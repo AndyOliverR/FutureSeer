@@ -1,0 +1,935 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Cosmic Background Effects */
+.cosmic-background {
+  background: radial-gradient(circle at 20% 20%, #1c0136 0%, #0a001f 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.cosmic-background-refined {
+  background: linear-gradient(to bottom, #0f012b 0%, #210a40 100%);
+  background-attachment: fixed;
+}
+
+.cosmic-background-treated {
+  background: linear-gradient(to bottom, #0a001e 0%, #1a0033 50%, #0f0028 100%);
+  background-attachment: fixed;
+}
+
+.cosmic-background-restored {
+  background: linear-gradient(rgba(5, 0, 15, 0.9), rgba(15, 0, 30, 0.95)), url("/assets/bg/starfield.avif") center
+    center / cover no-repeat;
+  background-attachment: fixed;
+  filter: brightness(0.9) contrast(1.2);
+}
+
+.bg-gradient-radial {
+  background: radial-gradient(var(--tw-gradient-stops));
+}
+
+/* Starfield Layer */
+.starfield-layer {
+  background-image: radial-gradient(1px 1px at 20px 30px, #ffffff, transparent),
+    radial-gradient(1px 1px at 40px 70px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 130px 80px, #ffffff, transparent),
+    radial-gradient(1px 1px at 160px 30px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 200px 60px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 230px 90px, #ffffff, transparent),
+    radial-gradient(1px 1px at 270px 20px, rgba(255, 255, 255, 0.8), transparent);
+  background-repeat: repeat;
+  background-size: 300px 150px;
+  animation: starfield-twinkle 8s ease-in-out infinite;
+}
+
+.starfield-realistic {
+  position: absolute;
+  inset: 0;
+  background: url("/assets/bg/starfield.avif") center center / cover no-repeat;
+  filter: brightness(1.1) contrast(1.05);
+  z-index: -1;
+  opacity: 0.8;
+}
+
+.starfield-treated {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(10, 0, 30, 0.85), rgba(15, 0, 40, 0.9)), url("/assets/bg/starfield.avif") center
+    center / cover no-repeat;
+  filter: brightness(0.7) contrast(1.2) blur(0.2px);
+  z-index: -2;
+  opacity: 0.6;
+}
+
+/* Cosmic Aura Behind Logo */
+.cosmic-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(200, 120, 255, 0.1) 0%, rgba(150, 100, 255, 0.05) 50%, transparent 80%);
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  pointer-events: none;
+  animation: cosmic-breathe-restored 15s ease-in-out infinite;
+}
+
+/* Nebula Overlays */
+.nebula-overlay-1 {
+  background: radial-gradient(ellipse at 30% 20%, rgba(147, 51, 234, 0.08) 0%, transparent 50%);
+  animation: nebula-drift-1 40s ease-in-out infinite;
+}
+
+.nebula-overlay-2 {
+  background: radial-gradient(ellipse at 70% 60%, rgba(79, 70, 229, 0.06) 0%, transparent 50%);
+  animation: nebula-drift-2 50s ease-in-out infinite reverse;
+}
+
+/* Cosmic Logo Effects */
+.cosmic-logo {
+  text-shadow: 0 0 10px rgba(249, 201, 34, 0.5), 0 0 20px rgba(249, 201, 34, 0.3), 0 0 30px rgba(249, 201, 34, 0.2), 0 0
+    40px rgba(249, 201, 34, 0.1);
+  filter: drop-shadow(0 0 15px rgba(249, 201, 34, 0.4));
+}
+
+.cosmic-logo-refined {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.4), 0 0 12px rgba(249, 201, 34, 0.3), 0 0 24px rgba(249, 201, 34, 0.2);
+  filter: drop-shadow(0 0 8px rgba(249, 201, 34, 0.2));
+}
+
+.cosmic-logo-enhanced {
+  text-shadow: 0 0 8px #f9d976, 0 0 24px #f9d976, 0 0 48px #fbb034, 0 0 72px rgba(251, 176, 52, 0.3);
+  filter: drop-shadow(0 0 20px rgba(249, 217, 118, 0.4));
+}
+
+.sacred-logo {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3), 0 0 12px rgba(249, 201, 34, 0.2), 0 0 24px rgba(249, 201, 34, 0.1);
+  filter: drop-shadow(0 0 8px rgba(249, 201, 34, 0.15));
+}
+
+.sacred-logo-restored {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.4), 0 0 16px rgba(249, 201, 34, 0.3), 0 0 32px rgba(249, 201, 34, 0.1);
+  filter: drop-shadow(0 0 12px rgba(249, 201, 34, 0.2));
+}
+
+/* Cosmic Icon Glow */
+.cosmic-icon-glow {
+  filter: drop-shadow(0 0 8px rgba(249, 201, 34, 0.4));
+}
+
+.cosmic-icon-refined {
+  filter: drop-shadow(0 0 4px rgba(249, 201, 34, 0.2));
+}
+
+.sacred-icon {
+  filter: drop-shadow(0 0 4px rgba(249, 201, 34, 0.2));
+}
+
+/* Text Glow Effects */
+.cosmic-text-glow {
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.cosmic-text-refined {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+.hero-text {
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.6), 0 0 4px rgba(255, 255, 255, 0.1);
+}
+
+.hero-text-restored {
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.8), 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+/* Button Effects */
+.cosmic-button-primary {
+  box-shadow: 0 0 20px rgba(249, 201, 34, 0.3), 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.cosmic-button-primary:hover {
+  box-shadow: 0 0 30px rgba(249, 201, 34, 0.5), 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.cosmic-button-secondary {
+  box-shadow: 0 0 15px rgba(147, 51, 234, 0.2), inset 0 0 15px rgba(147, 51, 234, 0.1), inset 0 1px 0
+    rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.cosmic-button-secondary:hover {
+  box-shadow: 0 0 25px rgba(147, 51, 234, 0.4), inset 0 0 20px rgba(147, 51, 234, 0.2), inset 0 1px 0
+    rgba(255, 255, 255, 0.2);
+}
+
+.sacred-button-primary {
+  box-shadow: 0 0 16px rgba(249, 201, 34, 0.25), 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.sacred-button-primary:hover {
+  box-shadow: 0 0 24px rgba(249, 201, 34, 0.35), 0 6px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px) scale(1.02);
+}
+
+.sacred-button-secondary {
+  box-shadow: 0 0 12px rgba(147, 51, 234, 0.2), inset 0 0 12px rgba(147, 51, 234, 0.08), inset 0 1px 0
+    rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.sacred-button-secondary:hover {
+  box-shadow: 0 0 18px rgba(147, 51, 234, 0.3), inset 0 0 18px rgba(147, 51, 234, 0.12), inset 0 1px 0
+    rgba(255, 255, 255, 0.12);
+}
+
+/* Feature Card Effects */
+.cosmic-feature-card:hover {
+  transform: translateY(-5px);
+  filter: drop-shadow(0 10px 20px rgba(147, 51, 234, 0.2));
+}
+
+.cosmic-feature-refined:hover {
+  transform: translateY(-3px);
+  filter: drop-shadow(0 8px 16px rgba(147, 51, 234, 0.1));
+}
+
+.sacred-feature:hover {
+  transform: translateY(-2px);
+  filter: drop-shadow(0 6px 12px rgba(147, 51, 234, 0.1));
+}
+
+/* Realistic Shooting Stars */
+.shooting-star-realistic {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ffffff, #ffffff, transparent);
+  border-radius: 50%;
+  animation: realistic-shooting-star 4s ease-in-out infinite;
+  opacity: 0;
+}
+
+.shooting-star-realistic::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -20px;
+  width: 20px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
+  border-radius: 50%;
+  animation: realistic-shooting-star 4s ease-in-out infinite;
+}
+
+.shooting-star-refined {
+  position: absolute;
+  width: 2px;
+  height: 80px;
+  background: linear-gradient(to bottom, #fefefe, #ccccee, transparent);
+  animation: shoot-refined 2s ease-out;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.shooting-star-divine {
+  position: absolute;
+  width: 2px;
+  height: 80px;
+  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6), transparent);
+  opacity: 0;
+  transform: rotate(45deg);
+  animation: shootStar 2.8s ease-out forwards;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+.shooting-star-divine::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 4px;
+  height: 20px;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.8), transparent);
+  border-radius: 50%;
+}
+
+.shooting-star-restored {
+  position: absolute;
+  top: 0;
+  left: 20%;
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.4), transparent);
+  animation: shoot-restored 6s ease-out forwards;
+  opacity: 0;
+  transform: rotate(45deg);
+  pointer-events: none;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+.shooting-star-restored::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 3px;
+  height: 15px;
+  background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.6), transparent);
+  border-radius: 50%;
+}
+
+/* Floating Particles */
+.floating-particle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background: #ffffff;
+  opacity: 0.5;
+  animation: float-upward 30s linear infinite;
+}
+
+.floating-particle-refined {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background: rgba(249, 201, 34, 0.6);
+  animation: float-refined 35s linear infinite;
+  will-change: transform;
+}
+
+.sacred-particle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background: rgba(249, 201, 34, 0.4);
+  animation: sacred-float 45s linear infinite;
+  opacity: 0;
+}
+
+.sacred-particle-minimal {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background: rgba(249, 201, 34, 0.3);
+  animation: sacred-float-minimal 60s linear infinite;
+  opacity: 0;
+}
+
+/* Animations */
+@keyframes shootingStar {
+  0% {
+    transform: translateX(0) translateY(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100vw) translateY(-200px);
+    opacity: 0;
+  }
+}
+
+@keyframes shootingStarTrail {
+  0% {
+    transform: translateX(-20px) translateY(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.6;
+  }
+  85% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateX(calc(100vw - 20px)) translateY(-200px);
+    opacity: 0;
+  }
+}
+
+@keyframes starfield-twinkle {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes nebula-drift-1 {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(10px) translateY(-5px) scale(1.02);
+  }
+}
+
+@keyframes nebula-drift-2 {
+  0%,
+  100% {
+    transform: translateX(0) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(-8px) translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes realistic-shooting-star {
+  0% {
+    transform: translateX(0) translateY(0);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(300px) translateY(150px);
+    opacity: 0;
+  }
+}
+
+@keyframes float-upward {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(20px);
+    opacity: 0;
+  }
+}
+
+@keyframes shoot-refined {
+  0% {
+    transform: translate(0, 0) rotate(45deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(400px, 400px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes float-refined {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(15px) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes aurora-pulse {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.25;
+    transform: translateX(-50%) scale(1.05);
+  }
+}
+
+@keyframes cosmic-breathe {
+  0%,
+  100% {
+    opacity: 0.08;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.12;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+@keyframes cosmic-breathe-restored {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.15;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+@keyframes sacred-float {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.4;
+  }
+  90% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(10px) rotate(90deg);
+    opacity: 0;
+  }
+}
+
+@keyframes sacred-float-minimal {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.3;
+  }
+  85% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(8px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse-gentle {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes pulse-divine {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.18;
+  }
+}
+
+/* Utility Classes */
+.animate-starfield {
+  animation: starfield 60s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 4s ease-in-out infinite;
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 6s ease-in-out infinite;
+}
+
+.animate-pulse-divine {
+  animation: pulse-divine 8s ease-in-out infinite;
+}
+
+.bg-size-200 {
+  background-size: 200% 200%;
+}
+
+/* Accessibility - Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .shooting-star-realistic,
+  .floating-particle,
+  .starfield-layer,
+  .nebula-overlay-1,
+  .nebula-overlay-2,
+  .cosmic-logo-enhanced {
+    animation: none !important;
+  }
+
+  .cosmic-button-primary:hover,
+  .cosmic-button-secondary:hover,
+  .cosmic-feature-card:hover {
+    transform: none !important;
+  }
+
+  .shooting-star-refined,
+  .floating-particle-refined,
+  .aurora-atmosphere,
+  .cosmic-logo-refined {
+    animation: none !important;
+  }
+
+  .sacred-button-primary:hover,
+  .sacred-button-secondary:hover,
+  .sacred-feature:hover {
+    transform: none !important;
+  }
+
+  .starfield-treated {
+    filter: brightness(0.7) contrast(1.2);
+  }
+
+  .shooting-star-divine,
+  .sacred-particle,
+  .cosmic-glow,
+  .sacred-logo {
+    animation: none !important;
+  }
+
+  .shooting-star-restored,
+  .sacred-particle-minimal,
+  .cosmic-aura,
+  .sacred-logo-restored {
+    animation: none !important;
+  }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  .cosmic-logo {
+    text-shadow: 0 0 5px rgba(249, 201, 34, 0.5), 0 0 10px rgba(249, 201, 34, 0.3);
+  }
+
+  .cosmic-logo-refined {
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.3), 0 0 8px rgba(249, 201, 34, 0.2);
+  }
+
+  .shooting-star-container,
+  .shooting-star-realistic,
+  .floating-particle {
+    display: none; /* Disable on mobile for performance */
+  }
+
+  .shooting-star-refined,
+  .floating-particle-refined {
+    display: none; /* Disable on mobile for performance */
+  }
+
+  .starfield-layer {
+    background-size: 200px 100px; /* Reduce complexity on mobile */
+  }
+
+  .starfield-realistic {
+    opacity: 0.6; /* Reduce starfield intensity on mobile */
+  }
+
+  .starfield-treated {
+    opacity: 0.4; /* Reduce intensity on mobile */
+    filter: brightness(0.6) contrast(1.1);
+  }
+
+  .nebula-overlay-1,
+  .nebula-overlay-2 {
+    opacity: 0.5; /* Reduce nebula intensity on mobile */
+  }
+
+  .aurora-atmosphere {
+    opacity: 0.5; /* Reduce intensity on mobile */
+  }
+
+  .cosmic-glow {
+    width: 400px;
+    height: 400px;
+    opacity: 0.6;
+  }
+
+  .hero-text {
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.7), 0 0 3px rgba(255, 255, 255, 0.1);
+  }
+
+  .sacred-logo {
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.2), 0 0 8px rgba(249, 201, 34, 0.15);
+  }
+
+  .shooting-star-restored,
+  .sacred-particle-minimal {
+    display: none; /* Disable on mobile for performance */
+  }
+
+  .cosmic-aura {
+    width: 400px;
+    height: 400px;
+    opacity: 0.7;
+  }
+
+  .hero-text-restored {
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.9), 0 0 3px rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .cosmic-background {
+    background: #000000;
+  }
+
+  .cosmic-background-refined {
+    background: #000000;
+  }
+
+  .cosmic-background-treated {
+    background: #000000;
+  }
+
+  .cosmic-background-restored {
+    background: #000000;
+    filter: none;
+  }
+
+  .starfield-layer {
+    opacity: 1;
+  }
+
+  .starfield-realistic {
+    opacity: 1;
+    filter: contrast(1.5);
+  }
+
+  .starfield-treated {
+    opacity: 0.8;
+    filter: contrast(2);
+  }
+
+  .aurora-atmosphere {
+    display: none;
+  }
+
+  .cosmic-glow {
+    display: none;
+  }
+
+  .hero-text {
+    text-shadow: 0 0 2px #000000;
+  }
+
+  .sacred-logo {
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  }
+
+  .cosmic-aura {
+    display: none;
+  }
+
+  .sacred-logo-restored {
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Performance optimizations */
+.shooting-star-restored,
+.sacred-particle-minimal,
+.cosmic-aura {
+  will-change: transform, opacity;
+}
+
+/* Ensure smooth rendering */
+@media (min-width: 769px) {
+  .cosmic-background-restored {
+    transform: translateZ(0); /* Force GPU acceleration */
+  }
+
+  .cosmic-background-refined {
+    transform: translateZ(0); /* Force GPU acceleration */
+  }
+
+  .cosmic-background-treated {
+    transform: translateZ(0); /* Force GPU acceleration */
+  }
+}
+
+/* Alternative SVG Starfield (if AVIF fails) */
+.cosmic-background-restored {
+  background: linear-gradient(rgba(5, 0, 15, 0.9), rgba(15, 0, 30, 0.95)),
+    radial-gradient(1px 1px at 25px 35px, rgba(255, 255, 255, 0.2), transparent),
+    radial-gradient(1px 1px at 45px 75px, rgba(255, 255, 255, 0.15), transparent),
+    radial-gradient(1px 1px at 95px 45px, rgba(255, 255, 255, 0.1), transparent),
+    radial-gradient(1px 1px at 135px 85px, rgba(255, 255, 255, 0.18), transparent),
+    radial-gradient(1px 1px at 165px 35px, rgba(255, 255, 255, 0.12), transparent),
+    radial-gradient(1px 1px at 205px 65px, rgba(255, 255, 255, 0.16), transparent),
+    radial-gradient(1px 1px at 235px 95px, rgba(255, 255, 255, 0.14), transparent),
+    radial-gradient(1px 1px at 275px 25px, rgba(255, 255, 255, 0.11), transparent), #0a001e;
+  background-repeat: repeat;
+  background-size: 300px 120px, 300px 120px, 300px 120px, 300px 120px, 300px 120px, 300px 120px, 300px 120px, 300px
+    120px, 300px 120px;
+  background-attachment: fixed;
+  filter: brightness(0.9) contrast(1.2);
+}
+
+@keyframes shoot-restored {
+  0% {
+    transform: translate(0, 0) rotate(45deg);
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(500px, 500px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes cosmic-breathe-restored {
+  0%,
+  100% {
+    opacity: 0.1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.15;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
+@keyframes sacred-float-minimal {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.3;
+  }
+  85% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(8px) rotate(45deg);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-divine {
+  0%,
+  100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.18;
+  }
+}
+
+/* Design System */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.gold-glow {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.text-soft {
+  color: #eaeaea;
+}
+
+.symbolic-placeholder {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+}
