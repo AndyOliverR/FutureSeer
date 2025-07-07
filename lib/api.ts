@@ -203,4 +203,4 @@ export const getRemedies = (symbolicData: any, question: string) => {
   }
 
   return remedies;
-}; 
+};

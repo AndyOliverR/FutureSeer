@@ -39,23 +39,23 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
 ### Installation
 
 1. **Clone the repository**
-   ```bash
+   \`\`\`bash
    git clone <repository-url>
    cd FutureSeer
-   ```
+   \`\`\`
 
 2. **Install dependencies**
-   ```bash
+   \`\`\`bash
    pnpm install
-   ```
+   \`\`\`
 
 3. **Set up environment variables**
-   ```bash
+   \`\`\`bash
    cp env-template.txt .env.local
-   ```
+   \`\`\`
    
    Edit `.env.local` with your API keys:
-   ```env
+   \`\`\`env
    # OpenAI API Configuration (Server-side only)
    OPENAI_API_KEY=your_openai_api_key_here
    
@@ -82,7 +82,7 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
    # App Configuration
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    NEXT_PUBLIC_APP_NAME=FutureSeer
-   ```
+   \`\`\`
 
 4. **Set up Firebase**
    - Create a Firebase project
@@ -91,9 +91,9 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
    - Add your Firebase config to `.env.local`
 
 5. **Run the development server**
-   ```bash
+   \`\`\`bash
    pnpm dev
-   ```
+   \`\`\`
 
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
@@ -101,7 +101,7 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
 ## 📱 Mobile Deployment
 
 ### Capacitor Setup
-```bash
+\`\`\`bash
 # Install Capacitor
 pnpm add @capacitor/core @capacitor/cli
 pnpm add @capacitor/ios @capacitor/android
@@ -122,11 +122,11 @@ npx cap sync
 # Open in native IDE
 npx cap open ios
 npx cap open android
-```
+\`\`\`
 
 ## 🏗️ Project Structure
 
-```
+\`\`\`
 FutureSeer/
 ├── app/                    # Next.js app directory
 │   ├── ask/               # Ask the Seer page
@@ -150,7 +150,7 @@ FutureSeer/
 │   └── ...
 ├── styles/               # Global styles
 └── public/               # Static assets
-```
+\`\`\`
 
 ## 🔧 Configuration
 
@@ -262,4 +262,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**FutureSeer** - Where ancient wisdom meets modern AI ✨🔮 
+**FutureSeer** - Where ancient wisdom meets modern AI ✨🔮

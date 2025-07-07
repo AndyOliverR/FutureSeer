@@ -50,4 +50,4 @@ Keep the response mystical yet practical, around 200-300 words.`
       { status: 500 }
     )
   }
-} 
+}

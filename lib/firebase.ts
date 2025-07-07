@@ -282,4 +282,4 @@ export const getTrialTimeLeft = (trialEndTime?: number): number => {
 export const auth = getFirebaseAuth();
 export const db = getFirebaseDB();
 
-export default app; 
+export default app;

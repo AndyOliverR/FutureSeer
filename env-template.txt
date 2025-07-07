@@ -27,4 +27,4 @@ PAYPAL_CLIENT_ID=your_paypal_client_id_here
 
 # App Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_APP_NAME=FutureSeer 
+NEXT_PUBLIC_APP_NAME=FutureSeer
