@@ -56,13 +56,19 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
    
    Edit `.env.local` with your API keys:
    ```env
-   # OpenAI API Configuration
-   NEXT_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
+   # OpenAI API Configuration (Server-side only)
+   OPENAI_API_KEY=your_openai_api_key_here
    
-   # AstroApp API for astrological data
-   NEXT_PUBLIC_ASTROAPP_API_KEY=your_astroapp_api_key_here
+   # AstroApp API for astrological data (Server-side only)
+   ASTROAPP_API_KEY=your_astroapp_api_key_here
    
-   # Firebase Configuration
+   # Stability AI for symbolic image generation (Server-side only)
+   STABILITY_API_KEY=your_stability_api_key_here
+   
+   # PostHog Analytics (Server-side only)
+   POSTHOG_API_KEY=your_posthog_api_key_here
+   
+   # Firebase Configuration (Client-side public keys)
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key_here
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
@@ -70,8 +76,8 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
    
-   # PayPal Configuration
-   NEXT_PUBLIC_PAYPAL_CLIENT_ID=your_paypal_client_id_here
+   # PayPal Configuration (Server-side only)
+   PAYPAL_CLIENT_ID=your_paypal_client_id_here
    
    # App Configuration
    NEXT_PUBLIC_APP_URL=http://localhost:3000

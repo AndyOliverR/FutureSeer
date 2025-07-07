@@ -9,17 +9,31 @@ import { trackEvent } from "@/lib/api"
 
 function SubscribePageContent() {
   const { user, userProfile } = useAuth()
-  const [trialTimeLeft, setTrialTimeLeft] = useState<number>(0)
-  const [selectedPlan, setSelectedPlan] = useState<string>('')
-  const [customTip, setCustomTip] = useState<number>(0)
+  const [timeLeft, setTimeLeft] = useState(0)
+  const [paypalConfig, setPaypalConfig] = useState<any>(null)
 
-  // Calculate trial time left
+  useEffect(() => {
+    // Fetch PayPal configuration from server
+    fetch('/api/paypal-config')
+      .then(res => res.json())
+      .then(config => setPaypalConfig(config))
+      .catch(err => console.error('Error fetching PayPal config:', err))
+  }, [])
+
   useEffect(() => {
     if (userProfile?.trialEndTime) {
-      const timeLeft = getTrialTimeLeft(userProfile.trialEndTime)
-      setTrialTimeLeft(timeLeft)
+      const interval = setInterval(() => {
+        setTimeLeft(getTimeLeft())
+      }, 1000)
+      return () => clearInterval(interval)
     }
   }, [userProfile])
+
+  const getTimeLeft = () => {
+    if (!userProfile?.trialEndTime) return 0
+    const timeLeft = userProfile.trialEndTime - Date.now()
+    return Math.max(0, timeLeft)
+  }
 
   const formatTimeLeft = (ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60))
@@ -28,98 +42,107 @@ function SubscribePageContent() {
   }
 
   const handleSubscriptionSuccess = async (planId: string) => {
-    if (user?.uid) {
+    if (!user?.uid) return
+    
+    try {
       await updateSubscriptionStatus(user.uid, true)
-      trackEvent('subscription_purchased', { plan: planId })
+      
+      alert("Subscription successful! Welcome to FutureSeer Premium! ✨")
+      window.location.href = "/dashboard"
+    } catch (error) {
+      console.error("Error updating subscription:", error)
+      alert("Payment successful! Please refresh the page to see your premium features.")
     }
   }
 
   const handleTipSuccess = async (amount: number) => {
-    if (user?.uid) {
-      await updateTipStatus(user.uid, true)
-      trackEvent('tip_given', { amount })
-    }
+    alert(`Thank you for your generous donation of ₹${amount}! 🙏`)
   }
 
   const plans = [
     {
       name: "Monthly",
-      price: "₹99",
+      price: "₹499",
       period: "/month",
       features: [
-        "Unlimited AI consultations",
-        "All 18 tools access",
-        "Daily guidance",
-        "Basic remedies",
-        "Priority support",
-      ],
-      popular: false,
+        "Unlimited AI predictions",
+        "All 18 divination tools",
+        "Daily cosmic guidance",
+        "Personal notes & history",
+        "Priority support"
+      ]
     },
     {
       name: "Quarterly",
-      price: "₹299",
-      period: "/quarter",
-      originalPrice: "₹297",
+      price: "₹1,299",
+      period: "/3 months",
+      originalPrice: "₹1,497",
+      savings: "Save ₹198",
+      popular: true,
       features: [
         "Everything in Monthly",
-        "Early feature access",
-        "Advanced remedies",
-        "Personalized insights",
-        "Priority support",
-      ],
-      popular: true,
-      savings: "Save ₹198",
+        "Advanced analytics",
+        "Custom remedies",
+        "Exclusive content",
+        "Early access to features"
+      ]
     },
     {
       name: "Yearly",
-      price: "₹999",
+      price: "₹4,999",
       period: "/year",
-      originalPrice: "₹1,188",
+      originalPrice: "₹5,988",
+      savings: "Save ₹989",
       features: [
-        "Best value plan",
-        "Custom remedy creation",
-        "Priority delivery",
-        "Unlimited consultations",
-        "Early access",
-      ],
-      popular: false,
-      savings: "Save ₹189",
-    },
+        "Everything in Quarterly",
+        "Personal consultation",
+        "VIP community access",
+        "Lifetime updates",
+        "Dedicated support"
+      ]
+    }
   ]
+
+  if (!paypalConfig) {
+    return (
+      <div className="min-h-screen p-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center pt-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400 mx-auto"></div>
+            <p className="text-soft mt-4">Loading payment options...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-16 pt-8">
-          <Link href="/" className="text-soft hover:gold-glow mb-4 inline-block">
-            ← Back to Home
+        <div className="text-center mb-12 pt-8">
+          <Link href="/dashboard" className="text-soft hover:gold-glow mb-4 inline-block">
+            ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-semibold gold-glow mb-4">Choose Your Journey</h1>
-          <p className="text-soft leading-relaxed mb-8">Unlock the full power of AI-driven divine wisdom</p>
-
-          {/* Trial Banner */}
-          <div className="glass-card rounded-2xl p-4 max-w-md mx-auto">
-            <p className="text-soft text-sm">
-              🎁 <span className="font-medium">
-                {trialTimeLeft > 0 
-                  ? `${formatTimeLeft(trialTimeLeft)} remaining in trial`
-                  : 'Trial expired - Subscribe to continue'
-                }
-              </span>
-            </p>
-            {trialTimeLeft > 0 && (
-              <div className="mt-2">
-                <div className="w-full bg-purple-800/30 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${Math.max(0, (trialTimeLeft / (9 * 60 * 60 * 1000)) * 100)}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-          </div>
+          <h1 className="text-4xl font-semibold gold-glow mb-4">Choose Your Path</h1>
+          <p className="text-soft leading-relaxed">Unlock the full power of mystical AI insights</p>
         </div>
+
+        {/* Trial Banner */}
+        {userProfile && !userProfile.isSubscribed && timeLeft > 0 && (
+          <div className="glass-card rounded-3xl p-6 mb-8 text-center">
+            <h3 className="text-lg gold-glow mb-2">Trial Period Active</h3>
+            <p className="text-soft/70 mb-4">
+              You have <span className="gold-glow font-semibold">{formatTimeLeft(timeLeft)}</span> remaining in your trial
+            </p>
+            <div className="w-full bg-white/10 rounded-full h-2">
+              <div 
+                className="bg-gradient-to-r from-yellow-400 to-yellow-600 h-2 rounded-full transition-all duration-1000"
+                style={{ width: `${Math.max(0, 100 - (timeLeft / (9 * 60 * 60 * 1000)) * 100)}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
 
         {/* Plans Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
@@ -198,7 +221,7 @@ function SubscribePageContent() {
                       purchase_units: [
                         {
                           amount: {
-                            value: "299",
+                            value: "1299",
                             currency_code: "INR"
                           },
                           description: "FutureSeer Quarterly Subscription"
@@ -224,7 +247,7 @@ function SubscribePageContent() {
                       purchase_units: [
                         {
                           amount: {
-                            value: "999",
+                            value: "4999",
                             currency_code: "INR"
                           },
                           description: "FutureSeer Yearly Subscription"

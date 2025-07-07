@@ -1,8 +1,8 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc } from 'firebase/firestore';
 
-// Firebase configuration
+// Client-side Firebase config (only public keys)
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -12,10 +12,47 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Lazy Firebase initialization
+let app: any = null;
+let firebaseAuth: any = null;
+let firebaseDB: any = null;
+
+const initializeFirebase = (): { app: any; auth: any; db: any } => {
+  if (typeof window === 'undefined') {
+    // Server-side, return null
+    return { app: null, auth: null, db: null };
+  }
+
+  if (!app) {
+    try {
+      // Check if all required config values are present
+      if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+        console.warn('Firebase configuration incomplete. Some features may not work.');
+        return { app: null, auth: null, db: null };
+      }
+
+      app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+      firebaseAuth = getAuth(app);
+      firebaseDB = getFirestore(app);
+    } catch (error) {
+      console.error('Error initializing Firebase:', error);
+      return { app: null, auth: null, db: null };
+    }
+  }
+
+  return { app, auth: firebaseAuth, db: firebaseDB };
+};
+
+// Initialize Firebase services
+export const getFirebaseAuth = (): any => {
+  const { auth } = initializeFirebase();
+  return auth;
+};
+
+export const getFirebaseDB = (): any => {
+  const { db } = initializeFirebase();
+  return db;
+};
 
 // Auth providers
 export const googleProvider = new GoogleAuthProvider();
@@ -60,10 +97,16 @@ export interface Note {
 // Auth functions
 export const signInWithGoogle = async () => {
   try {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase not initialized');
+
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     
     // Check if user exists in Firestore
+    const db = getFirebaseDB();
+    if (!db) throw new Error('Firestore not initialized');
+
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
     if (!userDoc.exists()) {
@@ -98,6 +141,9 @@ export const signInWithGoogle = async () => {
 
 export const signOutUser = async () => {
   try {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase not initialized');
+
     await signOut(auth);
   } catch (error) {
     console.error('Error signing out:', error);
@@ -108,6 +154,9 @@ export const signOutUser = async () => {
 // Firestore functions
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   try {
+    const db = getFirebaseDB();
+    if (!db) return null;
+
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (userDoc.exists()) {
       return userDoc.data() as UserProfile;
@@ -121,6 +170,9 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 
 export const saveAskHistory = async (askData: Omit<AskHistory, 'id'> & { uid: string }): Promise<string> => {
   try {
+    const db = getFirebaseDB();
+    if (!db) throw new Error('Firestore not initialized');
+
     const docRef = await addDoc(collection(db, 'askHistory'), askData);
     return docRef.id;
   } catch (error) {
@@ -131,6 +183,9 @@ export const saveAskHistory = async (askData: Omit<AskHistory, 'id'> & { uid: st
 
 export const getAskHistory = async (uid: string): Promise<AskHistory[]> => {
   try {
+    const db = getFirebaseDB();
+    if (!db) return [];
+
     const q = query(
       collection(db, 'askHistory'),
       where('uid', '==', uid),
@@ -149,6 +204,9 @@ export const getAskHistory = async (uid: string): Promise<AskHistory[]> => {
 
 export const saveNote = async (noteData: Omit<Note, 'id'>): Promise<string> => {
   try {
+    const db = getFirebaseDB();
+    if (!db) throw new Error('Firestore not initialized');
+
     const docRef = await addDoc(collection(db, 'notes'), noteData);
     return docRef.id;
   } catch (error) {
@@ -159,6 +217,9 @@ export const saveNote = async (noteData: Omit<Note, 'id'>): Promise<string> => {
 
 export const getNotes = async (uid: string): Promise<Note[]> => {
   try {
+    const db = getFirebaseDB();
+    if (!db) return [];
+
     const q = query(
       collection(db, 'notes'),
       where('uid', '==', uid),
@@ -177,6 +238,9 @@ export const getNotes = async (uid: string): Promise<Note[]> => {
 
 export const updateSubscriptionStatus = async (uid: string, isSubscribed: boolean): Promise<void> => {
   try {
+    const db = getFirebaseDB();
+    if (!db) throw new Error('Firestore not initialized');
+
     await updateDoc(doc(db, 'users', uid), {
       isSubscribed,
       updatedAt: Date.now(),
@@ -189,6 +253,9 @@ export const updateSubscriptionStatus = async (uid: string, isSubscribed: boolea
 
 export const updateTipStatus = async (uid: string, isTipped: boolean): Promise<void> => {
   try {
+    const db = getFirebaseDB();
+    if (!db) throw new Error('Firestore not initialized');
+
     await updateDoc(doc(db, 'users', uid), {
       isTipped,
       updatedAt: Date.now(),
@@ -209,4 +276,10 @@ export const getTrialTimeLeft = (trialEndTime?: number): number => {
   if (!trialEndTime) return 0;
   const timeLeft = trialEndTime - Date.now();
   return Math.max(0, timeLeft);
-}; 
+};
+
+// Legacy exports for backward compatibility
+export const auth = getFirebaseAuth();
+export const db = getFirebaseDB();
+
+export default app; 

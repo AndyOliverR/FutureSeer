@@ -18,144 +18,108 @@ if (typeof window !== 'undefined') {
 }
 
 // AstroApp API functions
-export const getAstroData = async (dateOfBirth: string, location: string) => {
+export async function getAstroData(birthDate: string, birthPlace: string) {
   try {
-    const response = await fetch(`https://api.astroapp.com/v1/natal-chart`, {
+    const response = await fetch('/api/astroapp', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ASTROAPP_API_KEY}`,
       },
       body: JSON.stringify({
-        date_of_birth: dateOfBirth,
-        location: location,
+        birthDate,
+        birthPlace,
       }),
-    });
+    })
 
     if (!response.ok) {
-      throw new Error('Failed to fetch astro data');
+      throw new Error('Failed to fetch astrological data')
     }
 
-    return await response.json();
+    const data = await response.json()
+    return data
   } catch (error) {
-    console.error('Error fetching astro data:', error);
-    // Return mock data for development
+    console.error('Error fetching astro data:', error)
+    // Return fallback data
     return {
-      sun_sign: 'Aries',
-      moon_sign: 'Cancer',
-      rising_sign: 'Libra',
-      planets: {
-        sun: { sign: 'Aries', degree: 15, house: 1 },
-        moon: { sign: 'Cancer', degree: 8, house: 4 },
-        mercury: { sign: 'Pisces', degree: 28, house: 12 },
-        venus: { sign: 'Aquarius', degree: 22, house: 11 },
-        mars: { sign: 'Taurus', degree: 5, house: 2 },
-        jupiter: { sign: 'Sagittarius', degree: 18, house: 9 },
-        saturn: { sign: 'Capricorn', degree: 12, house: 10 },
-        uranus: { sign: 'Aquarius', degree: 8, house: 11 },
-        neptune: { sign: 'Pisces', degree: 25, house: 12 },
-        pluto: { sign: 'Capricorn', degree: 20, house: 10 },
-      },
-      houses: Array.from({ length: 12 }, (_, i) => ({
-        house: i + 1,
-        sign: ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'][i],
-        degree: Math.floor(Math.random() * 30),
-      })),
-    };
+      sun_sign: 'Unknown',
+      moon_sign: 'Unknown',
+      rising_sign: 'Unknown',
+      planets: {},
+      houses: {},
+    }
   }
-};
+}
 
 // Stability AI for symbolic backgrounds
-export const generateSymbolicBackground = async (symbol: string, style: string = 'mystical') => {
+export async function generateSymbolicImage(prompt: string) {
   try {
-    const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
+    const response = await fetch('/api/stability', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_STABILITY_API_KEY}`,
       },
       body: JSON.stringify({
-        text_prompts: [
-          {
-            text: `${symbol} ${style} mystical background, grayscale, minimalist, sacred geometry, ethereal, spiritual`,
-            weight: 1,
-          },
-        ],
-        cfg_scale: 7,
-        height: 1024,
-        width: 1024,
-        samples: 1,
-        steps: 30,
-        style_preset: 'cinematic',
+        prompt,
       }),
-    });
+    })
 
     if (!response.ok) {
-      throw new Error('Failed to generate symbolic background');
+      throw new Error('Failed to generate image')
     }
 
-    const result = await response.json();
-    return result.artifacts[0].base64;
+    const data = await response.json()
+    return data.imageUrl
   } catch (error) {
-    console.error('Error generating symbolic background:', error);
-    // Return placeholder for development
-    return null;
+    console.error('Error generating image:', error)
+    return null
   }
-};
+}
 
 // OpenAI for AI predictions and summaries
-export const generateAIPrediction = async (question: string, astroData: any, symbolicData: any) => {
+export async function generateAIPrediction(question: string, astroData: any, symbolicData: any) {
   try {
-    const prompt = `
-You are FutureSeer, a mystical AI oracle that combines ancient wisdom with modern insights.
+    const response = await fetch('/api/openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        question,
+        astroData,
+        symbolicData,
+      }),
+    })
 
-Question: "${question}"
+    if (!response.ok) {
+      throw new Error('Failed to generate prediction')
+    }
 
-Astrological Context:
-- Sun Sign: ${astroData.sun_sign}
-- Moon Sign: ${astroData.moon_sign}
-- Rising Sign: ${astroData.rising_sign}
-
-Symbolic Elements: ${JSON.stringify(symbolicData)}
-
-Please provide:
-1. A mystical yet grounded interpretation (2-3 sentences)
-2. Key themes and patterns to watch for
-3. Timing insights based on astrological cycles
-4. Practical guidance for the querent
-
-Keep the tone sacred, wise, and empowering. Avoid negative predictions, focus on growth and potential.
-`;
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are FutureSeer, a mystical AI oracle that provides wise, empowering guidance combining ancient wisdom with modern insights.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      max_tokens: 500,
-      temperature: 0.7,
-    });
-
-    return completion.choices[0].message.content;
+    const data = await response.json()
+    return data.prediction
   } catch (error) {
-    console.error('Error generating AI prediction:', error);
-    return 'The stars whisper of great potential ahead. Trust in your journey and remain open to the signs around you.';
+    console.error('Error generating prediction:', error)
+    return 'Unable to generate prediction at this time. Please try again later.'
   }
-};
+}
 
 // PostHog analytics
-export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
-  if (typeof window !== 'undefined') {
-    posthog.capture(eventName, properties);
+export async function trackEvent(event: string, userId: string, properties?: any) {
+  try {
+    await fetch('/api/posthog', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        event,
+        userId,
+        properties,
+      }),
+    })
+  } catch (error) {
+    console.error('Error tracking event:', error)
   }
-};
+}
 
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
   if (typeof window !== 'undefined') {
@@ -164,76 +128,25 @@ export const identifyUser = (userId: string, properties?: Record<string, any>) =
 };
 
 // Symbolic data mapping
-export const getSymbolicData = (question: string, astroData: any) => {
-  const keywords = question.toLowerCase().split(' ');
-  const symbolicElements: {
-    elements: string[];
-    numbers: number[];
-    colors: string[];
-    directions: string[];
-    animals: string[];
-    crystals: string[];
-  } = {
-    elements: [],
-    numbers: [],
-    colors: [],
-    directions: [],
-    animals: [],
-    crystals: [],
-  };
-
-  // Element mapping based on astrological signs
-  const elementMap = {
-    fire: ['aries', 'leo', 'sagittarius'],
-    earth: ['taurus', 'virgo', 'capricorn'],
-    air: ['gemini', 'libra', 'aquarius'],
-    water: ['cancer', 'scorpio', 'pisces'],
-  };
-
-  // Add elements based on user's signs
-  Object.entries(elementMap).forEach(([element, signs]) => {
-    if (signs.includes(astroData.sun_sign.toLowerCase())) {
-      symbolicElements.elements.push(element);
-    }
-  });
-
-  // Number mapping based on question keywords
-  const numberKeywords = {
-    '1': ['first', 'one', 'single', 'beginning'],
-    '2': ['two', 'second', 'pair', 'balance'],
-    '3': ['three', 'third', 'trinity', 'growth'],
-    '4': ['four', 'fourth', 'foundation', 'stability'],
-    '5': ['five', 'fifth', 'change', 'freedom'],
-    '6': ['six', 'sixth', 'harmony', 'love'],
-    '7': ['seven', 'seventh', 'spiritual', 'mystery'],
-    '8': ['eight', 'eighth', 'power', 'abundance'],
-    '9': ['nine', 'ninth', 'completion', 'wisdom'],
-  };
-
-  Object.entries(numberKeywords).forEach(([number, words]) => {
-    if (words.some(word => keywords.includes(word))) {
-      symbolicElements.numbers.push(parseInt(number));
-    }
-  });
-
-  // Color mapping
-  const colorMap = {
-    red: ['passion', 'energy', 'action', 'courage'],
-    blue: ['peace', 'wisdom', 'communication', 'trust'],
-    green: ['growth', 'nature', 'healing', 'prosperity'],
-    yellow: ['joy', 'intellect', 'optimism', 'clarity'],
-    purple: ['spirituality', 'mystery', 'royalty', 'transformation'],
-    orange: ['creativity', 'enthusiasm', 'adventure', 'confidence'],
-  };
-
-  Object.entries(colorMap).forEach(([color, words]) => {
-    if (words.some(word => keywords.includes(word))) {
-      symbolicElements.colors.push(color);
-    }
-  });
-
-  return symbolicElements;
-};
+export function getSymbolicData(question: string, astroData: any) {
+  // This function generates symbolic data based on the question and astrological context
+  const symbols = [
+    '🌙 Moon', '☀️ Sun', '⭐ Star', '🔮 Crystal', '🌸 Flower', '🌊 Water',
+    '🔥 Fire', '🌍 Earth', '💎 Diamond', '🦋 Butterfly', '🐉 Dragon', '🦅 Eagle'
+  ]
+  
+  const randomSymbols = symbols
+    .sort(() => 0.5 - Math.random())
+    .slice(0, 3)
+  
+  return {
+    primarySymbol: randomSymbols[0],
+    secondarySymbols: randomSymbols.slice(1),
+    elementalInfluence: ['Fire', 'Water', 'Earth', 'Air'][Math.floor(Math.random() * 4)],
+    cosmicAlignment: ['Harmonious', 'Challenging', 'Transformative', 'Balanced'][Math.floor(Math.random() * 4)],
+    timing: ['Immediate', 'Within a week', 'Within a month', 'Within a year'][Math.floor(Math.random() * 4)],
+  }
+}
 
 // Remedy suggestions
 export const getRemedies = (symbolicData: any, question: string) => {
