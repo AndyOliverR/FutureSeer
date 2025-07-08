@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Satoshi:wght@300;400;500;600;700&display=swap");
-
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -57,13 +55,13 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Satoshi", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   }
 }
 
 /* Typography */
 .font-serif {
-  font-family: "Cormorant Garamond", serif;
+  font-family: var(--font-cormorant), "Times New Roman", serif;
 }
 
 /* Cosmic Title */
@@ -79,7 +77,7 @@
 
 .cosmic-subtitle {
   text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  font-family: "Satoshi", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 300;
 }
 
@@ -270,6 +268,78 @@
   }
 }
 
+/* Cosmic Background Effects */
+.cosmic-background {
+  background: radial-gradient(circle at 20% 20%, #1c0136 0%, #0a001f 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.cosmic-background-refined {
+  background: linear-gradient(to bottom, #0f012b 0%, #210a40 100%);
+  background-attachment: fixed;
+}
+
+.cosmic-background-treated {
+  background: linear-gradient(to bottom, #0a001e 0%, #1a0033 50%, #0f0028 100%);
+  background-attachment: fixed;
+}
+
+.cosmic-background-restored {
+  background: linear-gradient(rgba(5, 0, 15, 0.9), rgba(15, 0, 30, 0.95)), url("/assets/bg/starfield.avif") center
+    center / cover no-repeat;
+  background-attachment: fixed;
+  filter: brightness(0.9) contrast(1.2);
+}
+
+.bg-gradient-radial {
+  background: radial-gradient(var(--tw-gradient-stops));
+}
+
+/* Starfield Layer */
+.starfield-layer {
+  background-image: radial-gradient(1px 1px at 20px 30px, #ffffff, transparent),
+    radial-gradient(1px 1px at 40px 70px, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 130px 80px, #ffffff, transparent),
+    radial-gradient(1px 1px at 160px 30px, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 200px 60px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 230px 90px, #ffffff, transparent),
+    radial-gradient(1px 1px at 270px 20px, rgba(255, 255, 255, 0.8), transparent);
+  background-repeat: repeat;
+  background-size: 300px 150px;
+  animation: starfield-twinkle 8s ease-in-out infinite;
+}
+
+.starfield-realistic {
+  position: absolute;
+  inset: 0;
+  background: url("/assets/bg/starfield.avif") center center / cover no-repeat;
+  filter: brightness(1.1) contrast(1.05);
+  z-index: -1;
+  opacity: 0.8;
+}
+
+.starfield-treated {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(10, 0, 30, 0.85), rgba(15, 0, 40, 0.9)), url("/assets/bg/starfield.avif") center
+    center / cover no-repeat;
+  filter: brightness(0.7) contrast(1.2) blur(0.2px);
+  z-index: -2;
+  opacity: 0.6;
+}
+
+@keyframes starfield-twinkle {
+  0%,
+  100% {
+    opacity: 0.88;
+  }
+  50% {
+    opacity: 0.99;
+  }
+}
+
 /* Mobile Optimizations */
 @media (max-width: 768px) {
   .cosmic-title {
@@ -335,4 +405,14 @@
 
 .text-soft {
   color: #e2e8f0;
+}
+
+.symbolic-placeholder {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
 }

@@ -52,8 +52,8 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Satoshi", "Inter", "sans-serif"],
-        serif: ["Cormorant Garamond", "serif"],
+        sans: ["Inter", "sans-serif"],
+        serif: ["var(--font-cormorant)", "Times New Roman", "serif"],
       },
       spacing: {
         "18": "4.5rem",
