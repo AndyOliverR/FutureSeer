@@ -1,8 +1,49 @@
 import { type NextRequest, NextResponse } from "next/server"
 
-// Mock astrological data generator
-function generateMockAstroData(birthDate: string, birthPlace: string) {
-  const signs = [
+export async function POST(request: NextRequest) {
+  try {
+    const { birth_date, birth_place } = await request.json()
+
+    const astroApiKey = process.env.ASTROAPP_API_KEY
+
+    if (!astroApiKey || astroApiKey.trim() === "" || astroApiKey === "undefined") {
+      console.warn("[FutureSeer] AstroApp API key not configured, using fallback data")
+      return NextResponse.json(generateFallbackAstroData(birth_date, birth_place))
+    }
+
+    // Make request to AstroApp API
+    const response = await fetch("https://api.astroapp.com/v1/chart", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${astroApiKey}`,
+      },
+      body: JSON.stringify({
+        birth_date,
+        birth_place,
+        chart_type: "natal",
+      }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return NextResponse.json(data)
+    } else {
+      throw new Error(`AstroApp API error: ${response.status}`)
+    }
+  } catch (error) {
+    console.warn("[FutureSeer] AstroApp API failed, using fallback data:", error)
+    const { birth_date, birth_place } = await request.json()
+    return NextResponse.json(generateFallbackAstroData(birth_date, birth_place))
+  }
+}
+
+// Generate fallback astrological data
+function generateFallbackAstroData(birthDate: string, birthPlace: string) {
+  const date = new Date(birthDate)
+  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+
+  const zodiacSigns = [
     "Aries",
     "Taurus",
     "Gemini",
@@ -16,149 +57,58 @@ function generateMockAstroData(birthDate: string, birthPlace: string) {
     "Aquarius",
     "Pisces",
   ]
-  const planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+
+  const planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Rahu", "Ketu"]
+  const houses = Array.from({ length: 12 }, (_, i) => i + 1)
 
   // Generate consistent data based on birth date
-  const dateHash = new Date(birthDate).getTime()
-  const random = (seed: number) => ((seed * 9301 + 49297) % 233280) / 233280
+  const sunSignIndex = Math.floor((dayOfYear / 30.44) % 12)
+  const moonSignIndex = (sunSignIndex + Math.floor(dayOfYear / 7)) % 12
+  const risingSignIndex = (sunSignIndex + Math.floor(dayOfYear / 3)) % 12
 
   return {
-    sun_sign: signs[Math.floor(random(dateHash) * signs.length)],
-    moon_sign: signs[Math.floor(random(dateHash + 1) * signs.length)],
-    rising_sign: signs[Math.floor(random(dateHash + 2) * signs.length)],
-    planets: {
-      sun: {
-        sign: signs[Math.floor(random(dateHash) * signs.length)],
-        house: Math.floor(random(dateHash + 10) * 12) + 1,
-        degree: Math.floor(random(dateHash + 20) * 30),
+    sun_sign: zodiacSigns[sunSignIndex],
+    moon_sign: zodiacSigns[moonSignIndex],
+    rising_sign: zodiacSigns[risingSignIndex],
+    planetary_positions: planets.reduce(
+      (acc, planet, index) => {
+        acc[planet.toLowerCase()] = {
+          sign: zodiacSigns[(sunSignIndex + index) % 12],
+          house: houses[(index * 3 + Math.floor(dayOfYear / 10)) % 12],
+          degree: Math.floor((dayOfYear * (index + 1)) % 30),
+          retrograde: Math.random() > 0.8, // 20% chance of retrograde
+        }
+        return acc
       },
-      moon: {
-        sign: signs[Math.floor(random(dateHash + 1) * signs.length)],
-        house: Math.floor(random(dateHash + 11) * 12) + 1,
-        degree: Math.floor(random(dateHash + 21) * 30),
-      },
-      mercury: {
-        sign: signs[Math.floor(random(dateHash + 2) * signs.length)],
-        house: Math.floor(random(dateHash + 12) * 12) + 1,
-        degree: Math.floor(random(dateHash + 22) * 30),
-      },
-      venus: {
-        sign: signs[Math.floor(random(dateHash + 3) * signs.length)],
-        house: Math.floor(random(dateHash + 13) * 12) + 1,
-        degree: Math.floor(random(dateHash + 23) * 30),
-      },
-      mars: {
-        sign: signs[Math.floor(random(dateHash + 4) * signs.length)],
-        house: Math.floor(random(dateHash + 14) * 12) + 1,
-        degree: Math.floor(random(dateHash + 24) * 30),
-      },
-      jupiter: {
-        sign: signs[Math.floor(random(dateHash + 5) * signs.length)],
-        house: Math.floor(random(dateHash + 15) * 12) + 1,
-        degree: Math.floor(random(dateHash + 25) * 30),
-      },
-    },
-    houses: {
-      1: {
-        sign: signs[Math.floor(random(dateHash + 100) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 200) * planets.length)],
-      },
-      2: {
-        sign: signs[Math.floor(random(dateHash + 101) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 201) * planets.length)],
-      },
-      3: {
-        sign: signs[Math.floor(random(dateHash + 102) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 202) * planets.length)],
-      },
-      4: {
-        sign: signs[Math.floor(random(dateHash + 103) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 203) * planets.length)],
-      },
-      5: {
-        sign: signs[Math.floor(random(dateHash + 104) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 204) * planets.length)],
-      },
-      6: {
-        sign: signs[Math.floor(random(dateHash + 105) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 205) * planets.length)],
-      },
-      7: {
-        sign: signs[Math.floor(random(dateHash + 106) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 206) * planets.length)],
-      },
-      8: {
-        sign: signs[Math.floor(random(dateHash + 107) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 207) * planets.length)],
-      },
-      9: {
-        sign: signs[Math.floor(random(dateHash + 108) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 208) * planets.length)],
-      },
-      10: {
-        sign: signs[Math.floor(random(dateHash + 109) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 209) * planets.length)],
-      },
-      11: {
-        sign: signs[Math.floor(random(dateHash + 110) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 210) * planets.length)],
-      },
-      12: {
-        sign: signs[Math.floor(random(dateHash + 111) * signs.length)],
-        lord: planets[Math.floor(random(dateHash + 211) * planets.length)],
-      },
-    },
+      {} as Record<string, any>,
+    ),
+    houses: houses.map((house) => ({
+      house_number: house,
+      sign: zodiacSigns[(house + sunSignIndex - 1) % 12],
+      lord: planets[house % planets.length],
+      significance: getHouseSignificance(house),
+    })),
+    birth_date: birthDate,
+    birth_place: birthPlace,
+    generated_at: Date.now(),
+    source: "fallback",
   }
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    const { birthDate, birthPlace } = await request.json()
-
-    if (!birthDate) {
-      return NextResponse.json({ error: "Birth date is required" }, { status: 400 })
-    }
-
-    // Check if AstroApp API key is available
-    if (process.env.ASTROAPP_API_KEY) {
-      // TODO: Implement actual AstroApp API call here
-      // For now, return mock data even when API key is available
-    }
-
-    // Generate mock astrological data
-    const astroData = generateMockAstroData(birthDate, birthPlace || "Unknown")
-
-    return NextResponse.json(astroData)
-  } catch (error) {
-    console.error("AstroApp API error:", error)
-
-    // Return fallback data on error
-    return NextResponse.json({
-      sun_sign: "Capricorn",
-      moon_sign: "Pisces",
-      rising_sign: "Virgo",
-      planets: {
-        sun: { sign: "Capricorn", house: 5, degree: 15 },
-        moon: { sign: "Pisces", house: 7, degree: 22 },
-        mercury: { sign: "Sagittarius", house: 4, degree: 8 },
-        venus: { sign: "Aquarius", house: 6, degree: 12 },
-        mars: { sign: "Scorpio", house: 3, degree: 28 },
-        jupiter: { sign: "Taurus", house: 9, degree: 5 },
-      },
-      houses: {
-        1: { sign: "Virgo", lord: "Mercury" },
-        2: { sign: "Libra", lord: "Venus" },
-        3: { sign: "Scorpio", lord: "Mars" },
-        4: { sign: "Sagittarius", lord: "Jupiter" },
-        5: { sign: "Capricorn", lord: "Saturn" },
-        6: { sign: "Aquarius", lord: "Saturn" },
-        7: { sign: "Pisces", lord: "Jupiter" },
-        8: { sign: "Aries", lord: "Mars" },
-        9: { sign: "Taurus", lord: "Venus" },
-        10: { sign: "Gemini", lord: "Mercury" },
-        11: { sign: "Cancer", lord: "Moon" },
-        12: { sign: "Leo", lord: "Sun" },
-      },
-    })
-  }
+function getHouseSignificance(house: number): string {
+  const significances = [
+    "Self, personality, physical appearance, first impressions",
+    "Wealth, family, speech, values, material possessions",
+    "Communication, siblings, short journeys, courage",
+    "Home, mother, emotional foundation, property",
+    "Creativity, children, romance, speculation, education",
+    "Health, service, daily routines, enemies, obstacles",
+    "Partnerships, marriage, business relationships, legal matters",
+    "Transformation, occult, longevity, hidden knowledge",
+    "Higher learning, philosophy, long journeys, spirituality",
+    "Career, reputation, public image, authority figures",
+    "Gains, friendships, hopes and wishes, elder siblings",
+    "Losses, spirituality, foreign lands, subconscious mind",
+  ]
+  return significances[house - 1] || "Unknown significance"
 }

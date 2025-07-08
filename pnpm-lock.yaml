@@ -104,9 +104,6 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: latest
         version: 1.2.7(@types/react-dom@19.0.0)(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
-      '@rrweb/types':
-        specifier: latest
-        version: 2.0.0-alpha.18
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.21(postcss@8.5.6)
@@ -153,10 +150,10 @@ importers:
         specifier: latest
         version: 5.8.2(ws@8.18.3)(zod@3.25.74)
       posthog-js:
-        specifier: latest
-        version: 1.256.2(@rrweb/types@2.0.0-alpha.18)(rrweb-snapshot@2.0.0-alpha.4)
+        specifier: ^1.256.2
+        version: 1.256.2
       posthog-node:
-        specifier: latest
+        specifier: ^5.1.1
         version: 5.1.1
       react:
         specifier: ^19
@@ -182,9 +179,6 @@ importers:
       recharts:
         specifier: latest
         version: 3.0.2(@types/react@19.0.0)(react-dom@19.0.0(react@19.0.0))(react-is@18.3.1)(react@19.0.0)(redux@5.0.1)
-      rrweb-snapshot:
-        specifier: latest
-        version: 2.0.0-alpha.4
       sonner:
         specifier: latest
         version: 2.0.6(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -1397,9 +1391,6 @@ packages:
       react-redux:
         optional: true
 
-  '@rrweb/types@2.0.0-alpha.18':
-    resolution: {integrity: sha512-iMH3amHthJZ9x3gGmBPmdfim7wLGygC2GciIkw2A6SO8giSn8PHYtRT8OKNH4V+k3SZ6RSnYHcTQxBA7pSWZ3Q==}
-
   '@standard-schema/spec@1.0.0':
     resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
@@ -2325,9 +2316,6 @@ packages:
     resolution: {integrity: sha512-9dkvaxAsk/xNXSJzMgFqqMCuFgt2+KsOFek3TMLfo8NCPfWpBmqwyNn5Y+NX56QUYfCtsyhF3ayiboEoUmJk/A==}
     engines: {node: 20 || >=22}
     hasBin: true
-
-  rrweb-snapshot@2.0.0-alpha.4:
-    resolution: {integrity: sha512-KQ2OtPpXO5jLYqg1OnXS/Hf+EzqnZyP5A+XPqBCjYpj3XIje/Od4gdUwjbFo3cVuWq5Cw5Y1d3/xwgIS7/XpQQ==}
 
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
@@ -3952,8 +3940,6 @@ snapshots:
       react: 19.0.0
       react-redux: 9.2.0(@types/react@19.0.0)(react@19.0.0)(redux@5.0.1)
 
-  '@rrweb/types@2.0.0-alpha.18': {}
-
   '@standard-schema/spec@1.0.0': {}
 
   '@standard-schema/utils@0.3.0': {}
@@ -4662,15 +4648,12 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  posthog-js@1.256.2(@rrweb/types@2.0.0-alpha.18)(rrweb-snapshot@2.0.0-alpha.4):
+  posthog-js@1.256.2:
     dependencies:
       core-js: 3.43.0
       fflate: 0.4.8
       preact: 10.26.9
       web-vitals: 4.2.4
-    optionalDependencies:
-      '@rrweb/types': 2.0.0-alpha.18
-      rrweb-snapshot: 2.0.0-alpha.4
 
   posthog-node@5.1.1: {}
 
@@ -4827,8 +4810,6 @@ snapshots:
     dependencies:
       glob: 11.0.3
       package-json-from-dist: 1.0.1
-
-  rrweb-snapshot@2.0.0-alpha.4: {}
 
   run-parallel@1.2.0:
     dependencies:

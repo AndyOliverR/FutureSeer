@@ -1,32 +1,58 @@
-import posthog from "posthog-js"
-
-// Initialize PostHog only if key is available
+// PostHog Analytics (Client-side with safety checks)
 let posthogInitialized = false
 
-if (typeof window !== "undefined") {
-  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
-  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com"
+const initializePostHog = () => {
+  if (typeof window === "undefined") return false
 
-  if (posthogKey && posthogKey.trim() !== "") {
-    try {
-      posthog.init(posthogKey, {
-        api_host: posthogHost,
-        loaded: (posthog) => {
-          if (process.env.NODE_ENV === "development") posthog.debug()
-        },
-      })
-      posthogInitialized = true
-    } catch (error) {
-      console.warn("PostHog initialization failed:", error)
-      posthogInitialized = false
-    }
-  } else {
-    console.warn("PostHog key not found. Analytics will be disabled.")
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST
+
+  if (!posthogKey || posthogKey.trim() === "" || posthogKey === "undefined") {
+    console.warn("[FutureSeer] PostHog key not configured - analytics disabled")
+    return false
+  }
+
+  try {
+    const { posthog } = require("posthog-js")
+    posthog.init(posthogKey, {
+      api_host: posthogHost || "https://app.posthog.com",
+      loaded: (posthog: any) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("[FutureSeer] PostHog initialized successfully")
+        }
+      },
+    })
+    posthogInitialized = true
+    return true
+  } catch (error) {
+    console.warn("[FutureSeer] PostHog initialization failed:", error)
+    return false
   }
 }
 
-// AstroApp API functions
-export async function getAstroData(birthDate: string, birthPlace: string) {
+// Safe event tracking function
+export const trackEvent = (eventName: string, properties?: Record<string, any>) => {
+  try {
+    if (typeof window === "undefined") return
+
+    if (!posthogInitialized) {
+      const initialized = initializePostHog()
+      if (!initialized) return
+    }
+
+    const { posthog } = require("posthog-js")
+    posthog.capture(eventName, {
+      ...properties,
+      timestamp: Date.now(),
+      source: "futureseer_web",
+    })
+  } catch (error) {
+    console.warn("[FutureSeer] Event tracking failed:", error)
+  }
+}
+
+// Astrological Data API
+export const getAstroData = async (birthDate: string, birthPlace: string) => {
   try {
     const response = await fetch("/api/astroapp", {
       method: "POST",
@@ -34,77 +60,100 @@ export async function getAstroData(birthDate: string, birthPlace: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        birthDate,
-        birthPlace,
+        birth_date: birthDate,
+        birth_place: birthPlace,
       }),
     })
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch astrological data")
+    if (response.ok) {
+      const data = await response.json()
+      return data
+    } else {
+      throw new Error("Astro API failed")
     }
-
-    const data = await response.json()
-    return data
   } catch (error) {
-    console.error("Error fetching astro data:", error)
-    // Return fallback data
-    return {
-      sun_sign: "Capricorn",
-      moon_sign: "Pisces",
-      rising_sign: "Virgo",
-      planets: {
-        sun: { sign: "Capricorn", house: 5, degree: 15 },
-        moon: { sign: "Pisces", house: 7, degree: 22 },
-        mercury: { sign: "Sagittarius", house: 4, degree: 8 },
-        venus: { sign: "Aquarius", house: 6, degree: 12 },
-        mars: { sign: "Scorpio", house: 3, degree: 28 },
-        jupiter: { sign: "Taurus", house: 9, degree: 5 },
-      },
-      houses: {
-        1: { sign: "Virgo", lord: "Mercury" },
-        2: { sign: "Libra", lord: "Venus" },
-        3: { sign: "Scorpio", lord: "Mars" },
-        4: { sign: "Sagittarius", lord: "Jupiter" },
-        5: { sign: "Capricorn", lord: "Saturn" },
-        6: { sign: "Aquarius", lord: "Saturn" },
-        7: { sign: "Pisces", lord: "Jupiter" },
-        8: { sign: "Aries", lord: "Mars" },
-        9: { sign: "Taurus", lord: "Venus" },
-        10: { sign: "Gemini", lord: "Mercury" },
-        11: { sign: "Cancer", lord: "Moon" },
-        12: { sign: "Leo", lord: "Sun" },
-      },
-    }
+    console.warn("[FutureSeer] Using fallback astrological data")
+    // Fallback astrological data
+    return generateFallbackAstroData(birthDate, birthPlace)
   }
 }
 
-// Stability AI for symbolic backgrounds
-export async function generateSymbolicImage(prompt: string) {
-  try {
-    const response = await fetch("/api/stability", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+// Generate fallback astrological data
+const generateFallbackAstroData = (birthDate: string, birthPlace: string) => {
+  const date = new Date(birthDate)
+  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+
+  const zodiacSigns = [
+    "Aries",
+    "Taurus",
+    "Gemini",
+    "Cancer",
+    "Leo",
+    "Virgo",
+    "Libra",
+    "Scorpio",
+    "Sagittarius",
+    "Capricorn",
+    "Aquarius",
+    "Pisces",
+  ]
+
+  const planets = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn"]
+  const houses = Array.from({ length: 12 }, (_, i) => i + 1)
+
+  // Generate consistent data based on birth date
+  const sunSignIndex = Math.floor((dayOfYear / 30.44) % 12)
+  const moonSignIndex = (sunSignIndex + Math.floor(dayOfYear / 7)) % 12
+  const risingSignIndex = (sunSignIndex + Math.floor(dayOfYear / 3)) % 12
+
+  return {
+    sun_sign: zodiacSigns[sunSignIndex],
+    moon_sign: zodiacSigns[moonSignIndex],
+    rising_sign: zodiacSigns[risingSignIndex],
+    planetary_positions: planets.reduce(
+      (acc, planet, index) => {
+        acc[planet.toLowerCase()] = {
+          sign: zodiacSigns[(sunSignIndex + index) % 12],
+          house: houses[(index * 3 + Math.floor(dayOfYear / 10)) % 12],
+          degree: Math.floor((dayOfYear * (index + 1)) % 30),
+        }
+        return acc
       },
-      body: JSON.stringify({
-        prompt,
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error("Failed to generate image")
-    }
-
-    const data = await response.json()
-    return data.imageUrl
-  } catch (error) {
-    console.error("Error generating image:", error)
-    return null
+      {} as Record<string, any>,
+    ),
+    houses: houses.map((house) => ({
+      house_number: house,
+      sign: zodiacSigns[(house + sunSignIndex - 1) % 12],
+      lord: planets[house % 7],
+      significance: getHouseSignificance(house),
+    })),
+    birth_date: birthDate,
+    birth_place: birthPlace,
+    generated_at: Date.now(),
+    source: "fallback",
   }
 }
 
-// OpenAI for AI predictions and summaries - Server-side only
-export async function generateAIPrediction(question: string, astroData: any, symbolicData: any) {
+const getHouseSignificance = (house: number): string => {
+  const significances = [
+    "Self, personality, physical appearance",
+    "Wealth, family, speech, values",
+    "Communication, siblings, short journeys",
+    "Home, mother, emotional foundation",
+    "Creativity, children, romance, speculation",
+    "Health, service, daily routines, enemies",
+    "Partnerships, marriage, business relationships",
+    "Transformation, occult, longevity",
+    "Higher learning, philosophy, long journeys",
+    "Career, reputation, public image",
+    "Gains, friendships, hopes and wishes",
+    "Losses, spirituality, foreign lands",
+  ]
+  return significances[house - 1] || "Unknown significance"
+}
+
+// AI Prediction Generation
+export const generateAIPrediction = async (question: string, astroData: any, symbolicData: any) => {
   try {
     const response = await fetch("/api/openai", {
       method: "POST",
@@ -118,214 +167,266 @@ export async function generateAIPrediction(question: string, astroData: any, sym
       }),
     })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || "Failed to generate prediction")
+    if (response.ok) {
+      const data = await response.json()
+      return data.prediction
+    } else {
+      throw new Error("OpenAI API failed")
     }
-
-    const data = await response.json()
-    return data.prediction
   } catch (error) {
-    console.error("Error generating prediction:", error)
-
-    // Return fallback prediction when AI is unavailable
+    console.warn("[FutureSeer] Using fallback AI prediction")
     return generateFallbackPrediction(question, astroData, symbolicData)
   }
 }
 
-// Fallback prediction when AI services are unavailable
-function generateFallbackPrediction(question: string, astroData: any, symbolicData: any) {
-  const insights = [
-    "The cosmic energies surrounding your question suggest a time of transformation and growth.",
-    "Your astrological chart indicates strong planetary influences that favor positive change.",
-    "The universe whispers of opportunities that align with your highest good.",
-    "Ancient wisdom suggests patience and mindful action will lead to favorable outcomes.",
-    "The stars indicate that your intuition holds the key to navigating this situation.",
-  ]
+// Generate fallback prediction using symbolic interpretation
+const generateFallbackPrediction = (question: string, astroData: any, symbolicData: any) => {
+  const questionLower = question.toLowerCase()
 
-  const randomInsight = insights[Math.floor(Math.random() * insights.length)]
+  // Analyze question type
+  let theme = "general"
+  if (questionLower.includes("love") || questionLower.includes("relationship")) theme = "love"
+  else if (questionLower.includes("career") || questionLower.includes("job") || questionLower.includes("work"))
+    theme = "career"
+  else if (questionLower.includes("health") || questionLower.includes("body")) theme = "health"
+  else if (questionLower.includes("money") || questionLower.includes("wealth") || questionLower.includes("finance"))
+    theme = "wealth"
+  else if (questionLower.includes("travel") || questionLower.includes("journey")) theme = "travel"
 
-  return `${randomInsight} 
+  // Generate prediction based on astrological data and theme
+  const sunSign = astroData.sun_sign
+  const moonSign = astroData.moon_sign
+  const risingSign = astroData.rising_sign
 
-Based on your astrological profile with ${astroData.sun_sign} sun and ${astroData.moon_sign} moon, the cosmic forces suggest focusing on your natural strengths. The symbolic elements present in your question point toward ${symbolicData.elementalInfluence?.toLowerCase() || "balanced"} energy patterns.
-
-Consider meditation and reflection as you move forward. The timing appears ${symbolicData.timing?.toLowerCase() || "favorable"} for taking inspired action.
-
-*Note: This is a general cosmic reading. For personalized insights, our AI oracle will be available once configured.*`
-}
-
-// PostHog analytics - Safe wrapper functions
-export function trackEvent(event: string, properties?: any) {
-  if (typeof window !== "undefined" && posthogInitialized && posthog) {
-    try {
-      posthog.capture(event, properties)
-    } catch (error) {
-      console.warn("Failed to track event:", error)
-    }
+  const predictions = {
+    love: [
+      `With your ${sunSign} sun and ${moonSign} moon, the cosmic energies suggest a period of emotional growth in relationships. Your ${risingSign} rising indicates how others perceive your romantic energy.`,
+      `The planetary alignments in your chart indicate that matters of the heart require patience and understanding. Your ${sunSign} nature seeks harmony, while your ${moonSign} emotions guide you toward deeper connections.`,
+      `Venus's influence through your ${sunSign} placement suggests that love comes through authentic self-expression. Trust your ${moonSign} intuition in matters of romance.`,
+    ],
+    career: [
+      `Your ${sunSign} determination combined with ${risingSign} presentation skills creates opportunities for professional advancement. The cosmic timing favors bold career moves.`,
+      `With ${moonSign} emotional intelligence and ${sunSign} leadership qualities, you're positioned for success in collaborative endeavors. Trust your professional instincts.`,
+      `The planetary positions suggest that your ${risingSign} public image aligns well with your ${sunSign} core purpose. Career growth comes through authentic expression.`,
+    ],
+    health: [
+      `Your ${sunSign} vitality is supported by ${moonSign} emotional balance. Focus on holistic wellness approaches that honor both body and spirit.`,
+      `The cosmic energies suggest that your ${risingSign} physical constitution benefits from ${sunSign}-aligned activities. Listen to your body's wisdom.`,
+      `With ${moonSign} governing your emotional health and ${sunSign} your vital force, balance is key to optimal wellbeing.`,
+    ],
+    wealth: [
+      `Your ${sunSign} approach to resources, guided by ${moonSign} intuition, reveals opportunities for financial growth. The universe supports practical abundance.`,
+      `The planetary alignments suggest that your ${risingSign} public image can attract prosperity. Your ${sunSign} values guide wise financial decisions.`,
+      `With ${moonSign} emotional relationship to money and ${sunSign} core values, wealth flows through aligned action and patient cultivation.`,
+    ],
+    travel: [
+      `Your ${sunSign} adventurous spirit, supported by ${moonSign} emotional needs, points toward transformative journeys. The cosmos encourages exploration.`,
+      `The planetary positions suggest that travel serves your ${risingSign} growth and ${sunSign} life purpose. New horizons await your discovery.`,
+      `With ${moonSign} guiding your emotional needs and ${sunSign} your core desires, journeys bring both adventure and inner wisdom.`,
+    ],
+    general: [
+      `The cosmic tapestry weaves together your ${sunSign} essence, ${moonSign} emotional nature, and ${risingSign} outer expression. This is a time of integration and growth.`,
+      `Your astrological blueprint reveals a soul journey guided by ${sunSign} purpose, ${moonSign} intuition, and ${risingSign} presentation to the world.`,
+      `The universe speaks through the harmony of your ${sunSign} core self, ${moonSign} inner world, and ${risingSign} external manifestation. Trust the cosmic flow.`,
+    ],
   }
+
+  const themePredictions = predictions[theme as keyof typeof predictions] || predictions.general
+  const randomPrediction = themePredictions[Math.floor(Math.random() * themePredictions.length)]
+
+  return `${randomPrediction} The symbolic elements in your question resonate with ${symbolicData.primaryElement} energy, suggesting ${symbolicData.guidance}. This is a time for ${symbolicData.action} and embracing the wisdom of ${symbolicData.symbol}.`
 }
 
-export const identifyUser = (userId: string, properties?: Record<string, any>) => {
-  if (typeof window !== "undefined" && posthogInitialized && posthog) {
-    try {
-      posthog.identify(userId, properties)
-    } catch (error) {
-      console.warn("Failed to identify user:", error)
-    }
+// Symbolic Data Generation
+export const getSymbolicData = (question: string, astroData: any) => {
+  const questionLower = question.toLowerCase()
+
+  // Determine primary element based on question and astro data
+  const elements = ["Fire", "Earth", "Air", "Water"]
+  const colors = ["Red", "Gold", "Blue", "Green", "Purple", "Silver", "White"]
+  const numbers = [1, 3, 7, 9, 11, 22, 33]
+  const symbols = ["Star", "Moon", "Sun", "Tree", "Mountain", "Ocean", "Phoenix", "Dragon", "Lotus", "Key"]
+
+  // Generate consistent symbolic data based on question content and astro data
+  const questionHash = question.split("").reduce((a, b) => a + b.charCodeAt(0), 0)
+  const astroHash = astroData.sun_sign.length + astroData.moon_sign.length
+  const combinedHash = questionHash + astroHash
+
+  const primaryElement = elements[combinedHash % elements.length]
+  const sacredColor = colors[combinedHash % colors.length]
+  const luckyNumber = numbers[combinedHash % numbers.length]
+  const symbol = symbols[combinedHash % symbols.length]
+
+  // Generate guidance based on symbolic elements
+  const guidanceMap = {
+    Fire: "passion and decisive action",
+    Earth: "grounding and practical steps",
+    Air: "communication and mental clarity",
+    Water: "emotional flow and intuitive wisdom",
   }
-}
 
-// Symbolic data mapping
-export function getSymbolicData(question: string, astroData: any) {
-  // This function generates symbolic data based on the question and astrological context
-  const symbols = [
-    "🌙 Moon",
-    "☀️ Sun",
-    "⭐ Star",
-    "🔮 Crystal",
-    "🌸 Flower",
-    "🌊 Water",
-    "🔥 Fire",
-    "🌍 Earth",
-    "💎 Diamond",
-    "🦋 Butterfly",
-    "🐉 Dragon",
-    "🦅 Eagle",
-  ]
-
-  const elements = ["Fire", "Water", "Earth", "Air"]
-  const alignments = ["Harmonious", "Challenging", "Transformative", "Balanced"]
-  const timings = ["Immediate", "Within a week", "Within a month", "Within a year"]
-  const colors = ["red", "blue", "green", "yellow", "purple", "orange"]
-  const numbers = [1, 3, 7, 9, 11, 21, 108]
-
-  const randomSymbols = symbols.sort(() => 0.5 - Math.random()).slice(0, 3)
+  const actionMap = {
+    Fire: "taking bold initiative",
+    Earth: "building solid foundations",
+    Air: "seeking knowledge and connection",
+    Water: "trusting your emotions",
+  }
 
   return {
-    primarySymbol: randomSymbols[0],
-    secondarySymbols: randomSymbols.slice(1),
-    elementalInfluence: elements[Math.floor(Math.random() * elements.length)],
-    cosmicAlignment: alignments[Math.floor(Math.random() * alignments.length)],
-    timing: timings[Math.floor(Math.random() * timings.length)],
-    colors: colors.sort(() => 0.5 - Math.random()).slice(0, 2),
-    numbers: numbers.sort(() => 0.5 - Math.random()).slice(0, 2),
-    elements: elements.sort(() => 0.5 - Math.random()).slice(0, 2),
+    primaryElement,
+    sacredColor,
+    luckyNumber,
+    symbol,
+    guidance: guidanceMap[primaryElement as keyof typeof guidanceMap],
+    action: actionMap[primaryElement as keyof typeof actionMap],
+    timestamp: Date.now(),
   }
 }
 
-// Remedy suggestions
+// Remedies Generation
 export const getRemedies = (symbolicData: any, question: string) => {
-  const remedies = []
-
-  // Mudras based on elements
-  if (symbolicData.elements?.includes("Fire") || symbolicData.elements?.includes("fire")) {
-    remedies.push({
-      icon: "🔥",
-      title: "Agni Mudra",
-      desc: "Join ring finger tip to thumb tip for 15 minutes daily to enhance fire energy",
-      type: "mudra",
-    })
-  }
-
-  if (symbolicData.elements?.includes("Water") || symbolicData.elements?.includes("water")) {
-    remedies.push({
-      icon: "🌊",
-      title: "Varun Mudra",
-      desc: "Join little finger tip to thumb tip for emotional balance and flow",
-      type: "mudra",
-    })
-  }
-
-  if (symbolicData.elements?.includes("Earth") || symbolicData.elements?.includes("earth")) {
-    remedies.push({
-      icon: "🌍",
-      title: "Prithvi Mudra",
-      desc: "Join ring finger tip to thumb tip for grounding and stability",
-      type: "mudra",
-    })
-  }
-
-  if (symbolicData.elements?.includes("Air") || symbolicData.elements?.includes("air")) {
-    remedies.push({
-      icon: "💨",
-      title: "Vayu Mudra",
-      desc: "Press index finger to thumb base for mental clarity and communication",
-      type: "mudra",
-    })
-  }
-
-  // Crystals based on colors
-  if (symbolicData.colors) {
-    symbolicData.colors.forEach((color: string) => {
-      const crystalMap = {
-        red: { name: "Red Jasper", properties: "Grounding and protection", icon: "🔴" },
-        blue: { name: "Lapis Lazuli", properties: "Wisdom and communication", icon: "🔵" },
-        green: { name: "Green Aventurine", properties: "Growth and abundance", icon: "🟢" },
-        yellow: { name: "Citrine", properties: "Joy and manifestation", icon: "🟡" },
-        purple: { name: "Amethyst", properties: "Spirituality and peace", icon: "🟣" },
-        orange: { name: "Carnelian", properties: "Creativity and courage", icon: "🟠" },
-      }
-
-      const crystal = crystalMap[color as keyof typeof crystalMap]
-      if (crystal) {
-        remedies.push({
-          icon: crystal.icon,
-          title: crystal.name,
-          desc: `${crystal.properties} - Carry or meditate with this crystal daily`,
-          type: "crystal",
-        })
-      }
-    })
-  }
-
-  // Mantras based on numbers
-  if (symbolicData.numbers?.includes(108)) {
-    remedies.push({
-      icon: "🕉️",
-      title: "Om Namah Shivaya",
-      desc: "Chant this sacred mantra 108 times daily for spiritual awakening",
-      type: "mantra",
-    })
-  }
-
-  if (symbolicData.numbers?.includes(21)) {
-    remedies.push({
-      icon: "📿",
-      title: "Gayatri Mantra",
-      desc: "Recite 21 times at sunrise for divine wisdom and guidance",
-      type: "mantra",
-    })
-  }
-
-  // Default remedies if none generated
-  if (remedies.length === 0) {
-    remedies.push(
+  const remedyDatabase = {
+    Fire: [
       {
         icon: "🕯️",
-        title: "Sacred Candle",
-        desc: "Light a white candle at sunset for 21 minutes daily",
+        title: "Sacred Flame Meditation",
+        desc: "Light a red candle and meditate for 11 minutes at sunrise",
         type: "ritual",
       },
       {
         icon: "💎",
-        title: "Clear Quartz",
-        desc: "Carry clear quartz for amplifying positive intentions",
+        title: "Ruby Crystal",
+        desc: "Carry a ruby or red jasper for courage and vitality",
+        type: "crystal",
+      },
+      { icon: "📿", title: "Mars Mantra", desc: 'Chant "Om Angarakaya Namaha" 108 times', type: "mantra" },
+    ],
+    Earth: [
+      { icon: "🌱", title: "Grounding Ritual", desc: "Walk barefoot on earth for 15 minutes daily", type: "ritual" },
+      {
+        icon: "💎",
+        title: "Green Aventurine",
+        desc: "Keep green aventurine in your workspace for stability",
         type: "crystal",
       },
       {
-        icon: "🌿",
-        title: "Sage Cleansing",
-        desc: "Burn sage to clear negative energies from your space",
+        icon: "🏠",
+        title: "Vastu Harmony",
+        desc: "Place a small plant in the northeast corner of your home",
+        type: "vastu",
+      },
+    ],
+    Air: [
+      {
+        icon: "💨",
+        title: "Breath of Clarity",
+        desc: "Practice pranayama breathing for 10 minutes twice daily",
         type: "ritual",
       },
+      { icon: "💎", title: "Clear Quartz", desc: "Meditate with clear quartz for mental clarity", type: "crystal" },
       {
         icon: "📿",
-        title: "Meditation Practice",
-        desc: "Practice 10 minutes of mindful meditation daily",
-        type: "practice",
+        title: "Mercury Mantra",
+        desc: 'Recite "Om Budhaya Namaha" 108 times on Wednesdays',
+        type: "mantra",
       },
-    )
+    ],
+    Water: [
+      {
+        icon: "🌊",
+        title: "Moon Water Blessing",
+        desc: "Drink water charged under moonlight for 3 nights",
+        type: "ritual",
+      },
+      { icon: "💎", title: "Moonstone", desc: "Wear moonstone jewelry to enhance intuition", type: "crystal" },
+      { icon: "🛁", title: "Sacred Bath", desc: "Add sea salt and lavender to your bath on Mondays", type: "ritual" },
+    ],
   }
 
-  return remedies.slice(0, 4) // Return max 4 remedies
+  const colorRemedies = {
+    Red: { icon: "👕", title: "Wear Red", desc: "Incorporate red clothing or accessories on Tuesdays", type: "color" },
+    Gold: { icon: "✨", title: "Golden Hour", desc: "Spend time in golden sunlight between 6-7 AM", type: "color" },
+    Blue: {
+      icon: "💙",
+      title: "Blue Meditation",
+      desc: "Visualize blue light surrounding you during meditation",
+      type: "color",
+    },
+    Green: { icon: "🍃", title: "Nature Connection", desc: "Spend time in green natural spaces weekly", type: "color" },
+    Purple: {
+      icon: "🔮",
+      title: "Third Eye Activation",
+      desc: "Focus on purple light at your third eye center",
+      type: "color",
+    },
+    Silver: { icon: "🌙", title: "Lunar Energy", desc: "Wear silver jewelry during the full moon", type: "color" },
+    White: { icon: "🤍", title: "Purification", desc: "Wear white on Mondays for spiritual cleansing", type: "color" },
+  }
+
+  const numberRemedies = {
+    1: { icon: "1️⃣", title: "Unity Meditation", desc: "Meditate alone for enhanced self-awareness", type: "number" },
+    3: { icon: "3️⃣", title: "Triple Blessing", desc: "Perform your chosen ritual 3 times daily", type: "number" },
+    7: {
+      icon: "7️⃣",
+      title: "Seven Chakras",
+      desc: "Balance all seven chakras with colored light meditation",
+      type: "number",
+    },
+    9: { icon: "9️⃣", title: "Completion Cycle", desc: "Practice gratitude for 9 things daily", type: "number" },
+    11: { icon: "🔢", title: "Master Number", desc: "Set intentions at 11:11 AM and PM", type: "number" },
+    22: { icon: "🔢", title: "Master Builder", desc: "Focus on manifesting your dreams for 22 days", type: "number" },
+    33: { icon: "🔢", title: "Master Teacher", desc: "Share your wisdom with others through service", type: "number" },
+  }
+
+  const elementRemedies =
+    remedyDatabase[symbolicData.primaryElement as keyof typeof remedyDatabase] || remedyDatabase.Fire
+  const colorRemedy = colorRemedies[symbolicData.sacredColor as keyof typeof colorRemedies]
+  const numberRemedy = numberRemedies[symbolicData.luckyNumber as keyof typeof numberRemedies]
+
+  return [...elementRemedies, colorRemedy, numberRemedy].filter(Boolean)
+}
+
+// Image Generation (Stability AI)
+export const generateImage = async (prompt: string) => {
+  try {
+    const response = await fetch("/api/stability", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      return data.imageUrl
+    } else {
+      throw new Error("Image generation failed")
+    }
+  } catch (error) {
+    console.warn("[FutureSeer] Image generation unavailable")
+    return null
+  }
+}
+
+// Utility function to get trial time left
+export const getTrialTimeLeft = (trialEndTime: number) => {
+  const now = Date.now()
+  const timeLeft = trialEndTime - now
+  return Math.max(0, timeLeft)
+}
+
+// Format time remaining
+export const formatTimeRemaining = (milliseconds: number) => {
+  const hours = Math.floor(milliseconds / (1000 * 60 * 60))
+  const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((milliseconds % (1000 * 60)) / 1000)
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds}s`
+  } else {
+    return `${seconds}s`
+  }
 }

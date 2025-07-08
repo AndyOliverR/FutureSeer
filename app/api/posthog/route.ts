@@ -1,44 +1,41 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { PostHog } from "posthog-node"
-
-// Initialize PostHog server-side client
-let posthog: PostHog | null = null
-
-if (process.env.POSTHOG_API_KEY) {
-  posthog = new PostHog(process.env.POSTHOG_API_KEY, {
-    host: process.env.POSTHOG_HOST || "https://app.posthog.com",
-  })
-}
 
 export async function POST(request: NextRequest) {
   try {
-    if (!posthog) {
-      return NextResponse.json({ error: "PostHog not configured" }, { status: 503 })
+    const { event, properties } = await request.json()
+
+    const posthogKey = process.env.POSTHOG_API_KEY
+    const posthogHost = process.env.POSTHOG_HOST || "https://app.posthog.com"
+
+    if (!posthogKey) {
+      console.warn("[FutureSeer] PostHog API key not configured")
+      return NextResponse.json({ success: false, error: "PostHog not configured" })
     }
 
-    const { event, userId, properties } = await request.json()
-
-    if (!event) {
-      return NextResponse.json({ error: "Event name is required" }, { status: 400 })
-    }
-
-    // Track the event
-    posthog.capture({
-      distinctId: userId || "anonymous",
-      event,
-      properties: {
-        ...properties,
-        timestamp: new Date().toISOString(),
-        source: "futureseer-app",
+    const response = await fetch(`${posthogHost}/capture/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${posthogKey}`,
       },
+      body: JSON.stringify({
+        api_key: posthogKey,
+        event,
+        properties: {
+          ...properties,
+          timestamp: new Date().toISOString(),
+          source: "futureseer_server",
+        },
+      }),
     })
 
-    // Ensure events are sent
-    await posthog.shutdown()
-
-    return NextResponse.json({ success: true })
+    if (response.ok) {
+      return NextResponse.json({ success: true })
+    } else {
+      throw new Error(`PostHog API error: ${response.status}`)
+    }
   } catch (error) {
-    console.error("PostHog API error:", error)
-    return NextResponse.json({ error: "Failed to track event" }, { status: 500 })
+    console.error("[FutureSeer] PostHog server tracking failed:", error)
+    return NextResponse.json({ success: false, error: "Tracking failed" })
   }
 }
