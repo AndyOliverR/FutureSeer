@@ -11,7 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        gold: "#FFD700",
+        gold: "#fbbf24",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -52,7 +52,8 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Satoshi", "Inter", "sans-serif"],
+        serif: ["Cormorant Garamond", "serif"],
       },
       spacing: {
         "18": "4.5rem",
