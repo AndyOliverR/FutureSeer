@@ -1,13 +1,28 @@
 import posthog from "posthog-js"
 
-// Initialize PostHog
+// Initialize PostHog only if key is available
+let posthogInitialized = false
+
 if (typeof window !== "undefined") {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY || "", {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",
-    loaded: (posthog) => {
-      if (process.env.NODE_ENV === "development") posthog.debug()
-    },
-  })
+  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com"
+
+  if (posthogKey && posthogKey.trim() !== "") {
+    try {
+      posthog.init(posthogKey, {
+        api_host: posthogHost,
+        loaded: (posthog) => {
+          if (process.env.NODE_ENV === "development") posthog.debug()
+        },
+      })
+      posthogInitialized = true
+    } catch (error) {
+      console.warn("PostHog initialization failed:", error)
+      posthogInitialized = false
+    }
+  } else {
+    console.warn("PostHog key not found. Analytics will be disabled.")
+  }
 }
 
 // AstroApp API functions
@@ -139,16 +154,24 @@ Consider meditation and reflection as you move forward. The timing appears ${sym
 *Note: This is a general cosmic reading. For personalized insights, our AI oracle will be available once configured.*`
 }
 
-// PostHog analytics
+// PostHog analytics - Safe wrapper functions
 export function trackEvent(event: string, properties?: any) {
-  if (typeof window !== "undefined" && posthog) {
-    posthog.capture(event, properties)
+  if (typeof window !== "undefined" && posthogInitialized && posthog) {
+    try {
+      posthog.capture(event, properties)
+    } catch (error) {
+      console.warn("Failed to track event:", error)
+    }
   }
 }
 
 export const identifyUser = (userId: string, properties?: Record<string, any>) => {
-  if (typeof window !== "undefined" && posthog) {
-    posthog.identify(userId, properties)
+  if (typeof window !== "undefined" && posthogInitialized && posthog) {
+    try {
+      posthog.identify(userId, properties)
+    } catch (error) {
+      console.warn("Failed to identify user:", error)
+    }
   }
 }
 
