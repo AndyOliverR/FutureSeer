@@ -53,6 +53,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+        poppins: ["Poppins", "sans-serif"],
+        serif: ["Cormorant Garamond", "serif"],
       },
       spacing: {
         "18": "4.5rem",

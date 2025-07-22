@@ -141,7 +141,7 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
                 placeholder={`What would you like to know about your ${toolName.toLowerCase()}?`}
                 className="w-full h-24 bg-transparent border border-white/20 rounded-2xl p-4 text-soft placeholder-white/50 resize-none focus:outline-none focus:border-yellow-400"
               />
-            </div>
+          </div>
             <div className="text-center">
               <button
                 type="submit"
@@ -149,15 +149,15 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
                 className="px-8 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-2xl font-semibold hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "🔮 Consulting the Stars..." : `Generate ${toolName} Reading`}
-              </button>
-            </div>
+            </button>
+          </div>
           </form>
         </div>
 
         {/* Results */}
         {showResults && result && (
           <div className="glass-card rounded-3xl p-8">
-            <h3 className="text-lg gold-glow mb-6">Your {toolName} Reading</h3>
+          <h3 className="text-lg gold-glow mb-6">Your {toolName} Reading</h3>
             <div className="space-y-6">
               <div>
                 <h4 className="text-soft font-medium mb-2">Question</h4>
@@ -185,7 +185,7 @@ export default function ToolPage({ params }: { params: { slug: string } }) {
                 </div>
               </div>
             </div>
-          </div>
+        </div>
         )}
       </div>
     </div>

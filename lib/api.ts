@@ -1,8 +1,8 @@
 import posthog from "posthog-js"
 
-// Initialize PostHog
-if (typeof window !== "undefined") {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY || "", {
+// Initialize PostHog only if API key is provided
+if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",
     loaded: (posthog) => {
       if (process.env.NODE_ENV === "development") posthog.debug()
@@ -10,13 +10,59 @@ if (typeof window !== "undefined") {
   })
 }
 
-// AstroApp API functions
-export async function getAstroData(birthDate: string, birthPlace: string) {
+// Updated AstroApp API functions to use comprehensive data service with fallback
+export async function getAstroData(birthDate: string, birthPlace: string, userId?: string) {
   try {
-    const response = await fetch("/api/astroapp", {
-      method: "POST",
+    console.log("Getting astrological data using comprehensive service with fallback...")
+    
+    // If we have a userId, try to get comprehensive data
+    if (userId) {
+      try {
+        const { getComprehensiveAstroData } = await import('./astroDataService')
+        const comprehensiveData = await getComprehensiveAstroData(userId, birthDate, birthPlace)
+        
+        // Transform to expected format for backward compatibility
+        return {
+          sun_sign: comprehensiveData.sunSign,
+          moon_sign: comprehensiveData.moonSign,
+          rising_sign: comprehensiveData.risingSign,
+          planets: comprehensiveData.planets.map(planet => ({
+            name: planet.name,
+            sign: planet.sign,
+            degree: planet.degree,
+            house: planet.house
+          })),
+          houses: comprehensiveData.houses.map(house => ({
+            number: house.number,
+            sign: house.sign,
+            degree: house.degree
+          })),
+          aspects: comprehensiveData.aspects,
+          elements: comprehensiveData.elements,
+          modalities: comprehensiveData.modalities,
+          personalityTraits: comprehensiveData.personalityTraits,
+          lifePath: comprehensiveData.lifePath,
+          challenges: comprehensiveData.challenges,
+          strengths: comprehensiveData.strengths,
+          compatibility: comprehensiveData.compatibility,
+          currentTransits: comprehensiveData.currentTransits,
+          metadata: {
+            ...comprehensiveData.metadata,
+            source: comprehensiveData.metadata.isFallback ? 'internal_calculations' : 'astroapp'
+          }
+        }
+      } catch (comprehensiveError) {
+        console.warn('Comprehensive data service failed, falling back to direct API:', comprehensiveError)
+      }
+    }
+    
+    // Fallback to direct AstroApp API call
+    console.log("Using direct AstroApp API call...")
+    
+    const response = await fetch('/api/astroapp', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         birthDate,
@@ -24,41 +70,110 @@ export async function getAstroData(birthDate: string, birthPlace: string) {
       }),
     })
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch astrological data")
+    if (response.ok) {
+      const data = await response.json()
+      console.log("Successfully got AstroApp data")
+      return data
+    } else {
+      console.log("AstroApp API failed, using internal calculations...")
+      
+      // Use internal calculations as final fallback
+      try {
+        const { generateFallbackAstroData } = await import('./astroFallback')
+        const fallbackData = await generateFallbackAstroData(birthDate, birthPlace)
+        console.log("Successfully generated fallback data using internal calculations")
+        return fallbackData
+      } catch (fallbackError) {
+        console.error("Fallback calculations failed:", fallbackError)
+        // Return basic fallback data
+        return {
+          sun_sign: "Aquarius",
+          moon_sign: "Taurus",
+          rising_sign: "Libra",
+          planets: [
+            { name: "Sun", sign: "Aquarius", degree: 15, house: 5 },
+            { name: "Moon", sign: "Taurus", degree: 8, house: 8 },
+            { name: "Mercury", sign: "Capricorn", degree: 28, house: 4 },
+            { name: "Venus", sign: "Pisces", degree: 3, house: 6 },
+            { name: "Mars", sign: "Sagittarius", degree: 22, house: 3 },
+            { name: "Jupiter", sign: "Gemini", degree: 12, house: 9 },
+            { name: "Saturn", sign: "Aquarius", degree: 18, house: 5 },
+            { name: "Uranus", sign: "Taurus", degree: 5, house: 8 },
+            { name: "Neptune", sign: "Pisces", degree: 25, house: 6 },
+            { name: "Pluto", sign: "Capricorn", degree: 30, house: 4 }
+          ],
+          houses: [
+            { number: 1, sign: "Libra", degree: 15 },
+            { number: 2, sign: "Scorpio", degree: 8 },
+            { number: 3, sign: "Sagittarius", degree: 22 },
+            { number: 4, sign: "Capricorn", degree: 28 },
+            { number: 5, sign: "Aquarius", degree: 18 },
+            { number: 6, sign: "Pisces", degree: 25 },
+            { number: 7, sign: "Aries", degree: 15 },
+            { number: 8, sign: "Taurus", degree: 8 },
+            { number: 9, sign: "Gemini", degree: 12 },
+            { number: 10, sign: "Cancer", degree: 5 },
+            { number: 11, sign: "Leo", degree: 22 },
+            { number: 12, sign: "Virgo", degree: 18 }
+          ],
+          aspects: [
+            { planet1: "Sun", planet2: "Moon", type: "Trine", orb: 3.2 },
+            { planet1: "Sun", planet2: "Jupiter", type: "Sextile", orb: 2.1 },
+            { planet1: "Moon", planet2: "Venus", type: "Conjunction", orb: 1.8 }
+          ],
+          metadata: {
+            source: 'emergency_fallback',
+            version: '1.0',
+            isFallback: true
+          }
+        }
+      }
     }
-
-    const data = await response.json()
-    return data
   } catch (error) {
-    console.error("Error fetching astro data:", error)
-    // Return fallback data
+    console.error("Error getting AstroApp data:", error)
+    console.log("Using emergency fallback data due to error")
+    
+    // Return emergency fallback data on error
     return {
-      sun_sign: "Capricorn",
-      moon_sign: "Pisces",
-      rising_sign: "Virgo",
-      planets: {
-        sun: { sign: "Capricorn", house: 5, degree: 15 },
-        moon: { sign: "Pisces", house: 7, degree: 22 },
-        mercury: { sign: "Sagittarius", house: 4, degree: 8 },
-        venus: { sign: "Aquarius", house: 6, degree: 12 },
-        mars: { sign: "Scorpio", house: 3, degree: 28 },
-        jupiter: { sign: "Taurus", house: 9, degree: 5 },
-      },
-      houses: {
-        1: { sign: "Virgo", lord: "Mercury" },
-        2: { sign: "Libra", lord: "Venus" },
-        3: { sign: "Scorpio", lord: "Mars" },
-        4: { sign: "Sagittarius", lord: "Jupiter" },
-        5: { sign: "Capricorn", lord: "Saturn" },
-        6: { sign: "Aquarius", lord: "Saturn" },
-        7: { sign: "Pisces", lord: "Jupiter" },
-        8: { sign: "Aries", lord: "Mars" },
-        9: { sign: "Taurus", lord: "Venus" },
-        10: { sign: "Gemini", lord: "Mercury" },
-        11: { sign: "Cancer", lord: "Moon" },
-        12: { sign: "Leo", lord: "Sun" },
-      },
+      sun_sign: "Aquarius",
+      moon_sign: "Taurus",
+      rising_sign: "Libra",
+      planets: [
+        { name: "Sun", sign: "Aquarius", degree: 15, house: 5 },
+        { name: "Moon", sign: "Taurus", degree: 8, house: 8 },
+        { name: "Mercury", sign: "Capricorn", degree: 28, house: 4 },
+        { name: "Venus", sign: "Pisces", degree: 3, house: 6 },
+        { name: "Mars", sign: "Sagittarius", degree: 22, house: 3 },
+        { name: "Jupiter", sign: "Gemini", degree: 12, house: 9 },
+        { name: "Saturn", sign: "Aquarius", degree: 18, house: 5 },
+        { name: "Uranus", sign: "Taurus", degree: 5, house: 8 },
+        { name: "Neptune", sign: "Pisces", degree: 25, house: 6 },
+        { name: "Pluto", sign: "Capricorn", degree: 30, house: 4 }
+      ],
+      houses: [
+        { number: 1, sign: "Libra", degree: 15 },
+        { number: 2, sign: "Scorpio", degree: 8 },
+        { number: 3, sign: "Sagittarius", degree: 22 },
+        { number: 4, sign: "Capricorn", degree: 28 },
+        { number: 5, sign: "Aquarius", degree: 18 },
+        { number: 6, sign: "Pisces", degree: 25 },
+        { number: 7, sign: "Aries", degree: 15 },
+        { number: 8, sign: "Taurus", degree: 8 },
+        { number: 9, sign: "Gemini", degree: 12 },
+        { number: 10, sign: "Cancer", degree: 5 },
+        { number: 11, sign: "Leo", degree: 18 },
+        { number: 12, sign: "Virgo", degree: 25 }
+      ],
+      aspects: [
+        { planet1: "Sun", planet2: "Moon", type: "Trine", orb: 3.2 },
+        { planet1: "Venus", planet2: "Mars", type: "Sextile", orb: 1.8 },
+        { planet1: "Jupiter", planet2: "Saturn", type: "Square", orb: 2.1 }
+      ],
+      metadata: {
+        source: 'emergency_fallback',
+        version: '1.0',
+        isFallback: true
+      }
     }
   }
 }
