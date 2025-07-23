@@ -2,12 +2,13 @@ import { useState } from "react";
 
 export function useIChing() {
   const [question, setQuestion] = useState("");
+  const [method, setMethod] = useState("");
+  const [hexagrams, setHexagrams] = useState("");
   const [analysis, setAnalysis] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Placeholder logic for actions
-  function performIChingAnalysis() {
+  function performIChingReading() {
     setIsLoading(true);
     setTimeout(() => {
       setAnalysis({ result: "Sample I Ching analysis" });
@@ -17,17 +18,22 @@ export function useIChing() {
 
   function resetData() {
     setQuestion("");
+    setMethod("");
+    setHexagrams("");
     setAnalysis(null);
     setError(null);
   }
 
   return {
     question,
-    setQuestion,
+    method,
+    hexagrams,
     analysis,
     isLoading,
     error,
-    performIChingAnalysis,
+    setQuestion,
+    setMethod,
+    performIChingReading,
     resetData,
   };
 } 
