@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { TarotCoachInterface } from "@/components/TarotCoachInterface"
-import { useTarot } from "@/hooks/useTarot"
+import { useTarot } from "@/hooks/use-tarot"
 
 export default function TarotPage() {
   const {

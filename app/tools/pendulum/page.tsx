@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { PendulumCoachInterface } from "@/components/PendulumCoachInterface"
-import { usePendulum } from "@/hooks/usePendulum"
+import { usePendulum } from "@/hooks/use-pendulum"
 
 export default function PendulumPage() {
   const {
