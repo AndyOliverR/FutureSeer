@@ -11,7 +11,7 @@ interface FaceReadingData {
   isStale: boolean
 }
 
-export function useFaceReadingData() {
+export function useFaceReading() {
   const { user } = useAuth()
   const [data, setData] = useState<FaceReadingData>({
     analysis: null,
