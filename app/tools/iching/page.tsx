@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { IChingCoachInterface } from "@/components/IChingCoachInterface"
-import { useIChing } from "@/hooks/useIChing"
+import { useIChing } from "@/hooks/use-iching"
 
 export default function IChingPage() {
   const {
