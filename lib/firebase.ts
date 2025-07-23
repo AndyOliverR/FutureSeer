@@ -1,6 +1,31 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc } from 'firebase/firestore';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  EmailAuthProvider,
+  signInWithPopup, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
+  signOut, 
+  onAuthStateChanged, 
+  User,
+  UserCredential,
+  AuthError
+} from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { 
+  saveLocalAskHistory, 
+  getLocalAskHistory, 
+  saveLocalNote, 
+  getLocalNotes, 
+  updateLocalNote, 
+  deleteLocalNote,
+  saveLocalUserProfile,
+  getLocalUserProfile
+} from './localStorage';
+import { clearAstroDataCache } from './astroDataService';
 
 // Client-side Firebase config (only public keys)
 const firebaseConfig = {
@@ -26,14 +51,48 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
   if (!app) {
     try {
       // Check if all required config values are present
-      if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+      const missingConfigs = [];
+      if (!firebaseConfig.apiKey) missingConfigs.push('NEXT_PUBLIC_FIREBASE_API_KEY');
+      if (!firebaseConfig.authDomain) missingConfigs.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
+      if (!firebaseConfig.projectId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+      if (!firebaseConfig.storageBucket) missingConfigs.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
+      if (!firebaseConfig.messagingSenderId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
+      if (!firebaseConfig.appId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_APP_ID');
+
+      if (missingConfigs.length > 0) {
+        console.error('Firebase configuration incomplete. Missing:', missingConfigs);
         console.warn('Firebase configuration incomplete. Some features may not work.');
         return { app: null, auth: null, db: null };
       }
 
+      // Log Firebase config status (without exposing actual values)
+      console.log('Firebase configuration status:', {
+        apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
+        authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
+        projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
+        storageBucket: firebaseConfig.storageBucket ? '✅ Set' : '❌ Missing',
+        messagingSenderId: firebaseConfig.messagingSenderId ? '✅ Set' : '❌ Missing',
+        appId: firebaseConfig.appId ? '✅ Set' : '❌ Missing',
+      });
+
       app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
       firebaseAuth = getAuth(app);
-      firebaseDB = getFirestore(app);
+      
+      // Connect to the "default" database explicitly to resolve naming conflict
+      // Firebase Support identified that "default" database exists but should be "(default)"
+      // This explicit connection resolves the "WebChannelConnection RPC 'write' stream transport errored" issue
+      try {
+        firebaseDB = getFirestore(app, 'default');
+        console.log('Connected to Firestore database: "default"');
+      } catch (dbError) {
+        console.warn('Failed to connect to "default" database, trying default connection:', dbError);
+        // Fallback to default database connection
+        firebaseDB = getFirestore(app);
+        console.log('Connected to default Firestore database');
+      }
+      
+      console.log('Firebase initialized successfully');
+      console.log('Note: Firestore connection will be tested on first use');
     } catch (error) {
       console.error('Error initializing Firebase:', error);
       return { app: null, auth: null, db: null };
@@ -54,8 +113,15 @@ export const getFirebaseDB = (): any => {
   return db;
 };
 
-// Auth providers
+// Auth providers with enhanced configuration
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('email');
+googleProvider.addScope('profile');
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
+export const emailProvider = new EmailAuthProvider();
 
 // User types
 export interface UserProfile {
@@ -69,43 +135,81 @@ export interface UserProfile {
   trialEndTime?: number;
   createdAt: number;
   lastLoginAt: number;
-}
-
-export interface AskHistory {
-  id: string;
-  uid: string;
-  question: string;
-  aiSummary: string;
-  scientificData: any;
-  symbolicData: any;
-  remedies: any[];
-  timestamp: number;
-  reflection?: string;
+  birthDate?: string; // ISO date string
+  birthPlace?: string; // City, Country
+  birthTime?: string; // ISO time string (HH:mm or HH:mm:ss)
+  emailVerified?: boolean;
+  providerData?: any[];
+  lastSignInTime?: number;
+  creationTime?: number;
+  updatedAt?: number;
 }
 
 export interface Note {
-  id: string;
+  id?: string;
   uid: string;
   title: string;
   content: string;
-  color: string;
-  tags: string[];
+  color?: string;
+  tags?: string[];
   createdAt: number;
   updatedAt: number;
 }
 
-// Auth functions
-export const signInWithGoogle = async () => {
+export interface AskHistory {
+  id?: string;
+  uid: string;
+  question: string;
+  aiSummary: string;
+  scientificData?: any;
+  symbolicData?: any;
+  remedies?: string[];
+  timestamp: number;
+}
+
+// Enhanced error handling
+export const getAuthErrorMessage = (error: AuthError): string => {
+  switch (error.code) {
+    case 'auth/user-not-found':
+      return 'No account found with this email address.';
+    case 'auth/wrong-password':
+      return 'Incorrect password. Please try again.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters long.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in was cancelled.';
+    case 'auth/popup-blocked':
+      return 'Pop-up was blocked. Please allow pop-ups for this site.';
+    case 'auth/cancelled-popup-request':
+      return 'Sign-in was cancelled.';
+    default:
+      return 'An error occurred during authentication. Please try again.';
+  }
+};
+
+// Enhanced auth functions
+export const signInWithGoogle = async (): Promise<User> => {
   try {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase not initialized');
 
-    const result = await signInWithPopup(auth, googleProvider);
+    const result: UserCredential = await signInWithPopup(auth, googleProvider);
     const user = result.user;
     
     // Check if user exists in Firestore
     const db = getFirebaseDB();
-    if (!db) throw new Error('Firestore not initialized');
+    if (!db) {
+      console.warn('Firestore not initialized, skipping profile creation');
+      return user;
+    }
 
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     
@@ -122,24 +226,137 @@ export const signInWithGoogle = async () => {
         trialEndTime: Date.now() + (9 * 60 * 60 * 1000), // 9 hours
         createdAt: Date.now(),
         lastLoginAt: Date.now(),
+        emailVerified: user.emailVerified,
+        providerData: user.providerData,
+        lastSignInTime: user.metadata.lastSignInTime ? parseInt(user.metadata.lastSignInTime) : Date.now(),
+        creationTime: user.metadata.creationTime ? parseInt(user.metadata.creationTime) : Date.now(),
       };
       
-      await setDoc(doc(db, 'users', user.uid), userProfile);
+      try {
+        await setDoc(doc(db, 'users', user.uid), userProfile);
+        console.log('Successfully created user profile for:', user.uid);
+      } catch (profileError: any) {
+        console.error('Error creating user profile:', {
+          error: profileError.message,
+          code: profileError.code,
+          uid: user.uid,
+          email: user.email
+        });
+        // Don't throw error, user can still use the app
+      }
     } else {
-      // Update last login
-      await updateDoc(doc(db, 'users', user.uid), {
-        lastLoginAt: Date.now(),
-      });
+      // Update last login and profile data
+      try {
+        await updateDoc(doc(db, 'users', user.uid), {
+          lastLoginAt: Date.now(),
+          lastSignInTime: user.metadata.lastSignInTime ? parseInt(user.metadata.lastSignInTime) : Date.now(),
+          emailVerified: user.emailVerified,
+          displayName: user.displayName || userDoc.data().displayName,
+          photoURL: user.photoURL || userDoc.data().photoURL,
+        });
+        console.log('Updated last login for user:', user.uid);
+      } catch (updateError: any) {
+        console.error('Error updating last login:', {
+          error: updateError.message,
+          code: updateError.code,
+          uid: user.uid
+        });
+        // Don't throw error, user can still use the app
+      }
     }
     
     return user;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error signing in with Google:', error);
-    throw error;
+    throw new Error(getAuthErrorMessage(error));
   }
 };
 
-export const signOutUser = async () => {
+// Email/Password authentication
+export const signInWithEmail = async (email: string, password: string): Promise<User> => {
+  try {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase not initialized');
+
+    const result: UserCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+    
+    // Update last login
+    const db = getFirebaseDB();
+    if (db) {
+      try {
+        await updateDoc(doc(db, 'users', user.uid), {
+          lastLoginAt: Date.now(),
+          lastSignInTime: user.metadata.lastSignInTime ? parseInt(user.metadata.lastSignInTime) : Date.now(),
+        });
+      } catch (error) {
+        console.error('Error updating last login:', error);
+      }
+    }
+    
+    return user;
+  } catch (error: any) {
+    console.error('Error signing in with email:', error);
+    throw new Error(getAuthErrorMessage(error));
+  }
+};
+
+// Email/Password registration
+export const signUpWithEmail = async (email: string, password: string, displayName: string): Promise<User> => {
+  try {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase not initialized');
+
+    const result: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = result.user;
+    
+    // Update profile with display name
+    await updateProfile(user, { displayName });
+    
+    // Create user profile in Firestore
+    const db = getFirebaseDB();
+    if (db) {
+      const userProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: displayName,
+        photoURL: '',
+        isSubscribed: false,
+        isTipped: false,
+        trialStartTime: Date.now(),
+        trialEndTime: Date.now() + (9 * 60 * 60 * 1000), // 9 hours
+        createdAt: Date.now(),
+        lastLoginAt: Date.now(),
+        emailVerified: user.emailVerified,
+        providerData: user.providerData,
+        lastSignInTime: user.metadata.lastSignInTime ? parseInt(user.metadata.lastSignInTime) : Date.now(),
+        creationTime: user.metadata.creationTime ? parseInt(user.metadata.creationTime) : Date.now(),
+      };
+      
+      await setDoc(doc(db, 'users', user.uid), userProfile);
+    }
+    
+    return user;
+  } catch (error: any) {
+    console.error('Error signing up with email:', error);
+    throw new Error(getAuthErrorMessage(error));
+  }
+};
+
+// Password reset
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase not initialized');
+
+    await sendPasswordResetEmail(auth, email);
+  } catch (error: any) {
+    console.error('Error sending password reset email:', error);
+    throw new Error(getAuthErrorMessage(error));
+  }
+};
+
+export const signOutUser = async (): Promise<void> => {
   try {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase not initialized');
@@ -171,20 +388,45 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 export const saveAskHistory = async (askData: Omit<AskHistory, 'id'> & { uid: string }): Promise<string> => {
   try {
     const db = getFirebaseDB();
-    if (!db) throw new Error('Firestore not initialized');
+    if (!db) {
+      console.log('Firebase not available, using local storage');
+      return saveLocalAskHistory(askData);
+    }
 
-    const docRef = await addDoc(collection(db, 'askHistory'), askData);
-    return docRef.id;
-  } catch (error) {
-    console.error('Error saving ask history:', error);
-    throw error;
+    // Validate data before saving
+    if (!askData.uid || !askData.question || !askData.aiSummary) {
+      console.warn('Invalid ask data, skipping save');
+      return 'validation-failed';
+    }
+
+    // Try Firebase first, with a timeout
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('Firebase timeout')), 5000)
+    );
+    
+    const firebasePromise = addDoc(collection(db, 'askHistory'), askData);
+    
+    try {
+      const docRef = await Promise.race([firebasePromise, timeoutPromise]);
+      console.log('Successfully saved ask history to Firebase:', docRef.id);
+      return docRef.id;
+    } catch (firebaseError) {
+      console.warn('Firebase save failed, using local storage:', firebaseError);
+      return saveLocalAskHistory(askData);
+    }
+  } catch (error: any) {
+    console.warn('Error in saveAskHistory, using local storage:', error.message);
+    return saveLocalAskHistory(askData);
   }
 };
 
 export const getAskHistory = async (uid: string): Promise<AskHistory[]> => {
   try {
     const db = getFirebaseDB();
-    if (!db) return [];
+    if (!db) {
+      console.warn('Firebase not initialized, using local storage');
+      return getLocalAskHistory();
+    }
 
     const q = query(
       collection(db, 'askHistory'),
@@ -198,27 +440,69 @@ export const getAskHistory = async (uid: string): Promise<AskHistory[]> => {
     })) as AskHistory[];
   } catch (error) {
     console.error('Error getting ask history:', error);
-    return [];
+    // Fall back to local storage
+    console.log('Falling back to local storage for ask history');
+    return getLocalAskHistory();
   }
 };
 
 export const saveNote = async (noteData: Omit<Note, 'id'>): Promise<string> => {
   try {
     const db = getFirebaseDB();
-    if (!db) throw new Error('Firestore not initialized');
+    if (!db) {
+      console.warn('Firebase not initialized, using local storage');
+      return saveLocalNote(noteData);
+    }
+
+    // Log the data being saved for debugging
+    console.log('Saving note:', {
+      uid: noteData.uid,
+      titleLength: noteData.title?.length || 0,
+      contentLength: noteData.content?.length || 0,
+      color: noteData.color,
+      tagsCount: noteData.tags?.length || 0,
+      createdAt: noteData.createdAt,
+      updatedAt: noteData.updatedAt
+    });
+
+    // Validate data before saving
+    if (!noteData.uid || !noteData.title || !noteData.content) {
+      console.warn('Invalid note data, skipping save:', {
+        hasUid: !!noteData.uid,
+        hasTitle: !!noteData.title,
+        hasContent: !!noteData.content
+      });
+      return 'validation-failed';
+    }
 
     const docRef = await addDoc(collection(db, 'notes'), noteData);
+    console.log('Successfully saved note with ID:', docRef.id);
     return docRef.id;
-  } catch (error) {
-    console.error('Error saving note:', error);
-    throw error;
+  } catch (error: any) {
+    console.error('Error saving note:', {
+      error: error.message,
+      code: error.code,
+      details: error.details || 'No additional details',
+      data: {
+        uid: noteData.uid,
+        titleLength: noteData.title?.length || 0,
+        contentLength: noteData.content?.length || 0
+      }
+    });
+    
+    // Fall back to local storage
+    console.log('Falling back to local storage for note');
+    return saveLocalNote(noteData);
   }
 };
 
 export const getNotes = async (uid: string): Promise<Note[]> => {
   try {
     const db = getFirebaseDB();
-    if (!db) return [];
+    if (!db) {
+      console.warn('Firebase not initialized, using local storage');
+      return getLocalNotes();
+    }
 
     const q = query(
       collection(db, 'notes'),
@@ -232,7 +516,9 @@ export const getNotes = async (uid: string): Promise<Note[]> => {
     })) as Note[];
   } catch (error) {
     console.error('Error getting notes:', error);
-    return [];
+    // Fall back to local storage
+    console.log('Falling back to local storage for notes');
+    return getLocalNotes();
   }
 };
 
@@ -262,6 +548,32 @@ export const updateTipStatus = async (uid: string, isTipped: boolean): Promise<v
     });
   } catch (error) {
     console.error('Error updating tip status:', error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (uid: string, profileData: Partial<UserProfile>): Promise<void> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) throw new Error('Firestore not initialized');
+
+    // Remove uid from profileData to avoid overwriting it
+    const { uid: _, ...updateData } = profileData;
+    
+    await updateDoc(doc(db, 'users', uid), {
+      ...updateData,
+      updatedAt: Date.now(),
+    });
+    
+    // Clear astro data cache if birth details were changed
+    if (updateData.birthDate || updateData.birthPlace || updateData.birthTime) {
+      console.log('Birth details updated, clearing astro data cache for user:', uid);
+      clearAstroDataCache(uid);
+    }
+    
+    console.log('Successfully updated user profile for:', uid);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     throw error;
   }
 };

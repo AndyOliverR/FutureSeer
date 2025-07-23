@@ -1,94 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Poppins:wght@400;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
+/* Cosmic Design System Variables */
+:root {
+  --gold: #FFD700;
+  --gold-gradient: linear-gradient(90deg, #FFD700 0%, #FFEF8F 100%);
+  --glass-bg: rgba(24, 26, 38, 0.7);
+  --glass-blur: blur(12px);
+  --starfield: url('/assets/bg/starfield.avif');
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', 'Satoshi', Arial, sans-serif;
+  background: var(--starfield) center/cover no-repeat, #0a0a23;
+  color: #fff;
+  min-height: 100vh;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cormorant Garamond', 'Playfair Display', serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 1.5rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 4px 32px 0 rgba(0,0,0,0.25);
+}
+
+.gold {
+  color: var(--gold);
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.btn-cosmic {
+  background: var(--glass-bg);
+  color: var(--gold);
+  border: 1.5px solid var(--gold);
+  border-radius: 999px;
+  box-shadow: 0 0 12px 2px #FFD70055;
+  padding: 0.75em 2em;
+  font-family: 'Poppins', Arial, sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  outline: none;
+}
+.btn-cosmic:hover, .btn-cosmic:focus {
+  background: var(--gold-gradient);
+  color: #181a26;
+  box-shadow: 0 0 32px 4px #FFD70099;
+}
+
+input[type="search"], .search-bar {
+  background: var(--glass-bg);
+  border: 1.5px solid var(--gold);
+  border-radius: 999px;
+  color: #fff;
+  padding: 0.75em 1.5em;
+  font-size: 1.1rem;
+  font-family: 'Poppins', Arial, sans-serif;
+  outline: none;
+  box-shadow: 0 2px 12px 0 #FFD70022;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+input[type="search"]:focus, .search-bar:focus {
+  border: 1.5px solid #fffbe6;
+  box-shadow: 0 0 16px 2px #FFD70055;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: #181a26;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold);
+  border-radius: 8px;
+}
+
+/* Shooting Star Animation */
+.shooting-star {
+  position: absolute;
+  width: 2px;
+  height: 80px;
+  background: linear-gradient(90deg, #fffbe6 0%, #FFD700 100%);
+  opacity: 0.7;
+  border-radius: 999px;
+  filter: blur(0.5px);
+  animation: shooting 2.5s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes shooting {
+  0% { opacity: 0; transform: translateX(0) scaleY(1); }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(600px) scaleY(0.7); }
+}
+
+@media (max-width: 600px) {
+  h1 { font-size: 2.2rem; }
+  h2 { font-size: 1.5rem; }
+  .btn-cosmic { font-size: 1rem; padding: 0.6em 1.2em; }
 }
