@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { WesternAstrologyCoachInterface } from "@/components/WesternAstrologyCoachInterface"
-import { useWesternAstrology } from "@/hooks/useWesternAstrology"
+import { useWesternAstrology } from "@/hooks/use-western-astrology"
 
 export default function WesternAstrologyPage() {
   const {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { VedicCoachInterface } from "@/components/VedicCoachInterface"
-import { useVedic } from "@/hooks/useVedic"
+import { useVedic } from "@/hooks/use-vedic"
 
 export default function VedicPage() {
   const {

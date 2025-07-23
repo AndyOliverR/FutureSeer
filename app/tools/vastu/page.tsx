@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { VastuCoachInterface } from "@/components/VastuCoachInterface"
-import { useVastu } from "@/hooks/useVastu"
+import { useVastu } from "@/hooks/use-vastu"
 
 export default function VastuPage() {
   const {
