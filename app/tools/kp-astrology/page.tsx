@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { KPAstrologyCoachInterface } from "@/components/KPAstrologyCoachInterface"
-import { useKPAstrology } from "@/hooks/useKPAstrology"
+import { useKPAstrology } from "@/hooks/use-kp-astrology"
 
 export default function KPAstrologyPage() {
   const {

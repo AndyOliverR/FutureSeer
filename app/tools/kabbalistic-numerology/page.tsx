@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { KabbalisticNumerologyCoachInterface } from "@/components/KabbalisticNumerologyCoachInterface"
-import { useKabbalisticNumerology } from "@/hooks/useKabbalisticNumerology"
+import { useKabbalisticNumerology } from "@/hooks/use-kabbalistic-numerology"
 
 export default function KabbalisticNumerologyPage() {
   const {
