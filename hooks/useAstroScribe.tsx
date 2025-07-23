@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { astroScribeIntelligence } from '@/lib/astroScribeIntelligence'
+import { getAstroScribeAnalysis } from "@/lib/astroScribeIntelligence"
 
 export interface ScribeData {
   interpretationType: string
@@ -88,7 +88,7 @@ export function useAstroScribe() {
     setError(null)
 
     try {
-      const result = await astroScribeIntelligence.generateInterpretation(scribeData)
+      const result = await getAstroScribeAnalysis(scribeData)
       setInterpretation(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate interpretation')

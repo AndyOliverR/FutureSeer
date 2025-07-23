@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTarotData } from '@/hooks/use-tarot'
+import { useTarot } from "@/hooks/use-tarot"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 export function TarotCoachInterface() {
-  const { tarotData, coaching, getCoaching, loading } = useTarotData()
+  const { tarotData, coaching, getCoaching, loading } = useTarot()
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
   const [currentResponse, setCurrentResponse] = useState<string | null>(null)

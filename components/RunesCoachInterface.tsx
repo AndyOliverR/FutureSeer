@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useRunesData } from '@/hooks/use-runes'
+import { useRunes } from "@/hooks/use-runes"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 
 export function RunesCoachInterface() {
-  const { runesData, coaching, getCoaching, loading } = useRunesData()
+  const { runesData, coaching, getCoaching, loading } = useRunes()
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
   const [currentResponse, setCurrentResponse] = useState<string | null>(null)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { usePalmistryData } from '@/hooks/use-palmistry'
+import { usePalmistry } from "@/hooks/use-palmistry"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 
 export function PalmistryCoachInterface() {
-  const { palmistryData, coaching, getCoaching, loading } = usePalmistryData()
+  const { palmistryData, coaching, getCoaching, loading } = usePalmistry()
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
   const [currentResponse, setCurrentResponse] = useState<string | null>(null)
