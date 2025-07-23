@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { FaceReadingCoachInterface } from "@/components/FaceReadingCoachInterface"
-import { useFaceReading } from "@/hooks/useFaceReading"
+import { useFaceReading } from "@/hooks/use-face-reading"
 
 export default function FaceReadingPage() {
   const {

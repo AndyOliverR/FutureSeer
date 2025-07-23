@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { BaZiCoachInterface } from "@/components/BaZiCoachInterface"
-import { useBaZi } from "@/hooks/useBaZi"
+import { useBaZi } from "@/hooks/use-bazi"
 
 export default function BaZiPage() {
   const {

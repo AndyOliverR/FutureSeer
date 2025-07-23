@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { HoraryAstrologyCoachInterface } from "@/components/HoraryAstrologyCoachInterface"
-import { useHoraryAstrology } from "@/hooks/useHoraryAstrology"
+import { useHoraryAstrology } from "@/hooks/use-horary-astrology"
 
 export default function HoraryPage() {
   const {
