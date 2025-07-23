@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { NameAnalysisCoachInterface } from "@/components/NameAnalysisCoachInterface"
-import { useNameAnalysis } from "@/hooks/useNameAnalysis"
+import { useNameAnalysis } from "@/hooks/use-name-analysis"
 
 export default function NameAnalysisPage() {
   const {

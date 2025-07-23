@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { NumerologyCoachInterface } from "@/components/NumerologyCoachInterface"
-import { useNumerologyData } from "@/hooks/useNumerologyData"
+import { useNumerologyData } from "@/hooks/use-numerology-data"
 
 export default function NumerologyPage() {
   const {
