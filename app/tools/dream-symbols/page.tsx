@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { DreamSymbolsCoachInterface } from "@/components/DreamSymbolsCoachInterface"
-import { useDreamSymbols } from "@/hooks/useDreamSymbols"
+import { useDreamSymbols } from "@/hooks/use-dream-symbols"
 
 export default function DreamSymbolsPage() {
   const {
