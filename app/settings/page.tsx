@@ -1,313 +1,279 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { useAuth } from "@/hooks/use-auth"
-import { updateSubscriptionStatus } from "@/lib/firebase"
+import { motion, AnimatePresence } from "framer-motion"
+import { useSettings } from "@/hooks/useSettings"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, User, LogOut, Trash2, CheckCircle, XCircle, Moon, Sun, Bell, Globe, Mic, Mail } from "lucide-react"
 
 export default function SettingsPage() {
-  const { user, userProfile } = useAuth()
-  const [darkMode, setDarkMode] = useState(true)
-  const [language, setLanguage] = useState("english")
-  const [voiceGuidance, setVoiceGuidance] = useState(false)
-  const [showFeedback, setShowFeedback] = useState(false)
-  const [feedback, setFeedback] = useState("")
-  const [inviteCode, setInviteCode] = useState("")
-  const [showInviteModal, setShowInviteModal] = useState(false)
+  const {
+    settings,
+    loading,
+    error,
+    success,
+    isEditingProfile,
+    profileData,
+    userProfile,
+    trialStatus,
+    updateSetting,
+    updateProfile,
+    clearMessages,
+    setIsEditingProfile,
+    setProfileData,
+  } = useSettings()
 
-  // Generate invite code based on user ID
-  const generateInviteCode = () => {
-    if (!user?.uid) return ""
-    return `FUTURESEER-${user.uid.slice(0, 8).toUpperCase()}`
-  }
-
-  const handleFeedbackSubmit = async () => {
-    if (!feedback.trim() || !user?.uid) return
-    
-    try {
-      // Here you would typically send feedback to your backend
-      console.log('Feedback submitted:', feedback)
-      setFeedback("")
-      setShowFeedback(false)
-      alert("Thank you for your feedback! 🙏")
-    } catch (error) {
-      console.error('Error submitting feedback:', error)
-    }
-  }
-
-  const handleInviteCodeSubmit = async () => {
-    if (!inviteCode.trim() || !user?.uid) return
-    
-    try {
-      // Here you would validate the invite code with your backend
-      console.log('Invite code submitted:', inviteCode)
-      setInviteCode("")
-      setShowInviteModal(false)
-      alert("Invite code applied successfully! ✨")
-    } catch (error) {
-      console.error('Error applying invite code:', error)
-    }
-  }
+  const [showDelete, setShowDelete] = useState(false)
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden" style={{ backgroundImage: "url('/images/starfield-bg.png')" }}>
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
+      <div className="relative z-10 p-4 max-w-3xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12 pt-8">
-          <Link href="/dashboard" className="text-soft hover:gold-glow mb-4 inline-block">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-10 pt-8"
+        >
+          <Link href="/dashboard" className="text-amber-200 hover:text-amber-300 mb-4 inline-block transition-all duration-300">
             ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-semibold gold-glow mb-4">Settings</h1>
-          <p className="text-soft leading-relaxed">Customize your mystical experience</p>
-        </div>
+          <h1 className="text-4xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-4">Settings</h1>
+          <p className="text-slate-300 font-serif leading-relaxed">Manage your preferences, profile, and account</p>
+        </motion.div>
 
-        {/* User Info */}
-        {userProfile && (
-          <div className="glass-card rounded-3xl p-8 mb-8">
-            <h2 className="text-xl gold-glow mb-6">Account Status</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-soft font-medium mb-2">Subscription</h3>
-                <div className={`px-3 py-1 rounded-full text-sm inline-block ${
-                  userProfile.isSubscribed 
-                    ? "bg-green-500/20 text-green-300" 
-                    : "bg-yellow-500/20 text-yellow-300"
-                }`}>
-                  {userProfile.isSubscribed ? "Active" : "Trial"}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-soft font-medium mb-2">Member Since</h3>
-                <p className="text-soft/70 text-sm">
-                  {new Date(userProfile.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Success/Error Messages */}
+        <AnimatePresence>
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-2xl text-green-300 text-center font-serif flex items-center justify-center gap-2"
+            >
+              <CheckCircle className="w-5 h-5" /> {success}
+              <button onClick={clearMessages} className="ml-2 text-green-200 hover:text-green-100">✕</button>
+            </motion.div>
+          )}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-2xl text-red-300 text-center font-serif flex items-center justify-center gap-2"
+            >
+              <XCircle className="w-5 h-5" /> {error}
+              <button onClick={clearMessages} className="ml-2 text-red-200 hover:text-red-100">✕</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Settings Sections */}
-        <div className="space-y-8">
-          {/* Appearance */}
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl gold-glow mb-6">Appearance</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-soft font-medium mb-1">Dark Mode</h3>
-                <p className="text-soft/70 text-sm">Toggle between light and dark themes</p>
-              </div>
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  darkMode ? "bg-yellow-400" : "bg-white/20"
-                }`}
+        {/* Profile Card */}
+        <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 mb-8 card-glow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-200 font-serif text-xl">
+              <User className="w-6 h-6" /> Profile
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isEditingProfile ? (
+              <form
+                className="space-y-4"
+                onSubmit={e => {
+                  e.preventDefault()
+                  updateProfile(profileData)
+                }}
               >
-                <div
-                  className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
-                    darkMode ? "translate-x-6" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Language */}
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl gold-glow mb-6">Language</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-soft font-medium mb-1">Interface Language</h3>
-                <p className="text-soft/70 text-sm">Choose your preferred language</p>
-              </div>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="bg-transparent border border-white/20 rounded-2xl p-3 text-soft focus:outline-none focus:border-yellow-400"
-              >
-                <option value="english" className="bg-gray-800">
-                  English
-                </option>
-                <option value="hindi" className="bg-gray-800">
-                  हिंदी
-                </option>
-                <option value="sanskrit" className="bg-gray-800">
-                  संस्कृत
-                </option>
-              </select>
-            </div>
-          </div>
-
-          {/* Audio */}
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl gold-glow mb-6">Audio</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-soft font-medium mb-1">Voice Guidance</h3>
-                <p className="text-soft/70 text-sm">Enable spoken predictions and guidance</p>
-              </div>
-              <button
-                onClick={() => setVoiceGuidance(!voiceGuidance)}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  voiceGuidance ? "bg-yellow-400" : "bg-white/20"
-                }`}
-              >
-                <div
-                  className={`absolute w-5 h-5 bg-white rounded-full top-0.5 transition-transform ${
-                    voiceGuidance ? "translate-x-6" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Invite System */}
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl gold-glow mb-6">Invite Friends</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-soft font-medium mb-2">Your Invite Code</h3>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="text"
-                    value={generateInviteCode()}
-                    readOnly
-                    className="flex-1 bg-transparent border border-white/20 rounded-2xl p-3 text-soft focus:outline-none"
+                <div>
+                  <label className="block text-slate-300 font-serif mb-1">Display Name</label>
+                  <Input
+                    value={profileData.displayName}
+                    onChange={e => setProfileData({ ...profileData, displayName: e.target.value })}
+                    className="input-glow"
                   />
-                  <button
-                    onClick={() => navigator.clipboard.writeText(generateInviteCode())}
-                    className="px-4 py-3 glass-card rounded-2xl text-soft hover:bg-white/10"
-                  >
-                    Copy
-                  </button>
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-300 font-serif mb-1">Birth Date</label>
+                    <Input
+                      type="date"
+                      value={profileData.birthDate}
+                      onChange={e => setProfileData({ ...profileData, birthDate: e.target.value })}
+                      className="input-glow"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 font-serif mb-1">Birth Time</label>
+                    <Input
+                      type="time"
+                      value={profileData.birthTime}
+                      onChange={e => setProfileData({ ...profileData, birthTime: e.target.value })}
+                      className="input-glow"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-slate-300 font-serif mb-1">Birth Place</label>
+                    <Input
+                      value={profileData.birthPlace}
+                      onChange={e => setProfileData({ ...profileData, birthPlace: e.target.value })}
+                      className="input-glow"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-4 mt-4">
+                  <Button type="submit" className="bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 button-glow">Save</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsEditingProfile(false)} className="border-slate-600 text-slate-300">Cancel</Button>
+                </div>
+              </form>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300 font-serif">Name:</span>
+                  <span className="text-amber-100 font-serif">{userProfile?.displayName || "-"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300 font-serif">Birth Date:</span>
+                  <span className="text-amber-100 font-serif">{userProfile?.birthDate || "-"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300 font-serif">Birth Time:</span>
+                  <span className="text-amber-100 font-serif">{userProfile?.birthTime || "-"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300 font-serif">Birth Place:</span>
+                  <span className="text-amber-100 font-serif">{userProfile?.birthPlace || "-"}</span>
+                </div>
+                <Button onClick={() => setIsEditingProfile(true)} className="mt-4 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 button-glow">Edit Profile</Button>
               </div>
-              <div>
-                <h3 className="text-soft font-medium mb-2">Apply Invite Code</h3>
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="px-4 py-2 glass-card rounded-2xl text-soft hover:bg-white/10"
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Preferences Card */}
+        <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 mb-8 card-glow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-200 font-serif text-xl">
+              <Moon className="w-6 h-6" /> Preferences
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sun className="w-5 h-5 text-yellow-300" />
+                  <span className="text-slate-300 font-serif">Dark Mode</span>
+                </div>
+                <Switch checked={settings.darkMode} onCheckedChange={v => updateSetting('darkMode', v)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-amber-300" />
+                  <span className="text-slate-300 font-serif">Notifications</span>
+                </div>
+                <Switch checked={settings.notifications} onCheckedChange={v => updateSetting('notifications', v)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-yellow-200" />
+                  <span className="text-slate-300 font-serif">Email Updates</span>
+                </div>
+                <Switch checked={settings.emailUpdates} onCheckedChange={v => updateSetting('emailUpdates', v)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Mic className="w-5 h-5 text-blue-300" />
+                  <span className="text-slate-300 font-serif">Voice Guidance</span>
+                </div>
+                <Switch checked={settings.voiceGuidance} onCheckedChange={v => updateSetting('voiceGuidance', v)} />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-green-300" />
+                  <span className="text-slate-300 font-serif">Language</span>
+                </div>
+                <select
+                  value={settings.language}
+                  onChange={e => updateSetting('language', e.target.value)}
+                  className="bg-slate-800/50 border border-slate-600 rounded-lg px-3 py-2 text-amber-100 font-serif focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
                 >
-                  Enter Code
-                </button>
+                  <option value="english">English</option>
+                  <option value="hindi">Hindi</option>
+                  <option value="spanish">Spanish</option>
+                  <option value="french">French</option>
+                </select>
               </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Feedback */}
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl gold-glow mb-6">Feedback & Support</h2>
-            <div className="space-y-4">
-              <button
-                onClick={() => setShowFeedback(true)}
-                className="px-4 py-2 glass-card rounded-2xl text-soft hover:bg-white/10"
+        {/* Trial/Subscription Status */}
+        <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 mb-8 card-glow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-200 font-serif text-xl">
+              <Badge className="bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-900">Trial</Badge>
+              Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {trialStatus ? (
+              <div className="flex items-center gap-4">
+                {trialStatus.isActive ? (
+                  <span className="text-green-400 font-serif">Active ({trialStatus.daysLeft} days left)</span>
+                ) : (
+                  <span className="text-red-400 font-serif">Expired</span>
+                )}
+                <span className="text-slate-400 font-serif">Upgrade coming soon</span>
+              </div>
+            ) : (
+              <span className="text-slate-400 font-serif">No trial info</span>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Account Management */}
+        <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 mb-8 card-glow">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-200 font-serif text-xl">
+              <LogOut className="w-6 h-6" /> Account
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4">
+              <Button variant="outline" className="border-slate-600 text-slate-300 flex items-center gap-2 justify-center">
+                <LogOut className="w-5 h-5" /> Sign Out
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex items-center gap-2 justify-center"
+                onClick={() => setShowDelete(true)}
               >
-                Send Feedback
-              </button>
-              <button className="px-4 py-2 glass-card rounded-2xl text-soft hover:bg-white/10">
-                Contact Support
-              </button>
+                <Trash2 className="w-5 h-5" /> Delete Account
+              </Button>
+              <AnimatePresence>
+                {showDelete && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="mt-4 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-300 text-center font-serif"
+                  >
+                    <div className="mb-2">Are you sure you want to delete your account? This action cannot be undone.</div>
+                    <div className="flex gap-4 justify-center mt-4">
+                      <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowDelete(false)}>Cancel</Button>
+                      <Button variant="destructive" className="bg-red-600 text-white" disabled>Delete (Coming Soon)</Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          </div>
-
-          {/* Privacy */}
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl gold-glow mb-6">Privacy & Data</h2>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-soft font-medium mb-2">Data Privacy</h3>
-                <p className="text-soft/70 text-sm leading-relaxed mb-4">
-                  Your personal information and readings are encrypted and stored securely. We never share your data
-                  with third parties. All AI processing happens on secure servers with enterprise-grade protection.
-                </p>
-                <div className="flex space-x-4">
-                  <button className="px-4 py-2 glass-card rounded-2xl text-soft text-sm hover:bg-white/10">
-                    View Privacy Policy
-                  </button>
-                  <button className="px-4 py-2 glass-card rounded-2xl text-soft text-sm hover:bg-white/10">
-                    Export My Data
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Account */}
-          <div className="glass-card rounded-3xl p-8">
-            <h2 className="text-xl gold-glow mb-6">Account</h2>
-            <div className="space-y-4">
-              <Link href="/subscribe" className="w-full py-3 glass-card rounded-2xl text-soft hover:bg-white/10 text-left px-6 block">
-                Manage Subscription
-              </Link>
-              <button className="w-full py-3 glass-card rounded-2xl text-soft hover:bg-white/10 text-left px-6">
-                Change Password
-              </button>
-              <button className="w-full py-3 glass-card rounded-2xl text-red-400 hover:bg-red-500/10 text-left px-6">
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Feedback Modal */}
-        {showFeedback && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="glass-card rounded-3xl p-8 max-w-md w-full">
-              <h3 className="text-xl gold-glow mb-6">Send Feedback</h3>
-              <textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                placeholder="Share your thoughts, suggestions, or report issues..."
-                className="w-full h-32 bg-transparent border border-white/20 rounded-2xl p-4 text-soft placeholder-white/50 resize-none focus:outline-none focus:border-yellow-400 mb-6"
-              />
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setShowFeedback(false)}
-                  className="flex-1 py-3 glass-card rounded-2xl text-soft hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleFeedbackSubmit}
-                  disabled={!feedback.trim()}
-                  className="flex-1 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-2xl font-semibold disabled:opacity-50"
-                >
-                  Send Feedback
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Invite Code Modal */}
-        {showInviteModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="glass-card rounded-3xl p-8 max-w-md w-full">
-              <h3 className="text-xl gold-glow mb-6">Enter Invite Code</h3>
-              <input
-                type="text"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="Enter your invite code..."
-                className="w-full bg-transparent border border-white/20 rounded-2xl p-4 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400 mb-6"
-              />
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setShowInviteModal(false)}
-                  className="flex-1 py-3 glass-card rounded-2xl text-soft hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleInviteCodeSubmit}
-                  disabled={!inviteCode.trim()}
-                  className="flex-1 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-2xl font-semibold disabled:opacity-50"
-                >
-                  Apply Code
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

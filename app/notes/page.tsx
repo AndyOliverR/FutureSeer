@@ -1,59 +1,37 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
-import { useAuth } from "@/hooks/use-auth"
-import { saveNote, getNotes, Note } from "@/lib/firebase"
-import { doc, updateDoc, deleteDoc } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { motion, AnimatePresence } from "framer-motion"
+import { useNotes } from "@/hooks/useNotes"
+import { Note } from "@/lib/firebase"
 
 export default function NotesPage() {
-  const { user } = useAuth()
+  const { notes, loading, error, createNote, updateNote, deleteNote } = useNotes()
   const [showModal, setShowModal] = useState(false)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const [newNote, setNewNote] = useState("")
   const [noteTitle, setNoteTitle] = useState("")
-  const [selectedColor, setSelectedColor] = useState("gray")
-  const [notes, setNotes] = useState<Note[]>([])
-  const [loading, setLoading] = useState(true)
+  const [selectedColor, setSelectedColor] = useState<string>("gray")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const colors = [
-    { name: "gray", class: "bg-gray-500/20" },
-    { name: "yellow", class: "bg-yellow-500/20" },
-    { name: "purple", class: "bg-purple-500/20" },
-    { name: "blue", class: "bg-blue-500/20" },
-    { name: "green", class: "bg-green-500/20" },
-    { name: "pink", class: "bg-pink-500/20" },
+    { name: "gray", class: "bg-gray-500/20", border: "border-gray-500/30" },
+    { name: "yellow", class: "bg-yellow-500/20", border: "border-yellow-500/30" },
+    { name: "purple", class: "bg-purple-500/20", border: "border-purple-500/30" },
+    { name: "blue", class: "bg-blue-500/20", border: "border-blue-500/30" },
+    { name: "green", class: "bg-green-500/20", border: "border-green-500/30" },
+    { name: "pink", class: "bg-pink-500/20", border: "border-pink-500/30" },
   ]
 
-  useEffect(() => {
-    if (user?.uid) {
-      loadNotes()
-    } else {
-      setLoading(false)
-    }
-  }, [user])
-
-  const loadNotes = async () => {
-    if (!user?.uid) return
-    
-    try {
-      const userNotes = await getNotes(user.uid)
-      setNotes(userNotes)
-    } catch (error) {
-      console.error('Error loading notes:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleSaveNote = async () => {
-    if (!user?.uid || !noteTitle.trim() || !newNote.trim()) return
+    if (!noteTitle.trim() || !newNote.trim()) return
 
+    setIsSubmitting(true)
     try {
       if (editingNote) {
         // Update existing note
-        await updateDoc(doc(db, 'notes', editingNote.id), {
+        await updateNote(editingNote.id, {
           title: noteTitle,
           content: newNote,
           color: selectedColor,
@@ -61,8 +39,7 @@ export default function NotesPage() {
         })
       } else {
         // Create new note
-        await saveNote({
-          uid: user.uid,
+        await createNote({
           title: noteTitle,
           content: newNote,
           color: selectedColor,
@@ -72,15 +49,16 @@ export default function NotesPage() {
         })
       }
 
-      // Reset form and reload notes
+      // Reset form
       setShowModal(false)
       setEditingNote(null)
       setNewNote("")
       setNoteTitle("")
       setSelectedColor("gray")
-      await loadNotes()
     } catch (error) {
       console.error('Error saving note:', error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -88,18 +66,13 @@ export default function NotesPage() {
     setEditingNote(note)
     setNoteTitle(note.title)
     setNewNote(note.content)
-    setSelectedColor(note.color)
+    setSelectedColor(note.color ? note.color : "gray")
     setShowModal(true)
   }
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!user?.uid) return
-
-    try {
-      await deleteDoc(doc(db, 'notes', noteId))
-      await loadNotes()
-    } catch (error) {
-      console.error('Error deleting note:', error)
+    if (confirm('Are you sure you want to delete this note?')) {
+      await deleteNote(noteId)
     }
   }
 
@@ -116,32 +89,73 @@ export default function NotesPage() {
     return 'Just now'
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen p-4 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">📝</div>
-          <p className="text-soft">Loading your spiritual notes...</p>
-        </div>
+  // Cosmic Loader Component
+  const CosmicLoader = () => (
+    <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="text-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="text-6xl mb-6"
+        >
+          🌟
+        </motion.div>
+        <motion.p
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="text-soft text-lg"
+        >
+          Loading your spiritual notes...
+        </motion.p>
       </div>
-    )
+    </div>
+  )
+
+  if (loading) {
+    return <CosmicLoader />
   }
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
+         style={{ backgroundImage: "url('/images/starfield-bg.png')" }}>
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
+      
+      <div className="relative z-10 p-4 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12 pt-8">
-          <Link href="/dashboard" className="text-soft hover:gold-glow mb-4 inline-block">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12 pt-8"
+        >
+          <Link href="/dashboard" className="text-amber-200 hover:text-amber-300 mb-4 inline-block transition-all duration-300">
             ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-semibold gold-glow mb-4">Spiritual Notes</h1>
-          <p className="text-soft leading-relaxed">Record your mystical insights and experiences</p>
-        </div>
+          <h1 className="text-4xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-4">Spiritual Notes</h1>
+          <p className="text-slate-300 font-serif leading-relaxed">Record your mystical insights and experiences</p>
+        </motion.div>
+
+        {/* Error Display */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-2xl text-red-300 text-center font-serif"
+          >
+            {error}
+          </motion.div>
+        )}
 
         {/* New Note Button */}
-        <div className="text-center mb-8">
-          <button
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-center mb-8"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => {
               setEditingNote(null)
               setNoteTitle("")
@@ -149,100 +163,166 @@ export default function NotesPage() {
               setSelectedColor("gray")
               setShowModal(true)
             }}
-            className="px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-2xl font-semibold hover:scale-105 transition-transform"
+            className="px-8 py-4 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 button-glow"
           >
-            + New Note
-          </button>
-        </div>
+            ✨ New Note
+          </motion.button>
+        </motion.div>
 
         {/* Notes Grid */}
-        {notes.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-4">📝</div>
-            <p className="text-soft/70">No notes yet. Start recording your spiritual insights!</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {notes.map((note) => (
-              <div key={note.id} className="glass-card rounded-2xl p-6 hover:scale-105 transition-transform">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`w-3 h-3 rounded-full ${colors.find((c) => c.name === note.color)?.class}`}></div>
-                  <div className="flex space-x-2">
-                    <button 
-                      onClick={() => handleEditNote(note)}
-                      className="text-soft/50 hover:text-soft text-sm transition-colors"
-                    >
-                      ✏️
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="text-soft/50 hover:text-red-400 text-sm transition-colors"
-                    >
-                      🗑️
-                    </button>
+        <AnimatePresence>
+          {notes.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-center py-16"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-6xl mb-6"
+              >
+                📝
+              </motion.div>
+              <p className="text-amber-200 font-serif text-lg mb-4">No notes yet</p>
+              <p className="text-slate-300 font-serif">Start recording your spiritual insights and experiences</p>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {notes.map((note, index) => (
+                <motion.div
+                  key={note.id}
+                  initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  className={`backdrop-blur-md bg-slate-900/40 border border-slate-700/50 rounded-2xl p-6 shadow-xl card-glow ${colors.find((c) => c.name === (note.color ?? 'gray'))?.border}`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`w-4 h-4 rounded-full ${colors.find((c) => c.name === (note.color ?? 'gray'))?.class}`}></div>
+                    <div className="flex space-x-3">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleEditNote(note)}
+                        className="text-slate-400 hover:text-amber-200 text-lg transition-colors duration-200"
+                      >
+                        ✏️
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="text-slate-400 hover:text-red-400 text-lg transition-colors duration-200"
+                      >
+                        🗑️
+                      </motion.button>
+                    </div>
                   </div>
-                </div>
-                <h3 className="text-soft font-medium mb-2">{note.title}</h3>
-                <p className="text-soft/70 text-sm leading-relaxed mb-4 line-clamp-3">{note.content}</p>
-                <div className="text-soft/50 text-xs">{formatDate(note.updatedAt)}</div>
-              </div>
-            ))}
-          </div>
-        )}
+                  <h3 className="text-amber-200 font-serif font-semibold mb-3 text-lg">{note.title}</h3>
+                  <p className="text-slate-300 font-serif text-sm leading-relaxed mb-4 line-clamp-4">{note.content}</p>
+                  <div className="text-slate-400 font-serif text-xs flex items-center">
+                    <span className="mr-2">🕐</span>
+                    {formatDate(note.updatedAt)}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="glass-card rounded-3xl p-8 max-w-md w-full">
-              <h3 className="text-xl gold-glow mb-6">
-                {editingNote ? 'Edit Note' : 'New Note'}
-              </h3>
-              <input
-                type="text"
-                value={noteTitle}
-                onChange={(e) => setNoteTitle(e.target.value)}
-                placeholder="Note title..."
-                className="w-full bg-transparent border border-white/20 rounded-2xl p-4 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400 mb-4"
-              />
-              <textarea
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="Write your insights..."
-                className="w-full h-32 bg-transparent border border-white/20 rounded-2xl p-4 text-soft placeholder-white/50 resize-none focus:outline-none focus:border-yellow-400 mb-4"
-              />
-              <div className="flex space-x-2 mb-6">
-                {colors.map((color) => (
-                  <button
-                    key={color.name}
-                    onClick={() => setSelectedColor(color.name)}
-                    className={`w-6 h-6 rounded-full ${color.class} ${selectedColor === color.name ? "ring-2 ring-yellow-400" : ""}`}
+        <AnimatePresence>
+          {showModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="backdrop-blur-md bg-slate-900/90 border border-slate-700/50 rounded-3xl p-8 max-w-md w-full shadow-2xl"
+              >
+                <h3 className="text-2xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-6 text-center">
+                  {editingNote ? 'Edit Note' : 'New Note'}
+                </h3>
+                
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    value={noteTitle}
+                    onChange={(e) => setNoteTitle(e.target.value)}
+                    placeholder="Note title..."
+                    className="w-full bg-slate-800/50 border border-slate-600 rounded-2xl p-4 text-amber-100 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300 input-glow"
                   />
-                ))}
-              </div>
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => {
-                    setShowModal(false)
-                    setEditingNote(null)
-                    setNoteTitle("")
-                    setNewNote("")
-                    setSelectedColor("gray")
-                  }}
-                  className="flex-1 py-3 glass-card rounded-2xl text-soft hover:bg-white/10"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSaveNote}
-                  disabled={!noteTitle.trim() || !newNote.trim()}
-                  className="flex-1 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-2xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {editingNote ? 'Update Note' : 'Save Note'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+                  
+                  <textarea
+                    value={newNote}
+                    onChange={(e) => setNewNote(e.target.value)}
+                    placeholder="Write your insights..."
+                    className="w-full h-32 bg-slate-800/50 border border-slate-600 rounded-2xl p-4 text-amber-100 placeholder:text-slate-400 resize-none focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300 input-glow"
+                  />
+                  
+                  <div className="flex justify-center space-x-3">
+                    {colors.map((color) => (
+                      <motion.button
+                        key={color.name}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setSelectedColor(color.name ? color.name : "gray")}
+                        className={`w-8 h-8 rounded-full ${color.class} ${selectedColor === color.name ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900" : ""} transition-all duration-200`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex space-x-4 mt-8">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      setShowModal(false)
+                      setEditingNote(null)
+                      setNoteTitle("")
+                      setNewNote("")
+                      setSelectedColor("gray")
+                    }}
+                    className="flex-1 py-3 bg-slate-800/50 border border-slate-600 rounded-2xl text-slate-300 hover:bg-slate-700/50 transition-all duration-300"
+                  >
+                    Cancel
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleSaveNote}
+                    disabled={!noteTitle.trim() || !newNote.trim() || isSubmitting}
+                    className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 rounded-2xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 button-glow"
+                  >
+                    {isSubmitting ? (
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full mx-auto"
+                      />
+                    ) : (
+                      editingNote ? 'Update Note' : 'Save Note'
+                    )}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
