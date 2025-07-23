@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useIChingData } from '@/hooks/use-iching'
+import { useIChing } from "@/hooks/use-iching"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 
 export function IChingCoachInterface() {
-  const { ichingData, coaching, getCoaching, loading } = useIChingData()
+  const { ichingData, coaching, getCoaching, loading } = useIChing()
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
   const [currentResponse, setCurrentResponse] = useState<string | null>(null)

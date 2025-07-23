@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useFaceReadingData } from '@/hooks/use-face-reading'
+import { useFaceReading } from "@/hooks/use-face-reading"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 
 export function FaceReadingCoachInterface() {
-  const { faceReadingData, coaching, getCoaching, loading } = useFaceReadingData()
+  const { faceReadingData, coaching, getCoaching, loading } = useFaceReading()
   const [question, setQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
   const [currentResponse, setCurrentResponse] = useState<string | null>(null)
