@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { PalmistryCoachInterface } from "@/components/PalmistryCoachInterface"
-import { usePalmistry } from "@/hooks/usePalmistry"
+import { usePalmistry } from "@/hooks/use-palmistry"
 
 export default function PalmistryPage() {
   const {

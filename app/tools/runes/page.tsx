@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { RunesCoachInterface } from "@/components/RunesCoachInterface"
-import { useRunes } from "@/hooks/useRunes"
+import { useRunes } from "@/hooks/use-runes"
 
 export default function RunesPage() {
   const {
