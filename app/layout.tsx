@@ -40,6 +40,9 @@ export default function RootLayout({
             </AuthProvider>
           </main>
         </div>
+        <footer className="text-center text-sm text-gray-400 my-8">
+          © 2025 FutureSeer. All rights reserved.
+        </footer>
       </body>
     </html>
   )
