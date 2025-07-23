@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { LenormandCoachInterface } from "@/components/LenormandCoachInterface"
-import { useLenormand } from "@/hooks/useLenormand"
+import { useLenormand } from "@/hooks/use-lenormand"
 
 export default function LenormandPage() {
   const {
