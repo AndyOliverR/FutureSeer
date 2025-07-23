@@ -7,8 +7,7 @@ export function useTarot() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Placeholder logic for actions
-  function performTarotAnalysis() {
+  function performTarotReading() {
     setIsLoading(true);
     setTimeout(() => {
       setAnalysis({ result: "Sample tarot analysis" });
@@ -25,13 +24,13 @@ export function useTarot() {
 
   return {
     question,
-    setQuestion,
     spreadType,
-    setSpreadType,
     analysis,
     isLoading,
     error,
-    performTarotAnalysis,
+    setQuestion,
+    setSpreadType,
+    performTarotReading,
     resetData,
   };
 } 

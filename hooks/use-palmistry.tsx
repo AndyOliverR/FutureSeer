@@ -7,7 +7,6 @@ export function usePalmistry() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Placeholder logic for actions
   function performPalmistryAnalysis() {
     setIsLoading(true);
     setTimeout(() => {
@@ -25,12 +24,12 @@ export function usePalmistry() {
 
   return {
     handType,
-    setHandType,
     palmData,
-    setPalmData,
     analysis,
     isLoading,
     error,
+    setHandType,
+    setPalmData,
     performPalmistryAnalysis,
     resetData,
   };
