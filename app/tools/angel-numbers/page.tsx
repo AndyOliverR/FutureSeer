@@ -1,19 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { AngelNumbersCoachInterface } from "@/components/AngelNumbersCoachInterface"
-import { useAngelNumbersData } from "@/hooks/useAngelNumbersData"
+import { useAngelNumbersData } from "@/hooks/use-angel-numbers-data"
 
 export default function AngelNumbersPage() {
   const {
-    number,
-    analysis,
-    isLoading,
+    angelNumbersData,
+    loading,
     error,
-    setNumber,
-    performAngelNumberAnalysis,
-    resetData
+    refresh,
+    clearCache,
+    isStale
   } = useAngelNumbersData()
 
   const [activeTab, setActiveTab] = useState("overview")
@@ -60,21 +58,6 @@ export default function AngelNumbersPage() {
             <div className="glass-card rounded-3xl p-6 border border-white/10">
               <h2 className="text-2xl gold-glow mb-6 text-center">Divine Messages</h2>
               
-              {/* Number Input */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">👼</span>
-                  Angel Number
-                </h3>
-                <input
-                  type="text"
-                  placeholder="Enter the number you keep seeing (e.g., 111, 222, 333...)"
-                  value={number || ""}
-                  onChange={(e) => setNumber(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                />
-              </div>
-
               {/* Instructions */}
               <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-white-500/10 to-silver-500/10 border border-white-500/20">
                 <h4 className="text-soft font-semibold mb-2 flex items-center">
@@ -94,17 +77,17 @@ export default function AngelNumbersPage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={performAngelNumberAnalysis}
-                  disabled={isLoading || !number.trim()}
+                  onClick={refresh}
+                  disabled={loading}
                   className="w-full bg-gradient-to-r from-white-500 to-silver-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
                 >
-                  {isLoading ? "👼 Decoding..." : "👼 Decode Angel Message"}
+                  {loading ? "👼 Decoding..." : "👼 Get Angel Numbers"}
                 </motion.button>
                 
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={resetData}
+                  onClick={clearCache}
                   className="w-full bg-white/5 border border-white/20 text-soft rounded-xl p-4 font-semibold hover:bg-white/10 transition-all duration-300"
                 >
                   🔄 Reset
@@ -123,7 +106,7 @@ export default function AngelNumbersPage() {
             <div className="glass-card rounded-3xl p-6 border border-white/10">
               {/* Tabs */}
               <div className="flex flex-wrap gap-2 mb-6">
-                {["overview", "meaning", "guidance", "timing", "action", "advice"].map((tab) => (
+                {["overview", "guidance", "numbers", "synchronicities"].map((tab) => (
                   <motion.button
                     key={tab}
                     whileHover={{ scale: 1.05 }}
@@ -142,7 +125,7 @@ export default function AngelNumbersPage() {
 
               {/* Content */}
               <AnimatePresence mode="wait">
-                {isLoading ? (
+                {loading ? (
                   <motion.div
                     key="loading"
                     initial={{ opacity: 0 }}
@@ -171,18 +154,107 @@ export default function AngelNumbersPage() {
                     <p className="text-red-400 text-lg mb-2">Decoding Error</p>
                     <p className="text-soft">{error}</p>
                   </motion.div>
-                ) : analysis ? (
+                ) : angelNumbersData ? (
                   <motion.div
                     key="results"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
+                    className="space-y-6"
                   >
-                    <AngelNumbersCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      number={number}
-                    />
+                    {activeTab === "overview" && (
+                      <div>
+                        <h3 className="text-2xl gold-glow mb-4">Your Angel Numbers Overview</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="text-center p-4 bg-white/5 rounded-xl">
+                            <div className="text-2xl mb-2">👼</div>
+                            <div className="text-soft font-semibold">Life Path</div>
+                            <div className="gold-glow text-xl">{angelNumbersData.lifePathAngel}</div>
+                          </div>
+                          <div className="text-center p-4 bg-white/5 rounded-xl">
+                            <div className="text-2xl mb-2">⭐</div>
+                            <div className="text-soft font-semibold">Destiny</div>
+                            <div className="gold-glow text-xl">{angelNumbersData.destinyAngel}</div>
+                          </div>
+                          <div className="text-center p-4 bg-white/5 rounded-xl">
+                            <div className="text-2xl mb-2">💫</div>
+                            <div className="text-soft font-semibold">Soul</div>
+                            <div className="gold-glow text-xl">{angelNumbersData.soulAngel}</div>
+                          </div>
+                          <div className="text-center p-4 bg-white/5 rounded-xl">
+                            <div className="text-2xl mb-2">✨</div>
+                            <div className="text-soft font-semibold">Personality</div>
+                            <div className="gold-glow text-xl">{angelNumbersData.personalityAngel}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === "guidance" && (
+                      <div>
+                        <h3 className="text-2xl gold-glow mb-4">Angelic Guidance</h3>
+                        <div className="space-y-4">
+                          <div className="p-4 bg-white/5 rounded-xl">
+                            <h4 className="text-soft font-semibold mb-2">Primary Message</h4>
+                            <p className="text-soft">{angelNumbersData.angelicGuidance.primaryMessage}</p>
+                          </div>
+                          <div className="p-4 bg-white/5 rounded-xl">
+                            <h4 className="text-soft font-semibold mb-2">Action Steps</h4>
+                            <ul className="space-y-2">
+                              {angelNumbersData.angelicGuidance.actionSteps.map((step, index) => (
+                                <li key={index} className="text-soft flex items-start">
+                                  <span className="mr-2">•</span>
+                                  {step}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === "numbers" && (
+                      <div>
+                        <h3 className="text-2xl gold-glow mb-4">Your Sacred Numbers</h3>
+                        <div className="space-y-4">
+                          <div className="p-4 bg-white/5 rounded-xl">
+                            <h4 className="text-soft font-semibold mb-2">Current Numbers</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              <div className="text-center">
+                                <div className="text-soft text-sm">Today</div>
+                                <div className="gold-glow text-xl">{angelNumbersData.currentDateAngel}</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-soft text-sm">Year</div>
+                                <div className="gold-glow text-xl">{angelNumbersData.personalYearAngel}</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-soft text-sm">Month</div>
+                                <div className="gold-glow text-xl">{angelNumbersData.personalMonthAngel}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === "synchronicities" && (
+                      <div>
+                        <h3 className="text-2xl gold-glow mb-4">Divine Synchronicities</h3>
+                        <div className="space-y-4">
+                          <div className="p-4 bg-white/5 rounded-xl">
+                            <h4 className="text-soft font-semibold mb-2">Number Sequences</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {angelNumbersData.synchronicities.numberSequences.map((seq, index) => (
+                                <span key={index} className="px-3 py-1 bg-yellow-400/20 text-yellow-400 rounded-full text-sm">
+                                  {seq}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 ) : (
                   <motion.div
@@ -195,8 +267,7 @@ export default function AngelNumbersPage() {
                     <div className="text-6xl mb-6">👼</div>
                     <h3 className="text-2xl gold-glow mb-4">Ready for Angelic Guidance?</h3>
                     <p className="text-soft leading-relaxed">
-                      Enter the number you keep seeing above to decode the divine 
-                      message from your guardian angels.
+                      Click "Get Angel Numbers" to receive your personalized angel number analysis.
                     </p>
                   </motion.div>
                 )}

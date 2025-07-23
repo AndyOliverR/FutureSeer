@@ -11,7 +11,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        gold: "#FFD700",
+        gold: "#fbbf24",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -53,8 +53,12 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+<<<<<<< HEAD
         poppins: ["Poppins", "sans-serif"],
         serif: ["Cormorant Garamond", "serif"],
+=======
+        serif: ["var(--font-cormorant)", "Times New Roman", "serif"],
+>>>>>>> 5a90a6f
       },
       spacing: {
         "18": "4.5rem",

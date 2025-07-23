@@ -1,44 +1,60 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
     const { prompt } = await request.json()
 
-    const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image', {
-      method: 'POST',
+    const stabilityApiKey = process.env.STABILITY_API_KEY
+
+    if (!stabilityApiKey || stabilityApiKey.trim() === "" || stabilityApiKey === "undefined") {
+      console.warn("[FutureSeer] Stability AI API key not configured")
+      return NextResponse.json({
+        success: false,
+        error: "Image generation not configured",
+        imageUrl: null,
+      })
+    }
+
+    const response = await fetch("https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.STABILITY_API_KEY}`,
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${stabilityApiKey}`,
+        Accept: "application/json",
       },
       body: JSON.stringify({
         text_prompts: [
           {
-            text: `${prompt}, mystical, cosmic, ethereal, high quality, detailed`,
+            text: `${prompt}, mystical, ethereal, cosmic, spiritual art style, high quality`,
             weight: 1,
           },
         ],
         cfg_scale: 7,
-        height: 1024,
-        width: 1024,
+        height: 512,
+        width: 512,
         samples: 1,
         steps: 30,
       }),
     })
 
-    if (!response.ok) {
-      throw new Error(`Stability API error: ${response.status}`)
-    }
+    if (response.ok) {
+      const data = await response.json()
+      const imageBase64 = data.artifacts[0].base64
+      const imageUrl = `data:image/png;base64,${imageBase64}`
 
-    const data = await response.json()
-    
-    return NextResponse.json({
-      imageUrl: data.artifacts?.[0]?.base64 || null,
-    })
+      return NextResponse.json({
+        success: true,
+        imageUrl,
+      })
+    } else {
+      throw new Error(`Stability AI API error: ${response.status}`)
+    }
   } catch (error) {
-    console.error('Stability API error:', error)
-    return NextResponse.json(
-      { error: 'Failed to generate image' },
-      { status: 500 }
-    )
+    console.error("[FutureSeer] Stability AI API failed:", error)
+    return NextResponse.json({
+      success: false,
+      error: "Image generation failed",
+      imageUrl: null,
+    })
   }
 }
