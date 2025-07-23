@@ -1,4 +1,6 @@
-# FutureSeer - AI-Powered Mystical Insights
+# FutureSeer
+
+<!-- Trigger Vercel deployment from main branch -->
 
 A Next.js 15 application that combines ancient divination wisdom with modern AI to provide personalized mystical insights and guidance.
 
