@@ -18,7 +18,7 @@ export default function WesternAstrologyPage() {
     setBirthDate,
     setBirthTime,
     setBirthPlace,
-    performWesternAnalysis,
+    performWesternAstrologyAnalysis,
     resetData
   } = useWesternAstrology()
 
@@ -143,8 +143,8 @@ export default function WesternAstrologyPage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={performWesternAnalysis}
-                  disabled={isLoading || !name.trim() || !birthDate || !birthTime || !birthPlace}
+                  onClick={performWesternAstrologyAnalysis}
+                  disabled={isLoading || !(name ?? '').trim() || !birthDate || !birthTime || !birthPlace}
                   className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? "⭐ Analyzing..." : "⭐ Cast Western Chart"}
@@ -227,14 +227,7 @@ export default function WesternAstrologyPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <WesternAstrologyCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      name={name}
-                      birthDate={birthDate}
-                      birthTime={birthTime}
-                      birthPlace={birthPlace}
-                    />
+                    <WesternAstrologyCoachInterface />
                   </motion.div>
                 ) : (
                   <motion.div
