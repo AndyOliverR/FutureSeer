@@ -64,9 +64,9 @@ export default function NotesPage() {
 
   const handleEditNote = (note: Note) => {
     setEditingNote(note)
-    setNoteTitle(note.title)
-    setNewNote(note.content)
-    setSelectedColor(note.color ? note.color : "gray")
+    setNoteTitle(note.title ?? "")
+    setNewNote(note.content ?? "")
+    setSelectedColor(note.color ?? "gray")
     setShowModal(true)
   }
 
@@ -132,7 +132,7 @@ export default function NotesPage() {
             ← Back to Dashboard
           </Link>
           <h1 className="text-4xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-4">Spiritual Notes</h1>
-          <p className="text-slate-300 font-serif leading-relaxed">Record your mystical insights and experiences</p>
+          <h2 className="text-slate-300 font-serif leading-relaxed">Record your mystical insights and experiences</h2>
         </motion.div>
 
         {/* Error Display */}
@@ -229,7 +229,7 @@ export default function NotesPage() {
                   <p className="text-slate-300 font-serif text-sm leading-relaxed mb-4 line-clamp-4">{note.content}</p>
                   <div className="text-slate-400 font-serif text-xs flex items-center">
                     <span className="mr-2">🕐</span>
-                    {formatDate(note.updatedAt)}
+                    {formatDate(note.updatedAt ?? 0)}
                   </div>
                 </motion.div>
               ))}

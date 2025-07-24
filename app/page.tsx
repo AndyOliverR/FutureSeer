@@ -4,7 +4,7 @@ import { FeatureBlocks } from "@/components/feature-blocks"
 
 export default function HomePage() {
   return (
-    <main
+    <div
       className="relative min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
       style={{ backgroundImage: "url('/images/starfield-bg.png')" }}
     >
@@ -13,6 +13,6 @@ export default function HomePage() {
         <HeroSection />
         <FeatureBlocks />
       </div>
-    </main>
+    </div>
   )
 } 
