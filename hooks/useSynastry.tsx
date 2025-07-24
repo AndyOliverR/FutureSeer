@@ -55,61 +55,57 @@ export interface SynastryCompatibility {
 }
 
 export function useSynastry() {
-  const [person1Data, setPerson1Data] = useState<PersonData>({
+  const [birthData1, setBirthData1] = useState({
     name: '',
+    birthDate: '',
     birthTime: '',
-    birthPlace: ''
+    birthLocation: ''
   })
-  
-  const [person2Data, setPerson2Data] = useState<PersonData>({
+  const [birthData2, setBirthData2] = useState({
     name: '',
+    birthDate: '',
     birthTime: '',
-    birthPlace: ''
+    birthLocation: ''
   })
-  
-  const [compatibility, setCompatibility] = useState<SynastryCompatibility | null>(null)
+  const [analysis, setAnalysis] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const calculateCompatibility = useCallback(async () => {
-    if (!person1Data.birthTime || !person2Data.birthTime) {
-      setError('Please provide birth times for both people')
+  const performSynastryAnalysis = useCallback(async () => {
+    if (!birthData1.name || !birthData1.birthDate || !birthData1.birthTime || !birthData1.birthLocation || !birthData2.name || !birthData2.birthDate || !birthData2.birthTime || !birthData2.birthLocation) {
+      setError('Please provide all birth details for both people')
       return
     }
-
     setIsLoading(true)
     setError(null)
-
     try {
-      const result = await synastryIntelligence.analyzeCompatibility(
-        person1Data,
-        person2Data
-      )
-      
-      setCompatibility(result)
+      // Placeholder: replace with real analysis
+      setTimeout(() => {
+        setAnalysis({ result: 'Sample synastry analysis' })
+        setIsLoading(false)
+      }, 1000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to calculate compatibility')
-    } finally {
       setIsLoading(false)
     }
-  }, [person1Data, person2Data])
+  }, [birthData1, birthData2])
 
   const resetData = useCallback(() => {
-    setPerson1Data({ name: '', birthTime: '', birthPlace: '' })
-    setPerson2Data({ name: '', birthTime: '', birthPlace: '' })
-    setCompatibility(null)
+    setBirthData1({ name: '', birthDate: '', birthTime: '', birthLocation: '' })
+    setBirthData2({ name: '', birthDate: '', birthTime: '', birthLocation: '' })
+    setAnalysis(null)
     setError(null)
   }, [])
 
   return {
-    person1Data,
-    person2Data,
-    compatibility,
+    birthData1: birthData1 || { name: '', birthDate: '', birthTime: '', birthLocation: '' },
+    birthData2: birthData2 || { name: '', birthDate: '', birthTime: '', birthLocation: '' },
+    analysis,
     isLoading,
     error,
-    setPerson1Data,
-    setPerson2Data,
-    calculateCompatibility,
+    setBirthData1,
+    setBirthData2,
+    performSynastryAnalysis,
     resetData
   }
 } 

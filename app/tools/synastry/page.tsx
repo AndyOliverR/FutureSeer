@@ -72,28 +72,28 @@ export default function SynastryPage() {
                   <input
                     type="text"
                     placeholder="Name"
-                    value={birthData1.name || ""}
+                    value={(birthData1?.name ?? "")}
                     onChange={(e) => setBirthData1({ ...birthData1, name: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="date"
                     placeholder="Birth Date"
-                    value={birthData1.birthDate || ""}
+                    value={(birthData1?.birthDate ?? "")}
                     onChange={(e) => setBirthData1({ ...birthData1, birthDate: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="time"
                     placeholder="Birth Time"
-                    value={birthData1.birthTime || ""}
+                    value={(birthData1?.birthTime ?? "")}
                     onChange={(e) => setBirthData1({ ...birthData1, birthTime: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="text"
                     placeholder="Birth Location"
-                    value={birthData1.birthLocation || ""}
+                    value={(birthData1?.birthLocation ?? "")}
                     onChange={(e) => setBirthData1({ ...birthData1, birthLocation: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
@@ -110,28 +110,28 @@ export default function SynastryPage() {
                   <input
                     type="text"
                     placeholder="Name"
-                    value={birthData2.name || ""}
+                    value={(birthData2?.name ?? "")}
                     onChange={(e) => setBirthData2({ ...birthData2, name: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="date"
                     placeholder="Birth Date"
-                    value={birthData2.birthDate || ""}
+                    value={(birthData2?.birthDate ?? "")}
                     onChange={(e) => setBirthData2({ ...birthData2, birthDate: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="time"
                     placeholder="Birth Time"
-                    value={birthData2.birthTime || ""}
+                    value={(birthData2?.birthTime ?? "")}
                     onChange={(e) => setBirthData2({ ...birthData2, birthTime: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="text"
                     placeholder="Birth Location"
-                    value={birthData2.birthLocation || ""}
+                    value={(birthData2?.birthLocation ?? "")}
                     onChange={(e) => setBirthData2({ ...birthData2, birthLocation: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
@@ -242,10 +242,18 @@ export default function SynastryPage() {
                     exit={{ opacity: 0 }}
                   >
                     <SynastryCoachInterface 
-                      analysis={analysis}
+                      compatibility={analysis}
                       activeTab={activeTab}
-                      birthData1={birthData1}
-                      birthData2={birthData2}
+                      person1Data={{
+                        name: birthData1?.name ?? '',
+                        birthTime: birthData1?.birthTime ?? '',
+                        birthPlace: birthData1?.birthLocation ?? '',
+                      }}
+                      person2Data={{
+                        name: birthData2?.name ?? '',
+                        birthTime: birthData2?.birthTime ?? '',
+                        birthPlace: birthData2?.birthLocation ?? '',
+                      }}
                     />
                   </motion.div>
                 ) : (
