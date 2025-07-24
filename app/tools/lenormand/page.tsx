@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { LenormandCoachInterface } from "@/components/LenormandCoachInterface"
-import { useLenormand } from "@/hooks/use-lenormand"
+import { useLenormand } from "@/hooks/use-lenormand-hook"
 
 export default function LenormandPage() {
+  const hookResult = useLenormand() || {};
+  console.log("useLenormand hook result:", hookResult);
   const {
-    question,
-    spreadType,
+    question = "",
+    spreadType = "",
     analysis,
     isLoading,
     error,
@@ -16,7 +18,7 @@ export default function LenormandPage() {
     setSpreadType,
     performLenormandReading,
     resetData
-  } = useLenormand()
+  } = hookResult;
 
   const [activeTab, setActiveTab] = useState("overview")
 
@@ -116,7 +118,7 @@ export default function LenormandPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={performLenormandReading}
-                  disabled={isLoading || !question.trim() || !spreadType}
+                  disabled={isLoading}
                   className="w-full bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? "🎴 Reading..." : "🎴 Cast Lenormand Cards"}
@@ -199,12 +201,7 @@ export default function LenormandPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <LenormandCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      question={question}
-                      spreadType={spreadType}
-                    />
+                    <LenormandCoachInterface />
                   </motion.div>
                 ) : (
                   <motion.div
