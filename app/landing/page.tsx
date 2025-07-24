@@ -36,7 +36,7 @@ export default function LandingPage() {
             </button>
           </div>
         </nav>
-        <main className="flex flex-col items-center justify-center min-h-screen pt-32 pb-12 px-4">
+        <div className="flex flex-col items-center justify-center min-h-screen pt-32 pb-12 px-4">
           {/* Hero Section */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl heading-serif gold-glow text-center mb-6 font-bold">
             Unveil the mysteries of your destiny through ancient wisdom and AI insight.
@@ -100,7 +100,7 @@ export default function LandingPage() {
           <footer className="text-center text-white/60 text-xs mt-12">
             2025 FutureSeer All Rights Reserved
           </footer>
-        </main>
+        </div>
       </div>
     </div>
   );

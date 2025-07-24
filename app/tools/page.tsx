@@ -31,7 +31,7 @@ export default function ToolsPage() {
             ← Back to Dashboard
           </Link>
           <h1 className="text-4xl font-semibold gold-glow mb-4">Divination Tools</h1>
-          <p className="text-soft leading-relaxed">Choose your path to cosmic wisdom</p>
+          <h2 className="text-soft leading-relaxed">Choose your path to cosmic wisdom</h2>
         </motion.div>
 
         {/* Search and Filter */}
