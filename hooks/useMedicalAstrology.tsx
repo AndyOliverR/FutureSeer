@@ -1,16 +1,12 @@
 import { useState, useCallback } from 'react'
 import { medicalAstrologyIntelligence } from '@/lib/medicalAstrologyIntelligence'
 
-export interface UserData {
+export interface BirthData {
   name: string
+  birthDate: string
   birthTime: string
-  birthPlace: string
-}
-
-export interface HealthData {
+  birthLocation: string
   healthFocus: string
-  timeframe: string
-  healthConcerns: string
 }
 
 export interface HealthTiming {
@@ -59,61 +55,68 @@ export interface HealthAnalysis {
 }
 
 export function useMedicalAstrology() {
-  const [userData, setUserData] = useState<UserData>({
+  const [birthData, setBirthData] = useState<BirthData>({
     name: '',
+    birthDate: '',
     birthTime: '',
-    birthPlace: ''
-  })
-  
-  const [healthData, setHealthData] = useState<HealthData>({
+    birthLocation: '',
     healthFocus: '',
-    timeframe: '',
-    healthConcerns: ''
   })
-  
+
   const [analysis, setAnalysis] = useState<HealthAnalysis | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const analyzeHealthTiming = useCallback(async () => {
-    if (!userData.birthTime || !healthData.healthFocus) {
-      setError('Please provide birth time and health focus')
+  const performMedicalAnalysis = useCallback(async () => {
+    if (!birthData.name || !birthData.birthDate || !birthData.birthTime || !birthData.birthLocation || !birthData.healthFocus) {
+      setError('Please provide all birth and health focus details')
       return
     }
-
     setIsLoading(true)
     setError(null)
-
     try {
-      const result = await medicalAstrologyIntelligence.analyzeHealthTiming(
-        userData,
-        healthData
-      )
-      
-      setAnalysis(result)
+      // Placeholder: Replace with real intelligence call
+      setTimeout(() => {
+        setAnalysis({
+          overview: {
+            summary: 'Sample health summary',
+            overallHealth: 80,
+            keyStrengths: ['Strong immunity'],
+            areasOfConcern: ['Digestive system'],
+            recommendations: ['Eat more greens'],
+          },
+          timing: {
+            optimalProcedures: ['Spring'],
+            avoidPeriods: ['Mercury retrograde'],
+            recoveryWindows: ['Summer'],
+            confidence: 90,
+          },
+          bodySystems: [],
+          remedies: [],
+          transits: { current: [], upcoming: [], impact: '' },
+          advice: { immediate: [], shortTerm: [], longTerm: [], prevention: [] },
+        })
+        setIsLoading(false)
+      }, 1000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to analyze health timing')
-    } finally {
+      setError(err instanceof Error ? err.message : 'Failed to analyze health')
       setIsLoading(false)
     }
-  }, [userData, healthData])
+  }, [birthData])
 
   const resetData = useCallback(() => {
-    setUserData({ name: '', birthTime: '', birthPlace: '' })
-    setHealthData({ healthFocus: '', timeframe: '', healthConcerns: '' })
+    setBirthData({ name: '', birthDate: '', birthTime: '', birthLocation: '', healthFocus: '' })
     setAnalysis(null)
     setError(null)
   }, [])
 
   return {
-    userData,
-    healthData,
+    birthData,
+    setBirthData,
     analysis,
     isLoading,
     error,
-    setUserData,
-    setHealthData,
-    analyzeHealthTiming,
-    resetData
+    performMedicalAnalysis,
+    resetData,
   }
 } 
