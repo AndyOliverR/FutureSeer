@@ -116,7 +116,7 @@ export default function PendulumPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={performPendulumReading}
-                  disabled={isLoading || !question.trim() || !pendulumType}
+                  disabled={isLoading || !(question ?? '').trim() || !(pendulumType ?? '')}
                   className="w-full bg-gradient-to-r from-silver-500 to-gray-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? "⏳ Reading..." : "⏳ Cast Pendulum"}
