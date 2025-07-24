@@ -111,7 +111,7 @@ export default function NumerologyPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={performNumerologyAnalysis}
-                  disabled={isLoading || !name.trim() || !birthDate}
+                  disabled={isLoading || !(name ?? '').trim() || !(birthDate ?? '')}
                   className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? "🔢 Calculating..." : "🔢 Calculate Numbers"}
