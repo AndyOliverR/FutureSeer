@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react'
 import { mundaneAstrologyIntelligence } from '@/lib/mundaneAstrologyIntelligence'
 
-export interface AnalysisData {
-  analysisType: string
-  timePeriod: string
-  geographicFocus: string
-  specificTopics: string
-  analysisDepth: string
+export interface EventData {
+  eventName: string
+  eventDate: string
+  eventTime: string
+  eventLocation: string
+  analysisFocus: string
 }
 
 export interface WorldEvent {
@@ -65,55 +65,61 @@ export interface MundaneAnalysis {
 }
 
 export function useMundaneAstrology() {
-  const [analysisData, setAnalysisData] = useState<AnalysisData>({
-    analysisType: '',
-    timePeriod: '',
-    geographicFocus: '',
-    specificTopics: '',
-    analysisDepth: ''
+  const [eventData, setEventData] = useState<EventData>({
+    eventName: '',
+    eventDate: '',
+    eventTime: '',
+    eventLocation: '',
+    analysisFocus: '',
   })
   const [analysis, setAnalysis] = useState<MundaneAnalysis | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const performMundaneAnalysis = useCallback(async () => {
-    if (!analysisData.analysisType || !analysisData.timePeriod || !analysisData.geographicFocus || !analysisData.analysisDepth) {
-      setError('Please provide all required analysis parameters')
+    if (!eventData.eventName || !eventData.eventDate || !eventData.eventTime || !eventData.eventLocation || !eventData.analysisFocus) {
+      setError('Please provide all event details and analysis focus')
       return
     }
-
     setIsLoading(true)
     setError(null)
-
     try {
-      const result = await mundaneAstrologyIntelligence.performMundaneAnalysis(analysisData)
-      setAnalysis(result)
+      // Placeholder: Replace with real intelligence call
+      setTimeout(() => {
+        setAnalysis({
+          overview: {
+            summary: 'Sample world event summary',
+            keyThemes: ['Political change'],
+            majorInfluences: ['Saturn transit'],
+            overallOutlook: 'neutral',
+          },
+          events: [],
+          trends: [],
+          predictions: [],
+          cycles: [],
+          advice: { global: [], economic: [], political: [], social: [], environmental: [] },
+        })
+        setIsLoading(false)
+      }, 1000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to perform mundane analysis')
-    } finally {
+      setError(err instanceof Error ? err.message : 'Failed to analyze world event')
       setIsLoading(false)
     }
-  }, [analysisData])
+  }, [eventData])
 
   const resetData = useCallback(() => {
-    setAnalysisData({
-      analysisType: '',
-      timePeriod: '',
-      geographicFocus: '',
-      specificTopics: '',
-      analysisDepth: ''
-    })
+    setEventData({ eventName: '', eventDate: '', eventTime: '', eventLocation: '', analysisFocus: '' })
     setAnalysis(null)
     setError(null)
   }, [])
 
   return {
-    analysisData,
+    eventData,
+    setEventData,
     analysis,
     isLoading,
     error,
-    setAnalysisData,
     performMundaneAnalysis,
-    resetData
+    resetData,
   }
 } 
