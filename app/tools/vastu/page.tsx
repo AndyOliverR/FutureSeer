@@ -70,28 +70,28 @@ export default function VastuPage() {
                   <input
                     type="text"
                     placeholder="Property Type (House, Office, etc.)"
-                    value={propertyData.type || ""}
+                    value={propertyData?.type ?? ""}
                     onChange={(e) => setPropertyData({ ...propertyData, type: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="text"
                     placeholder="Main Entrance Direction"
-                    value={propertyData.entranceDirection || ""}
+                    value={propertyData?.entranceDirection ?? ""}
                     onChange={(e) => setPropertyData({ ...propertyData, entranceDirection: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="text"
                     placeholder="Plot Shape"
-                    value={propertyData.plotShape || ""}
+                    value={propertyData?.plotShape ?? ""}
                     onChange={(e) => setPropertyData({ ...propertyData, plotShape: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
                   <input
                     type="text"
                     placeholder="Construction Year"
-                    value={propertyData.constructionYear || ""}
+                    value={propertyData?.constructionYear ?? ""}
                     onChange={(e) => setPropertyData({ ...propertyData, constructionYear: e.target.value })}
                     className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                   />
@@ -105,7 +105,7 @@ export default function VastuPage() {
                   Analysis Focus
                 </h3>
                 <select
-                  value={propertyData.analysisFocus || ""}
+                  value={propertyData?.analysisFocus ?? ""}
                   onChange={(e) => setPropertyData({ ...propertyData, analysisFocus: e.target.value })}
                   className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
                 >
@@ -138,7 +138,7 @@ export default function VastuPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={performVastuAnalysis}
-                  disabled={isLoading || !propertyData.type || !propertyData.entranceDirection || !propertyData.plotShape || !propertyData.analysisFocus}
+                  disabled={isLoading || !(propertyData?.type) || !(propertyData?.entranceDirection) || !(propertyData?.plotShape) || !(propertyData?.analysisFocus)}
                   className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? "🏠 Analyzing..." : "🏠 Analyze Vastu"}
@@ -221,11 +221,7 @@ export default function VastuPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <VastuCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      propertyData={propertyData}
-                    />
+                    <VastuCoachInterface />
                   </motion.div>
                 ) : (
                   <motion.div
