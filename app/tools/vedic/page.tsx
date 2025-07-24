@@ -144,7 +144,7 @@ export default function VedicPage() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={performVedicAnalysis}
-                  disabled={isLoading || !name.trim() || !birthDate || !birthTime || !birthPlace}
+                  disabled={isLoading || !(name ?? '').trim() || !birthDate || !birthTime || !birthPlace}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
                 >
                   {isLoading ? "🕉️ Analyzing..." : "🕉️ Cast Vedic Chart"}
@@ -227,14 +227,7 @@ export default function VedicPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <VedicCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      name={name}
-                      birthDate={birthDate}
-                      birthTime={birthTime}
-                      birthPlace={birthPlace}
-                    />
+                    <VedicCoachInterface />
                   </motion.div>
                 ) : (
                   <motion.div
