@@ -3,8 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
 import { TestAuth } from "@/components/TestAuth";
-import { TestModeSwitcher } from "@/components/TestModeSwitcher";
-import { MysticalFeedback } from "@/components/MysticalFeedback";
 import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -28,8 +26,6 @@ export default function RootLayout({
             {children}
             <Footer />
             <TestAuth />
-            <TestModeSwitcher />
-            <MysticalFeedback />
           </div>
           <Toaster />
         </ClientProviders>
