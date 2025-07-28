@@ -30,24 +30,25 @@ async function setupUserModes() {
     console.log('1. God Mode (Superadmin) - Full access to everything');
     console.log('2. Mary Mode (Admin) - Limited admin access');
     console.log('3. Normal User - Regular user access');
-    console.log('4. Test Mode - Quick access for testing (will be removed on launch)\n');
+    console.log('4. Test Mode - Use TEST/TEST login (no email needed)\n');
 
     // For now, we'll set up with placeholder emails - you can update these
     const userModes = {
-      godMode: process.env.GOD_MODE_EMAIL || 'andyrozario@hotmail.com',
-      maryMode: process.env.MARY_MODE_EMAIL || 'andyoliverrozario2@gmail.com', 
-      normalUser: process.env.NORMAL_USER_EMAIL || 'andyrozario7@gmail.com',
-      testMode: process.env.TEST_MODE_EMAIL || 'test@futureseer.com'
+      godMode: process.env.GOD_MODE_EMAIL || 'andyrozario@hotmail.com', // God Mode
+      maryMode: process.env.MARY_MODE_EMAIL || 'andyoliverrozario2@gmail.com', // Mary Mode
+      normalUser: process.env.NORMAL_USER_EMAIL || 'andyrozario7@gmail.com', // Normal User
+      // testMode removed - using TEST/TEST login instead
     };
 
     console.log('Using these email addresses:');
     console.log(`God Mode: ${userModes.godMode}`);
     console.log(`Mary Mode: ${userModes.maryMode}`);
     console.log(`Normal User: ${userModes.normalUser}`);
-    console.log(`Test Mode: ${userModes.testMode}\n`);
+    console.log(`Test Mode: Use TEST/TEST login (no email needed)\n`);
 
-    // Find users by email and set claims
+    // Find users by email and set claims (skip test mode)
     for (const [mode, email] of Object.entries(userModes)) {
+      if (mode === 'testMode') continue; // Skip test mode - use TEST/TEST instead
       try {
         const user = await admin.auth().getUserByEmail(email);
         console.log(`✅ Found user: ${email} (${user.uid})`);
@@ -107,23 +108,7 @@ async function setupUserModes() {
             console.log('   Setting Normal User claims (no admin access)');
             break;
 
-          case 'testMode':
-            claims = {
-              superadmin: true,
-              admin: true,
-              support: true,
-              userManagement: true,
-              logs: true,
-              codeEditor: true,
-              billing: true,
-              featureFlags: true,
-              dataExport: true,
-              impersonate: true,
-              deleteUser: true,
-              testMode: true
-            };
-            console.log('   Setting Test Mode claims (full access for testing)');
-            break;
+
         }
 
         await admin.auth().setCustomUserClaims(user.uid, claims);
@@ -144,7 +129,7 @@ async function setupUserModes() {
     console.log('GOD_MODE_EMAIL=your-god-email@example.com');
     console.log('MARY_MODE_EMAIL=your-mary-email@example.com');
     console.log('NORMAL_USER_EMAIL=your-normal-email@example.com');
-    console.log('TEST_MODE_EMAIL=your-test-email@example.com');
+    console.log('Test Mode: Use TEST/TEST login (no email needed)');
 
   } catch (error) {
     console.error('❌ Error:', error);

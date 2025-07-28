@@ -11,7 +11,7 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
 - **Daily Insights**: Personalized daily horoscopes and cosmic guidance
 - **Ask the Seer**: Direct AI consultation for life questions
 - **Notes & History**: Save and track your mystical journey
-- **Subscription System**: PayPal integration for premium access
+- **Subscription System**: Premium access system (payment integration coming soon)
 - **Mobile Optimized**: Responsive design with touch-friendly interactions
 
 ### Divination Tools
@@ -78,8 +78,7 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
    NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
    
-   # PayPal Configuration (Server-side only)
-   PAYPAL_CLIENT_ID=your_paypal_client_id_here
+   
    
    # App Configuration
    NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -168,8 +167,7 @@ FutureSeer/
 2. Generate an API key
 3. Add the key to your environment variables
 
-### PayPal Setup
-1. Create a PayPal Developer account
+
 2. Create a new app
 3. Get your client ID
 4. Add to environment variables

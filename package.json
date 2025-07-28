@@ -14,7 +14,7 @@
     "@capacitor/cli": "latest",
     "@capacitor/core": "^7.4.1",
     "@hookform/resolvers": "^3.9.1",
-    "@paypal/react-paypal-js": "^8.8.3",
+
     "@radix-ui/react-accordion": "latest",
     "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-aspect-ratio": "latest",
