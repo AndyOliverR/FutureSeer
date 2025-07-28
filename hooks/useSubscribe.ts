@@ -5,6 +5,8 @@ import { useState, useCallback, useEffect } from "react";
 interface SubscriptionConfig {
   available: boolean;
   plans: SubscriptionPlan[];
+  features: FeatureTier[];
+  communityFeatures: CommunityFeature[];
 }
 
 interface SubscriptionPlan {
@@ -15,6 +17,23 @@ interface SubscriptionPlan {
   interval: string;
   features: string[];
   popular?: boolean;
+  savings?: number;
+  originalPrice?: number;
+  valueScore: number; // 1-10 scale for perceived value
+  targetAudience: string;
+  conversionRate?: number;
+}
+
+interface FeatureTier {
+  tier: string;
+  features: string[];
+  value: string;
+}
+
+interface CommunityFeature {
+  name: string;
+  description: string;
+  availableIn: string[];
 }
 
 export function useSubscribe() {
@@ -22,7 +41,9 @@ export function useSubscribe() {
   const [error, setError] = useState<string | null>(null);
   const [subscriptionConfig, setSubscriptionConfig] = useState<SubscriptionConfig>({
     available: false,
-    plans: []
+    plans: [],
+    features: [],
+    communityFeatures: []
   });
 
   const fetchSubscriptionConfig = useCallback(async () => {
@@ -30,49 +51,142 @@ export function useSubscribe() {
       setLoading(true);
       setError(null);
       
-      // For now, return a placeholder configuration
-      // This will be replaced with your new payment system
+      // Strategic pricing based on Scaling Innovation principles
       const config: SubscriptionConfig = {
         available: false, // Set to true when new payment system is ready
         plans: [
           {
-            id: "basic",
-            name: "Basic Plan",
-            price: 9.99,
+            id: "seeker",
+            name: "Cosmic Seeker",
+            price: 0,
             currency: "USD",
-            interval: "month",
+            interval: "forever",
             features: [
-              "Daily predictions",
-              "Basic astrology tools",
-              "Email support"
-            ]
-          },
-          {
-            id: "premium",
-            name: "Premium Plan",
-            price: 19.99,
-            currency: "USD",
-            interval: "month",
-            features: [
-              "All Basic features",
-              "Advanced astrology tools",
-              "Priority support",
-              "Custom reports"
+              "3 AI readings per day",
+              "Basic astrology tools (5 tools)",
+              "Daily cosmic insights",
+              "Community access (read-only)",
+              "Basic support"
             ],
-            popular: true
+            valueScore: 3,
+            targetAudience: "New users, curious explorers",
+            conversionRate: 0.15 // 15% conversion to paid
           },
           {
-            id: "lifetime",
-            name: "Lifetime Access",
-            price: 299.99,
+            id: "mystic",
+            name: "Mystic Explorer",
+            price: 12.99,
             currency: "USD",
-            interval: "one-time",
+            interval: "month",
+            originalPrice: 19.99,
+            savings: 7,
             features: [
-              "All Premium features",
-              "Lifetime access",
-              "Exclusive content",
-              "VIP support"
-            ]
+              "Unlimited AI readings",
+              "All 18+ divination tools",
+              "Advanced astrology reports",
+              "Priority AI responses",
+              "Community participation",
+              "Personal reading history",
+              "Email support"
+            ],
+            popular: true,
+            valueScore: 7,
+            targetAudience: "Regular users, spiritual seekers",
+            conversionRate: 0.25
+          },
+          {
+            id: "oracle",
+            name: "Cosmic Oracle",
+            price: 29.99,
+            currency: "USD",
+            interval: "month",
+            originalPrice: 39.99,
+            savings: 10,
+            features: [
+              "All Mystic Explorer features",
+              "Custom AI training on your data",
+              "Exclusive cosmic insights",
+              "1-on-1 consultation sessions",
+              "Advanced analytics & patterns",
+              "Priority support",
+              "Early access to new features"
+            ],
+            valueScore: 9,
+            targetAudience: "Power users, professionals",
+            conversionRate: 0.08
+          },
+          {
+            id: "master",
+            name: "Cosmic Master",
+            price: 499.99,
+            currency: "USD",
+            interval: "lifetime",
+            features: [
+              "All Oracle features forever",
+              "Lifetime updates & new tools",
+              "VIP community access",
+              "Personal cosmic advisor",
+              "Exclusive content & workshops",
+              "Dedicated support team",
+              "Influence on product roadmap"
+            ],
+            valueScore: 10,
+            targetAudience: "Lifetime believers, high-value customers",
+            conversionRate: 0.02
+          }
+        ],
+        features: [
+          {
+            tier: "Core Value",
+            features: [
+              "AI-Powered Predictions",
+              "18+ Divination Tools", 
+              "Personalized Insights",
+              "Mobile Optimization"
+            ],
+            value: "Foundation of mystical guidance"
+          },
+          {
+            tier: "Advanced Value",
+            features: [
+              "Custom AI Training",
+              "Pattern Recognition",
+              "Community Features",
+              "Priority Support"
+            ],
+            value: "Enhanced personalization & community"
+          },
+          {
+            tier: "Premium Value",
+            features: [
+              "1-on-1 Consultations",
+              "Exclusive Content",
+              "Lifetime Access",
+              "Product Influence"
+            ],
+            value: "Ultimate mystical experience"
+          }
+        ],
+        communityFeatures: [
+          {
+            name: "Cosmic Community",
+            description: "Connect with fellow seekers, share insights, and learn together",
+            availableIn: ["mystic", "oracle", "master"]
+          },
+          {
+            name: "Expert Q&A",
+            description: "Get answers from certified astrologers and mystics",
+            availableIn: ["oracle", "master"]
+          },
+          {
+            name: "Exclusive Workshops",
+            description: "Monthly live workshops on advanced mystical practices",
+            availableIn: ["master"]
+          },
+          {
+            name: "Study Groups",
+            description: "Form study groups around specific divination methods",
+            availableIn: ["mystic", "oracle", "master"]
           }
         ]
       };
@@ -81,7 +195,7 @@ export function useSubscribe() {
     } catch (err) {
       console.error("Error fetching subscription config:", err);
       setError("Failed to load subscription options");
-      setSubscriptionConfig({ available: false, plans: [] });
+      setSubscriptionConfig({ available: false, plans: [], features: [], communityFeatures: [] });
     } finally {
       setLoading(false);
     }
@@ -127,6 +241,26 @@ export function useSubscribe() {
     }
   }, []);
 
+  // Analytics and optimization functions
+  const trackPricingEvent = useCallback((event: string, planId: string, metadata?: any) => {
+    // Track pricing-related events for optimization
+    console.log(`Pricing Event: ${event}`, { planId, metadata });
+    // Integrate with your analytics system
+  }, []);
+
+  const getRecommendedPlan = useCallback((userBehavior: any) => {
+    // AI-powered plan recommendation based on user behavior
+    const { readingFrequency, toolUsage, communityEngagement } = userBehavior;
+    
+    if (readingFrequency > 10 && communityEngagement > 0.7) {
+      return 'oracle';
+    } else if (readingFrequency > 5 || toolUsage > 0.5) {
+      return 'mystic';
+    } else {
+      return 'seeker';
+    }
+  }, []);
+
   useEffect(() => {
     fetchSubscriptionConfig();
   }, [fetchSubscriptionConfig]);
@@ -138,5 +272,7 @@ export function useSubscribe() {
     subscribeToPlan,
     cancelSubscription,
     fetchSubscriptionConfig,
+    trackPricingEvent,
+    getRecommendedPlan,
   };
 } 
