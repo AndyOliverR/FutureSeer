@@ -170,22 +170,27 @@ export function useSubscribe() {
         communityFeatures: [
           {
             name: "Cosmic Community",
-            description: "Connect with fellow seekers, share insights, and learn together",
+            description: "Connect with fellow seekers, share insights, and learn together in a safe, moderated environment",
             availableIn: ["mystic", "oracle", "master"]
           },
           {
-            name: "Expert Q&A",
-            description: "Get answers from certified astrologers and mystics",
+            name: "Independent Expert Network",
+            description: "Interact with verified independent astrologers and mystics who contribute voluntarily",
             availableIn: ["oracle", "master"]
           },
           {
-            name: "Exclusive Workshops",
-            description: "Monthly live workshops on advanced mystical practices",
+            name: "Expert-Led Discussions",
+            description: "Reddit-style threads where independent experts share knowledge and answer questions",
             availableIn: ["master"]
           },
           {
             name: "Study Groups",
-            description: "Form study groups around specific divination methods",
+            description: "Form study groups around specific divination methods with community members",
+            availableIn: ["mystic", "oracle", "master"]
+          },
+          {
+            name: "Safety-First Environment",
+            description: "Strict community guidelines with AI moderation and mental health protection",
             availableIn: ["mystic", "oracle", "master"]
           }
         ]
