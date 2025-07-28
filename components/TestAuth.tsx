@@ -1,52 +1,48 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/components/ui/use-toast'
-import { Zap, Eye, EyeOff } from 'lucide-react'
+import { Zap, Eye, EyeOff, X } from 'lucide-react'
 
 export function TestAuth() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('TEST')
+  const [password, setPassword] = useState('TEST')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isVisible, setIsVisible] = useState(true)
+  const [isTestMode, setIsTestMode] = useState(false)
   const { toast } = useToast()
+
+  useEffect(() => {
+    // Check localStorage only on client side
+    const testMode = typeof window !== 'undefined' ? localStorage.getItem('testMode') : null
+    setIsTestMode(!!testMode)
+  }, [])
 
   const handleTestLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (username === 'TEST' && password === 'TEST') {
       setLoading(true)
-      
-      // Simulate login delay
+
       setTimeout(() => {
-        // Set test mode in localStorage
         localStorage.setItem('testMode', 'Test Mode')
         localStorage.setItem('testModeEmail', 'test@futureseer.com')
         localStorage.setItem('testClaims', JSON.stringify({
-          superadmin: true,
-          admin: true,
-          support: true,
-          userManagement: true,
-          logs: true,
-          codeEditor: true,
-          billing: true,
-          featureFlags: true,
-          dataExport: true,
-          impersonate: true,
-          deleteUser: true,
-          testMode: true
+          superadmin: true, admin: true, support: true, userManagement: true, logs: true,
+          codeEditor: true, billing: true, featureFlags: true, dataExport: true,
+          impersonate: true, deleteUser: true, testMode: true
         }))
-        
+
         toast({
           title: 'Test Login Successful',
           description: 'You are now in Test Mode with full access',
         })
-        
-        // Reload the page to apply test mode
+
         window.location.reload()
       }, 1000)
     } else {
@@ -65,12 +61,26 @@ export function TestAuth() {
     window.location.reload()
   }
 
-  // Show logout button if already in test mode
-  if (localStorage.getItem('testMode')) {
+  const handleClose = () => {
+    setIsVisible(false)
+  }
+
+  // Don't render if not visible
+  if (!isVisible) {
+    return null
+  }
+
+  if (isTestMode) {
     return (
       <div className="fixed top-4 right-4 z-50">
         <Card className="w-64 shadow-lg border-2 border-red-200">
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 relative">
+            <button
+              onClick={handleClose}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <CardTitle className="text-sm flex items-center gap-2">
               <Zap className="w-4 h-4 text-red-500" />
               Test Mode Active
@@ -94,7 +104,13 @@ export function TestAuth() {
   return (
     <div className="fixed top-4 right-4 z-50">
       <Card className="w-64 shadow-lg border-2 border-amber-200">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 relative">
+          <button
+            onClick={handleClose}
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
           <CardTitle className="text-sm flex items-center gap-2">
             <Zap className="w-4 h-4 text-amber-500" />
             Quick Test Login

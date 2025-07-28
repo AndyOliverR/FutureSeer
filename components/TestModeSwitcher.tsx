@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/components/ui/use-toast'
-import { Crown, Shield, User, Zap, LogOut } from 'lucide-react'
+import { Crown, Shield, User, Zap, LogOut, X } from 'lucide-react'
 
 interface UserMode {
   name: string
@@ -24,18 +24,9 @@ const userModes: UserMode[] = [
     description: 'Full superadmin access to everything',
     icon: <Crown className="w-5 h-5" />,
     claims: {
-      superadmin: true,
-      admin: true,
-      support: true,
-      userManagement: true,
-      logs: true,
-      codeEditor: true,
-      billing: true,
-      featureFlags: true,
-      dataExport: true,
-      impersonate: true,
-      deleteUser: true,
-      testMode: true
+      superadmin: true, admin: true, support: true, userManagement: true, logs: true,
+      codeEditor: true, billing: true, featureFlags: true, dataExport: true,
+      impersonate: true, deleteUser: true, testMode: true
     },
     color: 'bg-gradient-to-r from-amber-500 to-yellow-500'
   },
@@ -45,17 +36,9 @@ const userModes: UserMode[] = [
     description: 'Limited admin access for support',
     icon: <Shield className="w-5 h-5" />,
     claims: {
-      admin: true,
-      support: true,
-      userManagement: false,
-      logs: true,
-      codeEditor: false,
-      billing: false,
-      featureFlags: false,
-      dataExport: false,
-      impersonate: false,
-      deleteUser: false,
-      testMode: true
+      admin: true, support: true, userManagement: false, logs: true,
+      codeEditor: false, billing: false, featureFlags: false, dataExport: false,
+      impersonate: false, deleteUser: false, testMode: true
     },
     color: 'bg-gradient-to-r from-blue-500 to-purple-500'
   },
@@ -65,17 +48,9 @@ const userModes: UserMode[] = [
     description: 'Regular user with no admin access',
     icon: <User className="w-5 h-5" />,
     claims: {
-      admin: false,
-      support: false,
-      userManagement: false,
-      logs: false,
-      codeEditor: false,
-      billing: false,
-      featureFlags: false,
-      dataExport: false,
-      impersonate: false,
-      deleteUser: false,
-      testMode: false
+      admin: false, support: false, userManagement: false, logs: false,
+      codeEditor: false, billing: false, featureFlags: false, dataExport: false,
+      impersonate: false, deleteUser: false, testMode: false
     },
     color: 'bg-gradient-to-r from-green-500 to-emerald-500'
   },
@@ -85,18 +60,9 @@ const userModes: UserMode[] = [
     description: 'Quick testing access (will be removed on launch)',
     icon: <Zap className="w-5 h-5" />,
     claims: {
-      superadmin: true,
-      admin: true,
-      support: true,
-      userManagement: true,
-      logs: true,
-      codeEditor: true,
-      billing: true,
-      featureFlags: true,
-      dataExport: true,
-      impersonate: true,
-      deleteUser: true,
-      testMode: true
+      superadmin: true, admin: true, support: true, userManagement: true, logs: true,
+      codeEditor: true, billing: true, featureFlags: true, dataExport: true,
+      impersonate: true, deleteUser: true, testMode: true
     },
     color: 'bg-gradient-to-r from-red-500 to-pink-500'
   }
@@ -105,33 +71,36 @@ const userModes: UserMode[] = [
 export function TestModeSwitcher() {
   const { user, isSuperadmin } = useAuth()
   const [switching, setSwitching] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+  const [testMode, setTestMode] = useState<string | null>(null)
+  const [testModeEmail, setTestModeEmail] = useState<string | null>(null)
   const { toast } = useToast()
 
-  // Check if we're in test mode
-  const testMode = localStorage.getItem('testMode')
-  const testModeEmail = localStorage.getItem('testModeEmail')
-  
-  // Only show if in test mode or if user is superadmin
-  const hasTestModeAccess = isSuperadmin || testMode
-
-  if (!hasTestModeAccess) {
-    return null
-  }
+  useEffect(() => {
+    // Check localStorage only on client side
+    if (typeof window !== 'undefined') {
+      const mode = localStorage.getItem('testMode')
+      const email = localStorage.getItem('testModeEmail')
+      setTestMode(mode)
+      setTestModeEmail(email)
+      
+      const hasTestModeAccess = isSuperadmin || !!mode
+      setIsVisible(hasTestModeAccess)
+    }
+  }, [isSuperadmin])
 
   const handleSwitchMode = async (mode: UserMode) => {
     setSwitching(true)
     try {
-      // Update test mode in localStorage
       localStorage.setItem('testMode', mode.name)
       localStorage.setItem('testModeEmail', mode.email)
       localStorage.setItem('testClaims', JSON.stringify(mode.claims))
-      
+
       toast({
         title: `Switched to ${mode.name}`,
         description: `Now using: ${mode.email}`,
       })
 
-      // Reload the page to apply the new mode
       setTimeout(() => {
         window.location.reload()
       }, 1000)
@@ -154,15 +123,28 @@ export function TestModeSwitcher() {
     window.location.reload()
   }
 
-  // Find current mode based on localStorage or default to first mode
-  const currentMode = userModes.find(mode => 
+  const handleClose = () => {
+    setIsVisible(false)
+  }
+
+  if (!isVisible) {
+    return null
+  }
+
+  const currentMode = userModes.find(mode =>
     mode.name === testMode
   ) || userModes[0]
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <Card className="w-80 shadow-lg border-2 border-amber-200">
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 relative">
+          <button
+            onClick={handleClose}
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-4 h-4" />
+          </button>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Zap className="w-5 h-5 text-amber-500" />
@@ -179,7 +161,7 @@ export function TestModeSwitcher() {
             <br />
             <span className="text-xs text-gray-500">{testModeEmail || currentMode.email}</span>
           </div>
-          
+
           <div className="space-y-2">
             {userModes.map((mode) => (
               <Button
