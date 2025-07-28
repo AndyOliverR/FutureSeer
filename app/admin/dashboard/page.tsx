@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Download, Search, UserCheck, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Search, UserCheck, Eye, ChevronLeft, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, Settings, FileText, Filter } from 'lucide-react';
 
 // Dummy user data for scaffolding
 const dummyUsers = [
@@ -100,8 +100,14 @@ async function impersonateUser(targetUid: string, idToken: string) {
   return response.json();
 }
 
-async function exportUsers(format: 'json' | 'csv', idToken: string) {
-  const response = await fetch(`/api/admin/export-users?format=${format}`, {
+async function exportUsers(format: 'json' | 'csv', idToken: string, fields: string[] = []) {
+  const params = new URLSearchParams();
+  params.append('format', format);
+  if (fields.length > 0) {
+    params.append('fields', fields.join(','));
+  }
+  
+  const response = await fetch(`/api/admin/export-users?${params.toString()}`, {
     headers: { Authorization: `Bearer ${idToken}` }
   });
   
@@ -133,6 +139,42 @@ async function exportUsers(format: 'json' | 'csv', idToken: string) {
   }
 }
 
+async function performBulkAction(action: string, userIds: string[], idToken: string, claims?: any, reason?: string) {
+  const response = await fetch('/api/admin/bulk-actions', {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`
+    },
+    body: JSON.stringify({ action, userIds, claims, reason })
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to perform bulk action');
+  }
+  
+  return response.json();
+}
+
+async function fetchAuditLogs(idToken: string, filters?: any) {
+  const params = new URLSearchParams();
+  if (filters) {
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.append(key, String(value));
+    });
+  }
+  
+  const response = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${idToken}` }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch audit logs');
+  }
+  
+  return response.json();
+}
+
 function UserManagement() {
   const { user } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
@@ -140,6 +182,9 @@ function UserManagement() {
   const [updating, setUpdating] = useState<{ [uid: string]: boolean }>({});
   const [impersonating, setImpersonating] = useState<{ [uid: string]: boolean }>({});
   const [exporting, setExporting] = useState(false);
+  const [bulkActioning, setBulkActioning] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [pageToken, setPageToken] = useState<string | undefined>(undefined);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
@@ -227,7 +272,7 @@ function UserManagement() {
     setExporting(true);
     try {
       const idToken = await getIdToken();
-      await exportUsers(format, idToken);
+      await exportUsers(format, idToken, []);
       toast({ 
         title: 'Export Successful', 
         description: `Users exported as ${format.toUpperCase()}` 
@@ -236,6 +281,52 @@ function UserManagement() {
       toast({ title: 'Export Failed', description: e.message, variant: 'destructive' });
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleSelectUser = (uid: string) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(uid)) {
+      newSelected.delete(uid);
+    } else {
+      newSelected.add(uid);
+    }
+    setSelectedUsers(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUsers.size === users.length) {
+      setSelectedUsers(new Set());
+      setShowBulkActions(false);
+    } else {
+      setSelectedUsers(new Set(users.map(u => u.uid)));
+      setShowBulkActions(true);
+    }
+  };
+
+  const handleBulkAction = async (action: string, claims?: any) => {
+    if (selectedUsers.size === 0) return;
+    
+    setBulkActioning(true);
+    try {
+      const idToken = await getIdToken();
+      const userIds = Array.from(selectedUsers);
+      const result = await performBulkAction(action, userIds, idToken, claims);
+      
+      toast({ 
+        title: 'Bulk Action Successful', 
+        description: `${result.results.success.length} users updated successfully` 
+      });
+      
+      // Refresh the user list
+      fetchUsers(idToken, pageToken, search);
+      setSelectedUsers(new Set());
+      setShowBulkActions(false);
+    } catch (e: any) {
+      toast({ title: 'Bulk Action Failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setBulkActioning(false);
     }
   };
 
@@ -284,10 +375,69 @@ function UserManagement() {
             Search
           </Button>
         </form>
+
+        {showBulkActions && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-blue-800">
+                {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleBulkAction('updateClaims', { support: true })}
+                  disabled={bulkActioning}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Shield className="w-4 h-4 mr-1" />
+                  Make Support
+                </Button>
+                <Button
+                  onClick={() => handleBulkAction('updateClaims', { admin: true })}
+                  disabled={bulkActioning}
+                  size="sm"
+                  variant="outline"
+                >
+                  <Users className="w-4 h-4 mr-1" />
+                  Make Admin
+                </Button>
+                <Button
+                  onClick={() => handleBulkAction('disableUsers')}
+                  disabled={bulkActioning}
+                  size="sm"
+                  variant="destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Disable Users
+                </Button>
+                <Button
+                  onClick={() => setSelectedUsers(new Set())}
+                  size="sm"
+                  variant="ghost"
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
               <tr>
+                <th className="p-2">
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center justify-center w-4 h-4"
+                  >
+                    {selectedUsers.size === users.length ? (
+                      <CheckSquare className="w-4 h-4" />
+                    ) : (
+                      <Square className="w-4 h-4" />
+                    )}
+                  </button>
+                </th>
                 <th className="p-2">Email</th>
                 <th className="p-2">Display Name</th>
                 <th className="p-2">Superadmin</th>
@@ -307,6 +457,18 @@ function UserManagement() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.uid} className="border-b last:border-0">
+                  <td className="p-2">
+                    <button
+                      onClick={() => handleSelectUser(user.uid)}
+                      className="flex items-center justify-center w-4 h-4"
+                    >
+                      {selectedUsers.has(user.uid) ? (
+                        <CheckSquare className="w-4 h-4" />
+                      ) : (
+                        <Square className="w-4 h-4" />
+                      )}
+                    </button>
+                  </td>
                   <td className="p-2 font-mono">{user.email}</td>
                   <td className="p-2">{user.displayName}</td>
                   {['superadmin','admin','support','userManagement','logs','codeEditor','billing','featureFlags','dataExport','impersonate','deleteUser'].map((claim) => (
@@ -366,11 +528,114 @@ function UserManagement() {
 }
 
 function Logs() {
+  const { user } = useAuth();
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    action: '',
+    userId: '',
+    startDate: '',
+    endDate: '',
+  });
+  const { toast } = useToast();
+
+  async function getIdToken() {
+    if (!user) return '';
+    return await user.getIdToken();
+  }
+
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const idToken = await getIdToken();
+      const data = await fetchAuditLogs(idToken, filters);
+      setLogs(data.logs);
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [filters]);
+
+  if (loading) return <div className="p-4 text-center">Loading logs...</div>;
+
   return (
     <Card>
-      <CardHeader><CardTitle>Logs</CardTitle></CardHeader>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle>Audit Logs</CardTitle>
+          <Button onClick={fetchLogs} size="sm" variant="outline">
+            <Activity className="w-4 h-4 mr-1" />
+            Refresh
+          </Button>
+        </div>
+      </CardHeader>
       <CardContent>
-        <p>View all app logs and user actions here. (Coming soon)</p>
+        <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+          <Input
+            placeholder="Filter by action..."
+            value={filters.action}
+            onChange={(e) => setFilters(prev => ({ ...prev, action: e.target.value }))}
+          />
+          <Input
+            placeholder="Filter by user ID..."
+            value={filters.userId}
+            onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
+          />
+          <Input
+            type="date"
+            value={filters.startDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+          />
+          <Input
+            type="date"
+            value={filters.endDate}
+            onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+          />
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr>
+                <th className="p-2">Timestamp</th>
+                <th className="p-2">Action</th>
+                <th className="p-2">Performed By</th>
+                <th className="p-2">Target User</th>
+                <th className="p-2">Details</th>
+                <th className="p-2">IP Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => (
+                <tr key={log.id} className="border-b last:border-0">
+                  <td className="p-2 font-mono text-xs">
+                    {new Date(log.timestamp).toLocaleString()}
+                  </td>
+                  <td className="p-2">
+                    <Badge variant="outline">{log.action}</Badge>
+                  </td>
+                  <td className="p-2 font-mono">{log.performedBy}</td>
+                  <td className="p-2 font-mono">{log.targetUser}</td>
+                  <td className="p-2">
+                    <pre className="text-xs bg-gray-100 p-1 rounded">
+                      {JSON.stringify(log.details, null, 2)}
+                    </pre>
+                  </td>
+                  <td className="p-2 font-mono text-xs">{log.ipAddress}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {logs.length === 0 && (
+          <p className="text-center text-gray-500 mt-4">No logs found</p>
+        )}
       </CardContent>
     </Card>
   );

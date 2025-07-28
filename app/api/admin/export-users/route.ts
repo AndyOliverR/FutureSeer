@@ -24,6 +24,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const format = searchParams.get('format') || 'json'; // 'json' or 'csv'
     const pageSize = parseInt(searchParams.get('pageSize') || '1000', 10);
+    const fields = searchParams.get('fields')?.split(',') || [
+      'uid', 'email', 'displayName', 'emailVerified', 'disabled', 
+      'createdAt', 'lastSignIn', 'claims', 'providers'
+    ];
 
     // Fetch all users (in batches if needed)
     let allUsers: any[] = [];
@@ -31,38 +35,45 @@ export async function GET(req: NextRequest) {
 
     do {
       const result = await admin.auth().listUsers(pageSize, nextPageToken);
-      const users = result.users.map((user) => ({
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        emailVerified: user.emailVerified,
-        disabled: user.disabled,
-        createdAt: user.metadata.creationTime,
-        lastSignIn: user.metadata.lastSignInTime,
-        claims: user.customClaims || {},
-        providers: user.providerData.map(p => p.providerId),
-      }));
+      const users = result.users.map((user) => {
+        const userData: any = {};
+        
+        if (fields.includes('uid')) userData.uid = user.uid;
+        if (fields.includes('email')) userData.email = user.email;
+        if (fields.includes('displayName')) userData.displayName = user.displayName;
+        if (fields.includes('emailVerified')) userData.emailVerified = user.emailVerified;
+        if (fields.includes('disabled')) userData.disabled = user.disabled;
+        if (fields.includes('createdAt')) userData.createdAt = user.metadata.creationTime;
+        if (fields.includes('lastSignIn')) userData.lastSignIn = user.metadata.lastSignInTime;
+        if (fields.includes('claims')) userData.claims = user.customClaims || {};
+        if (fields.includes('providers')) userData.providers = user.providerData.map(p => p.providerId);
+        if (fields.includes('phoneNumber')) userData.phoneNumber = user.phoneNumber;
+        if (fields.includes('photoURL')) userData.photoURL = user.photoURL;
+        if (fields.includes('tenantId')) userData.tenantId = user.tenantId;
+        
+        return userData;
+      });
       allUsers.push(...users);
       nextPageToken = result.pageToken;
     } while (nextPageToken);
 
     if (format === 'csv') {
-      // Convert to CSV
-      const headers = ['UID', 'Email', 'Display Name', 'Email Verified', 'Disabled', 'Created At', 'Last Sign In', 'Claims', 'Providers'];
-      const csvRows = [headers.join(',')];
+      // Convert to CSV with selected fields
+      const csvHeaders = fields.map(field => field.charAt(0).toUpperCase() + field.slice(1));
+      const csvRows = [csvHeaders.join(',')];
       
       allUsers.forEach(user => {
-        const row = [
-          user.uid,
-          user.email || '',
-          user.displayName || '',
-          user.emailVerified ? 'Yes' : 'No',
-          user.disabled ? 'Yes' : 'No',
-          user.createdAt || '',
-          user.lastSignIn || '',
-          JSON.stringify(user.claims),
-          user.providers.join(';'),
-        ].map(field => `"${field.replace(/"/g, '""')}"`).join(',');
+        const row = fields.map(field => {
+          let value = user[field];
+          if (field === 'claims') {
+            value = JSON.stringify(value);
+          } else if (field === 'providers') {
+            value = Array.isArray(value) ? value.join(';') : value;
+          } else if (field === 'emailVerified' || field === 'disabled') {
+            value = value ? 'Yes' : 'No';
+          }
+          return `"${String(value || '').replace(/"/g, '""')}"`;
+        }).join(',');
         csvRows.push(row);
       });
 
@@ -81,6 +92,7 @@ export async function GET(req: NextRequest) {
         users: allUsers,
         totalCount: allUsers.length,
         exportedAt: new Date().toISOString(),
+        fields: fields,
       });
     }
   } catch (error: any) {
