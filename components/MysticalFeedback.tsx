@@ -113,35 +113,28 @@ export function MysticalFeedback() {
 
   return (
     <>
-      {/* Floating Mystical Button - Always Visible */}
+      {/* Floating Mystical Button - Golden Sparkle Only */}
       <div className="fixed bottom-6 left-6 z-[99999] pointer-events-auto">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button
               size="lg"
-              className="relative group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full w-20 h-20 p-0 border-4 border-white/30 animate-pulse"
+              className="relative group bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full w-16 h-16 p-0 border-2 border-white/30"
               style={{ 
-                boxShadow: '0 0 20px rgba(147, 51, 234, 0.5), 0 0 40px rgba(236, 72, 153, 0.3)',
-                animation: 'pulse 2s infinite'
+                boxShadow: '0 0 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(245, 158, 11, 0.4)',
               }}
             >
-              <Sparkles className="w-8 h-8 group-hover:animate-pulse" />
+              <Sparkles className="w-6 h-6 group-hover:animate-pulse" />
               
-              {/* Mystical glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-50 animate-ping" />
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-0 group-hover:opacity-60 animate-pulse" />
-              
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-100 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap shadow-lg">
-                Share Mystical Feedback ✨
-              </div>
+              {/* Golden glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-300 to-yellow-400 rounded-full opacity-30 group-hover:opacity-50 animate-pulse" />
             </Button>
           </DialogTrigger>
 
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl">
-                <Sparkles className="w-6 h-6 text-purple-500" />
+                <Sparkles className="w-6 h-6 text-amber-500" />
                 Mystical Feedback Portal
               </DialogTitle>
             </DialogHeader>
@@ -209,7 +202,7 @@ export function MysticalFeedback() {
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting || !title.trim() || !description.trim()}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
                 >
                   <Send className="w-4 h-4 mr-2" />
                   {isSubmitting ? 'Sending...' : 'Send Feedback'}
