@@ -3,15 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
     "dev": "next dev",
-    "export": "next build && next export",
+    "build": "next build",
+    "start": "next start",
     "lint": "next lint",
-    "mobile:add": "npx cap add android && npx cap add ios",
-    "mobile:android": "npx cap open android",
-    "mobile:build": "npm run export && npx cap sync",
-    "mobile:ios": "npx cap open ios",
-    "start": "next start"
+    "setup-users": "node scripts/setup-user-modes.js"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.1",

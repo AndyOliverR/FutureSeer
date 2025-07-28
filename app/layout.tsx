@@ -3,8 +3,7 @@ import { Inter, Cedarville_Cursive } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/hooks/use-auth"
 import { Toaster } from "@/components/ui/toaster"
-import { ServiceStatus } from "@/components/ServiceStatus"
-import { TopNavBar } from "@/components/TopNavBar";
+import { TestModeSwitcher } from '@/components/TestModeSwitcher'
 
 const inter = Inter({ subsets: ["latin"] })
 const cedarvilleCursive = Cedarville_Cursive({ 
@@ -31,11 +30,10 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} ${cedarvilleCursive.variable} bg-[url('/assets/bg/starfield.avif')] bg-cover bg-center bg-fixed`}>
         <div className="flex min-h-screen relative flex-col">
-          <TopNavBar />
           <main className="flex-1">
             <AuthProvider>
               {children}
-              <ServiceStatus />
+              <TestModeSwitcher />
               <Toaster />
             </AuthProvider>
           </main>
