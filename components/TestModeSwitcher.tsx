@@ -84,10 +84,10 @@ export function TestModeSwitcher() {
       setTestMode(mode)
       setTestModeEmail(email)
       
-      const hasTestModeAccess = isSuperadmin || !!mode
-      setIsVisible(hasTestModeAccess)
+      // Always show for testing - remove conditional logic
+      setIsVisible(true)
     }
-  }, [isSuperadmin])
+  }, [])
 
   const handleSwitchMode = async (mode: UserMode) => {
     setSwitching(true)

@@ -159,13 +159,13 @@ export function MysticalFeedback() {
 
   return (
     <>
-      {/* Floating Mystical Button */}
+      {/* Floating Mystical Button - Always Visible */}
       <div className="fixed bottom-6 left-6 z-[9999]">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button
               size="lg"
-              className="relative group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full w-16 h-16 p-0 border-2 border-white/20"
+              className="relative group bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full w-16 h-16 p-0 border-2 border-white/20 animate-pulse"
             >
               <Sparkles className="w-7 h-7 group-hover:animate-pulse" />
               
