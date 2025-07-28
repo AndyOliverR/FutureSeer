@@ -27,25 +27,6 @@ export default function RootLayout({
           <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
             {children}
             <Footer />
-            
-            {/* Test div to verify layout is working */}
-            <div 
-              className="fixed top-4 left-4 z-[999999] bg-blue-500 text-white p-2 rounded text-xs"
-              style={{ 
-                position: 'fixed',
-                top: '16px',
-                left: '16px',
-                zIndex: 999999,
-                backgroundColor: 'blue',
-                color: 'white',
-                padding: '8px',
-                borderRadius: '4px',
-                fontSize: '12px'
-              }}
-            >
-              LAYOUT LOADED
-            </div>
-            
             <TestAuth />
             <TestModeSwitcher />
             <MysticalFeedback />

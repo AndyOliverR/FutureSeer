@@ -37,7 +37,8 @@ export function TestAuth() {
     if (username === 'TEST' && password === 'TEST') {
       setLoading(true)
 
-      setTimeout(() => {
+      try {
+        // Set test mode in localStorage
         localStorage.setItem('testMode', 'Test Mode')
         localStorage.setItem('testModeEmail', 'test@futureseer.com')
         localStorage.setItem('testClaims', JSON.stringify({
@@ -47,12 +48,22 @@ export function TestAuth() {
         }))
 
         toast({
-          title: 'Test Login Successful',
-          description: 'You are now in Test Mode with full access',
+          title: 'Test Login Successful! 🎉',
+          description: 'You are now in Test Mode with full access. The page will reload in 2 seconds.',
         })
 
-        window.location.reload()
-      }, 1000)
+        // Reload after 2 seconds to show the change
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } catch (error) {
+        toast({
+          title: 'Login Error',
+          description: 'Failed to set test mode. Please try again.',
+          variant: 'destructive'
+        })
+        setLoading(false)
+      }
     } else {
       toast({
         title: 'Invalid Credentials',
@@ -78,10 +89,10 @@ export function TestAuth() {
     return null
   }
 
-  // Always render for testing - comment out the visibility check
-  // if (!isVisible) {
-  //   return null
-  // }
+  // Don't render if not visible
+  if (!isVisible) {
+    return null
+  }
 
   if (isTestMode) {
     return (
