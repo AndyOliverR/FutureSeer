@@ -107,9 +107,12 @@ export function TestModeSwitcher() {
   const [switching, setSwitching] = useState(false)
   const { toast } = useToast()
 
-  // Only show in test mode - check if user has test mode access
-  // We'll check this by looking for test mode in localStorage or if user is superadmin
-  const hasTestModeAccess = isSuperadmin || localStorage.getItem('testMode')
+  // Check if we're in test mode
+  const testMode = localStorage.getItem('testMode')
+  const testModeEmail = localStorage.getItem('testModeEmail')
+  
+  // Only show if in test mode or if user is superadmin
+  const hasTestModeAccess = isSuperadmin || testMode
 
   if (!hasTestModeAccess) {
     return null
@@ -118,8 +121,7 @@ export function TestModeSwitcher() {
   const handleSwitchMode = async (mode: UserMode) => {
     setSwitching(true)
     try {
-      // In a real implementation, you would call an API to switch modes
-      // For now, we'll simulate the switch by updating localStorage
+      // Update test mode in localStorage
       localStorage.setItem('testMode', mode.name)
       localStorage.setItem('testModeEmail', mode.email)
       localStorage.setItem('testClaims', JSON.stringify(mode.claims))
@@ -152,8 +154,9 @@ export function TestModeSwitcher() {
     window.location.reload()
   }
 
+  // Find current mode based on localStorage or default to first mode
   const currentMode = userModes.find(mode => 
-    mode.name === localStorage.getItem('testMode')
+    mode.name === testMode
   ) || userModes[0]
 
   return (
@@ -174,7 +177,7 @@ export function TestModeSwitcher() {
           <div className="text-sm text-gray-600 mb-3">
             Current: <span className="font-semibold">{currentMode.name}</span>
             <br />
-            <span className="text-xs text-gray-500">{currentMode.email}</span>
+            <span className="text-xs text-gray-500">{testModeEmail || currentMode.email}</span>
           </div>
           
           <div className="space-y-2">
