@@ -113,21 +113,18 @@ export function MysticalFeedback() {
 
   return (
     <>
-      {/* Floating Mystical Button - Golden Sparkle Only */}
+      {/* Floating Mystical Button - Golden Sparkle Icon Only */}
       <div className="fixed bottom-6 left-6 z-[99999] pointer-events-auto">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button
               size="lg"
-              className="relative group bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 rounded-full w-16 h-16 p-0 border-2 border-white/30"
+              className="relative group bg-transparent hover:bg-transparent text-amber-400 hover:text-amber-300 shadow-none hover:shadow-none transition-all duration-300 rounded-full w-16 h-16 p-0 border-0"
               style={{ 
-                boxShadow: '0 0 20px rgba(251, 191, 36, 0.6), 0 0 40px rgba(245, 158, 11, 0.4)',
+                filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 40px rgba(245, 158, 11, 0.6))',
               }}
             >
-              <Sparkles className="w-6 h-6 group-hover:animate-pulse" />
-              
-              {/* Golden glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-300 to-yellow-400 rounded-full opacity-30 group-hover:opacity-50 animate-pulse" />
+              <Sparkles className="w-8 h-8 group-hover:animate-pulse" style={{ filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.9))' }} />
             </Button>
           </DialogTrigger>
 
