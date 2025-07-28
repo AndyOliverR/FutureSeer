@@ -21,6 +21,8 @@ export function TestAuth() {
     // Check localStorage only on client side
     const testMode = typeof window !== 'undefined' ? localStorage.getItem('testMode') : null
     setIsTestMode(!!testMode)
+    // Always show for testing
+    setIsVisible(true)
   }, [])
 
   const handleTestLogin = async (e: React.FormEvent) => {
@@ -65,15 +67,15 @@ export function TestAuth() {
     setIsVisible(false)
   }
 
-  // Don't render if not visible
-  if (!isVisible) {
-    return null
-  }
+  // Always render for testing - comment out the visibility check
+  // if (!isVisible) {
+  //   return null
+  // }
 
   if (isTestMode) {
     return (
-      <div className="fixed top-4 right-4 z-50">
-        <Card className="w-64 shadow-lg border-2 border-red-200">
+      <div className="fixed top-4 right-4 z-[9999]">
+        <Card className="w-64 shadow-lg border-2 border-red-200 bg-red-50">
           <CardHeader className="pb-2 relative">
             <button
               onClick={handleClose}
@@ -102,8 +104,8 @@ export function TestAuth() {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50">
-      <Card className="w-64 shadow-lg border-2 border-amber-200">
+    <div className="fixed top-4 right-4 z-[9999]">
+      <Card className="w-64 shadow-lg border-2 border-amber-200 bg-amber-50">
         <CardHeader className="pb-2 relative">
           <button
             onClick={handleClose}
