@@ -1,179 +1,142 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from './use-auth';
-import { trackEvent } from '@/lib/api';
+"use client";
 
-interface PayPalConfig {
-  clientId: string | null;
+import { useState, useCallback, useEffect } from "react";
+
+interface SubscriptionConfig {
   available: boolean;
+  plans: SubscriptionPlan[];
 }
 
-export interface SubscriptionPlan {
+interface SubscriptionPlan {
   id: string;
   name: string;
   price: number;
-  period: string;
-  originalPrice?: number;
-  savings?: number;
+  currency: string;
+  interval: string;
   features: string[];
-  isPopular?: boolean;
-  isBestValue?: boolean;
+  popular?: boolean;
 }
 
 export function useSubscribe() {
-  const { user, userProfile } = useAuth();
-  const [paypalConfig, setPaypalConfig] = useState<PayPalConfig>({ clientId: null, available: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [customTipAmount, setCustomTipAmount] = useState<number>(0);
+  const [subscriptionConfig, setSubscriptionConfig] = useState<SubscriptionConfig>({
+    available: false,
+    plans: []
+  });
 
-  const plans: SubscriptionPlan[] = [
-    {
-      id: "monthly",
-      name: "Monthly",
-      price: 9,
-      period: "month",
-      features: [
-        "✨ Unlimited AI readings",
-        "🔮 All 18 divination tools",
-        "📱 Mobile app access",
-        "💫 Daily cosmic insights"
-      ]
-    },
-    {
-      id: "quarterly",
-      name: "Quarterly",
-      price: 21,
-      period: "3 months",
-      originalPrice: 27,
-      savings: 6,
-      isPopular: true,
-      features: [
-        "✨ Unlimited AI readings",
-        "🔮 All 18 divination tools",
-        "📱 Mobile app access",
-        "💫 Daily cosmic insights",
-        "🎯 Priority support"
-      ]
-    },
-    {
-      id: "yearly",
-      name: "Yearly",
-      price: 72,
-      period: "year",
-      originalPrice: 108,
-      savings: 36,
-      isBestValue: true,
-      features: [
-        "✨ Unlimited AI readings",
-        "🔮 All 18 divination tools",
-        "📱 Mobile app access",
-        "💫 Daily cosmic insights",
-        "🎯 Priority support",
-        "🌟 Exclusive content"
-      ]
-    }
-  ];
-
-  const features = [
-    { icon: "🔮", title: "AI Oracle", desc: "Advanced AI-powered predictions and insights" },
-    { icon: "⭐", title: "18 Tools", desc: "Complete suite of divination methods" },
-    { icon: "📱", title: "Mobile Ready", desc: "Seamless experience across all devices" },
-    { icon: "💫", title: "Daily Insights", desc: "Personalized cosmic guidance every day" },
-    { icon: "🎯", title: "Accurate Readings", desc: "Precision-tuned algorithms for accuracy" },
-    { icon: "🌟", title: "Premium Support", desc: "Priority assistance from our team" },
-  ];
-
-  const tipAmounts = [5, 10, 25];
-
-  const fetchPayPalConfig = useCallback(async () => {
+  const fetchSubscriptionConfig = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch("/api/paypal-config");
-      if (!response.ok) throw new Error('Failed to fetch PayPal config');
-      const config = await response.json();
-      setPaypalConfig(config);
+      
+      // For now, return a placeholder configuration
+      // This will be replaced with your new payment system
+      const config: SubscriptionConfig = {
+        available: false, // Set to true when new payment system is ready
+        plans: [
+          {
+            id: "basic",
+            name: "Basic Plan",
+            price: 9.99,
+            currency: "USD",
+            interval: "month",
+            features: [
+              "Daily predictions",
+              "Basic astrology tools",
+              "Email support"
+            ]
+          },
+          {
+            id: "premium",
+            name: "Premium Plan",
+            price: 19.99,
+            currency: "USD",
+            interval: "month",
+            features: [
+              "All Basic features",
+              "Advanced astrology tools",
+              "Priority support",
+              "Custom reports"
+            ],
+            popular: true
+          },
+          {
+            id: "lifetime",
+            name: "Lifetime Access",
+            price: 299.99,
+            currency: "USD",
+            interval: "one-time",
+            features: [
+              "All Premium features",
+              "Lifetime access",
+              "Exclusive content",
+              "VIP support"
+            ]
+          }
+        ]
+      };
+      
+      setSubscriptionConfig(config);
     } catch (err) {
-      console.error("Error fetching PayPal config:", err);
-      setError('Failed to load payment options');
-      setPaypalConfig({ clientId: null, available: false });
+      console.error("Error fetching subscription config:", err);
+      setError("Failed to load subscription options");
+      setSubscriptionConfig({ available: false, plans: [] });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const subscribeToPlan = useCallback(async (planId: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // This will be replaced with your new payment system
+      console.log(`Subscribing to plan: ${planId}`);
+      
+      // Placeholder for new payment system integration
+      throw new Error("Payment system not yet implemented");
+      
+    } catch (err: any) {
+      console.error("Error subscribing to plan:", err);
+      setError(err.message || "Failed to subscribe");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const cancelSubscription = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // This will be replaced with your new payment system
+      console.log("Cancelling subscription");
+      
+      // Placeholder for new payment system integration
+      throw new Error("Payment system not yet implemented");
+      
+    } catch (err: any) {
+      console.error("Error cancelling subscription:", err);
+      setError(err.message || "Failed to cancel subscription");
+      throw err;
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchPayPalConfig();
-  }, [fetchPayPalConfig]);
-
-  const handleSubscriptionClick = useCallback((planId: string) => {
-    if (!user?.uid) return;
-    
-    setSelectedPlan(planId);
-    trackEvent("subscription_click", { plan: planId, userId: user.uid });
-    
-    // Here you would typically redirect to payment flow
-    console.log(`Starting subscription flow for plan: ${planId}`);
-  }, [user]);
-
-  const handleTipClick = useCallback((amount: number) => {
-    if (!user?.uid) return;
-    
-    trackEvent("tip_click", { amount, userId: user.uid });
-    
-    // Here you would typically redirect to payment flow
-    console.log(`Starting tip flow for amount: $${amount}`);
-  }, [user]);
-
-  const handleCustomTip = useCallback(() => {
-    if (!user?.uid || customTipAmount <= 0) return;
-    
-    handleTipClick(customTipAmount);
-  }, [user, customTipAmount, handleTipClick]);
-
-  const getPlanById = useCallback((planId: string) => {
-    return plans.find(plan => plan.id === planId);
-  }, [plans]);
-
-  const formatPrice = useCallback((price: number) => {
-    return `$${price}`;
-  }, []);
-
-  const calculateSavings = useCallback((originalPrice: number, currentPrice: number) => {
-    return originalPrice - currentPrice;
-  }, []);
-
-  const getSavingsPercentage = useCallback((originalPrice: number, currentPrice: number) => {
-    return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-  }, []);
+    fetchSubscriptionConfig();
+  }, [fetchSubscriptionConfig]);
 
   return {
-    // State
-    paypalConfig,
     loading,
     error,
-    selectedPlan,
-    customTipAmount,
-    
-    // Data
-    plans,
-    features,
-    tipAmounts,
-    userProfile,
-    
-    // Actions
-    setSelectedPlan,
-    setCustomTipAmount,
-    handleSubscriptionClick,
-    handleTipClick,
-    handleCustomTip,
-    fetchPayPalConfig,
-    
-    // Utilities
-    getPlanById,
-    formatPrice,
-    calculateSavings,
-    getSavingsPercentage,
+    subscriptionConfig,
+    subscribeToPlan,
+    cancelSubscription,
+    fetchSubscriptionConfig,
   };
 } 

@@ -33,9 +33,6 @@ export async function GET() {
     NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ? 
       `✅ Set (${process.env.NEXT_PUBLIC_FIREBASE_APP_ID.substring(0, 7)}...)` : 
       '❌ Missing',
-    PAYPAL_CLIENT_ID: process.env.PAYPAL_CLIENT_ID ? 
-      `✅ Set (${process.env.PAYPAL_CLIENT_ID.substring(0, 7)}...)` : 
-      '❌ Missing',
     NODE_ENV: process.env.NODE_ENV || 'Not set',
   }
 
