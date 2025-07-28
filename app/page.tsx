@@ -1,4 +1,5 @@
 "use client";
+import { Header } from "@/components/header"
 import { HeroSection } from "@/components/hero-section"
 import { FeatureBlocks } from "@/components/feature-blocks"
 
@@ -10,6 +11,7 @@ export default function HomePage() {
     >
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
       <div className="relative z-10">
+        <Header />
         <HeroSection />
         <FeatureBlocks />
       </div>
