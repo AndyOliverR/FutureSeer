@@ -159,6 +159,24 @@ export function MysticalFeedback() {
 
   return (
     <>
+      {/* Debug: Always visible test div */}
+      <div 
+        className="fixed top-4 left-4 z-[999999] bg-red-500 text-white p-2 rounded"
+        style={{ 
+          position: 'fixed',
+          top: '16px',
+          left: '16px',
+          zIndex: 999999,
+          backgroundColor: 'red',
+          color: 'white',
+          padding: '8px',
+          borderRadius: '4px',
+          fontSize: '12px'
+        }}
+      >
+        DEBUG: MysticalFeedback mounted
+      </div>
+
       {/* Floating Mystical Button - Always Visible */}
       <div className="fixed bottom-6 left-6 z-[99999] pointer-events-auto">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
