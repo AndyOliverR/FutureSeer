@@ -74,19 +74,23 @@ export function TestModeSwitcher() {
   const [isVisible, setIsVisible] = useState(false)
   const [testMode, setTestMode] = useState<string | null>(null)
   const [testModeEmail, setTestModeEmail] = useState<string | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
+    // Handle SSR - only run on client
+    setIsMounted(true)
+    
     // Check localStorage only on client side
-    if (typeof window !== 'undefined') {
-      const mode = localStorage.getItem('testMode')
-      const email = localStorage.getItem('testModeEmail')
-      setTestMode(mode)
-      setTestModeEmail(email)
-      
-      // Always show for testing - remove conditional logic
-      setIsVisible(true)
-    }
+    const mode = localStorage.getItem('testMode')
+    const email = localStorage.getItem('testModeEmail')
+    setTestMode(mode)
+    setTestModeEmail(email)
+    
+    // Always show for testing - remove conditional logic
+    setIsVisible(true)
+    
+    console.log('🔄 TestModeSwitcher mounted on client')
   }, [])
 
   const handleSwitchMode = async (mode: UserMode) => {
@@ -125,6 +129,11 @@ export function TestModeSwitcher() {
 
   const handleClose = () => {
     setIsVisible(false)
+  }
+
+  // Don't render anything until mounted on client
+  if (!isMounted) {
+    return null
   }
 
   if (!isVisible) {

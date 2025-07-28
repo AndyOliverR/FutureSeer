@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -9,13 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
 import { Sparkles, Camera, Send, X, Star, MessageCircle, Lightbulb, Bug } from 'lucide-react'
-import html2canvas from 'html2canvas'
 
 interface FeedbackData {
   type: 'suggestion' | 'bug' | 'feature' | 'general'
   title: string
   description: string
-  screenshot: string | null
   userAgent: string
   url: string
   timestamp: string
@@ -23,18 +21,17 @@ interface FeedbackData {
 
 export function MysticalFeedback() {
   const [isOpen, setIsOpen] = useState(false)
-  const [isCapturing, setIsCapturing] = useState(false)
   const [feedbackType, setFeedbackType] = useState<'suggestion' | 'bug' | 'feature' | 'general'>('suggestion')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [screenshot, setScreenshot] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const { toast } = useToast()
-  const dialogRef = useRef<HTMLDivElement>(null)
 
-  // Debug: Log when component mounts
+  // Handle SSR - only render on client
   useEffect(() => {
-    console.log('✨ MysticalFeedback component mounted')
+    setIsMounted(true)
+    console.log('✨ MysticalFeedback mounted on client')
   }, [])
 
   const feedbackTypes = [
@@ -43,49 +40,6 @@ export function MysticalFeedback() {
     { type: 'feature', icon: <Star className="w-4 h-4" />, label: 'Feature Request', color: 'bg-purple-500' },
     { type: 'general', icon: <MessageCircle className="w-4 h-4" />, label: 'General', color: 'bg-gray-500' }
   ]
-
-  const captureScreenshot = async () => {
-    if (!dialogRef.current) return
-
-    setIsCapturing(true)
-    try {
-      // Hide the feedback dialog temporarily to avoid capturing it
-      const dialog = dialogRef.current
-      const originalDisplay = dialog.style.display
-      dialog.style.display = 'none'
-
-      // Capture the entire page
-      const canvas = await html2canvas(document.body, {
-        allowTaint: true,
-        useCORS: true,
-        scale: 1,
-        backgroundColor: null,
-        logging: false,
-        width: window.innerWidth,
-        height: window.innerHeight
-      })
-
-      // Restore dialog visibility
-      dialog.style.display = originalDisplay
-
-      const screenshotData = canvas.toDataURL('image/png')
-      setScreenshot(screenshotData)
-
-      toast({
-        title: 'Screenshot Captured! ✨',
-        description: 'Current screen has been captured for your feedback',
-      })
-    } catch (error) {
-      console.error('Screenshot capture failed:', error)
-      toast({
-        title: 'Screenshot Failed',
-        description: 'Could not capture screenshot. You can still submit feedback.',
-        variant: 'destructive'
-      })
-    } finally {
-      setIsCapturing(false)
-    }
-  }
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
@@ -104,7 +58,6 @@ export function MysticalFeedback() {
         type: feedbackType,
         title: title.trim(),
         description: description.trim(),
-        screenshot,
         userAgent: navigator.userAgent,
         url: window.location.href,
         timestamp: new Date().toISOString()
@@ -123,8 +76,6 @@ export function MysticalFeedback() {
         throw new Error('Failed to submit feedback')
       }
 
-      const result = await response.json()
-
       toast({
         title: 'Feedback Sent! 🌟',
         description: 'Thank you for your mystical insights. We\'ll review it carefully.',
@@ -133,7 +84,6 @@ export function MysticalFeedback() {
       // Reset form
       setTitle('')
       setDescription('')
-      setScreenshot(null)
       setFeedbackType('suggestion')
       setIsOpen(false)
 
@@ -153,30 +103,16 @@ export function MysticalFeedback() {
     setIsOpen(false)
     setTitle('')
     setDescription('')
-    setScreenshot(null)
     setFeedbackType('suggestion')
+  }
+
+  // Don't render anything until mounted on client
+  if (!isMounted) {
+    return null
   }
 
   return (
     <>
-      {/* Debug: Always visible test div */}
-      <div 
-        className="fixed top-4 left-4 z-[999999] bg-red-500 text-white p-2 rounded"
-        style={{ 
-          position: 'fixed',
-          top: '16px',
-          left: '16px',
-          zIndex: 999999,
-          backgroundColor: 'red',
-          color: 'white',
-          padding: '8px',
-          borderRadius: '4px',
-          fontSize: '12px'
-        }}
-      >
-        DEBUG: MysticalFeedback mounted
-      </div>
-
       {/* Floating Mystical Button - Always Visible */}
       <div className="fixed bottom-6 left-6 z-[99999] pointer-events-auto">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -202,7 +138,7 @@ export function MysticalFeedback() {
             </Button>
           </DialogTrigger>
 
-          <DialogContent ref={dialogRef} className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl">
                 <Sparkles className="w-6 h-6 text-purple-500" />
@@ -259,46 +195,6 @@ export function MysticalFeedback() {
                 <div className="text-xs text-gray-500 mt-1">
                   {description.length}/1000 characters
                 </div>
-              </div>
-
-              {/* Screenshot Section */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-3 block">
-                  Current Screen (Optional)
-                </label>
-                
-                {screenshot ? (
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <img
-                        src={screenshot}
-                        alt="Screenshot"
-                        className="w-full rounded-lg border border-gray-200 max-h-48 object-cover"
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-2 right-2"
-                        onClick={() => setScreenshot(null)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      Screenshot captured from current page
-                    </Badge>
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={captureScreenshot}
-                    disabled={isCapturing}
-                    className="w-full"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    {isCapturing ? 'Capturing...' : 'Capture Current Screen'}
-                  </Button>
-                )}
               </div>
 
               {/* Submit Button */}

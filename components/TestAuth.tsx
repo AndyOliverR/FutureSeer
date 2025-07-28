@@ -15,14 +15,20 @@ export function TestAuth() {
   const [loading, setLoading] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
   const [isTestMode, setIsTestMode] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
+    // Handle SSR - only run on client
+    setIsMounted(true)
+    
     // Check localStorage only on client side
-    const testMode = typeof window !== 'undefined' ? localStorage.getItem('testMode') : null
+    const testMode = localStorage.getItem('testMode')
     setIsTestMode(!!testMode)
     // Always show for testing
     setIsVisible(true)
+    
+    console.log('🔧 TestAuth mounted on client')
   }, [])
 
   const handleTestLogin = async (e: React.FormEvent) => {
@@ -65,6 +71,11 @@ export function TestAuth() {
 
   const handleClose = () => {
     setIsVisible(false)
+  }
+
+  // Don't render anything until mounted on client
+  if (!isMounted) {
+    return null
   }
 
   // Always render for testing - comment out the visibility check
