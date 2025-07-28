@@ -30,24 +30,6 @@ export default function RootLayout({
             <TestAuth />
             <TestModeSwitcher />
             <MysticalFeedback />
-            
-            {/* Debug: Test div to verify layout is working */}
-            <div 
-              className="fixed top-4 right-4 z-[999999] bg-green-500 text-white p-2 rounded text-xs"
-              style={{ 
-                position: 'fixed',
-                top: '16px',
-                right: '16px',
-                zIndex: 999999,
-                backgroundColor: 'green',
-                color: 'white',
-                padding: '8px',
-                borderRadius: '4px',
-                fontSize: '12px'
-              }}
-            >
-              DEBUG: Layout loaded
-            </div>
           </div>
           <Toaster />
         </ClientProviders>
