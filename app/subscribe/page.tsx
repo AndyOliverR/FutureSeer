@@ -4,7 +4,7 @@ import { useSubscribe } from "@/hooks/useSubscribe";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Users, Crown, Sparkles, TrendingUp } from "lucide-react";
+import { Check, Star, Zap, Users, Crown, Sparkles, TrendingUp, Shield, BookOpen, Heart } from "lucide-react";
 
 export default function SubscribePage() {
   const {
@@ -201,15 +201,23 @@ export default function SubscribePage() {
         {/* Community Features */}
         <div className="mb-16">
           <h2 className="text-3xl font-bold text-amber-300 text-center mb-12">
-            Join Our Mystical Community
+            Join Our Safe Mystical Community
           </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-6">
             {subscriptionConfig.communityFeatures.map((feature, index) => (
               <Card key={index} className="border border-gray-700 hover:border-amber-500/50 transition-colors">
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="w-6 h-6 text-amber-500" />
+                      {feature.name.includes("Safety") ? (
+                        <Shield className="w-6 h-6 text-amber-500" />
+                      ) : feature.name.includes("Expert") ? (
+                        <Star className="w-6 h-6 text-amber-500" />
+                      ) : feature.name.includes("Study") ? (
+                        <BookOpen className="w-6 h-6 text-amber-500" />
+                      ) : (
+                        <Users className="w-6 h-6 text-amber-500" />
+                      )}
                     </div>
                     <h3 className="text-lg font-semibold text-white mb-2">{feature.name}</h3>
                     <p className="text-sm text-gray-400 mb-3">{feature.description}</p>
@@ -253,6 +261,89 @@ export default function SubscribePage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+
+        {/* Safety & Trust Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-amber-300 text-center mb-12">
+            Your Safety is Our Priority
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="border border-green-500/30 bg-green-500/5">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Shield className="w-8 h-8 text-green-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">AI-Powered Safety</h3>
+                  <p className="text-gray-400">
+                    Advanced AI moderation with real-time content filtering and crisis detection
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-blue-500/30 bg-blue-500/5">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-blue-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Human Oversight</h3>
+                  <p className="text-gray-400">
+                    Dedicated moderation team with mental health professionals for crisis situations
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border border-purple-500/30 bg-purple-500/5">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Heart className="w-8 h-8 text-purple-500" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-white mb-2">Mental Health First</h3>
+                  <p className="text-gray-400">
+                    Zero tolerance for harmful content with immediate crisis response protocols
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="mt-8 text-center">
+            <Card className="max-w-4xl mx-auto bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border-amber-500/30">
+              <CardContent className="pt-6">
+                <h3 className="text-xl font-semibold text-amber-300 mb-4">
+                  Independent Expert Network
+                </h3>
+                <p className="text-gray-300 mb-4">
+                  Our experts are independent community contributors who share knowledge voluntarily. 
+                  They are verified through AI-powered background checks and community feedback, 
+                  but operate independently of FutureSeer.
+                </p>
+                <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-400">
+                  <div>
+                    <div className="font-semibold text-amber-300 mb-1">🔍 AI Verification</div>
+                    <div>Automated background checks and credential verification</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-amber-300 mb-1">🌟 Community Driven</div>
+                    <div>Experts contribute freely to help fellow seekers</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-amber-300 mb-1">🛡️ Safety First</div>
+                    <div>Strict guidelines with immediate violation response</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold text-amber-300 mb-1">📧 Transparent Process</div>
+                    <div>Clear communication about all moderation decisions</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
