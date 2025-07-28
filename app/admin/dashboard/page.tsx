@@ -694,7 +694,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-slate-900 to-slate-800">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-4xl font-bold mb-8 text-amber-300">God Mode Admin Dashboard</h1>
+        <h1 className="text-4xl font-bold mb-8 text-amber-300">God Mode Dashboard</h1>
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="users">Users</TabsTrigger>
