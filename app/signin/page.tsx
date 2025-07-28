@@ -49,6 +49,32 @@ export default function SignInPage() {
       return
     }
 
+    // Check for TEST credentials
+    if (email === 'TEST' && password === 'TEST') {
+      setIsLoading(true)
+      setError(null)
+      
+      try {
+        // Set test mode in localStorage
+        localStorage.setItem('testMode', 'Test Mode')
+        localStorage.setItem('testModeEmail', 'test@futureseer.com')
+        localStorage.setItem('testClaims', JSON.stringify({
+          superadmin: true, admin: true, support: true, userManagement: true, logs: true,
+          codeEditor: true, billing: true, featureFlags: true, dataExport: true,
+          impersonate: true, deleteUser: true, testMode: true
+        }))
+
+        // Redirect to dashboard
+        router.push("/dashboard")
+      } catch (error: any) {
+        setError("Test login failed. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
+
+    // Regular Firebase authentication
     setIsLoading(true)
     setError(null)
     
@@ -352,6 +378,13 @@ export default function SignInPage() {
                 onSubmit={handleEmailSignIn}
                 className="space-y-4"
               >
+                {/* TEST Login Note */}
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                  <p className="text-xs text-amber-300 text-center">
+                    💡 <strong>Quick Test:</strong> Use <code className="bg-amber-500/20 px-1 rounded">TEST</code> / <code className="bg-amber-500/20 px-1 rounded">TEST</code> for instant access
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-amber-200 font-serif">Email</Label>
                   <div className="relative">
