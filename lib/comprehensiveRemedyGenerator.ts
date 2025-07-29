@@ -1,5 +1,5 @@
 // COMPREHENSIVE REMEDY GENERATION ENGINE
-// Analyzes ALL FutureSeer systems and generates holistic remedies
+// Analyzes ALL FutureSeer systems and generates holistic remedies with advanced personalization
 
 import { ComprehensiveRemedy } from './comprehensiveRemedyDatabase'
 import { 
@@ -11,6 +11,8 @@ import {
   MODERN_HOLISTIC_REMEDIES,
   LIFESTYLE_REMEDIES
 } from './comprehensiveRemedyDatabase'
+import { AdvancedPersonalizationIntegration, PersonalizedRemedy } from './advancedPersonalizationIntegration'
+import { AdvancedUserProfile, PersonalizedContext } from './advancedPersonalization'
 
 export interface UserSystemData {
   // Astrological Data
@@ -144,6 +146,38 @@ export function generateHolisticRemedies(
 }
 
 // ============================================================================
+// ADVANCED PERSONALIZATION INTEGRATION
+// ============================================================================
+
+export function generateAdvancedPersonalizedRemedies(
+  userData: UserSystemData,
+  question: string,
+  advancedProfile: AdvancedUserProfile,
+  context: PersonalizedContext
+): PersonalizedRemedy[] {
+  // Generate base remedies
+  const baseRemedies = generateHolisticRemedies(userData, question)
+  
+  // Apply advanced personalization
+  const personalizationIntegration = new AdvancedPersonalizationIntegration(advancedProfile, context)
+  const personalizedRemedies = personalizationIntegration.personalizeRemedies(baseRemedies)
+  
+  // Rank and filter remedies
+  const rankedRemedies = personalizationIntegration.rankRemedies(personalizedRemedies)
+  
+  // Apply intelligent filtering based on user profile
+  const filteredRemedies = personalizationIntegration.filterRemedies(rankedRemedies, {
+    minCompatibility: 60,
+    minEffectiveness: 70,
+    maxRisk: 40,
+    maxCost: advancedProfile.budgetRange === 'low' ? 'low' : 'luxury',
+    maxDifficulty: advancedProfile.meditationExperience === 'beginner' ? 'beginner' : 'expert'
+  })
+  
+  return filteredRemedies.slice(0, 8) // Return top 8 most personalized remedies
+}
+
+// ============================================================================
 // ASTROLOGICAL REMEDY GENERATORS
 // ============================================================================
 
@@ -160,7 +194,7 @@ function generateVedicRemedies(vedicData: any, question: string): ComprehensiveR
         category: 'Nakshatra Enhancement',
         title: nakshatraRemedy.title,
         description: nakshatraRemedy.description,
-        icon: <Star className="w-5 h-5 text-yellow-500" />,
+        icon: "⭐",
         priority: 'high',
         instructions: nakshatraRemedy.instructions,
         benefits: nakshatraRemedy.benefits,
@@ -726,7 +760,47 @@ function generatePersonalizedCombinationRemedies(userData: UserSystemData, quest
   return remedies
 }
 
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+function generateFinancialAstrologyRemedies(financialData: any, question: string): ComprehensiveRemedy[] {
+  // Implementation for financial astrology remedies
+  return []
+}
+
+function generateKabbalisticRemedies(kabbalisticData: any, question: string): ComprehensiveRemedy[] {
+  // Implementation for kabbalistic remedies
+  return []
+}
+
+function generateRuneRemedies(runeData: any, question: string): ComprehensiveRemedy[] {
+  // Implementation for rune remedies
+  return []
+}
+
+function generateIChingRemedies(ichingData: any, question: string): ComprehensiveRemedy[] {
+  // Implementation for I Ching remedies
+  return []
+}
+
+function generateFaceReadingRemedies(faceData: any, question: string): ComprehensiveRemedy[] {
+  // Implementation for face reading remedies
+  return []
+}
+
+function generateBaziRemedies(baziData: any, question: string): ComprehensiveRemedy[] {
+  // Implementation for Bazi remedies
+  return []
+}
+
+function generateDreamRemedies(dreamData: any, question: string): ComprehensiveRemedy[] {
+  // Implementation for dream remedies
+  return []
+}
+
 export default {
   generateHolisticRemedies,
+  generateAdvancedPersonalizedRemedies,
   UserSystemData
 } 

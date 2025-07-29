@@ -14,7 +14,7 @@ export interface ComprehensiveRemedy {
   category: string // Remedy category
   title: string
   description: string
-  icon: React.ReactNode
+  icon: string
   priority: 'critical' | 'high' | 'medium' | 'low'
   instructions: string[]
   benefits: string[]
