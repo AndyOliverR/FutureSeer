@@ -152,18 +152,12 @@ export function MysticalFeedback() {
 
   return (
     <>
-      {/* Floating Mystical Button - Pure Golden Sparkle Only */}
+      {/* Floating Mystical Button - Pure ✨ Emoji Only */}
       <div className="fixed bottom-6 left-6 z-[99999] pointer-events-auto">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <div className="cursor-pointer group">
-              <Sparkles 
-                className="w-12 h-12 text-amber-400 group-hover:text-amber-300 transition-all duration-300 group-hover:animate-pulse" 
-                style={{ 
-                  filter: 'drop-shadow(0 0 15px rgba(251, 191, 36, 0.9)) drop-shadow(0 0 30px rgba(245, 158, 11, 0.7)) drop-shadow(0 0 45px rgba(217, 119, 6, 0.5))',
-                  textShadow: '0 0 20px rgba(251, 191, 36, 0.8)'
-                }} 
-              />
+              <span className="text-4xl hover:scale-110 transition-transform duration-300">✨</span>
             </div>
           </DialogTrigger>
 
