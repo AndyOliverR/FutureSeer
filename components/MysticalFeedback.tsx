@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
 import { Sparkles, Camera, Send, X, Star, MessageCircle, Lightbulb, Bug } from 'lucide-react'
+import html2canvas from 'html2canvas'
 
 interface FeedbackData {
   type: 'suggestion' | 'bug' | 'feature' | 'general'
@@ -17,6 +18,7 @@ interface FeedbackData {
   userAgent: string
   url: string
   timestamp: string
+  screenshot?: string
 }
 
 export function MysticalFeedback() {
@@ -24,6 +26,7 @@ export function MysticalFeedback() {
   const [feedbackType, setFeedbackType] = useState<'suggestion' | 'bug' | 'feature' | 'general'>('suggestion')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [screenshot, setScreenshot] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const { toast } = useToast()
@@ -40,6 +43,39 @@ export function MysticalFeedback() {
     { type: 'feature', icon: <Star className="w-4 h-4" />, label: 'Feature Request', color: 'bg-purple-500' },
     { type: 'general', icon: <MessageCircle className="w-4 h-4" />, label: 'General', color: 'bg-gray-500' }
   ]
+
+  const captureScreenshot = async () => {
+    try {
+      const canvas = await html2canvas(document.body, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scale: 1,
+        logging: false,
+        width: window.innerWidth,
+        height: window.innerHeight
+      })
+      
+      const screenshotData = canvas.toDataURL('image/png')
+      setScreenshot(screenshotData)
+      
+      toast({
+        title: 'Screenshot Captured! 📸',
+        description: 'Current page screenshot has been added to your feedback.',
+      })
+    } catch (error) {
+      console.error('Screenshot capture failed:', error)
+      toast({
+        title: 'Screenshot Failed',
+        description: 'Could not capture screenshot. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const removeScreenshot = () => {
+    setScreenshot(null)
+  }
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
@@ -60,7 +96,8 @@ export function MysticalFeedback() {
         description: description.trim(),
         userAgent: navigator.userAgent,
         url: window.location.href,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        screenshot: screenshot || undefined
       }
 
       // Submit feedback to API
@@ -85,6 +122,7 @@ export function MysticalFeedback() {
       setTitle('')
       setDescription('')
       setFeedbackType('suggestion')
+      setScreenshot(null)
       setIsOpen(false)
 
     } catch (error) {
@@ -104,6 +142,7 @@ export function MysticalFeedback() {
     setTitle('')
     setDescription('')
     setFeedbackType('suggestion')
+    setScreenshot(null)
   }
 
   // Don't render anything until mounted on client
@@ -113,19 +152,19 @@ export function MysticalFeedback() {
 
   return (
     <>
-      {/* Floating Mystical Button - Golden Sparkle Icon Only */}
+      {/* Floating Mystical Button - Pure Golden Sparkle Only */}
       <div className="fixed bottom-6 left-6 z-[99999] pointer-events-auto">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button
-              size="lg"
-              className="relative group bg-transparent hover:bg-transparent text-amber-400 hover:text-amber-300 shadow-none hover:shadow-none transition-all duration-300 rounded-full w-16 h-16 p-0 border-0"
-              style={{ 
-                filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.8)) drop-shadow(0 0 40px rgba(245, 158, 11, 0.6))',
-              }}
-            >
-              <Sparkles className="w-8 h-8 group-hover:animate-pulse" style={{ filter: 'drop-shadow(0 0 10px rgba(251, 191, 36, 0.9))' }} />
-            </Button>
+            <div className="cursor-pointer group">
+              <Sparkles 
+                className="w-12 h-12 text-amber-400 group-hover:text-amber-300 transition-all duration-300 group-hover:animate-pulse" 
+                style={{ 
+                  filter: 'drop-shadow(0 0 15px rgba(251, 191, 36, 0.9)) drop-shadow(0 0 30px rgba(245, 158, 11, 0.7)) drop-shadow(0 0 45px rgba(217, 119, 6, 0.5))',
+                  textShadow: '0 0 20px rgba(251, 191, 36, 0.8)'
+                }} 
+              />
+            </div>
           </DialogTrigger>
 
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -184,6 +223,46 @@ export function MysticalFeedback() {
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {description.length}/1000 characters
+                </div>
+              </div>
+
+              {/* Screenshot Section */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Screenshot (Optional)
+                </label>
+                <div className="space-y-3">
+                  {!screenshot ? (
+                    <Button
+                      variant="outline"
+                      onClick={captureScreenshot}
+                      className="w-full"
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Capture Current Page Screenshot
+                    </Button>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <img 
+                          src={screenshot} 
+                          alt="Screenshot" 
+                          className="w-full rounded-lg border border-gray-200 max-h-48 object-cover"
+                        />
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={removeScreenshot}
+                          className="absolute top-2 right-2"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Screenshot captured successfully. Click X to remove.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

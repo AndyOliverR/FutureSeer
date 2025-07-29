@@ -1,436 +1,792 @@
-"use client";
+"use client"
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { useAuth } from '@/hooks/use-auth';
-import { AdvancedUserProfile } from '@/lib/advancedPersonalization';
-import AdvancedProfileSetup from '@/components/AdvancedProfileSetup';
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Switch } from '@/components/ui/switch'
+import { 
+  User, 
+  Heart, 
+  Brain, 
+  Target, 
+  Settings, 
+  Save, 
+  RefreshCw,
+  Star,
+  Moon,
+  Sun,
+  Palette,
+  Music,
+  BookOpen,
+  Calendar,
+  MapPin,
+  Sparkles,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/components/ui/use-toast'
+
+interface AdvancedProfile {
+  // Personality
+  mbtiType: string
+  enneagramType: string
+  personalityTraits: string[]
+  
+  // Lifestyle
+  sleepSchedule: string
+  workStyle: string
+  stressLevel: number
+  energyLevel: number
+  socialPreference: 'introvert' | 'ambivert' | 'extrovert'
+  
+  // Spiritual
+  spiritualBeliefs: string[]
+  meditationPractice: boolean
+  meditationFrequency: string
+  spiritualGoals: string[]
+  
+  // Goals & Context
+  lifeGoals: string[]
+  currentChallenges: string[]
+  relationshipStatus: string
+  careerStage: string
+  
+  // Preferences
+  preferredReadingStyle: 'detailed' | 'concise' | 'visual'
+  preferredTimeOfDay: 'morning' | 'afternoon' | 'evening' | 'night'
+  notificationPreferences: {
+    dailyInsights: boolean
+    weeklyReports: boolean
+    newFeatures: boolean
+    communityUpdates: boolean
+    personalizedRemedies: boolean
+  }
+  
+  // Health & Wellness
+  healthProfile: {
+    diet: string
+    exercise: string
+    stressManagement: string
+    sleepQuality: number
+    energyLevels: number
+  }
+  
+  // Customization
+  themePreference: 'light' | 'dark' | 'auto'
+  languagePreference: string
+  timezone: string
+}
+
+const mbtiTypes = [
+  'INTJ', 'INTP', 'ENTJ', 'ENTP',
+  'INFJ', 'INFP', 'ENFJ', 'ENFP',
+  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+  'ISTP', 'ISFP', 'ESTP', 'ESFP'
+]
+
+const enneagramTypes = [
+  'Type 1 - The Reformer', 'Type 2 - The Helper', 'Type 3 - The Achiever',
+  'Type 4 - The Individualist', 'Type 5 - The Investigator', 'Type 6 - The Loyalist',
+  'Type 7 - The Enthusiast', 'Type 8 - The Challenger', 'Type 9 - The Peacemaker'
+]
+
+const spiritualBeliefs = [
+  'Buddhism', 'Hinduism', 'Christianity', 'Islam', 'Judaism', 'Taoism',
+  'New Age', 'Atheist', 'Agnostic', 'Spiritual but not religious',
+  'Paganism', 'Wicca', 'Other'
+]
+
+const lifeGoals = [
+  'Career Success', 'Financial Freedom', 'Personal Growth', 'Spiritual Development',
+  'Healthy Relationships', 'Physical Health', 'Mental Wellness', 'Creative Expression',
+  'Travel & Adventure', 'Community Service', 'Learning & Education', 'Family'
+]
 
 export default function AdvancedPersonalizationPage() {
-  const { user } = useAuth();
-  const [profile, setProfile] = useState<AdvancedUserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [completionPercentage, setCompletionPercentage] = useState(0);
+  const { user } = useAuth()
+  const { toast } = useToast()
+  
+  const [profile, setProfile] = useState<AdvancedProfile>({
+    mbtiType: '',
+    enneagramType: '',
+    personalityTraits: [],
+    sleepSchedule: '',
+    workStyle: '',
+    stressLevel: 5,
+    energyLevel: 5,
+    socialPreference: 'ambivert',
+    spiritualBeliefs: [],
+    meditationPractice: false,
+    meditationFrequency: '',
+    spiritualGoals: [],
+    lifeGoals: [],
+    currentChallenges: [],
+    relationshipStatus: '',
+    careerStage: '',
+    preferredReadingStyle: 'detailed',
+    preferredTimeOfDay: 'morning',
+    notificationPreferences: {
+      dailyInsights: true,
+      weeklyReports: true,
+      newFeatures: true,
+      communityUpdates: false,
+      personalizedRemedies: true
+    },
+    healthProfile: {
+      diet: '',
+      exercise: '',
+      stressManagement: '',
+      sleepQuality: 5,
+      energyLevels: 5
+    },
+    themePreference: 'auto',
+    languagePreference: 'English',
+    timezone: 'UTC'
+  })
 
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState('personality')
+
+  // Load profile data
   useEffect(() => {
     if (user?.uid) {
-      fetchProfile();
+      loadProfile()
     }
-  }, [user?.uid]);
+  }, [user?.uid])
 
-  const fetchProfile = async () => {
+  const loadProfile = async () => {
+    setIsLoading(true)
     try {
-      const response = await fetch(`/api/personalization/profile?userId=${user?.uid}`);
+      const response = await fetch(`/api/personalization/profile?userId=${user?.uid}`)
       if (response.ok) {
-        const data = await response.json();
-        setProfile(data.advancedProfile);
-        calculateCompletion(data.advancedProfile);
+        const data = await response.json()
+        setProfile(data.advancedProfile || profile)
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error loading profile:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-  const calculateCompletion = (profileData: AdvancedUserProfile) => {
-    let completed = 0;
-    let total = 0;
+  const saveProfile = async () => {
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/personalization/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.uid,
+          advancedProfile: profile
+        }),
+      })
 
-    // Check personality data
-    if (profileData.mbtiType) completed++;
-    if (profileData.enneagramType) completed++;
-    total += 2;
+      if (response.ok) {
+        toast({
+          title: 'Profile Saved! 🌟',
+          description: 'Your advanced personalization settings have been updated.',
+        })
+      } else {
+        throw new Error('Failed to save profile')
+      }
+    } catch (error) {
+      toast({
+        title: 'Save Failed',
+        description: 'Could not save your profile. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
-    // Check lifestyle data
-    const lifestyleFields = Object.values(profileData.lifestyle);
-    completed += lifestyleFields.filter(field => field && field !== '').length;
-    total += lifestyleFields.length;
+  const calculateCompletion = () => {
+    const fields = [
+      profile.mbtiType,
+      profile.enneagramType,
+      profile.sleepSchedule,
+      profile.workStyle,
+      profile.spiritualBeliefs.length,
+      profile.lifeGoals.length,
+      profile.relationshipStatus,
+      profile.careerStage
+    ]
+    
+    const completed = fields.filter(field => 
+      typeof field === 'string' ? field !== '' : field > 0
+    ).length
+    
+    return Math.round((completed / fields.length) * 100)
+  }
 
-    // Check spiritual beliefs
-    const spiritualFields = Object.values(profileData.spiritualBeliefs);
-    completed += spiritualFields.filter(field => 
-      field && (typeof field === 'string' ? field !== '' : Array.isArray(field) ? field.length > 0 : true)
-    ).length;
-    total += spiritualFields.length;
+  const completion = calculateCompletion()
 
-    // Check life goals
-    const goalFields = Object.values(profileData.lifeGoals);
-    completed += goalFields.filter(field => 
-      field && (typeof field === 'string' ? field !== '' : Array.isArray(field) ? field.length > 0 : true)
-    ).length;
-    total += goalFields.length;
+  const tabs = [
+    { id: 'personality', label: 'Personality', icon: Brain },
+    { id: 'lifestyle', label: 'Lifestyle', icon: Heart },
+    { id: 'spiritual', label: 'Spiritual', icon: Star },
+    { id: 'goals', label: 'Goals & Context', icon: Target },
+    { id: 'preferences', label: 'Preferences', icon: Settings },
+    { id: 'health', label: 'Health & Wellness', icon: Sun }
+  ]
 
-    // Check current context
-    const contextFields = Object.values(profileData.currentContext);
-    completed += contextFields.filter(field => 
-      field && (typeof field === 'string' ? field !== '' : Array.isArray(field) ? field.length > 0 : true)
-    ).length;
-    total += contextFields.length;
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'personality':
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="text-soft text-sm mb-3 block">MBTI Type</label>
+              <select
+                value={profile.mbtiType}
+                onChange={(e) => setProfile(prev => ({ ...prev, mbtiType: e.target.value }))}
+                className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft"
+              >
+                <option value="">Select your MBTI type</option>
+                {mbtiTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
 
-    // Check preferences
-    const preferenceFields = Object.values(profileData.preferences);
-    completed += preferenceFields.filter(field => 
-      Array.isArray(field) ? field.length > 0 : field && field !== ''
-    ).length;
-    total += preferenceFields.length;
+            <div>
+              <label className="text-soft text-sm mb-3 block">Enneagram Type</label>
+              <select
+                value={profile.enneagramType}
+                onChange={(e) => setProfile(prev => ({ ...prev, enneagramType: e.target.value }))}
+                className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft"
+              >
+                <option value="">Select your Enneagram type</option>
+                {enneagramTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
 
-    // Check health profile
-    const healthFields = Object.values(profileData.healthProfile);
-    completed += healthFields.filter(field => 
-      field && (typeof field === 'string' ? field !== '' : Array.isArray(field) ? field.length > 0 : true)
-    ).length;
-    total += healthFields.length;
+            <div>
+              <label className="text-soft text-sm mb-3 block">Social Preference</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['introvert', 'ambivert', 'extrovert'].map((type) => (
+                  <Button
+                    key={type}
+                    variant={profile.socialPreference === type ? "default" : "outline"}
+                    onClick={() => setProfile(prev => ({ ...prev, socialPreference: type as any }))}
+                    className="capitalize"
+                  >
+                    {type}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
 
-    setCompletionPercentage(Math.round((completed / total) * 100));
-  };
+      case 'lifestyle':
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="text-soft text-sm mb-3 block">Sleep Schedule</label>
+              <Input
+                value={profile.sleepSchedule}
+                onChange={(e) => setProfile(prev => ({ ...prev, sleepSchedule: e.target.value }))}
+                placeholder="e.g., 11 PM - 7 AM"
+                className="bg-white/5 border-white/20 text-soft"
+              />
+            </div>
 
-  const handleProfileComplete = (newProfile: AdvancedUserProfile) => {
-    setProfile(newProfile);
-    setIsEditing(false);
-    calculateCompletion(newProfile);
-  };
+            <div>
+              <label className="text-soft text-sm mb-3 block">Work Style</label>
+              <Textarea
+                value={profile.workStyle}
+                onChange={(e) => setProfile(prev => ({ ...prev, workStyle: e.target.value }))}
+                placeholder="Describe your work style, schedule, and environment..."
+                rows={3}
+                className="bg-white/5 border-white/20 text-soft"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-soft text-sm mb-3 block">Stress Level (1-10)</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={profile.stressLevel}
+                  onChange={(e) => setProfile(prev => ({ ...prev, stressLevel: parseInt(e.target.value) }))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-soft mt-1">
+                  <span>Low</span>
+                  <span>{profile.stressLevel}</span>
+                  <span>High</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-soft text-sm mb-3 block">Energy Level (1-10)</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={profile.energyLevel}
+                  onChange={(e) => setProfile(prev => ({ ...prev, energyLevel: parseInt(e.target.value) }))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-soft mt-1">
+                  <span>Low</span>
+                  <span>{profile.energyLevel}</span>
+                  <span>High</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'spiritual':
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="text-soft text-sm mb-3 block">Spiritual Beliefs</label>
+              <div className="grid grid-cols-2 gap-2">
+                {spiritualBeliefs.map((belief) => (
+                  <Button
+                    key={belief}
+                    variant={profile.spiritualBeliefs.includes(belief) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setProfile(prev => ({
+                      ...prev,
+                      spiritualBeliefs: prev.spiritualBeliefs.includes(belief)
+                        ? prev.spiritualBeliefs.filter(b => b !== belief)
+                        : [...prev.spiritualBeliefs, belief]
+                    }))}
+                    className="justify-start"
+                  >
+                    {profile.spiritualBeliefs.includes(belief) && <CheckCircle className="w-3 h-3 mr-1" />}
+                    {belief}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-soft text-sm mb-3 block">Meditation Practice</label>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={profile.meditationPractice}
+                    onCheckedChange={(checked) => setProfile(prev => ({ ...prev, meditationPractice: checked }))}
+                  />
+                  <span className="text-soft text-sm">
+                    {profile.meditationPractice ? 'Yes' : 'No'}
+                  </span>
+                </div>
+              </div>
+
+              {profile.meditationPractice && (
+                <div>
+                  <label className="text-soft text-sm mb-3 block">Meditation Frequency</label>
+                  <Input
+                    value={profile.meditationFrequency}
+                    onChange={(e) => setProfile(prev => ({ ...prev, meditationFrequency: e.target.value }))}
+                    placeholder="e.g., Daily, 3x per week"
+                    className="bg-white/5 border-white/20 text-soft"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="text-soft text-sm mb-3 block">Spiritual Goals</label>
+              <Textarea
+                value={profile.spiritualGoals.join(', ')}
+                onChange={(e) => setProfile(prev => ({ 
+                  ...prev, 
+                  spiritualGoals: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                }))}
+                placeholder="Enter your spiritual goals, separated by commas..."
+                rows={3}
+                className="bg-white/5 border-white/20 text-soft"
+              />
+            </div>
+          </div>
+        )
+
+      case 'goals':
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="text-soft text-sm mb-3 block">Life Goals</label>
+              <div className="grid grid-cols-2 gap-2">
+                {lifeGoals.map((goal) => (
+                  <Button
+                    key={goal}
+                    variant={profile.lifeGoals.includes(goal) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setProfile(prev => ({
+                      ...prev,
+                      lifeGoals: prev.lifeGoals.includes(goal)
+                        ? prev.lifeGoals.filter(g => g !== goal)
+                        : [...prev.lifeGoals, goal]
+                    }))}
+                    className="justify-start"
+                  >
+                    {profile.lifeGoals.includes(goal) && <CheckCircle className="w-3 h-3 mr-1" />}
+                    {goal}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-soft text-sm mb-3 block">Current Challenges</label>
+              <Textarea
+                value={profile.currentChallenges.join(', ')}
+                onChange={(e) => setProfile(prev => ({ 
+                  ...prev, 
+                  currentChallenges: e.target.value.split(',').map(s => s.trim()).filter(s => s)
+                }))}
+                placeholder="Enter your current challenges, separated by commas..."
+                rows={3}
+                className="bg-white/5 border-white/20 text-soft"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-soft text-sm mb-3 block">Relationship Status</label>
+                <Input
+                  value={profile.relationshipStatus}
+                  onChange={(e) => setProfile(prev => ({ ...prev, relationshipStatus: e.target.value }))}
+                  placeholder="e.g., Single, Married, In a relationship"
+                  className="bg-white/5 border-white/20 text-soft"
+                />
+              </div>
+
+              <div>
+                <label className="text-soft text-sm mb-3 block">Career Stage</label>
+                <Input
+                  value={profile.careerStage}
+                  onChange={(e) => setProfile(prev => ({ ...prev, careerStage: e.target.value }))}
+                  placeholder="e.g., Student, Early career, Mid-career, Senior"
+                  className="bg-white/5 border-white/20 text-soft"
+                />
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'preferences':
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="text-soft text-sm mb-3 block">Preferred Reading Style</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['detailed', 'concise', 'visual'].map((style) => (
+                  <Button
+                    key={style}
+                    variant={profile.preferredReadingStyle === style ? "default" : "outline"}
+                    onClick={() => setProfile(prev => ({ ...prev, preferredReadingStyle: style as any }))}
+                    className="capitalize"
+                  >
+                    {style}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-soft text-sm mb-3 block">Preferred Time of Day</label>
+              <div className="grid grid-cols-2 gap-2">
+                {['morning', 'afternoon', 'evening', 'night'].map((time) => (
+                  <Button
+                    key={time}
+                    variant={profile.preferredTimeOfDay === time ? "default" : "outline"}
+                    onClick={() => setProfile(prev => ({ ...prev, preferredTimeOfDay: time as any }))}
+                    className="capitalize"
+                  >
+                    {time}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-soft text-sm mb-3 block">Notification Preferences</label>
+              <div className="space-y-3">
+                {Object.entries(profile.notificationPreferences).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <span className="text-soft capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                    <Switch
+                      checked={value}
+                      onCheckedChange={(checked) => setProfile(prev => ({
+                        ...prev,
+                        notificationPreferences: {
+                          ...prev.notificationPreferences,
+                          [key]: checked
+                        }
+                      }))}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-soft text-sm mb-3 block">Theme Preference</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['light', 'dark', 'auto'].map((theme) => (
+                    <Button
+                      key={theme}
+                      variant={profile.themePreference === theme ? "default" : "outline"}
+                      onClick={() => setProfile(prev => ({ ...prev, themePreference: theme as any }))}
+                      className="capitalize"
+                    >
+                      {theme}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-soft text-sm mb-3 block">Language Preference</label>
+                <select
+                  value={profile.languagePreference}
+                  onChange={(e) => setProfile(prev => ({ ...prev, languagePreference: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft"
+                >
+                  <option value="English">English</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
+                  <option value="German">German</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'health':
+        return (
+          <div className="space-y-6">
+            <div>
+              <label className="text-soft text-sm mb-3 block">Diet</label>
+              <Input
+                value={profile.healthProfile.diet}
+                onChange={(e) => setProfile(prev => ({ 
+                  ...prev, 
+                  healthProfile: { ...prev.healthProfile, diet: e.target.value }
+                }))}
+                placeholder="e.g., Vegetarian, Vegan, Mediterranean"
+                className="bg-white/5 border-white/20 text-soft"
+              />
+            </div>
+
+            <div>
+              <label className="text-soft text-sm mb-3 block">Exercise Routine</label>
+              <Textarea
+                value={profile.healthProfile.exercise}
+                onChange={(e) => setProfile(prev => ({ 
+                  ...prev, 
+                  healthProfile: { ...prev.healthProfile, exercise: e.target.value }
+                }))}
+                placeholder="Describe your exercise routine and fitness activities..."
+                rows={3}
+                className="bg-white/5 border-white/20 text-soft"
+              />
+            </div>
+
+            <div>
+              <label className="text-soft text-sm mb-3 block">Stress Management</label>
+              <Textarea
+                value={profile.healthProfile.stressManagement}
+                onChange={(e) => setProfile(prev => ({ 
+                  ...prev, 
+                  healthProfile: { ...prev.healthProfile, stressManagement: e.target.value }
+                }))}
+                placeholder="How do you manage stress? (e.g., meditation, exercise, hobbies)"
+                rows={3}
+                className="bg-white/5 border-white/20 text-soft"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-soft text-sm mb-3 block">Sleep Quality (1-10)</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={profile.healthProfile.sleepQuality}
+                  onChange={(e) => setProfile(prev => ({ 
+                    ...prev, 
+                    healthProfile: { ...prev.healthProfile, sleepQuality: parseInt(e.target.value) }
+                  }))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-soft mt-1">
+                  <span>Poor</span>
+                  <span>{profile.healthProfile.sleepQuality}</span>
+                  <span>Excellent</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-soft text-sm mb-3 block">Energy Levels (1-10)</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={profile.healthProfile.energyLevels}
+                  onChange={(e) => setProfile(prev => ({ 
+                    ...prev, 
+                    healthProfile: { ...prev.healthProfile, energyLevels: parseInt(e.target.value) }
+                  }))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-soft mt-1">
+                  <span>Low</span>
+                  <span>{profile.healthProfile.energyLevels}</span>
+                  <span>High</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+
+      default:
+        return null
+    }
+  }
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="h-64 bg-muted rounded"></div>
+      <div className="min-h-screen p-4 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 mx-auto mb-4 animate-spin text-amber-400" />
+          <p className="text-soft">Loading your profile...</p>
         </div>
       </div>
-    );
-  }
-
-  if (isEditing) {
-    return (
-      <AdvancedProfileSetup
-        onComplete={handleProfileComplete}
-        onCancel={() => setIsEditing(false)}
-        initialData={profile || {}}
-      />
-    );
+    )
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Advanced Personalization</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your personalized experience and preferences
+    <div className="min-h-screen p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8 pt-8"
+        >
+          <h1 className="text-4xl font-bold gold-glow mb-4">Advanced Personalization</h1>
+          <p className="text-soft leading-relaxed text-lg mb-6">
+            Fine-tune your mystical experience with detailed preferences and insights
           </p>
-        </div>
-        <Button onClick={() => setIsEditing(true)}>
-          {profile ? 'Edit Profile' : 'Complete Profile'}
-        </Button>
-      </div>
 
-      {/* Profile Completion Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Completion</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Completion Progress</span>
-              <span className="text-sm text-muted-foreground">{completionPercentage}%</span>
+          {/* Completion Progress */}
+          <div className="max-w-md mx-auto mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-soft text-sm">Profile Completion</span>
+              <span className="text-soft text-sm">{completion}%</span>
             </div>
-            <Progress value={completionPercentage} className="w-full" />
-            <p className="text-sm text-muted-foreground">
-              {completionPercentage < 50 
-                ? "Complete your profile to unlock highly personalized insights and remedies."
-                : completionPercentage < 80
-                ? "Great progress! Complete more sections for even better personalization."
-                : "Excellent! Your profile is well-completed for optimal personalization."
-              }
-            </p>
+            <Progress value={completion} className="h-2" />
+            {completion < 100 && (
+              <p className="text-xs text-soft/60 mt-2">
+                Complete your profile for more personalized insights
+              </p>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </motion.div>
 
-      {profile && (
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="personality">Personality</TabsTrigger>
-            <TabsTrigger value="lifestyle">Lifestyle</TabsTrigger>
-            <TabsTrigger value="spiritual">Spiritual</TabsTrigger>
-            <TabsTrigger value="goals">Goals</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Personality Type</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {profile.mbtiType && (
-                      <div className="flex justify-between">
-                        <span className="text-sm">MBTI:</span>
-                        <Badge variant="secondary">{profile.mbtiType}</Badge>
-                      </div>
-                    )}
-                    {profile.enneagramType && (
-                      <div className="flex justify-between">
-                        <span className="text-sm">Enneagram:</span>
-                        <Badge variant="secondary">Type {profile.enneagramType}</Badge>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Lifestyle</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {profile.lifestyle.sleepSchedule && (
-                      <div className="flex justify-between">
-                        <span className="text-sm">Sleep:</span>
-                        <span className="text-sm font-medium">{profile.lifestyle.sleepSchedule}</span>
-                      </div>
-                    )}
-                    {profile.lifestyle.exercise && (
-                      <div className="flex justify-between">
-                        <span className="text-sm">Exercise:</span>
-                        <span className="text-sm font-medium">{profile.lifestyle.exercise}</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Spiritual</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {profile.spiritualBeliefs.religion && (
-                      <div className="flex justify-between">
-                        <span className="text-sm">Religion:</span>
-                        <span className="text-sm font-medium">{profile.spiritualBeliefs.religion}</span>
-                      </div>
-                    )}
-                    {profile.spiritualBeliefs.meditationFrequency && (
-                      <div className="flex justify-between">
-                        <span className="text-sm">Meditation:</span>
-                        <span className="text-sm font-medium">{profile.spiritualBeliefs.meditationFrequency}</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="personality" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Personality Profile</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-medium mb-2">MBTI Type</h4>
-                    {profile.mbtiType ? (
-                      <Badge variant="outline" className="text-lg px-4 py-2">{profile.mbtiType}</Badge>
-                    ) : (
-                      <p className="text-muted-foreground">Not specified</p>
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="font-medium mb-2">Enneagram Type</h4>
-                    {profile.enneagramType ? (
-                      <Badge variant="outline" className="text-lg px-4 py-2">Type {profile.enneagramType}</Badge>
-                    ) : (
-                      <p className="text-muted-foreground">Not specified</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium mb-4">Big Five Personality Traits</h4>
-                  <div className="space-y-3">
-                    {Object.entries(profile.bigFiveTraits).map(([trait, value]) => (
-                      <div key={trait} className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="capitalize">{trait}</span>
-                          <span className="font-medium">{value}%</span>
-                        </div>
-                        <Progress value={value} className="h-2" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="lifestyle" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Lifestyle & Habits</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(profile.lifestyle).map(([key, value]) => (
-                    <div key={key}>
-                      <h4 className="font-medium mb-2 capitalize">{key.replace(/([A-Z])/g, ' $1')}</h4>
-                      {value ? (
-                        <p className="text-sm">{value}</p>
-                      ) : (
-                        <p className="text-muted-foreground text-sm">Not specified</p>
-                      )}
-                    </div>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Tabs */}
+          <div className="lg:col-span-1">
+            <Card className="glass-card border-white/10">
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  {tabs.map((tab) => (
+                    <Button
+                      key={tab.id}
+                      variant={activeTab === tab.id ? "default" : "ghost"}
+                      onClick={() => setActiveTab(tab.id)}
+                      className="w-full justify-start"
+                    >
+                      <tab.icon className="w-4 h-4 mr-2" />
+                      {tab.label}
+                    </Button>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="spiritual" className="space-y-4">
-            <Card>
+          {/* Content */}
+          <div className="lg:col-span-3">
+            <Card className="glass-card border-white/10">
               <CardHeader>
-                <CardTitle>Spiritual Beliefs & Practices</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  {(() => {
+                    const currentTab = tabs.find(t => t.id === activeTab);
+                    return currentTab ? (
+                      <>
+                        <currentTab.icon className="w-5 h-5" />
+                        {currentTab.label}
+                      </>
+                    ) : null;
+                  })()}
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(profile.spiritualBeliefs).map(([key, value]) => (
-                    <div key={key}>
-                      <h4 className="font-medium mb-2 capitalize">{key.replace(/([A-Z])/g, ' $1')}</h4>
-                      {Array.isArray(value) ? (
-                        value.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {value.map((item, index) => (
-                              <Badge key={index} variant="secondary">{item}</Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-muted-foreground text-sm">None selected</p>
-                        )
-                      ) : value ? (
-                        <p className="text-sm">{value}</p>
-                      ) : (
-                        <p className="text-muted-foreground text-sm">Not specified</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <CardContent className="p-6">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {renderTabContent()}
+                  </motion.div>
+                </AnimatePresence>
 
-          <TabsContent value="goals" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Life Goals & Aspirations</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Short-term Goals</h4>
-                    {profile.lifeGoals.shortTerm.length > 0 ? (
-                      <ul className="space-y-1">
-                        {profile.lifeGoals.shortTerm.map((goal, index) => (
-                          <li key={index} className="text-sm flex items-center gap-2">
-                            <span className="text-blue-500">•</span>
-                            {goal}
-                          </li>
-                        ))}
-                      </ul>
+                {/* Save Button */}
+                <div className="flex justify-end mt-8 pt-6 border-t border-white/10">
+                  <Button
+                    onClick={saveProfile}
+                    disabled={isSaving}
+                    className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                  >
+                    {isSaving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
                     ) : (
-                      <p className="text-muted-foreground text-sm">No short-term goals set</p>
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Changes
+                      </>
                     )}
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium mb-2">Long-term Goals</h4>
-                    {profile.lifeGoals.longTerm.length > 0 ? (
-                      <ul className="space-y-1">
-                        {profile.lifeGoals.longTerm.map((goal, index) => (
-                          <li key={index} className="text-sm flex items-center gap-2">
-                            <span className="text-green-500">•</span>
-                            {goal}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">No long-term goals set</p>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.entries(profile.lifeGoals).filter(([key]) => !['shortTerm', 'longTerm'].includes(key)).map(([key, value]) => (
-                      <div key={key}>
-                        <h4 className="font-medium mb-2 capitalize">{key.replace(/([A-Z])/g, ' $1')}</h4>
-                        {value ? (
-                          <p className="text-sm">{value}</p>
-                        ) : (
-                          <p className="text-muted-foreground text-sm">Not specified</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="preferences" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Preferences & Interests</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {Object.entries(profile.preferences).map(([key, value]) => (
-                    <div key={key}>
-                      <h4 className="font-medium mb-2 capitalize">{key.replace(/([A-Z])/g, ' $1')}</h4>
-                      {Array.isArray(value) && value.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {value.map((item, index) => (
-                            <Badge key={index} variant="outline">{item}</Badge>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-muted-foreground text-sm">None selected</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      )}
-
-      {!profile && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <h3 className="text-lg font-medium mb-2">Complete Your Advanced Profile</h3>
-            <p className="text-muted-foreground mb-4">
-              Set up your advanced personalization profile to receive highly tailored insights, 
-              remedies, and predictions based on your unique characteristics.
-            </p>
-            <Button onClick={() => setIsEditing(true)}>
-              Start Profile Setup
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  )
 } 
