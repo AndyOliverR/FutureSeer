@@ -1,125 +1,147 @@
 "use client"
 
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Camera, Upload, User, Calendar, MapPin, Clock, Hand, Image as ImageIcon } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { 
+  User, 
+  Calendar, 
+  MapPin, 
+  Camera, 
+  Hand, 
+  Heart, 
+  Star, 
+  ArrowRight, 
+  ArrowLeft, 
+  Check,
+  Upload,
+  Sparkles
+} from 'lucide-react'
+import { useAuth } from '@/hooks/use-auth'
+import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 
 interface ProfileData {
+  // Step 1: Basic Info
   fullName: string
-  dateOfBirth: string
-  timeOfBirth: string
-  placeOfBirth: string
-  selfieImage: string | null
-  palmImage: string | null
+  email: string
+  
+  // Step 2: Birth Details
+  birthDate: string
+  birthTime: string
+  birthPlace: string
+  
+  // Step 3: Face Photo
+  facePhoto: File | null
+  facePhotoUrl: string
+  
+  // Step 4: Palm Photo
+  palmPhoto: File | null
+  palmPhotoUrl: string
+  
+  // Step 5: Preferences
+  interests: string[]
+  experienceLevel: 'beginner' | 'intermediate' | 'advanced'
+  notificationPreferences: {
+    dailyInsights: boolean
+    newFeatures: boolean
+    communityUpdates: boolean
+  }
 }
 
+const interests = [
+  'Astrology', 'Numerology', 'Tarot', 'Palmistry', 'Face Reading',
+  'I Ching', 'Runes', 'Dream Analysis', 'Vastu', 'Feng Shui',
+  'Crystal Healing', 'Meditation', 'Spiritual Growth', 'Self-Discovery'
+]
+
 export default function ProfileSetupPage() {
+  const { user, userProfile } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
+  
   const [currentStep, setCurrentStep] = useState(1)
-  const [loading, setLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
-    dateOfBirth: '',
-    timeOfBirth: '',
-    placeOfBirth: '',
-    selfieImage: null,
-    palmImage: null
+    email: '',
+    birthDate: '',
+    birthTime: '',
+    birthPlace: '',
+    facePhoto: null,
+    facePhotoUrl: '',
+    palmPhoto: null,
+    palmPhotoUrl: '',
+    interests: [],
+    experienceLevel: 'beginner',
+    notificationPreferences: {
+      dailyInsights: true,
+      newFeatures: true,
+      communityUpdates: false
+    }
   })
 
-  const selfieRef = useRef<HTMLInputElement>(null)
-  const palmRef = useRef<HTMLInputElement>(null)
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [showCamera, setShowCamera] = useState(false)
-  const [cameraType, setCameraType] = useState<'selfie' | 'palm'>('selfie')
+  // Load existing profile data
+  useEffect(() => {
+    if (userProfile) {
+      setProfileData(prev => ({
+        ...prev,
+        fullName: userProfile.displayName || '',
+        email: userProfile.email || '',
+        birthDate: userProfile.birthDate || '',
+        birthTime: userProfile.birthTime || '',
+        birthPlace: userProfile.birthPlace || ''
+      }))
+    }
+  }, [userProfile])
 
-  const steps = [
-    { id: 1, title: 'Basic Information', icon: User },
-    { id: 2, title: 'Birth Details', icon: Calendar },
-    { id: 3, title: 'Face Photo', icon: Camera },
-    { id: 4, title: 'Palm Photo', icon: Hand },
-    { id: 5, title: 'Complete Setup', icon: ImageIcon }
-  ]
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!user) {
+      router.push('/signin')
+    }
+  }, [user, router])
 
-  const handleInputChange = (field: keyof ProfileData, value: string) => {
-    setProfileData(prev => ({ ...prev, [field]: value }))
-  }
+  const totalSteps = 5
+  const progress = (currentStep / totalSteps) * 100
 
-  const handleFileUpload = (type: 'selfie' | 'palm', file: File) => {
+  const handleFileUpload = (file: File, type: 'face' | 'palm') => {
     const reader = new FileReader()
     reader.onload = (e) => {
-      const imageData = e.target?.result as string
-      if (type === 'selfie') {
-        setProfileData(prev => ({ ...prev, selfieImage: imageData }))
+      const url = e.target?.result as string
+      if (type === 'face') {
+        setProfileData(prev => ({
+          ...prev,
+          facePhoto: file,
+          facePhotoUrl: url
+        }))
       } else {
-        setProfileData(prev => ({ ...prev, palmImage: imageData }))
+        setProfileData(prev => ({
+          ...prev,
+          palmPhoto: file,
+          palmPhotoUrl: url
+        }))
       }
-      toast({
-        title: `${type === 'selfie' ? 'Face' : 'Palm'} photo uploaded!`,
-        description: 'Photo captured successfully for analysis.',
-      })
     }
     reader.readAsDataURL(file)
   }
 
-  const startCamera = async (type: 'selfie' | 'palm') => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: type === 'selfie' ? 'user' : 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
-      })
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        setShowCamera(true)
-        setCameraType(type)
-      }
-    } catch (error) {
-      toast({
-        title: 'Camera access denied',
-        description: 'Please allow camera access to take photos.',
-        variant: 'destructive'
-      })
-    }
-  }
-
-  const capturePhoto = () => {
-    if (videoRef.current) {
-      const canvas = document.createElement('canvas')
-      canvas.width = videoRef.current.videoWidth
-      canvas.height = videoRef.current.videoHeight
-      const ctx = canvas.getContext('2d')
-      
-      if (ctx) {
-        ctx.drawImage(videoRef.current, 0, 0)
-        const imageData = canvas.toDataURL('image/jpeg', 0.8)
-        
-        if (cameraType === 'selfie') {
-          setProfileData(prev => ({ ...prev, selfieImage: imageData }))
-        } else {
-          setProfileData(prev => ({ ...prev, palmImage: imageData }))
-        }
-        
-        setShowCamera(false)
-        toast({
-          title: `${cameraType === 'selfie' ? 'Face' : 'Palm'} photo captured!`,
-          description: 'Photo saved for mystical analysis.',
-        })
-      }
-    }
+  const handleInterestToggle = (interest: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interest)
+        ? prev.interests.filter(i => i !== interest)
+        : [...prev.interests, interest]
+    }))
   }
 
   const nextStep = () => {
-    if (currentStep < steps.length) {
+    if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -130,310 +152,327 @@ export default function ProfileSetupPage() {
     }
   }
 
-  const handleCompleteSetup = async () => {
-    setLoading(true)
+  const handleComplete = async () => {
+    setIsLoading(true)
     
     try {
-      // Validate all required fields
-      if (!profileData.fullName || !profileData.dateOfBirth || !profileData.timeOfBirth || !profileData.placeOfBirth) {
-        throw new Error('Please fill in all required fields')
-      }
-      
-      if (!profileData.selfieImage) {
-        throw new Error('Please upload a face photo')
-      }
-      
-      if (!profileData.palmImage) {
-        throw new Error('Please upload a palm photo')
-      }
-
-      // Save profile data to Firebase (you'll need to implement this)
-      // await saveProfileData(profileData)
+      // Here you would typically save the profile data
+      // For now, we'll simulate the save
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
       toast({
-        title: 'Profile setup complete! 🌟',
-        description: 'Your mystical journey begins now.',
+        title: 'Profile Setup Complete! 🌟',
+        description: 'Your mystical journey is now personalized just for you.',
       })
       
-      // Redirect to dashboard
       router.push('/dashboard')
-      
     } catch (error) {
       toast({
-        title: 'Setup incomplete',
-        description: error instanceof Error ? error.message : 'Please complete all steps',
+        title: 'Setup Failed',
+        description: 'Could not save your profile. Please try again.',
         variant: 'destructive'
       })
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
-  const renderStepContent = () => {
+  const renderStep = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="fullName" className="text-lg font-semibold">
-                What's your full name? ✨
-              </Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Enter your complete name"
-                value={profileData.fullName}
-                onChange={(e) => handleInputChange('fullName', e.target.value)}
-                className="mt-2 text-lg"
-              />
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="text-center mb-8">
+              <div className="text-4xl mb-4">👋</div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Welcome to FutureSeer</h2>
+              <p className="text-soft">Let's personalize your mystical journey</p>
             </div>
             
-            <div className="bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
-                💫 Your name holds powerful numerological significance. We'll analyze every letter to reveal your destiny numbers and life path.
-              </p>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="fullName" className="text-soft">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  value={profileData.fullName}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Enter your full name"
+                  className="bg-white/5 border-white/20 text-soft"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="email" className="text-soft">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={profileData.email}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="your.email@example.com"
+                  className="bg-white/5 border-white/20 text-soft"
+                  disabled
+                />
+                <p className="text-xs text-soft/60 mt-1">Email is managed by your authentication provider</p>
+              </div>
             </div>
-          </div>
+          </motion.div>
         )
 
       case 2:
         return (
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="dateOfBirth" className="text-lg font-semibold">
-                When were you born? 📅
-              </Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={profileData.dateOfBirth}
-                onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                className="mt-2 text-lg"
-              />
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="text-center mb-8">
+              <div className="text-4xl mb-4">🌟</div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Birth Details</h2>
+              <p className="text-soft">Your cosmic blueprint for accurate readings</p>
             </div>
             
-            <div>
-              <Label htmlFor="timeOfBirth" className="text-lg font-semibold">
-                What time were you born? ⏰
-              </Label>
-              <Input
-                id="timeOfBirth"
-                type="time"
-                value={profileData.timeOfBirth}
-                onChange={(e) => handleInputChange('timeOfBirth', e.target.value)}
-                className="mt-2 text-lg"
-              />
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="birthDate" className="text-soft">Date of Birth *</Label>
+                <Input
+                  id="birthDate"
+                  type="date"
+                  value={profileData.birthDate}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, birthDate: e.target.value }))}
+                  className="bg-white/5 border-white/20 text-soft"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="birthTime" className="text-soft">Time of Birth</Label>
+                <Input
+                  id="birthTime"
+                  type="time"
+                  value={profileData.birthTime}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, birthTime: e.target.value }))}
+                  className="bg-white/5 border-white/20 text-soft"
+                />
+                <p className="text-xs text-soft/60 mt-1">For more accurate astrological readings</p>
+              </div>
+              
+              <div>
+                <Label htmlFor="birthPlace" className="text-soft">Place of Birth</Label>
+                <Input
+                  id="birthPlace"
+                  value={profileData.birthPlace}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, birthPlace: e.target.value }))}
+                  placeholder="City, Country"
+                  className="bg-white/5 border-white/20 text-soft"
+                />
+              </div>
             </div>
-            
-            <div>
-              <Label htmlFor="placeOfBirth" className="text-lg font-semibold">
-                Where were you born? 🌍
-              </Label>
-              <Input
-                id="placeOfBirth"
-                type="text"
-                placeholder="City, Country"
-                value={profileData.placeOfBirth}
-                onChange={(e) => handleInputChange('placeOfBirth', e.target.value)}
-                className="mt-2 text-lg"
-              />
-            </div>
-            
-            <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                🌟 Your birth details create your unique astrological chart. We'll calculate planetary positions, houses, and cosmic influences.
-              </p>
-            </div>
-          </div>
+          </motion.div>
         )
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-4">📸 Capture Your Face for Analysis</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                We'll analyze your facial features for personality insights and compatibility readings.
-              </p>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="text-center mb-8">
+              <div className="text-4xl mb-4">📸</div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Face Photo</h2>
+              <p className="text-soft">For face reading and personality analysis</p>
             </div>
             
-            {profileData.selfieImage ? (
-              <div className="text-center">
-                <img 
-                  src={profileData.selfieImage} 
-                  alt="Face photo" 
-                  className="w-64 h-64 object-cover rounded-lg mx-auto border-4 border-green-200"
-                />
-                <Button 
-                  onClick={() => setProfileData(prev => ({ ...prev, selfieImage: null }))}
-                  variant="outline"
-                  className="mt-4"
-                >
-                  Retake Photo
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button 
-                    onClick={() => startCamera('selfie')}
-                    className="h-32 flex flex-col items-center justify-center gap-2"
-                  >
-                    <Camera className="w-8 h-8" />
-                    <span>Take Photo</span>
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => selfieRef.current?.click()}
+            <div className="space-y-4">
+              {profileData.facePhotoUrl ? (
+                <div className="text-center">
+                  <img
+                    src={profileData.facePhotoUrl}
+                    alt="Face photo"
+                    className="w-32 h-32 rounded-full mx-auto mb-4 object-cover border-2 border-amber-400"
+                  />
+                  <Button
                     variant="outline"
-                    className="h-32 flex flex-col items-center justify-center gap-2"
+                    onClick={() => setProfileData(prev => ({ ...prev, facePhoto: null, facePhotoUrl: '' }))}
+                    className="text-soft"
                   >
-                    <Upload className="w-8 h-8" />
-                    <span>Upload Photo</span>
+                    Change Photo
                   </Button>
                 </div>
-                
-                <input
-                  ref={selfieRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) handleFileUpload('selfie', file)
-                  }}
-                  className="hidden"
-                />
+              ) : (
+                <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-soft/60" />
+                  <p className="text-soft mb-4">Upload a clear face photo</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileUpload(file, 'face')
+                    }}
+                    className="hidden"
+                    id="facePhoto"
+                  />
+                  <Label htmlFor="facePhoto" asChild>
+                    <Button variant="outline" className="cursor-pointer">
+                      <Camera className="w-4 h-4 mr-2" />
+                      Choose Photo
+                    </Button>
+                  </Label>
+                </div>
+              )}
+              
+              <div className="text-xs text-soft/60 text-center">
+                <p>• Clear, well-lit photo of your face</p>
+                <p>• Used for face reading analysis only</p>
+                <p>• Your privacy is protected</p>
               </div>
-            )}
-            
-            <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg">
-              <p className="text-sm text-purple-800 dark:text-purple-200">
-                👁️ Face reading reveals your personality traits, communication style, and hidden talents through facial features and expressions.
-              </p>
             </div>
-          </div>
+          </motion.div>
         )
 
       case 4:
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold mb-4">🤲 Capture Your Palm for Analysis</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                We'll analyze your palm lines for life path, relationships, and future insights.
-              </p>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="text-center mb-8">
+              <div className="text-4xl mb-4">🤲</div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Palm Photo</h2>
+              <p className="text-soft">For palmistry and life path analysis</p>
             </div>
             
-            {profileData.palmImage ? (
-              <div className="text-center">
-                <img 
-                  src={profileData.palmImage} 
-                  alt="Palm photo" 
-                  className="w-64 h-64 object-cover rounded-lg mx-auto border-4 border-green-200"
-                />
-                <Button 
-                  onClick={() => setProfileData(prev => ({ ...prev, palmImage: null }))}
-                  variant="outline"
-                  className="mt-4"
-                >
-                  Retake Photo
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button 
-                    onClick={() => startCamera('palm')}
-                    className="h-32 flex flex-col items-center justify-center gap-2"
-                  >
-                    <Camera className="w-8 h-8" />
-                    <span>Take Photo</span>
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => palmRef.current?.click()}
+            <div className="space-y-4">
+              {profileData.palmPhotoUrl ? (
+                <div className="text-center">
+                  <img
+                    src={profileData.palmPhotoUrl}
+                    alt="Palm photo"
+                    className="w-32 h-32 rounded-lg mx-auto mb-4 object-cover border-2 border-amber-400"
+                  />
+                  <Button
                     variant="outline"
-                    className="h-32 flex flex-col items-center justify-center gap-2"
+                    onClick={() => setProfileData(prev => ({ ...prev, palmPhoto: null, palmPhotoUrl: '' }))}
+                    className="text-soft"
                   >
-                    <Upload className="w-8 h-8" />
-                    <span>Upload Photo</span>
+                    Change Photo
                   </Button>
                 </div>
-                
-                <input
-                  ref={palmRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) handleFileUpload('palm', file)
-                  }}
-                  className="hidden"
-                />
+              ) : (
+                <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
+                  <Hand className="w-12 h-12 mx-auto mb-4 text-soft/60" />
+                  <p className="text-soft mb-4">Upload a clear palm photo</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileUpload(file, 'palm')
+                    }}
+                    className="hidden"
+                    id="palmPhoto"
+                  />
+                  <Label htmlFor="palmPhoto" asChild>
+                    <Button variant="outline" className="cursor-pointer">
+                      <Camera className="w-4 h-4 mr-2" />
+                      Choose Photo
+                    </Button>
+                  </Label>
+                </div>
+              )}
+              
+              <div className="text-xs text-soft/60 text-center">
+                <p>• Clear photo of your palm (both hands recommended)</p>
+                <p>• Used for palmistry analysis only</p>
+                <p>• Your privacy is protected</p>
               </div>
-            )}
-            
-            <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
-              <p className="text-sm text-green-800 dark:text-green-200">
-                🖐️ Palmistry reveals your life path, relationships, career, and future through the unique lines and patterns on your hands.
-              </p>
             </div>
-          </div>
+          </motion.div>
         )
 
       case 5:
         return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold mb-4">🌟 Complete Your Mystical Profile</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Review your information and complete your setup to unlock all mystical insights.
-              </p>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="text-center mb-8">
+              <div className="text-4xl mb-4">⚙️</div>
+              <h2 className="text-2xl font-semibold text-white mb-2">Preferences</h2>
+              <p className="text-soft">Customize your mystical experience</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Personal Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p><strong>Name:</strong> {profileData.fullName}</p>
-                  <p><strong>Birth Date:</strong> {profileData.dateOfBirth}</p>
-                  <p><strong>Birth Time:</strong> {profileData.timeOfBirth}</p>
-                  <p><strong>Birth Place:</strong> {profileData.placeOfBirth}</p>
-                </CardContent>
-              </Card>
+            <div className="space-y-6">
+              <div>
+                <Label className="text-soft mb-3 block">Areas of Interest</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {interests.map((interest) => (
+                    <Button
+                      key={interest}
+                      variant={profileData.interests.includes(interest) ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleInterestToggle(interest)}
+                      className="justify-start"
+                    >
+                      {profileData.interests.includes(interest) && <Check className="w-3 h-3 mr-1" />}
+                      {interest}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5" />
-                    Analysis Photos
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="flex items-center gap-2">
-                    <Camera className="w-4 h-4" />
-                    Face Photo: {profileData.selfieImage ? '✅ Uploaded' : '❌ Missing'}
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Hand className="w-4 h-4" />
-                    Palm Photo: {profileData.palmImage ? '✅ Uploaded' : '❌ Missing'}
-                  </p>
-                </CardContent>
-              </Card>
+              <div>
+                <Label className="text-soft mb-3 block">Experience Level</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['beginner', 'intermediate', 'advanced'].map((level) => (
+                    <Button
+                      key={level}
+                      variant={profileData.experienceLevel === level ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setProfileData(prev => ({ ...prev, experienceLevel: level as any }))}
+                      className="capitalize"
+                    >
+                      {level}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-soft mb-3 block">Notification Preferences</Label>
+                <div className="space-y-2">
+                  {Object.entries(profileData.notificationPreferences).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <span className="text-soft capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <Button
+                        variant={value ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setProfileData(prev => ({
+                          ...prev,
+                          notificationPreferences: {
+                            ...prev.notificationPreferences,
+                            [key]: !value
+                          }
+                        }))}
+                      >
+                        {value ? 'On' : 'Off'}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            
-            <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-yellow-950/20 p-6 rounded-lg text-center">
-              <h4 className="text-lg font-semibold mb-2">🔮 Ready to Begin Your Mystical Journey?</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Once complete, you'll have access to all predictive systems, personalized insights, and the exclusive "Ask the Seer" feature.
-              </p>
-            </div>
-          </div>
+          </motion.div>
         )
 
       default:
@@ -441,118 +480,73 @@ export default function ProfileSetupPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-            Complete Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-500">Mystical Profile</span>
-          </h1>
-          <p className="text-xl text-gray-300">
-            Set up your profile to unlock personalized mystical insights and predictions
-          </p>
-        </div>
+  if (!user) {
+    return null
+  }
 
+  return (
+    <div className="min-h-screen p-4">
+      <div className="max-w-2xl mx-auto">
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-400">Step {currentStep} of {steps.length}</span>
-            <span className="text-sm text-gray-400">{Math.round((currentStep / steps.length) * 100)}% Complete</span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-soft text-sm">Step {currentStep} of {totalSteps}</span>
+            <span className="text-soft text-sm">{Math.round(progress)}%</span>
           </div>
-          <Progress value={(currentStep / steps.length) * 100} className="h-2" />
-        </div>
-
-        {/* Step Indicators */}
-        <div className="flex justify-center mb-8">
-          <div className="flex space-x-4">
-            {steps.map((step, index) => (
-              <div
-                key={step.id}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full ${
-                  currentStep >= step.id
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-slate-700 text-gray-400'
-                }`}
-              >
-                <step.icon className="w-4 h-4" />
-                <span className="hidden md:inline text-sm font-medium">{step.title}</span>
-              </div>
-            ))}
-          </div>
+          <Progress value={progress} className="h-2" />
         </div>
 
         {/* Main Content */}
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="glass-card border-white/10">
           <CardContent className="p-8">
-            {renderStepContent()}
+            <AnimatePresence mode="wait">
+              {renderStep()}
+            </AnimatePresence>
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+              <Button
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+                className="text-soft"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Previous
+              </Button>
+
+              {currentStep < totalSteps ? (
+                <Button
+                  onClick={nextStep}
+                  disabled={!profileData.fullName.trim()}
+                  className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                >
+                  Next
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleComplete}
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                >
+                  {isLoading ? (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                      Completing...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Complete Setup
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8">
-          <Button
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            variant="outline"
-            className="px-8"
-          >
-            Previous
-          </Button>
-          
-          {currentStep < steps.length ? (
-            <Button
-              onClick={nextStep}
-              className="px-8 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
-            >
-              Next Step
-            </Button>
-          ) : (
-            <Button
-              onClick={handleCompleteSetup}
-              disabled={loading}
-              className="px-8 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-            >
-              {loading ? 'Setting up...' : 'Complete Setup'}
-            </Button>
-          )}
-        </div>
       </div>
-
-      {/* Camera Modal */}
-      {showCamera && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-lg max-w-2xl w-full mx-4">
-            <div className="text-center mb-4">
-              <h3 className="text-xl font-semibold">
-                {cameraType === 'selfie' ? '📸 Take Face Photo' : '🤲 Take Palm Photo'}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                Position your {cameraType === 'selfie' ? 'face' : 'palm'} clearly in the frame
-              </p>
-            </div>
-            
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full rounded-lg mb-4"
-            />
-            
-            <div className="flex justify-center space-x-4">
-              <Button onClick={capturePhoto} className="bg-green-500 hover:bg-green-600">
-                Capture Photo
-              </Button>
-              <Button 
-                onClick={() => setShowCamera(false)} 
-                variant="outline"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 } 
