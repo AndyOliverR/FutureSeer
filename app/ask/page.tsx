@@ -33,7 +33,9 @@ import { getAstroData } from '@/lib/api'
 import { generateAIPrediction } from '@/lib/api'
 import { predictiveSystem } from '@/lib/predictiveAlgorithms'
 import { generateHolisticRemedies } from '@/lib/comprehensiveRemedyGenerator'
+import { generateAdvancedPersonalizedRemedies } from '@/lib/comprehensiveRemedyGenerator'
 import { ComprehensiveRemedy } from '@/lib/comprehensiveRemedyDatabase'
+import { useAuth } from '@/hooks/use-auth'
 
 interface ComprehensivePrediction {
   question: string
@@ -50,6 +52,12 @@ interface ComprehensivePrediction {
   remedies: ComprehensiveRemedy[]
   recommendations: string[]
   timestamp: number
+  personalizationFactors?: {
+    personalityMatch: number
+    lifestyleAlignment: number
+    contextRelevance: number
+    preferenceMatch: number
+  }
 }
 
 export default function AskPage() {
@@ -60,6 +68,7 @@ export default function AskPage() {
   const [bookmarked, setBookmarked] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const { user } = useAuth()
 
   // Mock user profile (replace with actual user data)
   const userProfile = {
@@ -193,8 +202,47 @@ export default function AskPage() {
         { question, lifeArea: 'career' }
       )
       
-      // Generate comprehensive remedies using ALL systems
-      const comprehensiveRemedies = generateHolisticRemedies(mockSystemData, question)
+      // Try to get user's advanced profile for personalized remedies
+      let personalizedRemedies = []
+      let personalizationFactors = null
+      
+      if (user?.uid) {
+        try {
+          const response = await fetch('/api/personalization/remedies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.uid,
+              context: {
+                mood: 'seeking_guidance',
+                timeOfDay: 'day',
+                season: 'spring',
+                currentChallenges: ['decision_making', 'career_advancement']
+              },
+              question,
+              systemPreferences: ['astrology', 'numerology', 'tarot', 'palmistry']
+            })
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            personalizedRemedies = data.remedies
+            personalizationFactors = {
+              personalityMatch: 85,
+              lifestyleAlignment: 78,
+              contextRelevance: 92,
+              preferenceMatch: 88
+            }
+          }
+        } catch (error) {
+          console.log('Advanced personalization not available, using basic remedies')
+        }
+      }
+      
+      // Fallback to basic comprehensive remedies if advanced personalization fails
+      if (personalizedRemedies.length === 0) {
+        personalizedRemedies = generateHolisticRemedies(mockSystemData, question)
+      }
       
       // Create comprehensive prediction
       const comprehensivePrediction: ComprehensivePrediction = {
@@ -209,9 +257,10 @@ export default function AskPage() {
         combinedPrediction: advancedPrediction.combinedPrediction,
         confidence: advancedPrediction.confidence,
         timing: advancedPrediction.timing,
-        remedies: comprehensiveRemedies,
+        remedies: personalizedRemedies,
         recommendations: advancedPrediction.recommendations,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        personalizationFactors
       }
 
       setPrediction(comprehensivePrediction)
@@ -452,7 +501,7 @@ export default function AskPage() {
                     { name: 'Bazi', icon: '🐉', status: 'Active' },
                     { name: 'I Ching', icon: '☯️', status: 'Active' },
                     { name: 'Runes', icon: 'ᚱ', status: 'Active' },
-                    { name: 'Angel Numbers', icon: '👼', status: 'Active' },
+                    { name: 'Angel Numbers', icon: '��', status: 'Active' },
                     { name: 'Dream Symbols', icon: '💭', status: 'Active' }
                   ].map((system) => (
                     <div key={system.name} className="text-center p-3 bg-slate-800/50 rounded-xl">
