@@ -9,6 +9,7 @@ const navLinks = [
   { name: "Settings", href: "/settings", icon: "⚙️" },
   { name: "Tools", href: "/tools", icon: "🧰" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
+  { name: "Remedies", href: "/remedies", icon: "💎" },
 ];
 
 export function TopNavBar() {

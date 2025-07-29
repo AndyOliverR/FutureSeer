@@ -31,6 +31,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { getAstroData } from '@/lib/api'
 import { generateAIPrediction } from '@/lib/api'
 import { predictiveSystem } from '@/lib/predictiveAlgorithms'
+import { generatePersonalizedRemedies } from '@/lib/remedyDatabase'
 
 interface ComprehensivePrediction {
   question: string
@@ -50,13 +51,24 @@ interface ComprehensivePrediction {
 }
 
 interface Remedy {
-  type: 'gemstone' | 'color' | 'metal' | 'timing' | 'action' | 'crystal' | 'accessory'
+  id: string
+  type: 'gemstone' | 'color' | 'metal' | 'timing' | 'action' | 'crystal' | 'accessory' | 'mantra' | 'mudra' | 'ritual' | 'diet' | 'lifestyle'
   title: string
   description: string
   icon: React.ReactNode
   priority: 'high' | 'medium' | 'low'
   instructions: string[]
   benefits: string[]
+  contraindications?: string[]
+  activationTime?: string
+  duration?: string
+  frequency?: string
+  cost?: 'free' | 'low' | 'medium' | 'high'
+  difficulty?: 'easy' | 'moderate' | 'advanced'
+  astrologicalTriggers?: string[]
+  numerologicalTriggers?: string[]
+  elementalAssociations?: string[]
+  planetaryRulers?: string[]
 }
 
 export default function AskPage() {
@@ -79,183 +91,36 @@ export default function AskPage() {
   }
 
   const generateRemedies = (astroData: any, numerologyData: any, question: string): Remedy[] => {
-    const remedies: Remedy[] = []
-    
-    // Gemstone remedies based on missing numbers
-    if (numerologyData?.missingNumbers?.includes(5)) {
-      remedies.push({
-        type: 'gemstone',
-        title: 'Emerald Ring',
-        description: 'Wear emerald on left ring finger with gold ring',
-        icon: <Gem className="w-5 h-5 text-green-500" />,
-        priority: 'high',
-        instructions: [
-          'Purchase 1 carat emerald',
-          'Set in gold ring',
-          'Wear on left ring finger',
-          'Activate on Wednesday during Mercury hour'
-        ],
-        benefits: [
-          'Enhances communication skills',
-          'Improves business success',
-          'Strengthens relationships',
-          'Brings financial prosperity'
-        ]
-      })
+    // Mock face reading and palm reading data for now
+    const faceReadingData = {
+      eyeShape: 'almond',
+      noseType: 'straight',
+      mouthShape: 'full',
+      foreheadType: 'high',
+      personalityTraits: ['Intelligent', 'Creative', 'Ambitious'],
+      communicationStyle: 'Direct and clear',
+      hiddenTalents: ['Leadership', 'Innovation']
     }
 
-    if (numerologyData?.missingNumbers?.includes(7)) {
-      remedies.push({
-        type: 'gemstone',
-        title: 'Yellow Sapphire',
-        description: 'Wear yellow sapphire on right index finger',
-        icon: <Gem className="w-5 h-5 text-yellow-500" />,
-        priority: 'high',
-        instructions: [
-          'Purchase yellow sapphire',
-          'Set in gold ring',
-          'Wear on right index finger',
-          'Activate on Thursday during Jupiter hour'
-        ],
-        benefits: [
-          'Enhances wisdom and knowledge',
-          'Improves spiritual growth',
-          'Brings good fortune',
-          'Strengthens intuition'
-        ]
-      })
+    const palmReadingData = {
+      lifeLine: 'Long and clear',
+      heartLine: 'Curved and deep',
+      headLine: 'Straight and strong',
+      fateLine: 'Present and clear',
+      lifePath: 'Success in business and relationships',
+      challenges: 'Patience and timing',
+      opportunities: 'Leadership and innovation'
     }
 
-    // Watch remedy for missing numbers 5 and 7
-    if (numerologyData?.missingNumbers?.includes(5) && numerologyData?.missingNumbers?.includes(7)) {
-      remedies.push({
-        type: 'accessory',
-        title: 'Green Dial Watch',
-        description: 'Wear green dial watch with Roman numerals and date',
-        icon: <Watch className="w-5 h-5 text-green-500" />,
-        priority: 'high',
-        instructions: [
-          'Purchase watch with green dial',
-          'Must have Roman numerals',
-          'Must show date',
-          'Chain should be metal with gold and silver links',
-          'Wear daily on left wrist'
-        ],
-        benefits: [
-          'Balances missing numbers 5 and 7',
-          'Improves time management',
-          'Enhances decision-making',
-          'Brings success in endeavors'
-        ]
-      })
-    }
-
-    // Blue sapphire remedy
-    remedies.push({
-      type: 'gemstone',
-      title: 'Blue Sapphire',
-      description: 'Wear blue sapphire on right pinky finger',
-      icon: <Gem className="w-5 h-5 text-blue-500" />,
-      priority: 'medium',
-      instructions: [
-        'Purchase blue sapphire',
-        'Set in silver ring',
-        'Wear on right pinky finger',
-        'Activate on Saturday during Saturn hour'
-      ],
-      benefits: [
-        'Protects from negative energies',
-        'Improves concentration',
-        'Brings discipline and patience',
-        'Enhances career success'
-      ]
-    })
-
-    // Diamond ring remedy
-    remedies.push({
-      type: 'gemstone',
-      title: 'Diamond Ring',
-      description: 'Wear 1 carat diamond with silver on right middle finger',
-      icon: <Diamond className="w-5 h-5 text-white" />,
-      priority: 'medium',
-      instructions: [
-        'Purchase 1 carat diamond',
-        'Set in silver ring',
-        'Wear on right middle finger',
-        'Activate on Friday during Venus hour'
-      ],
-      benefits: [
-        'Enhances love and relationships',
-        'Improves artistic abilities',
-        'Brings luxury and comfort',
-        'Strengthens Venus energy'
-      ]
-    })
-
-    // Color remedies
-    remedies.push({
-      type: 'color',
-      title: 'Wear Green Clothing',
-      description: 'Incorporate green color in daily attire',
-      icon: <Palette className="w-5 h-5 text-green-500" />,
-      priority: 'medium',
-      instructions: [
-        'Wear green clothes on Wednesdays',
-        'Use green accessories',
-        'Include green in home decor',
-        'Choose green for important meetings'
-      ],
-      benefits: [
-        'Balances Mercury energy',
-        'Improves communication',
-        'Brings growth and prosperity',
-        'Enhances mental clarity'
-      ]
-    })
-
-    // Crystal remedies
-    remedies.push({
-      type: 'crystal',
-      title: 'Clear Quartz Crystal',
-      description: 'Keep clear quartz crystal for amplification',
-      icon: <Circle className="w-5 h-5 text-white" />,
-      priority: 'low',
-      instructions: [
-        'Place clear quartz on work desk',
-        'Hold during meditation',
-        'Keep in bedroom for peaceful sleep',
-        'Clean monthly with salt water'
-      ],
-      benefits: [
-        'Amplifies positive energies',
-        'Clears negative thoughts',
-        'Enhances spiritual connection',
-        'Improves focus and clarity'
-      ]
-    })
-
-    // Timing remedies
-    remedies.push({
-      type: 'timing',
-      title: 'Mercury Hour Activities',
-      description: 'Perform important tasks during Mercury hour',
-      icon: <Clock className="w-5 h-5 text-green-500" />,
-      priority: 'medium',
-      instructions: [
-        'Schedule important meetings on Wednesdays',
-        'Start new projects during Mercury hour',
-        'Sign contracts during this time',
-        'Communicate important messages'
-      ],
-      benefits: [
-        'Enhances communication success',
-        'Improves business outcomes',
-        'Brings clarity to decisions',
-        'Strengthens Mercury influence'
-      ]
-    })
-
-    return remedies
+    // Use the comprehensive remedy database
+    return generatePersonalizedRemedies(
+      astroData,
+      numerologyData,
+      faceReadingData,
+      palmReadingData,
+      question,
+      userProfile
+    )
   }
 
   const handleAsk = async (e: React.FormEvent) => {
