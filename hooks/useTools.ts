@@ -29,8 +29,7 @@ export function useTools() {
       icon: "⭐", 
       slug: "kp-astrology",
       category: "Astrology", 
-      description: "Krishnamurti Paddhati system",
-      isComingSoon: true
+      description: "Krishnamurti Paddhati system"
     },
     { 
       name: "Western Astrology", 
@@ -92,16 +91,14 @@ export function useTools() {
       icon: "⏰", 
       slug: "horary",
       category: "Astrology",
-      description: "Answer specific questions with timing",
-      isComingSoon: true
+      description: "Answer specific questions with timing"
     },
     { 
       name: "Bazi", 
       icon: "🐉", 
       slug: "bazi",
       category: "Chinese",
-      description: "Four Pillars of Destiny",
-      isComingSoon: true
+      description: "Four Pillars of Destiny"
     },
     
     // Numerology Tools
@@ -117,8 +114,7 @@ export function useTools() {
       icon: "✡️", 
       slug: "kabbalistic-numerology",
       category: "Numerology",
-      description: "Hebrew mystical number meanings",
-      isComingSoon: true
+      description: "Hebrew mystical number meanings"
     },
     { 
       name: "Angel Numbers", 
@@ -141,16 +137,14 @@ export function useTools() {
       icon: "🌸", 
       slug: "lenormand",
       category: "Divination",
-      description: "36-card fortune telling system",
-      isComingSoon: true
+      description: "36-card fortune telling system"
     },
     { 
       name: "Runes", 
       icon: "ᚱ", 
       slug: "runes",
       category: "Divination",
-      description: "Ancient Norse alphabet divination",
-      isComingSoon: true
+      description: "Ancient Norse alphabet divination"
     },
     { 
       name: "I Ching", 
@@ -160,85 +154,80 @@ export function useTools() {
       description: "Chinese Book of Changes"
     },
     { 
+      name: "Pendulum", 
+      icon: "⏳", 
+      slug: "pendulum",
+      category: "Divination",
+      description: "Dowsing and energy detection"
+    },
+    { 
       name: "Geomancy", 
       icon: "🌍", 
       slug: "geomancy",
       category: "Divination",
-      description: "Medieval earth divination system",
-      isPremium: true
-    },
-    { 
-      name: "Pendulum", 
-      icon: "🔮", 
-      slug: "pendulum",
-      category: "Divination",
-      description: "Dowsing and energy detection",
-      isComingSoon: true
+      description: "Earth divination system"
     },
     
     // Reading Tools
     { 
       name: "Palmistry", 
-      icon: "✋", 
+      icon: "🤲", 
       slug: "palmistry",
       category: "Reading",
-      description: "Palm reading and lifeline analysis"
+      description: "Palm reading and hand analysis"
     },
     { 
       name: "Face Reading", 
       icon: "👤", 
       slug: "face-reading",
       category: "Reading",
-      description: "Physiognomy and facial features"
+      description: "Physiognomy and facial analysis"
     },
-    
-    // Specialized Tools
     { 
       name: "Name Analysis", 
       icon: "📝", 
       slug: "name-analysis",
-      category: "Analysis",
+      category: "Reading",
       description: "Numerological name interpretation"
     },
     { 
       name: "Dream Symbols", 
       icon: "💭", 
       slug: "dream-symbols",
-      category: "Analysis",
-      description: "Dream interpretation and symbols",
-      isComingSoon: true
+      category: "Reading",
+      description: "Dream interpretation and symbolism"
     },
+    
+    // Analysis Tools
     { 
       name: "Vastu", 
       icon: "🏠", 
       slug: "vastu",
       category: "Analysis",
-      description: "Indian architectural energy system"
-    },
-    { 
-      name: "AstroScribe", 
-      icon: "✍️", 
-      slug: "astroscribe",
-      category: "Analysis",
-      description: "AI-powered astrological interpretation",
-      isPremium: true
-    },
+      description: "Space harmony and architecture"
+    }
   ];
 
-  const categories = useMemo(() => {
-    const cats = ["all", ...Array.from(new Set(tools.map(tool => tool.category)))];
-    return cats;
-  }, []);
-
+  // Filter tools based on search and category
   const filteredTools = useMemo(() => {
-    return tools.filter(tool => {
-      const matchesCategory = selectedCategory === "all" || tool.category === selectedCategory;
-      const matchesSearch = tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           tool.description.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [tools, selectedCategory, searchTerm]);
+    let filtered = tools;
+    
+    if (searchTerm) {
+      filtered = filtered.filter(tool => 
+        tool.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tool.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tool.category.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(tool => tool.category === selectedCategory);
+    }
+    
+    return filtered;
+  }, [tools, searchTerm, selectedCategory]);
 
+  // Group tools by category
   const toolsByCategory = useMemo(() => {
     const grouped = tools.reduce((acc, tool) => {
       if (!acc[tool.category]) {
@@ -247,31 +236,38 @@ export function useTools() {
       acc[tool.category].push(tool);
       return acc;
     }, {} as Record<string, Tool[]>);
+    
     return grouped;
   }, [tools]);
 
+  // Get unique categories
+  const categories = useMemo(() => {
+    const cats = [...new Set(tools.map(tool => tool.category))];
+    return ["all", ...cats];
+  }, [tools]);
+
   const getCategoryIcon = (category: string) => {
-    const icons: Record<string, string> = {
+    const icons: { [key: string]: string } = {
       "Astrology": "⭐",
-      "Numerology": "🔢",
+      "Numerology": "🔢", 
       "Divination": "🔮",
       "Reading": "📖",
       "Analysis": "🔍",
-      "Chinese": "🐉",
+      "Chinese": "🐉"
     };
     return icons[category] || "✨";
   };
 
   const getCategoryColor = (category: string) => {
-    const colors: Record<string, string> = {
-      "Astrology": "from-purple-500/20 to-purple-600/20",
-      "Numerology": "from-blue-500/20 to-blue-600/20",
-      "Divination": "from-pink-500/20 to-pink-600/20",
-      "Reading": "from-green-500/20 to-green-600/20",
-      "Analysis": "from-yellow-500/20 to-yellow-600/20",
-      "Chinese": "from-red-500/20 to-red-600/20",
+    const colors: { [key: string]: string } = {
+      "Astrology": "from-purple-500 to-blue-600",
+      "Numerology": "from-cyan-500 to-blue-600",
+      "Divination": "from-pink-500 to-purple-600",
+      "Reading": "from-green-500 to-emerald-600",
+      "Analysis": "from-orange-500 to-red-600",
+      "Chinese": "from-red-500 to-orange-600"
     };
-    return colors[category] || "from-gray-500/20 to-gray-600/20";
+    return colors[category] || "from-gray-500 to-slate-600";
   };
 
   return {

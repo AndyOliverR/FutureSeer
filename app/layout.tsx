@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { MysticalFeedback } from "@/components/MysticalFeedback";
 import { TestAuth } from "@/components/TestAuth";
 import { TestModeSwitcher } from "@/components/TestModeSwitcher";
+import { AuthProvider } from "@/hooks/use-auth";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,14 +23,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-          {children}
-          <Footer />
-          <MysticalFeedback />
-          <TestAuth />
-          <TestModeSwitcher />
-        </div>
-        <Toaster />
+        <AuthProvider>
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            {children}
+            <Footer />
+            <MysticalFeedback />
+            <TestAuth />
+            <TestModeSwitcher />
+          </div>
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

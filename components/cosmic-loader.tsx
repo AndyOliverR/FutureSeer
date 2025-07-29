@@ -1,32 +1,29 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { motion } from 'framer-motion'
 
-export function CosmicLoader() {
+interface CosmicLoaderProps {
+  text?: string
+  className?: string
+}
+
+export function CosmicLoader({ text = "Consulting the cosmic realm...", className = '' }: CosmicLoaderProps) {
   return (
-    <div className="flex items-center justify-center">
+    <div className={`text-center ${className}`}>
       <motion.div
-        className="relative w-16 h-16"
         animate={{ rotate: 360 }}
         transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        className="text-6xl mb-6"
       >
-        {/* Outer ring */}
-        <div className="absolute inset-0 border-4 border-transparent border-t-yellow-400 rounded-full"></div>
-        
-        {/* Inner ring */}
-        <motion.div
-          className="absolute inset-2 border-2 border-transparent border-b-purple-400 rounded-full"
-          animate={{ rotate: -360 }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-        ></motion.div>
-        
-        {/* Center dot */}
-        <motion.div
-          className="absolute inset-6 bg-gradient-to-r from-yellow-400 to-purple-400 rounded-full"
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
-        ></motion.div>
+        🌟
       </motion.div>
+      <motion.p
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        className="text-amber-200 font-serif text-lg"
+      >
+        {text}
+      </motion.p>
     </div>
   )
 } 
