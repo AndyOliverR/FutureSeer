@@ -52,7 +52,17 @@ export function TopNavBar() {
   }, [showMenu]);
 
   const toggleMenu = () => {
-    setShowMenu(prev => !prev);
+    console.log('Toggle menu clicked, current state:', showMenu);
+    setShowMenu(prev => {
+      const newState = !prev;
+      console.log('New menu state:', newState);
+      return newState;
+    });
+  };
+
+  const closeMenu = () => {
+    console.log('Closing menu');
+    setShowMenu(false);
   };
 
   return (
@@ -82,11 +92,11 @@ export function TopNavBar() {
           <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
         </button>
         
-        {/* Navigation Menu */}
+        {/* Navigation Menu - No Borders */}
         {showMenu && (
           <div
             ref={menuRef}
-            className="absolute right-4 top-16 flex flex-col items-center z-50 bg-slate-900/95 backdrop-blur-sm border border-amber-500/20 rounded-lg p-4 shadow-xl"
+            className="absolute right-4 top-16 flex flex-col items-center z-50 bg-slate-900/95 backdrop-blur-sm rounded-lg p-4 shadow-xl"
             style={{ gap: '1.5rem', transformOrigin: 'top right' }}
           >
             {navLinks.map((link, idx) => (
@@ -94,7 +104,7 @@ export function TopNavBar() {
                 key={link.href}
                 href={link.href}
                 className="text-2xl text-yellow-200 hover:text-yellow-400 transition-all duration-200 p-2 hover:scale-110"
-                onClick={() => setShowMenu(false)}
+                onClick={closeMenu}
                 tabIndex={0}
                 aria-label={link.name}
                 style={{ 
