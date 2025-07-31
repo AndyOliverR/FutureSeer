@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { TestAuth } from "@/components/TestAuth"
-import { TestModeSwitcher } from "@/components/TestModeSwitcher"
 import { MysticalFeedback } from "@/components/MysticalFeedback"
 import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/ui/toaster"
@@ -58,16 +57,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <ClientProviders>
-          <AnalyticsInitializer />
-          {children}
-          <TestAuth />
-          <TestModeSwitcher />
-          <MysticalFeedback />
-          <Footer />
-          <Toaster />
-        </ClientProviders>
+      <body className={`${inter.className} bg-slate-950`}>
+        <div
+          className="relative min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
+          style={{ backgroundImage: "url('/images/starfield-bg.png')" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
+          <div className="relative z-10">
+            <ClientProviders>
+              <AnalyticsInitializer />
+              {children}
+              <TestAuth />
+              {/* <TestModeSwitcher /> */}
+              <MysticalFeedback />
+              <Footer />
+              <Toaster />
+            </ClientProviders>
+          </div>
+        </div>
       </body>
     </html>
   )
