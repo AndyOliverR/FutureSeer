@@ -152,7 +152,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               variant={activeTab === 'share' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab('share')}
-              className="flex-1"
+              className={`flex-1 ${activeTab === 'share' ? 'bg-amber-500/20 text-amber-200 border-amber-500/30' : 'text-gray-300 hover:text-amber-200'}`}
             >
               <Share2 className="w-4 h-4 mr-2" />
               Share
@@ -161,7 +161,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               variant={activeTab === 'contacts' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab('contacts')}
-              className="flex-1"
+              className={`flex-1 ${activeTab === 'contacts' ? 'bg-amber-500/20 text-amber-200 border-amber-500/30' : 'text-gray-300 hover:text-amber-200'}`}
             >
               <Users className="w-4 h-4 mr-2" />
               Contacts ({contacts.length})
@@ -170,7 +170,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               variant={activeTab === 'stats' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab('stats')}
-              className="flex-1"
+              className={`flex-1 ${activeTab === 'stats' ? 'bg-amber-500/20 text-amber-200 border-amber-500/30' : 'text-gray-300 hover:text-amber-200'}`}
             >
               <Star className="w-4 h-4 mr-2" />
               Stats

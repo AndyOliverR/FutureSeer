@@ -51,6 +51,10 @@ export function TopNavBar() {
     };
   }, [showMenu]);
 
+  const toggleMenu = () => {
+    setShowMenu(prev => !prev);
+  };
+
   return (
     <nav className="w-full bg-slate-950/90 border-b border-yellow-700/20 shadow-lg px-4 py-2 flex items-center justify-between z-50 sticky top-0">
       <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent tracking-wide hover:scale-105 transition-transform">
@@ -60,7 +64,7 @@ export function TopNavBar() {
         {/* Mystical Share Button */}
         <button
           onClick={() => setShowShareModal(true)}
-          className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 text-purple-200 hover:from-purple-500/30 hover:to-indigo-500/30 transition-all duration-200 hover:scale-110"
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 hover:from-purple-500/30 hover:to-indigo-500/30 transition-all duration-200 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/25"
           aria-label="Share FutureSeer"
           title="Share FutureSeer"
         >
@@ -70,7 +74,7 @@ export function TopNavBar() {
         {/* Hamburger menu */}
         <button
           className="flex flex-col justify-center items-center w-10 h-10 rounded hover:bg-yellow-700/10 focus:outline-none transition-all duration-200"
-          onClick={() => setShowMenu((v) => !v)}
+          onClick={toggleMenu}
           aria-label="Toggle navigation menu"
         >
           <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}></span>
@@ -89,7 +93,7 @@ export function TopNavBar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-2xl text-yellow-200 hover:text-yellow-400 transition-all duration-200 p-2 hover:scale-110"
+                className="text-2xl text-yellow-200 hover:text-yellow-400 transition-all duration-200 p-2 hover:scale-110 hover:bg-amber-500/10 rounded-full"
                 onClick={() => setShowMenu(false)}
                 tabIndex={0}
                 aria-label={link.name}
