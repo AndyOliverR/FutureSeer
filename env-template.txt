@@ -7,12 +7,16 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 # AstroApp API for astrological data (Server-side only)
 ASTROAPP_API_KEY=your_astroapp_api_key_here
+ASTROAPP_EMAIL=your_astroapp_email_here
+ASTROAPP_PASSWORD=your_astroapp_password_here
 
 # Stability AI for symbolic image generation (Server-side only)
 STABILITY_API_KEY=your_stability_api_key_here
 
-# PostHog Analytics (Server-side only)
+# PostHog Analytics
 POSTHOG_API_KEY=your_posthog_api_key_here
+NEXT_PUBLIC_POSTHOG_KEY=your_posthog_public_key_here
+NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
 
 # Firebase Configuration (Client-side public keys)
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key_here
@@ -21,8 +25,6 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-
-
 
 # App Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000

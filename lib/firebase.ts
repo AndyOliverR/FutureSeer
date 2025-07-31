@@ -60,13 +60,14 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       if (!firebaseConfig.appId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_APP_ID');
 
       if (missingConfigs.length > 0) {
-        console.error('Firebase configuration incomplete. Missing:', missingConfigs);
-        console.warn('Firebase configuration incomplete. Some features may not work.');
+        console.error('❌ Firebase configuration incomplete. Missing:', missingConfigs);
+        console.warn('⚠️ Firebase configuration incomplete. Some features may not work.');
+        console.info('💡 Please check your environment variables in Vercel dashboard.');
         return { app: null, auth: null, db: null };
       }
 
       // Log Firebase config status (without exposing actual values)
-      console.log('Firebase configuration status:', {
+      console.log('✅ Firebase configuration status:', {
         apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
         authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
         projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
@@ -75,26 +76,29 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
         appId: firebaseConfig.appId ? '✅ Set' : '❌ Missing',
       });
 
+      // Initialize Firebase app
       app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
       firebaseAuth = getAuth(app);
       
-      // Connect to the "default" database explicitly to resolve naming conflict
-      // Firebase Support identified that "default" database exists but should be "(default)"
-      // This explicit connection resolves the "WebChannelConnection RPC 'write' stream transport errored" issue
+      // Connect to Firestore with better error handling
       try {
-        firebaseDB = getFirestore(app, 'default');
-        console.log('Connected to Firestore database: "default"');
-      } catch (dbError) {
-        console.warn('Failed to connect to "default" database, trying default connection:', dbError);
-        // Fallback to default database connection
         firebaseDB = getFirestore(app);
-        console.log('Connected to default Firestore database');
+        console.log('✅ Connected to Firestore database successfully');
+        
+        // Test the connection with a simple operation
+        const testDoc = doc(firebaseDB, '_test', 'connection');
+        console.log('✅ Firestore connection test completed');
+      } catch (dbError) {
+        console.error('❌ Failed to connect to Firestore:', dbError);
+        console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
+        return { app: null, auth: null, db: null };
       }
       
-      console.log('Firebase initialized successfully');
-      console.log('Note: Firestore connection will be tested on first use');
+      console.log('✅ Firebase initialized successfully');
+      console.log('ℹ️ Note: Firestore connection will be tested on first use');
     } catch (error) {
-      console.error('Error initializing Firebase:', error);
+      console.error('❌ Error initializing Firebase:', error);
+      console.error('💡 Please check your Firebase configuration and environment variables.');
       return { app: null, auth: null, db: null };
     }
   }

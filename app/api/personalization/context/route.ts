@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
-
-const db = getFirestore();
+import { getFirebaseDB } from '@/lib/firebase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +13,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const db = getFirebaseDB();
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 500 }
+      );
+    }
+
+    const { doc, updateDoc } = await import('firebase/firestore');
     const userRef = doc(db, 'users', userId);
     
     // Update user's current context
@@ -48,6 +55,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
+    const db = getFirebaseDB();
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 500 }
+      );
+    }
+
+    const { doc, getDoc } = await import('firebase/firestore');
     const userDoc = await getDoc(doc(db, 'users', userId));
     
     if (!userDoc.exists()) {
@@ -85,6 +101,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    const db = getFirebaseDB();
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database not available' },
+        { status: 500 }
+      );
+    }
+
+    const { doc, updateDoc, getDoc } = await import('firebase/firestore');
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     

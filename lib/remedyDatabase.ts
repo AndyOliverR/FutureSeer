@@ -8,7 +8,7 @@ export interface Remedy {
   type: 'gemstone' | 'color' | 'metal' | 'timing' | 'action' | 'crystal' | 'accessory' | 'mantra' | 'mudra' | 'ritual' | 'diet' | 'lifestyle'
   title: string
   description: string
-  icon: React.ReactNode
+  icon: string
   priority: 'high' | 'medium' | 'low'
   instructions: string[]
   benefits: string[]
@@ -25,7 +25,7 @@ export interface Remedy {
 }
 
 // Comprehensive Gemstone Database
-const GEMSTONE_DATABASE = {
+export const GEMSTONE_DATABASE = {
   // Sun Sign Gemstones
   aries: [
     {
@@ -246,7 +246,7 @@ const GEMSTONE_DATABASE = {
 }
 
 // Numerology-based Remedies
-const NUMEROLOGY_REMEDIES = {
+export const NUMEROLOGY_REMEDIES = {
   missingNumbers: {
     1: {
       title: 'Leadership Development',
@@ -387,7 +387,7 @@ const NUMEROLOGY_REMEDIES = {
 }
 
 // Color Therapy Database
-const COLOR_THERAPY = {
+export const COLOR_THERAPY = {
   red: {
     title: 'Energy and Courage',
     description: 'Enhance physical energy and courage',
@@ -495,7 +495,7 @@ const COLOR_THERAPY = {
 }
 
 // Mantra Database
-const MANTRA_DATABASE = {
+export const MANTRA_DATABASE = {
   om: {
     title: 'Universal Sound',
     description: 'The primordial sound that connects to universal consciousness',
@@ -538,7 +538,7 @@ const MANTRA_DATABASE = {
 }
 
 // Mudra Database
-const MUDRA_DATABASE = {
+export const MUDRA_DATABASE = {
   gyan: {
     title: 'Gyan Mudra',
     description: 'Mudra of knowledge and wisdom',
@@ -616,7 +616,7 @@ export function generatePersonalizedRemedies(
         type: 'gemstone',
         title: primaryGemstone.name,
         description: primaryGemstone.description,
-        icon: <Gem className="w-5 h-5 text-blue-500" />,
+        icon: 'gem',
         priority: 'high',
         instructions: primaryGemstone.instructions,
         benefits: primaryGemstone.benefits,
@@ -642,7 +642,7 @@ export function generatePersonalizedRemedies(
           type: remedy.type as any,
           title: remedy.title,
           description: remedy.description,
-          icon: <Star className="w-5 h-5 text-yellow-500" />,
+          icon: 'star',
           priority: 'high',
           instructions: remedy.instructions,
           benefits: remedy.benefits,
@@ -665,7 +665,7 @@ export function generatePersonalizedRemedies(
         type: lifePathRemedy.type as any,
         title: lifePathRemedy.title,
         description: lifePathRemedy.description,
-        icon: <Heart className="w-5 h-5 text-red-500" />,
+        icon: 'heart',
         priority: 'medium',
         instructions: lifePathRemedy.instructions,
         benefits: lifePathRemedy.benefits,
@@ -688,7 +688,7 @@ export function generatePersonalizedRemedies(
         type: 'color',
         title: colorRemedy.title,
         description: colorRemedy.description,
-        icon: <Palette className="w-5 h-5 text-green-500" />,
+        icon: 'palette',
         priority: 'medium',
         instructions: colorRemedy.instructions,
         benefits: colorRemedy.benefits,
@@ -710,7 +710,7 @@ export function generatePersonalizedRemedies(
       type: 'mantra',
       title: mantra.title,
       description: mantra.description,
-      icon: <Circle className="w-5 h-5 text-purple-500" />,
+      icon: 'circle',
       priority: 'medium',
       instructions: mantra.instructions,
       benefits: mantra.benefits,
@@ -730,7 +730,7 @@ export function generatePersonalizedRemedies(
       type: 'mudra',
       title: mudra.title,
       description: mudra.description,
-      icon: <Shield className="w-5 h-5 text-blue-500" />,
+      icon: 'shield',
       priority: 'medium',
       instructions: mudra.instructions,
       benefits: mudra.benefits,
@@ -814,7 +814,7 @@ function generateTimingRemedy(astroData: any, numerologyData: any): Remedy | nul
     type: 'timing',
     title: 'Optimal Timing for Activities',
     description: 'Align your activities with cosmic timing for maximum effectiveness',
-    icon: <Clock className="w-5 h-5 text-green-500" />,
+            icon: 'clock',
     priority: 'medium',
     instructions: [
       'Schedule important meetings during Mercury hours (6-8 AM, 2-4 PM)',
@@ -842,7 +842,7 @@ function generateLifestyleRemedies(question: string, astroData: any, numerologyD
       type: 'lifestyle',
       title: 'Career Enhancement Practices',
       description: 'Boost your professional success and career growth',
-      icon: <Zap className="w-5 h-5 text-yellow-500" />,
+      icon: 'zap',
       priority: 'high',
       instructions: [
         'Dress professionally in your power colors',
@@ -864,7 +864,7 @@ function generateLifestyleRemedies(question: string, astroData: any, numerologyD
       type: 'lifestyle',
       title: 'Love and Relationship Enhancement',
       description: 'Attract and nurture loving relationships',
-      icon: <Heart className="w-5 h-5 text-pink-500" />,
+              icon: 'heart',
       priority: 'high',
       instructions: [
         'Wear pink or rose-colored clothing',
@@ -886,7 +886,7 @@ function generateLifestyleRemedies(question: string, astroData: any, numerologyD
       type: 'lifestyle',
       title: 'Health and Wellness Optimization',
       description: 'Enhance your physical and mental well-being',
-      icon: <Shield className="w-5 h-5 text-green-500" />,
+              icon: 'shield',
       priority: 'high',
       instructions: [
         'Practice daily exercise or yoga',

@@ -78,7 +78,7 @@ export interface ComprehensiveRemedy {
 // 1. ASTROLOGICAL REMEDIES (All Systems)
 // ============================================================================
 
-const ASTROLOGICAL_REMEDIES = {
+export const ASTROLOGICAL_REMEDIES = {
   // Vedic Astrology Remedies
   vedic: {
     nakshatraRemedies: {
@@ -222,7 +222,7 @@ const ASTROLOGICAL_REMEDIES = {
 // 2. NUMEROLOGY REMEDIES (All Systems)
 // ============================================================================
 
-const NUMEROLOGY_REMEDIES = {
+export const NUMEROLOGY_REMEDIES = {
   // Chaldean Numerology
   chaldean: {
     missingNumbers: {
@@ -291,7 +291,7 @@ const NUMEROLOGY_REMEDIES = {
 // 3. DIVINATION REMEDIES
 // ============================================================================
 
-const DIVINATION_REMEDIES = {
+export const DIVINATION_REMEDIES = {
   // Tarot Remedies
   tarot: {
     majorArcana: {
@@ -345,7 +345,7 @@ const DIVINATION_REMEDIES = {
 // 4. READING REMEDIES
 // ============================================================================
 
-const READING_REMEDIES = {
+export const READING_REMEDIES = {
   // Palmistry Remedies
   palmistry: {
     lineEnhancement: {
@@ -399,7 +399,7 @@ const READING_REMEDIES = {
 // 5. SPECIALIZED SYSTEM REMEDIES
 // ============================================================================
 
-const SPECIALIZED_REMEDIES = {
+export const SPECIALIZED_REMEDIES = {
   // Vastu Remedies
   vastu: {
     directionalRemedies: {
