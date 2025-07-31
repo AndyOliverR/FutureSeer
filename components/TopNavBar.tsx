@@ -57,45 +57,53 @@ export function TopNavBar() {
         FutureSeer
       </Link>
       <div className="flex items-center gap-4">
-        {/* Share App Button */}
+        {/* Mystical Share Button */}
         <button
           onClick={() => setShowShareModal(true)}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-200 hover:from-amber-500/30 hover:to-yellow-500/30 transition-all duration-200"
+          className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 text-purple-200 hover:from-purple-500/30 hover:to-indigo-500/30 transition-all duration-200 hover:scale-110"
           aria-label="Share FutureSeer"
+          title="Share FutureSeer"
         >
-          <span className="text-sm">Share</span>
-          <span className="text-lg">📤</span>
+          <span className="text-xl">🔮</span>
         </button>
         
         {/* Hamburger menu */}
         <button
-          className="flex flex-col justify-center items-center w-10 h-10 rounded hover:bg-yellow-700/10 focus:outline-none"
+          className="flex flex-col justify-center items-center w-10 h-10 rounded hover:bg-yellow-700/10 focus:outline-none transition-all duration-200"
           onClick={() => setShowMenu((v) => !v)}
-          aria-label="Open navigation menu"
+          aria-label="Toggle navigation menu"
         >
-          <span className="block w-6 h-0.5 bg-white mb-1 rounded"></span>
-          <span className="block w-6 h-0.5 bg-white mb-1 rounded"></span>
-          <span className="block w-6 h-0.5 bg-white rounded"></span>
+          <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}></span>
+          <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? 'opacity-0' : 'mb-1'}`}></span>
+          <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
         </button>
-        <div
-          ref={menuRef}
-          className={`absolute right-4 top-16 flex flex-col items-center z-50 transition-all duration-300 ${showMenu ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-90 opacity-0 pointer-events-none'}`}
-          style={{ gap: '1.5rem', transformOrigin: 'top right' }}
-        >
-          {showMenu && navLinks.map((link, idx) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-2xl text-yellow-200 hover:text-yellow-400 transition-colors p-2 bg-transparent border-none shadow-none"
-              onClick={() => setShowMenu(false)}
-              tabIndex={0}
-              aria-label={link.name}
-              style={{ transition: 'transform 0.3s cubic-bezier(.4,2,.6,1)', transform: showMenu ? `translateY(0)` : `translateY(-10px)`, transitionDelay: `${idx * 40}ms` }}
-            >
-              <span>{link.icon}</span>
-            </Link>
-          ))}
-        </div>
+        
+        {/* Navigation Menu */}
+        {showMenu && (
+          <div
+            ref={menuRef}
+            className="absolute right-4 top-16 flex flex-col items-center z-50 bg-slate-900/95 backdrop-blur-sm border border-amber-500/20 rounded-lg p-4 shadow-xl"
+            style={{ gap: '1.5rem', transformOrigin: 'top right' }}
+          >
+            {navLinks.map((link, idx) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-2xl text-yellow-200 hover:text-yellow-400 transition-all duration-200 p-2 hover:scale-110"
+                onClick={() => setShowMenu(false)}
+                tabIndex={0}
+                aria-label={link.name}
+                style={{ 
+                  transition: 'all 0.3s cubic-bezier(.4,2,.6,1)', 
+                  animationDelay: `${idx * 40}ms`,
+                  animation: 'slideInFromTop 0.3s ease-out forwards'
+                }}
+              >
+                <span>{link.icon}</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
       
       {/* Share App Modal */}
@@ -103,6 +111,19 @@ export function TopNavBar() {
         isOpen={showShareModal} 
         onClose={() => setShowShareModal(false)} 
       />
+      
+      <style jsx>{`
+        @keyframes slideInFromTop {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </nav>
   );
 }
