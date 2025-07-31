@@ -1,192 +1,225 @@
 "use client"
 
-import { useState } from "react"
-import Link from "next/link"
-import { useAuth } from "@/hooks/use-auth"
-import { generateAIPrediction, getAstroData, getSymbolicData } from "@/lib/api"
+import { useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { useTools } from '@/hooks/useTools'
+import { useAnalytics } from '@/lib/analytics'
+import { ToolSymbol } from '@/components/MysticalSymbol'
+import { MysticalCard } from '@/components/MysticalBackground'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { ArrowLeft, Sparkles, Star, Clock, Users, TrendingUp } from 'lucide-react'
+import Link from 'next/link'
 
-export default function ToolPage({ params }: { params: { slug: string } }) {
-  const { user, userProfile } = useAuth()
-  const [loading, setLoading] = useState(false)
-  const [showResults, setShowResults] = useState(false)
-  const [result, setResult] = useState<any>(null)
-  const [formData, setFormData] = useState({
-    birthDate: "",
-    birthTime: "",
-    birthPlace: "",
-    question: "",
-  })
+export default function ToolPage() {
+  const params = useParams()
+  const { tools } = useTools()
+  const { trackToolAccess, trackPageView } = useAnalytics()
+  
+  const slug = params.slug as string
+  const tool = tools.find(t => t.slug === slug)
 
-  const toolName = params.slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())
-
-  const toolDescriptions: { [key: string]: string } = {
-    "vedic-astrology": "Vedic Astrology, also known as Jyotish, is an ancient Indian system that uses the position of celestial bodies to understand human destiny. It provides insights into personality, relationships, career, and life events.",
-    "kp-astrology": "Krishnamurti Paddhati (KP) is a modern astrological system that uses sub-lords and cusps to provide precise timing predictions. It's particularly effective for answering specific questions with exact timing.",
-    "western-astrology": "Western Astrology is based on the tropical zodiac and focuses on personality traits, life patterns, and psychological insights. It uses the 12 zodiac signs and planetary positions.",
-    "horary": "Horary Astrology answers specific questions by casting a chart for the moment the question is asked. It provides yes/no answers and timing for events.",
-    "bazi": "Bazi (Four Pillars of Destiny) is a Chinese astrological system that uses year, month, day, and hour pillars to reveal personality and life path.",
-    "chaldean-numerology": "Chaldean Numerology is an ancient Babylonian system that assigns numerical values to letters to reveal personality traits and life patterns.",
-    "kabbalistic-numerology": "Kabbalistic Numerology uses Hebrew letters and their numerical values to provide spiritual insights and divine guidance.",
-    "angel-numbers": "Angel Numbers are sequences that appear repeatedly to convey divine messages and guidance from spiritual realms.",
-    "tarot": "Tarot uses 78 cards with rich symbolism to provide guidance on love, career, spirituality, and life decisions.",
-    "lenormand": "Lenormand is a 36-card system that provides practical, straightforward answers about daily life and relationships.",
-    "runes": "Runes are ancient Norse symbols that offer wisdom, protection, and guidance for life's challenges and decisions.",
-    "i-ching": "I Ching (Book of Changes) is an ancient Chinese divination system that provides wisdom through 64 hexagrams.",
-    "pendulum": "Pendulum dowsing uses energy detection to answer yes/no questions and find lost objects or information.",
-    "palmistry": "Palmistry reads the lines and features of the hand to reveal personality traits and life events.",
-    "face-reading": "Face Reading (Physiognomy) interprets facial features to understand personality and predict life patterns.",
-    "name-analysis": "Name Analysis uses numerological principles to reveal the hidden meanings and influences of names.",
-    "dream-symbols": "Dream Symbol interpretation decodes the messages and guidance hidden in your dreams.",
-    "vastu": "Vastu Shastra is an ancient Indian system that harmonizes living spaces with natural energies for prosperity and well-being.",
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!user || !formData.birthDate || !formData.birthPlace) return
-
-    setLoading(true)
-    try {
-      // Get astrological data
-      const astroData = await getAstroData(formData.birthDate, formData.birthPlace)
-      
-      // Create a specific question for this tool
-      const toolQuestion = formData.question || `What insights does ${toolName} reveal about my life path?`
-      
-      // Get symbolic data
-      const symbolicData = getSymbolicData(toolQuestion, astroData)
-      
-      // Generate AI prediction specific to this tool
-      const aiPrediction = await generateAIPrediction(toolQuestion, astroData, symbolicData)
-      
-      setResult({
-        toolName,
-        question: toolQuestion,
-        astroData,
-        symbolicData,
-        aiPrediction,
-        timestamp: Date.now(),
+  useEffect(() => {
+    if (tool) {
+      // Track tool access
+      trackToolAccess(tool.name, tool.category, {
+        tool_slug: slug,
+        is_premium: tool.isPremium,
+        is_coming_soon: tool.isComingSoon
       })
-      setShowResults(true)
-    } catch (error) {
-      console.error('Error generating reading:', error)
-    } finally {
-      setLoading(false)
+      
+      // Track page view
+      trackPageView()
     }
+  }, [tool, slug, trackToolAccess, trackPageView])
+
+  if (!tool) {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Tool Not Found</h1>
+          <p className="text-gray-400 mb-6">The mystical tool you're looking for doesn't exist.</p>
+          <Link href="/tools">
+            <Button className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Tools
+            </Button>
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12 pt-8">
-          <Link href="/tools" className="text-soft hover:gold-glow mb-4 inline-block">
-            ← Back to Tools
+        <div className="mb-8">
+          <Link href="/tools" className="inline-flex items-center gap-2 text-amber-200 hover:text-amber-300 transition-colors mb-6 group">
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>Back to Tools</span>
           </Link>
-          <h1 className="text-4xl font-semibold gold-glow mb-4">{toolName}</h1>
-          <p className="text-soft leading-relaxed">Ancient wisdom meets AI precision</p>
-        </div>
-
-        {/* Background Symbol */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-          <div className="symbolic-placeholder w-96 h-96 rounded-full">{toolName} Symbol</div>
-        </div>
-
-        {/* Description */}
-        <div className="glass-card rounded-3xl p-8 mb-12 relative z-10">
-          <h2 className="text-xl gold-glow mb-4">About {toolName}</h2>
-          <p className="text-soft leading-relaxed">
-            {toolDescriptions[params.slug] || "This ancient divination system provides deep insights into your spiritual path. Our AI analyzes traditional patterns and meanings to deliver personalized guidance tailored to your unique situation."}
-          </p>
-        </div>
-
-        {/* Input Form */}
-        <div className="glass-card rounded-3xl p-8 mb-12 relative z-10">
-          <h3 className="text-lg gold-glow mb-6">Enter Your Details</h3>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          
+          <div className="flex items-center gap-4 mb-4">
+            <ToolSymbol
+              toolName={slug}
+              size="lg"
+              variant="glow"
+              animated={true}
+            />
             <div>
-              <label className="block text-soft text-sm mb-2">Birth Date *</label>
-              <input
-                type="date"
-                required
-                value={formData.birthDate}
-                onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                className="w-full bg-transparent border border-white/20 rounded-2xl p-4 text-soft focus:outline-none focus:border-yellow-400"
-              />
+              <h1 className="text-4xl font-bold gold-glow mb-2">{tool.name}</h1>
+              <p className="text-soft text-lg">{tool.description}</p>
             </div>
-            <div>
-              <label className="block text-soft text-sm mb-2">Birth Time</label>
-              <input
-                type="time"
-                value={formData.birthTime}
-                onChange={(e) => setFormData({ ...formData, birthTime: e.target.value })}
-                className="w-full bg-transparent border border-white/20 rounded-2xl p-4 text-soft focus:outline-none focus:border-yellow-400"
-              />
-            </div>
-            <div>
-              <label className="block text-soft text-sm mb-2">Birth Place *</label>
-              <input
-                type="text"
-                required
-                value={formData.birthPlace}
-                onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
-                placeholder="City, Country"
-                className="w-full bg-transparent border border-white/20 rounded-2xl p-4 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400"
-              />
-            </div>
-            <div>
-              <label className="block text-soft text-sm mb-2">Specific Question (Optional)</label>
-              <textarea
-                value={formData.question}
-                onChange={(e) => setFormData({ ...formData, question: e.target.value })}
-                placeholder={`What would you like to know about your ${toolName.toLowerCase()}?`}
-                className="w-full h-24 bg-transparent border border-white/20 rounded-2xl p-4 text-soft placeholder-white/50 resize-none focus:outline-none focus:border-yellow-400"
-              />
           </div>
-            <div className="text-center">
-              <button
-                type="submit"
-                disabled={loading || !formData.birthDate || !formData.birthPlace}
-                className="px-8 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-2xl font-semibold hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "🔮 Consulting the Stars..." : `Generate ${toolName} Reading`}
-            </button>
+          
+          <div className="flex items-center gap-4">
+            <Badge variant={tool.isPremium ? "default" : "secondary"}>
+              {tool.isPremium ? "Premium" : "Free"}
+            </Badge>
+            {tool.isComingSoon && (
+              <Badge variant="outline" className="text-amber-400 border-amber-400">
+                Coming Soon
+              </Badge>
+            )}
+            <Badge variant="outline">{tool.category}</Badge>
           </div>
-          </form>
         </div>
 
-        {/* Results */}
-        {showResults && result && (
-          <div className="glass-card rounded-3xl p-8">
-          <h3 className="text-lg gold-glow mb-6">Your {toolName} Reading</h3>
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-soft font-medium mb-2">Question</h4>
-                <p className="text-soft/70">{result.question}</p>
-              </div>
-              <div>
-                <h4 className="text-soft font-medium mb-2">AI Interpretation</h4>
-                <p className="text-soft/70 leading-relaxed">{result.aiPrediction}</p>
-              </div>
-              <div>
-                <h4 className="text-soft font-medium mb-2">Astrological Context</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div className="text-center p-3 glass-card rounded-xl">
-                    <div className="text-soft/70">Sun Sign</div>
-                    <div className="gold-glow">{result.astroData.sun_sign}</div>
+        {/* Tool Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <MysticalCard
+              tool={slug}
+              showBackground={true}
+              className="mb-8"
+            >
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-semibold text-white mb-4">About {tool.name}</h2>
+                  <p className="text-soft leading-relaxed">{tool.longDescription}</p>
+                </div>
+                
+                {tool.features && (
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-3">Key Features</h3>
+                    <ul className="space-y-2">
+                      {tool.features.map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2 text-soft">
+                          <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className="text-center p-3 glass-card rounded-xl">
-                    <div className="text-soft/70">Moon Sign</div>
-                    <div className="gold-glow">{result.astroData.moon_sign}</div>
-                  </div>
-                  <div className="text-center p-3 glass-card rounded-xl">
-                    <div className="text-soft/70">Rising Sign</div>
-                    <div className="gold-glow">{result.astroData.rising_sign}</div>
+                )}
+                
+                {tool.quote && (
+                  <blockquote className="border-l-4 border-amber-400 pl-4 italic text-soft">
+                    "{tool.quote}"
+                  </blockquote>
+                )}
+              </div>
+            </MysticalCard>
+
+            {/* Tool Interface */}
+            {!tool.isComingSoon && (
+              <MysticalCard tool={slug}>
+                <div className="text-center">
+                  <h3 className="text-xl font-semibold text-white mb-4">Ready to Begin Your Journey?</h3>
+                  <p className="text-soft mb-6">Experience the mystical power of {tool.name}</p>
+                  <Link href={`/tools/${slug}/analyze`}>
+                    <Button size="lg" className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600">
+                      <Star className="w-4 h-4 mr-2" />
+                      Start {tool.name} Reading
+                    </Button>
+                  </Link>
+                </div>
+              </MysticalCard>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Tool Stats */}
+            <Card className="glass-card border-white/10">
+              <CardHeader>
+                <CardTitle className="text-white">Tool Statistics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-soft">Accuracy Rate</span>
+                  <span className="text-amber-400 font-semibold">94%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-soft">Response Time</span>
+                  <span className="text-amber-400 font-semibold">~2s</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-soft">User Rating</span>
+                  <div className="flex items-center gap-1">
+                    <Star className="w-4 h-4 text-amber-400 fill-current" />
+                    <span className="text-amber-400 font-semibold">4.8/5</span>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Related Tools */}
+            <Card className="glass-card border-white/10">
+              <CardHeader>
+                <CardTitle className="text-white">Related Tools</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {tools
+                    .filter(t => t.category === tool.category && t.slug !== slug)
+                    .slice(0, 3)
+                    .map((relatedTool) => (
+                      <Link
+                        key={relatedTool.slug}
+                        href={`/tools/${relatedTool.slug}`}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                      >
+                        <ToolSymbol
+                          toolName={relatedTool.slug}
+                          size="sm"
+                          variant="default"
+                        />
+                        <div>
+                          <p className="text-white text-sm font-medium">{relatedTool.name}</p>
+                          <p className="text-soft text-xs">{relatedTool.description}</p>
+                        </div>
+                      </Link>
+                    ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card className="glass-card border-white/10">
+              <CardHeader>
+                <CardTitle className="text-white">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <Clock className="w-4 h-4 mr-2" />
+                  View History
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Users className="w-4 h-4 mr-2" />
+                  Share Reading
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Track Progress
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        )}
       </div>
     </div>
   )

@@ -1,528 +1,374 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
+import { useToast } from '@/components/ui/use-toast'
+import { useAuth } from '@/hooks/use-auth'
+import { useAnalytics } from '@/lib/analytics'
+import { MysticalCard } from '@/components/MysticalBackground'
+import { ToolSymbol } from '@/components/MysticalSymbol'
 import { 
   Sparkles, 
-  Search, 
-  Star, 
-  Clock, 
+  Brain, 
   Heart, 
+  Target, 
   Zap, 
-  Shield, 
-  Gem, 
-  Watch,
-  Circle,
-  Diamond,
-  Palette,
-  Music,
+  Star, 
+  Moon, 
+  Sun,
+  Loader2,
+  Send,
+  RefreshCw,
   BookOpen,
-  Calendar,
-  MapPin,
-  User,
-  Camera,
-  Hand,
-  Leaf
+  Lightbulb,
+  Shield,
+  Compass
 } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
-import { getAstroData } from '@/lib/api'
-import { generateAIPrediction } from '@/lib/api'
-import { predictiveSystem } from '@/lib/predictiveAlgorithms'
-import { generateHolisticRemedies } from '@/lib/comprehensiveRemedyGenerator'
-import { generateAdvancedPersonalizedRemedies } from '@/lib/comprehensiveRemedyGenerator'
-import { ComprehensiveRemedy } from '@/lib/comprehensiveRemedyDatabase'
-import { useAuth } from '@/hooks/use-auth'
 
-interface ComprehensivePrediction {
-  question: string
-  aiPrediction: string
-  astroData: any
-  numerologyData: any
-  faceReadingData: any
-  palmReadingData: any
-  markovPrediction: any
-  bayesianPrediction: any
-  combinedPrediction: string
+interface HolisticRemedy {
+  id: string
+  type: 'gemstone' | 'numerology' | 'astrology' | 'crystal' | 'meditation' | 'ritual'
+  name: string
+  description: string
+  benefits: string[]
+  instructions: string
   confidence: number
-  timing: string
-  remedies: ComprehensiveRemedy[]
-  recommendations: string[]
-  timestamp: number
-  personalizationFactors?: {
-    personalityMatch: number
-    lifestyleAlignment: number
-    contextRelevance: number
-    preferenceMatch: number
-  }
+  symbol?: string
+  color?: string
 }
 
 export default function AskPage() {
-  const [question, setQuestion] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [prediction, setPrediction] = useState<ComprehensivePrediction | null>(null)
-  const [revealed, setRevealed] = useState(false)
-  const [bookmarked, setBookmarked] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
   const { user } = useAuth()
+  const { toast } = useToast()
+  const { trackAskTheSeer, trackToolAnalysis } = useAnalytics()
+  
+  const [question, setQuestion] = useState('')
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [remedies, setRemedies] = useState<HolisticRemedy[]>([])
+  const [questionType, setQuestionType] = useState<string>('')
+  const [analysisQuality, setAnalysisQuality] = useState<number>(0)
 
-  // Mock user profile (replace with actual user data)
-  const userProfile = {
-    fullName: 'Andy Rozario',
-    dateOfBirth: '1990-01-01',
-    timeOfBirth: '12:00',
-    placeOfBirth: 'Mumbai, India',
-    email: 'andyoliverrozario2@gmail.com'
-  }
+  // Question type detection
+  useEffect(() => {
+    if (question.trim()) {
+      const lowerQuestion = question.toLowerCase()
+      let detectedType = 'general'
+      
+      if (lowerQuestion.includes('love') || lowerQuestion.includes('relationship') || lowerQuestion.includes('romance')) {
+        detectedType = 'love'
+      } else if (lowerQuestion.includes('career') || lowerQuestion.includes('job') || lowerQuestion.includes('work')) {
+        detectedType = 'career'
+      } else if (lowerQuestion.includes('health') || lowerQuestion.includes('wellness') || lowerQuestion.includes('healing')) {
+        detectedType = 'health'
+      } else if (lowerQuestion.includes('money') || lowerQuestion.includes('finance') || lowerQuestion.includes('wealth')) {
+        detectedType = 'finance'
+      } else if (lowerQuestion.includes('spiritual') || lowerQuestion.includes('purpose') || lowerQuestion.includes('meaning')) {
+        detectedType = 'spiritual'
+      }
+      
+      setQuestionType(detectedType)
+    }
+  }, [question])
 
-  // Mock comprehensive system data (replace with actual data)
-  const mockSystemData = {
-    // Astrological Data
-    vedicAstrology: {
-      nakshatra: 'Ashwini',
-      dosha: 'Vata',
-      sunSign: 'Capricorn',
-      moonSign: 'Cancer',
-      risingSign: 'Libra'
-    },
-    westernAstrology: {
-      sunSign: 'Capricorn',
-      moonSign: 'Cancer',
-      risingSign: 'Libra',
-      houses: { first: 'Libra', second: 'Scorpio' }
-    },
-    medicalAstrology: {
-      weakPlanets: ['Mars', 'Saturn'],
-      healthAreas: ['Digestive', 'Nervous']
-    },
-    financialAstrology: {
-      wealthPlanets: ['Jupiter', 'Venus'],
-      investmentTiming: 'Waxing Moon'
-    },
-    
-    // Numerology Data
-    chaldeanNumerology: {
-      lifePathNumber: 7,
-      missingNumbers: [5, 7],
-      destinyNumber: 3,
-      personalYear: 2024
-    },
-    angelNumbers: {
-      currentSequence: '111',
-      frequentNumbers: ['111', '222', '333']
-    },
-    kabbalisticNumerology: {
-      nameValue: 15,
-      spiritualPath: 'Wisdom'
-    },
-    
-    // Divination Data
-    tarot: {
-      majorArcana: ['Fool', 'Magician'],
-      currentInfluence: 'New Beginnings'
-    },
-    runes: {
-      primaryRune: 'Fehu',
-      energy: 'Abundance'
-    },
-    iching: {
-      primaryHexagram: '1',
-      meaning: 'Creative Force'
-    },
-    
-    // Reading Data
-    palmistry: {
-      weakLines: ['Life Line', 'Heart Line'],
-      strongLines: ['Head Line']
-    },
-    faceReading: {
-      eyeShape: 'Almond',
-      noseType: 'Straight',
-      personalityTraits: ['Intelligent', 'Creative']
-    },
-    
-    // Specialized Data
-    vastu: {
-      weakDirections: ['North', 'East'],
-      strongDirections: ['South', 'West']
-    },
-    bazi: {
-      primaryElement: 'Wood',
-      weakElement: 'Metal'
-    },
-    dreamSymbols: {
-      frequentSymbols: ['Water', 'Flying'],
-      interpretation: 'Emotional Freedom'
-    },
-    
-    // Profile Data
-    userProfile,
-    currentLifeArea: 'Career'
-  }
+  const questionTypes = [
+    { type: 'love', icon: Heart, label: 'Love & Relationships', color: 'bg-pink-500' },
+    { type: 'career', icon: Target, label: 'Career & Success', color: 'bg-blue-500' },
+    { type: 'health', icon: Shield, label: 'Health & Wellness', color: 'bg-green-500' },
+    { type: 'finance', icon: Zap, label: 'Finance & Abundance', color: 'bg-yellow-500' },
+    { type: 'spiritual', icon: Compass, label: 'Spiritual Growth', color: 'bg-purple-500' },
+    { type: 'general', icon: Brain, label: 'General Guidance', color: 'bg-gray-500' }
+  ]
 
-  const handleAsk = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     if (!question.trim()) {
       toast({
-        title: "Question Required",
-        description: "Please enter your question for the Seer.",
-        variant: "destructive"
+        title: 'Question Required',
+        description: 'Please enter your mystical question',
+        variant: 'destructive'
       })
       return
     }
 
-    setLoading(true)
-    setError(null)
-    setRevealed(false)
-
+    setIsAnalyzing(true)
+    
     try {
-      // Get astrological data
-      const astroData = await getAstroData(userProfile.dateOfBirth, userProfile.timeOfBirth, userProfile.placeOfBirth, 'user123')
-      
-      // Generate AI prediction
-      const symbolicData = {
-        primarySymbol: 'Star',
-        elementalInfluence: 'Fire',
-        cosmicAlignment: 'Harmonious',
-        timing: 'Favorable'
-      }
-      const aiPrediction = await generateAIPrediction(question, astroData, symbolicData)
-      
-      // Generate advanced predictions using Markov Chain and Bayesian Networks
-      const advancedPrediction = await predictiveSystem.generateComprehensivePrediction(
-        'user123',
-        'current_state',
-        astroData,
-        mockSystemData.chaldeanNumerology,
-        ['career_focused', 'spiritual_seeker'],
-        { question, lifeArea: 'career' }
-      )
-      
-      // Try to get user's advanced profile for personalized remedies
-      let personalizedRemedies = []
-      let personalizationFactors = null
-      
-      if (user?.uid) {
-        try {
-          const response = await fetch('/api/personalization/remedies', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user.uid,
-              context: {
-                mood: 'seeking_guidance',
-                timeOfDay: 'day',
-                season: 'spring',
-                currentChallenges: ['decision_making', 'career_advancement']
-              },
-              question,
-              systemPreferences: ['astrology', 'numerology', 'tarot', 'palmistry']
-            })
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            personalizedRemedies = data.remedies
-            personalizationFactors = {
-              personalityMatch: 85,
-              lifestyleAlignment: 78,
-              contextRelevance: 92,
-              preferenceMatch: 88
-            }
-          }
-        } catch (error) {
-          console.log('Advanced personalization not available, using basic remedies')
-        }
-      }
-      
-      // Fallback to basic comprehensive remedies if advanced personalization fails
-      if (personalizedRemedies.length === 0) {
-        personalizedRemedies = generateHolisticRemedies(mockSystemData, question)
-      }
-      
-      // Create comprehensive prediction
-      const comprehensivePrediction: ComprehensivePrediction = {
-        question,
-        aiPrediction: aiPrediction.prediction,
-        astroData,
-        numerologyData: mockSystemData.chaldeanNumerology,
-        faceReadingData: mockSystemData.faceReading,
-        palmReadingData: mockSystemData.palmistry,
-        markovPrediction: advancedPrediction.markovPrediction,
-        bayesianPrediction: advancedPrediction.bayesianPrediction,
-        combinedPrediction: advancedPrediction.combinedPrediction,
-        confidence: advancedPrediction.confidence,
-        timing: advancedPrediction.timing,
-        remedies: personalizedRemedies,
-        recommendations: advancedPrediction.recommendations,
-        timestamp: Date.now(),
-        personalizationFactors
-      }
-
-      setPrediction(comprehensivePrediction)
-      toast({
-        title: "Divine Wisdom Received",
-        description: "The Seer has revealed your cosmic guidance.",
+      // Track the question
+      trackAskTheSeer(questionType, {
+        question_length: question.length,
+        question_type: questionType,
+        user_id: user?.uid
       })
-    } catch (err) {
-      console.error('Error generating prediction:', err)
-      setError('Failed to connect with the divine realm. Please try again.')
+
+      // Simulate AI analysis
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      // Generate mock remedies
+      const mockRemedies: HolisticRemedy[] = [
+        {
+          id: '1',
+          type: 'gemstone',
+          name: 'Rose Quartz',
+          description: 'The stone of universal love and healing',
+          benefits: ['Enhances love and relationships', 'Promotes emotional healing', 'Opens the heart chakra'],
+          instructions: 'Wear as jewelry or place under your pillow',
+          confidence: 0.92,
+          symbol: '💎',
+          color: '#FFB6C1'
+        },
+        {
+          id: '2',
+          type: 'numerology',
+          name: 'Life Path Number 7',
+          description: 'Your spiritual journey and inner wisdom',
+          benefits: ['Deepens spiritual understanding', 'Enhances intuition', 'Promotes inner peace'],
+          instructions: 'Meditate on the number 7 daily',
+          confidence: 0.88,
+          symbol: '7️⃣',
+          color: '#800080'
+        },
+        {
+          id: '3',
+          type: 'meditation',
+          name: 'Cosmic Alignment Meditation',
+          description: 'Align your energy with universal forces',
+          benefits: ['Brings clarity and focus', 'Reduces stress and anxiety', 'Connects with higher self'],
+          instructions: 'Practice for 15 minutes daily at sunrise',
+          confidence: 0.85,
+          symbol: '🧘',
+          color: '#4169E1'
+        }
+      ]
+      
+      setRemedies(mockRemedies)
+      setAnalysisQuality(0.88)
+      
+      // Track analysis completion
+      trackToolAnalysis('ask_the_seer', questionType, 0.88, {
+        remedies_generated: mockRemedies.length,
+        question_length: question.length
+      })
+      
       toast({
-        title: "Connection Error",
-        description: "Unable to reach the mystical realm. Please try again.",
-        variant: "destructive"
+        title: 'Mystical Insights Revealed! 🌟',
+        description: 'Your personalized remedies have been generated.',
+      })
+      
+    } catch (error) {
+      console.error('Analysis failed:', error)
+      toast({
+        title: 'Analysis Failed',
+        description: 'Could not generate mystical insights. Please try again.',
+        variant: 'destructive'
       })
     } finally {
-      setLoading(false)
+      setIsAnalyzing(false)
     }
   }
 
-  const getRemedyIcon = (type: string) => {
-    switch (type) {
-      case 'gemstone': return <Gem className="w-5 h-5 text-blue-500" />
-      case 'color': return <Palette className="w-5 h-5 text-purple-500" />
-      case 'crystal': return <Circle className="w-5 h-5 text-white" />
-      case 'accessory': return <Watch className="w-5 h-5 text-green-500" />
-      case 'mantra': return <Music className="w-5 h-5 text-yellow-500" />
-      case 'mudra': return <Hand className="w-5 h-5 text-pink-500" />
-      case 'ritual': return <Sparkles className="w-5 h-5 text-amber-500" />
-      case 'diet': return <Leaf className="w-5 h-5 text-green-500" />
-      case 'lifestyle': return <Heart className="w-5 h-5 text-red-500" />
-      default: return <Star className="w-5 h-5 text-gold-500" />
-    }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical': return 'bg-red-500 text-white'
-      case 'high': return 'bg-orange-500 text-white'
-      case 'medium': return 'bg-yellow-500 text-black'
-      case 'low': return 'bg-green-500 text-white'
-      default: return 'bg-gray-500 text-white'
-    }
+  const resetForm = () => {
+    setQuestion('')
+    setRemedies([])
+    setQuestionType('')
+    setAnalysisQuality(0)
   }
 
   return (
     <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8 pt-8">
-          <h1 className="text-5xl font-bold gold-glow mb-4">🔮 Ask the Seer</h1>
-          <p className="text-soft leading-relaxed text-lg mb-4">
-            Divine wisdom from ALL mystical systems combined for your ultimate guidance
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-8"
+        >
+          <div className="text-6xl mb-4">🔮</div>
+          <h1 className="text-4xl font-bold gold-glow mb-4">Ask the Seer</h1>
+          <p className="text-soft text-lg leading-relaxed">
+            Pose your deepest questions to our AI-powered mystical oracle. 
+            Receive personalized insights combining astrology, numerology, and ancient wisdom.
           </p>
-          <div className="glass-card rounded-2xl p-6 border border-purple-500/20 max-w-2xl mx-auto">
-            <p className="text-xl italic text-purple-300 font-serif mb-2">
-              "When all systems align, the universe speaks with one voice, revealing the path to your destiny."
-            </p>
-            <p className="text-soft/70 text-sm">— FutureSeer Oracle</p>
-          </div>
-        </div>
+        </motion.div>
 
-        {/* Question Form */}
-        <Card className="glass-card border-purple-500/20 mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl gold-glow text-center">Your Sacred Question</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAsk} className="space-y-4">
+        {/* Question Input */}
+        <MysticalCard className="mb-8">
+          <div className="space-y-6">
+            <div>
+              <label className="text-soft text-sm mb-3 block">Your Mystical Question</label>
               <Textarea
+                placeholder="Ask about love, career, health, spirituality, or any aspect of your life..."
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                placeholder="Ask anything about your life, destiny, relationships, career, health, or spiritual path..."
-                className="min-h-[120px] text-lg"
-                disabled={loading}
+                rows={4}
+                className="bg-white/5 border-white/20 text-soft placeholder-gray-500 focus:border-amber-400"
+                disabled={isAnalyzing}
               />
-              <Button 
-                type="submit" 
-                disabled={loading || !question.trim()}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            </div>
+
+            {/* Question Type Indicator */}
+            {questionType && (
+              <div className="flex items-center gap-2">
+                <span className="text-soft text-sm">Detected:</span>
+                {questionTypes.map((type) => (
+                  type.type === questionType && (
+                    <Badge key={type.type} className={type.color}>
+                      <type.icon className="w-3 h-3 mr-1" />
+                      {type.label}
+                    </Badge>
+                  )
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                onClick={handleSubmit}
+                disabled={isAnalyzing || !question.trim()}
+                className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
               >
-                {loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Consulting the Divine Realm...
-                  </div>
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Consulting the Stars...
+                  </>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5" />
-                    Ask the Seer
-                  </div>
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Seek Mystical Guidance
+                  </>
                 )}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
+              
+              {remedies.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={resetForm}
+                  className="text-soft"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  New Question
+                </Button>
+              )}
+            </div>
+          </div>
+        </MysticalCard>
 
-        {/* Error Display */}
-        {error && (
-          <Card className="glass-card border-red-500/20 mb-8">
-            <CardContent className="pt-6">
-              <div className="text-red-400 text-center">
-                <p className="text-lg">{error}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Prediction Results */}
-        {prediction && (
-          <div className="space-y-8">
-            {/* Combined Prediction */}
-            <Card className="glass-card border-purple-500/20">
-              <CardHeader>
-                <CardTitle className="text-2xl gold-glow flex items-center gap-2">
-                  <Sparkles className="w-6 h-6" />
-                  Divine Oracle Response
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl p-6 border border-purple-500/20">
-                  <p className="text-lg leading-relaxed text-white">
-                    {prediction.combinedPrediction}
-                  </p>
+        {/* Results */}
+        {remedies.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="space-y-6"
+          >
+            {/* Analysis Quality */}
+            <MysticalCard>
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Star className="w-5 h-5 text-amber-400" />
+                  <span className="text-white font-semibold">Analysis Confidence</span>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-slate-800/50 rounded-xl">
-                    <Clock className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-                    <h4 className="font-semibold text-blue-400">Timing</h4>
-                    <p className="text-sm text-gray-300">{prediction.timing}</p>
-                  </div>
-                  <div className="text-center p-4 bg-slate-800/50 rounded-xl">
-                    <Zap className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
-                    <h4 className="font-semibold text-yellow-400">Energy</h4>
-                    <p className="text-sm text-gray-300">High Cosmic Alignment</p>
-                  </div>
-                  <div className="text-center p-4 bg-slate-800/50 rounded-xl">
-                    <Shield className="w-8 h-8 text-green-400 mx-auto mb-2" />
-                    <h4 className="font-semibold text-green-400">Protection</h4>
-                    <p className="text-sm text-gray-300">Divine Shield Active</p>
-                  </div>
+                <div className="text-2xl font-bold text-amber-400 mb-1">
+                  {Math.round(analysisQuality * 100)}%
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Comprehensive Remedies */}
-            <Card className="glass-card border-amber-500/20">
-              <CardHeader>
-                <CardTitle className="text-2xl gold-glow flex items-center gap-2">
-                  <Gem className="w-6 h-6" />
-                  Your Personalized Remedy Program
-                </CardTitle>
-                <p className="text-soft">
-                  Holistic solutions from ALL mystical systems combined for your unique profile
+                <p className="text-soft text-sm">
+                  Based on cosmic alignment and mystical calculations
                 </p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {prediction.remedies.map((remedy, index) => (
-                    <Card key={remedy.id} className="bg-slate-800/50 border-slate-600">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {remedy.icon}
-                            <CardTitle className="text-lg">{remedy.title}</CardTitle>
-                          </div>
-                          <Badge className={getPriorityColor(remedy.priority)}>
-                            {remedy.priority}
+              </div>
+            </MysticalCard>
+
+            {/* Remedies */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {remedies.map((remedy, index) => (
+                <motion.div
+                  key={remedy.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
+                >
+                  <MysticalCard>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">{remedy.symbol}</div>
+                        <div>
+                          <h3 className="text-white font-semibold">{remedy.name}</h3>
+                          <Badge variant="outline" className="text-xs">
+                            {remedy.type}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-400">{remedy.system} • {remedy.category}</p>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <p className="text-sm text-gray-300">{remedy.description}</p>
-                        
-                        <div>
-                          <h5 className="font-semibold text-sm mb-2 text-amber-400">Instructions:</h5>
-                          <ul className="text-xs text-gray-400 space-y-1">
-                            {remedy.instructions.slice(0, 3).map((instruction, idx) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <span className="text-amber-400 mt-1">•</span>
-                                {instruction}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        
-                        <div>
-                          <h5 className="font-semibold text-sm mb-2 text-green-400">Benefits:</h5>
-                          <ul className="text-xs text-gray-400 space-y-1">
-                            {remedy.benefits.slice(0, 2).map((benefit, idx) => (
-                              <li key={idx} className="flex items-start gap-2">
-                                <span className="text-green-400 mt-1">✓</span>
-                                {benefit}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>Cost: {remedy.cost}</span>
-                          <span>Difficulty: {remedy.difficulty}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-                
-                <div className="mt-6 p-4 bg-gradient-to-r from-amber-900/30 to-orange-900/30 rounded-xl border border-amber-500/20">
-                  <h4 className="text-lg font-semibold text-amber-400 mb-2">🌟 Holistic Integration</h4>
-                  <p className="text-sm text-gray-300">
-                    These remedies work synergistically across all mystical systems. Each remedy enhances the others, 
-                    creating a powerful transformation program tailored specifically to your unique cosmic blueprint.
-                  </p>
-                </div>
+                      </div>
+                      
+                      <p className="text-soft text-sm">{remedy.description}</p>
+                      
+                      <div>
+                        <h4 className="text-white text-sm font-medium mb-2">Benefits:</h4>
+                        <ul className="space-y-1">
+                          {remedy.benefits.map((benefit, i) => (
+                            <li key={i} className="text-soft text-xs flex items-center gap-2">
+                              <div className="w-1 h-1 bg-amber-400 rounded-full" />
+                              {benefit}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div>
+                        <h4 className="text-white text-sm font-medium mb-2">Instructions:</h4>
+                        <p className="text-soft text-xs">{remedy.instructions}</p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-soft text-xs">Confidence</span>
+                        <span className="text-amber-400 text-sm font-semibold">
+                          {Math.round(remedy.confidence * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  </MysticalCard>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Features */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-16"
+        >
+          <h2 className="text-2xl font-bold text-white text-center mb-8">Why Choose the Seer?</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="glass-card border-white/10">
+              <CardContent className="p-6 text-center">
+                <Brain className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+                <h3 className="text-white font-semibold mb-2">AI-Powered Insights</h3>
+                <p className="text-soft text-sm">Advanced algorithms combine multiple mystical traditions for accurate guidance.</p>
               </CardContent>
             </Card>
-
-            {/* System Integration Summary */}
-            <Card className="glass-card border-cyan-500/20">
-              <CardHeader>
-                <CardTitle className="text-2xl gold-glow flex items-center gap-2">
-                  <Sparkles className="w-6 h-6" />
-                  Systems Integration Analysis
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {[
-                    { name: 'Vedic', icon: '🕉️', status: 'Active' },
-                    { name: 'Western', icon: '♈', status: 'Active' },
-                    { name: 'Numerology', icon: '🔢', status: 'Active' },
-                    { name: 'Tarot', icon: '🃏', status: 'Active' },
-                    { name: 'Palmistry', icon: '✋', status: 'Active' },
-                    { name: 'Face Reading', icon: '👤', status: 'Active' },
-                    { name: 'Vastu', icon: '🏠', status: 'Active' },
-                    { name: 'Bazi', icon: '🐉', status: 'Active' },
-                    { name: 'I Ching', icon: '☯️', status: 'Active' },
-                    { name: 'Runes', icon: 'ᚱ', status: 'Active' },
-                    { name: 'Angel Numbers', icon: '��', status: 'Active' },
-                    { name: 'Dream Symbols', icon: '💭', status: 'Active' }
-                  ].map((system) => (
-                    <div key={system.name} className="text-center p-3 bg-slate-800/50 rounded-xl">
-                      <div className="text-2xl mb-1">{system.icon}</div>
-                      <div className="text-xs font-semibold text-gray-300">{system.name}</div>
-                      <div className="text-xs text-green-400">{system.status}</div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="mt-6 p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-xl border border-cyan-500/20">
-                  <h4 className="text-lg font-semibold text-cyan-400 mb-2">🔮 Comprehensive Analysis</h4>
-                  <p className="text-sm text-gray-300">
-                    All 12+ mystical systems have been analyzed and integrated to provide you with the most 
-                    comprehensive and accurate guidance possible. This is the power of FutureSeer's holistic approach.
-                  </p>
-                </div>
+            
+            <Card className="glass-card border-white/10">
+              <CardContent className="p-6 text-center">
+                <Heart className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+                <h3 className="text-white font-semibold mb-2">Personalized Remedies</h3>
+                <p className="text-soft text-sm">Tailored solutions based on your unique cosmic blueprint and current situation.</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="glass-card border-white/10">
+              <CardContent className="p-6 text-center">
+                <BookOpen className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+                <h3 className="text-white font-semibold mb-2">Ancient Wisdom</h3>
+                <p className="text-soft text-sm">Drawing from centuries of mystical knowledge and spiritual traditions.</p>
               </CardContent>
             </Card>
           </div>
-        )}
+        </motion.div>
       </div>
     </div>
   )
