@@ -61,14 +61,14 @@ export function TopNavBar() {
         FutureSeer
       </Link>
       <div className="flex items-center gap-4">
-        {/* Mystical Share Button */}
+        {/* Mystical Share Button - Just Crystal Ball */}
         <button
           onClick={() => setShowShareModal(true)}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 hover:from-purple-500/30 hover:to-indigo-500/30 transition-all duration-200 hover:scale-110 hover:shadow-lg hover:shadow-purple-500/25"
+          className="flex items-center justify-center w-10 h-10 text-2xl hover:scale-110 transition-all duration-200"
           aria-label="Share FutureSeer"
           title="Share FutureSeer"
         >
-          <span className="text-xl">🔮</span>
+          <span>🔮</span>
         </button>
         
         {/* Hamburger menu */}
@@ -93,7 +93,7 @@ export function TopNavBar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-2xl text-yellow-200 hover:text-yellow-400 transition-all duration-200 p-2 hover:scale-110 hover:bg-amber-500/10 rounded-full"
+                className="text-2xl text-yellow-200 hover:text-yellow-400 transition-all duration-200 p-2 hover:scale-110"
                 onClick={() => setShowMenu(false)}
                 tabIndex={0}
                 aria-label={link.name}
