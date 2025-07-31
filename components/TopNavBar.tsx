@@ -1,6 +1,7 @@
    "use client";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
+import { ShareAppModal } from "./ShareAppModal";
 
 const navLinks = [
   { name: "Dashboard", href: "/dashboard", icon: "🏠" },
@@ -10,10 +11,13 @@ const navLinks = [
   { name: "Tools", href: "/tools", icon: "🧰" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
   { name: "Remedies", href: "/remedies", icon: "💎" },
+  { name: "Community", href: "/community/attribution", icon: "🏆" },
+  { name: "Admin", href: "/admin/community-management", icon: "👑" },
 ];
 
 export function TopNavBar() {
   const [showMenu, setShowMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -32,12 +36,37 @@ export function TopNavBar() {
     };
   }, [showMenu]);
 
+  // Add keyboard support for closing menu
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setShowMenu(false);
+      }
+    }
+    if (showMenu) {
+      document.addEventListener("keydown", handleEscape);
+    }
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [showMenu]);
+
   return (
     <nav className="w-full bg-slate-950/90 border-b border-yellow-700/20 shadow-lg px-4 py-2 flex items-center justify-between z-50 sticky top-0">
       <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent tracking-wide hover:scale-105 transition-transform">
         FutureSeer
       </Link>
       <div className="flex items-center gap-4">
+        {/* Share App Button */}
+        <button
+          onClick={() => setShowShareModal(true)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-200 hover:from-amber-500/30 hover:to-yellow-500/30 transition-all duration-200"
+          aria-label="Share FutureSeer"
+        >
+          <span className="text-sm">Share</span>
+          <span className="text-lg">📤</span>
+        </button>
+        
         {/* Hamburger menu */}
         <button
           className="flex flex-col justify-center items-center w-10 h-10 rounded hover:bg-yellow-700/10 focus:outline-none"
@@ -68,6 +97,12 @@ export function TopNavBar() {
           ))}
         </div>
       </div>
+      
+      {/* Share App Modal */}
+      <ShareAppModal 
+        isOpen={showShareModal} 
+        onClose={() => setShowShareModal(false)} 
+      />
     </nav>
   );
 }
