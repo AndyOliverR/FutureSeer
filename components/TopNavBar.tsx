@@ -1,4 +1,4 @@
-   "use client";
+"use client";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { ShareAppModal } from "./ShareAppModal";
@@ -67,11 +67,11 @@ export function TopNavBar() {
   };
 
   return (
-    <nav className="w-full bg-slate-950/90 border-b border-yellow-700/20 shadow-lg px-4 py-2 flex items-center justify-between z-50 sticky top-0">
+    <nav className="w-full bg-slate-950/90 border-b border-yellow-700/20 shadow-lg px-4 py-2 flex items-center justify-between z-50 sticky top-0 relative">
       <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent tracking-wide hover:scale-105 transition-transform">
         FutureSeer
       </Link>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 relative">
         {/* Mystical Share Button - Just Crystal Ball */}
         <button
           onClick={() => setShowShareModal(true)}
@@ -84,22 +84,21 @@ export function TopNavBar() {
         
         {/* Hamburger menu */}
         <button
-          className="hamburger-button flex flex-col justify-center items-center w-10 h-10 focus:outline-none border-0 bg-transparent p-0 m-0"
+          className="hamburger-button flex flex-col justify-center items-center w-10 h-10 focus:outline-none"
           onClick={toggleMenu}
           aria-label="Toggle navigation menu"
-          style={{ border: 'none', outline: 'none' }}
         >
           <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}></span>
           <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'opacity-0' : 'mb-1'}`}></span>
           <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
         </button>
         
-        {/* Navigation Menu - No Borders */}
+        {/* Navigation Menu - Fixed positioning */}
         {showMenu && (
           <div
             ref={menuRef}
-            className="absolute right-4 top-16 flex flex-col items-center z-50 bg-slate-900/95 backdrop-blur-sm rounded-lg p-4 shadow-xl"
-            style={{ gap: '1.5rem', transformOrigin: 'top right' }}
+            className="absolute right-0 top-12 flex flex-col items-center z-[9999] bg-slate-900/95 backdrop-blur-sm rounded-lg p-4 shadow-xl border border-yellow-700/20"
+            style={{ gap: '1.5rem', minWidth: '200px' }}
           >
             {navLinks.map((link, idx) => (
               <Link
@@ -140,11 +139,12 @@ export function TopNavBar() {
           }
         }
         
-        /* Override any button styling that might cause borders */
+        /* Remove all button styling that might cause borders */
         button {
           border: none !important;
           outline: none !important;
           background: transparent !important;
+          box-shadow: none !important;
         }
         
         /* Specific styling for hamburger button */
@@ -152,6 +152,22 @@ export function TopNavBar() {
           border: none !important;
           outline: none !important;
           background: transparent !important;
+          box-shadow: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+        
+        /* Remove any focus styles */
+        .hamburger-button:focus {
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        /* Remove any hover styles that might add borders */
+        .hamburger-button:hover {
+          border: none !important;
+          outline: none !important;
           box-shadow: none !important;
         }
       `}</style>
