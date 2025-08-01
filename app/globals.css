@@ -10,4 +10,45 @@
 .dark :root {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
+}
+
+/* Remove all button borders and outlines */
+button {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button:hover {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Specific styling for hamburger menu */
+.hamburger-button {
+  border: none !important;
+  outline: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.hamburger-button:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.hamburger-button:hover {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 } 
