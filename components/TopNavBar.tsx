@@ -84,13 +84,14 @@ export function TopNavBar() {
         
         {/* Hamburger menu */}
         <button
-          className="flex flex-col justify-center items-center w-10 h-10 rounded hover:bg-yellow-700/10 focus:outline-none transition-all duration-200"
+          className="hamburger-button flex flex-col justify-center items-center w-10 h-10 focus:outline-none border-0 bg-transparent p-0 m-0"
           onClick={toggleMenu}
           aria-label="Toggle navigation menu"
+          style={{ border: 'none', outline: 'none' }}
         >
-          <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}></span>
-          <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? 'opacity-0' : 'mb-1'}`}></span>
-          <span className={`block w-6 h-0.5 bg-white rounded transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
+          <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}></span>
+          <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'opacity-0' : 'mb-1'}`}></span>
+          <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
         </button>
         
         {/* Navigation Menu - No Borders */}
@@ -137,6 +138,21 @@ export function TopNavBar() {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        
+        /* Override any button styling that might cause borders */
+        button {
+          border: none !important;
+          outline: none !important;
+          background: transparent !important;
+        }
+        
+        /* Specific styling for hamburger button */
+        .hamburger-button {
+          border: none !important;
+          outline: none !important;
+          background: transparent !important;
+          box-shadow: none !important;
         }
       `}</style>
     </nav>
