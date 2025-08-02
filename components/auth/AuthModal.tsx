@@ -200,19 +200,19 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
               <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-yellow-500/30 rounded-xl p-1 backdrop-blur-sm">
                 <TabsTrigger 
                   value="signin" 
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-yellow-200 data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 rounded-lg transition-all duration-300 hover:bg-yellow-500/10"
+                  className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-amber-400 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 rounded-lg transition-all duration-300 hover:bg-yellow-500/10 hover:text-yellow-200"
                 >
                   Sign In
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup" 
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-yellow-200 data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 rounded-lg transition-all duration-300 hover:bg-yellow-500/10"
+                  className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-amber-400 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 rounded-lg transition-all duration-300 hover:bg-yellow-500/10 hover:text-yellow-200"
                 >
                   Sign Up
                 </TabsTrigger>
                 <TabsTrigger 
                   value="reset" 
-                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-yellow-200 data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 rounded-lg transition-all duration-300 hover:bg-yellow-500/10"
+                  className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-400 data-[state=active]:to-amber-400 data-[state=active]:text-black data-[state=active]:shadow-lg data-[state=active]:shadow-yellow-500/20 rounded-lg transition-all duration-300 hover:bg-yellow-500/10 hover:text-yellow-200"
                 >
                   Reset
                 </TabsTrigger>
