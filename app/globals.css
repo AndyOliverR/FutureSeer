@@ -13,27 +13,27 @@
     transform: translateY(0px) rotate(0deg); 
   }
   50% { 
-    transform: translateY(-10px) rotate(5deg); 
+    transform: translateY(-8px) rotate(3deg); 
   }
 }
 
 @keyframes sparkle {
   0%, 100% { 
-    opacity: 0; 
-    transform: scale(0) rotate(0deg); 
+    opacity: 0.3; 
+    transform: scale(0.8) rotate(0deg); 
   }
   50% { 
     opacity: 1; 
-    transform: scale(1) rotate(180deg); 
+    transform: scale(1.2) rotate(180deg); 
   }
 }
 
 @keyframes cosmic-pulse {
   0%, 100% { 
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); 
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.2); 
   }
   50% { 
-    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6); 
+    box-shadow: 0 0 35px rgba(139, 92, 246, 0.5); 
   }
 }
 
@@ -47,15 +47,15 @@
 }
 
 .animate-float {
-  animation: float 3s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite;
 }
 
 .animate-sparkle {
-  animation: sparkle 2s ease-in-out infinite;
+  animation: sparkle 3s ease-in-out infinite;
 }
 
 .animate-cosmic-pulse {
-  animation: cosmic-pulse 2s ease-in-out infinite;
+  animation: cosmic-pulse 3s ease-in-out infinite;
 }
 
 .animate-mystical-glow {
