@@ -25,18 +25,18 @@ interface FeedbackData {
 function FloatingParticles() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(20)].map((_, i) => (
+      {[...Array(15)].map((_, i) => (
         <div
           key={i}
           className="absolute animate-float"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 3}s`,
-            animationDuration: `${3 + Math.random() * 4}s`,
+            animationDelay: `${Math.random() * 4}s`,
+            animationDuration: `${5 + Math.random() * 6}s`,
           }}
         >
-          <div className="w-1 h-1 bg-gradient-to-r from-amber-400 to-purple-500 rounded-full opacity-60 animate-pulse" />
+          <div className="w-1 h-1 bg-gradient-to-r from-amber-400 to-purple-500 rounded-full opacity-40 animate-pulse" style={{ animationDuration: '4s' }} />
         </div>
       ))}
     </div>
@@ -250,19 +250,21 @@ export function MysticalFeedback() {
             >
               {/* Main button with cosmic effects */}
               <div className="relative">
-                <div className="text-5xl hover:scale-110 transition-all duration-500 animate-mystical-glow">
-                  ✨
-                </div>
+                                 <div className="text-5xl hover:scale-110 transition-all duration-500 animate-mystical-glow relative">
+                   <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-purple-500 to-pink-500 rounded-full blur-lg opacity-30 scale-150" />
+                   <div className="relative z-10">✨</div>
+                 </div>
                 
-                {/* Orbiting sparkles */}
-                <div className="absolute inset-0 animate-spin" style={{ animationDuration: '3s' }}>
-                  <div className="absolute -top-2 -right-2 text-lg animate-sparkle" style={{ animationDelay: '0s' }}>⭐</div>
-                  <div className="absolute -bottom-2 -left-2 text-lg animate-sparkle" style={{ animationDelay: '1s' }}>🌟</div>
-                  <div className="absolute -top-2 -left-2 text-lg animate-sparkle" style={{ animationDelay: '2s' }}>💫</div>
-                </div>
+                                 {/* Orbiting sparkles */}
+                 <div className="absolute inset-0 animate-spin" style={{ animationDuration: '8s' }}>
+                   <div className="absolute -top-3 -right-3 text-lg animate-sparkle" style={{ animationDelay: '0s' }}>⭐</div>
+                   <div className="absolute -bottom-3 -left-3 text-lg animate-sparkle" style={{ animationDelay: '2.5s' }}>🌟</div>
+                   <div className="absolute -top-3 -left-3 text-lg animate-sparkle" style={{ animationDelay: '5s' }}>💫</div>
+                 </div>
                 
-                {/* Cosmic pulse ring */}
-                <div className="absolute inset-0 rounded-full animate-cosmic-pulse" />
+                                 {/* Cosmic pulse ring */}
+                 <div className="absolute inset-0 rounded-full animate-cosmic-pulse" style={{ animationDuration: '4s' }} />
+                 <div className="absolute inset-0 rounded-full animate-cosmic-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
               </div>
               
               {/* Hover effect */}
