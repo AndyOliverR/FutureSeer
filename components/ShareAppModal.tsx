@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -117,238 +116,298 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'registered': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'sent': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'declined': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'registered': return 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-300 border-green-500/40';
+      case 'sent': return 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-300 border-blue-500/40';
+      case 'pending': return 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-300 border-yellow-500/40';
+      case 'declined': return 'bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 border-red-500/40';
+      default: return 'bg-gradient-to-r from-gray-500/20 to-slate-500/20 text-gray-300 border-gray-500/40';
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl bg-slate-900/95 backdrop-blur-sm border-amber-500/20 max-h-[90vh] overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-amber-200 flex items-center gap-2">
-            <Share2 className="w-5 h-5" />
-            Share FutureSeer
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="text-gray-400 hover:text-white"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Tabs */}
-          <div className="flex space-x-1 bg-slate-800/50 rounded-lg p-1">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+      <div className="w-full max-w-2xl bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
+        {/* Animated mystical glow effect */}
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-amber-500/10 rounded-2xl animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
+        
+        {/* Floating particles effect */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-6 left-6 w-2 h-2 bg-amber-400/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-12 right-8 w-1 h-1 bg-yellow-300/80 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-8 left-10 w-1.5 h-1.5 bg-amber-300/70 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-6 right-6 w-1 h-1 bg-yellow-400/60 rounded-full animate-bounce" style={{ animationDelay: '1.5s' }}></div>
+        </div>
+        
+        <div className="relative z-10">
+          <div className="flex flex-row items-center justify-between p-6 border-b border-amber-500/30 relative">
+            {/* Mystical orb behind title */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 rounded-full blur-xl animate-pulse"></div>
+            
+            <div className="flex items-center gap-3 relative z-10">
+              <div className="p-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-lg">
+                <Share2 className="w-6 h-6 text-amber-300" />
+              </div>
+              <h2 className="text-2xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 animate-in slide-in-from-left-2 duration-500">
+                Share FutureSeer
+              </h2>
+            </div>
             <Button
-              variant={activeTab === 'share' ? 'default' : 'ghost'}
+              variant="ghost"
               size="sm"
-              onClick={() => setActiveTab('share')}
-              className={`flex-1 ${activeTab === 'share' ? 'bg-amber-500/20 text-amber-200 border-amber-500/30' : 'text-gray-300 hover:text-amber-200'}`}
+              onClick={onClose}
+              className="text-gray-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-all duration-300 relative z-10"
             >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-            <Button
-              variant={activeTab === 'contacts' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('contacts')}
-              className={`flex-1 ${activeTab === 'contacts' ? 'bg-amber-500/20 text-amber-200 border-amber-500/30' : 'text-gray-300 hover:text-amber-200'}`}
-            >
-              <Users className="w-4 h-4 mr-2" />
-              Contacts ({contacts.length})
-            </Button>
-            <Button
-              variant={activeTab === 'stats' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('stats')}
-              className={`flex-1 ${activeTab === 'stats' ? 'bg-amber-500/20 text-amber-200 border-amber-500/30' : 'text-gray-300 hover:text-amber-200'}`}
-            >
-              <Star className="w-4 h-4 mr-2" />
-              Stats
+              <X className="w-5 h-5" />
             </Button>
           </div>
 
-          {/* Share Tab */}
-          {activeTab === 'share' && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">
-                  Share Method
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant={shareMethod === 'email' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setShareMethod('email')}
-                    className="flex items-center gap-2"
-                  >
-                    <Mail className="w-4 h-4" />
-                    Email
-                  </Button>
-                  <Button
-                    variant={shareMethod === 'message' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setShareMethod('message')}
-                    className="flex items-center gap-2"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    Message
-                  </Button>
-                  <Button
-                    variant={shareMethod === 'link' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setShareMethod('link')}
-                    className="flex items-center gap-2"
-                  >
-                    <Copy className="w-4 h-4" />
-                    Link
-                  </Button>
-                </div>
-              </div>
+          <div className="p-6 space-y-6">
+            {/* Tabs */}
+            <div className="flex space-x-2 bg-gradient-to-r from-slate-800/60 to-slate-700/60 rounded-xl p-1 backdrop-blur-sm border border-amber-500/20">
+              <Button
+                variant={activeTab === 'share' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('share')}
+                className={`flex-1 transition-all duration-300 ${
+                  activeTab === 'share' 
+                    ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
+                }`}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+              <Button
+                variant={activeTab === 'contacts' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('contacts')}
+                className={`flex-1 transition-all duration-300 ${
+                  activeTab === 'contacts' 
+                    ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
+                }`}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Contacts ({contacts.length})
+              </Button>
+              <Button
+                variant={activeTab === 'stats' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('stats')}
+                className={`flex-1 transition-all duration-300 ${
+                  activeTab === 'stats' 
+                    ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
+                }`}
+              >
+                <Star className="w-4 h-4 mr-2" />
+                Stats
+              </Button>
+            </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">
-                  Custom Message (Optional)
-                </label>
-                <Textarea
-                  value={shareMessage}
-                  onChange={(e) => setShareMessage(e.target.value)}
-                  placeholder="Add a personal message to your invitation..."
-                  className="bg-slate-800/50 border-slate-600 text-gray-300"
-                  rows={3}
-                />
-              </div>
-
-              {shareMethod === 'link' && (
+            {/* Share Tab */}
+            {activeTab === 'share' && (
+              <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                 <div>
-                  <label className="text-sm font-medium text-gray-300 mb-2 block">
-                    Share Link
+                  <label className="text-sm font-medium text-amber-300 mb-3 block">
+                    ✨ Share Method ✨
                   </label>
-                  <div className="flex gap-2">
-                    <Input
-                      value={shareLink}
-                      readOnly
-                      className="bg-slate-800/50 border-slate-600 text-gray-300"
-                    />
+                  <div className="grid grid-cols-3 gap-3">
                     <Button
-                      onClick={() => handleShare('link')}
-                      className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white"
+                      variant={shareMethod === 'email' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setShareMethod('email')}
+                      className={`flex items-center gap-2 transition-all duration-300 ${
+                        shareMethod === 'email' 
+                          ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
+                      }`}
                     >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      <Mail className="w-4 h-4" />
+                      Email
+                    </Button>
+                    <Button
+                      variant={shareMethod === 'message' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setShareMethod('message')}
+                      className={`flex items-center gap-2 transition-all duration-300 ${
+                        shareMethod === 'message' 
+                          ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
+                      }`}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Message
+                    </Button>
+                    <Button
+                      variant={shareMethod === 'link' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setShareMethod('link')}
+                      className={`flex items-center gap-2 transition-all duration-300 ${
+                        shareMethod === 'link' 
+                          ? 'bg-gradient-to-r from-amber-500/30 to-yellow-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
+                      }`}
+                    >
+                      <Copy className="w-4 h-4" />
+                      Link
                     </Button>
                   </div>
                 </div>
-              )}
 
-              <Button
-                onClick={() => handleShare(shareMethod)}
-                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white"
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share FutureSeer
-              </Button>
-            </div>
-          )}
-
-          {/* Contacts Tab */}
-          {activeTab === 'contacts' && (
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-amber-200">Add New Contact</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    placeholder="Name"
-                    value={newContact.name}
-                    onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                    className="bg-slate-800/50 border-slate-600 text-gray-300"
-                  />
-                  <Input
-                    placeholder="Email"
-                    type="email"
-                    value={newContact.email}
-                    onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                    className="bg-slate-800/50 border-slate-600 text-gray-300"
+                <div>
+                  <label className="text-sm font-medium text-amber-300 mb-3 block">
+                    💫 Custom Message (Optional) 💫
+                  </label>
+                  <Textarea
+                    value={shareMessage}
+                    onChange={(e) => setShareMessage(e.target.value)}
+                    placeholder="Add a personal message to your invitation..."
+                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                    rows={3}
                   />
                 </div>
-                <Input
-                  placeholder="Phone (optional)"
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                  className="bg-slate-800/50 border-slate-600 text-gray-300"
-                />
-                <Button onClick={addContact} className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
-                  Add Contact
+
+                {shareMethod === 'link' && (
+                  <div>
+                    <label className="text-sm font-medium text-amber-300 mb-3 block">
+                      🔗 Share Link 🔗
+                    </label>
+                    <div className="flex gap-3">
+                      <Input
+                        value={shareLink}
+                        readOnly
+                        className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 rounded-xl backdrop-blur-sm"
+                      />
+                      <Button
+                        onClick={() => handleShare('link')}
+                        className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                      >
+                        {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  onClick={() => handleShare(shareMethod)}
+                  className="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  <Share2 className="w-5 h-5 mr-2" />
+                  ✨ Share FutureSeer ✨
                 </Button>
               </div>
+            )}
 
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-amber-200">Your Contacts</h3>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {contacts.map((contact) => (
-                    <div key={contact.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-gray-200">{contact.name}</p>
-                        <p className="text-sm text-gray-400">{contact.email}</p>
+            {/* Contacts Tab */}
+            {activeTab === 'contacts' && (
+              <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+                <div className="space-y-4">
+                  <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">
+                    👥 Add New Contact
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      placeholder="Name"
+                      value={newContact.name}
+                      onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                    />
+                    <Input
+                      placeholder="Email"
+                      type="email"
+                      value={newContact.email}
+                      onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                    />
+                  </div>
+                  <Input
+                    placeholder="Phone (optional)"
+                    value={newContact.phone}
+                    onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                  />
+                  <Button 
+                    onClick={addContact} 
+                    className="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300"
+                  >
+                    ✨ Add Contact ✨
+                  </Button>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">
+                    📋 Your Contacts
+                  </h3>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {contacts.map((contact, index) => (
+                      <div 
+                        key={contact.id} 
+                        className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-amber-500/10"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <div>
+                          <p className="font-semibold text-gray-200">{contact.name}</p>
+                          <p className="text-sm text-gray-400">{contact.email}</p>
+                        </div>
+                        <Badge className={`${getStatusColor(contact.status)} rounded-full px-3 py-1 font-medium`}>
+                          {contact.status}
+                        </Badge>
                       </div>
-                      <Badge className={getStatusColor(contact.status)}>
-                        {contact.status}
-                      </Badge>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Stats Tab */}
-          {activeTab === 'stats' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                  <h4 className="text-2xl font-bold text-blue-200">{shareStats.totalShared}</h4>
-                  <p className="text-gray-400 text-sm">Total Shared</p>
+            {/* Stats Tab */}
+            {activeTab === 'stats' && (
+              <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                    <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-400">{shareStats.totalShared}</h4>
+                    <p className="text-gray-400 text-sm font-medium">Total Shared</p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                    <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-200 to-green-400">{shareStats.successfulReferrals}</h4>
+                    <p className="text-gray-400 text-sm font-medium">Successful</p>
+                  </div>
+                  <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                    <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-400">{shareStats.pendingInvites}</h4>
+                    <p className="text-gray-400 text-sm font-medium">Pending</p>
+                  </div>
                 </div>
-                <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                  <h4 className="text-2xl font-bold text-green-200">{shareStats.successfulReferrals}</h4>
-                  <p className="text-gray-400 text-sm">Successful</p>
-                </div>
-                <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                  <h4 className="text-2xl font-bold text-yellow-200">{shareStats.pendingInvites}</h4>
-                  <p className="text-gray-400 text-sm">Pending</p>
-                </div>
-              </div>
 
-              <div className="p-4 bg-slate-800/50 rounded-lg">
-                <h4 className="font-semibold text-amber-200 mb-2">Recent Activity</h4>
-                <p className="text-gray-400 text-sm">
-                  Last share: {shareStats.lastShareDate ? 
-                    new Date(shareStats.lastShareDate).toLocaleDateString() : 
-                    'No recent activity'}
-                </p>
-                <p className="text-gray-400 text-sm">
-                  Success rate: {shareStats.totalShared > 0 ? 
-                    Math.round((shareStats.successfulReferrals / shareStats.totalShared) * 100) : 0}%
-                </p>
-              </div>
+                <div className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm">
+                  <h4 className="font-semibold text-amber-200 mb-3 text-lg">📊 Recent Activity</h4>
+                  <div className="space-y-2">
+                    <p className="text-gray-300 text-sm">
+                      <span className="text-amber-300">Last share:</span> {shareStats.lastShareDate ? 
+                        new Date(shareStats.lastShareDate).toLocaleDateString() : 
+                        'No recent activity'}
+                    </p>
+                    <p className="text-gray-300 text-sm">
+                      <span className="text-amber-300">Success rate:</span> {shareStats.totalShared > 0 ? 
+                        Math.round((shareStats.successfulReferrals / shareStats.totalShared) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
 
-              <div className="text-center p-4 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 rounded-lg border border-amber-500/20">
-                <Star className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-                <h4 className="text-lg font-semibold text-amber-200 mb-1">Community Builder</h4>
-                <p className="text-gray-400 text-sm">You're helping grow our mystical community! ✨</p>
+                <div className="text-center p-6 bg-gradient-to-r from-amber-500/15 to-yellow-500/15 rounded-xl border border-amber-500/30 backdrop-blur-sm hover:border-amber-500/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/20">
+                  <div className="w-12 h-12 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Star className="w-6 h-6 text-amber-300" />
+                  </div>
+                  <h4 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-2">Community Builder</h4>
+                  <p className="text-gray-300 text-sm">You're helping grow our mystical community! ✨🌟</p>
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 } 

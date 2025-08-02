@@ -7,6 +7,61 @@
   --foreground: 222.2 84% 4.9%;
 }
 
+/* Mystical Feedback Animations */
+@keyframes float {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  50% { 
+    transform: translateY(-10px) rotate(5deg); 
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 0; 
+    transform: scale(0) rotate(0deg); 
+  }
+  50% { 
+    opacity: 1; 
+    transform: scale(1) rotate(180deg); 
+  }
+}
+
+@keyframes cosmic-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); 
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.6); 
+  }
+}
+
+@keyframes mystical-glow {
+  0%, 100% { 
+    filter: brightness(1) saturate(1); 
+  }
+  50% { 
+    filter: brightness(1.1) saturate(1.2); 
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.animate-cosmic-pulse {
+  animation: cosmic-pulse 2s ease-in-out infinite;
+}
+
+.animate-mystical-glow {
+  animation: mystical-glow 3s ease-in-out infinite;
+}
+
 .dark :root {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
@@ -51,4 +106,114 @@ button:hover {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* Aggressively remove ALL blue borders and focus rings */
+* {
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-color: transparent !important;
+}
+
+*:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+*:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any browser default focus styles */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  ring: none !important;
+}
+
+/* SPECIFIC FIX FOR HAMBURGER MENU BLUE BORDER */
+.hamburger-button,
+.hamburger-button:focus,
+.hamburger-button:hover,
+.hamburger-button:active {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-width: 0 !important;
+  min-height: 40px !important;
+  min-width: 40px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0 !important;
+  padding: 6px !important;
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+/* Ensure hamburger lines are visible */
+.hamburger-button span {
+  background-color: white !important;
+  height: 2px !important;
+  width: 24px !important;
+  display: block !important;
+  margin: 2px 0 !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Remove blue border from menu container */
+div[class*="absolute right-0 top-12"] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-width: 0 !important;
+}
+
+/* SPECIFIC HAMBURGER MENU CLASS */
+.hamburger-menu {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-width: 0 !important;
+}
+
+.hamburger-menu:focus,
+.hamburger-menu:hover,
+.hamburger-menu:active {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Remove any potential blue borders from menu items */
+.hamburger-menu a,
+.hamburger-menu a:focus,
+.hamburger-menu a:hover,
+.hamburger-menu a:active {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  --tw-ring-color: transparent !important;
+  --tw-ring-offset-color: transparent !important;
+  --tw-ring-offset-width: 0 !important;
+  --tw-ring-width: 0 !important;
 } 
