@@ -21,32 +21,20 @@ export function TopNavBar() {
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && event.target instanceof Node && !menuRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
-    }
-    if (showMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showMenu]);
+  // Removed click outside handler - menu only closes on hamburger button click
 
-  // Add keyboard support for closing menu
+  // Keyboard support
   useEffect(() => {
-    function handleEscape(event: KeyboardEvent) {
+    const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setShowMenu(false);
       }
-    }
+    };
+
     if (showMenu) {
       document.addEventListener("keydown", handleEscape);
     }
+
     return () => {
       document.removeEventListener("keydown", handleEscape);
     };
@@ -54,11 +42,7 @@ export function TopNavBar() {
 
   const toggleMenu = () => {
     console.log('Toggle menu clicked, current state:', showMenu);
-    setShowMenu(prev => {
-      const newState = !prev;
-      console.log('New menu state:', newState);
-      return newState;
-    });
+    setShowMenu(!showMenu);
   };
 
   const closeMenu = () => {
@@ -82,41 +66,60 @@ export function TopNavBar() {
           <span>🔮</span>
         </button>
         
-        {/* Hamburger menu */}
-        <button
-          className="hamburger-button flex flex-col justify-center items-center w-10 h-10 focus:outline-none"
-          onClick={toggleMenu}
-          aria-label="Toggle navigation menu"
-        >
-          <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}></span>
-          <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'opacity-0' : 'mb-1'}`}></span>
-          <span className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
-        </button>
-        
-        {/* Navigation Menu - Fixed positioning */}
-        {showMenu && (
-          <div
-            ref={menuRef}
-            className="absolute right-0 top-12 flex flex-col items-center z-[9999] bg-slate-900/95 backdrop-blur-sm rounded-lg p-4 shadow-xl border border-yellow-700/20"
-            style={{ gap: '1.5rem', minWidth: '200px' }}
+                 {/* Hamburger menu */}
+                             <button
+            className="hamburger-button flex flex-col justify-center items-center w-10 h-10 focus:outline-none"
+            onClick={toggleMenu}
+            aria-label="Toggle navigation menu"
           >
-            {navLinks.map((link, idx) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-2xl text-yellow-200 hover:text-yellow-400 transition-all duration-200 p-2 hover:scale-110"
-                onClick={closeMenu}
-                tabIndex={0}
-                aria-label={link.name}
-                style={{ 
-                  transition: 'all 0.3s cubic-bezier(.4,2,.6,1)', 
-                  animationDelay: `${idx * 40}ms`,
-                  animation: 'slideInFromTop 0.3s ease-out forwards'
-                }}
-              >
-                <span>{link.icon}</span>
-              </Link>
-            ))}
+            <span 
+              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}
+              style={{ backgroundColor: 'white', height: '2px', width: '24px' }}
+            ></span>
+            <span 
+              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'opacity-0' : 'mb-1'}`}
+              style={{ backgroundColor: 'white', height: '2px', width: '24px' }}
+            ></span>
+            <span 
+              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}
+              style={{ backgroundColor: 'white', height: '2px', width: '24px' }}
+            ></span>
+          </button>
+        
+                 {/* Navigation Menu - Floating in space */}
+         {showMenu && (
+           <div
+             key={`menu-${showMenu}`}
+             ref={menuRef}
+             className="hamburger-menu absolute right-0 top-12 flex flex-col items-end z-[9999]"
+                           style={{ 
+                gap: '0.75rem', 
+                minWidth: '200px',
+                border: 'none',
+                outline: 'none',
+                boxShadow: 'none',
+                background: 'transparent',
+                padding: '0.5rem',
+                paddingRight: '0'
+              }}
+           >
+                                                   {navLinks.map((link, idx) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-xl text-white hover:text-yellow-300 transition-all duration-300 p-1 hover:scale-110"
+                  onClick={closeMenu}
+                  tabIndex={0}
+                  aria-label={link.name}
+                  style={{ 
+                    transition: 'all 0.3s cubic-bezier(.4,2,.6,1)', 
+                    animationDelay: `${idx * 50}ms`,
+                    animation: 'floatIn 0.5s ease-out forwards'
+                  }}
+                >
+                  <span>{link.icon}</span>
+                </Link>
+              ))}
           </div>
         )}
       </div>
@@ -128,44 +131,78 @@ export function TopNavBar() {
       />
       
       <style jsx>{`
-        @keyframes slideInFromTop {
+        @keyframes floatIn {
           from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateY(-20px) scale(0.8);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
           }
         }
         
-        /* Remove all button styling that might cause borders */
-        button {
-          border: none !important;
-          outline: none !important;
-          background: transparent !important;
-          box-shadow: none !important;
+        /* COMPLETELY REMOVE ALL BORDERS AND FOCUS STYLES */
+        * {
+          --tw-ring-color: transparent !important;
+          --tw-ring-offset-color: transparent !important;
+          --tw-ring-offset-width: 0 !important;
+          --tw-ring-width: 0 !important;
         }
         
-        /* Specific styling for hamburger button */
-        .hamburger-button {
+        /* Remove ALL button styling EXCEPT hamburger button */
+        button:not(.hamburger-button), button:focus:not(.hamburger-button), button:hover:not(.hamburger-button), button:active:not(.hamburger-button), button:focus-visible:not(.hamburger-button) {
           border: none !important;
           outline: none !important;
           background: transparent !important;
           box-shadow: none !important;
           padding: 0 !important;
           margin: 0 !important;
+          ring: none !important;
+          ring-width: 0 !important;
+          ring-color: transparent !important;
         }
         
-        /* Remove any focus styles */
-        .hamburger-button:focus {
+                 /* Specific styling for hamburger button - floating without background */
+         .hamburger-button {
+           border: none !important;
+           outline: none !important;
+           background: transparent !important;
+           box-shadow: none !important;
+           padding: 6px !important;
+           margin: 0 !important;
+           min-height: 40px !important;
+           min-width: 40px !important;
+           display: flex !important;
+           align-items: center !important;
+           justify-content: center !important;
+           border-radius: 0 !important;
+           position: relative !important;
+           z-index: 1000 !important;
+         }
+         
+         /* Ensure hamburger lines are visible */
+         .hamburger-button span {
+           background-color: white !important;
+           height: 2px !important;
+           width: 24px !important;
+           display: block !important;
+           margin: 2px 0 !important;
+           transition: all 0.3s ease !important;
+         }
+        
+        /* Remove ALL focus styles from everything */
+        *:focus, *:focus-visible, *:focus-within {
           border: none !important;
           outline: none !important;
           box-shadow: none !important;
+          ring: none !important;
+          ring-width: 0 !important;
+          ring-color: transparent !important;
         }
         
-        /* Remove any hover styles that might add borders */
-        .hamburger-button:hover {
+        /* Specific menu styling to remove any borders */
+        div[ref] {
           border: none !important;
           outline: none !important;
           box-shadow: none !important;
