@@ -288,9 +288,9 @@ export function MysticalFeedback() {
                      </div>
                      Mystical Feedback Portal
                      <div className="ml-auto flex gap-2">
-                       <Gem className="w-5 h-5 text-slate-400" />
+                       <Gem className="w-5 h-5 text-purple-400" />
                        <Wand className="w-5 h-5 text-slate-400" />
-                       <Eye className="w-5 h-5 text-slate-400" />
+                       <Eye className="w-5 h-5 text-purple-400" />
                      </div>
                    </DialogTitle>
                 </DialogHeader>
@@ -436,7 +436,7 @@ export function MysticalFeedback() {
                                          <Button
                        onClick={handleSubmit}
                        disabled={isSubmitting || !title.trim() || !description.trim()}
-                       className="flex-1 h-14 bg-gradient-to-r from-slate-700 via-purple-600 to-slate-600 hover:from-slate-600 hover:via-purple-700 hover:to-slate-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden"
+                       className="flex-1 h-14 bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden"
                      >
                        <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                        <div className="relative flex items-center gap-3">
