@@ -25,18 +25,18 @@ interface FeedbackData {
 function FloatingParticles() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(15)].map((_, i) => (
+      {[...Array(8)].map((_, i) => (
         <div
           key={i}
           className="absolute animate-float"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            animationDelay: `${Math.random() * 4}s`,
-            animationDuration: `${5 + Math.random() * 6}s`,
+            animationDelay: `${Math.random() * 6}s`,
+            animationDuration: `${8 + Math.random() * 8}s`,
           }}
         >
-          <div className="w-1 h-1 bg-gradient-to-r from-amber-400 to-purple-500 rounded-full opacity-40 animate-pulse" style={{ animationDuration: '4s' }} />
+          <div className="w-1 h-1 bg-gradient-to-r from-slate-400 to-purple-400 rounded-full opacity-20 animate-pulse" style={{ animationDuration: '6s' }} />
         </div>
       ))}
     </div>
@@ -46,10 +46,10 @@ function FloatingParticles() {
 // Mystical background component
 function MysticalBackground() {
   return (
-    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900/20 to-amber-900/20 rounded-lg">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.1),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(251,191,36,0.1),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(236,72,153,0.1),transparent_50%)]" />
+    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800/10 to-slate-700/10 rounded-lg">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(148,163,184,0.05),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(139,92,246,0.05),transparent_50%)]" />
     </div>
   )
 }
@@ -250,30 +250,29 @@ export function MysticalFeedback() {
             >
               {/* Main button with cosmic effects */}
               <div className="relative">
-                                 <div className="text-5xl hover:scale-110 transition-all duration-500 animate-mystical-glow relative">
-                   <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-purple-500 to-pink-500 rounded-full blur-lg opacity-30 scale-150" />
+                                 <div className="text-4xl hover:scale-105 transition-all duration-300 relative">
+                   <div className="absolute inset-0 bg-gradient-to-r from-slate-400 via-purple-400 to-slate-500 rounded-full blur-md opacity-20 scale-125" />
                    <div className="relative z-10">✨</div>
                  </div>
                 
-                                 {/* Orbiting sparkles */}
-                 <div className="absolute inset-0 animate-spin" style={{ animationDuration: '8s' }}>
-                   <div className="absolute -top-3 -right-3 text-lg animate-sparkle" style={{ animationDelay: '0s' }}>⭐</div>
-                   <div className="absolute -bottom-3 -left-3 text-lg animate-sparkle" style={{ animationDelay: '2.5s' }}>🌟</div>
-                   <div className="absolute -top-3 -left-3 text-lg animate-sparkle" style={{ animationDelay: '5s' }}>💫</div>
+                                 {/* Subtle orbiting elements */}
+                 <div className="absolute inset-0 animate-spin" style={{ animationDuration: '12s' }}>
+                   <div className="absolute -top-2 -right-2 text-sm opacity-40" style={{ animationDelay: '0s' }}>•</div>
+                   <div className="absolute -bottom-2 -left-2 text-sm opacity-40" style={{ animationDelay: '4s' }}>•</div>
+                   <div className="absolute -top-2 -left-2 text-sm opacity-40" style={{ animationDelay: '8s' }}>•</div>
                  </div>
                 
-                                 {/* Cosmic pulse ring */}
-                 <div className="absolute inset-0 rounded-full animate-cosmic-pulse" style={{ animationDuration: '4s' }} />
-                 <div className="absolute inset-0 rounded-full animate-cosmic-pulse" style={{ animationDuration: '6s', animationDelay: '2s' }} />
+                                 {/* Subtle pulse ring */}
+                 <div className="absolute inset-0 rounded-full animate-cosmic-pulse" style={{ animationDuration: '6s' }} />
               </div>
               
-              {/* Hover effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-purple-500/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 blur-xl" />
+                             {/* Subtle hover effect */}
+               <div className="absolute inset-0 bg-gradient-to-r from-slate-400/10 to-purple-400/10 rounded-full scale-0 group-hover:scale-120 transition-transform duration-300 blur-md" />
             </div>
           </DialogTrigger>
 
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-0 bg-transparent p-0">
-            <div className="relative bg-gradient-to-br from-slate-900/95 via-purple-900/90 to-amber-900/90 backdrop-blur-xl rounded-2xl border border-purple-500/30 shadow-2xl overflow-hidden">
+                         <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-700/90 backdrop-blur-xl rounded-2xl border border-slate-600/30 shadow-xl overflow-hidden">
               {/* Mystical background */}
               <MysticalBackground />
               
@@ -283,24 +282,23 @@ export function MysticalFeedback() {
               {/* Content */}
               <div className="relative z-10 p-8">
                 <DialogHeader className="mb-8">
-                  <DialogTitle className="flex items-center gap-3 text-2xl font-bold bg-gradient-to-r from-amber-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    <div className="relative">
-                      <Sparkles className="w-8 h-8 text-amber-400 animate-pulse" />
-                      <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-purple-500 rounded-full blur-lg opacity-50" />
-                    </div>
-                    Mystical Feedback Portal
-                    <div className="ml-auto flex gap-2">
-                      <Gem className="w-6 h-6 text-purple-400 animate-bounce" style={{ animationDelay: '0s' }} />
-                      <Wand className="w-6 h-6 text-amber-400 animate-bounce" style={{ animationDelay: '0.5s' }} />
-                      <Eye className="w-6 h-6 text-pink-400 animate-bounce" style={{ animationDelay: '1s' }} />
-                    </div>
-                  </DialogTitle>
+                                     <DialogTitle className="flex items-center gap-3 text-xl font-semibold text-slate-200">
+                     <div className="relative">
+                       <Sparkles className="w-6 h-6 text-purple-400" />
+                     </div>
+                     Mystical Feedback Portal
+                     <div className="ml-auto flex gap-2">
+                       <Gem className="w-5 h-5 text-slate-400" />
+                       <Wand className="w-5 h-5 text-slate-400" />
+                       <Eye className="w-5 h-5 text-slate-400" />
+                     </div>
+                   </DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-8">
                   {/* Feedback Type Selection */}
                   <div>
-                    <label className="text-lg font-semibold text-amber-200 mb-4 block flex items-center gap-2">
+                                         <label className="text-base font-medium text-slate-300 mb-4 block flex items-center gap-2">
                       <Moon className="w-5 h-5" />
                       What type of mystical insight are you sharing?
                     </label>
@@ -323,20 +321,20 @@ export function MysticalFeedback() {
                             </div>
                             <span className="font-medium text-slate-200">{type.label}</span>
                           </div>
-                          {feedbackType === type.type && (
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-amber-400 to-purple-500 rounded-full animate-pulse" />
-                          )}
+                                                     {feedbackType === type.type && (
+                             <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full" />
+                           )}
                         </Button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Title Input */}
-                  <div className="relative">
-                    <label className="text-lg font-semibold text-amber-200 mb-3 block flex items-center gap-2">
-                      <Sun className="w-5 h-5" />
-                      Brief Title *
-                    </label>
+                                     {/* Title Input */}
+                   <div className="relative">
+                     <label className="text-base font-medium text-slate-300 mb-3 block flex items-center gap-2">
+                       <Sun className="w-5 h-5" />
+                       Brief Title *
+                     </label>
                     <div className="relative">
                       <Input
                         placeholder="Summarize your mystical insight in a few words..."
@@ -345,18 +343,18 @@ export function MysticalFeedback() {
                         maxLength={100}
                         className="bg-slate-800/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-purple-500/50 focus:ring-purple-500/20 h-12 text-lg"
                       />
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <div className="w-2 h-2 bg-gradient-to-r from-amber-400 to-purple-500 rounded-full animate-pulse" />
-                      </div>
+                                             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                         <div className="w-1.5 h-1.5 bg-slate-400 rounded-full opacity-60" />
+                       </div>
                     </div>
                   </div>
 
-                  {/* Description Input */}
-                  <div className="relative">
-                    <label className="text-lg font-semibold text-amber-200 mb-3 block flex items-center gap-2">
-                      <Heart className="w-5 h-5" />
-                      Detailed Description *
-                    </label>
+                                     {/* Description Input */}
+                   <div className="relative">
+                     <label className="text-base font-medium text-slate-300 mb-3 block flex items-center gap-2">
+                       <Heart className="w-5 h-5" />
+                       Detailed Description *
+                     </label>
                     <div className="relative">
                       <Textarea
                         placeholder="Share your mystical thoughts, cosmic suggestions, or report interdimensional issues..."
@@ -374,12 +372,12 @@ export function MysticalFeedback() {
                     </div>
                   </div>
 
-                  {/* Screenshot Section */}
-                  <div className="relative">
-                    <label className="text-lg font-semibold text-amber-200 mb-3 block flex items-center gap-2">
-                      <Camera className="w-5 h-5" />
-                      Mystical Snapshot (Optional)
-                    </label>
+                                     {/* Screenshot Section */}
+                   <div className="relative">
+                     <label className="text-base font-medium text-slate-300 mb-3 block flex items-center gap-2">
+                       <Camera className="w-5 h-5" />
+                       Screenshot (Optional)
+                     </label>
                     <div className="space-y-4">
                       {!screenshot ? (
                         <Button
@@ -435,30 +433,25 @@ export function MysticalFeedback() {
                     >
                       Cancel
                     </Button>
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={isSubmitting || !title.trim() || !description.trim()}
-                      className="flex-1 h-14 bg-gradient-to-r from-amber-500 via-purple-500 to-pink-500 hover:from-amber-600 hover:via-purple-600 hover:to-pink-600 text-white font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      <div className="relative flex items-center gap-3">
-                        <Send className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                        <span>{isSubmitting ? 'Sending to the Cosmos...' : 'Send Mystical Feedback'}</span>
-                      </div>
-                    </Button>
+                                         <Button
+                       onClick={handleSubmit}
+                       disabled={isSubmitting || !title.trim() || !description.trim()}
+                       className="flex-1 h-14 bg-gradient-to-r from-slate-700 via-purple-600 to-slate-600 hover:from-slate-600 hover:via-purple-700 hover:to-slate-500 text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden"
+                     >
+                       <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                       <div className="relative flex items-center gap-3">
+                         <Send className="w-5 h-5 group-hover:scale-105 transition-transform duration-300" />
+                         <span>{isSubmitting ? 'Sending...' : 'Send Feedback'}</span>
+                       </div>
+                     </Button>
                   </div>
 
-                  {/* Info Text */}
-                  <div className="text-center py-4">
-                    <div className="text-sm text-amber-300/80 font-medium">
-                      Your feedback helps us channel the mystical energies for everyone ✨
-                    </div>
-                    <div className="flex justify-center gap-2 mt-2">
-                      <div className="w-1 h-1 bg-amber-400 rounded-full animate-pulse" style={{ animationDelay: '0s' }} />
-                      <div className="w-1 h-1 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
-                      <div className="w-1 h-1 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-                    </div>
-                  </div>
+                                     {/* Info Text */}
+                   <div className="text-center py-4">
+                     <div className="text-sm text-slate-400 font-medium">
+                       Your feedback helps us improve the mystical experience for everyone
+                     </div>
+                   </div>
                 </div>
               </div>
             </div>

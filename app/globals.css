@@ -30,10 +30,10 @@
 
 @keyframes cosmic-pulse {
   0%, 100% { 
-    box-shadow: 0 0 15px rgba(139, 92, 246, 0.2); 
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.1); 
   }
   50% { 
-    box-shadow: 0 0 35px rgba(139, 92, 246, 0.5); 
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); 
   }
 }
 
@@ -42,7 +42,7 @@
     filter: brightness(1) saturate(1); 
   }
   50% { 
-    filter: brightness(1.1) saturate(1.2); 
+    filter: brightness(1.05) saturate(1.1); 
   }
 }
 
