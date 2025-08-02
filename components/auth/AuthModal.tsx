@@ -246,7 +246,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-gradient-to-r from-slate-900/90 to-slate-800/90 px-6 py-2 text-yellow-300 font-semibold rounded-full border border-yellow-500/20 shadow-lg backdrop-blur-sm">
-                    ✨ Or continue with email ✨
+                                         <span className="text-yellow-300">✨</span> Or continue with email <span className="text-yellow-300">✨</span>
                   </span>
                 </div>
               </div>
@@ -313,15 +313,15 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                      className="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 mt-6" 
                      disabled={isLoading}
                    >
-                     {isLoading ? (
-                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                     ) : (
-                       <span className="flex items-center gap-2">
-                         <span>✨</span>
-                         Sign In
-                         <span>✨</span>
-                       </span>
-                     )}
+                                           {isLoading ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <span className="text-white">✨</span>
+                          Sign In
+                          <span className="text-white">✨</span>
+                        </span>
+                      )}
                    </Button>
                 </form>
               </TabsContent>
@@ -460,7 +460,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                 onClick={onClose}
                 className="text-sm text-yellow-300 hover:text-yellow-200 bg-yellow-500/10 hover:bg-yellow-500/20 px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105"
               >
-                ✨ Cancel ✨
+                                 <span className="text-yellow-200">✨</span> Cancel <span className="text-yellow-200">✨</span>
               </Button>
             </div>
           </div>
