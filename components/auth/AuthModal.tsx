@@ -166,25 +166,25 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-             <div className="w-full max-w-md bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-900/95 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
+             <div className="w-full max-w-md bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-blue-900/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
          {/* Animated mystical glow effect */}
-         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/8 via-slate-500/5 to-purple-500/8 rounded-2xl animate-pulse"></div>
-         <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-purple-500/5 rounded-2xl"></div>
+         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-blue-500/5 to-amber-500/8 rounded-2xl animate-pulse"></div>
+         <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
          
          {/* Floating particles effect */}
          <div className="absolute inset-0 overflow-hidden">
-           <div className="absolute top-4 left-4 w-2 h-2 bg-purple-400/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-           <div className="absolute top-8 right-6 w-1 h-1 bg-slate-300/80 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-           <div className="absolute bottom-6 left-8 w-1.5 h-1.5 bg-purple-300/70 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
-           <div className="absolute bottom-4 right-4 w-1 h-1 bg-slate-400/60 rounded-full animate-bounce" style={{ animationDelay: '1.5s' }}></div>
+           <div className="absolute top-4 left-4 w-2 h-2 bg-amber-400/60 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+           <div className="absolute top-8 right-6 w-1 h-1 bg-blue-300/80 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+           <div className="absolute bottom-6 left-8 w-1.5 h-1.5 bg-amber-300/70 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
+           <div className="absolute bottom-4 right-4 w-1 h-1 bg-blue-400/60 rounded-full animate-bounce" style={{ animationDelay: '1.5s' }}></div>
          </div>
         
         <div className="relative z-10">
-                     <div className="text-center p-8 border-b border-purple-500/30 relative">
+                     <div className="text-center p-8 border-b border-amber-500/30 relative">
              {/* Mystical orb behind title */}
-             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-r from-purple-500/20 to-slate-500/20 rounded-full blur-xl animate-pulse"></div>
+             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-r from-amber-500/20 to-blue-500/20 rounded-full blur-xl animate-pulse"></div>
              
-             <h2 className="text-3xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-slate-400 to-purple-600 relative z-10 animate-in slide-in-from-top-2 duration-500">
+             <h2 className="text-3xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600 relative z-10 animate-in slide-in-from-top-2 duration-500">
                FutureSeer
              </h2>
              <p className="text-gray-300 mt-3 text-sm font-medium animate-in slide-in-from-bottom-2 duration-500 delay-100">
@@ -197,22 +197,22 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
               setActiveTab(value as any);
               resetForm();
             }}>
-                             <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 rounded-xl p-1 backdrop-blur-sm">
+                             <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 rounded-xl p-1 backdrop-blur-sm">
                  <TabsTrigger 
                    value="signin" 
-                   className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/30 data-[state=active]:to-slate-500/30 data-[state=active]:text-purple-200 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 rounded-lg transition-all duration-300 hover:bg-purple-500/10 hover:text-purple-200"
+                   className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/30 data-[state=active]:to-blue-500/30 data-[state=active]:text-amber-200 data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/20 rounded-lg transition-all duration-300 hover:bg-amber-500/10 hover:text-amber-200"
                  >
                    Sign In
                  </TabsTrigger>
                  <TabsTrigger 
                    value="signup" 
-                   className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/30 data-[state=active]:to-slate-500/30 data-[state=active]:text-purple-200 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 rounded-lg transition-all duration-300 hover:bg-purple-500/10 hover:text-purple-200"
+                   className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/30 data-[state=active]:to-blue-500/30 data-[state=active]:text-amber-200 data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/20 rounded-lg transition-all duration-300 hover:bg-amber-500/10 hover:text-amber-200"
                  >
                    Sign Up
                  </TabsTrigger>
                  <TabsTrigger 
                    value="reset" 
-                   className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/30 data-[state=active]:to-slate-500/30 data-[state=active]:text-purple-200 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 rounded-lg transition-all duration-300 hover:bg-purple-500/10 hover:text-purple-200"
+                   className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/30 data-[state=active]:to-blue-500/30 data-[state=active]:text-amber-200 data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/20 rounded-lg transition-all duration-300 hover:bg-amber-500/10 hover:text-amber-200"
                  >
                    Reset
                  </TabsTrigger>
@@ -242,11 +242,11 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
 
                              <div className="relative my-8">
                  <div className="absolute inset-0 flex items-center">
-                   <span className="w-full border-t border-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                   <span className="w-full border-t border-gradient-to-r from-transparent via-amber-500/30 to-transparent" />
                  </div>
                  <div className="relative flex justify-center text-xs uppercase">
-                   <span className="bg-gradient-to-r from-slate-900/90 to-slate-800/90 px-6 py-2 text-purple-300 font-semibold rounded-full border border-purple-500/20 shadow-lg backdrop-blur-sm">
-                                          <span className="text-purple-300">✨</span> Or continue with email <span className="text-purple-300">✨</span>
+                   <span className="bg-gradient-to-r from-blue-900/90 to-blue-800/90 px-6 py-2 text-amber-300 font-semibold rounded-full border border-amber-500/20 shadow-lg backdrop-blur-sm">
+                                          <span className="text-amber-300">✨</span> Or continue with email <span className="text-amber-300">✨</span>
                    </span>
                  </div>
                </div>
@@ -264,39 +264,39 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
               <TabsContent value="signin" className="space-y-4">
                 <form onSubmit={handleEmailSignIn} className="space-y-4">
                                      <div className="space-y-3">
-                                           <Label htmlFor="signin-email" className="text-purple-300 font-medium text-sm">Email</Label>
+                                           <Label htmlFor="signin-email" className="text-amber-300 font-medium text-sm">Email</Label>
                       <div className="relative group">
-                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-400 group-focus-within:text-purple-300 transition-colors duration-200" />
+                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-400 group-focus-within:text-amber-300 transition-colors duration-200" />
                         <Input
                           id="signin-email"
                           type="email"
                           placeholder="Enter your email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="pl-12 pr-4 py-3 bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 text-white placeholder-gray-400 focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-purple-500/40"
+                          className="pl-12 pr-4 py-3 bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                           required
                         />
                       </div>
                     </div>
                    
                                       <div className="space-y-3">
-                      <Label htmlFor="signin-password" className="text-purple-300 font-medium text-sm">Password</Label>
+                      <Label htmlFor="signin-password" className="text-amber-300 font-medium text-sm">Password</Label>
                       <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-purple-400 group-focus-within:text-purple-300 transition-colors duration-200" />
+                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-400 group-focus-within:text-amber-300 transition-colors duration-200" />
                         <Input
                           id="signin-password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter your password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="pl-12 pr-12 py-3 bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 text-white placeholder-gray-400 focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-purple-500/40"
+                          className="pl-12 pr-12 py-3 bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                           required
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-purple-500/10 text-purple-400 hover:text-purple-300 rounded-lg transition-all duration-200"
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 rounded-lg transition-all duration-200"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                          {showPassword ? (
@@ -310,7 +310,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
 
                                        <Button 
                       type="submit" 
-                      className="w-full bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 mt-6" 
+                      className="w-full bg-gradient-to-r from-amber-500 via-blue-600 to-amber-600 hover:from-amber-600 hover:via-blue-700 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 mt-6" 
                       disabled={isLoading}
                     >
                                             {isLoading ? (
@@ -330,52 +330,52 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
               <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleEmailSignUp} className="space-y-4">
                                      <div className="space-y-2">
-                     <Label htmlFor="signup-name" className="text-purple-300">Display Name</Label>
+                     <Label htmlFor="signup-name" className="text-amber-300">Display Name</Label>
                      <Input
                        id="signup-name"
                        type="text"
                        placeholder="Enter your name"
                        value={displayName}
                        onChange={(e) => setDisplayName(e.target.value)}
-                       className="bg-slate-800/50 border-purple-500/30 text-white placeholder-gray-400 focus:border-purple-500/50"
+                       className="bg-blue-800/50 border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/50"
                        required
                      />
                    </div>
 
                    <div className="space-y-2">
-                     <Label htmlFor="signup-email" className="text-purple-300">Email</Label>
+                     <Label htmlFor="signup-email" className="text-amber-300">Email</Label>
                      <div className="relative">
-                       <Mail className="absolute left-3 top-3 h-4 w-4 text-purple-400" />
+                       <Mail className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
                        <Input
                          id="signup-email"
                          type="email"
                          placeholder="Enter your email"
                          value={email}
                          onChange={(e) => setEmail(e.target.value)}
-                         className="pl-10 bg-slate-800/50 border-purple-500/30 text-white placeholder-gray-400 focus:border-purple-500/50"
+                         className="pl-10 bg-blue-800/50 border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/50"
                          required
                        />
                      </div>
                    </div>
                    
                    <div className="space-y-2">
-                     <Label htmlFor="signup-password" className="text-purple-300">Password</Label>
+                     <Label htmlFor="signup-password" className="text-amber-300">Password</Label>
                      <div className="relative">
-                       <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-400" />
+                       <Lock className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
                        <Input
                          id="signup-password"
                          type={showPassword ? "text" : "password"}
                          placeholder="Create a password"
                          value={password}
                          onChange={(e) => setPassword(e.target.value)}
-                         className="pl-10 pr-10 bg-slate-800/50 border-purple-500/30 text-white placeholder-gray-400 focus:border-purple-500/50"
+                         className="pl-10 pr-10 bg-blue-800/50 border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/50"
                          required
                        />
                        <Button
                          type="button"
                          variant="ghost"
                          size="sm"
-                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-purple-400"
+                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-amber-400"
                          onClick={() => setShowPassword(!showPassword)}
                        >
                          {showPassword ? (
@@ -388,23 +388,23 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                    </div>
 
                    <div className="space-y-2">
-                     <Label htmlFor="signup-confirm-password" className="text-purple-300">Confirm Password</Label>
+                     <Label htmlFor="signup-confirm-password" className="text-amber-300">Confirm Password</Label>
                      <div className="relative">
-                       <Lock className="absolute left-3 top-3 h-4 w-4 text-purple-400" />
+                       <Lock className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
                        <Input
                          id="signup-confirm-password"
                          type={showConfirmPassword ? "text" : "password"}
                          placeholder="Confirm your password"
                          value={confirmPassword}
                          onChange={(e) => setConfirmPassword(e.target.value)}
-                         className="pl-10 pr-10 bg-slate-800/50 border-purple-500/30 text-white placeholder-gray-400 focus:border-purple-500/50"
+                         className="pl-10 pr-10 bg-blue-800/50 border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/50"
                          required
                        />
                        <Button
                          type="button"
                          variant="ghost"
                          size="sm"
-                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-purple-400"
+                         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-amber-400"
                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                        >
                          {showConfirmPassword ? (
@@ -416,7 +416,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                      </div>
                    </div>
 
-                   <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white" disabled={isLoading}>
+                   <Button type="submit" className="w-full bg-gradient-to-r from-amber-500 via-blue-600 to-amber-600 hover:from-amber-600 hover:via-blue-700 hover:to-amber-700 text-white" disabled={isLoading}>
                      {isLoading ? (
                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                      ) : null}
@@ -429,22 +429,22 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                <TabsContent value="reset" className="space-y-4">
                  <form onSubmit={handlePasswordReset} className="space-y-4">
                    <div className="space-y-2">
-                     <Label htmlFor="reset-email" className="text-purple-300">Email</Label>
+                     <Label htmlFor="reset-email" className="text-amber-300">Email</Label>
                      <div className="relative">
-                       <Mail className="absolute left-3 top-3 h-4 w-4 text-purple-400" />
+                       <Mail className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
                        <Input
                          id="reset-email"
                          type="email"
                          placeholder="Enter your email"
                          value={email}
                          onChange={(e) => setEmail(e.target.value)}
-                         className="pl-10 bg-slate-800/50 border-purple-500/30 text-white placeholder-gray-400 focus:border-purple-500/50"
+                         className="pl-10 bg-blue-800/50 border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/50"
                          required
                        />
                      </div>
                    </div>
 
-                   <Button type="submit" className="w-full bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white" disabled={isLoading}>
+                   <Button type="submit" className="w-full bg-gradient-to-r from-amber-500 via-blue-600 to-amber-600 hover:from-amber-600 hover:via-blue-700 hover:to-amber-700 text-white" disabled={isLoading}>
                      {isLoading ? (
                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                      ) : null}
@@ -458,9 +458,9 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                <Button
                  variant="ghost"
                  onClick={onClose}
-                 className="text-sm text-purple-300 hover:text-purple-200 bg-purple-500/10 hover:bg-purple-500/20 px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+                 className="text-sm text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105"
                >
-                                  <span className="text-purple-200">✨</span> Cancel <span className="text-purple-200">✨</span>
+                                  <span className="text-amber-200">✨</span> Cancel <span className="text-amber-200">✨</span>
                </Button>
              </div>
           </div>

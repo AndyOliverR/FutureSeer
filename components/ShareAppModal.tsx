@@ -128,29 +128,29 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-2xl bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-700/90 backdrop-blur-xl border border-purple-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
+      <div className="w-full max-w-2xl bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-blue-700/90 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
         {/* Animated mystical glow effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/8 via-slate-500/5 to-purple-500/8 rounded-2xl animate-pulse"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-purple-500/5 rounded-2xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-blue-500/5 to-amber-500/8 rounded-2xl animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
         
         {/* Floating particles effect */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-6 left-6 w-1.5 h-1.5 bg-purple-400/40 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-12 right-8 w-1 h-1 bg-slate-400/50 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-          <div className="absolute bottom-8 left-10 w-1 h-1 bg-purple-300/40 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-6 right-6 w-1.5 h-1.5 bg-slate-400/30 rounded-full animate-bounce" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-6 left-6 w-1.5 h-1.5 bg-amber-400/40 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+          <div className="absolute top-12 right-8 w-1 h-1 bg-blue-400/50 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-8 left-10 w-1 h-1 bg-amber-300/40 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute bottom-6 right-6 w-1.5 h-1.5 bg-blue-400/30 rounded-full animate-bounce" style={{ animationDelay: '1.5s' }}></div>
         </div>
         
         <div className="relative z-10">
-          <div className="flex flex-row items-center justify-between p-6 border-b border-purple-500/30 relative">
+          <div className="flex flex-row items-center justify-between p-6 border-b border-amber-500/30 relative">
             {/* Mystical orb behind title */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-purple-500/10 to-slate-500/10 rounded-full blur-xl animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-amber-500/10 to-blue-500/10 rounded-full blur-xl animate-pulse"></div>
             
             <div className="flex items-center gap-3 relative z-10">
-              <div className="p-2 bg-gradient-to-r from-purple-500/20 to-slate-500/20 rounded-lg">
-                <Share2 className="w-6 h-6 text-purple-300" />
+              <div className="p-2 bg-gradient-to-r from-amber-500/20 to-blue-500/20 rounded-lg">
+                <Share2 className="w-6 h-6 text-amber-300" />
               </div>
-              <h2 className="text-2xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-slate-400 to-purple-600 animate-in slide-in-from-left-2 duration-500">
+              <h2 className="text-2xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600 animate-in slide-in-from-left-2 duration-500">
                 Share FutureSeer
               </h2>
             </div>
@@ -158,7 +158,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-gray-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg transition-all duration-300 relative z-10"
+              className="text-gray-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-all duration-300 relative z-10"
             >
               <X className="w-5 h-5" />
             </Button>
@@ -166,15 +166,15 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
           <div className="p-6 space-y-6">
             {/* Tabs */}
-            <div className="flex space-x-2 bg-gradient-to-r from-slate-800/60 to-slate-700/60 rounded-xl p-1 backdrop-blur-sm border border-purple-500/20">
+            <div className="flex space-x-2 bg-gradient-to-r from-blue-800/60 to-blue-700/60 rounded-xl p-1 backdrop-blur-sm border border-amber-500/20">
               <Button
                 variant={activeTab === 'share' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('share')}
                 className={`flex-1 transition-all duration-300 ${
                   activeTab === 'share' 
-                    ? 'bg-gradient-to-r from-purple-500/30 to-slate-500/30 text-purple-200 shadow-lg shadow-purple-500/20 rounded-lg' 
-                    : 'text-gray-300 hover:text-purple-200 hover:bg-purple-500/10 rounded-lg'
+                    ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
                 }`}
               >
                 <Share2 className="w-4 h-4 mr-2" />
@@ -186,8 +186,8 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 onClick={() => setActiveTab('contacts')}
                 className={`flex-1 transition-all duration-300 ${
                   activeTab === 'contacts' 
-                    ? 'bg-gradient-to-r from-purple-500/30 to-slate-500/30 text-purple-200 shadow-lg shadow-purple-500/20 rounded-lg' 
-                    : 'text-gray-300 hover:text-purple-200 hover:bg-purple-500/10 rounded-lg'
+                    ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
                 }`}
               >
                 <Users className="w-4 h-4 mr-2" />
