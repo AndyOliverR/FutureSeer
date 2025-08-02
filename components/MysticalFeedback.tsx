@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/components/ui/use-toast'
-import { Sparkles, Camera, Send, X, Star, MessageCircle, Lightbulb, Bug, Zap, Moon, Sun, Crystal, Wand2, Eye, Heart } from 'lucide-react'
+import { Sparkles, Camera, Send, X, Star, MessageCircle, Lightbulb, Bug, Zap, Moon, Sun, Gem, Wand, Eye, Heart } from 'lucide-react'
 import html2canvas from 'html2canvas'
 
 interface FeedbackData {
@@ -288,8 +288,8 @@ export function MysticalFeedback() {
                     </div>
                     Mystical Feedback Portal
                     <div className="ml-auto flex gap-2">
-                      <Crystal className="w-6 h-6 text-purple-400 animate-bounce" style={{ animationDelay: '0s' }} />
-                      <Wand2 className="w-6 h-6 text-amber-400 animate-bounce" style={{ animationDelay: '0.5s' }} />
+                      <Gem className="w-6 h-6 text-purple-400 animate-bounce" style={{ animationDelay: '0s' }} />
+                      <Wand className="w-6 h-6 text-amber-400 animate-bounce" style={{ animationDelay: '0.5s' }} />
                       <Eye className="w-6 h-6 text-pink-400 animate-bounce" style={{ animationDelay: '1s' }} />
                     </div>
                   </DialogTitle>
