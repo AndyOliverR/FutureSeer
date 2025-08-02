@@ -108,16 +108,16 @@ const tests = {
     }
   },
 
-  // Test 3: Sign-up page loads
-  async 'Sign-up page loads successfully'() {
-    const response = await makeRequest(`${config.baseUrl}/signup`);
-    if (response.statusCode !== 200) {
-      throw new Error(`Expected status 200, got ${response.statusCode}`);
-    }
-    if (!response.data.includes('Sign Up')) {
-      throw new Error('Sign-up page does not contain "Sign Up"');
-    }
-  },
+                // Test 3: Sign-up page loads
+              async 'Sign-up page loads successfully'() {
+                const response = await makeRequest(`${config.baseUrl}/signup`);
+                if (response.statusCode !== 200) {
+                  throw new Error(`Expected status 200, got ${response.statusCode}`);
+                }
+                if (!response.data.includes('Create Account')) {
+                  throw new Error('Sign-up page does not contain "Create Account"');
+                }
+              },
 
   // Test 4: Tools page loads
   async 'Tools page loads successfully'() {
