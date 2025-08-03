@@ -339,14 +339,14 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-slate-400 to-purple-600">
-                    📋 Your Contacts
-                  </h3>
+                                     <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600">
+                     📋 Your Contacts
+                   </h3>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {contacts.map((contact, index) => (
                       <div 
                         key={contact.id} 
-                        className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/60 to-slate-700/60 rounded-xl border border-purple-500/20 backdrop-blur-sm hover:border-purple-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/10"
+                                                 className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-amber-500/10"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div>
@@ -367,42 +367,42 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             {activeTab === 'stats' && (
               <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-purple-500/20 backdrop-blur-sm hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/10">
-                    <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-purple-400">{shareStats.totalShared}</h4>
-                    <p className="text-gray-400 text-sm font-medium">Total Shared</p>
-                  </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-purple-500/20 backdrop-blur-sm hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/10">
-                    <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400">{shareStats.successfulReferrals}</h4>
-                    <p className="text-gray-400 text-sm font-medium">Successful</p>
-                  </div>
-                  <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-purple-500/20 backdrop-blur-sm hover:border-purple-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/10">
-                    <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-200 to-purple-400">{shareStats.pendingInvites}</h4>
-                    <p className="text-gray-400 text-sm font-medium">Pending</p>
-                  </div>
+                                     <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                     <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-400">{shareStats.totalShared}</h4>
+                     <p className="text-gray-400 text-sm font-medium">Total Shared</p>
+                   </div>
+                                     <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                     <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-400">{shareStats.successfulReferrals}</h4>
+                     <p className="text-gray-400 text-sm font-medium">Successful</p>
+                   </div>
+                                     <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                     <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-400">{shareStats.pendingInvites}</h4>
+                     <p className="text-gray-400 text-sm font-medium">Pending</p>
+                   </div>
                 </div>
 
-                <div className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-purple-500/20 backdrop-blur-sm">
-                  <h4 className="font-semibold text-purple-200 mb-3 text-lg">📊 Recent Activity</h4>
-                  <div className="space-y-2">
-                    <p className="text-gray-300 text-sm">
-                      <span className="text-purple-300">Last share:</span> {shareStats.lastShareDate ? 
-                        new Date(shareStats.lastShareDate).toLocaleDateString() : 
-                        'No recent activity'}
-                    </p>
-                    <p className="text-gray-300 text-sm">
-                      <span className="text-purple-300">Success rate:</span> {shareStats.totalShared > 0 ? 
-                        Math.round((shareStats.successfulReferrals / shareStats.totalShared) * 100) : 0}%
-                    </p>
-                  </div>
-                </div>
+                                 <div className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm">
+                   <h4 className="font-semibold text-amber-200 mb-3 text-lg">📊 Recent Activity</h4>
+                   <div className="space-y-2">
+                     <p className="text-gray-300 text-sm">
+                       <span className="text-amber-300">Last share:</span> {shareStats.lastShareDate ? 
+                         new Date(shareStats.lastShareDate).toLocaleDateString() : 
+                         'No recent activity'}
+                     </p>
+                     <p className="text-gray-300 text-sm">
+                       <span className="text-amber-300">Success rate:</span> {shareStats.totalShared > 0 ? 
+                         Math.round((shareStats.successfulReferrals / shareStats.totalShared) * 100) : 0}%
+                     </p>
+                   </div>
+                 </div>
 
-                <div className="text-center p-6 bg-gradient-to-r from-purple-500/15 to-slate-500/15 rounded-xl border border-purple-500/30 backdrop-blur-sm hover:border-purple-500/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500/20 to-slate-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Star className="w-6 h-6 text-purple-300" />
-                  </div>
-                  <h4 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-slate-400 to-purple-600 mb-2">Community Builder</h4>
-                  <p className="text-gray-300 text-sm">You're helping grow our mystical community! ✨🌟</p>
-                </div>
+                                 <div className="text-center p-6 bg-gradient-to-r from-amber-500/15 to-blue-500/15 rounded-xl border border-amber-500/30 backdrop-blur-sm hover:border-amber-500/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/20">
+                   <div className="w-12 h-12 bg-gradient-to-r from-amber-500/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                     <Star className="w-6 h-6 text-amber-300" />
+                   </div>
+                   <h4 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600 mb-2">Community Builder</h4>
+                   <p className="text-gray-300 text-sm">You're helping grow our mystical community! ✨🌟</p>
+                 </div>
               </div>
             )}
           </div>
