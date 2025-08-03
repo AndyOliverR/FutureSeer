@@ -199,8 +199,8 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 onClick={() => setActiveTab('stats')}
                 className={`flex-1 transition-all duration-300 ${
                   activeTab === 'stats' 
-                    ? 'bg-gradient-to-r from-purple-500/30 to-slate-500/30 text-purple-200 shadow-lg shadow-purple-500/20 rounded-lg' 
-                    : 'text-gray-300 hover:text-purple-200 hover:bg-purple-500/10 rounded-lg'
+                    ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
                 }`}
               >
                 <Star className="w-4 h-4 mr-2" />
@@ -212,7 +212,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             {activeTab === 'share' && (
               <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                 <div>
-                  <label className="text-sm font-medium text-purple-300 mb-3 block">
+                  <label className="text-sm font-medium text-amber-200 mb-3 block">
                     ✨ Share Method ✨
                   </label>
                   <div className="grid grid-cols-3 gap-3">
@@ -222,8 +222,8 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       onClick={() => setShareMethod('email')}
                       className={`flex items-center gap-2 transition-all duration-300 ${
                         shareMethod === 'email' 
-                          ? 'bg-gradient-to-r from-purple-500/30 to-slate-500/30 text-purple-200 border-purple-500/50 shadow-lg shadow-purple-500/20' 
-                          : 'border-purple-500/30 text-gray-300 hover:border-purple-500/50 hover:bg-purple-500/10'
+                          ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
                       }`}
                     >
                       <Mail className="w-4 h-4" />
@@ -235,8 +235,8 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       onClick={() => setShareMethod('message')}
                       className={`flex items-center gap-2 transition-all duration-300 ${
                         shareMethod === 'message' 
-                          ? 'bg-gradient-to-r from-purple-500/30 to-slate-500/30 text-purple-200 border-purple-500/50 shadow-lg shadow-purple-500/20' 
-                          : 'border-purple-500/30 text-gray-300 hover:border-purple-500/50 hover:bg-purple-500/10'
+                          ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
                       }`}
                     >
                       <MessageCircle className="w-4 h-4" />
@@ -248,8 +248,8 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       onClick={() => setShareMethod('link')}
                       className={`flex items-center gap-2 transition-all duration-300 ${
                         shareMethod === 'link' 
-                          ? 'bg-gradient-to-r from-purple-500/30 to-slate-500/30 text-purple-200 border-purple-500/50 shadow-lg shadow-purple-500/20' 
-                          : 'border-purple-500/30 text-gray-300 hover:border-purple-500/50 hover:bg-purple-500/10'
+                          ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
                       }`}
                     >
                       <Copy className="w-4 h-4" />
@@ -259,32 +259,32 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-purple-300 mb-3 block">
+                  <label className="text-sm font-medium text-amber-200 mb-3 block">
                     💫 Custom Message (Optional) 💫
                   </label>
                   <Textarea
                     value={shareMessage}
                     onChange={(e) => setShareMessage(e.target.value)}
                     placeholder="Add a personal message to your invitation..."
-                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 text-gray-300 placeholder-gray-400 focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-purple-500/40"
+                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     rows={3}
                   />
                 </div>
 
                 {shareMethod === 'link' && (
                   <div>
-                    <label className="text-sm font-medium text-purple-300 mb-3 block">
+                    <label className="text-sm font-medium text-amber-200 mb-3 block">
                       🔗 Share Link 🔗
                     </label>
                     <div className="flex gap-3">
                       <Input
                         value={shareLink}
                         readOnly
-                        className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 text-gray-300 rounded-xl backdrop-blur-sm"
+                        className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 rounded-xl backdrop-blur-sm"
                       />
                       <Button
                         onClick={() => handleShare('link')}
-                        className="bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                        className="bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                       >
                         {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                       </Button>
@@ -294,7 +294,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
                 <Button
                   onClick={() => handleShare(shareMethod)}
-                  className="w-full bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300"
                 >
                   <Share2 className="w-5 h-5 mr-2" />
                   ✨ Share FutureSeer ✨
@@ -306,7 +306,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             {activeTab === 'contacts' && (
               <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                 <div className="space-y-4">
-                  <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-slate-400 to-purple-600">
+                  <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600">
                     👥 Add New Contact
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -314,25 +314,25 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       placeholder="Name"
                       value={newContact.name}
                       onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 text-gray-300 placeholder-gray-400 focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-purple-500/40"
+                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     />
                     <Input
                       placeholder="Email"
                       type="email"
                       value={newContact.email}
                       onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 text-gray-300 placeholder-gray-400 focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-purple-500/40"
+                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     />
                   </div>
                   <Input
                     placeholder="Phone (optional)"
                     value={newContact.phone}
                     onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-purple-500/30 text-gray-300 placeholder-gray-400 focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-purple-500/40"
+                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                   />
                   <Button 
                     onClick={addContact} 
-                    className="w-full bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300"
+                    className="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300"
                   >
                     ✨ Add Contact ✨
                   </Button>
