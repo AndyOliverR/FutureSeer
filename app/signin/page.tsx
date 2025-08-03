@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, Apple, Facebook } from "lucide-react"
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { signInWithGoogle, signInWithEmail, resetPassword } from "@/lib/firebase"
 import { isAppleDevice } from "@/utils/isAppleDevice"
@@ -108,120 +108,22 @@ export default function SignInPage() {
     }
   }
 
-  // Handler for Apple Sign-In
-  const handleAppleSignIn = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      // TODO: Implement Apple sign-in logic (Firebase/Supabase OAuth)
-      // await signInWithApple()
-      throw new Error("Apple sign-in not yet implemented.")
-    } catch (error: any) {
-      setError(error.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-  // Handler for Facebook Sign-In
-  const handleFacebookSignIn = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      // TODO: Implement Facebook sign-in logic (Firebase/Supabase OAuth)
-      // await signInWithFacebook()
-      throw new Error("Facebook sign-in not yet implemented.")
-    } catch (error: any) {
-      setError(error.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-  // Handler for Microsoft Sign-In
-  const handleMicrosoftSignIn = async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      // TODO: Implement Microsoft sign-in logic (Firebase/Supabase OAuth)
-      // await signInWithMicrosoft()
-      throw new Error("Microsoft sign-in not yet implemented.")
-    } catch (error: any) {
-      setError(error.message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // OAuth providers not yet implemented - keeping only Google OAuth for now
+  // TODO: Implement Apple, Facebook, Microsoft OAuth when Firebase configuration is complete
 
-  const appleFirst = typeof window !== 'undefined' && isAppleDevice();
+  // Removed Apple device detection since we only support Google OAuth
 
-  const signInButtons = appleFirst
-    ? [
-        {
-          label: 'Continue with Apple',
-          onClick: handleAppleSignIn,
-          icon: <Apple className="mr-2 h-4 w-4" />,
-          className: "w-full bg-black text-white hover:bg-gray-900 border border-gray-700 font-serif mb-2 focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Apple',
-          key: 'apple',
-        },
-        {
-          label: 'Continue with Google',
-          onClick: handleGoogleSignIn,
-          icon: <Mail className="mr-2 h-4 w-4" />,
-          className: "w-full bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 font-serif mb-2 focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Google',
-          key: 'google',
-        },
-        {
-          label: 'Continue with Facebook',
-          onClick: handleFacebookSignIn,
-          icon: <Facebook className="mr-2 h-4 w-4" />,
-          className: "w-full bg-blue-600 text-white hover:bg-blue-700 border border-blue-700 font-serif mb-2 focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Facebook',
-          key: 'facebook',
-        },
-        {
-          label: 'Continue with Microsoft',
-          onClick: handleMicrosoftSignIn,
-          icon: <Sparkles className="mr-2 h-4 w-4" />,
-          className: "w-full bg-blue-800 text-white hover:bg-blue-900 border border-blue-900 font-serif focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Microsoft',
-          key: 'microsoft',
-        },
-      ]
-    : [
-        {
-          label: 'Continue with Google',
-          onClick: handleGoogleSignIn,
-          icon: <Mail className="mr-2 h-4 w-4" />,
-          className: "w-full bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 font-serif mb-2 focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Google',
-          key: 'google',
-        },
-        {
-          label: 'Continue with Apple',
-          onClick: handleAppleSignIn,
-          icon: <Apple className="mr-2 h-4 w-4" />,
-          className: "w-full bg-black text-white hover:bg-gray-900 border border-gray-700 font-serif mb-2 focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Apple',
-          key: 'apple',
-        },
-        {
-          label: 'Continue with Facebook',
-          onClick: handleFacebookSignIn,
-          icon: <Facebook className="mr-2 h-4 w-4" />,
-          className: "w-full bg-blue-600 text-white hover:bg-blue-700 border border-blue-700 font-serif mb-2 focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Facebook',
-          key: 'facebook',
-        },
-        {
-          label: 'Continue with Microsoft',
-          onClick: handleMicrosoftSignIn,
-          icon: <Sparkles className="mr-2 h-4 w-4" />,
-          className: "w-full bg-blue-800 text-white hover:bg-blue-900 border border-blue-900 font-serif focus:ring-2 focus:ring-amber-400",
-          aria: 'Sign in with Microsoft',
-          key: 'microsoft',
-        },
-      ];
+  // Simplified sign-in options - only Google OAuth implemented
+  const signInButtons = [
+    {
+      label: 'Continue with Google',
+      onClick: handleGoogleSignIn,
+      icon: <Mail className="mr-2 h-4 w-4" />,
+      className: "w-full bg-white text-gray-900 hover:bg-gray-100 border border-gray-300 font-serif mb-2 focus:ring-2 focus:ring-amber-400",
+      aria: 'Sign in with Google',
+      key: 'google',
+    },
+  ];
 
   // Button click handler wrapper
   const handleProviderClick = async (btn: any) => {
@@ -279,7 +181,7 @@ export default function SignInPage() {
               >
                 <div className="flex flex-col items-center mb-2">
                   <span className="text-slate-300 font-serif mb-2">Continue with</span>
-                  <div className="flex flex-row gap-3 justify-center">
+                  <div className="flex justify-center">
                     <Button
                       size="icon"
                       variant="outline"
@@ -289,47 +191,6 @@ export default function SignInPage() {
                       className="rounded-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-100"
                     >
                       {activeProvider === 'google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><g><path d="M21.805 10.023h-9.765v3.954h5.617c-.242 1.242-1.484 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.125s2.75-6.125 6.125-6.125c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.711-1.57-3.922-2.539-6.656-2.539-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.563-4.031 9.563-9.719 0-.656-.07-1.156-.156-1.484z" fill="#4285F4"/><path d="M3.545 7.545l3.25 2.383c.883-1.07 2.125-1.953 3.68-1.953 1.016 0 1.953.352 2.68.938l2.703-2.633c-1.711-1.57-3.922-2.539-6.656-2.539-2.672 0-5.07 1.07-6.844 2.797z" fill="#34A853"/><path d="M12.475 22.25c2.672 0 4.922-.883 6.563-2.406l-3.031-2.484c-.82.57-1.883.914-3.031.914-2.344 0-4.336-1.57-5.047-3.68l-3.242 2.5c1.75 3.477 5.406 5.156 8.788 5.156z" fill="#FBBC05"/><path d="M21.805 10.023h-9.765v3.954h5.617c-.242 1.242-1.484 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.125s2.75-6.125 6.125-6.125c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.711-1.57-3.922-2.539-6.656-2.539-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.563-4.031 9.563-9.719 0-.656-.07-1.156-.156-1.484z" fill="#EA4335"/></g></svg>}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      aria-label="Sign in with Apple"
-                      onClick={handleAppleSignIn}
-                      disabled={isLoading || activeProvider === 'apple'}
-                      className="rounded-full border border-black bg-black text-white hover:bg-gray-900"
-                    >
-                      {activeProvider === 'apple' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Apple className="h-5 w-5" />}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      aria-label="Sign in with Facebook"
-                      onClick={handleFacebookSignIn}
-                      disabled={isLoading || activeProvider === 'facebook'}
-                      className="rounded-full border border-blue-700 bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      {activeProvider === 'facebook' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Facebook className="h-5 w-5" />}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      aria-label="Sign in with Microsoft"
-                      onClick={handleMicrosoftSignIn}
-                      disabled={isLoading || activeProvider === 'microsoft'}
-                      className="rounded-full border border-blue-900 bg-blue-800 text-white hover:bg-blue-900"
-                    >
-                      {activeProvider === 'microsoft' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      aria-label="Sign in with X.com"
-                      onClick={() => alert('X.com (Twitter) sign-in not yet implemented.')}
-                      disabled={isLoading || activeProvider === 'xcom'}
-                      className="rounded-full border border-gray-700 bg-gray-900 text-white hover:bg-gray-800"
-                    >
-                      {/* X.com (Twitter) icon SVG */}
-                      <svg viewBox="0 0 32 32" fill="none" className="h-5 w-5"><path d="M25.5 7h-3.1l-5.1 6.6L12.1 7H6.5l7.2 10.1L6.5 25h3.1l5.3-6.9 5.3 6.9h5.6l-7.3-10.2L25.5 7zm-3.7 15.2l-4.1-5.3-4.1 5.3H8.9l6.1-8.5 6.1 8.5h-2.4z" fill="#fff"/></svg>
                     </Button>
                   </div>
                 </div>
