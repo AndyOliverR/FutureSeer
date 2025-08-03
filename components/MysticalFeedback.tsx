@@ -25,7 +25,7 @@ interface FeedbackData {
 function FloatingParticles() {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(8)].map((_, i) => (
+      {[...Array(12)].map((_, i) => (
         <div
           key={i}
           className="absolute animate-float"
@@ -36,7 +36,7 @@ function FloatingParticles() {
             animationDuration: `${8 + Math.random() * 8}s`,
           }}
         >
-          <div className="w-1 h-1 bg-gradient-to-r from-blue-400 to-amber-400 rounded-full opacity-20 animate-pulse" style={{ animationDuration: '6s' }} />
+          <div className="w-1.5 h-1.5 bg-gradient-to-r from-amber-300 to-yellow-400 rounded-full opacity-40 animate-pulse shadow-lg shadow-amber-300/50" style={{ animationDuration: '4s' }} />
         </div>
       ))}
     </div>
@@ -46,10 +46,11 @@ function FloatingParticles() {
 // Mystical background component
 function MysticalBackground() {
   return (
-    <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800/10 to-blue-700/10 rounded-lg">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(251,191,36,0.05),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.05),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(251,191,36,0.05),transparent_50%)]" />
+    <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 rounded-lg">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(251,191,36,0.08),transparent_40%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(59,130,246,0.06),transparent_40%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(251,191,36,0.04),transparent_60%)]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-blue-950/30" />
     </div>
   )
 }
@@ -84,37 +85,37 @@ export function MysticalFeedback() {
       type: 'suggestion', 
       icon: <Lightbulb className="w-5 h-5" />, 
       label: 'Suggestion', 
-      color: 'from-blue-500 to-cyan-500',
-      bgColor: 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20',
-      borderColor: 'border-blue-500/30',
-      glowColor: 'shadow-blue-500/50'
+      color: 'from-amber-400 to-yellow-400',
+      bgColor: 'bg-gradient-to-r from-amber-400/20 to-yellow-400/20',
+      borderColor: 'border-amber-400/40',
+      glowColor: 'shadow-amber-400/60'
     },
     { 
       type: 'bug', 
       icon: <Bug className="w-5 h-5" />, 
       label: 'Bug Report', 
-      color: 'from-red-500 to-pink-500',
-      bgColor: 'bg-gradient-to-r from-red-500/20 to-pink-500/20',
-      borderColor: 'border-red-500/30',
-      glowColor: 'shadow-red-500/50'
+      color: 'from-red-400 to-orange-400',
+      bgColor: 'bg-gradient-to-r from-red-400/20 to-orange-400/20',
+      borderColor: 'border-red-400/40',
+      glowColor: 'shadow-red-400/60'
     },
     { 
       type: 'feature', 
       icon: <Star className="w-5 h-5" />, 
       label: 'Feature Request', 
-      color: 'from-purple-500 to-violet-500',
-      bgColor: 'bg-gradient-to-r from-purple-500/20 to-violet-500/20',
-      borderColor: 'border-purple-500/30',
-      glowColor: 'shadow-purple-500/50'
+      color: 'from-blue-400 to-cyan-400',
+      bgColor: 'bg-gradient-to-r from-blue-400/20 to-cyan-400/20',
+      borderColor: 'border-blue-400/40',
+      glowColor: 'shadow-blue-400/60'
     },
     { 
       type: 'general', 
       icon: <MessageCircle className="w-5 h-5" />, 
       label: 'General', 
-      color: 'from-emerald-500 to-teal-500',
-      bgColor: 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20',
-      borderColor: 'border-emerald-500/30',
-      glowColor: 'shadow-emerald-500/50'
+      color: 'from-emerald-400 to-teal-400',
+      bgColor: 'bg-gradient-to-r from-emerald-400/20 to-teal-400/20',
+      borderColor: 'border-emerald-400/40',
+      glowColor: 'shadow-emerald-400/60'
     }
   ]
 
@@ -272,7 +273,7 @@ export function MysticalFeedback() {
           </DialogTrigger>
 
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-0 bg-transparent p-0">
-                         <div className="relative bg-gradient-to-br from-blue-900/95 via-blue-800/90 to-blue-700/90 backdrop-blur-xl rounded-2xl border border-amber-500/30 shadow-xl overflow-hidden">
+                         <div className="relative bg-gradient-to-br from-slate-950/98 via-blue-950/95 to-slate-900/95 backdrop-blur-xl rounded-2xl border border-amber-400/40 shadow-2xl shadow-amber-400/20 overflow-hidden">
               {/* Mystical background */}
               <MysticalBackground />
               
@@ -282,15 +283,15 @@ export function MysticalFeedback() {
               {/* Content */}
               <div className="relative z-10 p-8">
                 <DialogHeader className="mb-8">
-                                     <DialogTitle className="flex items-center gap-3 text-xl font-semibold text-slate-200">
+                                     <DialogTitle className="flex items-center gap-3 text-xl font-semibold text-white">
                      <div className="relative">
-                       <Sparkles className="w-6 h-6 text-amber-400" />
+                       <Sparkles className="w-6 h-6 text-amber-300" />
                      </div>
                      Mystical Feedback Portal
                      <div className="ml-auto flex gap-2">
-                       <Gem className="w-5 h-5 text-amber-400" />
-                       <Wand className="w-5 h-5 text-blue-400" />
-                       <Eye className="w-5 h-5 text-amber-400" />
+                       <Gem className="w-5 h-5 text-amber-300" />
+                       <Wand className="w-5 h-5 text-blue-300" />
+                       <Eye className="w-5 h-5 text-amber-300" />
                      </div>
                    </DialogTitle>
                 </DialogHeader>
@@ -298,8 +299,8 @@ export function MysticalFeedback() {
                 <div className="space-y-8">
                   {/* Feedback Type Selection */}
                   <div>
-                                         <label className="text-base font-medium text-slate-300 mb-4 block flex items-center gap-2">
-                      <Moon className="w-5 h-5" />
+                                         <label className="text-base font-medium text-amber-100 mb-4 block flex items-center gap-2">
+                      <Moon className="w-5 h-5 text-amber-300" />
                       What type of mystical insight are you sharing?
                     </label>
                     <div className="grid grid-cols-2 gap-4">
@@ -310,19 +311,19 @@ export function MysticalFeedback() {
                           className={`relative h-16 transition-all duration-300 ${
                             feedbackType === type.type 
                               ? `${type.bgColor} ${type.borderColor} border-2 ${type.glowColor} shadow-lg scale-105` 
-                              : 'bg-slate-800/50 border border-slate-600/30 hover:bg-slate-700/50'
+                              : 'bg-slate-800/30 border border-slate-600/20 hover:bg-slate-700/40'
                           } group`}
                           onClick={() => setFeedbackType(type.type as 'suggestion' | 'bug' | 'feature' | 'general')}
                         >
                           <div className={`absolute inset-0 bg-gradient-to-r ${type.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 rounded-lg`} />
                           <div className="relative flex items-center gap-3">
-                            <div className={`p-2 rounded-lg ${feedbackType === type.type ? 'bg-white/10' : 'bg-slate-700/50'}`}>
+                            <div className={`p-2 rounded-lg ${feedbackType === type.type ? 'bg-white/10' : 'bg-slate-700/30'}`}>
                               {type.icon}
                             </div>
-                            <span className="font-medium text-slate-200">{type.label}</span>
+                            <span className="font-medium text-white">{type.label}</span>
                           </div>
                                                      {feedbackType === type.type && (
-                             <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-400 rounded-full" />
+                             <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full shadow-lg shadow-amber-400/50" />
                            )}
                         </Button>
                       ))}
@@ -331,8 +332,8 @@ export function MysticalFeedback() {
 
                                      {/* Title Input */}
                    <div className="relative">
-                     <label className="text-base font-medium text-slate-300 mb-3 block flex items-center gap-2">
-                       <Sun className="w-5 h-5" />
+                     <label className="text-base font-medium text-amber-100 mb-3 block flex items-center gap-2">
+                       <Sun className="w-5 h-5 text-amber-300" />
                        Brief Title *
                      </label>
                     <div className="relative">
@@ -341,18 +342,18 @@ export function MysticalFeedback() {
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         maxLength={100}
-                        className="bg-slate-800/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-purple-500/50 focus:ring-purple-500/20 h-12 text-lg"
+                        className="bg-slate-800/30 border-slate-600/30 text-white placeholder-slate-400 focus:border-amber-400/50 focus:ring-amber-400/20 h-12 text-lg"
                       />
                                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                         <div className="w-1.5 h-1.5 bg-slate-400 rounded-full opacity-60" />
+                         <div className="w-1.5 h-1.5 bg-amber-400 rounded-full opacity-80 shadow-sm shadow-amber-400/50" />
                        </div>
                     </div>
                   </div>
 
                                      {/* Description Input */}
                    <div className="relative">
-                     <label className="text-base font-medium text-slate-300 mb-3 block flex items-center gap-2">
-                       <Heart className="w-5 h-5" />
+                     <label className="text-base font-medium text-amber-100 mb-3 block flex items-center gap-2">
+                       <Heart className="w-5 h-5 text-amber-300" />
                        Detailed Description *
                      </label>
                     <div className="relative">
@@ -362,10 +363,10 @@ export function MysticalFeedback() {
                         onChange={(e) => setDescription(e.target.value)}
                         rows={5}
                         maxLength={1000}
-                        className="bg-slate-800/50 border-slate-600/50 text-slate-200 placeholder-slate-400 focus:border-purple-500/50 focus:ring-purple-500/20 resize-none"
+                        className="bg-slate-800/30 border-slate-600/30 text-white placeholder-slate-400 focus:border-amber-400/50 focus:ring-amber-400/20 resize-none"
                       />
                       <div className="absolute bottom-3 right-3">
-                        <div className="text-sm text-slate-400 bg-slate-800/80 px-2 py-1 rounded-full">
+                        <div className="text-sm text-amber-200 bg-slate-800/60 px-2 py-1 rounded-full border border-amber-400/20">
                           {description.length}/1000
                         </div>
                       </div>
@@ -374,8 +375,8 @@ export function MysticalFeedback() {
 
                                      {/* Screenshot Section */}
                    <div className="relative">
-                     <label className="text-base font-medium text-slate-300 mb-3 block flex items-center gap-2">
-                       <Camera className="w-5 h-5" />
+                     <label className="text-base font-medium text-amber-100 mb-3 block flex items-center gap-2">
+                       <Camera className="w-5 h-5 text-amber-300" />
                        Screenshot (Optional)
                      </label>
                     <div className="space-y-4">
@@ -384,13 +385,13 @@ export function MysticalFeedback() {
                           variant="outline"
                           onClick={captureScreenshot}
                           disabled={isCapturing}
-                          className="w-full h-14 bg-gradient-to-r from-slate-800/50 to-slate-700/50 border-slate-600/50 text-slate-200 hover:from-slate-700/50 hover:to-slate-600/50 hover:border-purple-500/50 transition-all duration-300 group"
+                          className="w-full h-14 bg-gradient-to-r from-slate-800/30 to-slate-700/30 border-slate-600/30 text-white hover:from-slate-700/40 hover:to-slate-600/40 hover:border-amber-400/50 transition-all duration-300 group"
                         >
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <Camera className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
                               {isCapturing && (
-                                <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-purple-500 rounded-full animate-ping" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full animate-ping" />
                               )}
                             </div>
                             <span className="text-lg">
@@ -404,7 +405,7 @@ export function MysticalFeedback() {
                             <img 
                               src={screenshot} 
                               alt="Screenshot" 
-                              className="w-full rounded-xl border-2 border-purple-500/30 max-h-48 object-cover shadow-lg"
+                              className="w-full rounded-xl border-2 border-amber-400/40 max-h-48 object-cover shadow-lg shadow-amber-400/20"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             <Button
@@ -416,7 +417,7 @@ export function MysticalFeedback() {
                               <X className="w-4 h-4" />
                             </Button>
                           </div>
-                          <p className="text-sm text-amber-300 text-center">
+                          <p className="text-sm text-amber-200 text-center font-medium">
                             ✨ Mystical snapshot captured successfully
                           </p>
                         </div>
@@ -429,14 +430,14 @@ export function MysticalFeedback() {
                     <Button
                       variant="outline"
                       onClick={handleClose}
-                      className="flex-1 h-14 bg-slate-800/50 border-slate-600/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-300"
+                      className="flex-1 h-14 bg-slate-800/30 border-slate-600/30 text-white hover:bg-slate-700/40 hover:border-slate-500/40 transition-all duration-300"
                     >
                       Cancel
                     </Button>
                                          <Button
                        onClick={handleSubmit}
                        disabled={isSubmitting || !title.trim() || !description.trim()}
-                       className="flex-1 h-14 bg-gradient-to-r from-purple-600 via-slate-600 to-purple-700 hover:from-purple-700 hover:via-slate-700 hover:to-purple-800 text-white font-medium shadow-md hover:shadow-lg transition-all duration-300 group relative overflow-hidden"
+                       className="flex-1 h-14 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-medium shadow-lg hover:shadow-xl shadow-amber-400/30 hover:shadow-amber-400/50 transition-all duration-300 group relative overflow-hidden"
                      >
                        <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                        <div className="relative flex items-center gap-3">
@@ -448,7 +449,7 @@ export function MysticalFeedback() {
 
                                      {/* Info Text */}
                    <div className="text-center py-4">
-                     <div className="text-sm text-slate-400 font-medium">
+                     <div className="text-sm text-amber-200 font-medium">
                        Your feedback helps us improve the mystical experience for everyone
                      </div>
                    </div>
