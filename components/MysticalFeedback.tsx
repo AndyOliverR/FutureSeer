@@ -46,11 +46,11 @@ function FloatingParticles() {
 // Mystical background component
 function MysticalBackground() {
   return (
-    <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 rounded-lg">
+    <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 rounded-lg">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(251,191,36,0.08),transparent_40%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(59,130,246,0.06),transparent_40%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(148,163,184,0.06),transparent_40%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(251,191,36,0.04),transparent_60%)]" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-blue-950/30" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-slate-900/30" />
     </div>
   )
 }
@@ -103,10 +103,10 @@ export function MysticalFeedback() {
       type: 'feature', 
       icon: <Star className="w-5 h-5" />, 
       label: 'Feature Request', 
-      color: 'from-blue-400 to-cyan-400',
-      bgColor: 'bg-gradient-to-r from-blue-400/20 to-cyan-400/20',
-      borderColor: 'border-blue-400/40',
-      glowColor: 'shadow-blue-400/60'
+      color: 'from-slate-400 to-gray-400',
+      bgColor: 'bg-gradient-to-r from-slate-400/20 to-gray-400/20',
+      borderColor: 'border-slate-400/40',
+      glowColor: 'shadow-slate-400/60'
     },
     { 
       type: 'general', 
@@ -240,7 +240,6 @@ export function MysticalFeedback() {
   return (
     <>
 
-
       {/* Floating Mystical Button */}
       <div className="fixed bottom-6 left-6 z-[99999] pointer-events-auto">
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -252,7 +251,7 @@ export function MysticalFeedback() {
               {/* Main button with cosmic effects */}
               <div className="relative">
                                  <div className="text-4xl hover:scale-105 transition-all duration-300 relative">
-                   <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-amber-400 to-blue-500 rounded-full blur-md opacity-20 scale-125" />
+                   <div className="absolute inset-0 bg-gradient-to-r from-slate-400 via-amber-400 to-slate-500 rounded-full blur-md opacity-20 scale-125" />
                    <div className="relative z-10">✨</div>
                  </div>
                 
@@ -268,12 +267,12 @@ export function MysticalFeedback() {
               </div>
               
                              {/* Subtle hover effect */}
-               <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-amber-400/10 rounded-full scale-0 group-hover:scale-120 transition-transform duration-300 blur-md" />
+               <div className="absolute inset-0 bg-gradient-to-r from-slate-400/10 to-amber-400/10 rounded-full scale-0 group-hover:scale-120 transition-transform duration-300 blur-md" />
             </div>
           </DialogTrigger>
 
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto border-0 bg-transparent p-0">
-                         <div className="relative bg-gradient-to-br from-slate-950/98 via-blue-950/95 to-slate-900/95 backdrop-blur-xl rounded-2xl border border-amber-400/40 shadow-2xl shadow-amber-400/20 overflow-hidden">
+                         <div className="relative bg-gradient-to-br from-slate-950/98 via-slate-900/95 to-slate-800/95 backdrop-blur-xl rounded-2xl border border-amber-400/40 shadow-2xl shadow-amber-400/20 overflow-hidden">
               {/* Mystical background */}
               <MysticalBackground />
               
@@ -290,7 +289,7 @@ export function MysticalFeedback() {
                      Mystical Feedback Portal
                      <div className="ml-auto flex gap-2">
                        <Gem className="w-5 h-5 text-amber-300" />
-                       <Wand className="w-5 h-5 text-blue-300" />
+                       <Wand className="w-5 h-5 text-slate-300" />
                        <Eye className="w-5 h-5 text-amber-300" />
                      </div>
                    </DialogTitle>
