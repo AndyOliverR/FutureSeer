@@ -1,36 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow users to read and write their own data
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Allow users to read and write their own notes
-    match /notes/{noteId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-    }
-    
-    // Allow users to read and write their own ask history
-    match /askHistory/{historyId} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-    }
-    
-    // Allow users to read and write their own profiles
-    match /userProfiles/{profileId} {
-      allow read, write: if request.auth != null && request.auth.uid == profileId;
-    }
-    
-    // Test collection for connection testing
-    match /_test/{docId} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Deny all other access
+    // Temporary permissive rules for testing - allow authenticated users to read/write
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 } 
