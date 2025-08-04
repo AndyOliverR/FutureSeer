@@ -14,7 +14,7 @@ import {
   UserCredential,
   AuthError
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc, serverTimestamp, enableNetwork, disableNetwork, onSnapshot } from 'firebase/firestore';
 import { 
   saveLocalAskHistory, 
   getLocalAskHistory, 
@@ -80,21 +80,45 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
       firebaseAuth = getAuth(app);
       
-      // Connect to Firestore with better error handling
+      // Connect to Firestore with better error handling and network monitoring
       try {
         // Try to connect to the "default" database first (your specific database name)
         firebaseDB = getFirestore(app, 'default');
         console.log('✅ Connected to Firestore database: "default"');
         
+        // Enable network connectivity monitoring
+        enableNetwork(firebaseDB);
+        console.log('✅ Firestore network enabled');
+        
         // Test the connection with a simple operation
         const testDoc = doc(firebaseDB, '_test', 'connection');
         console.log('✅ Firestore connection test completed');
+        
+        // Monitor network connectivity
+        const unsubscribe = onSnapshot(testDoc, 
+          () => console.log('✅ Firestore real-time connection working'),
+          (error) => {
+            console.warn('⚠️ Firestore real-time connection issue:', error);
+            if (error.message.includes('offline')) {
+              console.log('🔄 Attempting to re-enable network...');
+              enableNetwork(firebaseDB);
+            }
+          }
+        );
+        
+        // Clean up listener after 5 seconds
+        setTimeout(() => unsubscribe(), 5000);
+        
       } catch (dbError) {
         console.warn('⚠️ Failed to connect to "default" database, trying default connection:', dbError);
         try {
           // Fallback to standard default connection
           firebaseDB = getFirestore(app);
           console.log('✅ Connected to default Firestore database');
+          
+          // Enable network for fallback connection
+          enableNetwork(firebaseDB);
+          console.log('✅ Firestore network enabled (fallback)');
         } catch (fallbackError) {
           console.error('❌ Failed to connect to Firestore:', fallbackError);
           console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
@@ -223,7 +247,23 @@ export const signInWithGoogle = async (): Promise<User> => {
       return user;
     }
 
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    // Check network status before attempting Firestore operations
+    const isOnline = await checkNetworkStatus();
+    if (!isOnline) {
+      console.warn('⚠️ Network offline, skipping Firestore operations');
+      return user;
+    }
+
+    let userDoc;
+    try {
+      userDoc = await getDoc(doc(db, 'users', user.uid));
+    } catch (docError: any) {
+      if (docError.message && docError.message.includes('offline')) {
+        console.warn('⚠️ Offline detected during user profile check, skipping Firestore operations');
+        return user;
+      }
+      throw docError;
+    }
     
     if (!userDoc.exists()) {
       // Create new user profile
@@ -380,19 +420,48 @@ export const signOutUser = async (): Promise<void> => {
   }
 };
 
+// Network status check
+export const checkNetworkStatus = async (): Promise<boolean> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return false;
+    
+    // Try to enable network
+    await enableNetwork(db);
+    return true;
+  } catch (error) {
+    console.warn('Network check failed:', error);
+    return false;
+  }
+};
+
 // Firestore functions
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   try {
     const db = getFirebaseDB();
     if (!db) return null;
 
+    // Check network status first
+    const isOnline = await checkNetworkStatus();
+    if (!isOnline) {
+      console.warn('⚠️ Network offline, using local storage for user profile');
+      return getLocalUserProfile(uid);
+    }
+
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (userDoc.exists()) {
       return userDoc.data() as UserProfile;
     }
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting user profile:', error);
+    
+    // If it's an offline error, try local storage
+    if (error.message && error.message.includes('offline')) {
+      console.log('🔄 Offline detected, falling back to local storage');
+      return getLocalUserProfile(uid);
+    }
+    
     return null;
   }
 };
