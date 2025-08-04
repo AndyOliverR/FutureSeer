@@ -671,7 +671,7 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
     try {
       // Set a timeout for Firebase operations
       const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Firebase timeout')), 3000)
+        setTimeout(() => reject(new Error('Firebase timeout')), 5000)
       );
       
       const firebasePromise = updateDoc(doc(db, 'users', uid), {
@@ -687,10 +687,10 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
         clearAstroDataCache(uid);
       }
       
-      console.log('✅ Successfully updated user profile in Firebase for:', uid);
+      console.log('✅ Successfully synced user profile to Firebase for:', uid);
     } catch (firebaseError: any) {
-      // Don't throw error, just log it since we already saved to localStorage
-      console.warn('⚠️ Firebase update failed (using local storage):', {
+      // Log the error but don't throw since we saved to localStorage
+      console.warn('⚠️ Firebase sync failed (data saved locally):', {
         error: firebaseError.message,
         code: firebaseError.code,
         uid: uid
@@ -698,12 +698,42 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
       
       // Check if it's a permissions error
       if (firebaseError.message && firebaseError.message.includes('permissions')) {
-        console.info('ℹ️ Firebase permissions issue detected. Profile saved locally only.');
+        console.info('ℹ️ Firebase permissions issue detected. Please deploy security rules.');
       }
     }
   } catch (error) {
     console.error('Error in updateUserProfile:', error);
     // Don't throw error since we saved to localStorage
+  }
+};
+
+// Sync localStorage with Firebase
+export const syncLocalStorageWithFirebase = async (uid: string): Promise<void> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) {
+      console.warn('⚠️ Firestore not initialized, cannot sync');
+      return;
+    }
+
+    const localProfile = getLocalUserProfile(uid);
+    if (!localProfile) {
+      console.log('ℹ️ No local profile to sync');
+      return;
+    }
+
+    // Try to sync local data to Firebase
+    try {
+      await setDoc(doc(db, 'users', uid), {
+        ...localProfile,
+        updatedAt: Date.now(),
+      });
+      console.log('✅ Successfully synced local profile to Firebase');
+    } catch (syncError: any) {
+      console.warn('⚠️ Failed to sync local profile to Firebase:', syncError.message);
+    }
+  } catch (error) {
+    console.error('Error syncing localStorage with Firebase:', error);
   }
 };
 
