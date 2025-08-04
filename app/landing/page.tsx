@@ -57,7 +57,7 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row gap-6 mb-12 w-full max-w-2xl justify-center">
             <Dialog open={openJourney} onOpenChange={setOpenJourney}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10">
+                <Button variant="outline" className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10 rounded-2xl">
                   Begin Your Journey
                 </Button>
               </DialogTrigger>
@@ -74,7 +74,7 @@ export default function LandingPage() {
 
             <Dialog open={openInvite} onOpenChange={setOpenInvite}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10">
+                <Button variant="outline" className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10 rounded-2xl">
                   I Have an Invite
                 </Button>
               </DialogTrigger>

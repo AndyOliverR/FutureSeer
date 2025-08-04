@@ -37,11 +37,11 @@ export function HeroSection() {
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
           <Button
             size="lg"
-            className="group relative px-8 py-4 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold text-lg border-0 shadow-lg shadow-amber-500/25 transition-all duration-300 hover:shadow-amber-400/40 hover:scale-105"
+            className="group relative px-8 py-4 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold text-lg border-0 shadow-lg shadow-amber-500/25 transition-all duration-300 hover:shadow-amber-400/40 hover:scale-105 rounded-2xl"
             onClick={() => setModal("journey")}
           >
             <span className="relative z-10">Begin Your Journey</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-md" />
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
           </Button>
         </div>
         {/* Subheading moved below CTA */}
