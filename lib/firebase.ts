@@ -164,6 +164,7 @@ export interface UserProfile {
   uid: string;
   email: string;
   displayName: string;
+  fullName?: string; // Full name for numerological calculations
   photoURL?: string;
   isSubscribed: boolean;
   isTipped: boolean;
