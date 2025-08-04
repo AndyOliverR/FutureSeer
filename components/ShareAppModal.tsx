@@ -128,29 +128,29 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-2xl bg-gradient-to-br from-slate-900/95 via-slate-800/90 to-slate-700/90 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
+      <div className="w-full max-w-2xl bg-gradient-to-br from-blue-950/95 via-blue-900/90 to-blue-800/90 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
         {/* Animated mystical glow effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-slate-500/5 to-amber-500/8 rounded-2xl animate-pulse"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-slate-500/5 rounded-2xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-blue-500/5 to-amber-500/8 rounded-2xl animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
         
         {/* Floating particles effect */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-6 left-6 w-1.5 h-1.5 bg-amber-400/40 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-          <div className="absolute top-12 right-8 w-1 h-1 bg-slate-400/50 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute top-12 right-8 w-1 h-1 bg-blue-400/50 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
           <div className="absolute bottom-8 left-10 w-1 h-1 bg-amber-300/40 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute bottom-6 right-6 w-1.5 h-1.5 bg-slate-400/30 rounded-full animate-bounce" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute bottom-6 right-6 w-1.5 h-1.5 bg-blue-400/30 rounded-full animate-bounce" style={{ animationDelay: '1.5s' }}></div>
         </div>
         
         <div className="relative z-10">
           <div className="flex flex-row items-center justify-between p-6 border-b border-amber-500/30 relative">
             {/* Mystical orb behind title */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-amber-500/10 to-slate-500/10 rounded-full blur-xl animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-r from-amber-500/10 to-blue-500/10 rounded-full blur-xl animate-pulse"></div>
             
             <div className="flex items-center gap-3 relative z-10">
-              <div className="p-2 bg-gradient-to-r from-amber-500/20 to-slate-500/20 rounded-lg">
+              <div className="p-2 bg-gradient-to-r from-amber-500/20 to-blue-500/20 rounded-lg">
                 <Share2 className="w-6 h-6 text-amber-300" />
               </div>
-              <h2 className="text-2xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-slate-400 to-amber-600 animate-in slide-in-from-left-2 duration-500">
+              <h2 className="text-2xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600 animate-in slide-in-from-left-2 duration-500">
                 Share FutureSeer
               </h2>
             </div>
@@ -166,14 +166,14 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
           <div className="p-6 space-y-6">
             {/* Tabs */}
-            <div className="flex space-x-2 bg-gradient-to-r from-slate-800/60 to-slate-700/60 rounded-xl p-1 backdrop-blur-sm border border-amber-500/20">
+            <div className="flex space-x-2 bg-gradient-to-r from-blue-800/60 to-blue-700/60 rounded-xl p-1 backdrop-blur-sm border border-amber-500/20">
               <Button
                 variant={activeTab === 'share' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('share')}
                 className={`flex-1 transition-all duration-300 ${
                   activeTab === 'share' 
-                    ? 'bg-gradient-to-r from-amber-500/30 to-slate-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
                     : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
                 }`}
               >
@@ -186,7 +186,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 onClick={() => setActiveTab('contacts')}
                 className={`flex-1 transition-all duration-300 ${
                   activeTab === 'contacts' 
-                    ? 'bg-gradient-to-r from-amber-500/30 to-slate-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
                     : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
                 }`}
               >
@@ -199,7 +199,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 onClick={() => setActiveTab('stats')}
                 className={`flex-1 transition-all duration-300 ${
                   activeTab === 'stats' 
-                    ? 'bg-gradient-to-r from-amber-500/30 to-slate-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
+                    ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 shadow-lg shadow-amber-500/20 rounded-lg' 
                     : 'text-gray-300 hover:text-amber-200 hover:bg-amber-500/10 rounded-lg'
                 }`}
               >
@@ -222,7 +222,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       onClick={() => setShareMethod('email')}
                       className={`flex items-center gap-2 transition-all duration-300 ${
                         shareMethod === 'email' 
-                          ? 'bg-gradient-to-r from-amber-500/30 to-slate-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
                           : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
                       }`}
                     >
@@ -235,7 +235,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       onClick={() => setShareMethod('message')}
                       className={`flex items-center gap-2 transition-all duration-300 ${
                         shareMethod === 'message' 
-                          ? 'bg-gradient-to-r from-amber-500/30 to-slate-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
                           : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
                       }`}
                     >
@@ -248,7 +248,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       onClick={() => setShareMethod('link')}
                       className={`flex items-center gap-2 transition-all duration-300 ${
                         shareMethod === 'link' 
-                          ? 'bg-gradient-to-r from-amber-500/30 to-slate-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
+                          ? 'bg-gradient-to-r from-amber-500/30 to-blue-500/30 text-amber-200 border-amber-500/50 shadow-lg shadow-amber-500/20' 
                           : 'border-amber-500/30 text-gray-300 hover:border-amber-500/50 hover:bg-amber-500/10'
                       }`}
                     >
@@ -266,7 +266,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                     value={shareMessage}
                     onChange={(e) => setShareMessage(e.target.value)}
                     placeholder="Add a personal message to your invitation..."
-                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                    className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     rows={3}
                   />
                 </div>
@@ -280,7 +280,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       <Input
                         value={shareLink}
                         readOnly
-                        className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 rounded-xl backdrop-blur-sm"
+                        className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 rounded-xl backdrop-blur-sm"
                       />
                       <Button
                         onClick={() => handleShare('link')}
@@ -306,7 +306,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             {activeTab === 'contacts' && (
               <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                 <div className="space-y-4">
-                  <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-slate-400 to-amber-600">
+                  <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600">
                     👥 Add New Contact
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -314,21 +314,21 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       placeholder="Name"
                       value={newContact.name}
                       onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                      className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     />
                     <Input
                       placeholder="Email"
                       type="email"
                       value={newContact.email}
                       onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                      className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                      className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     />
                   </div>
                   <Input
                     placeholder="Phone (optional)"
                     value={newContact.phone}
                     onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                    className="bg-gradient-to-r from-slate-800/60 to-slate-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                    className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                   />
                   <Button 
                     onClick={addContact} 
@@ -339,14 +339,14 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                 </div>
 
                 <div className="space-y-4">
-                                     <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-slate-400 to-amber-600">
+                                     <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600">
                      📋 Your Contacts
                    </h3>
                   <div className="space-y-3 max-h-60 overflow-y-auto">
                     {contacts.map((contact, index) => (
                       <div 
                         key={contact.id} 
-                                                 className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-amber-500/10"
+                                                 className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-amber-500/10"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div>
@@ -367,21 +367,21 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             {activeTab === 'stats' && (
               <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                 <div className="grid grid-cols-3 gap-4">
-                                     <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                                     <div className="text-center p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
                      <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-400">{shareStats.totalShared}</h4>
                      <p className="text-gray-400 text-sm font-medium">Total Shared</p>
                    </div>
-                                     <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
-                     <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-slate-400">{shareStats.successfulReferrals}</h4>
+                                     <div className="text-center p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                     <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-400">{shareStats.successfulReferrals}</h4>
                      <p className="text-gray-400 text-sm font-medium">Successful</p>
                    </div>
-                                     <div className="text-center p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                                     <div className="text-center p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
                      <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-400">{shareStats.pendingInvites}</h4>
                      <p className="text-gray-400 text-sm font-medium">Pending</p>
                    </div>
                 </div>
 
-                                 <div className="p-6 bg-gradient-to-br from-slate-800/60 to-slate-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm">
+                                 <div className="p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm">
                    <h4 className="font-semibold text-amber-200 mb-3 text-lg">📊 Recent Activity</h4>
                    <div className="space-y-2">
                      <p className="text-gray-300 text-sm">
@@ -396,11 +396,11 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                    </div>
                  </div>
 
-                                 <div className="text-center p-6 bg-gradient-to-r from-amber-500/15 to-slate-500/15 rounded-xl border border-amber-500/30 backdrop-blur-sm hover:border-amber-500/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/20">
-                   <div className="w-12 h-12 bg-gradient-to-r from-amber-500/20 to-slate-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                 <div className="text-center p-6 bg-gradient-to-r from-amber-500/15 to-blue-500/15 rounded-xl border border-amber-500/30 backdrop-blur-sm hover:border-amber-500/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/20">
+                   <div className="w-12 h-12 bg-gradient-to-r from-amber-500/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                      <Star className="w-6 h-6 text-amber-300" />
                    </div>
-                   <h4 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-slate-400 to-amber-600 mb-2">Community Builder</h4>
+                   <h4 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-blue-400 to-amber-600 mb-2">Community Builder</h4>
                    <p className="text-gray-300 text-sm">You're helping grow our mystical community! ✨🌟</p>
                  </div>
               </div>
