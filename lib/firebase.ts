@@ -440,7 +440,10 @@ export const checkNetworkStatus = async (): Promise<boolean> => {
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   try {
     const db = getFirebaseDB();
-    if (!db) return null;
+    if (!db) {
+      console.warn('⚠️ Firestore not initialized, using local storage for user profile');
+      return getLocalUserProfile(uid);
+    }
 
     // Check network status first
     const isOnline = await checkNetworkStatus();
@@ -449,11 +452,19 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       return getLocalUserProfile(uid);
     }
 
-    const userDoc = await getDoc(doc(db, 'users', uid));
-    if (userDoc.exists()) {
-      return userDoc.data() as UserProfile;
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        return userDoc.data() as UserProfile;
+      }
+      return null;
+    } catch (docError: any) {
+      if (docError.message && docError.message.includes('offline')) {
+        console.log('🔄 Offline detected, falling back to local storage');
+        return getLocalUserProfile(uid);
+      }
+      throw docError;
     }
-    return null;
   } catch (error: any) {
     console.error('Error getting user profile:', error);
     
@@ -637,23 +648,52 @@ export const updateTipStatus = async (uid: string, isTipped: boolean): Promise<v
 export const updateUserProfile = async (uid: string, profileData: Partial<UserProfile>): Promise<void> => {
   try {
     const db = getFirebaseDB();
-    if (!db) throw new Error('Firestore not initialized');
+    if (!db) {
+      console.warn('Firestore not initialized, saving to local storage');
+      // Save to localStorage as fallback
+      const existingProfile = getLocalUserProfile(uid);
+      const updatedProfile = {
+        ...existingProfile,
+        ...profileData,
+        uid,
+        updatedAt: Date.now(),
+      };
+      saveLocalUserProfile(uid, updatedProfile);
+      return;
+    }
 
     // Remove uid from profileData to avoid overwriting it
     const { uid: _, ...updateData } = profileData;
     
-    await updateDoc(doc(db, 'users', uid), {
-      ...updateData,
-      updatedAt: Date.now(),
-    });
-    
-    // Clear astro data cache if birth details were changed
-    if (updateData.birthDate || updateData.birthPlace || updateData.birthTime) {
-      console.log('Birth details updated, clearing astro data cache for user:', uid);
-      clearAstroDataCache(uid);
+    try {
+      await updateDoc(doc(db, 'users', uid), {
+        ...updateData,
+        updatedAt: Date.now(),
+      });
+      
+      // Clear astro data cache if birth details were changed
+      if (updateData.birthDate || updateData.birthPlace || updateData.birthTime) {
+        console.log('Birth details updated, clearing astro data cache for user:', uid);
+        clearAstroDataCache(uid);
+      }
+      
+      console.log('Successfully updated user profile for:', uid);
+    } catch (firebaseError: any) {
+      if (firebaseError.message && firebaseError.message.includes('offline')) {
+        console.warn('⚠️ Firebase offline, saving to local storage');
+        // Save to localStorage as fallback
+        const existingProfile = getLocalUserProfile(uid);
+        const updatedProfile = {
+          ...existingProfile,
+          ...profileData,
+          uid,
+          updatedAt: Date.now(),
+        };
+        saveLocalUserProfile(uid, updatedProfile);
+        return;
+      }
+      throw firebaseError;
     }
-    
-    console.log('Successfully updated user profile for:', uid);
   } catch (error) {
     console.error('Error updating user profile:', error);
     throw error;

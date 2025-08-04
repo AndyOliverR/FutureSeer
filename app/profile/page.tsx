@@ -70,8 +70,14 @@ export default function ProfilePage() {
         birthTimeAMPM: birthTimeAMPM,
         birthPlace: userProfile.birthPlace || ""
       })
+    } else if (user?.email) {
+      // If no userProfile but we have user data, set basic info
+      setFormData(prev => ({
+        ...prev,
+        email: user.email || ""
+      }))
     }
-  }, [userProfile])
+  }, [userProfile, user])
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -106,15 +112,25 @@ export default function ProfilePage() {
         }
       }
       
-      await updateUserProfile(user.uid, {
-        displayName: formData.displayName,
-        fullName: formData.fullName,
-        birthDate: formData.birthDate,
-        birthTime: birthTime24Hour,
-        birthPlace: formData.birthPlace
-      })
-      setSuccess("Profile updated successfully!")
-      setIsEditing(false)
+      try {
+        await updateUserProfile(user.uid, {
+          displayName: formData.displayName,
+          fullName: formData.fullName,
+          birthDate: formData.birthDate,
+          birthTime: birthTime24Hour,
+          birthPlace: formData.birthPlace
+        })
+        setSuccess("Profile updated successfully!")
+        setIsEditing(false)
+      } catch (firebaseError: any) {
+        // If Firebase fails, show warning but don't block the user
+        if (firebaseError.message && firebaseError.message.includes('offline')) {
+          setSuccess("Profile saved locally. Will sync when connection is restored.")
+          setIsEditing(false)
+        } else {
+          throw firebaseError
+        }
+      }
     } catch (error: any) {
       setError(error.message || "Failed to update profile")
     } finally {
