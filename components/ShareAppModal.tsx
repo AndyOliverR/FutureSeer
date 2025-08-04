@@ -128,10 +128,10 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-2xl bg-gradient-to-br from-blue-950/95 via-blue-900/90 to-blue-800/90 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
+        <div className="w-full max-w-2xl bg-slate-950/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300 max-h-[90vh]">
         {/* Animated mystical glow effect */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-blue-500/5 to-amber-500/8 rounded-2xl animate-pulse"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-transparent to-amber-500/8 rounded-2xl animate-pulse"></div>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-amber-500/5 rounded-2xl"></div>
         
         {/* Floating particles effect */}
         <div className="absolute inset-0 overflow-hidden">
@@ -314,21 +314,21 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                       placeholder="Name"
                       value={newContact.name}
                       onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                      className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                      className="bg-slate-900/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     />
                     <Input
                       placeholder="Email"
                       type="email"
                       value={newContact.email}
                       onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                      className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                      className="bg-slate-900/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                     />
                   </div>
                   <Input
                     placeholder="Phone (optional)"
                     value={newContact.phone}
                     onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                    className="bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
+                    className="bg-slate-900/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40"
                   />
                   <Button 
                     onClick={addContact} 
@@ -346,7 +346,7 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
                     {contacts.map((contact, index) => (
                       <div 
                         key={contact.id} 
-                                                 className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-amber-500/10"
+                                                 className="flex items-center justify-between p-4 bg-slate-900/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-amber-500/10"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div>
@@ -367,21 +367,21 @@ export function ShareAppModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             {activeTab === 'stats' && (
               <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                 <div className="grid grid-cols-3 gap-4">
-                                     <div className="text-center p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                                     <div className="text-center p-6 bg-slate-900/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
                      <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-400">{shareStats.totalShared}</h4>
                      <p className="text-gray-400 text-sm font-medium">Total Shared</p>
                    </div>
-                                     <div className="text-center p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                                     <div className="text-center p-6 bg-slate-900/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
                      <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-400">{shareStats.successfulReferrals}</h4>
                      <p className="text-gray-400 text-sm font-medium">Successful</p>
                    </div>
-                                     <div className="text-center p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
+                                     <div className="text-center p-6 bg-slate-900/60 rounded-xl border border-amber-500/20 backdrop-blur-sm hover:border-amber-500/40 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/10">
                      <h4 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-400">{shareStats.pendingInvites}</h4>
                      <p className="text-gray-400 text-sm font-medium">Pending</p>
                    </div>
                 </div>
 
-                                 <div className="p-6 bg-gradient-to-br from-blue-800/60 to-blue-700/60 rounded-xl border border-amber-500/20 backdrop-blur-sm">
+                                 <div className="p-6 bg-slate-900/60 rounded-xl border border-amber-500/20 backdrop-blur-sm">
                    <h4 className="font-semibold text-amber-200 mb-3 text-lg">📊 Recent Activity</h4>
                    <div className="space-y-2">
                      <p className="text-gray-300 text-sm">

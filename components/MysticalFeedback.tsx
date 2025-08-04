@@ -76,7 +76,7 @@ export function MysticalFeedback() {
       {/* Feedback Icon Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-20 right-4 p-3 bg-gradient-to-r from-blue-900/90 to-blue-800/90 backdrop-blur-md border border-amber-500/30 text-amber-300 rounded-full hover:bg-amber-500/20 hover:border-amber-500/50 transition-all duration-300 z-50 shadow-lg hover:shadow-xl transform hover:scale-110 button-glow"
+        className="fixed bottom-20 left-4 p-3 bg-transparent border border-amber-500/30 text-amber-300 rounded-full hover:bg-amber-500/10 hover:border-amber-500/50 transition-all duration-300 z-50 shadow-lg hover:shadow-xl transform hover:scale-110 button-glow"
         title="Share Feedback"
       >
         <MessageCircle className="w-6 h-6" />
@@ -85,10 +85,10 @@ export function MysticalFeedback() {
       {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-2xl bg-gradient-to-br from-blue-950/95 via-blue-900/90 to-blue-800/90 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
+          <div className="w-full max-w-2xl bg-slate-950/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
             {/* Animated mystical glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-blue-500/5 to-amber-500/8 rounded-2xl animate-pulse"></div>
-            <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-blue-500/5 rounded-2xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-transparent to-amber-500/8 rounded-2xl animate-pulse"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-amber-500/5 rounded-2xl"></div>
             
             {/* Floating particles effect */}
             <div className="absolute inset-0 overflow-hidden">
@@ -134,7 +134,7 @@ export function MysticalFeedback() {
                         className={`relative p-4 rounded-xl border-2 transition-all duration-300 transform hover:scale-105 ${
                           rating === option.value
                             ? `${option.bgColor} ${option.borderColor} ${option.glowColor} shadow-lg`
-                            : 'bg-gradient-to-r from-blue-800/60 to-blue-700/60 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/10'
+                            : 'bg-slate-900/60 border-amber-500/30 hover:border-amber-500/50 hover:bg-amber-500/10'
                         }`}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-amber-400 via-blue-400 to-amber-500 rounded-full blur-md opacity-20 scale-125" />
@@ -167,7 +167,7 @@ export function MysticalFeedback() {
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     placeholder="Share your thoughts, experiences, or suggestions for improving FutureSeer's mystical offerings..."
-                    className="min-h-[120px] bg-gradient-to-r from-blue-800/60 to-blue-700/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40 resize-none"
+                    className="min-h-[120px] bg-slate-900/60 border border-amber-500/30 text-gray-300 placeholder-gray-400 focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/20 rounded-xl backdrop-blur-sm transition-all duration-300 hover:border-amber-500/40 resize-none"
                     rows={5}
                   />
                 </div>
