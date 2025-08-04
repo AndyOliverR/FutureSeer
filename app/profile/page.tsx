@@ -27,20 +27,47 @@ export default function ProfilePage() {
   // Form state
   const [formData, setFormData] = useState({
     displayName: "",
+    fullName: "",
     email: "",
     birthDate: "",
     birthTime: "",
+    birthTimeAMPM: "AM",
     birthPlace: ""
   })
 
   // Load user data when component mounts
   useEffect(() => {
     if (userProfile) {
+      // Parse birth time to separate time and AM/PM
+      let birthTime = userProfile.birthTime || ""
+      let birthTimeAMPM = "AM"
+      
+      if (birthTime) {
+        // If time is in 24-hour format, convert to 12-hour with AM/PM
+        const timeParts = birthTime.split(':')
+        if (timeParts.length >= 2) {
+          const hour = parseInt(timeParts[0])
+          if (hour >= 12) {
+            birthTimeAMPM = "PM"
+            if (hour > 12) {
+              birthTime = `${hour - 12}:${timeParts[1]}`
+            }
+          } else {
+            birthTimeAMPM = "AM"
+            if (hour === 0) {
+              birthTime = `12:${timeParts[1]}`
+            }
+          }
+        }
+      }
+      
       setFormData({
         displayName: userProfile.displayName || "",
+        fullName: userProfile.fullName || "",
         email: userProfile.email || "",
         birthDate: userProfile.birthDate || "",
-        birthTime: userProfile.birthTime || "",
+        birthTime: birthTime,
+        birthTimeAMPM: birthTimeAMPM,
         birthPlace: userProfile.birthPlace || ""
       })
     }
@@ -61,10 +88,29 @@ export default function ProfilePage() {
     setSuccess(null)
     
     try {
+      // Convert 12-hour time to 24-hour format for storage
+      let birthTime24Hour = formData.birthTime
+      if (formData.birthTime && formData.birthTimeAMPM) {
+        const timeParts = formData.birthTime.split(':')
+        if (timeParts.length >= 2) {
+          let hour = parseInt(timeParts[0])
+          const minute = timeParts[1]
+          
+          if (formData.birthTimeAMPM === "PM" && hour !== 12) {
+            hour += 12
+          } else if (formData.birthTimeAMPM === "AM" && hour === 12) {
+            hour = 0
+          }
+          
+          birthTime24Hour = `${hour.toString().padStart(2, '0')}:${minute}`
+        }
+      }
+      
       await updateUserProfile(user.uid, {
         displayName: formData.displayName,
+        fullName: formData.fullName,
         birthDate: formData.birthDate,
-        birthTime: formData.birthTime,
+        birthTime: birthTime24Hour,
         birthPlace: formData.birthPlace
       })
       setSuccess("Profile updated successfully!")
@@ -78,11 +124,36 @@ export default function ProfilePage() {
 
   const handleCancel = () => {
     if (userProfile) {
+      // Parse birth time to separate time and AM/PM
+      let birthTime = userProfile.birthTime || ""
+      let birthTimeAMPM = "AM"
+      
+      if (birthTime) {
+        // If time is in 24-hour format, convert to 12-hour with AM/PM
+        const timeParts = birthTime.split(':')
+        if (timeParts.length >= 2) {
+          const hour = parseInt(timeParts[0])
+          if (hour >= 12) {
+            birthTimeAMPM = "PM"
+            if (hour > 12) {
+              birthTime = `${hour - 12}:${timeParts[1]}`
+            }
+          } else {
+            birthTimeAMPM = "AM"
+            if (hour === 0) {
+              birthTime = `12:${timeParts[1]}`
+            }
+          }
+        }
+      }
+      
       setFormData({
         displayName: userProfile.displayName || "",
+        fullName: userProfile.fullName || "",
         email: userProfile.email || "",
         birthDate: userProfile.birthDate || "",
-        birthTime: userProfile.birthTime || "",
+        birthTime: birthTime,
+        birthTimeAMPM: birthTimeAMPM,
         birthPlace: userProfile.birthPlace || ""
       })
     }
@@ -236,6 +307,29 @@ export default function ProfilePage() {
                       {formData.displayName || "Not set"}
                     </div>
                   )}
+                  <p className="text-xs text-slate-400 font-serif">Used for display purposes</p>
+                </div>
+
+                {/* Full Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="text-amber-200 font-serif flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Full Name
+                  </Label>
+                  {isEditing ? (
+                    <Input
+                      id="fullName"
+                      value={formData.fullName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                      className="bg-slate-800/50 border-slate-600 text-amber-100 placeholder:text-slate-400 focus:border-amber-400 focus:ring-amber-400/20 input-glow"
+                      placeholder="Enter your full name"
+                    />
+                  ) : (
+                    <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-md text-amber-100 font-serif">
+                      {formData.fullName || "Not set"}
+                    </div>
+                  )}
+                  <p className="text-xs text-slate-400 font-serif">Used for numerological and other calculations</p>
                 </div>
 
                 {/* Email */}
@@ -244,7 +338,7 @@ export default function ProfilePage() {
                     <Mail className="w-4 h-4" />
                     Email
                   </Label>
-                  <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-md text-amber-100 font-serif">
+                  <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-md text-amber-100 font-serif w-full">
                     {formData.email}
                   </div>
                   <p className="text-xs text-slate-400 font-serif">Email cannot be changed</p>
@@ -279,16 +373,26 @@ export default function ProfilePage() {
                     Birth Time
                   </Label>
                   {isEditing ? (
-                    <Input
-                      id="birthTime"
-                      type="time"
-                      value={formData.birthTime}
-                      onChange={(e) => setFormData(prev => ({ ...prev, birthTime: e.target.value }))}
-                      className="bg-slate-800/50 border-slate-600 text-amber-100 focus:border-amber-400 focus:ring-amber-400/20 input-glow"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="birthTime"
+                        type="time"
+                        value={formData.birthTime}
+                        onChange={(e) => setFormData(prev => ({ ...prev, birthTime: e.target.value }))}
+                        className="bg-slate-800/50 border-slate-600 text-amber-100 focus:border-amber-400 focus:ring-amber-400/20 input-glow flex-1"
+                      />
+                      <select
+                        value={formData.birthTimeAMPM}
+                        onChange={(e) => setFormData(prev => ({ ...prev, birthTimeAMPM: e.target.value }))}
+                        className="bg-slate-800/50 border border-slate-600 text-amber-100 focus:border-amber-400 focus:ring-amber-400/20 rounded-md px-3 py-2"
+                      >
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
                   ) : (
                     <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-md text-amber-100 font-serif">
-                      {formData.birthTime || "Not set"}
+                      {formData.birthTime ? `${formData.birthTime} ${formData.birthTimeAMPM}` : "Not set"}
                     </div>
                   )}
                   <p className="text-xs text-slate-400 font-serif">Used for precise astrological calculations</p>
