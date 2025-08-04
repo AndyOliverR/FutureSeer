@@ -82,16 +82,24 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       
       // Connect to Firestore with better error handling
       try {
-        firebaseDB = getFirestore(app);
-        console.log('✅ Connected to Firestore database successfully');
+        // Try to connect to the "default" database first (your specific database name)
+        firebaseDB = getFirestore(app, 'default');
+        console.log('✅ Connected to Firestore database: "default"');
         
         // Test the connection with a simple operation
         const testDoc = doc(firebaseDB, '_test', 'connection');
         console.log('✅ Firestore connection test completed');
       } catch (dbError) {
-        console.error('❌ Failed to connect to Firestore:', dbError);
-        console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
-        return { app: null, auth: null, db: null };
+        console.warn('⚠️ Failed to connect to "default" database, trying default connection:', dbError);
+        try {
+          // Fallback to standard default connection
+          firebaseDB = getFirestore(app);
+          console.log('✅ Connected to default Firestore database');
+        } catch (fallbackError) {
+          console.error('❌ Failed to connect to Firestore:', fallbackError);
+          console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
+          return { app: null, auth: null, db: null };
+        }
       }
       
       console.log('✅ Firebase initialized successfully');
