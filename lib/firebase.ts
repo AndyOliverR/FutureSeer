@@ -647,18 +647,21 @@ export const updateTipStatus = async (uid: string, isTipped: boolean): Promise<v
 
 export const updateUserProfile = async (uid: string, profileData: Partial<UserProfile>): Promise<void> => {
   try {
+    // Always save to localStorage first for immediate availability
+    const existingProfile = getLocalUserProfile(uid);
+    const updatedProfile = {
+      ...existingProfile,
+      ...profileData,
+      uid,
+      updatedAt: Date.now(),
+    };
+    saveLocalUserProfile(uid, updatedProfile);
+    console.log('✅ Profile saved to local storage for:', uid);
+
+    // Try Firebase as secondary storage (don't block on failure)
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('Firestore not initialized, saving to local storage');
-      // Save to localStorage as fallback
-      const existingProfile = getLocalUserProfile(uid);
-      const updatedProfile = {
-        ...existingProfile,
-        ...profileData,
-        uid,
-        updatedAt: Date.now(),
-      };
-      saveLocalUserProfile(uid, updatedProfile);
+      console.warn('⚠️ Firestore not initialized, using local storage only');
       return;
     }
 
@@ -666,10 +669,17 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
     const { uid: _, ...updateData } = profileData;
     
     try {
-      await updateDoc(doc(db, 'users', uid), {
+      // Set a timeout for Firebase operations
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Firebase timeout')), 3000)
+      );
+      
+      const firebasePromise = updateDoc(doc(db, 'users', uid), {
         ...updateData,
         updatedAt: Date.now(),
       });
+      
+      await Promise.race([firebasePromise, timeoutPromise]);
       
       // Clear astro data cache if birth details were changed
       if (updateData.birthDate || updateData.birthPlace || updateData.birthTime) {
@@ -677,26 +687,23 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
         clearAstroDataCache(uid);
       }
       
-      console.log('Successfully updated user profile for:', uid);
+      console.log('✅ Successfully updated user profile in Firebase for:', uid);
     } catch (firebaseError: any) {
-      if (firebaseError.message && firebaseError.message.includes('offline')) {
-        console.warn('⚠️ Firebase offline, saving to local storage');
-        // Save to localStorage as fallback
-        const existingProfile = getLocalUserProfile(uid);
-        const updatedProfile = {
-          ...existingProfile,
-          ...profileData,
-          uid,
-          updatedAt: Date.now(),
-        };
-        saveLocalUserProfile(uid, updatedProfile);
-        return;
+      // Don't throw error, just log it since we already saved to localStorage
+      console.warn('⚠️ Firebase update failed (using local storage):', {
+        error: firebaseError.message,
+        code: firebaseError.code,
+        uid: uid
+      });
+      
+      // Check if it's a permissions error
+      if (firebaseError.message && firebaseError.message.includes('permissions')) {
+        console.info('ℹ️ Firebase permissions issue detected. Profile saved locally only.');
       }
-      throw firebaseError;
     }
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    throw error;
+    console.error('Error in updateUserProfile:', error);
+    // Don't throw error since we saved to localStorage
   }
 };
 

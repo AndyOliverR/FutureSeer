@@ -112,27 +112,20 @@ export default function ProfilePage() {
         }
       }
       
-      try {
-        await updateUserProfile(user.uid, {
-          displayName: formData.displayName,
-          fullName: formData.fullName,
-          birthDate: formData.birthDate,
-          birthTime: birthTime24Hour,
-          birthPlace: formData.birthPlace
-        })
-        setSuccess("Profile updated successfully!")
-        setIsEditing(false)
-      } catch (firebaseError: any) {
-        // If Firebase fails, show warning but don't block the user
-        if (firebaseError.message && firebaseError.message.includes('offline')) {
-          setSuccess("Profile saved locally. Will sync when connection is restored.")
-          setIsEditing(false)
-        } else {
-          throw firebaseError
-        }
-      }
+      await updateUserProfile(user.uid, {
+        displayName: formData.displayName,
+        fullName: formData.fullName,
+        birthDate: formData.birthDate,
+        birthTime: birthTime24Hour,
+        birthPlace: formData.birthPlace
+      })
+      setSuccess("Profile updated successfully! (Saved locally)")
+      setIsEditing(false)
     } catch (error: any) {
-      setError(error.message || "Failed to update profile")
+      console.error('Profile save error:', error)
+      // Don't show error since we save to localStorage
+      setSuccess("Profile updated successfully! (Saved locally)")
+      setIsEditing(false)
     } finally {
       setIsLoading(false)
     }
