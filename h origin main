@@ -1,0 +1,5 @@
+[33m7ca8a72[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix modal colors: Update all modals to use dark blue and gold theme matching main page
+[33meb982b8[m Force Vercel redeploy - modal color fix
+[33m731116c[m Fix modal colors: Use consistent dark blue and gold theme across all modals
+[33me8f7f63[m Merge pull request #1 from AndyOliverR/ready-for-inspection
+[33m3bdf180[m Complete Dark Blue and Gold theme implementation - Finalized ShareAppModal with consistent amber/gold accents and deep blue backgrounds for glossy, shiny, sharp appealing aesthetic
