@@ -25,6 +25,7 @@ import {
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
+import { AppWrapper } from '@/components/AppWrapper'
 
 interface ProfileData {
   // Step 1: Basic Info
@@ -630,68 +631,70 @@ export default function ProfileSetupPage() {
   }
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-soft text-sm">Step {currentStep} of {totalSteps}</span>
-            <span className="text-soft text-sm">{Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-
-        {/* Main Content */}
-        <Card className="glass-card border-white/10">
-          <CardContent className="p-8">
-            <AnimatePresence mode="wait">
-              {renderStep()}
-            </AnimatePresence>
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
-              <Button
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-                className="text-soft"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Previous
-              </Button>
-
-              {currentStep < totalSteps ? (
-                <Button
-                  onClick={nextStep}
-                  disabled={!isCurrentStepComplete()}
-                  className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
-                >
-                  Next
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleComplete}
-                  disabled={isLoading || !isCurrentStepComplete()}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                >
-                  {isLoading ? (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                      Completing...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Complete Setup
-                    </>
-                  )}
-                </Button>
-              )}
+    <AppWrapper>
+      <div className="min-h-screen p-4">
+        <div className="max-w-2xl mx-auto">
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-soft text-sm">Step {currentStep} of {totalSteps}</span>
+              <span className="text-soft text-sm">{Math.round(progress)}%</span>
             </div>
-          </CardContent>
-        </Card>
+            <Progress value={progress} className="h-2" />
+          </div>
+
+          {/* Main Content */}
+          <Card className="glass-card border-white/10">
+            <CardContent className="p-8">
+              <AnimatePresence mode="wait">
+                {renderStep()}
+              </AnimatePresence>
+
+              {/* Navigation Buttons */}
+              <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+                <Button
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="text-soft"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Previous
+                </Button>
+
+                {currentStep < totalSteps ? (
+                  <Button
+                    onClick={nextStep}
+                    disabled={!isCurrentStepComplete()}
+                    className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                  >
+                    Next
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleComplete}
+                    disabled={isLoading || !isCurrentStepComplete()}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                        Completing...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        Complete Setup
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </AppWrapper>
   )
 } 
