@@ -1,5 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirebaseDB } from '@/lib/firebase';
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
+
+// Server-side Firebase config
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+// Initialize Firebase for server-side
+const getServerFirebaseDB = () => {
+  try {
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+    return getFirestore(app);
+  } catch (error) {
+    console.error('Failed to initialize Firebase on server:', error);
+    return null;
+  }
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +32,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const db = getFirebaseDB();
+    const db = getServerFirebaseDB();
     if (!db) {
       return NextResponse.json(
         { error: 'Database not available' },
@@ -18,7 +40,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { doc, getDoc } = await import('firebase/firestore');
     const userDoc = await getDoc(doc(db, 'users', userId));
     
     if (!userDoc.exists()) {
@@ -54,7 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getFirebaseDB();
+    const db = getServerFirebaseDB();
     if (!db) {
       return NextResponse.json(
         { error: 'Database not available' },
@@ -62,7 +83,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { doc, updateDoc } = await import('firebase/firestore');
     const userRef = doc(db, 'users', userId);
     
     // Update the user document with advanced profile data
@@ -97,7 +117,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const db = getFirebaseDB();
+    const db = getServerFirebaseDB();
     if (!db) {
       return NextResponse.json(
         { error: 'Database not available' },
@@ -105,7 +125,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { doc, updateDoc } = await import('firebase/firestore');
     const userRef = doc(db, 'users', userId);
     
     // Merge the advanced profile data with existing data
