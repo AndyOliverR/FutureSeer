@@ -40,24 +40,19 @@ export default function SignInPage() {
         profileComplete: !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
       });
       
-      // User is signed in, check profile completion
-      if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
-        // Profile is complete, go to dashboard
-        console.log('✅ Profile complete, redirecting to dashboard');
-        router.push("/dashboard")
-      } else {
-        // Profile is incomplete, go to profile setup
-        console.log('⚠️ Profile incomplete, redirecting to profile setup');
-        router.push("/profile-setup")
-      }
-    }
-  }, [user, userProfile, loading, router])
-
-  // Temporary bypass for testing - if user is authenticated but no profile data, assume they need to complete profile
-  useEffect(() => {
-    if (!loading && user && !userProfile) {
-      console.log('🔄 User authenticated but no profile data, redirecting to profile setup');
-      router.push("/profile-setup");
+      // TEMPORARY FIX: If user is authenticated, just go to dashboard
+      // This bypasses the profile completion check until we fix the Firebase permissions
+      console.log('✅ User authenticated, redirecting to dashboard (temporary bypass)');
+      router.push("/dashboard");
+      
+      // Original logic (commented out for now):
+      // if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
+      //   console.log('✅ Profile complete, redirecting to dashboard');
+      //   router.push("/dashboard")
+      // } else {
+      //   console.log('⚠️ Profile incomplete, redirecting to profile setup');
+      //   router.push("/profile-setup")
+      // }
     }
   }, [user, userProfile, loading, router])
 
