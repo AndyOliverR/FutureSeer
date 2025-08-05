@@ -30,6 +30,7 @@ interface ProfileData {
   // Step 1: Basic Info
   fullName: string
   email: string
+  gender: 'male' | 'female' | 'prefer-not-to-say'
   
   // Step 2: Birth Details
   birthDate: string
@@ -41,8 +42,10 @@ interface ProfileData {
   facePhotoUrl: string
   
   // Step 4: Palm Photo
-  palmPhoto: File | null
-  palmPhotoUrl: string
+  leftPalmPhoto: File | null
+  leftPalmPhotoUrl: string
+  rightPalmPhoto: File | null
+  rightPalmPhotoUrl: string
   
   // Step 5: Preferences
   interests: string[]
@@ -70,13 +73,16 @@ export default function ProfileSetupPage() {
   const [profileData, setProfileData] = useState<ProfileData>({
     fullName: '',
     email: '',
+    gender: 'prefer-not-to-say',
     birthDate: '',
     birthTime: '',
     birthPlace: '',
     facePhoto: null,
     facePhotoUrl: '',
-    palmPhoto: null,
-    palmPhotoUrl: '',
+    leftPalmPhoto: null,
+    leftPalmPhotoUrl: '',
+    rightPalmPhoto: null,
+    rightPalmPhotoUrl: '',
     interests: [],
     experienceLevel: 'beginner',
     notificationPreferences: {
@@ -110,7 +116,7 @@ export default function ProfileSetupPage() {
   const totalSteps = 5
   const progress = (currentStep / totalSteps) * 100
 
-  const handleFileUpload = (file: File, type: 'face' | 'palm') => {
+  const handleFileUpload = (file: File, type: 'face' | 'leftPalm' | 'rightPalm') => {
     const reader = new FileReader()
     reader.onload = (e) => {
       const url = e.target?.result as string
@@ -120,15 +126,45 @@ export default function ProfileSetupPage() {
           facePhoto: file,
           facePhotoUrl: url
         }))
-      } else {
+      } else if (type === 'leftPalm') {
         setProfileData(prev => ({
           ...prev,
-          palmPhoto: file,
-          palmPhotoUrl: url
+          leftPalmPhoto: file,
+          leftPalmPhotoUrl: url
+        }))
+      } else if (type === 'rightPalm') {
+        setProfileData(prev => ({
+          ...prev,
+          rightPalmPhoto: file,
+          rightPalmPhotoUrl: url
         }))
       }
     }
     reader.readAsDataURL(file)
+  }
+
+  // Get required palm photos based on gender
+  const getRequiredPalmPhotos = () => {
+    switch (profileData.gender) {
+      case 'male':
+        return ['rightPalm']
+      case 'female':
+        return ['leftPalm']
+      case 'prefer-not-to-say':
+        return ['leftPalm', 'rightPalm']
+      default:
+        return ['leftPalm', 'rightPalm']
+    }
+  }
+
+  // Check if palm photos are complete
+  const isPalmPhotosComplete = () => {
+    const required = getRequiredPalmPhotos()
+    return required.every(type => {
+      if (type === 'leftPalm') return profileData.leftPalmPhoto !== null
+      if (type === 'rightPalm') return profileData.rightPalmPhoto !== null
+      return false
+    })
   }
 
   const handleInterestToggle = (interest: string) => {
@@ -177,6 +213,24 @@ export default function ProfileSetupPage() {
     }
   }
 
+  // Check if current step is complete
+  const isCurrentStepComplete = () => {
+    switch (currentStep) {
+      case 1:
+        return profileData.fullName.trim() && profileData.gender
+      case 2:
+        return profileData.birthDate && profileData.birthTime && profileData.birthPlace
+      case 3:
+        return profileData.facePhoto !== null
+      case 4:
+        return isPalmPhotosComplete()
+      case 5:
+        return profileData.interests.length > 0
+      default:
+        return false
+    }
+  }
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -217,6 +271,37 @@ export default function ProfileSetupPage() {
                   disabled
                 />
                 <p className="text-xs text-soft/60 mt-1">Email is managed by your authentication provider</p>
+              </div>
+
+              <div>
+                <Label className="text-soft">Gender *</Label>
+                <div className="grid grid-cols-3 gap-3 mt-2">
+                  <Button
+                    type="button"
+                    variant={profileData.gender === 'male' ? 'default' : 'outline'}
+                    onClick={() => setProfileData(prev => ({ ...prev, gender: 'male' }))}
+                    className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                  >
+                    Male
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={profileData.gender === 'female' ? 'default' : 'outline'}
+                    onClick={() => setProfileData(prev => ({ ...prev, gender: 'female' }))}
+                    className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                  >
+                    Female
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={profileData.gender === 'prefer-not-to-say' ? 'default' : 'outline'}
+                    onClick={() => setProfileData(prev => ({ ...prev, gender: 'prefer-not-to-say' }))}
+                    className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                  >
+                    Prefer not to say
+                  </Button>
+                </div>
+                <p className="text-xs text-soft/60 mt-1">This helps determine which palm photos are required for palmistry readings</p>
               </div>
             </div>
           </motion.div>
@@ -347,50 +432,104 @@ export default function ProfileSetupPage() {
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">🤲</div>
               <h2 className="text-2xl font-semibold text-white mb-2">Palm Photo</h2>
-              <p className="text-soft">For palmistry and life path analysis</p>
+              <p className="text-soft">
+                {profileData.gender === 'male' ? 'Right palm for men' :
+                 profileData.gender === 'female' ? 'Left palm for women' :
+                 'Both palms for comprehensive analysis'}
+              </p>
             </div>
             
-            <div className="space-y-4">
-              {profileData.palmPhotoUrl ? (
-                <div className="text-center">
-                  <img
-                    src={profileData.palmPhotoUrl}
-                    alt="Palm photo"
-                    className="w-32 h-32 rounded-lg mx-auto mb-4 object-cover border-2 border-amber-400"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => setProfileData(prev => ({ ...prev, palmPhoto: null, palmPhotoUrl: '' }))}
-                    className="text-soft"
-                  >
-                    Change Photo
-                  </Button>
+            <div className="space-y-6">
+              {/* Show left palm for females and prefer-not-to-say */}
+              {(profileData.gender === 'female' || profileData.gender === 'prefer-not-to-say') && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white text-center">Left Palm</h3>
+                  {profileData.leftPalmPhotoUrl ? (
+                    <div className="text-center">
+                      <img
+                        src={profileData.leftPalmPhotoUrl}
+                        alt="Left Palm photo"
+                        className="w-32 h-32 rounded-lg mx-auto mb-4 object-cover border-2 border-amber-400"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => setProfileData(prev => ({ ...prev, leftPalmPhoto: null, leftPalmPhotoUrl: '' }))}
+                        className="text-soft"
+                      >
+                        Change Photo
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
+                      <Hand className="w-12 h-12 mx-auto mb-4 text-soft/60" />
+                      <p className="text-soft mb-4">Upload a clear left palm photo</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload(file, 'leftPalm')
+                        }}
+                        className="hidden"
+                        id="leftPalmPhoto"
+                      />
+                      <Label htmlFor="leftPalmPhoto" asChild>
+                        <Button variant="outline" className="cursor-pointer">
+                          <Camera className="w-4 h-4 mr-2" />
+                          Choose Photo
+                        </Button>
+                      </Label>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
-                  <Hand className="w-12 h-12 mx-auto mb-4 text-soft/60" />
-                  <p className="text-soft mb-4">Upload a clear palm photo</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) handleFileUpload(file, 'palm')
-                    }}
-                    className="hidden"
-                    id="palmPhoto"
-                  />
-                  <Label htmlFor="palmPhoto" asChild>
-                    <Button variant="outline" className="cursor-pointer">
-                      <Camera className="w-4 h-4 mr-2" />
-                      Choose Photo
-                    </Button>
-                  </Label>
+              )}
+
+              {/* Show right palm for males and prefer-not-to-say */}
+              {(profileData.gender === 'male' || profileData.gender === 'prefer-not-to-say') && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white text-center">Right Palm</h3>
+                  {profileData.rightPalmPhotoUrl ? (
+                    <div className="text-center">
+                      <img
+                        src={profileData.rightPalmPhotoUrl}
+                        alt="Right Palm photo"
+                        className="w-32 h-32 rounded-lg mx-auto mb-4 object-cover border-2 border-amber-400"
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => setProfileData(prev => ({ ...prev, rightPalmPhoto: null, rightPalmPhotoUrl: '' }))}
+                        className="text-soft"
+                      >
+                        Change Photo
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
+                      <Hand className="w-12 h-12 mx-auto mb-4 text-soft/60" />
+                      <p className="text-soft mb-4">Upload a clear right palm photo</p>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (file) handleFileUpload(file, 'rightPalm')
+                        }}
+                        className="hidden"
+                        id="rightPalmPhoto"
+                      />
+                      <Label htmlFor="rightPalmPhoto" asChild>
+                        <Button variant="outline" className="cursor-pointer">
+                          <Camera className="w-4 h-4 mr-2" />
+                          Choose Photo
+                        </Button>
+                      </Label>
+                    </div>
+                  )}
                 </div>
               )}
               
               <div className="text-xs text-soft/60 text-center">
-                <p>• Clear photo of your palm (both hands recommended)</p>
+                <p>• Clear, well-lit photo of your palm</p>
                 <p>• Used for palmistry analysis only</p>
                 <p>• Your privacy is protected</p>
               </div>
@@ -518,7 +657,7 @@ export default function ProfileSetupPage() {
               {currentStep < totalSteps ? (
                 <Button
                   onClick={nextStep}
-                  disabled={!profileData.fullName.trim()}
+                  disabled={!isCurrentStepComplete()}
                   className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
                 >
                   Next
@@ -527,7 +666,7 @@ export default function ProfileSetupPage() {
               ) : (
                 <Button
                   onClick={handleComplete}
-                  disabled={isLoading}
+                  disabled={isLoading || !isCurrentStepComplete()}
                   className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                 >
                   {isLoading ? (
