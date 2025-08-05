@@ -14,7 +14,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { signInWithGoogle, signUpWithEmail } from "@/lib/firebase"
 import { isAppleDevice } from "@/utils/isAppleDevice"
 import { useRef } from "react"
-import { AppWrapper } from "@/components/AppWrapper"
+
 
 export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -97,8 +97,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <AppWrapper>
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
            style={{ backgroundImage: "url('/images/starfield-bg.png')" }}>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
         
@@ -332,6 +331,6 @@ export default function SignUpPage() {
           </motion.div>
         </div>
       </div>
-    </AppWrapper>
+    </div>
   )
 } 
