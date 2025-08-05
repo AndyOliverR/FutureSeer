@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -25,20 +25,30 @@ export default function SignInPage() {
   const [resetSent, setResetSent] = useState(false)
   const [activeProvider, setActiveProvider] = useState<string | null>(null)
   
-  const { signIn } = useAuth()
+  const { user, userProfile, loading } = useAuth()
   const router = useRouter()
+
+  // Handle redirects after authentication
+  useEffect(() => {
+    if (!loading && user) {
+      // User is signed in, check profile completion
+      if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
+        // Profile is complete, go to dashboard
+        router.push("/dashboard")
+      } else {
+        // Profile is incomplete, go to profile setup
+        router.push("/profile-setup")
+      }
+    }
+  }, [user, userProfile, loading, router])
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     setError(null)
     
     try {
-      const user = await signInWithGoogle()
-      // Check if user profile is complete
-      if (user) {
-        // Redirect based on profile completion
-        router.push("/profile-setup")
-      }
+      await signInWithGoogle()
+      // The useEffect above will handle the redirect
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -83,12 +93,8 @@ export default function SignInPage() {
     setError(null)
     
     try {
-      const user = await signInWithEmail(email, password)
-      // Check if user profile is complete
-      if (user) {
-        // Redirect based on profile completion
-        router.push("/profile-setup")
-      }
+      await signInWithEmail(email, password)
+      // The useEffect above will handle the redirect
     } catch (error: any) {
       setError(error.message)
     } finally {
