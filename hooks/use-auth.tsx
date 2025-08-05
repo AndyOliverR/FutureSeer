@@ -208,7 +208,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Try to get user profile with better error handling
           try {
             const profile = await getUserProfile(firebaseUser.uid);
-            setUserProfile(profile);
+            if (profile) {
+              setUserProfile(profile);
+            } else {
+              // No profile found, create a basic one
+              console.log('No user profile found, creating basic profile');
+              const basicProfile: UserProfile = {
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || '',
+                photoURL: firebaseUser.photoURL || '',
+                isSubscribed: false,
+                isTipped: false,
+                trialStartTime: Date.now(),
+                trialEndTime: Date.now() + (9 * 60 * 60 * 1000), // 9 hours
+                createdAt: Date.now(),
+                lastLoginAt: Date.now(),
+                emailVerified: firebaseUser.emailVerified,
+                providerData: firebaseUser.providerData,
+                lastSignInTime: firebaseUser.metadata.lastSignInTime ? parseInt(firebaseUser.metadata.lastSignInTime) : Date.now(),
+                creationTime: firebaseUser.metadata.creationTime ? parseInt(firebaseUser.metadata.creationTime) : Date.now(),
+                // Profile is incomplete by default
+                birthDate: undefined,
+                birthTime: undefined,
+                birthPlace: undefined,
+              };
+              setUserProfile(basicProfile);
+            }
           } catch (profileError) {
             console.warn('Failed to load user profile due to permissions, using fallback:', profileError);
             // Create a basic profile with user info from Firebase Auth
