@@ -43,7 +43,11 @@ export async function GET(request: NextRequest) {
     const userDoc = await getDoc(doc(db, 'users', userId));
     
     if (!userDoc.exists()) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      // Return empty advanced profile if user doesn't exist
+      return NextResponse.json({
+        success: true,
+        advancedProfile: {}
+      });
     }
 
     const userData = userDoc.data();
@@ -56,10 +60,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching advanced profile:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch advanced profile' },
-      { status: 500 }
-    );
+    // Return empty profile instead of error
+    return NextResponse.json({
+      success: true,
+      advancedProfile: {}
+    });
   }
 }
 
