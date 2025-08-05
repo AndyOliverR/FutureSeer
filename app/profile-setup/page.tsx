@@ -632,23 +632,418 @@ export default function ProfileSetupPage() {
 
   return (
     <AppWrapper>
-      <div className="min-h-screen p-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-soft text-sm">Step {currentStep} of {totalSteps}</span>
-              <span className="text-soft text-sm">{Math.round(progress)}%</span>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat"
+           style={{ backgroundImage: "url('/images/starfield-bg.png')" }}>
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
+        
+        <div className="relative z-10">
+          {/* Header */}
+          {/* Assuming Header component exists elsewhere or is a placeholder */}
+          {/* <Header /> */}
+          
+          <div className="container mx-auto px-4 py-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="max-w-4xl mx-auto"
+            >
+              {/* Progress Indicator */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h1 className="text-3xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">
+                    Complete Your Profile
+                  </h1>
+                  <span className="text-amber-200 font-serif">
+                    Step {currentStep} of {totalSteps}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-700/50 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-amber-500 to-yellow-500 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+                  />
+                </div>
+              </div>
 
-          {/* Main Content */}
-          <Card className="glass-card border-white/10">
-            <CardContent className="p-8">
-              <AnimatePresence mode="wait">
-                {renderStep()}
-              </AnimatePresence>
+              {/* Step Content */}
+              <div className="bg-slate-900/40 backdrop-blur-md border border-slate-700/50 rounded-lg p-8 card-glow">
+                {currentStep === 1 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center mb-8">
+                      <div className="text-4xl mb-4">👋</div>
+                      <h2 className="text-2xl font-semibold text-white mb-2">Welcome to FutureSeer</h2>
+                      <p className="text-soft">Let's personalize your mystical journey</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="fullName" className="text-soft">Full Name *</Label>
+                        <Input
+                          id="fullName"
+                          value={profileData.fullName}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
+                          placeholder="Enter your full name"
+                          className="bg-white/5 border-white/20 text-soft"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="email" className="text-soft">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={profileData.email}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="your.email@example.com"
+                          className="bg-white/5 border-white/20 text-soft"
+                          disabled
+                        />
+                        <p className="text-xs text-soft/60 mt-1">Email is managed by your authentication provider</p>
+                      </div>
+
+                      <div>
+                        <Label className="text-soft">Gender *</Label>
+                        <div className="grid grid-cols-3 gap-3 mt-2">
+                          <Button
+                            type="button"
+                            variant={profileData.gender === 'male' ? 'default' : 'outline'}
+                            onClick={() => setProfileData(prev => ({ ...prev, gender: 'male' }))}
+                            className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                          >
+                            Male
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={profileData.gender === 'female' ? 'default' : 'outline'}
+                            onClick={() => setProfileData(prev => ({ ...prev, gender: 'female' }))}
+                            className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                          >
+                            Female
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={profileData.gender === 'prefer-not-to-say' ? 'default' : 'outline'}
+                            onClick={() => setProfileData(prev => ({ ...prev, gender: 'prefer-not-to-say' }))}
+                            className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                          >
+                            Prefer not to say
+                          </Button>
+                        </div>
+                        <p className="text-xs text-soft/60 mt-1">This helps determine which palm photos are required for palmistry readings</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {currentStep === 2 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center mb-8">
+                      <div className="text-4xl mb-4">🌟</div>
+                      <h2 className="text-2xl font-semibold text-white mb-2">Birth Details</h2>
+                      <p className="text-soft">Your cosmic blueprint for accurate readings</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="birthDate" className="text-soft">Date of Birth *</Label>
+                        <Input
+                          id="birthDate"
+                          type="date"
+                          value={profileData.birthDate}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, birthDate: e.target.value }))}
+                          className="bg-white/5 border-white/20 text-soft"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="birthTime" className="text-soft">Time of Birth</Label>
+                        <Input
+                          id="birthTime"
+                          type="time"
+                          value={profileData.birthTime}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, birthTime: e.target.value }))}
+                          className="bg-white/5 border-white/20 text-soft"
+                        />
+                        <p className="text-xs text-soft/60 mt-1">For more accurate astrological readings</p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="birthPlace" className="text-soft">Place of Birth</Label>
+                        <Input
+                          id="birthPlace"
+                          value={profileData.birthPlace}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, birthPlace: e.target.value }))}
+                          placeholder="City, Country"
+                          className="bg-white/5 border-white/20 text-soft"
+                        />
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {currentStep === 3 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center mb-8">
+                      <div className="text-4xl mb-4">📸</div>
+                      <h2 className="text-2xl font-semibold text-white mb-2">Face Photo</h2>
+                      <p className="text-soft">For face reading and personality analysis</p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      {profileData.facePhotoUrl ? (
+                        <div className="text-center">
+                          <img
+                            src={profileData.facePhotoUrl}
+                            alt="Face photo"
+                            className="w-32 h-32 rounded-full mx-auto mb-4 object-cover border-2 border-amber-400"
+                          />
+                          <Button
+                            variant="outline"
+                            onClick={() => setProfileData(prev => ({ ...prev, facePhoto: null, facePhotoUrl: '' }))}
+                            className="text-soft"
+                          >
+                            Change Photo
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
+                          <Upload className="w-12 h-12 mx-auto mb-4 text-soft/60" />
+                          <p className="text-soft mb-4">Upload a clear face photo</p>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleFileUpload(file, 'face')
+                            }}
+                            className="hidden"
+                            id="facePhoto"
+                          />
+                          <Label htmlFor="facePhoto" asChild>
+                            <Button variant="outline" className="cursor-pointer">
+                              <Camera className="w-4 h-4 mr-2" />
+                              Choose Photo
+                            </Button>
+                          </Label>
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-soft/60 text-center">
+                        <p>• Clear, well-lit photo of your face</p>
+                        <p>• Used for face reading analysis only</p>
+                        <p>• Your privacy is protected</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {currentStep === 4 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center mb-8">
+                      <div className="text-4xl mb-4">🤲</div>
+                      <h2 className="text-2xl font-semibold text-white mb-2">Palm Photo</h2>
+                      <p className="text-soft">
+                        {profileData.gender === 'male' ? 'Right palm for men' :
+                         profileData.gender === 'female' ? 'Left palm for women' :
+                         'Both palms for comprehensive analysis'}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {/* Show left palm for females and prefer-not-to-say */}
+                      {(profileData.gender === 'female' || profileData.gender === 'prefer-not-to-say') && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-white text-center">Left Palm</h3>
+                          {profileData.leftPalmPhotoUrl ? (
+                            <div className="text-center">
+                              <img
+                                src={profileData.leftPalmPhotoUrl}
+                                alt="Left Palm photo"
+                                className="w-32 h-32 rounded-lg mx-auto mb-4 object-cover border-2 border-amber-400"
+                              />
+                              <Button
+                                variant="outline"
+                                onClick={() => setProfileData(prev => ({ ...prev, leftPalmPhoto: null, leftPalmPhotoUrl: '' }))}
+                                className="text-soft"
+                              >
+                                Change Photo
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
+                              <Hand className="w-12 h-12 mx-auto mb-4 text-soft/60" />
+                              <p className="text-soft mb-4">Upload a clear left palm photo</p>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleFileUpload(file, 'leftPalm')
+                                }}
+                                className="hidden"
+                                id="leftPalmPhoto"
+                              />
+                              <Label htmlFor="leftPalmPhoto" asChild>
+                                <Button variant="outline" className="cursor-pointer">
+                                  <Camera className="w-4 h-4 mr-2" />
+                                  Choose Photo
+                                </Button>
+                              </Label>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Show right palm for males and prefer-not-to-say */}
+                      {(profileData.gender === 'male' || profileData.gender === 'prefer-not-to-say') && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-white text-center">Right Palm</h3>
+                          {profileData.rightPalmPhotoUrl ? (
+                            <div className="text-center">
+                              <img
+                                src={profileData.rightPalmPhotoUrl}
+                                alt="Right Palm photo"
+                                className="w-32 h-32 rounded-lg mx-auto mb-4 object-cover border-2 border-amber-400"
+                              />
+                              <Button
+                                variant="outline"
+                                onClick={() => setProfileData(prev => ({ ...prev, rightPalmPhoto: null, rightPalmPhotoUrl: '' }))}
+                                className="text-soft"
+                              >
+                                Change Photo
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
+                              <Hand className="w-12 h-12 mx-auto mb-4 text-soft/60" />
+                              <p className="text-soft mb-4">Upload a clear right palm photo</p>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) handleFileUpload(file, 'rightPalm')
+                                }}
+                                className="hidden"
+                                id="rightPalmPhoto"
+                              />
+                              <Label htmlFor="rightPalmPhoto" asChild>
+                                <Button variant="outline" className="cursor-pointer">
+                                  <Camera className="w-4 h-4 mr-2" />
+                                  Choose Photo
+                                </Button>
+                              </Label>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className="text-xs text-soft/60 text-center">
+                        <p>• Clear, well-lit photo of your palm</p>
+                        <p>• Used for palmistry analysis only</p>
+                        <p>• Your privacy is protected</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {currentStep === 5 && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    className="space-y-6"
+                  >
+                    <div className="text-center mb-8">
+                      <div className="text-4xl mb-4">⚙️</div>
+                      <h2 className="text-2xl font-semibold text-white mb-2">Preferences</h2>
+                      <p className="text-soft">Customize your mystical experience</p>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <Label className="text-soft mb-3 block">Areas of Interest</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {interests.map((interest) => (
+                            <Button
+                              key={interest}
+                              variant={profileData.interests.includes(interest) ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handleInterestToggle(interest)}
+                              className="justify-start"
+                            >
+                              {profileData.interests.includes(interest) && <Check className="w-3 h-3 mr-1" />}
+                              {interest}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-soft mb-3 block">Experience Level</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {['beginner', 'intermediate', 'advanced'].map((level) => (
+                            <Button
+                              key={level}
+                              variant={profileData.experienceLevel === level ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setProfileData(prev => ({ ...prev, experienceLevel: level as any }))}
+                              className="capitalize"
+                            >
+                              {level}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-soft mb-3 block">Notification Preferences</Label>
+                        <div className="space-y-2">
+                          {Object.entries(profileData.notificationPreferences).map(([key, value]) => (
+                            <div key={key} className="flex items-center justify-between">
+                              <span className="text-soft capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                              <Button
+                                variant={value ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setProfileData(prev => ({
+                                  ...prev,
+                                  notificationPreferences: {
+                                    ...prev.notificationPreferences,
+                                    [key]: !value
+                                  }
+                                }))}
+                              >
+                                {value ? 'On' : 'Off'}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
 
               {/* Navigation Buttons */}
               <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
@@ -691,8 +1086,8 @@ export default function ProfileSetupPage() {
                   </Button>
                 )}
               </div>
-            </CardContent>
-          </Card>
+            </motion.div>
+          </div>
         </div>
       </div>
     </AppWrapper>
