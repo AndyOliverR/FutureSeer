@@ -14,6 +14,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isSuperadmin: boolean;
+  isAdmin: boolean;
   isTestMode: boolean;
 }
 
@@ -78,7 +79,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
+
+  // Admin role checking function
+  const checkAdminRoles = (email: string | null) => {
+    if (!email) return { isSuperadmin: false, isAdmin: false };
+    
+    // Super admin (God Mode)
+    if (email === 'andyrozario@hotmail.com') {
+      return { isSuperadmin: true, isAdmin: true };
+    }
+    
+    // Admin (Mary Mode)
+    if (email === 'andyoliverrozario2@gmail.com') {
+      return { isSuperadmin: false, isAdmin: true };
+    }
+    
+    // Special user (no upgrade prompts)
+    if (email === 'andyrozario7@gmail.com') {
+      return { isSuperadmin: false, isAdmin: false };
+    }
+    
+    return { isSuperadmin: false, isAdmin: false };
+  };
 
   const signIn = async () => {
     try {
@@ -100,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setUserProfile(null);
         setIsSuperadmin(false);
+        setIsAdmin(false);
         return;
       }
       
@@ -143,6 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(mockUser);
         setUserProfile(mockProfile);
         setIsSuperadmin(true);
+        setIsAdmin(true);
         setLoading(false);
         return;
       }
@@ -159,20 +185,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (firebaseUser) {
           try {
-            // Check for superadmin claim
+            // Check for admin roles based on email
+            const adminRoles = checkAdminRoles(firebaseUser.email);
+            setIsSuperadmin(adminRoles.isSuperadmin);
+            setIsAdmin(adminRoles.isAdmin);
+            
+            // Also check for Firebase custom claims (for future use)
             const token = await getIdTokenResult(firebaseUser, true);
-            setIsSuperadmin(!!token.claims.superadmin);
+            if (token.claims.superadmin) {
+              setIsSuperadmin(true);
+            }
+            if (token.claims.admin) {
+              setIsAdmin(true);
+            }
           } catch (e) {
-            setIsSuperadmin(false);
+            // Fallback to email-based role checking
+            const adminRoles = checkAdminRoles(firebaseUser.email);
+            setIsSuperadmin(adminRoles.isSuperadmin);
+            setIsAdmin(adminRoles.isAdmin);
           }
+          
           const profile = await getUserProfile(firebaseUser.uid);
           setUserProfile(profile);
-          
-          // Note: Auto-fetch logic has been removed to fix chunk loading errors
-          // Data will be fetched on-demand when users access specific features
         } else {
           setUserProfile(null);
           setIsSuperadmin(false);
+          setIsAdmin(false);
         }
         
         setLoading(false);
@@ -192,6 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     refreshProfile,
     isSuperadmin,
+    isAdmin,
     isTestMode,
   };
 
