@@ -33,8 +33,12 @@ export default function SignInPage() {
     setError(null)
     
     try {
-      await signInWithGoogle()
-      router.push("/dashboard")
+      const user = await signInWithGoogle()
+      // Check if user profile is complete
+      if (user) {
+        // Redirect based on profile completion
+        router.push("/profile-setup")
+      }
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -64,7 +68,7 @@ export default function SignInPage() {
           impersonate: true, deleteUser: true, testMode: true
         }))
 
-        // Redirect to dashboard
+        // Redirect to dashboard for test mode
         router.push("/dashboard")
       } catch (error: any) {
         setError("Test login failed. Please try again.")
@@ -79,8 +83,12 @@ export default function SignInPage() {
     setError(null)
     
     try {
-      await signInWithEmail(email, password)
-      router.push("/dashboard")
+      const user = await signInWithEmail(email, password)
+      // Check if user profile is complete
+      if (user) {
+        // Redirect based on profile completion
+        router.push("/profile-setup")
+      }
     } catch (error: any) {
       setError(error.message)
     } finally {

@@ -5,6 +5,7 @@ import { MysticalFeedback } from "@/components/MysticalFeedback"
 import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/ui/toaster"
 import { AnalyticsInitializer } from "@/components/AnalyticsInitializer"
+import { HamburgerMenu } from "@/components/HamburgerMenu"
 import ClientProviders from "@/components/ClientProviders"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -66,6 +67,7 @@ export default function RootLayout({
             <ClientProviders>
               <AnalyticsInitializer />
               {children}
+              <HamburgerMenu />
               <MysticalFeedback />
               <Footer />
               <Toaster />
