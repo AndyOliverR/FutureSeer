@@ -31,14 +31,33 @@ export default function SignInPage() {
   // Handle redirects after authentication
   useEffect(() => {
     if (!loading && user) {
+      console.log('🔍 Auth Debug:', {
+        user: user?.email,
+        userProfile: userProfile,
+        hasBirthDate: !!userProfile?.birthDate,
+        hasBirthTime: !!userProfile?.birthTime,
+        hasBirthPlace: !!userProfile?.birthPlace,
+        profileComplete: !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
+      });
+      
       // User is signed in, check profile completion
       if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
         // Profile is complete, go to dashboard
+        console.log('✅ Profile complete, redirecting to dashboard');
         router.push("/dashboard")
       } else {
         // Profile is incomplete, go to profile setup
+        console.log('⚠️ Profile incomplete, redirecting to profile setup');
         router.push("/profile-setup")
       }
+    }
+  }, [user, userProfile, loading, router])
+
+  // Temporary bypass for testing - if user is authenticated but no profile data, assume they need to complete profile
+  useEffect(() => {
+    if (!loading && user && !userProfile) {
+      console.log('🔄 User authenticated but no profile data, redirecting to profile setup');
+      router.push("/profile-setup");
     }
   }, [user, userProfile, loading, router])
 
