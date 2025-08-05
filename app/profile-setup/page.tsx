@@ -201,7 +201,13 @@ export default function ProfileSetupPage() {
         description: 'Your mystical journey is now personalized just for you.',
       })
       
-      router.push('/dashboard')
+      // Check if user profile is complete and redirect to dashboard
+      if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
+        router.push('/dashboard')
+      } else {
+        // If profile is not complete, stay on profile setup
+        router.push('/profile-setup')
+      }
     } catch (error) {
       toast({
         title: 'Setup Failed',
