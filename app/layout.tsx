@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { TestAuth } from "@/components/TestAuth"
 import { MysticalFeedback } from "@/components/MysticalFeedback"
 import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/ui/toaster"
@@ -67,8 +66,6 @@ export default function RootLayout({
             <ClientProviders>
               <AnalyticsInitializer />
               {children}
-              <TestAuth />
-              {/* <TestModeSwitcher /> */}
               <MysticalFeedback />
               <Footer />
               <Toaster />

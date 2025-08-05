@@ -6,7 +6,7 @@ import { getFirebaseDB } from '@/lib/firebase';
 const TRIAL_DURATION_SECONDS = 9 * 60 * 60; // 9 hours
 
 export function usePlan() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, isSuperadmin, isAdmin, loading: authLoading } = useAuth();
   const [plan, setPlan] = useState<string | null>(null);
   const [trialStartedAt, setTrialStartedAt] = useState<Date | null>(null);
   const [trialTimeLeft, setTrialTimeLeft] = useState<number | null>(null);
@@ -25,6 +25,21 @@ export function usePlan() {
       setLoading(false);
       return;
     }
+
+    // Check if user should bypass trial/upgrade prompts
+    const shouldBypassUpgrade = isSuperadmin || isAdmin || user.email === 'andyrozario7@gmail.com';
+    
+    if (shouldBypassUpgrade) {
+      // For admin users and special users, set them as paid users
+      setPlan('premium');
+      setTrialStartedAt(null);
+      setTrialTimeLeft(null);
+      setIsTrialActive(false);
+      setIsPaid(true);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     const fetchPlan = async () => {
@@ -70,9 +85,7 @@ export function usePlan() {
       }
     };
     fetchPlan();
-    // Optionally, set up an interval to update trialTimeLeft every minute
-    // (not strictly needed for landing page, but can be added for live updates)
-  }, [user]);
+  }, [user, isSuperadmin, isAdmin]);
 
   return {
     plan,
