@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import { AppWrapper } from "@/components/AppWrapper"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -58,7 +59,9 @@ export default function RootLayout({
         >
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
           <div className="relative z-10">
-            {children}
+            <AppWrapper>
+              {children}
+            </AppWrapper>
           </div>
         </div>
       </body>
