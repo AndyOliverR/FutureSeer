@@ -1,8 +1,15 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
+import dynamic from "next/dynamic"
 
 const inter = Inter({ subsets: ["latin"] })
+
+// Dynamically import AppWrapper to avoid SSR issues
+const AppWrapper = dynamic(() => import("@/components/AppWrapper").then(mod => ({ default: mod.AppWrapper })), {
+  ssr: false,
+  loading: () => <div className="min-h-screen bg-slate-950" />
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -58,7 +65,9 @@ export default function RootLayout({
         >
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
           <div className="relative z-10">
-            {children}
+            <AppWrapper>
+              {children}
+            </AppWrapper>
           </div>
         </div>
       </body>
