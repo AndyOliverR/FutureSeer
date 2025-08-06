@@ -79,7 +79,20 @@ export function WelcomeGuide() {
   ];
 
   const handleStepAction = (path: string) => {
-    router.push(path);
+    console.log('🔍 WelcomeGuide: Attempting navigation to:', path);
+    try {
+      router.push(path);
+      // Fallback if router.push doesn't work
+      setTimeout(() => {
+        if (window.location.pathname !== path) {
+          console.log('🔍 WelcomeGuide: Router failed, using window.location');
+          window.location.href = path;
+        }
+      }, 100);
+    } catch (error) {
+      console.error('🔍 WelcomeGuide: Navigation error:', error);
+      window.location.href = path;
+    }
   };
 
   const nextStep = () => {
