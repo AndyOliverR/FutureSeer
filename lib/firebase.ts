@@ -423,12 +423,13 @@ export const checkNetworkStatus = async (): Promise<boolean> => {
   try {
     const db = getFirebaseDB();
     if (!db) return false;
-    
-    // Try to enable network
-    await enableNetwork(db);
+
+    // Use a simple document read to test connectivity
+    const testDoc = doc(db, '_test', 'connection-test');
+    await getDoc(testDoc);
     return true;
-  } catch (error) {
-    console.warn('Network check failed:', error);
+  } catch (error: any) {
+    console.warn('Network check failed:', error.message);
     return false;
   }
 };
@@ -456,8 +457,17 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       }
       return null;
     } catch (docError: any) {
+      // Handle specific Firebase errors
+      if (docError.code === 'permission-denied' || docError.message?.includes('permission')) {
+        console.warn('⚠️ Permission denied, using local storage');
+        return getLocalUserProfile(uid);
+      }
       if (docError.message && docError.message.includes('offline')) {
         console.log('🔄 Offline detected, falling back to local storage');
+        return getLocalUserProfile(uid);
+      }
+      if (docError.message && docError.message.includes('Target ID already exists')) {
+        console.warn('⚠️ Firebase ID conflict, using local storage');
         return getLocalUserProfile(uid);
       }
       throw docError;
@@ -465,9 +475,11 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   } catch (error: any) {
     console.error('Error getting user profile:', error);
     
-    // If it's an offline error, try local storage
-    if (error.message && error.message.includes('offline')) {
-      console.log('🔄 Offline detected, falling back to local storage');
+    // Handle specific error types
+    if (error.message && (error.message.includes('offline') || 
+                         error.message.includes('permission') || 
+                         error.message.includes('Target ID already exists'))) {
+      console.log('🔄 Using local storage fallback');
       return getLocalUserProfile(uid);
     }
     

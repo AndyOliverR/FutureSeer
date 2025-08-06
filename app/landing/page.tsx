@@ -101,11 +101,11 @@ export default function LandingPage() {
                   {loading ? "Loading..." : "Begin Your Journey"}
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent aria-describedby="journey-description">
                 <DialogHeader>
                   <DialogTitle>Ready to begin your journey?</DialogTitle>
                 </DialogHeader>
-                <div className="py-4 text-center text-lg">
+                <div id="journey-description" className="py-4 text-center text-lg">
                   {!user ? "You'll be taken to sign in to start your mystical journey." : 
                    !userProfile?.birthDate ? "Let's complete your profile to unlock personalized insights." :
                    "You are about to enter your cosmic dashboard."}
@@ -134,11 +134,11 @@ export default function LandingPage() {
                   I Have an Invite
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent aria-describedby="invite-description">
                 <DialogHeader>
                   <DialogTitle>Enter Your Invite Code</DialogTitle>
                 </DialogHeader>
-                <div className="py-4">
+                <div id="invite-description" className="py-4">
                   <input
                     type="text"
                     className="w-full px-4 py-3 rounded-xl bg-slate-900/60 border border-amber-400/30 text-lg font-serif text-amber-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 backdrop-blur-md shadow-lg"
