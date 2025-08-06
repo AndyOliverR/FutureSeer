@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { ShareAppModal } from "./ShareAppModal";
 
 const navLinks = [
@@ -21,12 +20,6 @@ export function TopNavBar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
-
-  // Don't show TopNavBar on profile-setup page
-  if (pathname === '/profile-setup') {
-    return null;
-  }
 
   // Removed click outside handler - menu only closes on hamburger button click
 
