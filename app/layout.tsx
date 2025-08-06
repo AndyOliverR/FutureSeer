@@ -8,6 +8,7 @@ import { AnalyticsInitializer } from "@/components/AnalyticsInitializer"
 import { HamburgerMenu } from "@/components/HamburgerMenu"
 import { AutoInitializer } from "@/components/AutoInitializer"
 import { WelcomeGuide } from "@/components/WelcomeGuide"
+import { ProfileCompletionNotice } from "@/components/ProfileCompletionNotice"
 import ClientProviders from "@/components/ClientProviders"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -73,6 +74,7 @@ export default function RootLayout({
               <HamburgerMenu />
               <WelcomeGuide />
               <MysticalFeedback />
+              <ProfileCompletionNotice />
               <Footer />
               <Toaster />
             </ClientProviders>

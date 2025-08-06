@@ -10,8 +10,22 @@ import { Sparkles, User, BarChart3, MessageCircle, Users, Trophy, ArrowRight } f
 
 export function WelcomeGuide() {
   const [currentStep, setCurrentStep] = useState(0);
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, loading } = useAuth();
   const router = useRouter();
+
+  // Debug logging
+  console.log('🔍 WelcomeGuide Debug:', {
+    user: user?.email,
+    userProfile: userProfile,
+    loading,
+    hasBirthDate: !!userProfile?.birthDate,
+    hasBirthTime: !!userProfile?.birthTime,
+    hasBirthPlace: !!userProfile?.birthPlace,
+    profileComplete: !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
+  });
+
+  // Always show the guide for now to help with debugging
+  const shouldShow = true; // user || !loading; // Show if user is signed in or not loading
 
   const steps = [
     {
@@ -83,95 +97,97 @@ export function WelcomeGuide() {
       transition={{ duration: 0.6 }}
       className="fixed bottom-4 left-4 z-50 max-w-sm"
     >
-      <Card className="backdrop-blur-md bg-slate-900/90 border border-amber-500/30 shadow-xl">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-400" />
-            <CardTitle className="text-lg text-amber-200">Welcome to FutureSeer! ✨</CardTitle>
-          </div>
-          <CardDescription className="text-slate-300">
-            Your mystical journey begins now. Let's guide you through your experience.
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          {/* Current Step */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              {steps[currentStep].icon}
-              <div>
-                <h3 className="font-semibold text-white">{steps[currentStep].title}</h3>
-                <p className="text-sm text-slate-300">{steps[currentStep].description}</p>
+      {shouldShow && (
+        <Card className="backdrop-blur-md bg-slate-900/90 border border-amber-500/30 shadow-xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-400" />
+              <CardTitle className="text-lg text-amber-200">Welcome to FutureSeer! ✨</CardTitle>
+            </div>
+            <CardDescription className="text-slate-300">
+              Your mystical journey begins now. Let's guide you through your experience.
+            </CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            {/* Current Step */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                {steps[currentStep].icon}
+                <div>
+                  <h3 className="font-semibold text-white">{steps[currentStep].title}</h3>
+                  <p className="text-sm text-slate-300">{steps[currentStep].description}</p>
+                </div>
+              </div>
+              
+              <Button
+                onClick={() => handleStepAction(steps[currentStep].path)}
+                className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold"
+              >
+                {steps[currentStep].action}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Progress Indicator */}
+            <div className="flex justify-between items-center">
+              <div className="flex gap-1">
+                {steps.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-2 w-2 rounded-full ${
+                      index === currentStep ? 'bg-amber-400' : 'bg-slate-600'
+                    }`}
+                  />
+                ))}
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  className="text-xs border-slate-600 text-slate-300 hover:bg-slate-800"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextStep}
+                  disabled={currentStep === steps.length - 1}
+                  className="text-xs border-slate-600 text-slate-300 hover:bg-slate-800"
+                >
+                  Next
+                </Button>
               </div>
             </div>
-            
-            <Button
-              onClick={() => handleStepAction(steps[currentStep].path)}
-              className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold"
-            >
-              {steps[currentStep].action}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
 
-          {/* Progress Indicator */}
-          <div className="flex justify-between items-center">
-            <div className="flex gap-1">
-              {steps.map((_, index) => (
-                <div
-                  key={index}
-                  className={`h-2 w-2 rounded-full ${
-                    index === currentStep ? 'bg-amber-400' : 'bg-slate-600'
-                  }`}
-                />
-              ))}
+            {/* Quick Access */}
+            <div className="pt-2 border-t border-slate-700">
+              <p className="text-xs text-slate-400 mb-2">Quick Access:</p>
+              <div className="flex flex-wrap gap-1">
+                {steps.map((step, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCurrentStep(index)}
+                    className={`text-xs h-6 px-2 ${
+                      index === currentStep 
+                        ? 'bg-amber-500/20 text-amber-300' 
+                        : 'text-slate-400 hover:text-slate-300'
+                    }`}
+                  >
+                    {index + 1}
+                  </Button>
+                ))}
+              </div>
             </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={prevStep}
-                disabled={currentStep === 0}
-                className="text-xs border-slate-600 text-slate-300 hover:bg-slate-800"
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={nextStep}
-                disabled={currentStep === steps.length - 1}
-                className="text-xs border-slate-600 text-slate-300 hover:bg-slate-800"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-
-          {/* Quick Access */}
-          <div className="pt-2 border-t border-slate-700">
-            <p className="text-xs text-slate-400 mb-2">Quick Access:</p>
-            <div className="flex flex-wrap gap-1">
-              {steps.map((step, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentStep(index)}
-                  className={`text-xs h-6 px-2 ${
-                    index === currentStep 
-                      ? 'bg-amber-500/20 text-amber-300' 
-                      : 'text-slate-400 hover:text-slate-300'
-                  }`}
-                >
-                  {index + 1}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </motion.div>
   );
 } 
