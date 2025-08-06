@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { AnalyticsInitializer } from "@/components/AnalyticsInitializer"
 import { HamburgerMenu } from "@/components/HamburgerMenu"
 import { AutoInitializer } from "@/components/AutoInitializer"
+import { WelcomeGuide } from "@/components/WelcomeGuide"
 import ClientProviders from "@/components/ClientProviders"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -70,6 +71,7 @@ export default function RootLayout({
               <AnalyticsInitializer />
               {children}
               <HamburgerMenu />
+              <WelcomeGuide />
               <MysticalFeedback />
               <Footer />
               <Toaster />
