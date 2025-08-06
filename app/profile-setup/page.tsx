@@ -255,38 +255,42 @@ export default function ProfileSetupPage() {
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="fullName" className="text-soft">Full Name *</Label>
+                <Label htmlFor="fullName" className="text-white font-medium">Full Name *</Label>
                 <Input
                   id="fullName"
                   value={profileData.fullName}
                   onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
                   placeholder="Enter your full name"
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
               
               <div>
-                <Label htmlFor="email" className="text-soft">Email Address</Label>
+                <Label htmlFor="email" className="text-white font-medium">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   value={profileData.email}
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="your.email@example.com"
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                   disabled
                 />
-                <p className="text-xs text-soft/60 mt-1">Email is managed by your authentication provider</p>
+                <p className="text-xs text-gray-300 mt-1">Email is managed by your authentication provider</p>
               </div>
 
               <div>
-                <Label className="text-soft">Gender *</Label>
+                <Label className="text-white font-medium">Gender *</Label>
                 <div className="grid grid-cols-3 gap-3 mt-2">
                   <Button
                     type="button"
                     variant={profileData.gender === 'male' ? 'default' : 'outline'}
                     onClick={() => setProfileData(prev => ({ ...prev, gender: 'male' }))}
-                    className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                    className={`${
+                      profileData.gender === 'male' 
+                        ? 'bg-amber-500 text-white hover:bg-amber-600' 
+                        : 'bg-white/5 border-white/20 text-white hover:bg-white/10'
+                    }`}
                   >
                     Male
                   </Button>
@@ -294,7 +298,11 @@ export default function ProfileSetupPage() {
                     type="button"
                     variant={profileData.gender === 'female' ? 'default' : 'outline'}
                     onClick={() => setProfileData(prev => ({ ...prev, gender: 'female' }))}
-                    className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                    className={`${
+                      profileData.gender === 'female' 
+                        ? 'bg-amber-500 text-white hover:bg-amber-600' 
+                        : 'bg-white/5 border-white/20 text-white hover:bg-white/10'
+                    }`}
                   >
                     Female
                   </Button>
@@ -302,12 +310,16 @@ export default function ProfileSetupPage() {
                     type="button"
                     variant={profileData.gender === 'prefer-not-to-say' ? 'default' : 'outline'}
                     onClick={() => setProfileData(prev => ({ ...prev, gender: 'prefer-not-to-say' }))}
-                    className="bg-white/5 border-white/20 text-soft hover:bg-white/10"
+                    className={`${
+                      profileData.gender === 'prefer-not-to-say' 
+                        ? 'bg-amber-500 text-white hover:bg-amber-600' 
+                        : 'bg-white/5 border-white/20 text-white hover:bg-white/10'
+                    }`}
                   >
                     Prefer not to say
                   </Button>
                 </div>
-                <p className="text-xs text-soft/60 mt-1">This helps determine which palm photos are required for palmistry readings</p>
+                <p className="text-xs text-gray-300 mt-1">This helps determine which palm photos are required for palmistry readings</p>
               </div>
             </div>
           </motion.div>
@@ -329,36 +341,73 @@ export default function ProfileSetupPage() {
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="birthDate" className="text-soft">Date of Birth *</Label>
+                <Label htmlFor="birthDate" className="text-white font-medium">Date of Birth *</Label>
                 <Input
                   id="birthDate"
                   type="date"
                   value={profileData.birthDate}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthDate: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
               
               <div>
-                <Label htmlFor="birthTime" className="text-soft">Time of Birth</Label>
-                <Input
-                  id="birthTime"
-                  type="time"
-                  value={profileData.birthTime}
-                  onChange={(e) => setProfileData(prev => ({ ...prev, birthTime: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-soft"
-                />
-                <p className="text-xs text-soft/60 mt-1">For more accurate astrological readings</p>
+                <Label htmlFor="birthTime" className="text-white font-medium">Time of Birth</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="birthTime"
+                    type="time"
+                    value={profileData.birthTime}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, birthTime: e.target.value }))}
+                    className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 flex-1"
+                  />
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Convert 24h to 12h AM
+                        if (profileData.birthTime) {
+                          const [hours, minutes] = profileData.birthTime.split(':')
+                          const hour12 = hours === '00' ? '12' : hours === '12' ? '12' : (parseInt(hours) % 12).toString().padStart(2, '0')
+                          setProfileData(prev => ({ ...prev, birthTime: `${hour12}:${minutes}` }))
+                        }
+                      }}
+                      className="bg-white/5 border-white/20 text-white hover:bg-white/10 px-3"
+                    >
+                      AM
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        // Convert 24h to 12h PM
+                        if (profileData.birthTime) {
+                          const [hours, minutes] = profileData.birthTime.split(':')
+                          const hour12 = hours === '00' ? '12' : hours === '12' ? '12' : (parseInt(hours) % 12).toString().padStart(2, '0')
+                          const hour24 = hours === '12' ? '12' : (parseInt(hours) + 12).toString().padStart(2, '0')
+                          setProfileData(prev => ({ ...prev, birthTime: `${hour24}:${minutes}` }))
+                        }
+                      }}
+                      className="bg-white/5 border-white/20 text-white hover:bg-white/10 px-3"
+                    >
+                      PM
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-300 mt-1">For more accurate astrological readings</p>
               </div>
               
               <div>
-                <Label htmlFor="birthPlace" className="text-soft">Place of Birth</Label>
+                <Label htmlFor="birthPlace" className="text-white font-medium">Place of Birth</Label>
                 <Input
                   id="birthPlace"
                   value={profileData.birthPlace}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthPlace: e.target.value }))}
                   placeholder="City, Country"
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -397,8 +446,8 @@ export default function ProfileSetupPage() {
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-soft/60" />
-                  <p className="text-soft mb-4">Upload a clear face photo</p>
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-white mb-4 font-medium">Upload a clear face photo</p>
                   <input
                     type="file"
                     accept="image/*"
@@ -410,7 +459,7 @@ export default function ProfileSetupPage() {
                     id="facePhoto"
                   />
                   <Label htmlFor="facePhoto" asChild>
-                    <Button variant="outline" className="cursor-pointer">
+                    <Button variant="outline" className="cursor-pointer bg-amber-500 text-white hover:bg-amber-600 border-amber-500">
                       <Camera className="w-4 h-4 mr-2" />
                       Choose Photo
                     </Button>
@@ -418,7 +467,7 @@ export default function ProfileSetupPage() {
                 </div>
               )}
               
-              <div className="text-xs text-soft/60 text-center">
+              <div className="text-xs text-gray-300 text-center space-y-1">
                 <p>• Clear, well-lit photo of your face</p>
                 <p>• Used for face reading analysis only</p>
                 <p>• Your privacy is protected</p>

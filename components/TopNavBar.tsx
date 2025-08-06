@@ -66,62 +66,7 @@ export function TopNavBar() {
           <span>🔮</span>
         </button>
         
-                 {/* Hamburger menu */}
-                             <button
-            className="hamburger-button flex flex-col justify-center items-center w-10 h-10 focus:outline-none"
-            onClick={toggleMenu}
-            aria-label="Toggle navigation menu"
-          >
-            <span 
-              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}
-              style={{ backgroundColor: 'white', height: '2px', width: '24px' }}
-            ></span>
-            <span 
-              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'opacity-0' : 'mb-1'}`}
-              style={{ backgroundColor: 'white', height: '2px', width: '24px' }}
-            ></span>
-            <span 
-              className={`block w-6 h-0.5 bg-white transition-all duration-300 ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}
-              style={{ backgroundColor: 'white', height: '2px', width: '24px' }}
-            ></span>
-          </button>
-        
-                 {/* Navigation Menu - Floating in space */}
-         {showMenu && (
-           <div
-             key={`menu-${showMenu}`}
-             ref={menuRef}
-             className="hamburger-menu absolute right-0 top-12 flex flex-col items-end z-[9999]"
-                           style={{ 
-                gap: '0.75rem', 
-                minWidth: '200px',
-                border: 'none',
-                outline: 'none',
-                boxShadow: 'none',
-                background: 'transparent',
-                padding: '0.5rem',
-                paddingRight: '0'
-              }}
-           >
-                                                   {navLinks.map((link, idx) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-xl text-white hover:text-yellow-300 transition-all duration-300 p-1 hover:scale-110"
-                  onClick={closeMenu}
-                  tabIndex={0}
-                  aria-label={link.name}
-                  style={{ 
-                    transition: 'all 0.3s cubic-bezier(.4,2,.6,1)', 
-                    animationDelay: `${idx * 50}ms`,
-                    animation: 'floatIn 0.5s ease-out forwards'
-                  }}
-                >
-                  <span>{link.icon}</span>
-                </Link>
-              ))}
-          </div>
-        )}
+        {/* Hamburger menu removed - using HamburgerMenu component instead */}
       </div>
       
       {/* Share App Modal */}
