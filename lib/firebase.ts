@@ -46,7 +46,7 @@ let initializationPromise: Promise<{ app: any; auth: any; db: any }> | null = nu
 const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> => {
   if (typeof window === 'undefined') {
     // Server-side, return null
-    return { app: null, auth: null, db: null };
+    return Promise.resolve({ app: null, auth: null, db: null });
   }
 
   // If already initializing, return the existing promise
@@ -56,7 +56,7 @@ const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> =
 
   // If already initialized, return immediately
   if (app && firebaseAuth && firebaseDB) {
-    return { app, auth: firebaseAuth, db: firebaseDB };
+    return Promise.resolve({ app, auth: firebaseAuth, db: firebaseDB });
   }
 
   initializationPromise = new Promise(async (resolve, reject) => {
@@ -134,20 +134,23 @@ const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> =
          } catch (fallbackError) {
            console.error('❌ Failed to connect to Firestore:', fallbackError);
            console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
-           return { app: null, auth: null, db: null };
+           resolve({ app: null, auth: null, db: null });
          }
        }
       
       console.log('✅ Firebase initialized successfully');
       console.log('ℹ️ Note: Firestore connection will be tested on first use');
+      
+      // Resolve the promise with the initialized Firebase instances
+      resolve({ app, auth: firebaseAuth, db: firebaseDB });
     } catch (error) {
       console.error('❌ Error initializing Firebase:', error);
       console.error('💡 Please check your Firebase configuration and environment variables.');
-      return { app: null, auth: null, db: null };
+      resolve({ app: null, auth: null, db: null });
     }
-  }
+  });
 
-  return { app, auth: firebaseAuth, db: firebaseDB };
+  return initializationPromise;
 };
 
 // Initialize Firebase services
