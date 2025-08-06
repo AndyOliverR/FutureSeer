@@ -2,15 +2,25 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { AuthModal } from "@/components/auth/AuthModal"
+import { useAuth } from "@/hooks/use-auth"
 
 export function HeroSection() {
-  const [modal, setModal] = useState<null | "journey">(null)
   const router = useRouter()
+  const { user, userProfile, loading } = useAuth()
 
-  function handleTest() {
-    setModal(null)
-    router.push("/dashboard")
+  function handleBeginJourney() {
+    if (loading) return; // Wait for auth to load
+    
+    if (!user) {
+      // Not signed in - go to sign in page
+      router.push("/signin");
+    } else if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
+      // Signed in but profile incomplete - go to profile setup
+      router.push("/profile-setup");
+    } else {
+      // Signed in and profile complete - go to dashboard
+      router.push("/dashboard");
+    }
   }
 
   return (
@@ -38,9 +48,12 @@ export function HeroSection() {
           <Button
             size="lg"
             className="group relative px-8 py-4 bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold text-lg border-0 shadow-lg shadow-amber-500/25 transition-all duration-300 hover:shadow-amber-400/40 hover:scale-105 rounded-2xl"
-            onClick={() => setModal("journey")}
+            onClick={handleBeginJourney}
+            disabled={loading}
           >
-            <span className="relative z-10">Begin Your Journey</span>
+            <span className="relative z-10">
+              {loading ? "Loading..." : "Begin Your Journey"}
+            </span>
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
           </Button>
         </div>
@@ -49,24 +62,6 @@ export function HeroSection() {
           Where ancient wisdom meets artificial intelligence. Unlock the mysteries of your path through personalized divination.
         </p>
       </div>
-      <AuthModal isOpen={modal === "journey"} onClose={() => setModal(null)} />
     </section>
-  )
-}
-
-function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="bg-slate-900/90 rounded-2xl shadow-2xl p-8 max-w-md w-full relative border border-amber-400/20">
-        <button
-          className="absolute top-3 right-3 text-amber-300 hover:text-amber-100 text-2xl font-bold"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          ×
-        </button>
-        {children}
-      </div>
-    </div>
   )
 } 

@@ -46,12 +46,12 @@ export default function LandingPage() {
     }
   };
 
-  // If user is already signed in and profile is complete, redirect to dashboard
-  useEffect(() => {
-    if (!loading && user && userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
-      router.push("/dashboard");
-    }
-  }, [user, userProfile, loading, router]);
+  // Remove automatic redirect to dashboard - let users go through the proper flow
+  // useEffect(() => {
+  //   if (!loading && user && userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
+  //     router.push("/dashboard");
+  //   }
+  // }, [user, userProfile, loading, router]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
