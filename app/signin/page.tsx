@@ -15,7 +15,6 @@ import { signInWithGoogle, signInWithEmail, resetPassword } from "@/lib/firebase
 import { isAppleDevice } from "@/utils/isAppleDevice"
 import { useRef } from "react"
 
-
 export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -41,18 +40,14 @@ export default function SignInPage() {
         profileComplete: !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
       });
       
-      // User is signed in, check profile completion
-      if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
-        // Profile is complete, go to dashboard
-        console.log('✅ Profile complete, redirecting to dashboard');
-        router.push("/dashboard")
-      } else {
-        // Profile is incomplete, go to profile setup
-        console.log('⚠️ Profile incomplete, redirecting to profile setup');
-        router.push("/profile-setup")
-      }
+      // For now, always redirect to profile setup after successful authentication
+      // This ensures users complete their profile before accessing the dashboard
+      console.log('🔄 User authenticated, redirecting to profile setup');
+      router.push("/profile-setup");
     }
   }, [user, userProfile, loading, router])
+
+  // Remove the temporary bypass since we're always going to profile setup
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
