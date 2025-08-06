@@ -361,41 +361,27 @@ export default function ProfileSetupPage() {
                     onChange={(e) => setProfileData(prev => ({ ...prev, birthTime: e.target.value }))}
                     className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 flex-1"
                   />
-                  <div className="flex gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Convert 24h to 12h AM
-                        if (profileData.birthTime) {
-                          const [hours, minutes] = profileData.birthTime.split(':')
-                          const hour12 = hours === '00' ? '12' : hours === '12' ? '12' : (parseInt(hours) % 12).toString().padStart(2, '0')
-                          setProfileData(prev => ({ ...prev, birthTime: `${hour12}:${minutes}` }))
+                  <select
+                    value={profileData.birthTime.includes('12') ? 'PM' : 'AM'}
+                    onChange={(e) => {
+                      const time = profileData.birthTime
+                      if (time) {
+                        const [hours, minutes] = time.split(':')
+                        let newHours = parseInt(hours)
+                        if (e.target.value === 'PM' && newHours < 12) {
+                          newHours += 12
+                        } else if (e.target.value === 'AM' && newHours >= 12) {
+                          newHours -= 12
                         }
-                      }}
-                      className="bg-white/5 border-white/20 text-white hover:bg-white/10 px-3"
-                    >
-                      AM
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        // Convert 24h to 12h PM
-                        if (profileData.birthTime) {
-                          const [hours, minutes] = profileData.birthTime.split(':')
-                          const hour12 = hours === '00' ? '12' : hours === '12' ? '12' : (parseInt(hours) % 12).toString().padStart(2, '0')
-                          const hour24 = hours === '12' ? '12' : (parseInt(hours) + 12).toString().padStart(2, '0')
-                          setProfileData(prev => ({ ...prev, birthTime: `${hour24}:${minutes}` }))
-                        }
-                      }}
-                      className="bg-white/5 border-white/20 text-white hover:bg-white/10 px-3"
-                    >
-                      PM
-                    </Button>
-                  </div>
+                        const newTime = `${newHours.toString().padStart(2, '0')}:${minutes}`
+                        setProfileData(prev => ({ ...prev, birthTime: newTime }))
+                      }
+                    }}
+                    className="bg-white/5 border border-white/20 text-white px-3 py-2 rounded-md"
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
                 </div>
                 <p className="text-xs text-gray-300 mt-1">For more accurate astrological readings</p>
               </div>
@@ -425,7 +411,7 @@ export default function ProfileSetupPage() {
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">📸</div>
               <h2 className="text-2xl font-semibold text-white mb-2">Face Photo</h2>
-              <p className="text-soft">For face reading and personality analysis</p>
+              <p className="text-gray-300">For face reading and personality analysis</p>
             </div>
             
             <div className="space-y-4">
@@ -439,7 +425,7 @@ export default function ProfileSetupPage() {
                   <Button
                     variant="outline"
                     onClick={() => setProfileData(prev => ({ ...prev, facePhoto: null, facePhotoUrl: '' }))}
-                    className="text-soft"
+                    className="text-white border-white/20 hover:bg-white/10"
                   >
                     Change Photo
                   </Button>
@@ -447,7 +433,7 @@ export default function ProfileSetupPage() {
               ) : (
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
                   <Upload className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-white mb-4 font-medium">Upload a clear face photo</p>
+                  <p className="text-white mb-4">Upload a clear face photo</p>
                   <input
                     type="file"
                     accept="image/*"
@@ -459,7 +445,7 @@ export default function ProfileSetupPage() {
                     id="facePhoto"
                   />
                   <Label htmlFor="facePhoto" asChild>
-                    <Button variant="outline" className="cursor-pointer bg-amber-500 text-white hover:bg-amber-600 border-amber-500">
+                    <Button variant="outline" className="cursor-pointer text-white border-white/20 hover:bg-white/10">
                       <Camera className="w-4 h-4 mr-2" />
                       Choose Photo
                     </Button>
@@ -467,7 +453,7 @@ export default function ProfileSetupPage() {
                 </div>
               )}
               
-              <div className="text-xs text-gray-300 text-center space-y-1">
+              <div className="text-xs text-gray-300 text-center">
                 <p>• Clear, well-lit photo of your face</p>
                 <p>• Used for face reading analysis only</p>
                 <p>• Your privacy is protected</p>
