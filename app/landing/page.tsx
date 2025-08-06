@@ -46,12 +46,12 @@ export default function LandingPage() {
     }
   };
 
-  // Remove automatic redirect to dashboard - let users go through the proper flow
-  // useEffect(() => {
-  //   if (!loading && user && userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
-  //     router.push("/dashboard");
-  //   }
-  // }, [user, userProfile, loading, router]);
+  // If user is already signed in and profile is complete, redirect to dashboard
+  useEffect(() => {
+    if (!loading && user && userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
+      router.push("/dashboard");
+    }
+  }, [user, userProfile, loading, router]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
@@ -101,11 +101,11 @@ export default function LandingPage() {
                   {loading ? "Loading..." : "Begin Your Journey"}
                 </Button>
               </DialogTrigger>
-              <DialogContent aria-describedby="journey-description">
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Ready to begin your journey?</DialogTitle>
                 </DialogHeader>
-                <div id="journey-description" className="py-4 text-center text-lg">
+                <div className="py-4 text-center text-lg">
                   {!user ? "You'll be taken to sign in to start your mystical journey." : 
                    !userProfile?.birthDate ? "Let's complete your profile to unlock personalized insights." :
                    "You are about to enter your cosmic dashboard."}
@@ -134,11 +134,11 @@ export default function LandingPage() {
                   I Have an Invite
                 </Button>
               </DialogTrigger>
-              <DialogContent aria-describedby="invite-description">
+              <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Enter Your Invite Code</DialogTitle>
                 </DialogHeader>
-                <div id="invite-description" className="py-4">
+                <div className="py-4">
                   <input
                     type="text"
                     className="w-full px-4 py-3 rounded-xl bg-slate-900/60 border border-amber-400/30 text-lg font-serif text-amber-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/40 backdrop-blur-md shadow-lg"

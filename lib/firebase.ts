@@ -37,113 +37,137 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Lazy Firebase initialization
+// Lazy Firebase initialization with retry mechanism
 let app: any = null;
 let firebaseAuth: any = null;
 let firebaseDB: any = null;
-let isInitializing = false;
+let initializationPromise: Promise<{ app: any; auth: any; db: any }> | null = null;
 
-const initializeFirebase = (): { app: any; auth: any; db: any } => {
+const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> => {
   if (typeof window === 'undefined') {
     // Server-side, return null
     return { app: null, auth: null, db: null };
   }
 
-  // If already initialized, return existing instances
+  // If already initializing, return the existing promise
+  if (initializationPromise) {
+    return initializationPromise;
+  }
+
+  // If already initialized, return immediately
   if (app && firebaseAuth && firebaseDB) {
     return { app, auth: firebaseAuth, db: firebaseDB };
   }
 
-  // If initialization is in progress, return null (will be handled by retry logic)
-  if (isInitializing) {
-    return { app: null, auth: null, db: null };
-  }
-
-  isInitializing = true;
-
-  try {
-    // Check if all required config values are present
-    const missingConfigs = [];
-    if (!firebaseConfig.apiKey) missingConfigs.push('NEXT_PUBLIC_FIREBASE_API_KEY');
-    if (!firebaseConfig.authDomain) missingConfigs.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
-    if (!firebaseConfig.projectId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
-    if (!firebaseConfig.storageBucket) missingConfigs.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
-    if (!firebaseConfig.messagingSenderId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
-    if (!firebaseConfig.appId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_APP_ID');
-
-    if (missingConfigs.length > 0) {
-      console.error('❌ Firebase configuration incomplete. Missing:', missingConfigs);
-      console.warn('⚠️ Firebase configuration incomplete. Some features may not work.');
-      console.info('💡 Please check your environment variables in Vercel dashboard.');
-      isInitializing = false;
-      return { app: null, auth: null, db: null };
-    }
-
-    // Log Firebase config status (without exposing actual values)
-    console.log('✅ Firebase configuration status:', {
-      apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
-      authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
-      projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
-      storageBucket: firebaseConfig.storageBucket ? '✅ Set' : '❌ Missing',
-      messagingSenderId: firebaseConfig.messagingSenderId ? '✅ Set' : '❌ Missing',
-      appId: firebaseConfig.appId ? '✅ Set' : '❌ Missing',
-    });
-
-    // Initialize Firebase app
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    firebaseAuth = getAuth(app);
-    
-    // Connect to Firestore with better error handling and network monitoring
+  initializationPromise = new Promise(async (resolve, reject) => {
     try {
-      // Use standard default connection first
-      firebaseDB = getFirestore(app);
-      console.log('✅ Connected to default Firestore database');
-      
-      // Enable network connectivity monitoring
-      enableNetwork(firebaseDB);
-      console.log('✅ Firestore network enabled');
-      
-      // Test the connection with a simple operation
-      const testDoc = doc(firebaseDB, '_test', 'connection');
-      console.log('✅ Firestore connection test completed');
-      
-      // Monitor network connectivity
-      const unsubscribe = onSnapshot(testDoc, 
-        () => console.log('✅ Firestore real-time connection working'),
-        (error) => {
-          console.warn('⚠️ Firestore real-time connection issue:', error);
-        }
-      );
+      // Check if all required config values are present
+      const missingConfigs = [];
+      if (!firebaseConfig.apiKey) missingConfigs.push('NEXT_PUBLIC_FIREBASE_API_KEY');
+      if (!firebaseConfig.authDomain) missingConfigs.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
+      if (!firebaseConfig.projectId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+      if (!firebaseConfig.storageBucket) missingConfigs.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
+      if (!firebaseConfig.messagingSenderId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
+      if (!firebaseConfig.appId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_APP_ID');
 
-      // Store Firebase instances globally for debugging
-      if (typeof window !== 'undefined') {
-        (window as any).firebase = { app, auth: firebaseAuth, db: firebaseDB };
+      if (missingConfigs.length > 0) {
+        console.error('❌ Firebase configuration incomplete. Missing:', missingConfigs);
+        console.warn('⚠️ Firebase configuration incomplete. Some features may not work.');
+        console.info('💡 Please check your environment variables in Vercel dashboard.');
+        resolve({ app: null, auth: null, db: null });
+        return;
       }
 
+      // Log Firebase config status (without exposing actual values)
+      console.log('✅ Firebase configuration status:', {
+        apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
+        authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
+        projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
+        storageBucket: firebaseConfig.storageBucket ? '✅ Set' : '❌ Missing',
+        messagingSenderId: firebaseConfig.messagingSenderId ? '✅ Set' : '❌ Missing',
+        appId: firebaseConfig.appId ? '✅ Set' : '❌ Missing',
+      });
+
+      // Initialize Firebase app
+      app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+      firebaseAuth = getAuth(app);
+      
+      // Connect to Firestore with better error handling and network monitoring
+      try {
+        // Use standard default connection first
+        firebaseDB = getFirestore(app);
+        console.log('✅ Connected to default Firestore database');
+        
+        // Enable network connectivity monitoring
+        enableNetwork(firebaseDB);
+        console.log('✅ Firestore network enabled');
+        
+        // Test the connection with a simple operation
+        const testDoc = doc(firebaseDB, '_test', 'connection');
+        console.log('✅ Firestore connection test completed');
+        
+        // Monitor network connectivity
+        const unsubscribe = onSnapshot(testDoc, 
+          () => console.log('✅ Firestore real-time connection working'),
+          (error) => {
+             console.warn('⚠️ Firestore real-time connection issue:', error);
+             if (error.message.includes('offline')) {
+               console.log('🔄 Attempting to re-enable network...');
+               enableNetwork(firebaseDB);
+             }
+           }
+         );
+         
+         // Clean up listener after 5 seconds
+         setTimeout(() => unsubscribe(), 5000);
+         
+       } catch (dbError) {
+         console.warn('⚠️ Failed to connect to default database, trying "default" connection:', dbError);
+         try {
+           // Fallback to "default" database connection
+           firebaseDB = getFirestore(app, 'default');
+           console.log('✅ Connected to "default" Firestore database');
+           
+           // Enable network for fallback connection
+           enableNetwork(firebaseDB);
+           console.log('✅ Firestore network enabled (fallback)');
+         } catch (fallbackError) {
+           console.error('❌ Failed to connect to Firestore:', fallbackError);
+           console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
+           return { app: null, auth: null, db: null };
+         }
+       }
+      
       console.log('✅ Firebase initialized successfully');
-      isInitializing = false;
-      return { app, auth: firebaseAuth, db: firebaseDB };
-    } catch (dbError) {
-      console.error('❌ Firestore initialization failed:', dbError);
-      isInitializing = false;
+      console.log('ℹ️ Note: Firestore connection will be tested on first use');
+    } catch (error) {
+      console.error('❌ Error initializing Firebase:', error);
+      console.error('💡 Please check your Firebase configuration and environment variables.');
       return { app: null, auth: null, db: null };
     }
-  } catch (error) {
-    console.error('❌ Firebase initialization failed:', error);
-    isInitializing = false;
-    return { app: null, auth: null, db: null };
   }
+
+  return { app, auth: firebaseAuth, db: firebaseDB };
 };
 
 // Initialize Firebase services
-export const getFirebaseAuth = (): any => {
-  const { auth } = initializeFirebase();
+export const getFirebaseAuth = async (): Promise<any> => {
+  const { auth } = await initializeFirebase();
   return auth;
 };
 
-export const getFirebaseDB = (): any => {
-  const { db } = initializeFirebase();
+export const getFirebaseDB = async (): Promise<any> => {
+  const { db } = await initializeFirebase();
   return db;
+};
+
+// Synchronous versions for backward compatibility
+export const getFirebaseAuthSync = (): any => {
+  return firebaseAuth;
+};
+
+export const getFirebaseDBSync = (): any => {
+  return firebaseDB;
 };
 
 // Auth providers with enhanced configuration
@@ -423,13 +447,12 @@ export const checkNetworkStatus = async (): Promise<boolean> => {
   try {
     const db = getFirebaseDB();
     if (!db) return false;
-
-    // Use a simple document read to test connectivity
-    const testDoc = doc(db, '_test', 'connection-test');
-    await getDoc(testDoc);
+    
+    // Try to enable network
+    await enableNetwork(db);
     return true;
-  } catch (error: any) {
-    console.warn('Network check failed:', error.message);
+  } catch (error) {
+    console.warn('Network check failed:', error);
     return false;
   }
 };
@@ -457,17 +480,8 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       }
       return null;
     } catch (docError: any) {
-      // Handle specific Firebase errors
-      if (docError.code === 'permission-denied' || docError.message?.includes('permission')) {
-        console.warn('⚠️ Permission denied, using local storage');
-        return getLocalUserProfile(uid);
-      }
       if (docError.message && docError.message.includes('offline')) {
         console.log('🔄 Offline detected, falling back to local storage');
-        return getLocalUserProfile(uid);
-      }
-      if (docError.message && docError.message.includes('Target ID already exists')) {
-        console.warn('⚠️ Firebase ID conflict, using local storage');
         return getLocalUserProfile(uid);
       }
       throw docError;
@@ -475,11 +489,9 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   } catch (error: any) {
     console.error('Error getting user profile:', error);
     
-    // Handle specific error types
-    if (error.message && (error.message.includes('offline') || 
-                         error.message.includes('permission') || 
-                         error.message.includes('Target ID already exists'))) {
-      console.log('🔄 Using local storage fallback');
+    // If it's an offline error, try local storage
+    if (error.message && error.message.includes('offline')) {
+      console.log('🔄 Offline detected, falling back to local storage');
       return getLocalUserProfile(uid);
     }
     

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -25,37 +25,20 @@ export default function SignInPage() {
   const [resetSent, setResetSent] = useState(false)
   const [activeProvider, setActiveProvider] = useState<string | null>(null)
   
-  const { user, userProfile, loading } = useAuth()
+  const { signIn } = useAuth()
   const router = useRouter()
-
-  // Handle redirects after authentication
-  useEffect(() => {
-    if (!loading && user) {
-      console.log('🔍 Auth Debug:', {
-        user: user?.email,
-        userProfile: userProfile,
-        hasBirthDate: !!userProfile?.birthDate,
-        hasBirthTime: !!userProfile?.birthTime,
-        hasBirthPlace: !!userProfile?.birthPlace,
-        profileComplete: !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
-      });
-      
-      // For now, always redirect to profile setup after successful authentication
-      // This ensures users complete their profile before accessing the dashboard
-      console.log('🔄 User authenticated, redirecting to profile setup');
-      router.push("/profile-setup");
-    }
-  }, [user, userProfile, loading, router])
-
-  // Remove the temporary bypass since we're always going to profile setup
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     setError(null)
     
     try {
-      await signInWithGoogle()
-      // The useEffect above will handle the redirect
+      const user = await signInWithGoogle()
+      // Check if user profile is complete
+      if (user) {
+        // Redirect based on profile completion
+        router.push("/profile-setup")
+      }
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -100,8 +83,12 @@ export default function SignInPage() {
     setError(null)
     
     try {
-      await signInWithEmail(email, password)
-      // The useEffect above will handle the redirect
+      const user = await signInWithEmail(email, password)
+      // Check if user profile is complete
+      if (user) {
+        // Redirect based on profile completion
+        router.push("/profile-setup")
+      }
     } catch (error: any) {
       setError(error.message)
     } finally {

@@ -1,13 +1,15 @@
-// Service Worker for FutureSeer - Handles automatic refresh and initialization
+// Simple Service Worker for FutureSeer
 const CACHE_NAME = 'futureseer-v1';
 const urlsToCache = [
   '/',
   '/dashboard',
-  '/profile-setup',
-  '/signin'
+  '/profile',
+  '/signin',
+  '/signup',
+  '/static/js/bundle.js',
+  '/static/css/main.css'
 ];
 
-// Install event - cache resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -18,18 +20,17 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
         // Return cached version or fetch from network
         return response || fetch(event.request);
-      })
+      }
+    )
   );
 });
 
-// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -43,22 +44,4 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-});
-
-// Handle automatic refresh for initialization issues
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'REFRESH_APP') {
-    // Force refresh the app
-    event.waitUntil(
-      self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({ type: 'FORCE_REFRESH' });
-        });
-      })
-    );
-  }
 }); 
