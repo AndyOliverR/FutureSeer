@@ -16,6 +16,23 @@ export function ProfileCompletionNotice() {
     return null;
   }
 
+  const handleCompleteProfile = () => {
+    console.log('🔍 ProfileCompletionNotice: Attempting navigation to /profile-setup');
+    try {
+      router.push("/profile-setup");
+      // Fallback if router.push doesn't work
+      setTimeout(() => {
+        if (window.location.pathname !== '/profile-setup') {
+          console.log('🔍 ProfileCompletionNotice: Router failed, using window.location');
+          window.location.href = '/profile-setup';
+        }
+      }, 100);
+    } catch (error) {
+      console.error('🔍 ProfileCompletionNotice: Navigation error:', error);
+      window.location.href = '/profile-setup';
+    }
+  };
+
   return (
     <div className="fixed top-20 right-4 z-50 max-w-sm">
       <Alert className="backdrop-blur-md bg-slate-900/90 border border-amber-500/30 shadow-xl">
@@ -50,7 +67,7 @@ export function ProfileCompletionNotice() {
             </div>
 
             <Button
-              onClick={() => router.push("/profile-setup")}
+              onClick={handleCompleteProfile}
               className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold"
             >
               Complete Profile Now

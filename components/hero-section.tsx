@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/use-auth"
@@ -7,6 +7,11 @@ import { useAuth } from "@/hooks/use-auth"
 export function HeroSection() {
   const router = useRouter()
   const { user, userProfile, loading } = useAuth()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   function handleBeginJourney() {
     if (loading) return; // Wait for auth to load
@@ -22,6 +27,9 @@ export function HeroSection() {
       router.push("/dashboard");
     }
   }
+
+  // Prevent hydration mismatch by not rendering button content until mounted
+  const buttonText = mounted && loading ? "Loading..." : "Begin Your Journey"
 
   return (
     <section className="flex flex-col items-center justify-start min-h-screen px-6 text-center pt-20">
@@ -52,7 +60,7 @@ export function HeroSection() {
             disabled={loading}
           >
             <span className="relative z-10">
-              {loading ? "Loading..." : "Begin Your Journey"}
+              {buttonText}
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
           </Button>
