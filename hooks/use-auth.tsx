@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
-import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile } from '@/lib/firebase';
+import { getFirebaseAuth, getFirebaseAuthSync, signInWithGoogle, signOutUser, getUserProfile, UserProfile } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getIdTokenResult } from 'firebase/auth';
 
@@ -174,11 +174,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Regular Firebase authentication
-      const auth = getFirebaseAuth();
-      if (!auth) {
-        setLoading(false);
-        return;
-      }
+      try {
+        const auth = await getFirebaseAuth();
+        if (!auth) {
+          setLoading(false);
+          return;
+        }
       
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         setUser(firebaseUser);
@@ -205,35 +206,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsAdmin(adminRoles.isAdmin);
           }
           
-          // Try to get user profile with better error handling
-          try {
-            const profile = await getUserProfile(firebaseUser.uid);
-            setUserProfile(profile);
-          } catch (profileError) {
-            console.warn('Failed to load user profile due to permissions, using fallback:', profileError);
-            // Create a basic profile with user info from Firebase Auth
-            const fallbackProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || '',
-              photoURL: firebaseUser.photoURL || '',
-              isSubscribed: false,
-              isTipped: false,
-              trialStartTime: Date.now(),
-              trialEndTime: Date.now() + (9 * 60 * 60 * 1000), // 9 hours
-              createdAt: Date.now(),
-              lastLoginAt: Date.now(),
-              emailVerified: firebaseUser.emailVerified,
-              providerData: firebaseUser.providerData,
-              lastSignInTime: firebaseUser.metadata.lastSignInTime ? parseInt(firebaseUser.metadata.lastSignInTime) : Date.now(),
-              creationTime: firebaseUser.metadata.creationTime ? parseInt(firebaseUser.metadata.creationTime) : Date.now(),
-              // Profile is incomplete by default
-              birthDate: undefined,
-              birthTime: undefined,
-              birthPlace: undefined,
-            };
-            setUserProfile(fallbackProfile);
-          }
+          const profile = await getUserProfile(firebaseUser.uid);
+          setUserProfile(profile);
         } else {
           setUserProfile(null);
           setIsSuperadmin(false);
@@ -244,6 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       return () => unsubscribe();
+      } catch (error) {
+        console.error('Firebase initialization error:', error);
+        setLoading(false);
+      }
     };
 
     initializeAuth();

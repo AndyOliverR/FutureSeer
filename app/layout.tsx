@@ -6,10 +6,8 @@ import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/ui/toaster"
 import { AnalyticsInitializer } from "@/components/AnalyticsInitializer"
 import { HamburgerMenu } from "@/components/HamburgerMenu"
-import { AutoInitializer } from "@/components/AutoInitializer"
-import { WelcomeGuide } from "@/components/WelcomeGuide"
-import { ProfileCompletionNotice } from "@/components/ProfileCompletionNotice"
 import ClientProviders from "@/components/ClientProviders"
+import { AppInitializer } from "@/components/AppInitializer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -67,17 +65,16 @@ export default function RootLayout({
         >
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
           <div className="relative z-10">
-            <ClientProviders>
-              <AutoInitializer />
-              <AnalyticsInitializer />
-              {children}
-              <HamburgerMenu />
-              <WelcomeGuide />
-              <MysticalFeedback />
-              <ProfileCompletionNotice />
-              <Footer />
-              <Toaster />
-            </ClientProviders>
+            <AppInitializer>
+              <ClientProviders>
+                <AnalyticsInitializer />
+                {children}
+                <HamburgerMenu />
+                <MysticalFeedback />
+                <Footer />
+                <Toaster />
+              </ClientProviders>
+            </AppInitializer>
           </div>
         </div>
       </body>
