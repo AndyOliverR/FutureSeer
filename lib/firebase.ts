@@ -37,29 +37,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Lazy Firebase initialization with retry mechanism
+// Lazy Firebase initialization
 let app: any = null;
 let firebaseAuth: any = null;
 let firebaseDB: any = null;
-let initializationPromise: Promise<{ app: any; auth: any; db: any }> | null = null;
 
-const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> => {
+const initializeFirebase = (): { app: any; auth: any; db: any } => {
   if (typeof window === 'undefined') {
     // Server-side, return null
-    return Promise.resolve({ app: null, auth: null, db: null });
+    return { app: null, auth: null, db: null };
   }
 
-  // If already initializing, return the existing promise
-  if (initializationPromise) {
-    return initializationPromise;
-  }
-
-  // If already initialized, return immediately
-  if (app && firebaseAuth && firebaseDB) {
-    return Promise.resolve({ app, auth: firebaseAuth, db: firebaseDB });
-  }
-
-  initializationPromise = new Promise(async (resolve, reject) => {
+  if (!app) {
     try {
       // Check if all required config values are present
       const missingConfigs = [];
@@ -74,8 +63,7 @@ const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> =
         console.error('❌ Firebase configuration incomplete. Missing:', missingConfigs);
         console.warn('⚠️ Firebase configuration incomplete. Some features may not work.');
         console.info('💡 Please check your environment variables in Vercel dashboard.');
-        resolve({ app: null, auth: null, db: null });
-        return;
+        return { app: null, auth: null, db: null };
       }
 
       // Log Firebase config status (without exposing actual values)
@@ -92,24 +80,24 @@ const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> =
       app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
       firebaseAuth = getAuth(app);
       
-      // Connect to Firestore with better error handling and network monitoring
-      try {
-        // Use standard default connection first
-        firebaseDB = getFirestore(app);
-        console.log('✅ Connected to default Firestore database');
-        
-        // Enable network connectivity monitoring
-        enableNetwork(firebaseDB);
-        console.log('✅ Firestore network enabled');
-        
-        // Test the connection with a simple operation
-        const testDoc = doc(firebaseDB, '_test', 'connection');
-        console.log('✅ Firestore connection test completed');
-        
-        // Monitor network connectivity
-        const unsubscribe = onSnapshot(testDoc, 
-          () => console.log('✅ Firestore real-time connection working'),
-          (error) => {
+             // Connect to Firestore with better error handling and network monitoring
+       try {
+         // Use standard default connection first
+         firebaseDB = getFirestore(app);
+         console.log('✅ Connected to default Firestore database');
+         
+         // Enable network connectivity monitoring
+         enableNetwork(firebaseDB);
+         console.log('✅ Firestore network enabled');
+         
+         // Test the connection with a simple operation
+         const testDoc = doc(firebaseDB, '_test', 'connection');
+         console.log('✅ Firestore connection test completed');
+         
+         // Monitor network connectivity
+         const unsubscribe = onSnapshot(testDoc, 
+           () => console.log('✅ Firestore real-time connection working'),
+           (error) => {
              console.warn('⚠️ Firestore real-time connection issue:', error);
              if (error.message.includes('offline')) {
                console.log('🔄 Attempting to re-enable network...');
@@ -134,43 +122,31 @@ const initializeFirebase = async (): Promise<{ app: any; auth: any; db: any }> =
          } catch (fallbackError) {
            console.error('❌ Failed to connect to Firestore:', fallbackError);
            console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
-           resolve({ app: null, auth: null, db: null });
+           return { app: null, auth: null, db: null };
          }
        }
       
       console.log('✅ Firebase initialized successfully');
       console.log('ℹ️ Note: Firestore connection will be tested on first use');
-      
-      // Resolve the promise with the initialized Firebase instances
-      resolve({ app, auth: firebaseAuth, db: firebaseDB });
     } catch (error) {
       console.error('❌ Error initializing Firebase:', error);
       console.error('💡 Please check your Firebase configuration and environment variables.');
-      resolve({ app: null, auth: null, db: null });
+      return { app: null, auth: null, db: null };
     }
-  });
+  }
 
-  return initializationPromise;
+  return { app, auth: firebaseAuth, db: firebaseDB };
 };
 
 // Initialize Firebase services
-export const getFirebaseAuth = async (): Promise<any> => {
-  const { auth } = await initializeFirebase();
+export const getFirebaseAuth = (): any => {
+  const { auth } = initializeFirebase();
   return auth;
 };
 
-export const getFirebaseDB = async (): Promise<any> => {
-  const { db } = await initializeFirebase();
+export const getFirebaseDB = (): any => {
+  const { db } = initializeFirebase();
   return db;
-};
-
-// Synchronous versions for backward compatibility
-export const getFirebaseAuthSync = (): any => {
-  return firebaseAuth;
-};
-
-export const getFirebaseDBSync = (): any => {
-  return firebaseDB;
 };
 
 // Auth providers with enhanced configuration
@@ -199,6 +175,7 @@ export interface UserProfile {
   birthDate?: string; // ISO date string
   birthPlace?: string; // City, Country
   birthTime?: string; // ISO time string (HH:mm or HH:mm:ss)
+  gender?: 'male' | 'female' | 'non-binary'; // Gender for palm reading
   emailVerified?: boolean;
   providerData?: any[];
   lastSignInTime?: number;

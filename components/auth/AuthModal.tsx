@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
   
   const { signIn } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -43,6 +45,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: "Your mystical journey begins now.",
       });
       onClose();
+      router.push('/profile-setup');
     } catch (error: any) {
       setError(error.message);
       toast({
@@ -72,6 +75,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: "Your mystical journey continues.",
       });
       onClose();
+      router.push('/profile-setup');
     } catch (error: any) {
       setError(error.message);
       toast({
@@ -111,6 +115,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: "Your mystical journey begins now.",
       });
       onClose();
+      router.push('/profile-setup');
     } catch (error: any) {
       setError(error.message);
       toast({
