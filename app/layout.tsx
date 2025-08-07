@@ -5,9 +5,7 @@ import { MysticalFeedback } from "@/components/MysticalFeedback"
 import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/ui/toaster"
 import { AnalyticsInitializer } from "@/components/AnalyticsInitializer"
-import { HamburgerMenu } from "@/components/HamburgerMenu"
 import ClientProviders from "@/components/ClientProviders"
-import { AppInitializer } from "@/components/AppInitializer"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -65,16 +63,13 @@ export default function RootLayout({
         >
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
           <div className="relative z-10">
-            <AppInitializer>
-              <ClientProviders>
-                <AnalyticsInitializer />
-                {children}
-                <HamburgerMenu />
-                <MysticalFeedback />
-                <Footer />
-                <Toaster />
-              </ClientProviders>
-            </AppInitializer>
+            <ClientProviders>
+              <AnalyticsInitializer />
+              {children}
+              <MysticalFeedback />
+              <Footer />
+              <Toaster />
+            </ClientProviders>
           </div>
         </div>
       </body>

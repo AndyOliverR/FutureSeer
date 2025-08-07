@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
-import { getFirebaseAuth, getFirebaseAuthSync, signInWithGoogle, signOutUser, getUserProfile, UserProfile } from '@/lib/firebase';
+import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getIdTokenResult } from 'firebase/auth';
 
@@ -174,12 +174,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Regular Firebase authentication
-      try {
-        const auth = await getFirebaseAuth();
-        if (!auth) {
-          setLoading(false);
-          return;
-        }
+      const auth = getFirebaseAuth();
+      if (!auth) {
+        setLoading(false);
+        return;
+      }
       
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         setUser(firebaseUser);
@@ -218,10 +217,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       return () => unsubscribe();
-      } catch (error) {
-        console.error('Firebase initialization error:', error);
-        setLoading(false);
-      }
     };
 
     initializeAuth();

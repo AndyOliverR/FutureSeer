@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,47 +11,11 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
 
 export default function LandingPage() {
   const [openJourney, setOpenJourney] = useState(false);
   const [openInvite, setOpenInvite] = useState(false);
   const router = useRouter();
-  const { user, userProfile, loading } = useAuth();
-
-  const handleBeginJourney = () => {
-    if (loading) return; // Wait for auth to load
-    
-    if (!user) {
-      // Not signed in - go to sign in page
-      router.push("/signin");
-    } else if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
-      // Signed in but profile incomplete - go to profile setup
-      router.push("/profile-setup");
-    } else {
-      // Signed in and profile complete - go to dashboard
-      router.push("/dashboard");
-    }
-  };
-
-  const handleInviteJourney = () => {
-    if (loading) return;
-    
-    if (!user) {
-      router.push("/signin");
-    } else if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
-      router.push("/profile-setup");
-    } else {
-      router.push("/dashboard");
-    }
-  };
-
-  // If user is already signed in and profile is complete, redirect to dashboard
-  useEffect(() => {
-    if (!loading && user && userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
-      router.push("/dashboard");
-    }
-  }, [user, userProfile, loading, router]);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 overflow-hidden">
@@ -93,44 +57,24 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row gap-6 mb-12 w-full max-w-2xl justify-center">
             <Dialog open={openJourney} onOpenChange={setOpenJourney}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10 rounded-2xl"
-                  disabled={loading}
-                >
-                  {loading ? "Loading..." : "Begin Your Journey"}
+                <Button variant="outline" className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10 rounded-2xl">
+                  Begin Your Journey
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Ready to begin your journey?</DialogTitle>
                 </DialogHeader>
-                <div className="py-4 text-center text-lg">
-                  {!user ? "You'll be taken to sign in to start your mystical journey." : 
-                   !userProfile?.birthDate ? "Let's complete your profile to unlock personalized insights." :
-                   "You are about to enter your cosmic dashboard."}
-                </div>
+                <div className="py-4 text-center text-lg">You are about to enter your cosmic dashboard.</div>
                 <DialogFooter>
-                  <Button 
-                    onClick={() => { 
-                      setOpenJourney(false); 
-                      handleBeginJourney(); 
-                    }} 
-                    className="w-full bg-amber-400 text-black font-bold"
-                  >
-                    Continue
-                  </Button>
+                  <Button onClick={() => { setOpenJourney(false); router.push("/dashboard"); }} className="w-full bg-amber-400 text-black font-bold">Continue</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
             <Dialog open={openInvite} onOpenChange={setOpenInvite}>
               <DialogTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10 rounded-2xl"
-                  disabled={loading}
-                >
+                <Button variant="outline" className="w-full md:w-1/2 text-center border-2 border-amber-400 text-amber-200 font-serif text-lg hover:bg-amber-400/10 rounded-2xl">
                   I Have an Invite
                 </Button>
               </DialogTrigger>
@@ -147,22 +91,14 @@ export default function LandingPage() {
                   />
                 </div>
                 <DialogFooter>
-                  <Button 
-                    onClick={() => { 
-                      setOpenInvite(false); 
-                      handleInviteJourney(); 
-                    }} 
-                    className="w-full bg-amber-400 text-black font-bold"
-                  >
-                    Continue
-                  </Button>
+                  <Button onClick={() => { setOpenInvite(false); router.push("/dashboard"); }} className="w-full bg-amber-400 text-black font-bold">Continue</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
           {/* Footer */}
           <footer className="text-center text-white/60 text-xs mt-12">
-            <p>Where ancient wisdom meets artificial intelligence. Unlock the mysteries of your path through personalized divination.</p>
+            2025 FutureSeer All Rights Reserved
           </footer>
         </div>
       </div>
