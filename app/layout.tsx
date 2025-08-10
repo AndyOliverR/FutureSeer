@@ -65,7 +65,9 @@ export default function RootLayout({
                 backgroundSize: "cover",
                 backgroundPosition: "center center",
                 backgroundRepeat: "no-repeat",
-                backgroundAttachment: "scroll"
+                backgroundAttachment: "scroll",
+                // Force background to override any conflicting styles
+                background: "url('/assets/bg/Starry BG.png') center/cover no-repeat !important"
               } as React.CSSProperties}
         >
                       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/25 via-slate-950/10 to-slate-950/30 pointer-events-none" style={{ zIndex: 2 }} />

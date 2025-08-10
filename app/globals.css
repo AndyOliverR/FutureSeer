@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* GLOBAL STARRY BACKGROUND ENFORCEMENT - Apply to ALL pages */
+* {
+  background-image: url('/assets/bg/Starry BG.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+}
+
+/* Ensure body and html always have the starry background */
+html, body {
+  background-image: url('/assets/bg/Starry BG.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+  min-height: 100vh;
+}
+
 :root {
   --background: 0 0% 100%;
   --foreground: 222.2 84% 4.9%;
@@ -421,6 +440,33 @@ div[class*="absolute right-0 top-12"] {
   
   /* FORCE background image to be visible */
   background-image: url('/assets/bg/Starry BG.png') !important;
+}
+
+/* CRITICAL: Force starry background on ALL pages and override any conflicting styles */
+html, body, .starfield-ultra-sharp, [class*="starfield"], [class*="cosmic"] {
+  background-image: url('/assets/bg/Starry BG.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+}
+
+/* Override any Tailwind bg- classes that might interfere */
+[class*="bg-"] {
+  background-image: url('/assets/bg/Starry BG.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+}
+
+/* Ensure admin pages also get the starry background */
+.app\/admin\/\* {
+  background-image: url('/assets/bg/Starry BG.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
 }
 
 /* Responsive starfield scaling for different screen sizes */

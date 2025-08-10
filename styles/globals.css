@@ -19,7 +19,7 @@ html, body {
   padding: 0;
   font-family: 'Poppins', 'Satoshi', Arial, sans-serif;
   /* REMOVED: background: var(--starfield) center/cover no-repeat, #0a0a23; - This was conflicting with layout.tsx */
-  background: #0a0a23; /* Keep only the fallback color */
+  /* REMOVED: background: #0a0a23; - Keep only the starry background */
   color: #fff;
   min-height: 100vh;
   box-sizing: border-box;
