@@ -10,7 +10,7 @@
   --gold-gradient: linear-gradient(90deg, #FFD700 0%, #FFEF8F 100%);
   --glass-bg: rgba(24, 26, 38, 0.7);
   --glass-blur: blur(12px);
-  --starfield: url('/assets/bg/starfield.avif');
+  /* REMOVED: --starfield: url('/assets/bg/Starry BG.png'); - No longer used in body background */
 }
 
 html, body {
@@ -18,11 +18,17 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: 'Poppins', 'Satoshi', Arial, sans-serif;
-  background: var(--starfield) center/cover no-repeat, #0a0a23;
+  /* REMOVED: background: var(--starfield) center/cover no-repeat, #0a0a23; - This was conflicting with layout.tsx */
+  background: #0a0a23; /* Keep only the fallback color */
   color: #fff;
   min-height: 100vh;
   box-sizing: border-box;
   overflow-x: hidden;
+  
+  /* Add image rendering optimization for sharper stars */
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 h1, h2, h3, h4, h5, h6 {

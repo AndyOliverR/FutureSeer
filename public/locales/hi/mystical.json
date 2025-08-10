@@ -1,0 +1,58 @@
+{
+  "zodiacSigns": {
+    "aries": "मेष",
+    "taurus": "वृषभ", 
+    "gemini": "मिथुन",
+    "cancer": "कर्क",
+    "leo": "सिंह",
+    "virgo": "कन्या",
+    "libra": "तुला",
+    "scorpio": "वृश्चिक",
+    "sagittarius": "धनु",
+    "capricorn": "मकर",
+    "aquarius": "कुम्भ",
+    "pisces": "मीन"
+  },
+  "planets": {
+    "sun": "सूर्य",
+    "moon": "चंद्र",
+    "mercury": "बुध",
+    "venus": "शुक्र",
+    "mars": "मंगल",
+    "jupiter": "बृहस्पति", 
+    "saturn": "शनि",
+    "uranus": "अरुण",
+    "neptune": "वरुण",
+    "pluto": "यम"
+  },
+  "elements": {
+    "fire": "अग्नि",
+    "earth": "पृथ्वी",
+    "air": "वायु", 
+    "water": "जल"
+  },
+  "tools": {
+    "astrology": "ज्योतिष",
+    "tarot": "टैरो",
+    "numerology": "अंकशास्त्र",
+    "palmistry": "हस्तरेखा",
+    "iching": "आई चिंग",
+    "runes": "रून्स",
+    "crystals": "क्रिस्टल",
+    "meditation": "ध्यान"
+  },
+  "concepts": {
+    "karma": "कर्म",
+    "chakra": "चक्र",
+    "aura": "आभामंडल",
+    "energy": "ऊर्जा",
+    "vibration": "कंपन",
+    "consciousness": "चेतना",
+    "intuition": "अंतर्दृष्टि",
+    "wisdom": "ज्ञान",
+    "enlightenment": "प्रबोधन",
+    "destiny": "भाग्य",
+    "fate": "नियति",
+    "fortune": "संपत्ति"
+  }
+}

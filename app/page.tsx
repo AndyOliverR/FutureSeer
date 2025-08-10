@@ -5,7 +5,7 @@ import { FeatureBlocks } from "@/components/feature-blocks"
 
 export default function HomePage() {
   return (
-    <div className="relative">
+    <div className="relative min-h-screen">
       <Header />
       <HeroSection />
       <FeatureBlocks />

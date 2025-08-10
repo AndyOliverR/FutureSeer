@@ -1,0 +1,79 @@
+{
+  "navigation": {
+    "dashboard": "Tableau de Bord",
+    "profile": "Profil", 
+    "settings": "Paramètres",
+    "tools": "Outils",
+    "history": "Historique",
+    "pricing": "Tarifs",
+    "signOut": "Se Déconnecter",
+    "backToDashboard": "Retour au Tableau de Bord"
+  },
+  "theme": {
+    "light": "Clair",
+    "dark": "Sombre", 
+    "system": "Système",
+    "themePreference": "Préférence de Thème"
+  },
+  "profile": {
+    "cosmicProfile": "Profil Cosmique",
+    "personalInformation": "Informations Personnelles",
+    "editProfile": "Modifier le Profil",
+    "name": "Nom",
+    "birthDate": "Date de Naissance",
+    "birthTime": "Heure de Naissance", 
+    "birthPlace": "Lieu de Naissance",
+    "displayName": "Nom d'Affichage",
+    "fullName": "Nom Complet",
+    "email": "E-mail",
+    "emailCannotBeChanged": "L'e-mail ne peut pas être modifié",
+    "usedForDisplay": "Utilisé à des fins d'affichage",
+    "usedForCalculations": "Utilisé pour les calculs numérologiques et autres",
+    "usedForReadings": "Utilisé pour des lectures astrologiques précises",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "mysticalJourney": "Votre voyage mystique commence ici"
+  },
+  "settings": {
+    "managePreferences": "Gérez vos préférences, profil et compte",
+    "preferences": "Préférences",
+    "notifications": "Notifications",
+    "emailUpdates": "Mises à Jour par E-mail", 
+    "voiceGuidance": "Guidance Vocale",
+    "language": "Langue",
+    "subscription": "Abonnement",
+    "account": "Compte",
+    "deleteAccount": "Supprimer le Compte",
+    "trial": "Essai",
+    "expired": "Expiré",
+    "upgradeComingSoon": "Mise à niveau bientôt disponible"
+  },
+  "dashboard": {
+    "welcomeBack": "Bon retour, {{name}}",
+    "lunarPhase": "Phase Lunaire",
+    "dominantElement": "Élément Dominant",
+    "cosmicMessage": "Le cosmos s'alignent en votre faveur, {{name}}. Votre intuition est forte aujourd'hui - faites confiance aux signes et laissez les étoiles guider vos prochaines étapes.",
+    "totalReadings": "Total des Lectures", 
+    "avgConfidence": "Confiance Moyenne",
+    "thisWeek": "Cette Semaine",
+    "astrologicalDataStatus": "État des Données Astrologiques",
+    "dataAvailable": "Données Disponibles",
+    "fresh": "Frais",
+    "issue": "Problème"
+  },
+  "buttons": {
+    "continue": "Continuer",
+    "submit": "Soumettre",
+    "update": "Mettre à Jour",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "close": "Fermer"
+  },
+  "messages": {
+    "success": "Succès !",
+    "error": "Une erreur s'est produite",
+    "loading": "Chargement...",
+    "saved": "Enregistré avec succès",
+    "updated": "Mis à jour avec succès"
+  }
+}

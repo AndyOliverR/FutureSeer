@@ -1,0 +1,79 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "profile": "Profile", 
+    "settings": "Settings",
+    "tools": "Tools",
+    "history": "History",
+    "pricing": "Pricing",
+    "signOut": "Sign Out",
+    "backToDashboard": "Back to Dashboard"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark", 
+    "system": "System",
+    "themePreference": "Theme Preference"
+  },
+  "profile": {
+    "cosmicProfile": "Cosmic Profile",
+    "personalInformation": "Personal Information",
+    "editProfile": "Edit Profile",
+    "name": "Name",
+    "birthDate": "Birth Date",
+    "birthTime": "Birth Time", 
+    "birthPlace": "Birth Place",
+    "displayName": "Display Name",
+    "fullName": "Full Name",
+    "email": "Email",
+    "emailCannotBeChanged": "Email cannot be changed",
+    "usedForDisplay": "Used for display purposes",
+    "usedForCalculations": "Used for numerological and other calculations",
+    "usedForReadings": "Used for accurate astrological readings",
+    "save": "Save",
+    "cancel": "Cancel",
+    "mysticalJourney": "Your mystical journey begins here"
+  },
+  "settings": {
+    "managePreferences": "Manage your preferences, profile, and account",
+    "preferences": "Preferences",
+    "notifications": "Notifications",
+    "emailUpdates": "Email Updates", 
+    "voiceGuidance": "Voice Guidance",
+    "language": "Language",
+    "subscription": "Subscription",
+    "account": "Account",
+    "deleteAccount": "Delete Account",
+    "trial": "Trial",
+    "expired": "Expired",
+    "upgradeComingSoon": "Upgrade coming soon"
+  },
+  "dashboard": {
+    "welcomeBack": "Welcome back, {{name}}",
+    "lunarPhase": "Lunar Phase",
+    "dominantElement": "Dominant Element",
+    "cosmicMessage": "The cosmos aligns in your favor, {{name}}. Your intuition is strong today - trust the signs and let the stars guide your next steps.",
+    "totalReadings": "Total Readings", 
+    "avgConfidence": "Avg Confidence",
+    "thisWeek": "This Week",
+    "astrologicalDataStatus": "Astrological Data Status",
+    "dataAvailable": "Data Available",
+    "fresh": "Fresh",
+    "issue": "Issue"
+  },
+  "buttons": {
+    "continue": "Continue",
+    "submit": "Submit",
+    "update": "Update",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "close": "Close"
+  },
+  "messages": {
+    "success": "Success!",
+    "error": "Error occurred",
+    "loading": "Loading...",
+    "saved": "Saved successfully",
+    "updated": "Updated successfully"
+  }
+}

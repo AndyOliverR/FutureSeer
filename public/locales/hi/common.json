@@ -1,0 +1,79 @@
+{
+  "navigation": {
+    "dashboard": "डैशबोर्ड",
+    "profile": "प्रोफ़ाइल", 
+    "settings": "सेटिंग्स",
+    "tools": "उपकरण",
+    "history": "इतिहास",
+    "pricing": "मूल्य निर्धारण",
+    "signOut": "साइन आउट",
+    "backToDashboard": "डैशबोर्ड पर वापस जाएं"
+  },
+  "theme": {
+    "light": "हल्का",
+    "dark": "गहरा", 
+    "system": "सिस्टम",
+    "themePreference": "थीम प्राथमिकता"
+  },
+  "profile": {
+    "cosmicProfile": "ब्रह्मांडीय प्रोफ़ाइल",
+    "personalInformation": "व्यक्तिगत जानकारी",
+    "editProfile": "प्रोफ़ाइल संपादित करें",
+    "name": "नाम",
+    "birthDate": "जन्म तिथि",
+    "birthTime": "जन्म समय", 
+    "birthPlace": "जन्म स्थान",
+    "displayName": "प्रदर्शन नाम",
+    "fullName": "पूरा नाम",
+    "email": "ईमेल",
+    "emailCannotBeChanged": "ईमेल बदला नहीं जा सकता",
+    "usedForDisplay": "प्रदर्शन के उद्देश्यों के लिए उपयोग किया जाता है",
+    "usedForCalculations": "अंकशास्त्र और अन्य गणनाओं के लिए उपयोग किया जाता है",
+    "usedForReadings": "सटीक ज्योतिषीय रीडिंग के लिए उपयोग किया जाता है",
+    "save": "सेव करें",
+    "cancel": "रद्द करें",
+    "mysticalJourney": "आपकी रहस्यमय यात्रा यहाँ से शुरू होती है"
+  },
+  "settings": {
+    "managePreferences": "अपनी प्राथमिकताएं, प्रोफ़ाइल और खाता प्रबंधित करें",
+    "preferences": "प्राथमिकताएं",
+    "notifications": "सूचनाएं",
+    "emailUpdates": "ईमेल अपडेट", 
+    "voiceGuidance": "आवाज मार्गदर्शन",
+    "language": "भाषा",
+    "subscription": "सदस्यता",
+    "account": "खाता",
+    "deleteAccount": "खाता हटाएं",
+    "trial": "परीक्षण",
+    "expired": "समाप्त",
+    "upgradeComingSoon": "अपग्रेड जल्द आ रहा है"
+  },
+  "dashboard": {
+    "welcomeBack": "वापस स्वागत है, {{name}}",
+    "lunarPhase": "चंद्र चरण",
+    "dominantElement": "प्रभावी तत्व",
+    "cosmicMessage": "ब्रह्मांड आपके पक्ष में है, {{name}}। आज आपकी अंतर्दृष्टि मजबूत है - संकेतों पर भरोसा करें और सितारों को अपने अगले कदमों का मार्गदर्शन करने दें।",
+    "totalReadings": "कुल रीडिंग", 
+    "avgConfidence": "औसत विश्वास",
+    "thisWeek": "इस सप्ताह",
+    "astrologicalDataStatus": "ज्योतिषीय डेटा स्थिति",
+    "dataAvailable": "डेटा उपलब्ध",
+    "fresh": "ताज़ा",
+    "issue": "समस्या"
+  },
+  "buttons": {
+    "continue": "जारी रखें",
+    "submit": "जमा करें",
+    "update": "अपडेट करें",
+    "delete": "हटाएं",
+    "confirm": "पुष्टि करें",
+    "close": "बंद करें"
+  },
+  "messages": {
+    "success": "सफलता!",
+    "error": "त्रुटि हुई",
+    "loading": "लोड हो रहा है...",
+    "saved": "सफलतापूर्वक सेव किया गया",
+    "updated": "सफलतापूर्वक अपडेट किया गया"
+  }
+}

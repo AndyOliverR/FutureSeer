@@ -1,0 +1,58 @@
+{
+  "zodiacSigns": {
+    "aries": "Aries",
+    "taurus": "Tauro", 
+    "gemini": "Géminis",
+    "cancer": "Cáncer",
+    "leo": "Leo",
+    "virgo": "Virgo",
+    "libra": "Libra",
+    "scorpio": "Escorpio",
+    "sagittarius": "Sagitario",
+    "capricorn": "Capricornio",
+    "aquarius": "Acuario",
+    "pisces": "Piscis"
+  },
+  "planets": {
+    "sun": "Sol",
+    "moon": "Luna",
+    "mercury": "Mercurio",
+    "venus": "Venus",
+    "mars": "Marte",
+    "jupiter": "Júpiter", 
+    "saturn": "Saturno",
+    "uranus": "Urano",
+    "neptune": "Neptuno",
+    "pluto": "Plutón"
+  },
+  "elements": {
+    "fire": "Fuego",
+    "earth": "Tierra",
+    "air": "Aire", 
+    "water": "Agua"
+  },
+  "tools": {
+    "astrology": "Astrología",
+    "tarot": "Tarot",
+    "numerology": "Numerología",
+    "palmistry": "Quiromancia",
+    "iching": "I Ching",
+    "runes": "Runas",
+    "crystals": "Cristales",
+    "meditation": "Meditación"
+  },
+  "concepts": {
+    "karma": "Karma",
+    "chakra": "Chakra",
+    "aura": "Aura",
+    "energy": "Energía",
+    "vibration": "Vibración",
+    "consciousness": "Conciencia",
+    "intuition": "Intuición",
+    "wisdom": "Sabiduría",
+    "enlightenment": "Iluminación",
+    "destiny": "Destino",
+    "fate": "Destino",
+    "fortune": "Fortuna"
+  }
+}

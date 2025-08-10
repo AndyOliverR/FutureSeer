@@ -96,8 +96,12 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
-         style={{ backgroundImage: "url('/images/starfield-bg.png')" }}>
+    <div className="min-h-screen bg-fixed bg-center bg-no-repeat overflow-hidden"
+         style={{ 
+           backgroundImage: "url('/assets/bg/starfield.avif')",
+           backgroundSize: "cover",
+           imageRendering: "crisp-edges"
+         } as React.CSSProperties}>
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
       
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
