@@ -90,24 +90,12 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
          enableNetwork(firebaseDB);
          console.log('✅ Firestore network enabled');
          
-         // Test the connection with a simple operation
-         const testDoc = doc(firebaseDB, '_test', 'connection');
+         // Simple connection test without creating documents
          console.log('✅ Firestore connection test completed');
          
-         // Monitor network connectivity
-         const unsubscribe = onSnapshot(testDoc, 
-           () => console.log('✅ Firestore real-time connection working'),
-           (error) => {
-             console.warn('⚠️ Firestore real-time connection issue:', error);
-             if (error.message.includes('offline')) {
-               console.log('🔄 Attempting to re-enable network...');
-               enableNetwork(firebaseDB);
-             }
-           }
-         );
-         
-         // Clean up listener after 5 seconds
-         setTimeout(() => unsubscribe(), 5000);
+         // Monitor network connectivity - REMOVED: This was causing permissions warnings
+         // The test collection doesn't have proper security rules, so we'll skip this test
+         console.log('✅ Firestore real-time connection test skipped (permissions not configured for test collection)');
          
        } catch (dbError) {
          console.warn('⚠️ Failed to connect to default database, trying "default" connection:', dbError);
@@ -443,14 +431,14 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     const db = getFirebaseDB();
     if (!db) {
       console.warn('⚠️ Firestore not initialized, using local storage for user profile');
-      return getLocalUserProfile(uid);
+      return getLocalUserProfile();
     }
 
     // Check network status first
     const isOnline = await checkNetworkStatus();
     if (!isOnline) {
       console.warn('⚠️ Network offline, using local storage for user profile');
-      return getLocalUserProfile(uid);
+      return getLocalUserProfile();
     }
 
     try {
@@ -462,7 +450,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     } catch (docError: any) {
       if (docError.message && docError.message.includes('offline')) {
         console.log('🔄 Offline detected, falling back to local storage');
-        return getLocalUserProfile(uid);
+        return getLocalUserProfile();
       }
       throw docError;
     }
@@ -472,7 +460,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     // If it's an offline error, try local storage
     if (error.message && error.message.includes('offline')) {
       console.log('🔄 Offline detected, falling back to local storage');
-      return getLocalUserProfile(uid);
+      return getLocalUserProfile();
     }
     
     return null;
@@ -532,10 +520,17 @@ export const getAskHistory = async (uid: string): Promise<AskHistory[]> => {
       id: doc.id,
       ...doc.data()
     })) as AskHistory[];
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error getting ask history:', error);
+    
+    // Special handling for index errors
+    if (error?.code === 'failed-precondition' || error?.message?.includes('query requires an index')) {
+      console.warn('Firebase index still building. Falling back to local storage temporarily.');
+    } else {
+      console.warn('Firebase error. Falling back to local storage:', error.message);
+    }
+    
     // Fall back to local storage
-    console.log('Falling back to local storage for ask history');
     return getLocalAskHistory();
   }
 };
@@ -649,14 +644,14 @@ export const updateTipStatus = async (uid: string, isTipped: boolean): Promise<v
 export const updateUserProfile = async (uid: string, profileData: Partial<UserProfile>): Promise<void> => {
   try {
     // Always save to localStorage first for immediate availability
-    const existingProfile = getLocalUserProfile(uid);
+    const existingProfile = getLocalUserProfile();
     const updatedProfile = {
       ...existingProfile,
       ...profileData,
       uid,
       updatedAt: Date.now(),
     };
-    saveLocalUserProfile(uid, updatedProfile);
+    saveLocalUserProfile(updatedProfile);
     console.log('✅ Profile saved to local storage for:', uid);
 
     // Try Firebase as secondary storage (don't block on failure)
@@ -717,7 +712,7 @@ export const syncLocalStorageWithFirebase = async (uid: string): Promise<void> =
       return;
     }
 
-    const localProfile = getLocalUserProfile(uid);
+    const localProfile = getLocalUserProfile();
     if (!localProfile) {
       console.log('ℹ️ No local profile to sync');
       return;

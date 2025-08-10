@@ -78,8 +78,15 @@ export default function HistoryPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            animate={{ 
+              scale: [1, 1.1, 1],
+              opacity: [0.8, 1, 0.8]
+            }}
+            transition={{ 
+              duration: 2.5, 
+              repeat: Infinity, 
+              ease: "easeInOut"
+            }}
             className="text-6xl mb-6"
           >
             🔮
@@ -97,8 +104,12 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
-         style={{ backgroundImage: "url('/images/starfield-bg.png')" }}>
+    <div className="min-h-screen bg-fixed bg-center bg-no-repeat overflow-hidden"
+         style={{ 
+           backgroundImage: "url('/assets/bg/starfield.avif')",
+           backgroundSize: "cover",
+           imageRendering: "crisp-edges"
+         } as React.CSSProperties}>
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
       
       <div className="relative z-10 p-4 max-w-7xl mx-auto">
@@ -134,14 +145,14 @@ export default function HistoryPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
         >
-          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow">
+          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow rounded-2xl">
             <CardContent className="p-4">
               <div className="text-2xl mb-2">📊</div>
               <div className="text-xl font-serif text-amber-200">{history.length}</div>
               <div className="text-sm text-slate-300">Total Readings</div>
             </CardContent>
           </Card>
-          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow">
+          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow rounded-2xl">
             <CardContent className="p-4">
               <div className="text-2xl mb-2">⭐</div>
               <div className="text-xl font-serif text-amber-200">
@@ -152,7 +163,7 @@ export default function HistoryPage() {
               <div className="text-sm text-slate-300">Avg Confidence</div>
             </CardContent>
           </Card>
-          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow">
+          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow rounded-2xl">
             <CardContent className="p-4">
               <div className="text-2xl mb-2">📅</div>
               <div className="text-xl font-serif text-amber-200">
@@ -164,7 +175,7 @@ export default function HistoryPage() {
               <div className="text-sm text-slate-300">This Week</div>
             </CardContent>
           </Card>
-          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow">
+          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 text-center card-glow rounded-2xl">
             <CardContent className="p-4">
               <div className="text-2xl mb-2">🔮</div>
               <div className="text-xl font-serif text-amber-200">
@@ -182,7 +193,7 @@ export default function HistoryPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mb-8"
         >
-          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 card-glow">
+          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 card-glow rounded-2xl">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Search */}
@@ -193,29 +204,33 @@ export default function HistoryPage() {
                     placeholder="Search your readings..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-slate-800/50 border-slate-600 text-amber-100 placeholder:text-slate-400 focus:border-amber-400 focus:ring-amber-400/20 input-glow"
+                    className="pl-10 bg-slate-800/50 border-slate-600 text-amber-100 placeholder:text-slate-400 focus:border-amber-400 focus:ring-amber-400/20 input-glow rounded-xl"
                   />
                 </div>
                 
                 {/* Filter */}
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex gap-3 overflow-x-auto pb-2">
                   {filterOptions.map((option) => {
                     const Icon = option.icon
-                    const colors = getTypeColor(option.label)
+                    const isActive = filterType === option.value
                     return (
-                      <Button
+                      <button
                         key={option.value}
                         onClick={() => setFilterType(option.value)}
-                        variant={filterType === option.value ? "default" : "outline"}
-                        className={`whitespace-nowrap ${
-                          filterType === option.value 
-                            ? "bg-amber-600 hover:bg-amber-500 text-slate-900" 
-                            : "border-slate-600 text-slate-300 hover:bg-slate-800/30"
+                        className={`group relative overflow-hidden whitespace-nowrap px-4 py-2.5 rounded-xl font-serif font-medium text-sm transition-all duration-300 backdrop-blur-sm ${
+                          isActive 
+                            ? "bg-gradient-to-r from-amber-600/30 to-yellow-500/30 border border-amber-400/50 text-amber-100 shadow-lg shadow-amber-500/20" 
+                            : "bg-gradient-to-r from-slate-700/20 to-slate-600/20 border border-slate-600/40 text-slate-300 hover:from-slate-600/30 hover:to-slate-500/30 hover:border-slate-500/60 hover:text-slate-200"
                         }`}
                       >
-                        <Icon className="w-4 h-4 mr-2" />
-                        {option.label}
-                      </Button>
+                        <div className={`absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ${isActive ? 'opacity-100' : 'opacity-0'}`}></div>
+                        <div className="relative flex items-center justify-center gap-2">
+                          <Icon className={`w-4 h-4 transition-transform group-hover:scale-110 ${
+                            isActive ? 'text-amber-200' : 'text-slate-400 group-hover:text-slate-300'
+                          }`} />
+                          <span className="transition-transform group-hover:scale-105">{option.label}</span>
+                        </div>
+                      </button>
                     )
                   })}
                 </div>
@@ -262,10 +277,13 @@ export default function HistoryPage() {
               </p>
               {!searchTerm && filterType === "all" && (
                 <Link href="/ask">
-                  <Button className="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold button-glow">
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Ask the Seer
-                  </Button>
+                  <button className="group relative overflow-hidden px-8 py-4 rounded-xl bg-gradient-to-r from-amber-600/20 to-yellow-500/20 border border-amber-400/30 text-amber-200 font-serif font-semibold text-lg hover:from-amber-500/30 hover:to-yellow-400/30 hover:border-amber-400/50 hover:text-amber-100 transition-all duration-300 backdrop-blur-sm shadow-lg shadow-amber-500/10">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                    <div className="relative flex items-center justify-center gap-3">
+                      <span className="text-2xl">🔮</span>
+                      <span className="transition-transform group-hover:scale-105">Ask the Seer</span>
+                    </div>
+                  </button>
                 </Link>
               )}
             </motion.div>
@@ -289,7 +307,7 @@ export default function HistoryPage() {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     whileHover={{ scale: 1.02, y: -2 }}
                   >
-                    <Card className={`backdrop-blur-md bg-slate-900/40 border ${colors.border} shadow-xl card-glow`}>
+                    <Card className={`backdrop-blur-md bg-slate-900/40 border ${colors.border} shadow-xl card-glow rounded-2xl`}>
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -359,7 +377,7 @@ export default function HistoryPage() {
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
               >
-                <Card className="backdrop-blur-md bg-slate-900/90 border border-slate-700/50 shadow-2xl">
+                <Card className="backdrop-blur-md bg-slate-900/90 border border-slate-700/50 shadow-2xl rounded-2xl">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-amber-200 font-serif text-xl">
@@ -387,15 +405,15 @@ export default function HistoryPage() {
                       <div>
                         <h3 className="text-amber-200 font-serif font-semibold mb-3">Astrological Profile</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-lg">
+                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-xl">
                             <div className="text-slate-400 text-sm font-serif">Sun Sign</div>
                             <div className="text-amber-200 font-serif">{selectedReading.scientificData.sun_sign}</div>
                           </div>
-                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-lg">
+                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-xl">
                             <div className="text-slate-400 text-sm font-serif">Moon Sign</div>
                             <div className="text-amber-200 font-serif">{selectedReading.scientificData.moon_sign}</div>
                           </div>
-                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-lg">
+                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-xl">
                             <div className="text-slate-400 text-sm font-serif">Rising Sign</div>
                             <div className="text-amber-200 font-serif">{selectedReading.scientificData.rising_sign}</div>
                           </div>
@@ -408,11 +426,11 @@ export default function HistoryPage() {
                       <div>
                         <h3 className="text-amber-200 font-serif font-semibold mb-3">Symbolic Elements</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-lg">
+                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-xl">
                             <div className="text-slate-400 text-sm font-serif">Primary Symbol</div>
                             <div className="text-amber-200 font-serif">{selectedReading.symbolicData.primarySymbol}</div>
                           </div>
-                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-lg">
+                          <div className="p-3 bg-slate-800/30 border border-slate-600 rounded-xl">
                             <div className="text-slate-400 text-sm font-serif">Elemental Influence</div>
                             <div className="text-amber-200 font-serif">{selectedReading.symbolicData.elementalInfluence}</div>
                           </div>
@@ -423,7 +441,7 @@ export default function HistoryPage() {
                     {/* AI Insight */}
                     <div>
                       <h3 className="text-amber-200 font-serif font-semibold mb-3">Seer's Insight</h3>
-                      <div className="p-4 bg-slate-800/30 border border-slate-600 rounded-lg">
+                                              <div className="p-4 bg-slate-800/30 border border-slate-600 rounded-xl">
                         <p className="text-slate-300 font-serif leading-relaxed whitespace-pre-line">
                           {selectedReading.aiSummary}
                         </p>
@@ -436,7 +454,7 @@ export default function HistoryPage() {
                         <h3 className="text-amber-200 font-serif font-semibold mb-3">Recommended Remedies</h3>
                         <div className="space-y-3">
                           {selectedReading.remedies.map((remedy: any, index: number) => (
-                            <div key={index} className="p-3 bg-slate-800/30 border border-slate-600 rounded-lg">
+                            <div key={index} className="p-3 bg-slate-800/30 border border-slate-600 rounded-xl">
                               <div className="text-amber-200 font-serif font-semibold">{remedy.title}</div>
                               <div className="text-slate-300 font-serif text-sm">{remedy.desc}</div>
                             </div>

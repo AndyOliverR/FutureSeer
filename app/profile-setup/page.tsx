@@ -235,49 +235,50 @@ export default function ProfileSetupPage() {
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">👋</div>
               <h2 className="text-2xl font-semibold text-white mb-2">Welcome to FutureSeer</h2>
-              <p className="text-soft">Let's personalize your mystical journey</p>
+              <p className="text-gray-300">Let's personalize your mystical journey</p>
             </div>
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="fullName" className="text-soft">Full Name *</Label>
+                <Label htmlFor="fullName" className="text-white">Full Name *</Label>
                 <Input
                   id="fullName"
+                  type="text"
                   value={profileData.fullName}
                   onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
                   placeholder="Enter your full name"
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
               
               <div>
-                <Label htmlFor="email" className="text-soft">Email Address</Label>
+                <Label htmlFor="email" className="text-white">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   value={profileData.email}
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="your.email@example.com"
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                   disabled
                 />
-                <p className="text-xs text-soft/60 mt-1">Email is managed by your authentication provider</p>
+                <p className="text-xs text-gray-300 mt-1">Email is managed by your authentication provider</p>
               </div>
               
               <div>
-                <Label htmlFor="gender" className="text-soft">Gender Identity *</Label>
+                <Label htmlFor="gender" className="text-white">Gender Identity *</Label>
                 <select
                   id="gender"
                   value={profileData.gender}
                   onChange={(e) => setProfileData(prev => ({ ...prev, gender: e.target.value as 'male' | 'female' | 'non-binary' | '' }))}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-soft focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
                 >
-                  <option value="">Select your gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="non-binary">Non-binary / Prefer not to specify</option>
+                  <option value="" className="text-gray-400">Select your gender</option>
+                  <option value="male" className="text-white">Male</option>
+                  <option value="female" className="text-white">Female</option>
+                  <option value="non-binary" className="text-white">Non-binary / Prefer not to specify</option>
                 </select>
-                <p className="text-xs text-soft/60 mt-1">Used for palm reading: Right palm for men, left palm for women, both palms for non-binary</p>
+                <p className="text-xs text-gray-300 mt-1">Used for palm reading: Right palm for men, left palm for women, both palms for non-binary</p>
               </div>
             </div>
           </motion.div>
@@ -294,41 +295,41 @@ export default function ProfileSetupPage() {
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">🌟</div>
               <h2 className="text-2xl font-semibold text-white mb-2">Birth Details</h2>
-              <p className="text-soft">Your cosmic blueprint for accurate readings</p>
+              <p className="text-gray-300">Your cosmic blueprint for accurate readings</p>
             </div>
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="birthDate" className="text-soft">Date of Birth *</Label>
+                <Label htmlFor="birthDate" className="text-white">Date of Birth *</Label>
                 <Input
                   id="birthDate"
                   type="date"
                   value={profileData.birthDate}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthDate: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white"
                 />
               </div>
               
               <div>
-                <Label htmlFor="birthTime" className="text-soft">Time of Birth</Label>
+                <Label htmlFor="birthTime" className="text-white">Time of Birth</Label>
                 <Input
                   id="birthTime"
                   type="time"
                   value={profileData.birthTime}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthTime: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white"
                 />
-                <p className="text-xs text-soft/60 mt-1">For more accurate astrological readings</p>
+                <p className="text-xs text-gray-300 mt-1">For more accurate astrological readings</p>
               </div>
               
               <div>
-                <Label htmlFor="birthPlace" className="text-soft">Place of Birth</Label>
+                <Label htmlFor="birthPlace" className="text-white">Place of Birth</Label>
                 <Input
                   id="birthPlace"
                   value={profileData.birthPlace}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthPlace: e.target.value }))}
                   placeholder="City, Country"
-                  className="bg-white/5 border-white/20 text-soft"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -346,7 +347,7 @@ export default function ProfileSetupPage() {
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">📸</div>
               <h2 className="text-2xl font-semibold text-white mb-2">Face Photo</h2>
-              <p className="text-soft">For face reading and personality analysis</p>
+              <p className="text-gray-300">For face reading and personality analysis</p>
             </div>
             
             <div className="space-y-4">
@@ -360,15 +361,15 @@ export default function ProfileSetupPage() {
                   <Button
                     variant="outline"
                     onClick={() => setProfileData(prev => ({ ...prev, facePhoto: null, facePhotoUrl: '' }))}
-                    className="text-soft"
+                    className="text-gray-300"
                   >
                     Change Photo
                   </Button>
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-soft/60" />
-                  <p className="text-soft mb-4">Upload a clear face photo</p>
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-300/60" />
+                  <p className="text-gray-300 mb-4">Upload a clear face photo</p>
                   <input
                     type="file"
                     accept="image/*"
@@ -388,7 +389,7 @@ export default function ProfileSetupPage() {
                 </div>
               )}
               
-              <div className="text-xs text-soft/60 text-center">
+              <div className="text-xs text-gray-300/60 text-center">
                 <p>• Clear, well-lit photo of your face</p>
                 <p>• Used for face reading analysis only</p>
                 <p>• Your privacy is protected</p>
@@ -408,7 +409,7 @@ export default function ProfileSetupPage() {
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">🤲</div>
               <h2 className="text-2xl font-semibold text-white mb-2">Palm Photo</h2>
-              <p className="text-soft">
+              <p className="text-gray-300">
                 {profileData.gender === 'male' && 'Upload your right palm for palmistry analysis'}
                 {profileData.gender === 'female' && 'Upload your left palm for palmistry analysis'}
                 {profileData.gender === 'non-binary' && 'Upload both palms for comprehensive palmistry analysis'}
@@ -427,15 +428,15 @@ export default function ProfileSetupPage() {
                   <Button
                     variant="outline"
                     onClick={() => setProfileData(prev => ({ ...prev, palmPhoto: null, palmPhotoUrl: '' }))}
-                    className="text-soft"
+                    className="text-gray-300"
                   >
                     Change Photo
                   </Button>
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
-                  <Hand className="w-12 h-12 mx-auto mb-4 text-soft/60" />
-                  <p className="text-soft mb-4">Upload a clear palm photo</p>
+                  <Hand className="w-12 h-12 mx-auto mb-4 text-gray-300/60" />
+                  <p className="text-gray-300 mb-4">Upload a clear palm photo</p>
                   <input
                     type="file"
                     accept="image/*"
@@ -455,7 +456,7 @@ export default function ProfileSetupPage() {
                 </div>
               )}
               
-              <div className="text-xs text-soft/60 text-center">
+              <div className="text-xs text-gray-300/60 text-center">
                 {profileData.gender === 'male' && (
                   <>
                     <p>• Clear photo of your right palm</p>
@@ -495,12 +496,12 @@ export default function ProfileSetupPage() {
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">⚙️</div>
               <h2 className="text-2xl font-semibold text-white mb-2">Preferences</h2>
-              <p className="text-soft">Customize your mystical experience</p>
+              <p className="text-gray-300">Customize your mystical experience</p>
             </div>
             
             <div className="space-y-6">
               <div>
-                <Label className="text-soft mb-3 block">Areas of Interest</Label>
+                <Label className="text-gray-300 mb-3 block">Areas of Interest</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {interests.map((interest) => (
                     <Button
@@ -518,7 +519,7 @@ export default function ProfileSetupPage() {
               </div>
               
               <div>
-                <Label className="text-soft mb-3 block">Experience Level</Label>
+                <Label className="text-gray-300 mb-3 block">Experience Level</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {['beginner', 'intermediate', 'advanced'].map((level) => (
                     <Button
@@ -535,11 +536,11 @@ export default function ProfileSetupPage() {
               </div>
               
               <div>
-                <Label className="text-soft mb-3 block">Notification Preferences</Label>
+                <Label className="text-gray-300 mb-3 block">Notification Preferences</Label>
                 <div className="space-y-2">
                   {Object.entries(profileData.notificationPreferences).map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between">
-                      <span className="text-soft capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <span className="text-gray-300 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                       <Button
                         variant={value ? "default" : "outline"}
                         size="sm"
@@ -576,8 +577,8 @@ export default function ProfileSetupPage() {
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-soft text-sm">Step {currentStep} of {totalSteps}</span>
-            <span className="text-soft text-sm">{Math.round(progress)}%</span>
+            <span className="text-gray-300 text-sm">Step {currentStep} of {totalSteps}</span>
+            <span className="text-gray-300 text-sm">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -595,7 +596,7 @@ export default function ProfileSetupPage() {
                 variant="outline"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className="text-soft"
+                className="text-gray-300"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Previous

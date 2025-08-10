@@ -16,10 +16,14 @@ export function DailySeerPreview({ date, summary, callToAction }: DailySeerPrevi
       <div className="text-xs text-slate-400 font-serif mb-1">{date}</div>
       <div className="text-lg font-serif text-amber-100 mb-3 text-center max-w-xl">{summary}</div>
       <button
-        className="mt-2 px-6 py-3 rounded-lg bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 font-semibold text-base shadow-md hover:from-amber-500 hover:to-yellow-400 transition-all button-glow"
+        className="group relative overflow-hidden mt-4 px-8 py-3 rounded-xl bg-gradient-to-r from-amber-600/20 to-yellow-500/20 border border-amber-400/30 text-amber-200 font-serif font-semibold text-base hover:from-amber-500/30 hover:to-yellow-400/30 hover:border-amber-400/50 hover:text-amber-100 transition-all duration-300 backdrop-blur-sm"
         onClick={() => router.push(callToAction)}
       >
-        Ask Again
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+        <div className="relative flex items-center justify-center gap-2">
+          <span className="text-xl">🔮</span>
+          <span className="transition-transform group-hover:scale-105">Ask Again</span>
+        </div>
       </button>
     </section>
   )

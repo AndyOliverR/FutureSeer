@@ -45,7 +45,7 @@ export function AstroDataStatus() {
 
   if (!hasValidBirthDetails) {
     return (
-      <Card className="bg-slate-800/50 border-slate-600">
+      <Card className="bg-slate-800/50 border-slate-600 rounded-2xl">
         <CardHeader>
           <CardTitle className="text-amber-400 flex items-center gap-2">
             <Star className="w-5 h-5" />
@@ -66,7 +66,7 @@ export function AstroDataStatus() {
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-600">
+    <Card className="bg-slate-800/50 border-slate-600 rounded-2xl">
       <CardHeader>
         <CardTitle className="text-amber-400 flex items-center gap-2">
           <Star className="w-5 h-5" />
@@ -88,7 +88,10 @@ export function AstroDataStatus() {
               {loading ? 'Loading...' : astroData ? 'Data Available' : 'No Data'}
             </span>
           </div>
-          <Badge variant={isDataFresh ? "default" : "secondary"}>
+          <Badge 
+            variant={isDataFresh ? "default" : "secondary"}
+            className={isDataFresh ? "bg-green-500/20 text-green-300 border-green-500/30" : "bg-amber-500/20 text-amber-300 border-amber-500/30"}
+          >
             {isDataFresh ? 'Fresh' : 'Stale'}
           </Badge>
         </div>
@@ -117,26 +120,32 @@ export function AstroDataStatus() {
 
         {/* Error Display */}
         {error && (
-          <div className="p-3 bg-red-900/30 border border-red-500/30 rounded-lg">
+          <div className="p-3 bg-red-900/30 border border-red-500/30 rounded-xl">
             <p className="text-red-200 text-sm">{error}</p>
           </div>
         )}
 
         {/* Actions */}
         <div className="flex gap-2">
-          <Button
+          <button
             onClick={handleRefresh}
             disabled={loading || refreshing}
-            size="sm"
-            variant="outline"
-            className="border-amber-400/30 text-amber-400 hover:bg-amber-400/10"
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-600/20 to-yellow-500/20 border border-amber-400/30 px-4 py-2 hover:from-amber-500/30 hover:to-yellow-400/30 hover:border-amber-400/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? 'Refreshing...' : 'Refresh Data'}
-          </Button>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+            <div className="relative flex items-center justify-center gap-2 text-amber-200 group-hover:text-amber-100 transition-colors">
+              <RefreshCw className={`w-4 h-4 transition-transform group-hover:scale-110 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="font-serif font-medium text-sm">
+                {refreshing ? 'Refreshing...' : 'Refresh Data'}
+              </span>
+            </div>
+          </button>
           
           {needsRefresh && (
-            <Badge variant="destructive" className="text-xs">
+            <Badge 
+              variant="destructive" 
+              className="bg-orange-500/20 text-orange-300 border-orange-500/30 text-xs"
+            >
               <Clock className="w-3 h-3 mr-1" />
               Update Recommended
             </Badge>

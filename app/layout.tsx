@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { MysticalFeedback } from "@/components/MysticalFeedback"
 import { Footer } from "@/components/Footer"
 import { Toaster } from "@/components/ui/toaster"
 import { AnalyticsInitializer } from "@/components/AnalyticsInitializer"
 import ClientProviders from "@/components/ClientProviders"
+import { I18nProvider } from "@/components/I18nProvider"
+import { MysticalFeedback } from "@/components/MysticalFeedback"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -55,23 +56,31 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-slate-950`}>
         <div
-          className="relative min-h-screen bg-cover bg-center bg-no-repeat bg-fixed"
-          style={{ backgroundImage: "url('/images/starfield-bg.png')" }}
+          className="relative min-h-screen starfield-ultra-sharp"
+                        style={{ 
+                backgroundImage: "url('/assets/bg/Starry BG.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center center",
+                backgroundRepeat: "no-repeat",
+                backgroundAttachment: "scroll"
+              } as React.CSSProperties}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/25 via-slate-950/10 to-slate-950/30 pointer-events-none" style={{ zIndex: 2 }} />
           <div className="relative z-10">
             <ClientProviders>
-              <AnalyticsInitializer />
-              {children}
-              <MysticalFeedback />
-              <Footer />
-              <Toaster />
+              <I18nProvider>
+                <AnalyticsInitializer />
+                {children}
+                <Footer />
+                <Toaster />
+              </I18nProvider>
             </ClientProviders>
           </div>
         </div>
+        <MysticalFeedback />
       </body>
     </html>
   )

@@ -1,0 +1,79 @@
+{
+  "navigation": {
+    "dashboard": "仪表板",
+    "profile": "个人资料", 
+    "settings": "设置",
+    "tools": "工具",
+    "history": "历史",
+    "pricing": "价格",
+    "signOut": "退出登录",
+    "backToDashboard": "返回仪表板"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色", 
+    "system": "系统",
+    "themePreference": "主题偏好"
+  },
+  "profile": {
+    "cosmicProfile": "宇宙档案",
+    "personalInformation": "个人信息",
+    "editProfile": "编辑个人资料",
+    "name": "姓名",
+    "birthDate": "出生日期",
+    "birthTime": "出生时间", 
+    "birthPlace": "出生地点",
+    "displayName": "显示名称",
+    "fullName": "全名",
+    "email": "电子邮件",
+    "emailCannotBeChanged": "电子邮件无法更改",
+    "usedForDisplay": "用于显示目的",
+    "usedForCalculations": "用于数字学和其他计算",
+    "usedForReadings": "用于精确的占星解读",
+    "save": "保存",
+    "cancel": "取消",
+    "mysticalJourney": "您的神秘之旅从这里开始"
+  },
+  "settings": {
+    "managePreferences": "管理您的偏好、个人资料和账户",
+    "preferences": "偏好设置",
+    "notifications": "通知",
+    "emailUpdates": "电子邮件更新", 
+    "voiceGuidance": "语音指导",
+    "language": "语言",
+    "subscription": "订阅",
+    "account": "账户",
+    "deleteAccount": "删除账户",
+    "trial": "试用",
+    "expired": "已过期",
+    "upgradeComingSoon": "升级即将推出"
+  },
+  "dashboard": {
+    "welcomeBack": "欢迎回来，{{name}}",
+    "lunarPhase": "月相",
+    "dominantElement": "主导元素",
+    "cosmicMessage": "宇宙正在眷顾您，{{name}}。您今天的直觉很强 - 相信这些征象，让星星指引您的下一步。",
+    "totalReadings": "总解读次数", 
+    "avgConfidence": "平均置信度",
+    "thisWeek": "本周",
+    "astrologicalDataStatus": "占星数据状态",
+    "dataAvailable": "数据可用",
+    "fresh": "新鲜",
+    "issue": "问题"
+  },
+  "buttons": {
+    "continue": "继续",
+    "submit": "提交",
+    "update": "更新",
+    "delete": "删除",
+    "confirm": "确认",
+    "close": "关闭"
+  },
+  "messages": {
+    "success": "成功！",
+    "error": "发生错误",
+    "loading": "加载中...",
+    "saved": "保存成功",
+    "updated": "更新成功"
+  }
+}

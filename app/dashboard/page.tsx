@@ -14,6 +14,7 @@ import { useHistory } from "@/hooks/useHistory"
 import { useDailyGuidance } from "@/hooks/useDailyGuidance"
 import { usePlan } from "@/hooks/usePlan"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Calendar, TrendingUp, Sparkles, Clock, Star, BookOpen, Settings, Plus, User, Heart, Target, Zap } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +22,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 
 export default function DashboardPage() {
+  const router = useRouter()
   const { user, userProfile, loading: authLoading } = useAuth()
   const { history, loading: historyLoading, formatDate } = useHistory()
   const { dailyData, loading: dailyLoading } = useDailyGuidance()
@@ -288,8 +290,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat overflow-hidden"
-         style={{ backgroundImage: "url('/images/starfield-bg.png')" }}>
+    <div className="min-h-screen bg-fixed bg-center bg-no-repeat overflow-hidden"
+         style={{ 
+           backgroundImage: "url('/assets/bg/starfield.avif')",
+           backgroundSize: "cover",
+           imageRendering: "crisp-edges"
+         } as React.CSSProperties}>
       <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
       
       <div className="relative z-10 p-4 max-w-7xl mx-auto">
@@ -367,156 +373,176 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Recent Predictions */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <PredictionHistoryCard items={historyItems} />
-            </motion.div>
+        {/* Main Content - Perfect Collage Layout */}
+        <div className="grid grid-cols-12 gap-4 mb-8">
+          {/* Row 1: Astro Data Status - Full Width */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="col-span-12"
+          >
+            <AstroDataStatus />
+          </motion.div>
 
-            {/* Confidence Trend */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-            >
-              <ConfidenceTrend data={confidenceTrendData} />
-            </motion.div>
+          {/* Row 2: Recent Predictions & Today's Seer Preview */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="col-span-12 lg:col-span-8"
+          >
+            <PredictionHistoryCard items={historyItems} />
+          </motion.div>
 
-            {/* Symbolic Patterns */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-            >
-              <SymbolicPatternHighlights insights={symbolicPatterns} />
-            </motion.div>
-
-            {/* Personalized Insights */}
-            {advancedProfile && personalizedInsights.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="col-span-12 lg:col-span-4"
+          >
+            <div className="h-full rounded-2xl backdrop-blur-md bg-slate-900/30 border border-slate-700/50 shadow-lg p-4 card-glow flex flex-col">
+              <h3 className="text-lg font-serif text-amber-200 mb-2">Today's Seer Preview</h3>
+              <div className="text-xs text-slate-400 font-serif mb-2">{dailySeerData.date}</div>
+              <div className="text-sm font-serif text-amber-100 mb-3 text-center flex-1 flex items-center justify-center line-clamp-4">{dailySeerData.summary}</div>
+              <button
+                className="group relative overflow-hidden w-full px-6 py-2 rounded-xl bg-gradient-to-r from-amber-600/20 to-yellow-500/20 border border-amber-400/30 text-amber-200 font-serif font-semibold text-sm hover:from-amber-500/30 hover:to-yellow-400/30 hover:border-amber-400/50 hover:text-amber-100 transition-all duration-300 backdrop-blur-sm mt-auto"
+                onClick={() => router.push(dailySeerData.callToAction)}
               >
-                <Card className="glass-card border-purple-500/20">
-                  <CardHeader>
-                    <CardTitle className="text-xl gold-glow flex items-center gap-2">
-                      <User className="w-5 h-5" />
-                      Personalized Insights
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Progress value={profileCompletion} className="flex-1" />
-                      <span className="text-sm text-muted-foreground">{profileCompletion}% Complete</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {personalizedInsights.map((insight, index) => (
-                        <div key={index} className="p-4 bg-slate-800/50 rounded-xl border border-slate-600">
-                          <div className="flex items-center gap-2 mb-2">
-                            <insight.icon className={`w-4 h-4 ${insight.color}`} />
-                            <h4 className="font-semibold text-sm">{insight.title}</h4>
-                          </div>
-                          <p className="text-xs text-gray-300">{insight.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-4 p-3 bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-xl border border-purple-500/20">
-                      <p className="text-sm text-gray-300">
-                        These insights are tailored to your unique personality, lifestyle, and preferences. 
-                        Complete your advanced profile for even more personalized guidance.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-          </div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <div className="relative flex items-center justify-center gap-2">
+                  <span className="text-lg">🔮</span>
+                  <span className="transition-transform group-hover:scale-105">Ask Again</span>
+                </div>
+              </button>
+            </div>
+          </motion.div>
 
-          {/* Right Column */}
-          <div className="space-y-8">
-            {/* Astro Data Status */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <AstroDataStatus />
-            </motion.div>
+          {/* Row 3: Confidence Trend & Active Remedy */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="col-span-12 lg:col-span-8"
+          >
+            <ConfidenceTrend data={confidenceTrendData} />
+          </motion.div>
 
-            {/* Daily Seer Preview */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-            >
-              <DailySeerPreview 
-                date={dailySeerData.date}
-                summary={dailySeerData.summary}
-                callToAction={dailySeerData.callToAction}
-              />
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="col-span-12 lg:col-span-4"
+          >
+            <div className="h-full rounded-2xl backdrop-blur-md bg-slate-900/30 border border-slate-700/50 shadow-lg p-4 card-glow flex flex-col">
+              <h3 className="text-lg font-serif text-amber-200 mb-2">Active Remedy</h3>
+              <div className="text-center flex-1 flex flex-col justify-center">
+                <div className="text-xl font-serif text-amber-100 mb-1">{activeRemedy.remedy}</div>
+                <div className="text-sm text-slate-300 mb-2">Type: {activeRemedy.type}</div>
+                <div className="text-sm text-amber-300 mb-3">New! You haven't opened this remedy yet.</div>
+              </div>
+              <button className="group relative overflow-hidden w-full px-6 py-2 rounded-xl bg-gradient-to-r from-purple-600/20 to-indigo-500/20 border border-purple-400/30 text-purple-200 font-serif font-semibold text-sm hover:from-purple-500/30 hover:to-indigo-400/30 hover:border-purple-400/50 hover:text-purple-100 transition-all duration-300 backdrop-blur-sm mt-auto">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                <div className="relative flex items-center justify-center gap-2">
+                  <span>💎</span>
+                  <span className="transition-transform group-hover:scale-105">See full remedy</span>
+                </div>
+              </button>
+            </div>
+          </motion.div>
 
-            {/* Active Remedies */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-            >
-              <ActiveRemedyCard 
-                remedy={activeRemedy.remedy}
-                type={activeRemedy.type}
-                status={activeRemedy.status}
-              />
-            </motion.div>
+          {/* Row 4: Symbolic Patterns & Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="col-span-12 lg:col-span-8"
+          >
+            <SymbolicPatternHighlights insights={symbolicPatterns} />
+          </motion.div>
 
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="rounded-2xl backdrop-blur-md bg-slate-900/40 border border-slate-700/50 p-6 card-glow"
-            >
-              <h3 className="text-xl font-serif text-amber-200 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="col-span-12 lg:col-span-4"
+          >
+            <div className="h-full rounded-2xl backdrop-blur-md bg-slate-900/40 border border-slate-700/50 p-4 card-glow flex flex-col">
+              <h3 className="text-lg font-serif text-amber-200 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-2 gap-3 flex-1">
                 <Link 
                   href="/ask"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-amber-600/20 to-yellow-500/20 border border-amber-400/30 hover:from-amber-500/30 hover:to-yellow-400/30 transition-all group"
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r from-amber-600/20 to-yellow-500/20 border border-amber-400/30 hover:from-amber-500/30 hover:to-yellow-400/30 transition-all group text-center h-full"
                 >
                   <Plus className="w-5 h-5 text-amber-200 group-hover:scale-110 transition-transform" />
-                  <span className="text-amber-100 font-serif">Ask the Seer</span>
+                  <span className="text-amber-100 font-serif text-sm">Ask Seer</span>
                 </Link>
                 <Link 
                   href="/tools"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-purple-600/20 to-indigo-500/20 border border-purple-400/30 hover:from-purple-500/30 hover:to-indigo-400/30 transition-all group"
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r from-purple-600/20 to-indigo-500/20 border border-purple-400/30 hover:from-purple-500/30 hover:to-indigo-400/30 transition-all group text-center h-full"
                 >
                   <Sparkles className="w-5 h-5 text-purple-200 group-hover:scale-110 transition-transform" />
-                  <span className="text-purple-100 font-serif">Divination Tools</span>
+                  <span className="text-purple-100 font-serif text-sm">Tools</span>
                 </Link>
                 <Link 
                   href="/history"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-600/20 to-cyan-500/20 border border-blue-400/30 hover:from-blue-500/30 hover:to-cyan-400/30 transition-all group"
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r from-blue-600/20 to-cyan-500/20 border border-blue-400/30 hover:from-blue-500/30 hover:to-cyan-400/30 transition-all group text-center h-full"
                 >
                   <BookOpen className="w-5 h-5 text-blue-200 group-hover:scale-110 transition-transform" />
-                  <span className="text-blue-100 font-serif">Reading History</span>
+                  <span className="text-blue-100 font-serif text-sm">History</span>
                 </Link>
                 <Link 
                   href="/settings"
-                  className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-slate-600/20 to-gray-500/20 border border-slate-400/30 hover:from-slate-500/30 hover:to-gray-400/30 transition-all group"
+                  className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-gradient-to-r from-slate-600/20 to-gray-500/20 border border-slate-400/30 hover:from-slate-500/30 hover:to-gray-400/30 transition-all group text-center h-full"
                 >
                   <Settings className="w-5 h-5 text-slate-200 group-hover:scale-110 transition-transform" />
-                  <span className="text-slate-100 font-serif">Settings</span>
+                  <span className="text-slate-100 font-serif text-sm">Settings</span>
                 </Link>
               </div>
+            </div>
+          </motion.div>
+
+          {/* Row 5: Personalized Insights - Full Width when Available */}
+          {advancedProfile && personalizedInsights.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+              className="col-span-12"
+            >
+              <Card className="glass-card border-purple-500/20 rounded-2xl">
+                <CardHeader>
+                  <CardTitle className="text-xl gold-glow flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    Personalized Insights
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Progress value={profileCompletion} className="flex-1" />
+                    <span className="text-sm text-muted-foreground">{profileCompletion}% Complete</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {personalizedInsights.map((insight, index) => (
+                      <div key={index} className="p-4 bg-slate-800/50 rounded-xl border border-slate-600">
+                        <div className="flex items-center gap-2 mb-2">
+                          <insight.icon className={`w-4 h-4 ${insight.color}`} />
+                          <h4 className="font-semibold text-sm">{insight.title}</h4>
+                        </div>
+                        <p className="text-xs text-gray-300">{insight.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 p-3 bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-xl border border-purple-500/20">
+                    <p className="text-sm text-gray-300">
+                      These insights are tailored to your unique personality, lifestyle, and preferences. 
+                      Complete your advanced profile for even more personalized guidance.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
-          </div>
+          )}
         </div>
 
         {/* Bottom CTA */}

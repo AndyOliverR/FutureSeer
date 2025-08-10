@@ -20,10 +20,14 @@ export function ActiveRemedyCard({ remedy, type, status }: ActiveRemedyCardProps
           <div className="text-xs text-yellow-400 font-serif mb-2">New! You haven’t opened this remedy yet.</div>
         )}
         <button
-          className="mt-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 font-semibold text-sm shadow-md hover:from-amber-500 hover:to-yellow-400 transition-all button-glow"
+          className="group relative overflow-hidden mt-3 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600/20 to-indigo-500/20 border border-purple-400/30 text-purple-200 font-serif font-semibold text-sm hover:from-purple-500/30 hover:to-indigo-400/30 hover:border-purple-400/50 hover:text-purple-100 transition-all duration-300 backdrop-blur-sm"
           onClick={() => router.push("/remedies/active")}
         >
-          See full remedy
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+          <div className="relative flex items-center justify-center gap-2">
+            <span className="text-lg">💎</span>
+            <span className="transition-transform group-hover:scale-105">See full remedy</span>
+          </div>
         </button>
       </div>
     </section>

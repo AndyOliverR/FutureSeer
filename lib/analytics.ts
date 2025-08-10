@@ -2,18 +2,22 @@ import posthog from 'posthog-js'
 
 // Initialize PostHog only if API key is provided
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
-    loaded: (posthog) => {
-      if (process.env.NODE_ENV === 'development') posthog.debug()
-    },
-    capture_pageview: false, // We'll handle this manually
-    capture_pageleave: true,
-    autocapture: true,
-    disable_session_recording: false,
-    enable_recording_console_log: false,
-    enable_recording_network_payloads: false,
-  })
+  try {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
+      loaded: (posthog) => {
+        if (process.env.NODE_ENV === 'development') posthog.debug()
+      },
+      capture_pageview: false, // We'll handle this manually
+      capture_pageleave: true,
+      autocapture: true,
+      disable_session_recording: false,
+      enable_recording_console_log: false,
+      enable_recording_network_payloads: false,
+    })
+  } catch (error) {
+    console.warn('Failed to initialize PostHog analytics:', error)
+  }
 }
 
 // Analytics Events

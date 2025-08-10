@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './use-auth';
 import { updateSubscriptionStatus, updateTipStatus, updateUserProfile } from '@/lib/firebase';
+import i18n from 'i18next';
 
 export interface UserSettings {
-  darkMode: boolean;
-  language: string;
+  theme: 'light' | 'dark' | 'system';
+  language: 'en' | 'hi' | 'es' | 'fr' | 'zh';
   voiceGuidance: boolean;
   notifications: boolean;
   emailUpdates: boolean;
@@ -18,8 +19,8 @@ export function useSettings() {
 
   // Settings state
   const [settings, setSettings] = useState<UserSettings>({
-    darkMode: true,
-    language: 'english',
+    theme: 'dark',
+    language: 'en',
     voiceGuidance: false,
     notifications: true,
     emailUpdates: true,
@@ -46,11 +47,64 @@ export function useSettings() {
     }
   }, [userProfile]);
 
+  // Apply theme to document
+  const applyTheme = useCallback((theme: 'light' | 'dark' | 'system') => {
+    const root = document.documentElement;
+    
+    if (theme === 'system') {
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', systemPrefersDark);
+      root.classList.toggle('light', !systemPrefersDark);
+    } else {
+      root.classList.toggle('dark', theme === 'dark');
+      root.classList.toggle('light', theme === 'light');
+    }
+  }, []);
+
   const updateSetting = useCallback((key: keyof UserSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
-    // Here you would typically save to backend/localStorage
+    
+    // Apply theme changes immediately
+    if (key === 'theme') {
+      applyTheme(value);
+    }
+    
+    // Apply language changes immediately
+    if (key === 'language') {
+      i18n.changeLanguage(value);
+    }
+    
+    // Save to localStorage
     localStorage.setItem('userSettings', JSON.stringify({ ...settings, [key]: value }));
-  }, [settings]);
+  }, [settings, applyTheme]);
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('userSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings(parsed);
+        applyTheme(parsed.theme || 'dark');
+      } catch (error) {
+        console.error('Failed to load settings from localStorage:', error);
+      }
+    } else {
+      // Apply default theme
+      applyTheme('dark');
+    }
+  }, [applyTheme]);
+
+  // Listen for system theme changes when theme is set to 'system'
+  useEffect(() => {
+    if (settings.theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => applyTheme('system');
+      
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+  }, [settings.theme, applyTheme]);
 
   const updateProfile = useCallback(async (data: Partial<typeof profileData>) => {
     if (!user?.uid) return;

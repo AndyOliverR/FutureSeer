@@ -7,6 +7,30 @@
   --foreground: 222.2 84% 4.9%;
 }
 
+/* Light theme variables */
+.light {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 84% 4.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+}
+
 /* Mystical Feedback Animations */
 @keyframes float {
   0%, 100% { 
@@ -62,9 +86,122 @@
   animation: mystical-glow 3s ease-in-out infinite;
 }
 
-.dark :root {
+/* Dark theme variables */
+.dark {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 212.7 26.8% 83.9%;
+}
+
+/* Crystal Clear Starfield Background */
+.starfield-background {
+  /* Sharp, clear image rendering */
+  image-rendering: crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  
+  /* Hardware acceleration for smooth performance */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  
+  /* Subtle enhancement without over-processing */
+  filter: contrast(1.05) brightness(1.02);
+  
+  /* Perfect background positioning - FIXED: Use cover instead of 100% 100% */
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover; /* Changed from 100% 100% to maintain aspect ratio */
+  
+  /* Additional optimization for sharp rendering */
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+}
+
+/* Subtle starfield enhancement without overwhelming effects */
+.starfield-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at 30% 70%, rgba(100, 150, 255, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0.4;
+  z-index: 1;
+}
+
+/* Clean text rendering on starfield */
+.starfield-background * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Light theme mystical styling */
+.light {
+  background-image: linear-gradient(to bottom, #f8fafc, #e2e8f0);
+}
+
+.light .card-glow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.light .backdrop-blur-md {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.light .bg-slate-900\/40 {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+.light .bg-slate-900\/30 {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(148, 163, 184, 0.3) !important;
+}
+
+.light .bg-slate-800\/50 {
+  background: rgba(241, 245, 249, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.4) !important;
+}
+
+.light .text-slate-300 {
+  color: #475569 !important;
+}
+
+.light .text-slate-200 {
+  color: #334155 !important;
+}
+
+.light .text-amber-200 {
+  color: #d97706 !important;
+}
+
+.light .text-amber-100 {
+  color: #ea580c !important;
 }
 
 /* Remove all button borders and outlines */
@@ -216,4 +353,154 @@ div[class*="absolute right-0 top-12"] {
   --tw-ring-offset-color: transparent !important;
   --tw-ring-offset-width: 0 !important;
   --tw-ring-width: 0 !important;
+}
+
+/* Force white color for specific profile icons */
+.icon-white-force {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.icon-white-force svg {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.icon-white-force * {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Sharp image rendering for starfield backgrounds */
+.starfield-sharp {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  -webkit-image-rendering: crisp-edges;
+  -moz-image-rendering: crisp-edges;
+  -o-image-rendering: crisp-edges;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* NEW: Ultra-sharp starfield background for high-definition stars */
+.starfield-ultra-sharp {
+  /* Optimal image rendering for HD starfield backgrounds */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: high-quality;
+  -webkit-image-rendering: -webkit-optimize-contrast;
+  -moz-image-rendering: crisp-edges;
+  -o-image-rendering: crisp-edges;
+  
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  
+  /* Background optimization - FIXED: No more moving stars */
+  background-attachment: scroll !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: cover !important; /* Changed back to cover to ensure no missing sections */
+  
+  /* Enhanced star definition for HD images */
+  filter: contrast(1.05) brightness(1.02) saturate(1.03);
+  
+  /* Prevent any blurring effects */
+  -webkit-filter: contrast(1.05) brightness(1.02) saturate(1.03);
+  -moz-filter: contrast(1.05) brightness(1.02) saturate(1.03);
+  
+  /* Background image will be handled by inline styles in layout.tsx */
+  
+  /* FORCE background image to be visible */
+  background-image: url('/assets/bg/Starry BG.png') !important;
+}
+
+/* Responsive starfield scaling for different screen sizes */
+@media (max-width: 768px) {
+  .starfield-ultra-sharp {
+    background-size: cover; /* Keep cover for mobile */
+    background-attachment: scroll; /* Better mobile performance */
+  }
+}
+
+@media (min-width: 1920px) {
+  .starfield-ultra-sharp {
+    background-size: cover; /* Maintain sharpness on ultra-wide screens */
+  }
+}
+
+/* EXTREME ZOOM-OUT: Alternative class for maximum starfield zoom-out effect */
+.starfield-extreme-zoom {
+  /* Optimal image rendering for HD starfield backgrounds */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: high-quality;
+  -webkit-image-rendering: -webkit-optimize-contrast;
+  -moz-image-rendering: crisp-edges;
+  -o-image-rendering: crisp-edges;
+  
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  
+  /* MAXIMUM ZOOM-OUT: Use contain for even more zoom-out than cover */
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: contain !important; /* Shows entire image, maximum zoom-out */
+  
+  /* Enhanced star definition for HD images */
+  filter: contrast(1.03) brightness(1.01) saturate(1.02);
+  
+  /* Prevent any blurring effects */
+  -webkit-filter: contrast(1.03) brightness(1.01) saturate(1.02);
+  -moz-filter: contrast(1.03) brightness(1.01) saturate(1.02);
+  
+  /* Background image will be handled by inline styles in layout.tsx */
+  
+  /* FORCE background image to be visible */
+  background-image: url('/assets/bg/Starry BG.png') !important;
+} 
+
+/* Custom Scrollbar Styles for Feedback Panel */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 158, 11, 0.3) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.3);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.5);
+}
+
+.scrollbar-thumb-amber-500\/30::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
 } 

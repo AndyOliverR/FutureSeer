@@ -72,21 +72,6 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/privacy" className="text-gray-400 hover:text-amber-400 transition-colors">
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a href="/refund-policy" className="text-gray-400 hover:text-amber-400 transition-colors">
-                  Refund Policy
-                </a>
-              </li>
-              <li>
-                <a href="/shipping-policy" className="text-gray-400 hover:text-amber-400 transition-colors">
-                  Shipping Policy
-                </a>
-              </li>
-              <li>
                 <a href="/contact" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Contact Us
                 </a>
