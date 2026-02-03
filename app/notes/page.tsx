@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNotes } from "@/hooks/useNotes"
 import { Note } from "@/lib/firebase"
+import { Header } from "@/components/header"
 
 export default function NotesPage() {
   const { notes, loading, error, createNote, updateNote, deleteNote } = useNotes()
@@ -116,16 +116,8 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-fixed bg-center bg-no-repeat overflow-hidden"
-         style={{ 
-           backgroundImage: "url('/assets/bg/starfield.avif')",
-           backgroundSize: "cover",
-           imageRendering: "crisp-edges",
-           WebkitImageRendering: "crisp-edges",
-           mozImageRendering: "crisp-edges"
-         }}>
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
-      
+    <div className="min-h-screen overflow-hidden starfield-ultra-sharp relative">
+      <Header />
       <div className="relative z-10 p-4 max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
@@ -134,9 +126,6 @@ export default function NotesPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12 pt-8"
         >
-          <Link href="/dashboard" className="text-amber-200 hover:text-amber-300 mb-4 inline-block transition-all duration-300">
-            ← Back to Dashboard
-          </Link>
           <h1 className="text-4xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-4">Spiritual Notes</h1>
           <h2 className="text-slate-300 font-serif leading-relaxed">Record your mystical insights and experiences</h2>
         </motion.div>

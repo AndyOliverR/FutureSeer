@@ -302,77 +302,470 @@ class IChingIntelligence {
   private directions = ['North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest']
   private timesOfDay = ['Dawn', 'Morning', 'Noon', 'Afternoon', 'Evening', 'Night']
 
+  // Hexagram lookup table: Maps 6-line binary pattern (bottom to top) to hexagram number
+  // Pattern: [bottom, line2, line3, line4, line5, top] where 1=yang, 0=yin
+  private hexagramLookup: Map<string, number> = new Map([
+    // All 64 hexagrams in King Wen sequence
+    ['111111', 1],   // The Creative
+    ['000000', 2],   // The Receptive
+    ['100010', 3],   // Difficulty at the Beginning
+    ['010001', 4],   // Youthful Folly
+    ['111010', 5],   // Waiting
+    ['010111', 6],   // Conflict
+    ['010000', 7],   // The Army
+    ['000010', 8],   // Holding Together
+    ['111011', 9],   // Small Taming
+    ['110111', 10],  // Treading
+    ['111000', 11],  // Peace
+    ['000111', 12],  // Standstill
+    ['111101', 13],  // Fellowship
+    ['101111', 14],  // Great Possession
+    ['000100', 15],  // Modesty
+    ['001000', 16],  // Enthusiasm
+    ['100110', 17],  // Following
+    ['011001', 18],  // Work on What Has Been Spoiled
+    ['110000', 19],  // Approach
+    ['000011', 20],  // Contemplation
+    ['100101', 21],  // Biting Through
+    ['101001', 22],  // Grace
+    ['000001', 23],  // Splitting Apart
+    ['100000', 24],  // Return
+    ['111001', 25],  // Innocence
+    ['100111', 26],  // Great Taming
+    ['100001', 27],  // Nourishment
+    ['011110', 28],  // Great Exceeding
+    ['010010', 29],  // The Abysmal Water
+    ['101101', 30],  // The Clinging Fire
+    ['100100', 31],  // Influence
+    ['001001', 32],  // Duration
+    ['111100', 33],  // Retreat
+    ['001111', 34],  // Great Power
+    ['000101', 35],  // Progress
+    ['101000', 36],  // Darkening of the Light
+    ['101010', 37],  // The Family
+    ['010101', 38],  // Opposition
+    ['001010', 39],  // Obstruction
+    ['010100', 40],  // Deliverance
+    ['110001', 41],  // Decrease
+    ['100011', 42],  // Increase
+    ['111110', 43],  // Breakthrough
+    ['011111', 44],  // Coming to Meet
+    ['000110', 45],  // Gathering Together
+    ['011000', 46],  // Pushing Upward
+    ['010110', 47],  // Oppression
+    ['011010', 48],  // The Well
+    ['101100', 49],  // Revolution
+    ['001101', 50],  // The Cauldron
+    ['001011', 51],  // The Arousing Thunder
+    ['110100', 52],  // Keeping Still Mountain
+    ['001110', 53],  // Development
+    ['011100', 54],  // The Marrying Maiden
+    ['101110', 55],  // Abundance
+    ['011101', 56],  // The Wanderer
+    ['010011', 57],  // The Gentle Wind
+    ['110010', 58],  // The Joyous Lake
+    ['010000', 59],  // Dispersion
+    ['000010', 60],  // Limitation
+    ['110110', 61],  // Inner Truth
+    ['011011', 62],  // Small Exceeding
+    ['110111', 63],  // After Completion
+    ['111110', 64]   // Before Completion
+  ])
+
+  // Trigram to binary pattern mapping (bottom to top for 3 lines)
+  private trigramPatterns: Map<string, string> = new Map([
+    ['Heaven', '111'],
+    ['Earth', '000'],
+    ['Thunder', '100'],
+    ['Mountain', '001'],
+    ['Wind', '110'],
+    ['Water', '010'],
+    ['Fire', '101'],
+    ['Lake', '011']
+  ])
+
+  // Trigram pair to hexagram number lookup
+  // Format: "UpperTrigram-LowerTrigram" -> hexagram number
+  private trigramPairLookup: Map<string, number> = new Map([
+    ['Heaven-Heaven', 1],
+    ['Earth-Earth', 2],
+    ['Water-Thunder', 3],
+    ['Mountain-Water', 4],
+    ['Water-Heaven', 5],
+    ['Heaven-Water', 6],
+    ['Earth-Water', 7],
+    ['Water-Earth', 8],
+    ['Wind-Heaven', 9],
+    ['Heaven-Lake', 10],
+    ['Earth-Heaven', 11],
+    ['Heaven-Earth', 12],
+    ['Heaven-Fire', 13],
+    ['Fire-Heaven', 14],
+    ['Earth-Mountain', 15],
+    ['Thunder-Earth', 16],
+    ['Lake-Thunder', 17],
+    ['Mountain-Wind', 18],
+    ['Earth-Lake', 19],
+    ['Wind-Earth', 20],
+    ['Fire-Thunder', 21],
+    ['Mountain-Fire', 22],
+    ['Earth-Mountain', 23],
+    ['Thunder-Earth', 24],
+    ['Thunder-Heaven', 25],
+    ['Mountain-Heaven', 26],
+    ['Mountain-Thunder', 27],
+    ['Lake-Wind', 28],
+    ['Water-Water', 29],
+    ['Fire-Fire', 30],
+    ['Mountain-Lake', 31],
+    ['Thunder-Thunder', 32],
+    ['Mountain-Heaven', 33],
+    ['Thunder-Lake', 34],
+    ['Fire-Earth', 35],
+    ['Fire-Lake', 36],
+    ['Wind-Fire', 37],
+    ['Fire-Wind', 38],
+    ['Mountain-Water', 39],
+    ['Water-Thunder', 40],
+    ['Mountain-Lake', 41],
+    ['Thunder-Wind', 42],
+    ['Lake-Heaven', 43],
+    ['Wind-Heaven', 44],
+    ['Lake-Earth', 45],
+    ['Wind-Earth', 46],
+    ['Lake-Water', 47],
+    ['Water-Wind', 48],
+    ['Fire-Water', 49],
+    ['Wind-Fire', 50],
+    ['Thunder-Thunder', 51],
+    ['Mountain-Mountain', 52],
+    ['Wind-Thunder', 53],
+    ['Thunder-Lake', 54],
+    ['Thunder-Fire', 55],
+    ['Fire-Mountain', 56],
+    ['Wind-Wind', 57],
+    ['Lake-Lake', 58],
+    ['Wind-Water', 59],
+    ['Water-Lake', 60],
+    ['Lake-Wind', 61],
+    ['Thunder-Mountain', 62],
+    ['Water-Fire', 63],
+    ['Fire-Water', 64]
+  ])
+
   async consultIChing(question: string, method: 'coins' | 'yarrow' | 'random'): Promise<IChingAnalysis> {
-    // Generate hexagram with changing lines
-    const hexagram = await this.generateHexagram(method)
+    console.log('🔮 ichingIntelligence: consultIChing called', { question, method });
     
-    // Analyze timing
-    const timing = this.analyzeTiming(hexagram)
-    
-    // Generate interpretation
-    const interpretation = this.generateInterpretation(question, hexagram)
-    
-    // Analyze elements
-    const elements = this.analyzeElements(hexagram)
-    
-    // Analyze trigrams
-    const trigramAnalysis = this.analyzeTrigrams(hexagram)
-    
-    // Analyze changing lines
-    const changingLines = this.analyzeChangingLines(hexagram)
-    
-    // Generate recommendations
-    const recommendations = this.generateRecommendations(hexagram, interpretation)
-    
-    // Generate coaching insights
-    const coaching = this.generateCoaching(hexagram, interpretation)
+    try {
+      // Generate hexagram with changing lines
+      console.log('🔮 ichingIntelligence: Generating hexagram with method:', method);
+      const hexagram = await this.generateHexagram(method)
+      console.log('✅ ichingIntelligence: Hexagram generated:', {
+        number: hexagram.number,
+        name: hexagram.name,
+        linesCount: hexagram.lines?.length || 0,
+        changingLinesCount: hexagram.changingLines?.length || 0
+      });
+      
+      // Analyze timing
+      console.log('🔮 ichingIntelligence: Analyzing timing...');
+      const timing = this.analyzeTiming(hexagram)
+      
+      // Generate interpretation
+      console.log('🔮 ichingIntelligence: Generating interpretation...');
+      const interpretation = this.generateInterpretation(question, hexagram)
+      
+      // Analyze elements
+      console.log('🔮 ichingIntelligence: Analyzing elements...');
+      const elements = this.analyzeElements(hexagram)
+      
+      // Analyze trigrams
+      console.log('🔮 ichingIntelligence: Analyzing trigrams...');
+      const trigramAnalysis = this.analyzeTrigrams(hexagram)
+      
+      // Analyze changing lines
+      console.log('🔮 ichingIntelligence: Analyzing changing lines...');
+      const changingLines = this.analyzeChangingLines(hexagram)
+      
+      // Generate recommendations
+      console.log('🔮 ichingIntelligence: Generating recommendations...');
+      const recommendations = this.generateRecommendations(hexagram, interpretation)
+      
+      // Generate coaching insights
+      console.log('🔮 ichingIntelligence: Generating coaching insights...');
+      const coaching = this.generateCoaching(hexagram, interpretation)
 
-    const analysis: IChingAnalysis = {
-      id: Date.now().toString(),
-      timestamp: new Date(),
-      question,
-      method,
-      hexagram,
-      timing,
-      interpretation,
-      elements,
-      trigramAnalysis,
-      changingLines,
-      confidenceLevel: 94,
-      recommendations,
-      coaching
+      const analysis: IChingAnalysis = {
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        question,
+        method,
+        hexagram,
+        timing,
+        interpretation,
+        elements,
+        trigramAnalysis,
+        changingLines,
+        confidenceLevel: 94,
+        recommendations,
+        coaching
+      }
+
+      console.log('✅ ichingIntelligence: Analysis object created successfully:', {
+        id: analysis.id,
+        hexagramNumber: analysis.hexagram.number,
+        hexagramName: analysis.hexagram.name,
+        hasInterpretation: !!analysis.interpretation,
+        recommendationsCount: analysis.recommendations.length
+      });
+
+      return analysis
+    } catch (error: any) {
+      console.error('❌ ichingIntelligence: Error in consultIChing:', error);
+      console.error('❌ ichingIntelligence: Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      throw error;
     }
+  }
 
-    return analysis
+  /**
+   * Three Coins Method
+   * Each coin: heads (3) or tails (2)
+   * Three coins sum: 6 = old yin (changing), 7 = young yang, 8 = young yin, 9 = old yang (changing)
+   * Probabilities: 6 (12.5%), 7 (37.5%), 8 (37.5%), 9 (12.5%)
+   */
+  private throwThreeCoins(): { value: number; isChanging: boolean; yinYang: 'yin' | 'yang' } {
+    const coin1 = Math.random() < 0.5 ? 2 : 3  // tails or heads
+    const coin2 = Math.random() < 0.5 ? 2 : 3
+    const coin3 = Math.random() < 0.5 ? 2 : 3
+    const sum = coin1 + coin2 + coin3
+    
+    // 6 = old yin (changing), 9 = old yang (changing)
+    // 7 = young yang, 8 = young yin
+    if (sum === 6) {
+      return { value: 6, isChanging: true, yinYang: 'yin' }
+    } else if (sum === 7) {
+      return { value: 7, isChanging: false, yinYang: 'yang' }
+    } else if (sum === 8) {
+      return { value: 8, isChanging: false, yinYang: 'yin' }
+    } else { // sum === 9
+      return { value: 9, isChanging: true, yinYang: 'yang' }
+    }
+  }
+
+  /**
+   * Yarrow Stalks Method (simplified for computational accuracy)
+   * Old yin (6): 1/16 probability
+   * Young yang (7): 5/16 probability
+   * Young yin (8): 7/16 probability
+   * Old yang (9): 3/16 probability
+   */
+  private throwYarrowStalks(): { value: number; isChanging: boolean; yinYang: 'yin' | 'yang' } {
+    const random = Math.random()
+    
+    // Cumulative probabilities
+    if (random < 1/16) {
+      return { value: 6, isChanging: true, yinYang: 'yin' }  // 1/16 = 6.25%
+    } else if (random < 6/16) {
+      return { value: 7, isChanging: false, yinYang: 'yang' }  // 5/16 = 31.25%
+    } else if (random < 13/16) {
+      return { value: 8, isChanging: false, yinYang: 'yin' }  // 7/16 = 43.75%
+    } else {
+      return { value: 9, isChanging: true, yinYang: 'yang' }  // 3/16 = 18.75%
+    }
+  }
+
+  /**
+   * Generate 6 lines using the specified method
+   */
+  private generateLines(method: 'coins' | 'yarrow' | 'random'): Array<{ value: number; isChanging: boolean; yinYang: 'yin' | 'yang'; position: number }> {
+    const lines: Array<{ value: number; isChanging: boolean; yinYang: 'yin' | 'yang'; position: number }> = []
+    
+    for (let position = 1; position <= 6; position++) {
+      let result
+      if (method === 'coins') {
+        result = this.throwThreeCoins()
+      } else if (method === 'yarrow') {
+        result = this.throwYarrowStalks()
+      } else { // random - use equal probabilities
+        const rand = Math.random()
+        if (rand < 0.25) {
+          result = { value: 6, isChanging: true, yinYang: 'yin' }
+        } else if (rand < 0.5) {
+          result = { value: 7, isChanging: false, yinYang: 'yang' }
+        } else if (rand < 0.75) {
+          result = { value: 8, isChanging: false, yinYang: 'yin' }
+        } else {
+          result = { value: 9, isChanging: true, yinYang: 'yang' }
+        }
+      }
+      lines.push({ ...result, position })
+    }
+    
+    return lines
+  }
+
+  /**
+   * Convert lines array to binary pattern string (bottom to top)
+   */
+  private linesToPattern(lines: Array<{ yinYang: 'yin' | 'yang' }>): string {
+    return lines.map(line => line.yinYang === 'yang' ? '1' : '0').join('')
+  }
+
+  /**
+   * Look up hexagram number from binary pattern
+   */
+  private patternToHexagramNumber(pattern: string): number {
+    const hexagramNum = this.hexagramLookup.get(pattern)
+    if (hexagramNum) {
+      return hexagramNum
+    }
+    // Fallback: try to find by trigrams if pattern doesn't match exactly
+    // This shouldn't happen with correct patterns, but provide safety
+    return 1 // Default to The Creative
+  }
+
+  /**
+   * Get hexagram data by number (with fallback for missing hexagrams)
+   */
+  private getHexagramByNumber(number: number): Omit<IChingHexagram, 'lines' | 'changingLines' | 'changingTo' | 'trigramUpper' | 'trigramLower' | 'elementUpper' | 'elementLower'> {
+    const hexagram = this.hexagrams.find(h => h.number === number)
+    if (hexagram) {
+      return hexagram
+    }
+    
+    // Hexagram name lookup for missing hexagrams (21-64)
+    const hexagramNames: Record<number, { name: string; chinese: string; pinyin: string; trigram: string; element: string; meaning: string }> = {
+      21: { name: "Biting Through", chinese: "噬嗑", pinyin: "Shì Kè", trigram: "Fire over Thunder", element: "Fire", meaning: "Justice, Resolution" },
+      22: { name: "Grace", chinese: "賁", pinyin: "Bì", trigram: "Mountain over Fire", element: "Earth", meaning: "Beauty, Adornment" },
+      23: { name: "Splitting Apart", chinese: "剝", pinyin: "Bō", trigram: "Earth over Mountain", element: "Earth", meaning: "Decay, Breakdown" },
+      24: { name: "Return", chinese: "復", pinyin: "Fù", trigram: "Thunder over Earth", element: "Wood", meaning: "Turning Point, Revival" },
+      25: { name: "Innocence", chinese: "無妄", pinyin: "Wú Wàng", trigram: "Thunder over Heaven", element: "Wood", meaning: "Spontaneity, Naturalness" },
+      26: { name: "Great Taming", chinese: "大畜", pinyin: "Dà Chù", trigram: "Mountain over Heaven", element: "Earth", meaning: "Great Accumulation, Restraint" },
+      27: { name: "Nourishment", chinese: "頤", pinyin: "Yí", trigram: "Mountain over Thunder", element: "Earth", meaning: "Nourishment, Self-Care" },
+      28: { name: "Great Exceeding", chinese: "大過", pinyin: "Dà Guò", trigram: "Lake over Wind", element: "Metal", meaning: "Great Excess, Overextension" },
+      29: { name: "The Abysmal Water", chinese: "坎", pinyin: "Kǎn", trigram: "Water over Water", element: "Water", meaning: "Danger, Depth" },
+      30: { name: "The Clinging Fire", chinese: "離", pinyin: "Lí", trigram: "Fire over Fire", element: "Fire", meaning: "Clarity, Illumination" },
+      31: { name: "Influence", chinese: "咸", pinyin: "Xián", trigram: "Mountain over Lake", element: "Earth", meaning: "Attraction, Interaction" },
+      32: { name: "Duration", chinese: "恆", pinyin: "Héng", trigram: "Thunder over Thunder", element: "Wood", meaning: "Persistence, Constancy" },
+      33: { name: "Retreat", chinese: "遯", pinyin: "Dùn", trigram: "Mountain over Heaven", element: "Earth", meaning: "Withdrawal, Retreat" },
+      34: { name: "Great Power", chinese: "大壯", pinyin: "Dà Zhuàng", trigram: "Thunder over Lake", element: "Wood", meaning: "Great Strength, Power" },
+      35: { name: "Progress", chinese: "晉", pinyin: "Jìn", trigram: "Fire over Earth", element: "Fire", meaning: "Advancement, Progress" },
+      36: { name: "Darkening of the Light", chinese: "明夷", pinyin: "Míng Yí", trigram: "Fire over Lake", element: "Fire", meaning: "Eclipse, Concealment" },
+      37: { name: "The Family", chinese: "家人", pinyin: "Jiā Rén", trigram: "Wind over Fire", element: "Wood", meaning: "Family, Household" },
+      38: { name: "Opposition", chinese: "睽", pinyin: "Kuí", trigram: "Fire over Wind", element: "Fire", meaning: "Separation, Opposition" },
+      39: { name: "Obstruction", chinese: "蹇", pinyin: "Jiǎn", trigram: "Mountain over Water", element: "Earth", meaning: "Difficulty, Obstacle" },
+      40: { name: "Deliverance", chinese: "解", pinyin: "Jiě", trigram: "Water over Thunder", element: "Water", meaning: "Release, Liberation" },
+      41: { name: "Decrease", chinese: "損", pinyin: "Sǔn", trigram: "Mountain over Lake", element: "Earth", meaning: "Reduction, Loss" },
+      42: { name: "Increase", chinese: "益", pinyin: "Yì", trigram: "Thunder over Wind", element: "Wood", meaning: "Growth, Benefit" },
+      43: { name: "Breakthrough", chinese: "夬", pinyin: "Guài", trigram: "Lake over Heaven", element: "Metal", meaning: "Resolution, Decision" },
+      44: { name: "Coming to Meet", chinese: "姤", pinyin: "Gòu", trigram: "Wind over Heaven", element: "Wood", meaning: "Encounter, Meeting" },
+      45: { name: "Gathering Together", chinese: "萃", pinyin: "Cuì", trigram: "Lake over Earth", element: "Metal", meaning: "Assembly, Gathering" },
+      46: { name: "Pushing Upward", chinese: "升", pinyin: "Shēng", trigram: "Wind over Earth", element: "Wood", meaning: "Ascension, Rise" },
+      47: { name: "Oppression", chinese: "困", pinyin: "Kùn", trigram: "Lake over Water", element: "Metal", meaning: "Exhaustion, Hardship" },
+      48: { name: "The Well", chinese: "井", pinyin: "Jǐng", trigram: "Water over Wind", element: "Water", meaning: "Source, Nourishment" },
+      49: { name: "Revolution", chinese: "革", pinyin: "Gé", trigram: "Fire over Water", element: "Fire", meaning: "Transformation, Change" },
+      50: { name: "The Cauldron", chinese: "鼎", pinyin: "Dǐng", trigram: "Wind over Fire", element: "Wood", meaning: "Nourishment, Transformation" },
+      51: { name: "The Arousing Thunder", chinese: "震", pinyin: "Zhèn", trigram: "Thunder over Thunder", element: "Wood", meaning: "Shock, Arousal" },
+      52: { name: "Keeping Still Mountain", chinese: "艮", pinyin: "Gèn", trigram: "Mountain over Mountain", element: "Earth", meaning: "Stillness, Restraint" },
+      53: { name: "Development", chinese: "漸", pinyin: "Jiàn", trigram: "Wind over Thunder", element: "Wood", meaning: "Gradual Progress" },
+      54: { name: "The Marrying Maiden", chinese: "歸妹", pinyin: "Guī Mèi", trigram: "Thunder over Lake", element: "Wood", meaning: "Marriage, Union" },
+      55: { name: "Abundance", chinese: "豐", pinyin: "Fēng", trigram: "Thunder over Fire", element: "Wood", meaning: "Abundance, Fullness" },
+      56: { name: "The Wanderer", chinese: "旅", pinyin: "Lǚ", trigram: "Fire over Mountain", element: "Fire", meaning: "Travel, Wandering" },
+      57: { name: "The Gentle Wind", chinese: "巽", pinyin: "Xùn", trigram: "Wind over Wind", element: "Wood", meaning: "Penetration, Gentleness" },
+      58: { name: "The Joyous Lake", chinese: "兌", pinyin: "Duì", trigram: "Lake over Lake", element: "Metal", meaning: "Joy, Pleasure" },
+      59: { name: "Dispersion", chinese: "渙", pinyin: "Huàn", trigram: "Wind over Water", element: "Wood", meaning: "Dispersion, Dissolution" },
+      60: { name: "Limitation", chinese: "節", pinyin: "Jié", trigram: "Water over Lake", element: "Water", meaning: "Moderation, Restraint" },
+      61: { name: "Inner Truth", chinese: "中孚", pinyin: "Zhōng Fú", trigram: "Lake over Wind", element: "Metal", meaning: "Sincerity, Truth" },
+      62: { name: "Small Exceeding", chinese: "小過", pinyin: "Xiǎo Guò", trigram: "Thunder over Mountain", element: "Wood", meaning: "Small Excess, Moderation" },
+      63: { name: "After Completion", chinese: "既濟", pinyin: "Jì Jì", trigram: "Water over Fire", element: "Water", meaning: "Completion, Success" },
+      64: { name: "Before Completion", chinese: "未濟", pinyin: "Wèi Jì", trigram: "Fire over Water", element: "Fire", meaning: "Before Completion, Transition" }
+    };
+    
+    // Use lookup table if available
+    const hexagramData = hexagramNames[number];
+    if (hexagramData) {
+      return {
+        number,
+        name: hexagramData.name,
+        chinese: hexagramData.chinese,
+        pinyin: hexagramData.pinyin,
+        trigram: hexagramData.trigram,
+        element: hexagramData.element,
+        meaning: hexagramData.meaning,
+        description: `${hexagramData.name} (${hexagramData.chinese}) represents ${hexagramData.meaning.toLowerCase()}.`
+      };
+    }
+    
+    // Final fallback - should never happen if lookup table is complete
+    console.warn(`⚠️ ichingIntelligence: Hexagram ${number} not found in lookup table, using generic fallback`);
+    return {
+      number,
+      name: `Hexagram ${number}`,
+      chinese: '未知',
+      pinyin: 'Wèi Zhī',
+      trigram: 'Unknown',
+      element: 'Unknown',
+      meaning: `Hexagram ${number}`,
+      description: `This is hexagram ${number} of the I Ching.`
+    }
+  }
+
+  /**
+   * Transform hexagram by changing lines
+   * Old yin (6) becomes young yang (7), old yang (9) becomes young yin (8)
+   */
+  private transformHexagram(lines: Array<{ value: number; isChanging: boolean; yinYang: 'yin' | 'yang'; position: number }>): string {
+    const transformedLines = lines.map(line => {
+      if (line.isChanging) {
+        // Flip: old yin -> yang, old yang -> yin
+        return { yinYang: line.yinYang === 'yin' ? 'yang' : 'yin' as 'yin' | 'yang' }
+      } else {
+        return { yinYang: line.yinYang }
+      }
+    })
+    return this.linesToPattern(transformedLines)
   }
 
   private async generateHexagram(method: 'coins' | 'yarrow' | 'random'): Promise<IChingHexagram> {
-    // Select random hexagram
-    const baseHexagram = this.hexagrams[Math.floor(Math.random() * this.hexagrams.length)]
+    console.log('🔮 ichingIntelligence: generateHexagram started with method:', method);
     
-    // Generate lines with changing properties
-    const lines = []
-    const changingLines: number[] = []
+    // Generate 6 lines using the specified method (from bottom to top)
+    console.log('🔮 ichingIntelligence: Generating 6 lines...');
+    const lineResults = this.generateLines(method)
+    console.log('✅ ichingIntelligence: Lines generated:', lineResults.map(l => `${l.position}:${l.yinYang}${l.isChanging ? ' (changing)' : ''}`));
     
-    for (let i = 1; i <= 6; i++) {
-      const isChanging = Math.random() < 0.3 // 30% chance of changing line
-      const isYin = Math.random() < 0.5
-      
-      if (isChanging) {
-        changingLines.push(i)
-      }
-      
-      lines.push({
-        position: i,
-        text: this.generateLineText(baseHexagram.name, i, isYin),
-        meaning: this.generateLineMeaning(baseHexagram.name, i, isYin),
-        changing: isChanging,
-        yinYang: isYin ? 'yin' : 'yang',
-        element: this.getLineElement(baseHexagram.element, i)
-      })
-    }
+    // Create pattern string (bottom to top)
+    const pattern = this.linesToPattern(lineResults)
+    console.log('🔮 ichingIntelligence: Pattern created:', pattern);
+    
+    // Look up hexagram number from pattern
+    const hexagramNumber = this.patternToHexagramNumber(pattern)
+    console.log('🔮 ichingIntelligence: Hexagram number looked up:', hexagramNumber);
+    
+    // Get hexagram data
+    const baseHexagram = this.getHexagramByNumber(hexagramNumber)
+    console.log('✅ ichingIntelligence: Base hexagram retrieved:', { number: baseHexagram.number, name: baseHexagram.name });
+    
+    // Extract changing line positions
+    const changingLines = lineResults
+      .filter(line => line.isChanging)
+      .map(line => line.position)
+    
+    // Build lines array with full data
+    const lines = lineResults.map(line => ({
+      position: line.position,
+      text: this.generateLineText(baseHexagram.name, line.position, line.yinYang === 'yin'),
+      meaning: this.generateLineMeaning(baseHexagram.name, line.position, line.yinYang === 'yin'),
+      changing: line.isChanging,
+      yinYang: line.yinYang,
+      element: this.getLineElement(baseHexagram.element, line.position)
+    }))
 
-    // Determine trigram components
+    // Determine trigram components from lines
     const trigramUpper = this.getTrigramFromLines(lines.slice(3, 6))
     const trigramLower = this.getTrigramFromLines(lines.slice(0, 3))
     const elementUpper = this.trigrams[trigramUpper as keyof typeof this.trigrams]?.element || 'Unknown'
@@ -381,19 +774,42 @@ class IChingIntelligence {
     // Generate changing hexagram if there are changing lines
     let changingTo: IChingHexagram | undefined
     if (changingLines.length > 0) {
-      const changingHexagram = this.hexagrams[Math.floor(Math.random() * this.hexagrams.length)]
+      // Transform the pattern by flipping changing lines
+      const transformedPattern = this.transformHexagram(lineResults)
+      const transformedHexagramNumber = this.patternToHexagramNumber(transformedPattern)
+      const transformedBaseHexagram = this.getHexagramByNumber(transformedHexagramNumber)
+      
+      // Create transformed lines (changing lines flipped, no longer changing)
+      const transformedLineResults = lineResults.map(line => ({
+        ...line,
+        isChanging: false,
+        yinYang: line.isChanging ? (line.yinYang === 'yin' ? 'yang' : 'yin') as 'yin' | 'yang' : line.yinYang
+      }))
+      
+      const transformedLines = transformedLineResults.map(line => ({
+        position: line.position,
+        text: this.generateLineText(transformedBaseHexagram.name, line.position, line.yinYang === 'yin'),
+        meaning: this.generateLineMeaning(transformedBaseHexagram.name, line.position, line.yinYang === 'yin'),
+        changing: false,
+        yinYang: line.yinYang,
+        element: this.getLineElement(transformedBaseHexagram.element, line.position)
+      }))
+      
+      const transformedTrigramUpper = this.getTrigramFromLines(transformedLines.slice(3, 6))
+      const transformedTrigramLower = this.getTrigramFromLines(transformedLines.slice(0, 3))
+      
       changingTo = {
-        ...changingHexagram,
-        lines: lines.map(line => ({ ...line, changing: false })),
+        ...transformedBaseHexagram,
+        lines: transformedLines,
         changingLines: [],
-        trigramUpper,
-        trigramLower,
-        elementUpper,
-        elementLower
+        trigramUpper: transformedTrigramUpper,
+        trigramLower: transformedTrigramLower,
+        elementUpper: this.trigrams[transformedTrigramUpper as keyof typeof this.trigrams]?.element || 'Unknown',
+        elementLower: this.trigrams[transformedTrigramLower as keyof typeof this.trigrams]?.element || 'Unknown'
       }
     }
 
-    return {
+    const hexagramResult = {
       ...baseHexagram,
       lines,
       changingLines,
@@ -402,7 +818,45 @@ class IChingIntelligence {
       trigramLower,
       elementUpper,
       elementLower
+    };
+    
+    // Validate hexagram structure
+    if (!hexagramResult.lines || !Array.isArray(hexagramResult.lines) || hexagramResult.lines.length !== 6) {
+      console.error('❌ ichingIntelligence: Invalid lines array:', hexagramResult.lines);
+      throw new Error(`Invalid hexagram lines: expected 6 lines, got ${hexagramResult.lines?.length || 0}`);
     }
+    
+    if (!hexagramResult.number || !hexagramResult.name || !hexagramResult.chinese) {
+      console.error('❌ ichingIntelligence: Missing required hexagram fields:', {
+        hasNumber: !!hexagramResult.number,
+        hasName: !!hexagramResult.name,
+        hasChinese: !!hexagramResult.chinese
+      });
+      throw new Error('Invalid hexagram: missing required fields');
+    }
+    
+    // Validate each line has required properties
+    hexagramResult.lines.forEach((line, idx) => {
+      if (!line.hasOwnProperty('yinYang') || !line.hasOwnProperty('changing') || !line.hasOwnProperty('position')) {
+        console.error(`❌ ichingIntelligence: Invalid line at index ${idx}:`, line);
+        throw new Error(`Invalid line structure at position ${idx}`);
+      }
+    });
+    
+    console.log('✅ ichingIntelligence: Hexagram generation complete and validated:', {
+      number: hexagramResult.number,
+      name: hexagramResult.name,
+      chinese: hexagramResult.chinese,
+      pinyin: hexagramResult.pinyin,
+      linesCount: hexagramResult.lines.length,
+      changingLinesCount: hexagramResult.changingLines.length,
+      hasChangingTo: !!hexagramResult.changingTo,
+      trigramUpper: hexagramResult.trigramUpper,
+      trigramLower: hexagramResult.trigramLower,
+      allLinesValid: hexagramResult.lines.every(l => l.yinYang && l.hasOwnProperty('changing'))
+    });
+    
+    return hexagramResult;
   }
 
   private generateLineText(hexagramName: string, position: number, isYin: boolean): string {

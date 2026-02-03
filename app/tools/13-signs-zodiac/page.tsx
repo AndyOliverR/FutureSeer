@@ -19,7 +19,7 @@ export default function ThirteenSignsZodiacPage() {
   const [activeTab, setActiveTab] = useState("overview")
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-4 starfield-ultra-sharp">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div

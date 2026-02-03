@@ -23,7 +23,6 @@ export interface UserSystemData {
   financialAstrology?: any
   mundaneAstrology?: any
   horaryAstrology?: any
-  hellenisticAstrology?: any
   synastry?: any
   
   // Numerology Data
@@ -235,16 +234,19 @@ function generateVedicRemedies(vedicData: any, question: string): ComprehensiveR
 function generateWesternRemedies(westernData: any, question: string): ComprehensiveRemedy[] {
   const remedies: ComprehensiveRemedy[] = []
   
-  // Sun sign remedies
+  // Note: Western astrology uses psychological and practical approaches, NOT ritualistic remedies
+  // Focus on self-awareness, mindfulness, lifestyle adjustments, and conscious engagement
+  
+  // Sun sign psychological practices
   if (westernData.sunSign) {
     const sunSignRemedy = ASTROLOGICAL_REMEDIES.western.sunSignRemedies[westernData.sunSign.toLowerCase()]
     if (sunSignRemedy) {
       remedies.push({
         id: `western_sun_${westernData.sunSign}`,
         system: 'Western Astrology',
-        category: 'Sun Sign Enhancement',
+        category: 'Sun Sign Self-Awareness Practice',
         title: sunSignRemedy.title,
-        description: sunSignRemedy.description,
+        description: `${sunSignRemedy.description} Western astrology emphasizes self-knowledge and conscious engagement with your planetary energies rather than external rituals.`,
         icon: 'sun',
         priority: 'medium',
         instructions: sunSignRemedy.instructions,
@@ -252,6 +254,7 @@ function generateWesternRemedies(westernData: any, question: string): Comprehens
         astrologicalTriggers: [westernData.sunSign],
         planetaryRulers: sunSignRemedy.planetaryRulers,
         elementalAssociations: sunSignRemedy.elementalAssociations,
+        modernUses: sunSignRemedy.modernUses || ['Personal growth', 'Self-awareness', 'Psychological development'],
         cost: 'low',
         difficulty: 'beginner'
       })

@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, CheckCircle, Clock, TrendingUp, Users, MessageCircle, Star, Zap, Filter, Search, Flag, Archive, Pin, Crown } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { Header } from '@/components/header';
 
 interface DiscussionThread {
   id: string;
@@ -40,7 +41,7 @@ interface CommunityStats {
 }
 
 export default function CommunityManagementPage() {
-  const { user } = useAuth();
+  const { user, isSuperadmin, isAdmin, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [discussions, setDiscussions] = useState<DiscussionThread[]>([]);
   const [filteredDiscussions, setFilteredDiscussions] = useState<DiscussionThread[]>([]);
@@ -239,9 +240,9 @@ export default function CommunityManagementPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
           <p className="text-amber-200">Loading community management dashboard...</p>
@@ -250,14 +251,14 @@ export default function CommunityManagementPage() {
     );
   }
 
-  if (!user?.isSuperadmin) {
+  if (!isSuperadmin && !isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Card className="w-96 bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
           <CardContent className="p-6 text-center">
             <Crown className="w-12 h-12 text-amber-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-amber-200 mb-2">Admin Access Required</h2>
-            <p className="text-gray-400 mb-4">You need superadmin privileges to access this page</p>
+            <p className="text-gray-400 mb-4">You need admin or superadmin privileges to access this page</p>
           </CardContent>
         </Card>
       </div>
@@ -265,7 +266,8 @@ export default function CommunityManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950">
+    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
+      <Header />
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">

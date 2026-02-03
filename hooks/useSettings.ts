@@ -47,6 +47,17 @@ export function useSettings() {
     }
   }, [userProfile]);
 
+  // Sync notification settings from Firestore to local state when userProfile loads
+  useEffect(() => {
+    if (userProfile) {
+      setSettings(prev => ({
+        ...prev,
+        ...(userProfile.notificationsEnabled !== undefined && { notifications: userProfile.notificationsEnabled }),
+        ...(userProfile.emailUpdates !== undefined && { emailUpdates: userProfile.emailUpdates }),
+      }));
+    }
+  }, [userProfile?.notificationsEnabled, userProfile?.emailUpdates]);
+
   // Apply theme to document
   const applyTheme = useCallback((theme: 'light' | 'dark' | 'system') => {
     const root = document.documentElement;

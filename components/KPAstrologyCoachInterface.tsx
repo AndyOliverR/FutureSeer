@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { kpAstrologyIntelligence, KPAnalysis, KPQuestion, KPAnswer } from '@/lib/kpAstrologyIntelligence'
 import { 
   Send, 
   Target, 
@@ -24,10 +25,14 @@ interface KPMessage {
   type: 'user' | 'coach'
   content: string
   timestamp: Date
-  coachingResponse?: any
+  coachingResponse?: KPAnswer
 }
 
-export function KPAstrologyCoachInterface() {
+interface KPAstrologyCoachInterfaceProps {
+  analysis?: KPAnalysis | null
+}
+
+export function KPAstrologyCoachInterface({ analysis }: KPAstrologyCoachInterfaceProps) {
   const { user } = useAuth()
   const [messages, setMessages] = useState<KPMessage[]>([])
   const [inputValue, setInputValue] = useState('')
@@ -54,8 +59,28 @@ export function KPAstrologyCoachInterface() {
     inputRef.current?.focus()
   }, [])
 
+  // Helper function to determine question category
+  const determineCategory = (question: string): KPQuestion['category'] => {
+    const lower = question.toLowerCase()
+    if (lower.includes('career') || lower.includes('job') || lower.includes('work') || lower.includes('profession')) return 'career'
+    if (lower.includes('relationship') || lower.includes('marriage') || lower.includes('love') || lower.includes('partner')) return 'relationships'
+    if (lower.includes('health') || lower.includes('illness') || lower.includes('medical') || lower.includes('disease')) return 'health'
+    if (lower.includes('wealth') || lower.includes('money') || lower.includes('financial') || lower.includes('finance')) return 'wealth'
+    if (lower.includes('education') || lower.includes('study') || lower.includes('learn') || lower.includes('school')) return 'education'
+    if (lower.includes('travel') || lower.includes('journey') || lower.includes('trip') || lower.includes('foreign')) return 'travel'
+    return 'general'
+  }
+
+  // Helper function to determine urgency
+  const determineUrgency = (question: string): KPQuestion['urgency'] => {
+    const lower = question.toLowerCase()
+    if (lower.includes('urgent') || lower.includes('immediate') || lower.includes('now') || lower.includes('asap')) return 'high'
+    if (lower.includes('soon') || lower.includes('near future') || lower.includes('coming')) return 'medium'
+    return 'low'
+  }
+
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || !user || isLoading) return
+    if (!inputValue.trim() || !user || isLoading || !analysis) return
 
     const userMessage: KPMessage = {
       id: Date.now().toString(),
@@ -65,24 +90,27 @@ export function KPAstrologyCoachInterface() {
     }
 
     setMessages(prev => [...prev, userMessage])
+    const questionText = inputValue.trim()
     setInputValue('')
     setIsLoading(true)
 
     try {
-      // Mock response for now - replace with actual KP intelligence
-      const mockResponse = {
-        guidance: `In KP Astrology, your question about "${inputValue.trim()}" would be analyzed through the precise system of sub-lords and cusps. The Krishnamurti Paddhati method provides exact timing predictions by examining the sublord of the significator and its connection to the cusps. This system is renowned for its mathematical precision in predicting the timing of events.`,
-        subLords: ['Mars', 'Venus', 'Saturn'],
-        cusps: ['1st House', '7th House', '10th House'],
-        timing: 'Next 3-6 months'
+      // Create KP question
+      const question: KPQuestion = {
+        question: questionText,
+        category: determineCategory(questionText),
+        urgency: determineUrgency(questionText)
       }
+
+      // Get answer from KP intelligence service
+      const answer = await kpAstrologyIntelligence.answerQuestion(analysis, question)
 
       const coachMessage: KPMessage = {
         id: (Date.now() + 1).toString(),
         type: 'coach',
-        content: mockResponse.guidance,
+        content: answer.answer,
         timestamp: new Date(),
-        coachingResponse: mockResponse
+        coachingResponse: answer
       }
 
       setMessages(prev => [...prev, coachMessage])
@@ -121,9 +149,14 @@ export function KPAstrologyCoachInterface() {
             <Target className="w-5 h-5" />
             Your KP Astrology Guide
           </CardTitle>
-          <p className="text-sm text-slate-400">
-            Ask me about Krishnamurti Paddhati predictions and precise timing analysis.
+          <p className="text-sm text-white/80">
+            Ask me about Krishnamurti Paddhati predictions and precise timing analysis based on sub-lords and cusps.
           </p>
+          {!analysis && (
+            <p className="text-sm text-yellow-400/80 mt-2">
+              Please generate your KP chart first to get personalized answers.
+            </p>
+          )}
         </CardHeader>
       </Card>
 
@@ -136,23 +169,26 @@ export function KPAstrologyCoachInterface() {
               <div className="text-center py-8">
                 <MessageCircle className="w-12 h-12 text-purple-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-white mb-2">Begin Your KP Journey</h3>
-                <p className="text-slate-400 mb-6">
-                  I'm here to guide you through the precise predictions of Krishnamurti Paddhati.
+                <p className="text-white/80 mb-6">
+                  I'm here to guide you through the precise predictions of Krishnamurti Paddhati using sub-lords and timing analysis.
                 </p>
                 
                 {/* Suggested Questions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto px-4">
                   {suggestedQuestions.map((question, index) => (
-                    <Button
+                    <button
                       key={index}
-                      variant="outline"
-                      size="sm"
-                      className="text-left h-auto p-3 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-purple-500"
                       onClick={() => handleSuggestedQuestion(question)}
+                      disabled={!analysis}
+                      className="group relative text-left h-auto p-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed
+                        bg-slate-900/60 backdrop-blur-sm border border-purple-500/30 text-white/90 
+                        hover:bg-slate-800/80 hover:border-purple-500/60 hover:text-white hover:shadow-lg hover:shadow-purple-500/20
+                        disabled:hover:bg-slate-900/60 disabled:hover:border-purple-500/30
+                        flex items-start gap-3 w-full"
                     >
-                      <Lightbulb className="w-4 h-4 mr-2 text-purple-400 flex-shrink-0" />
-                      <span className="text-xs">{question}</span>
-                    </Button>
+                      <Lightbulb className="w-4 h-4 mt-0.5 text-purple-400 flex-shrink-0 group-hover:text-purple-300 transition-colors" />
+                      <span className="text-sm leading-relaxed flex-1">{question}</span>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -167,18 +203,27 @@ export function KPAstrologyCoachInterface() {
                       className={`max-w-[80%] p-3 rounded-lg ${
                         message.type === 'user'
                           ? 'bg-purple-600 text-white'
-                          : 'bg-slate-700 text-slate-200'
+                          : 'bg-slate-700 text-white'
                       }`}
                     >
                       <p className="text-sm">{message.content}</p>
-                      {message.coachingResponse?.subLords && (
-                        <div className="mt-2 pt-2 border-t border-slate-600">
-                          <p className="text-xs text-slate-400">
-                            Sub-lords: {message.coachingResponse.subLords.join(', ')}
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            Timing: {message.coachingResponse.timing}
-                          </p>
+                      {message.coachingResponse && (
+                        <div className="mt-2 pt-2 border-t border-white/20">
+                          {message.coachingResponse.significators && message.coachingResponse.significators.length > 0 && (
+                            <p className="text-xs text-white/80 mb-1">
+                              <span className="text-yellow-400 font-medium">Significators:</span> {message.coachingResponse.significators.join(', ')}
+                            </p>
+                          )}
+                          {message.coachingResponse.timing && (
+                            <p className="text-xs text-white/80 mb-1">
+                              <span className="text-yellow-400 font-medium">Timing:</span> {message.coachingResponse.timing}
+                            </p>
+                          )}
+                          {message.coachingResponse.confidence && (
+                            <p className="text-xs text-white/70 mt-2">
+                              Confidence: <span className="text-green-400">{message.coachingResponse.confidence}%</span>
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -198,12 +243,12 @@ export function KPAstrologyCoachInterface() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask about KP predictions and timing..."
-                className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-purple-500"
-                disabled={isLoading || !user}
+                className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-white/70 focus:border-purple-500"
+                disabled={isLoading || !user || !analysis}
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading || !user}
+                disabled={!inputValue.trim() || isLoading || !user || !analysis}
                 className="bg-purple-600 hover:bg-purple-700 text-white"
               >
                 <Send className="w-4 h-4" />
@@ -219,7 +264,7 @@ export function KPAstrologyCoachInterface() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-purple-400" />
-              <span className="text-sm text-slate-300">Precise timing predictions</span>
+              <span className="text-sm text-white/90">Precise timing predictions</span>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="border-purple-500 text-purple-400">
@@ -228,6 +273,11 @@ export function KPAstrologyCoachInterface() {
               <Badge variant="outline" className="border-blue-500 text-blue-400">
                 Cusps
               </Badge>
+              {analysis?.timingAnalysis && (
+                <Badge variant="outline" className="border-yellow-500 text-yellow-400">
+                  {analysis.timingAnalysis.dasha} Dasha
+                </Badge>
+              )}
             </div>
           </div>
         </CardContent>

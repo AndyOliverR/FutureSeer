@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useIChing } from "@/hooks/use-iching"
+import { useAuth } from '@/hooks/use-auth'
+import { ichingIntelligence, IChingAnalysis, IChingCoaching } from '@/lib/ichingIntelligence'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
@@ -14,49 +14,50 @@ import {
   Heart, 
   Zap,
   BookOpen,
-  Brain,
-  Activity,
   Sparkles,
   ArrowRight,
   Clock,
-  Star,
-  Shield
+  Star
 } from 'lucide-react'
 
-export function IChingCoachInterface() {
-  const { ichingData, coaching, getCoaching, loading } = useIChing()
-  const [question, setQuestion] = useState('')
+interface IChingCoachInterfaceProps {
+  analysis: IChingAnalysis
+}
+
+export function IChingCoachInterface({ analysis }: IChingCoachInterfaceProps) {
+  const { user } = useAuth()
+  const [coachingQuestion, setCoachingQuestion] = useState('')
   const [isAsking, setIsAsking] = useState(false)
   const [currentResponse, setCurrentResponse] = useState<string | null>(null)
+  const [coachingHistory, setCoachingHistory] = useState<IChingCoaching[]>([])
 
   const handleAskQuestion = async () => {
-    if (!question.trim() || !ichingData) return
+    if (!coachingQuestion.trim()) return
 
     setIsAsking(true)
     setCurrentResponse(null)
 
     try {
-      const response = await getCoaching(question)
+      const response = await ichingIntelligence.getCoaching(coachingQuestion, analysis)
       if (response) {
         setCurrentResponse(response.response)
+        setCoachingHistory(prev => [response, ...prev])
+        
+        // Save to Firebase if user is authenticated
+        if (user && response) {
+          try {
+            await ichingIntelligence.saveCoaching(user.uid, response)
+          } catch (saveError) {
+            console.error('Failed to save coaching:', saveError)
+          }
+        }
       }
     } catch (error) {
       console.error('Error getting coaching:', error)
+      setCurrentResponse('I apologize, but I encountered an error while processing your question. Please try again.')
     } finally {
       setIsAsking(false)
     }
-  }
-
-  if (!ichingData) {
-    return (
-      <Card className="bg-slate-800/50 border-slate-600">
-        <CardContent className="p-6 text-center">
-          <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No I Ching Data</h3>
-          <p className="text-slate-400">Complete your profile to access I Ching coaching</p>
-        </CardContent>
-      </Card>
-    )
   }
 
   return (
@@ -80,14 +81,14 @@ export function IChingCoachInterface() {
             <div className="space-y-3">
               <Textarea
                 placeholder="Ask your I Ching wisdom coach about your hexagram, interpretation, or life guidance..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
+                value={coachingQuestion}
+                onChange={(e) => setCoachingQuestion(e.target.value)}
                 className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
                 rows={3}
               />
               <Button
                 onClick={handleAskQuestion}
-                disabled={!question.trim() || isAsking || loading}
+                disabled={!coachingQuestion.trim() || isAsking}
                 className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
               >
                 {isAsking ? (
@@ -132,7 +133,7 @@ export function IChingCoachInterface() {
                       key={index}
                       variant="outline"
                       size="sm"
-                      onClick={() => setQuestion(quickQuestion)}
+                      onClick={() => setCoachingQuestion(quickQuestion)}
                       className="justify-start text-left h-auto p-3 border-slate-600 text-slate-300 hover:bg-slate-600/50"
                     >
                       <ArrowRight className="w-3 h-3 mr-2 flex-shrink-0" />
@@ -155,7 +156,7 @@ export function IChingCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Your Strengths</span>
                     </div>
                     <div className="space-y-2">
-                      {ichingData.coaching.strengths.map((strength, index) => (
+                      {analysis.coaching.strengths.map((strength, index) => (
                         <div key={index} className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
                           <span className="text-sm text-slate-300">{strength}</span>
@@ -173,7 +174,7 @@ export function IChingCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Growth Challenges</span>
                     </div>
                     <div className="space-y-2">
-                      {ichingData.coaching.challenges.map((challenge, index) => (
+                      {analysis.coaching.challenges.map((challenge, index) => (
                         <div key={index} className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
                           <span className="text-sm text-slate-300">{challenge}</span>
@@ -191,7 +192,7 @@ export function IChingCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Growth Areas</span>
                     </div>
                     <div className="space-y-2">
-                      {ichingData.coaching.growthAreas.map((area, index) => (
+                      {analysis.coaching.growthAreas.map((area, index) => (
                         <div key={index} className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
                           <span className="text-sm text-slate-300">{area}</span>
@@ -209,7 +210,7 @@ export function IChingCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Daily Affirmations</span>
                     </div>
                     <div className="space-y-3">
-                      {ichingData.coaching.affirmations.map((affirmation, index) => (
+                      {analysis.coaching.affirmations.map((affirmation, index) => (
                         <div key={index} className="bg-slate-600/50 rounded-lg p-3">
                           <p className="text-sm text-slate-300 italic">"{affirmation}"</p>
                         </div>
@@ -228,19 +229,19 @@ export function IChingCoachInterface() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-400">Number:</span>
-                        <span className="text-white font-medium">{ichingData.hexagram.number}</span>
+                        <span className="text-white font-medium">{analysis.hexagram.number}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-400">Name:</span>
-                        <span className="text-white font-medium">{ichingData.hexagram.name}</span>
+                        <span className="text-white font-medium">{analysis.hexagram.name}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-400">Element:</span>
-                        <span className="text-white font-medium">{ichingData.hexagram.element}</span>
+                        <span className="text-white font-medium">{analysis.hexagram.element}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-400">Changing Lines:</span>
-                        <span className="text-white font-medium">{ichingData.changingLines.count}</span>
+                        <span className="text-white font-medium">{analysis.changingLines.count}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -251,7 +252,7 @@ export function IChingCoachInterface() {
 
           <TabsContent value="history" className="space-y-4">
             <ScrollArea className="h-96">
-              {coaching.length === 0 ? (
+              {coachingHistory.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageSquare className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-400">No coaching history yet</p>
@@ -259,7 +260,7 @@ export function IChingCoachInterface() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {coaching.map((session) => (
+                  {coachingHistory.map((session) => (
                     <Card key={session.id} className="bg-slate-700/50 border-slate-600">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">

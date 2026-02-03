@@ -11,7 +11,7 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(
-      "peer inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border border-slate-600/50 backdrop-blur-md transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 disabled:cursor-not-allowed disabled:opacity-50 shadow-lg hover:shadow-xl data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-amber-500/30 data-[state=checked]:to-yellow-400/30 data-[state=checked]:border-amber-400/60 data-[state=checked]:shadow-amber-400/20 data-[state=unchecked]:bg-slate-800/50 data-[state=unchecked]:border-slate-600/50",
+      "peer inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border-2 backdrop-blur-md m3-transition-standard focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--m3-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--m3-surface)] disabled:cursor-not-allowed disabled:opacity-50 m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition m3-ripple data-[state=checked]:bg-[var(--m3-primary)] data-[state=checked]:border-[var(--m3-primary)] data-[state=unchecked]:bg-[var(--m3-surface-container-high)] data-[state=unchecked]:border-[var(--m3-outline)]",
       className
     )}
     {...props}
@@ -19,7 +19,7 @@ const Switch = React.forwardRef<
   >
     <SwitchPrimitives.Thumb
       className={cn(
-        "pointer-events-none block h-5 w-5 rounded-full shadow-lg ring-0 transition-all duration-300 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-1 data-[state=checked]:bg-gradient-to-r data-[state=checked]:from-amber-300 data-[state=checked]:to-yellow-200 data-[state=checked]:shadow-amber-300/50 data-[state=unchecked]:bg-gradient-to-r data-[state=unchecked]:from-slate-300 data-[state=unchecked]:to-slate-100 data-[state=unchecked]:shadow-slate-300/30"
+        "pointer-events-none block h-5 w-5 rounded-full ring-0 m3-transition-standard m3-elevation-1 data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-1 data-[state=checked]:bg-[var(--m3-on-primary)] data-[state=unchecked]:bg-[var(--m3-on-surface-variant)]"
       )}
     />
   </SwitchPrimitives.Root>

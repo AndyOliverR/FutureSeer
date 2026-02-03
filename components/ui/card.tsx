@@ -4,12 +4,21 @@ import { cn } from "@/lib/utils"
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+  React.HTMLAttributes<HTMLDivElement> & {
+    elevation?: 0 | 1 | 2 | 3 | 4 | 5
+  }
+>(({ className, elevation = 1, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border bg-card text-card-foreground shadow-sm",
+      "rounded-2xl border bg-card text-card-foreground m3-elevation-transition will-change-[box-shadow]",
+      elevation === 0 && "m3-elevation-0",
+      elevation === 1 && "m3-elevation-1",
+      elevation === 2 && "m3-elevation-2",
+      elevation === 3 && "m3-elevation-3",
+      elevation === 4 && "m3-elevation-4",
+      elevation === 5 && "m3-elevation-5",
+      "hover:m3-elevation-3",
       className
     )}
     {...props}

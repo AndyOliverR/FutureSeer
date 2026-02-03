@@ -2,31 +2,34 @@
 
 import React from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { Header } from "@/components/header"
+import { EnhancedFooter } from "@/components/enhanced-footer"
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-amber-300 mb-4">
-            Terms and Conditions 📜
-          </h1>
-          <p className="text-gray-300 text-lg">
-            Please read these terms carefully before using FutureSeer
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col starfield-ultra-sharp">
+      <Header />
+      <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full">
+        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-20 pb-20">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-2xl font-bold text-amber-400 mb-2">
+              Terms and Conditions
+            </h1>
+            <p className="text-sm text-white/80 font-light">
+              Please read these terms carefully before using FutureSeer
+            </p>
+          </div>
 
-        {/* Main Content */}
-        <div className="bg-slate-800/50 rounded-lg p-8 border border-slate-700 space-y-8">
+          {/* Main Content */}
+          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 p-8 transition-all duration-300 space-y-8">
           
           {/* Introduction */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               1. Introduction
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 These Terms and Conditions ("Terms") govern your use of FutureSeer ("Service"), 
                 operated by FutureSeer ("Company," "we," "us," or "our"). By accessing or using 
@@ -41,10 +44,10 @@ export default function TermsPage() {
 
           {/* Acceptance of Terms */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               2. Acceptance of Terms
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 By creating an account, accessing, or using our Service, you acknowledge that you 
                 have read, understood, and agree to be bound by these Terms. If you do not agree 
@@ -59,10 +62,10 @@ export default function TermsPage() {
 
           {/* Service Description */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               3. Service Description
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 FutureSeer provides AI-powered mystical insights including but not limited to:
               </p>
@@ -85,10 +88,10 @@ export default function TermsPage() {
 
           {/* User Accounts */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               4. User Accounts
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 <strong>Account Creation:</strong> You must create an account to access our services. 
                 You are responsible for maintaining the confidentiality of your account credentials.
@@ -108,37 +111,81 @@ export default function TermsPage() {
             </div>
           </section>
 
-          {/* Payment Terms */}
+          {/* Payment Terms & Auto-Mandate */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
-              5. Payment Terms
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
+              5. Contribution Terms & Auto-Mandate Agreement
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
-                <strong>Subscription Plans:</strong> We offer various subscription plans with different 
-                features and pricing. All prices are listed in USD unless otherwise specified.
+                <strong>Innovation Experiment Participation:</strong> FutureSeer operates as an innovation experiment. 
+                When you join, you're contributing to making AI-powered divination accessible to all. Your participation 
+                helps improve accuracy, precision, and quality for everyone.
               </p>
               <p>
-                <strong>Payment Processing:</strong> Payments are processed securely through Razorpay. 
-                By making a payment, you authorize us to charge your payment method.
+                <strong>30-Day Free Trial:</strong> All new participants receive a 30-day free trial. During this period, 
+                you have full access to all features. No charges are made during the trial period.
               </p>
               <p>
-                <strong>Billing Cycle:</strong> Subscriptions are billed on a recurring basis according 
-                to your selected plan (monthly, yearly, or lifetime).
+                <strong>Payment Method Required:</strong> To secure your spot in the innovation experiment and access your 
+                free trial, we require a payment method to be on file. This payment method will not be charged during your 
+                30-day free trial period.
               </p>
               <p>
-                <strong>Price Changes:</strong> We may change our pricing with 30 days' notice. 
-                Existing subscribers will be notified of any price increases.
+                <strong>Auto-Mandate Agreement:</strong> By joining the FutureSeer innovation experiment, you authorize 
+                FutureSeer to automatically charge your payment method for recurring contributions according to your selected 
+                contribution tier (Buy Me a Coffee for monthly, Treat Me for quarterly, or Festive Hamper for annual). 
+                This authorization is required for regulatory compliance (RBI guidelines for recurring payments in India, 
+                similar regulations in other countries).
+              </p>
+              <p>
+                <strong>When Charges Begin:</strong> After your 30-day free trial ends, your contribution will automatically 
+                begin according to your selected tier. You will receive email notifications before any charges are made.
+              </p>
+              <p>
+                <strong>Payment Processing:</strong> Payments are processed securely through Razorpay, a PCI-DSS compliant 
+                payment gateway. Your payment information is encrypted and securely stored.
+              </p>
+              <p>
+                <strong>Cancel Anytime:</strong> You can cancel your contribution at any time through your profile settings. 
+                Cancellation will take effect at the end of your current billing cycle. No charges will be made after 
+                cancellation. You can rejoin the innovation experiment anytime.
+              </p>
+              <div>
+                <p><strong>Billing Cycle:</strong> Contributions are processed according to your selected tier:</p>
+                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                  <li>Buy Me a Coffee: Monthly contributions</li>
+                  <li>Treat Me: Quarterly contributions (every 3 months)</li>
+                  <li>Festive Hamper: Annual contributions (once per year)</li>
+                </ul>
+              </div>
+              <p>
+                <strong>Price Changes:</strong> As the innovation experiment evolves, contribution levels may be adjusted. 
+                We will provide 30 days' notice of any changes. Existing contributors will be notified of any adjustments.
+              </p>
+              <div>
+                <p><strong>Your Rights:</strong> You have the right to:</p>
+                <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                  <li>Cancel your contribution at any time with no questions asked</li>
+                  <li>Receive advance notice before any charges</li>
+                  <li>Access your contribution history and billing information</li>
+                  <li>Update your payment method at any time</li>
+                  <li>Rejoin the innovation experiment after cancellation</li>
+                </ul>
+              </div>
+              <p>
+                <strong>Refunds:</strong> Contributions are non-refundable, but you can cancel anytime to prevent future 
+                charges. If you experience any issues, please contact our support team.
               </p>
             </div>
           </section>
 
           {/* Acceptable Use */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               6. Acceptable Use
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>You agree not to use our Service to:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Violate any applicable laws or regulations</li>
@@ -155,10 +202,10 @@ export default function TermsPage() {
 
           {/* Intellectual Property */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               7. Intellectual Property
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 <strong>Our Rights:</strong> FutureSeer and all content, features, and functionality 
                 are owned by us and protected by copyright, trademark, and other intellectual property laws.
@@ -176,10 +223,10 @@ export default function TermsPage() {
 
           {/* Privacy */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               8. Privacy
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 Your privacy is important to us. Please review our Privacy Policy, which also governs 
                 your use of the Service and is incorporated into these Terms by reference.
@@ -193,10 +240,10 @@ export default function TermsPage() {
 
           {/* Disclaimers */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               9. Disclaimers
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 <strong>Entertainment Only:</strong> Our mystical insights and divination services are 
                 provided for entertainment and personal reflection purposes only. They are not intended 
@@ -219,10 +266,10 @@ export default function TermsPage() {
 
           {/* Limitation of Liability */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               10. Limitation of Liability
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 To the maximum extent permitted by law, FutureSeer shall not be liable for any indirect, 
                 incidental, special, consequential, or punitive damages arising from your use of our Service.
@@ -236,10 +283,10 @@ export default function TermsPage() {
 
           {/* Termination */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               11. Termination
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 <strong>Your Rights:</strong> You may cancel your subscription at any time through 
                 your account settings or by contacting our support team.
@@ -257,10 +304,10 @@ export default function TermsPage() {
 
           {/* Governing Law */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               12. Governing Law
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 These Terms shall be governed by and construed in accordance with the laws of India, 
                 without regard to its conflict of law provisions.
@@ -274,31 +321,33 @@ export default function TermsPage() {
 
           {/* Contact Information */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               13. Contact Information
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
-                If you have any questions about these Terms, please contact us at:
+                If you have any questions about these Terms, please contact us:
               </p>
               <p>
-                <strong>Email:</strong> legal@futureseer.com<br />
-                <strong>Support:</strong> support@futureseer.com
+                <strong>Legal:</strong> <Link href="/contact?type=legal" className="text-amber-400 hover:underline">Submit a legal query</Link><br />
+                <strong>Support:</strong> <Link href="/contact" className="text-amber-400 hover:underline">Submit a support query</Link>
               </p>
             </div>
           </section>
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <div className="mt-8 text-center text-sm text-white/60 font-light">
           <p>
             These Terms and Conditions are effective as of January 1, 2025.
           </p>
           <p className="mt-2">
-            Last updated: January 1, 2025
+            Last updated: February 3, 2025
           </p>
         </div>
+        </div>
       </div>
+      <EnhancedFooter />
     </div>
   )
 } 

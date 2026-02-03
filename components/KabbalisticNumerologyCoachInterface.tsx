@@ -1,47 +1,37 @@
-import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { 
-  Send, 
-  Hash, 
-  Lightbulb, 
-  Target, 
-  Heart, 
-  TrendingUp, 
-  Sparkles,
-  MessageCircle,
-  User,
-  Bot
-} from 'lucide-react'
+import { useState, useRef, useEffect } from "react"
+import { useAuth } from "@/hooks/use-auth"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { Send, MessageCircle, Brain, Trash2 } from "lucide-react"
+import type { SimplifiedKabbalisticAnalysis } from '@/lib/kabbalisticNumerologyIntelligence'
 
 interface KabbalisticMessage {
   id: string
   type: 'user' | 'coach'
   content: string
   timestamp: Date
-  coachingResponse?: any
+  coachingResponse?: { techniques?: string[] }
 }
 
-export function KabbalisticNumerologyCoachInterface() {
+interface KabbalisticNumerologyCoachInterfaceProps {
+  analysis: SimplifiedKabbalisticAnalysis | null
+  variant?: "dark" | "light"
+  userProfile?: any
+}
+
+const KABBALISTIC_STARTER_QUESTIONS = [
+  'What does my soul number suggest about my life path?',
+  'How can I align my name with my destiny according to Kabbalistic wisdom?',
+]
+
+export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark", userProfile }: KabbalisticNumerologyCoachInterfaceProps) {
+  const isLight = variant === "light"
   const { user } = useAuth()
   const [messages, setMessages] = useState<KabbalisticMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [suggestedQuestions] = useState([
-    "What is Gematria and how does it work?",
-    "How do I calculate my soul number?",
-    "What does my destiny number reveal?",
-    "How do Hebrew letters connect to numbers?",
-    "What is the significance of my name in Kabbalah?",
-    "How can I use Kabbalistic numerology daily?",
-    "What are the spiritual meanings of numbers?",
-    "How does birth date numerology work?"
-  ])
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -53,13 +43,14 @@ export function KabbalisticNumerologyCoachInterface() {
     inputRef.current?.focus()
   }, [])
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || !user || isLoading) return
+  const handleSendMessage = async (messageText?: string) => {
+    const text = (messageText ?? inputValue).trim()
+    if (!text || !user || isLoading) return
 
     const userMessage: KabbalisticMessage = {
       id: Date.now().toString(),
       type: 'user',
-      content: inputValue.trim(),
+      content: text,
       timestamp: new Date()
     }
 
@@ -67,166 +58,240 @@ export function KabbalisticNumerologyCoachInterface() {
     setInputValue('')
     setIsLoading(true)
 
+    const coachMessageId = (Date.now() + 1).toString()
+    const coachMessage: KabbalisticMessage = {
+      id: coachMessageId,
+      type: 'coach',
+      content: '',
+      timestamp: new Date(),
+      coachingResponse: { techniques: ['Gematria', 'Hebrew Letter Analysis', 'Soul Number'] }
+    }
+    setMessages(prev => [...prev, coachMessage])
+
     try {
-      // Mock response for now - replace with actual Kabbalistic intelligence
-      const mockResponse = {
-        guidance: `In Kabbalistic Numerology, your question about "${inputValue.trim()}" would be analyzed through the ancient Hebrew system of Gematria. This mystical tradition reveals the divine connection between letters, numbers, and the soul's purpose, offering profound insights into your spiritual journey and life path.`,
-        techniques: ['Gematria Calculation', 'Hebrew Letter Analysis', 'Soul Number Discovery'],
-        advice: 'Each letter carries divine energy and numerical significance.'
+      const response = await fetch('/api/ask-kabbalistic-numerology-seer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          question: text,
+          userProfile: userProfile ?? {},
+          kabbalisticAnalysis: analysis ?? undefined,
+          comprehensiveProfile: analysis ? { kabbalisticNumerology: { chart: analysis.chart } } : undefined,
+          sessionId: `kab_${Date.now()}`,
+        }),
+      })
+
+      const contentType = response.headers.get('Content-Type') ?? ''
+
+      if (contentType.includes('application/json')) {
+        const data = await response.json()
+        if (data.refused && data.response) {
+          setMessages(prev =>
+            prev.map(m => m.id === coachMessageId ? { ...m, content: data.response } : m)
+          )
+        } else if (data.error) {
+          setMessages(prev =>
+            prev.map(m => m.id === coachMessageId ? { ...m, content: data.error || 'Something went wrong.' } : m)
+          )
+        } else if (!response.ok) {
+          setMessages(prev =>
+            prev.map(m => m.id === coachMessageId ? { ...m, content: data.error || 'Request failed.' } : m)
+          )
+        }
+        setIsLoading(false)
+        return
       }
 
-      const coachMessage: KabbalisticMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'coach',
-        content: mockResponse.guidance,
-        timestamp: new Date(),
-        coachingResponse: mockResponse
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        setMessages(prev =>
+          prev.map(m => m.id === coachMessageId ? { ...m, content: errData.error || 'Request failed.' } : m)
+        )
+        setIsLoading(false)
+        return
       }
 
-      setMessages(prev => [...prev, coachMessage])
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let fullResponse = ''
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value, { stream: true })
+          fullResponse += chunk
+          setMessages(prev =>
+            prev.map(m => m.id === coachMessageId ? { ...m, content: fullResponse } : m)
+          )
+        }
+      }
     } catch (error) {
       console.error('Error getting Kabbalistic coaching:', error)
-      const errorMessage: KabbalisticMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'coach',
-        content: "I'm having trouble accessing the Kabbalistic wisdom right now. Please try again in a moment.",
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages(prev =>
+        prev.map(m => m.id === coachMessageId ? { ...m, content: "I'm having trouble accessing the Kabbalistic wisdom right now. Please try again in a moment." } : m)
+      )
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
   }
 
-  const handleSuggestedQuestion = (question: string) => {
-    setInputValue(question)
-    inputRef.current?.focus()
+  const clearChat = () => {
+    setMessages([])
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Header */}
-      <Card className="bg-slate-800/50 border-slate-600">
-        <CardHeader>
-          <CardTitle className="text-purple-400 flex items-center gap-2">
-            <Hash className="w-5 h-5" />
-            Your Kabbalistic Guide
-          </CardTitle>
-          <p className="text-sm text-slate-400">
-            Ask me about the mystical connection between Hebrew letters, numbers, and your soul.
-          </p>
-        </CardHeader>
-      </Card>
+  const noAnalysisCardClass = isLight
+    ? "bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 shadow-md"
+    : "bg-amber-950/95 border border-amber-500/30 rounded-xl p-6"
+  const noAnalysisIconClass = isLight ? "text-purple-600" : "text-amber-400"
+  const noAnalysisTitleClass = isLight ? "m3-title-large text-purple-900" : "m3-title-large text-white"
+  const noAnalysisBodyClass = isLight ? "m3-body-medium text-slate-700 mt-2" : "m3-body-medium text-slate-300 mt-2"
 
-      {/* Chat Interface */}
-      <Card className="bg-slate-800/50 border-slate-600 h-96">
-        <CardContent className="p-0 h-full flex flex-col">
-          {/* Messages Area */}
-          <ScrollArea className="flex-1 p-4">
-            {messages.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageCircle className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">Begin Your Kabbalistic Journey</h3>
-                <p className="text-slate-400 mb-6">
-                  I'm here to guide you through the mystical world of Kabbalistic Numerology.
-                </p>
-                
-                {/* Suggested Questions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                  {suggestedQuestions.map((question, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      className="text-left h-auto p-3 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-purple-500"
-                      onClick={() => handleSuggestedQuestion(question)}
-                    >
-                      <Lightbulb className="w-4 h-4 mr-2 text-purple-400 flex-shrink-0" />
-                      <span className="text-xs">{question}</span>
-                    </Button>
-                  ))}
+  if (!analysis) {
+    return (
+      <Card className={noAnalysisCardClass}>
+        <div className="text-center py-12">
+          <Brain className={`w-16 h-16 ${noAnalysisIconClass} mx-auto mb-4`} />
+          <p className={noAnalysisTitleClass}>Generate your Kabbalistic analysis to start asking questions</p>
+          <p className={noAnalysisBodyClass}>The expert needs your analysis data to provide personalized answers</p>
+        </div>
+      </Card>
+    )
+  }
+
+  const cardWrapper = isLight
+    ? "bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 border-2 border-purple-200 rounded-2xl h-[600px] flex flex-col overflow-hidden shadow-lg"
+    : "h-full flex flex-col bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden"
+  const headerStrip = isLight
+    ? "p-4 border-b border-purple-200 bg-white/80 flex items-center justify-between gap-3 shrink-0"
+    : "p-4 border-b border-slate-700/50 bg-gradient-to-r from-amber-900/20 to-slate-900/50 flex items-center justify-between gap-3 shrink-0"
+  const headerTitleClass = isLight ? "text-lg font-bold text-purple-900" : "text-xl font-bold text-white"
+  const headerSubtitleClass = isLight ? "text-sm text-slate-600 mt-0.5" : "text-sm text-slate-400 mt-1"
+  const emptyWrapperClass = isLight
+    ? "rounded-xl p-6 bg-white/80 border-2 border-purple-200"
+    : "rounded-xl p-6 bg-amber-950/40 border border-amber-500/20"
+  const emptyIconClass = isLight ? "text-purple-600" : "text-amber-400"
+  const userBubbleClass = isLight
+    ? "bg-gradient-to-r from-purple-400 to-indigo-500 text-white"
+    : "bg-amber-500/20 border border-amber-500/30 text-white"
+  const coachBubbleClass = isLight
+    ? "bg-white/90 text-slate-800 border-2 border-purple-200"
+    : "bg-slate-800/50 border border-slate-700/50 text-slate-200"
+  const inputAreaClass = isLight
+    ? "border-t border-purple-200 p-4 bg-white/90 shrink-0"
+    : "p-4 border-t border-slate-700/50 shrink-0"
+  const inputClass = isLight
+    ? "flex-1 bg-white border-purple-200 text-slate-800 placeholder:text-slate-500 focus:border-purple-400"
+    : "flex-1 bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500"
+  const sendBtnClass = isLight
+    ? "bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
+    : "bg-amber-500 hover:bg-amber-600 text-white"
+
+  return (
+    <div className={cardWrapper}>
+      <div className={headerStrip}>
+        <div>
+          <h3 className={headerTitleClass}>Kabbalistic Seer</h3>
+          <p className={headerSubtitleClass}>
+            Ask about soul lessons, name alignment, and inner correction.
+          </p>
+        </div>
+        {messages.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={isLight ? "text-slate-600 hover:bg-purple-100 shrink-0" : "text-slate-400 hover:text-amber-400 hover:bg-slate-700/50 shrink-0"}
+            onClick={clearChat}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Clear chat
+          </Button>
+        )}
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 && !isLoading ? (
+          <div className={emptyWrapperClass}>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <MessageCircle className={`w-12 h-12 ${emptyIconClass} mb-4`} />
+              <p className={isLight ? "text-slate-700 font-medium mb-2" : "text-slate-300 font-medium mb-2"}>
+                Welcome to Ask the Seer — Kabbalistic Numerology.
+              </p>
+              <p className={isLight ? "text-slate-600 text-sm mb-4" : "text-slate-400 text-sm mb-4"}>
+                Ask about soul lessons, name alignment, or Gematria—or pick a question below.
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {KABBALISTIC_STARTER_QUESTIONS.map((q, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSendMessage(q)}
+                    disabled={isLoading || !user}
+                    className={isLight ? "border-purple-200 hover:bg-purple-100 text-slate-700" : "border-amber-500/30 hover:bg-amber-500/20 text-slate-200"}
+                  >
+                    {q}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[80%] p-4 rounded-xl ${
+                    message.type === "user" ? userBubbleClass : coachBubbleClass
+                  }`}
+                >
+                  <p className="leading-relaxed whitespace-pre-wrap">
+                    {message.content || (message.type === "coach" && isLoading ? "…" : "")}
+                  </p>
                 </div>
               </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+
+      <div className={inputAreaClass}>
+        <div className="flex gap-2">
+          <Input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about Kabbalistic Numerology..."
+            className={inputClass}
+            disabled={isLoading || !user}
+          />
+          <Button
+            onClick={() => handleSendMessage()}
+            disabled={!inputValue.trim() || isLoading || !user}
+            className={sendBtnClass}
+          >
+            {isLoading ? (
+              <div className={`animate-spin rounded-full h-4 w-4 border-b-2 ${isLight ? "border-purple-600" : "border-white"}`} />
             ) : (
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        message.type === 'user'
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-slate-700 text-slate-200'
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      {message.coachingResponse?.techniques && (
-                        <div className="mt-2 pt-2 border-t border-slate-600">
-                          <p className="text-xs text-slate-400">
-                            Techniques: {message.coachingResponse.techniques.join(', ')}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
+              <Send className="w-4 h-4" />
             )}
-          </ScrollArea>
-
-          {/* Input Area */}
-          <div className="border-t border-slate-600 p-4">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask about Kabbalistic Numerology..."
-                className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-purple-500"
-                disabled={isLoading || !user}
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading || !user}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Personalization Info */}
-      <Card className="bg-slate-800/50 border-slate-600">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span className="text-sm text-slate-300">Hebrew mystical wisdom</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-purple-500 text-purple-400">
-                Gematria
-              </Badge>
-              <Badge variant="outline" className="border-blue-500 text-blue-400">
-                Kabbalah
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </Button>
+        </div>
+      </div>
     </div>
   )
-} 
+}

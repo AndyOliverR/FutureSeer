@@ -25,9 +25,9 @@ export function ConfidenceTrend({ data }: ConfidenceTrendProps) {
   }).join(" ")
 
   return (
-    <section className="w-full rounded-2xl backdrop-blur-md bg-slate-900/30 border border-slate-700/50 shadow-lg p-6 flex flex-col gap-2 items-center mb-2 card-glow">
+    <section className="w-full rounded-2xl backdrop-blur-sm bg-slate-900/30 border border-slate-700/50 shadow-lg p-6 flex flex-col gap-2 items-center mb-2 card-glow">
       <div className="w-full flex items-center justify-between mb-2">
-        <h3 className="text-xl font-serif text-amber-200">Confidence Trend</h3>
+        <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600">Confidence Trend</h3>
         <div className="flex gap-2">
           {timeframes.map(tf => (
             <button

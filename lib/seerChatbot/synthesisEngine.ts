@@ -301,11 +301,11 @@ Overall Analysis:
 ${evidence.timing_consensus ? `- Timing Consensus: ${evidence.timing_consensus[0]} to ${evidence.timing_consensus[1]}` : ''}
 
 Task:
-1. Provide a concise verdict with likelihood and timing
-2. Explain key supporting factors from the evidence
-3. State any risks or caveats
-4. Suggest 2-3 concrete next actions
-5. If critical information is missing, ask a clarifying question
+1. Use common sense: do not assume unstated constraints; consider obvious alternatives before giving a verdict between two bad options; if critical information is missing, ask a clarifying question.
+2. Provide a concise verdict with likelihood and timing
+3. Explain key supporting factors from the evidence
+4. State any risks or caveats
+5. Suggest 2-3 concrete next actions
 
 Format your response in a clear, mystical yet practical manner. Be specific about timing when available, and always acknowledge the source of your insights.
 

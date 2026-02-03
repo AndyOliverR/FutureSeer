@@ -1,0 +1,240 @@
+'use client'
+
+import { useState } from 'react'
+import { DevotionistStyleCard } from '@/components/western/DevotionistStyleCard'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import { Gem, Leaf, Activity, Search } from 'lucide-react'
+import { medicalDatabaseService, HomeopathicEntry, HerbalEntry, AcupunctureEntry } from '@/lib/medical/medicalDatabaseService'
+
+interface RemedyTabsProps {
+  selectedCondition?: string
+  bodyPart?: string
+  zodiacSign?: string
+  precomputedRemedies?: {
+    homeopathic?: any[]
+    herbal?: any[]
+    acupuncture?: any[]
+  }
+}
+
+export function RemedyTabs({ selectedCondition, bodyPart, zodiacSign, precomputedRemedies }: RemedyTabsProps) {
+  const [activeTab, setActiveTab] = useState<'homeopathy' | 'herbal' | 'acupuncture'>('homeopathy')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Use precomputed remedies if available, otherwise search
+  const homeopathicResults = precomputedRemedies?.homeopathic || medicalDatabaseService.searchHomeopathy({
+    bodyParts: bodyPart ? [bodyPart] : undefined,
+    keywords: searchTerm ? [searchTerm] : undefined
+  })
+
+  const herbalResults = precomputedRemedies?.herbal || medicalDatabaseService.searchHerbal({
+    bodyParts: bodyPart ? [bodyPart] : undefined,
+    keywords: searchTerm ? [searchTerm] : undefined
+  })
+
+  const acupunctureResults = precomputedRemedies?.acupuncture || medicalDatabaseService.searchAcupuncture({
+    zodiacSigns: zodiacSign ? [zodiacSign] : undefined,
+    keywords: searchTerm ? [searchTerm] : undefined
+  })
+
+  return (
+    <div className="w-full space-y-6">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-amber-700" />
+        <Input
+          type="text"
+          placeholder="Search remedies by symptom, planet, or body part..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-12 bg-amber-50/90 border-2 border-amber-300 text-slate-800 placeholder:text-slate-500 rounded-xl focus:border-amber-400"
+        />
+      </div>
+
+      {/* Tabs - devotionist style */}
+      <div className="flex gap-2 border-b border-amber-200 pb-4">
+        <button
+          onClick={() => setActiveTab('homeopathy')}
+          className={`px-6 py-3 rounded-xl transition-all font-medium flex items-center ${
+            activeTab === 'homeopathy'
+              ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+              : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/30'
+          }`}
+        >
+          <Gem className="inline-block mr-2 w-4 h-4" /> Homeopathy ({homeopathicResults.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('herbal')}
+          className={`px-6 py-3 rounded-xl transition-all font-medium flex items-center ${
+            activeTab === 'herbal'
+              ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+              : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/30'
+          }`}
+        >
+          <Leaf className="inline-block mr-2 w-4 h-4" /> Herbal ({herbalResults.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('acupuncture')}
+          className={`px-6 py-3 rounded-xl transition-all font-medium flex items-center ${
+            activeTab === 'acupuncture'
+              ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+              : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/30'
+          }`}
+        >
+          <Activity className="inline-block mr-2 w-4 h-4" /> Acupuncture ({acupunctureResults.length})
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="min-h-[400px]">
+        {activeTab === 'homeopathy' && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {homeopathicResults.length > 0 ? (
+              homeopathicResults.map((remedy: HomeopathicEntry) => (
+                <DevotionistStyleCard
+                  key={remedy.id}
+                  variant="callout"
+                  colorScheme="amber"
+                  icon={<Gem className="w-5 h-5" />}
+                  title={remedy.name}
+                  subtitle={remedy.latinName}
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-600 font-medium mb-1">Keynotes:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {remedy.keynotes.slice(0, 3).map((keyword, idx) => (
+                          <Badge key={idx} className="text-xs bg-amber-200 text-amber-900 border border-amber-300">
+                            {keyword}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-700">
+                      <strong className="text-amber-900">Modalities:</strong> {remedy.modalities}
+                    </div>
+                    <div className="text-xs text-slate-700">
+                      <strong className="text-amber-900">Dosage:</strong> {remedy.dosage}
+                    </div>
+                    <div className="pt-2 border-t border-amber-200">
+                      <div className="flex gap-2 text-xs text-slate-600">
+                        <span>Ruler: {remedy.planetaryRuler}</span>
+                        <span>•</span>
+                        <span>{remedy.element}</span>
+                      </div>
+                    </div>
+                  </div>
+                </DevotionistStyleCard>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-slate-600">No homeopathic remedies found. Try different search terms.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'herbal' && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {herbalResults.length > 0 ? (
+              herbalResults.map((herb: HerbalEntry) => (
+                <DevotionistStyleCard
+                  key={herb.id}
+                  variant="callout"
+                  colorScheme="amber"
+                  icon={<Leaf className="w-5 h-5" />}
+                  title={herb.name}
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-600 font-medium mb-1">Virtues:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {herb.virtues.map((virtue, idx) => (
+                          <Badge key={idx} className="text-xs bg-amber-200 text-amber-900 border border-amber-300">
+                            {virtue}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="text-xs text-slate-700">
+                      <strong className="text-amber-900">Preparation:</strong> {herb.preparation}
+                    </div>
+                    <div className="text-xs text-slate-700">
+                      <strong className="text-amber-900">Dosage:</strong> {herb.dosage}
+                    </div>
+                    <div className="pt-2 border-t border-amber-200">
+                      <div className="flex gap-2 text-xs text-slate-600">
+                        <span>Ruler: {herb.planetaryRuler}</span>
+                        <span>•</span>
+                        <span>{herb.zodiacSign}</span>
+                      </div>
+                    </div>
+                    {herb.contraindications.length > 0 && (
+                      <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
+                        <strong>Caution:</strong> {herb.contraindications[0]}
+                      </div>
+                    )}
+                  </div>
+                </DevotionistStyleCard>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-slate-600">No herbal remedies found. Try different search terms.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'acupuncture' && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {acupunctureResults.length > 0 ? (
+              acupunctureResults.map((formula: AcupunctureEntry) => (
+                <DevotionistStyleCard
+                  key={formula.id}
+                  variant="callout"
+                  colorScheme="amber"
+                  icon={<Activity className="w-5 h-5" />}
+                  title={formula.name}
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-slate-600 font-medium mb-1">Meridians:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {formula.meridians.map((meridian, idx) => (
+                          <Badge key={idx} className="text-xs bg-amber-200 text-amber-900 border border-amber-300">
+                            {meridian}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 font-medium mb-1">Indications:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {formula.indications.map((ind, idx) => (
+                          <Badge key={idx} className="text-xs bg-amber-50 text-amber-900 border border-amber-300">
+                            {ind}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-amber-200">
+                      <div className="text-xs text-slate-700">
+                        <strong className="text-amber-900">Points:</strong> {formula.points.join(', ')}
+                      </div>
+                    </div>
+                  </div>
+                </DevotionistStyleCard>
+              ))
+            ) : (
+              <div className="col-span-3 text-center py-12">
+                <p className="text-slate-600">No acupuncture formulas found. Try different search terms.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+

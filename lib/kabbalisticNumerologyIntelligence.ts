@@ -101,7 +101,7 @@ export interface KabbalisticAnalysis {
     lessons: string[]
     blessings: string[]
   }
-  remedies: string[]
+  remedies: Array<{ title: string; description: string; instructions: string[]; benefits: string[] }>
 }
 
 export interface KabbalisticQuestion {
@@ -545,16 +545,46 @@ class KabbalisticNumerologyIntelligence {
       'Y': 'י', 'Z': 'ז'
     }
 
+    // Map English letters to Hebrew letters by value (Chaldean-Hebrew system)
+    const letterValueToHebrew: { [key: number]: HebrewLetter[] } = {
+      1: [this.hebrewLetters[0]], // Aleph
+      2: [this.hebrewLetters[1]], // Bet
+      3: [this.hebrewLetters[2]], // Gimel
+      4: [this.hebrewLetters[3]], // Dalet
+      5: [this.hebrewLetters[4]], // Heh
+      6: [this.hebrewLetters[5]], // Vav
+      7: [this.hebrewLetters[6], this.hebrewLetters[18]], // Zayin, Tzaddi
+      8: [this.hebrewLetters[7]], // Chet
+    }
+
     const hebrewName = fullName.toUpperCase().split('').map(char => nameToHebrew[char] || char).join('')
     const letters: HebrewLetter[] = []
     let totalValue = 0
 
-    // Analyze each letter
-    fullName.toUpperCase().split('').forEach(char => {
-      const hebrewLetter = this.hebrewLetters.find(hl => hl.name.charAt(0) === char || hl.letter === char)
-      if (hebrewLetter) {
-        letters.push(hebrewLetter)
-        totalValue += hebrewLetter.value
+    // Analyze each letter using Chaldean-Hebrew values
+    const cleanName = fullName.toUpperCase().replace(/[^A-Z]/g, '')
+    cleanName.split('').forEach(char => {
+      const letterValue = this.getLetterValue(char)
+      if (letterValue > 0) {
+        // Find a Hebrew letter with matching value, or use a default mapping
+        let hebrewLetter = this.hebrewLetters.find(hl => hl.value === letterValue)
+        if (!hebrewLetter) {
+          // Map to closest Hebrew letter by value
+          const valueMap: { [key: number]: number } = {
+            1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5, 7: 6, 8: 7
+          }
+          const index = valueMap[letterValue] ?? 0
+          hebrewLetter = this.hebrewLetters[index] || this.hebrewLetters[0]
+        }
+        
+        // Create a letter entry with English name
+        const letterEntry: HebrewLetter = {
+          ...hebrewLetter,
+          letter: nameToHebrew[char] || hebrewLetter.letter,
+          name: char
+        }
+        letters.push(letterEntry)
+        totalValue += letterValue
       }
     })
 
@@ -653,10 +683,12 @@ class KabbalisticNumerologyIntelligence {
   }
 
   private getLetterValue(letter: string): number {
+    // Chaldean-Hebrew Kabbalah letter values (from Linda Goodman's "Star Signs")
     const letterValues: { [key: string]: number } = {
-      'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9,
-      'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'O': 6, 'P': 7, 'Q': 8, 'R': 9,
-      'S': 1, 'T': 2, 'U': 3, 'V': 4, 'W': 5, 'X': 6, 'Y': 7, 'Z': 8
+      'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 8, 'G': 3, 'H': 5,
+      'I': 1, 'J': 1, 'K': 2, 'L': 3, 'M': 4, 'N': 5, 'O': 7, 'P': 8,
+      'Q': 1, 'R': 2, 'S': 3, 'T': 4, 'U': 6, 'V': 6, 'W': 6, 'X': 5,
+      'Y': 1, 'Z': 7
     }
     return letterValues[letter.toUpperCase()] || 0
   }
@@ -922,30 +954,180 @@ class KabbalisticNumerologyIntelligence {
     return cycles[cycle] || cycles[1]
   }
 
-  private suggestRemedies(chart: KabbalisticChart): string[] {
+  private suggestRemedies(chart: KabbalisticChart): Array<{ title: string; description: string; instructions: string[]; benefits: string[] }> {
     const dominantSephirot = chart.sephirot[0]
     const elementBalance = chart.elementBalance
     
     const baseRemedies = [
-      'Daily meditation and prayer',
-      'Study of Kabbalistic texts',
-      'Practice of loving-kindness',
-      'Regular spiritual practice'
+      {
+        title: 'Daily Meditation and Prayer',
+        description: 'Meditation connects you to the divine source and aligns your consciousness with the Tree of Life. Prayer opens channels for spiritual guidance and protection.',
+        instructions: [
+          'Set aside 15-30 minutes each morning for meditation',
+          'Create a sacred space with candles or crystals',
+          'Focus on your breath and visualize the Sephirot',
+          'End with a prayer expressing gratitude and seeking guidance',
+          'Use Hebrew letters or sacred sounds (like "Adonai" or "YHVH") as mantras'
+        ],
+        benefits: ['Enhanced spiritual connection', 'Reduced stress and anxiety', 'Greater clarity and intuition', 'Alignment with divine will', 'Protection from negative energies']
+      },
+      {
+        title: 'Study of Kabbalistic Texts',
+        description: 'The study of sacred texts like the Sefer Yetzirah, Zohar, and Tree of Life deepens your understanding of the divine structure and your place within it.',
+        instructions: [
+          'Read 20-30 minutes daily from Kabbalistic texts',
+          'Keep a journal of insights and revelations',
+          'Join study groups or online communities',
+          'Focus on understanding the Sephirot and their correspondences',
+          'Meditate on Hebrew letters and their meanings'
+        ],
+        benefits: ['Deeper spiritual understanding', 'Wisdom and insight', 'Connection to ancient wisdom', 'Expanded consciousness', 'Guidance for life decisions']
+      },
+      {
+        title: 'Practice of Loving-Kindness',
+        description: 'Chesed (Loving-Kindness) is a fundamental Sephira on the Tree of Life. Practicing compassion and kindness aligns you with divine mercy and opens channels of blessing.',
+        instructions: [
+          'Perform daily acts of kindness, no matter how small',
+          'Practice Metta (loving-kindness) meditation',
+          'Forgive yourself and others regularly',
+          'Express gratitude to those who help you',
+          'Volunteer or serve others in your community'
+        ],
+        benefits: ['Opens channels of divine blessing', 'Increases joy and fulfillment', 'Strengthens relationships', 'Attracts positive energy', 'Aligns with Chesed (Mercy) Sephira']
+      },
+      {
+        title: 'Regular Spiritual Practice',
+        description: 'Consistency in spiritual practice builds a strong foundation and creates a stable connection to the divine realms. Regular practice integrates Kabbalistic wisdom into daily life.',
+        instructions: [
+          'Establish a daily spiritual routine',
+          'Combine meditation, study, and prayer',
+          'Practice on the same schedule each day',
+          'Track your progress and insights',
+          'Adjust practices based on your spiritual growth'
+        ],
+        benefits: ['Strong spiritual foundation', 'Consistent divine connection', 'Integration of wisdom into daily life', 'Accelerated spiritual growth', 'Greater sense of purpose']
+      }
     ]
 
-    const sephirotRemedies: { [key: string]: string[] } = {
-      'Kether': ['Crown meditation', 'Divine surrender', 'Unity consciousness'],
-      'Chokmah': ['Intuitive development', 'Creative expression', 'Wisdom seeking'],
-      'Binah': ['Deep study', 'Understanding practice', 'Discipline'],
-      'Chesed': ['Compassionate action', 'Service to others', 'Generosity'],
-      'Geburah': ['Courageous action', 'Justice practice', 'Strength building']
+    const sephirotRemedies: { [key: string]: Array<{ title: string; description: string; instructions: string[]; benefits: string[] }> } = {
+      'Kether': [
+        {
+          title: 'Crown Meditation',
+          description: 'Kether represents the Crown, the highest point of divine connection. Crown meditation opens you to receive divine light and guidance from the source.',
+          instructions: [
+            'Visualize a golden light descending from above',
+            'Focus on the crown chakra at the top of your head',
+            'Chant sacred names like "Ehyeh" (I Am)',
+            'Practice for 20-30 minutes daily',
+            'Allow divine will to flow through you'
+          ],
+          benefits: ['Direct connection to divine source', 'Receiving divine guidance', 'Transcendence of ego', 'Unity consciousness', 'Spiritual illumination']
+        }
+      ],
+      'Chokmah': [
+        {
+          title: 'Intuitive Development',
+          description: 'Chokmah is Wisdom, the first emanation of divine light. Developing intuition opens you to receive creative insights and divine inspiration.',
+          instructions: [
+            'Practice daily intuitive exercises',
+            'Keep a dream journal',
+            'Meditate on receiving wisdom',
+            'Trust your first impressions',
+            'Practice automatic writing or drawing'
+          ],
+          benefits: ['Enhanced intuition', 'Creative inspiration', 'Divine insights', 'Wisdom and understanding', 'Connection to Chokmah energy']
+        }
+      ],
+      'Binah': [
+        {
+          title: 'Deep Study and Understanding',
+          description: 'Binah is Understanding, the feminine principle that gives form to wisdom. Deep study develops comprehension and analytical thinking.',
+          instructions: [
+            'Engage in deep, focused study sessions',
+            'Break down complex concepts into parts',
+            'Create structured learning plans',
+            'Practice analytical thinking',
+            'Teach others what you learn'
+          ],
+          benefits: ['Deep understanding', 'Analytical clarity', 'Structured thinking', 'Mastery of subjects', 'Connection to Binah energy']
+        }
+      ]
     }
 
-    const elementRemedies: string[] = []
-    if (elementBalance.fire < 2) elementRemedies.push('Fire element practices')
-    if (elementBalance.water < 2) elementRemedies.push('Water element practices')
-    if (elementBalance.air < 2) elementRemedies.push('Air element practices')
-    if (elementBalance.earth < 2) elementRemedies.push('Earth element practices')
+    const elementRemedies: Array<{ title: string; description: string; instructions: string[]; benefits: string[] }> = []
+    
+    if (elementBalance.fire < 2) {
+      elementRemedies.push({
+        title: 'Fire Element Practices',
+        description: 'Fire represents passion, transformation, and divine will. Strengthening fire energy brings courage, action, and the ability to manifest your desires through focused intention.',
+        instructions: [
+          'Practice sun salutations or sun gazing (safely at sunrise/sunset)',
+          'Use candles or fire in your meditation space',
+          'Wear red, orange, or gold colors',
+          'Engage in physical exercise and movement',
+          'Practice visualization of flames or light',
+          'Work with fire-related crystals (carnelian, red jasper, sunstone)',
+          'Eat warming, spicy foods',
+          'Express creativity and passion in daily activities'
+        ],
+        benefits: ['Increased energy and vitality', 'Courage and confidence', 'Ability to take action', 'Transformation and change', 'Manifestation of desires', 'Connection to divine will']
+      })
+    }
+    
+    if (elementBalance.water < 2) {
+      elementRemedies.push({
+        title: 'Water Element Practices',
+        description: 'Water represents emotions, intuition, and the flow of life. Strengthening water energy brings emotional balance, intuition, and the ability to flow with life\'s changes.',
+        instructions: [
+          'Spend time near bodies of water (ocean, lake, river)',
+          'Take ritual baths with sea salt or essential oils',
+          'Practice emotional release and processing',
+          'Wear blue, silver, or white colors',
+          'Drink plenty of water and stay hydrated',
+          'Work with water-related crystals (aquamarine, moonstone, pearl)',
+          'Practice swimming or water-based exercises',
+          'Meditate on the flow and movement of water'
+        ],
+        benefits: ['Emotional balance and healing', 'Enhanced intuition', 'Ability to flow with change', 'Deep emotional connection', 'Purification and cleansing', 'Connection to subconscious']
+      })
+    }
+    
+    if (elementBalance.air < 2) {
+      elementRemedies.push({
+        title: 'Air Element Practices',
+        description: 'Air represents intellect, communication, and the breath of life. Strengthening air energy brings mental clarity, effective communication, and intellectual growth.',
+        instructions: [
+          'Practice pranayama (breathwork) exercises',
+          'Spend time in open, airy spaces',
+          'Engage in intellectual activities and learning',
+          'Wear yellow, light blue, or white colors',
+          'Work with air-related crystals (citrine, topaz, clear quartz)',
+          'Practice clear communication and expression',
+          'Meditate on the breath and air currents',
+          'Read, write, or engage in mental exercises'
+        ],
+        benefits: ['Mental clarity and focus', 'Enhanced communication', 'Intellectual growth', 'Fresh perspectives', 'Lightness and freedom', 'Connection to higher mind']
+      })
+    }
+    
+    if (elementBalance.earth < 2) {
+      elementRemedies.push({
+        title: 'Earth Element Practices',
+        description: 'Earth represents stability, manifestation, and the material world. Strengthening earth energy brings grounding, stability, and the ability to manifest your spiritual insights into physical reality.',
+        instructions: [
+          'Spend time in nature, especially in gardens or forests',
+          'Practice grounding exercises (barefoot walking, gardening)',
+          'Work with earth-related crystals (hematite, obsidian, jasper)',
+          'Wear brown, green, or black colors',
+          'Eat root vegetables and grounding foods',
+          'Practice yoga or tai chi for physical grounding',
+          'Create structure and routine in daily life',
+          'Meditate while sitting or lying on the ground',
+          'Visualize roots extending from your body into the earth'
+        ],
+        benefits: ['Grounding and stability', 'Physical manifestation', 'Connection to body and senses', 'Practical application of wisdom', 'Security and safety', 'Connection to Malkuth (Kingdom)']
+      })
+    }
 
     return [...baseRemedies, ...(sephirotRemedies[dominantSephirot?.sephira] || []), ...elementRemedies]
   }
@@ -1014,4 +1196,132 @@ class KabbalisticNumerologyIntelligence {
   }
 }
 
-export const kabbalisticNumerologyIntelligence = new KabbalisticNumerologyIntelligence() 
+export const kabbalisticNumerologyIntelligence = new KabbalisticNumerologyIntelligence()
+
+// Helper function to reduce numbers (preserving master numbers)
+function reduceNumber(num: number): number {
+  while (num > 9 && num !== 11 && num !== 22 && num !== 33) {
+    num = num.toString().split('').reduce((sum, digit) => sum + parseInt(digit), 0)
+  }
+  return num
+}
+
+// Wrapper function to transform comprehensive analysis to simplified format
+export interface SimplifiedKabbalisticAnalysis {
+  overview: string
+  soulNumber: number
+  destinyNumber: number
+  personalityNumber: number
+  gematria: string
+  nameValue: number
+  nameMeaning: string
+  birthValue: number
+  birthMeaning: string
+  soulDescription: string
+  soulStrengths: string[]
+  soulChallenges: string[]
+  destinyDescription: string
+  lifePurpose: string
+  careerPaths: string[]
+  personalityDescription: string
+  personalityTraits: string[]
+  expressionModes: string[]
+  hebrewLetters: Array<{
+    hebrew: string
+    english: string
+    value: number
+    meaning: string
+  }>
+  guidance: string
+  recommendations: Array<{ title: string; description: string; instructions: string[]; benefits: string[] }>
+  // Additional comprehensive data
+  chart?: KabbalisticChart
+  spiritualPath?: any
+  relationships?: any
+  career?: any
+  currentCycle?: any
+  remedies?: Array<{ title: string; description: string; instructions: string[]; benefits: string[] }>
+}
+
+export async function getKabbalisticAnalysis(
+  userId: string,
+  data: { name: string; birthDate: string }
+): Promise<SimplifiedKabbalisticAnalysis> {
+  const fullAnalysis = await kabbalisticNumerologyIntelligence.analyzeKabbalistic({
+    fullName: data.name,
+    birthDate: data.birthDate
+  })
+
+  const nameAnalysis = fullAnalysis.chart.nameAnalysis
+  const dominantSephirot = fullAnalysis.chart.sephirot[0]
+
+  // Calculate birth date gematria
+  const birthDateStr = data.birthDate.replace(/-/g, '')
+  const birthValue = birthDateStr.split('').reduce((sum, digit) => sum + parseInt(digit) || 0, 0)
+  const reducedBirthValue = reduceNumber(birthValue)
+
+  // Get number meanings
+  const numberMeanings: { [key: number]: { meaning: string; description: string } } = {
+    1: { meaning: 'Leadership & Innovation', description: 'The Pioneer - Natural leader with strong willpower and divine connection' },
+    2: { meaning: 'Wisdom & Intuition', description: 'The Mediator - Intuitive wisdom and cooperative spirit' },
+    3: { meaning: 'Understanding & Structure', description: 'The Builder - Deep understanding and analytical thinking' },
+    4: { meaning: 'Mercy & Expansion', description: 'The Organizer - Compassionate action and generous spirit' },
+    5: { meaning: 'Strength & Justice', description: 'The Adventurer - Inner strength and righteous action' },
+    6: { meaning: 'Beauty & Harmony', description: 'The Nurturer - Inner harmony and balanced perspective' },
+    7: { meaning: 'Victory & Art', description: 'The Seeker - Creative expression and perseverance' },
+    8: { meaning: 'Glory & Communication', description: 'The Achiever - Clear communication and intellectual pursuits' },
+    9: { meaning: 'Foundation & Intuition', description: 'The Humanitarian - Emotional foundation and intuitive abilities' },
+    11: { meaning: 'Intuitive Vision', description: 'The Intuitive - Spiritual insight and inspiration' },
+    22: { meaning: 'Master Builder', description: 'The Master Builder - Practical vision and large-scale achievement' },
+    33: { meaning: 'Master Teacher', description: 'The Master Teacher - Universal love and healing abilities' }
+  }
+
+  const soulMeaning = numberMeanings[nameAnalysis.soulNumber] || numberMeanings[1]
+  const destinyMeaning = numberMeanings[nameAnalysis.destinyNumber] || numberMeanings[1]
+  const personalityMeaning = numberMeanings[nameAnalysis.personalityNumber] || numberMeanings[1]
+
+  // Transform Hebrew letters
+  const hebrewLetters = nameAnalysis.letters.map(letter => ({
+    hebrew: letter.letter,
+    english: letter.name,
+    value: letter.value,
+    meaning: letter.meaning
+  }))
+
+  // Build overview
+  const overview = `Your name "${data.name}" reveals a profound Kabbalistic pattern. Your Soul Number ${nameAnalysis.soulNumber} (${soulMeaning.meaning}) represents your inner essence and spiritual gifts. Your Destiny Number ${nameAnalysis.destinyNumber} (${destinyMeaning.meaning}) guides your life path, while your Personality Number ${nameAnalysis.personalityNumber} (${personalityMeaning.meaning}) shapes how others perceive you. Through the ancient art of Gematria, your name carries a total value of ${nameAnalysis.totalValue}, reduced to ${nameAnalysis.reducedValue}, connecting you to the divine energies of the Hebrew alphabet and the Tree of Life.`
+
+  // Build gematria description
+  const gematria = `Gematria is the ancient Kabbalistic practice of assigning numerical values to Hebrew letters. Your name "${data.name}" has a total Gematria value of ${nameAnalysis.totalValue}. When reduced, this becomes ${nameAnalysis.reducedValue}, revealing your connection to the ${dominantSephirot?.sephira || 'Divine'} Sephira on the Tree of Life. Each letter in your name carries specific spiritual energy and meaning, creating a unique vibrational pattern that influences your soul's journey.`
+
+  return {
+    overview,
+    soulNumber: nameAnalysis.soulNumber,
+    destinyNumber: nameAnalysis.destinyNumber,
+    personalityNumber: nameAnalysis.personalityNumber,
+    gematria,
+    nameValue: nameAnalysis.totalValue,
+    nameMeaning: `Your name carries the energy of ${soulMeaning.meaning}`,
+    birthValue: reducedBirthValue,
+    birthMeaning: `Your birth date reveals the cycle of ${numberMeanings[reducedBirthValue]?.meaning || 'Divine Guidance'}`,
+    soulDescription: fullAnalysis.personality.lifePurpose || soulMeaning.description,
+    soulStrengths: fullAnalysis.personality.strengths || [],
+    soulChallenges: fullAnalysis.personality.weaknesses || [],
+    destinyDescription: fullAnalysis.career.spiritualCalling?.join(', ') || destinyMeaning.description,
+    lifePurpose: fullAnalysis.personality.lifePurpose || `To express your ${soulMeaning.meaning} and fulfill your divine purpose`,
+    careerPaths: fullAnalysis.career.idealPaths || [],
+    personalityDescription: fullAnalysis.personality.coreTraits?.join(', ') || personalityMeaning.description,
+    personalityTraits: fullAnalysis.personality.coreTraits || [],
+    expressionModes: fullAnalysis.personality.spiritualGifts || [],
+    hebrewLetters,
+    guidance: fullAnalysis.spiritualPath.guidance?.join(' ') || 'Follow your inner wisdom and trust the divine guidance revealed through your numbers.',
+    recommendations: fullAnalysis.remedies || [],
+    // Include comprehensive data for advanced features
+    chart: fullAnalysis.chart,
+    spiritualPath: fullAnalysis.spiritualPath,
+    relationships: fullAnalysis.relationships,
+    career: fullAnalysis.career,
+    currentCycle: fullAnalysis.currentCycle,
+    remedies: fullAnalysis.remedies
+  }
+} 

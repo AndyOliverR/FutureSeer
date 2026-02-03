@@ -1,6 +1,7 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
 import { db } from '@/lib/firebase'
+import { palmistryImageAnalyzer } from './palmistry/palmistryImageAnalyzer'
 
 export interface PalmLine {
   name: string
@@ -231,7 +232,23 @@ class PalmistryIntelligence {
     'Creating positive life changes'
   ]
 
-  async analyzePalm(hand: 'left' | 'right' | 'both', dominantHand: 'left' | 'right', age: number, gender: 'male' | 'female' | 'other'): Promise<PalmistryAnalysis> {
+  async analyzePalm(hand: 'left' | 'right' | 'both', dominantHand: 'left' | 'right', age: number, gender: 'male' | 'female' | 'other', imageUrl?: string): Promise<PalmistryAnalysis> {
+    // If image URL is provided, use vision-based AI image analysis
+    // This provides REAL analysis of the actual palm photo using meta-llama/llama-4-maverick-17b-128e-instruct
+    // (Llama 4 Maverick - 128 expert MoE model optimized for vision tasks)
+    if (imageUrl) {
+      try {
+        console.log('🤲 Analyzing palm image with vision AI...');
+        const aiAnalysis = await palmistryImageAnalyzer.analyzePalmImage(imageUrl);
+        const formattedAnalysis = palmistryImageAnalyzer.formatPalmistryData(aiAnalysis, hand, dominantHand, age, gender);
+        return formattedAnalysis;
+      } catch (error) {
+        console.error('⚠️ Vision AI analysis failed, falling back to random generation:', error);
+        // Fall through to random generation below (not ideal, but maintains functionality)
+      }
+    }
+    
+    // Fallback to manual/random analysis if no image or AI analysis fails
     // Generate palm lines with detailed analysis
     const lines: PalmLine[] = this.palmLines.map(line => {
       const length = ['short', 'medium', 'long'][Math.floor(Math.random() * 3)] as any

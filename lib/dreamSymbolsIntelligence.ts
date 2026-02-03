@@ -206,6 +206,534 @@ const DREAM_SYMBOLS: { [key: string]: DreamSymbol } = {
     spiritualMeaning: 'Divine timing and spiritual cycles',
     psychologicalMeaning: 'Represents your relationship with time',
     advice: 'Trust divine timing and be patient'
+  },
+  // Additional Animals
+  'cat': {
+    symbol: 'cat',
+    category: 'animals',
+    meanings: ['independence', 'mystery', 'intuition', 'femininity'],
+    positiveInterpretation: 'Strong intuition and independent spirit',
+    negativeInterpretation: 'Isolation or being overly independent',
+    spiritualMeaning: 'Connection to feminine mysteries and intuition',
+    psychologicalMeaning: 'Represents your independence and self-sufficiency',
+    advice: 'Trust your intuition and maintain your independence'
+  },
+  'dog': {
+    symbol: 'dog',
+    category: 'animals',
+    meanings: ['loyalty', 'friendship', 'protection', 'companionship'],
+    positiveInterpretation: 'Loyal relationships and protection',
+    negativeInterpretation: 'Over-dependence or lack of boundaries',
+    spiritualMeaning: 'Faithful companions on your spiritual journey',
+    psychologicalMeaning: 'Represents loyalty and unconditional love',
+    advice: 'Nurture your relationships and protect what matters'
+  },
+  'bird': {
+    symbol: 'bird',
+    category: 'animals',
+    meanings: ['freedom', 'spirit', 'messages', 'perspective'],
+    positiveInterpretation: 'Freedom of spirit and higher perspective',
+    negativeInterpretation: 'Feeling trapped or disconnected',
+    spiritualMeaning: 'Messages from the divine and spiritual freedom',
+    psychologicalMeaning: 'Represents your aspirations and higher self',
+    advice: 'Soar above limitations and trust divine messages'
+  },
+  'lion': {
+    symbol: 'lion',
+    category: 'animals',
+    meanings: ['courage', 'leadership', 'power', 'strength'],
+    positiveInterpretation: 'Inner strength and leadership qualities',
+    negativeInterpretation: 'Aggression or misuse of power',
+    spiritualMeaning: 'Divine courage and royal authority',
+    psychologicalMeaning: 'Represents your inner power and confidence',
+    advice: 'Embrace your strength and lead with courage'
+  },
+  'wolf': {
+    symbol: 'wolf',
+    category: 'animals',
+    meanings: ['wildness', 'pack', 'instinct', 'loyalty'],
+    positiveInterpretation: 'Strong instincts and loyal connections',
+    negativeInterpretation: 'Feeling isolated or going against your nature',
+    spiritualMeaning: 'Primal wisdom and spiritual pack bonds',
+    psychologicalMeaning: 'Represents your wild nature and social bonds',
+    advice: 'Trust your instincts and value your pack'
+  },
+  'eagle': {
+    symbol: 'eagle',
+    category: 'animals',
+    meanings: ['freedom', 'vision', 'spiritual', 'soaring'],
+    positiveInterpretation: 'Clear vision and spiritual elevation',
+    negativeInterpretation: 'Being out of touch with reality',
+    spiritualMeaning: 'Connection to the divine and higher perspective',
+    psychologicalMeaning: 'Represents your ability to see the bigger picture',
+    advice: 'Rise above and see things from a higher perspective'
+  },
+  'horse': {
+    symbol: 'horse',
+    category: 'animals',
+    meanings: ['freedom', 'power', 'journey', 'wildness'],
+    positiveInterpretation: 'Freedom of movement and personal power',
+    negativeInterpretation: 'Feeling controlled or restricted',
+    spiritualMeaning: 'Journey of the soul and spiritual freedom',
+    psychologicalMeaning: 'Represents your drive and passion for life',
+    advice: 'Embrace your freedom and move forward with power'
+  },
+  'butterfly': {
+    symbol: 'butterfly',
+    category: 'animals',
+    meanings: ['transformation', 'beauty', 'change', 'freedom'],
+    positiveInterpretation: 'Beautiful transformation and positive change',
+    negativeInterpretation: 'Resistance to change or superficiality',
+    spiritualMeaning: 'Spiritual transformation and rebirth',
+    psychologicalMeaning: 'Represents your ability to transform and grow',
+    advice: 'Embrace transformation and allow yourself to change'
+  },
+  'spider': {
+    symbol: 'spider',
+    category: 'animals',
+    meanings: ['creativity', 'weaving', 'patience', 'fate'],
+    positiveInterpretation: 'Creative abilities and destiny creation',
+    negativeInterpretation: 'Feeling trapped in your own web',
+    spiritualMeaning: 'Weaving your own fate and spiritual creativity',
+    psychologicalMeaning: 'Represents your creative power and patience',
+    advice: 'Weave your destiny with patience and creativity'
+  },
+  'bear': {
+    symbol: 'bear',
+    category: 'animals',
+    meanings: ['strength', 'hibernation', 'introspection', 'protection'],
+    positiveInterpretation: 'Inner strength and protective instincts',
+    negativeInterpretation: 'Isolation or withdrawal from life',
+    spiritualMeaning: 'Deep introspection and spiritual strength',
+    psychologicalMeaning: 'Represents your need for rest and inner strength',
+    advice: 'Take time to rest and protect what matters to you'
+  },
+  // Additional Objects
+  'key': {
+    symbol: 'key',
+    category: 'objects',
+    meanings: ['access', 'opportunity', 'solution', 'freedom'],
+    positiveInterpretation: 'New opportunities and solutions to problems',
+    negativeInterpretation: 'Missing keys or feeling locked out',
+    spiritualMeaning: 'Keys to spiritual understanding and growth',
+    psychologicalMeaning: 'Represents solutions and access to new possibilities',
+    advice: 'Use the keys you have to unlock new opportunities'
+  },
+  'book': {
+    symbol: 'book',
+    category: 'objects',
+    meanings: ['knowledge', 'wisdom', 'learning', 'secrets'],
+    positiveInterpretation: 'New knowledge and wisdom coming your way',
+    negativeInterpretation: 'Feeling overwhelmed by information',
+    spiritualMeaning: 'Spiritual texts and divine knowledge',
+    psychologicalMeaning: 'Represents your quest for knowledge and understanding',
+    advice: 'Seek knowledge and wisdom in your journey'
+  },
+  'crown': {
+    symbol: 'crown',
+    category: 'objects',
+    meanings: ['authority', 'success', 'leadership', 'power'],
+    positiveInterpretation: 'Recognition and achievement of goals',
+    negativeInterpretation: 'Pressure of responsibility or arrogance',
+    spiritualMeaning: 'Divine authority and spiritual sovereignty',
+    psychologicalMeaning: 'Represents your inner authority and self-worth',
+    advice: 'Claim your power and lead with grace'
+  },
+  'ring': {
+    symbol: 'ring',
+    category: 'objects',
+    meanings: ['commitment', 'unity', 'eternity', 'bond'],
+    positiveInterpretation: 'Deep commitments and eternal bonds',
+    negativeInterpretation: 'Feeling trapped in commitments',
+    spiritualMeaning: 'Sacred bonds and spiritual commitments',
+    psychologicalMeaning: 'Represents your relationships and commitments',
+    advice: 'Honor your commitments and strengthen your bonds'
+  },
+  'ladder': {
+    symbol: 'ladder',
+    category: 'objects',
+    meanings: ['progress', 'ascent', 'opportunity', 'growth'],
+    positiveInterpretation: 'Climbing to new heights and progress',
+    negativeInterpretation: 'Feeling stuck or unable to progress',
+    spiritualMeaning: 'Spiritual ascent and divine elevation',
+    psychologicalMeaning: 'Represents your journey and upward progress',
+    advice: 'Continue climbing and reaching for higher goals'
+  },
+  'ship': {
+    symbol: 'ship',
+    category: 'objects',
+    meanings: ['journey', 'adventure', 'exploration', 'passage'],
+    positiveInterpretation: 'New journeys and adventures ahead',
+    negativeInterpretation: 'Feeling adrift or directionless',
+    spiritualMeaning: 'Journey of the soul and spiritual exploration',
+    psychologicalMeaning: 'Represents your life journey and exploration',
+    advice: 'Embark on new adventures and trust your journey'
+  },
+  'money': {
+    symbol: 'money',
+    category: 'objects',
+    meanings: ['security', 'value', 'resources', 'abundance'],
+    positiveInterpretation: 'Financial security and abundance',
+    negativeInterpretation: 'Financial worries or material attachment',
+    spiritualMeaning: 'Spiritual abundance and resourcefulness',
+    psychologicalMeaning: 'Represents your values and sense of security',
+    advice: 'Value what truly matters and attract abundance'
+  },
+  'gift': {
+    symbol: 'gift',
+    category: 'objects',
+    meanings: ['blessing', 'surprise', 'reward', 'generosity'],
+    positiveInterpretation: 'Unexpected blessings and rewards',
+    negativeInterpretation: 'Feeling unworthy or ungrateful',
+    spiritualMeaning: 'Divine gifts and spiritual blessings',
+    psychologicalMeaning: 'Represents receiving and giving love',
+    advice: 'Accept blessings graciously and share your gifts'
+  },
+  'candle': {
+    symbol: 'candle',
+    category: 'objects',
+    meanings: ['light', 'guidance', 'hope', 'spirituality'],
+    positiveInterpretation: 'Inner light and spiritual guidance',
+    negativeInterpretation: 'Feeling lost or in darkness',
+    spiritualMeaning: 'Divine light and spiritual illumination',
+    psychologicalMeaning: 'Represents hope and inner wisdom',
+    advice: 'Let your inner light guide you through darkness'
+  },
+  'sword': {
+    symbol: 'sword',
+    category: 'objects',
+    meanings: ['power', 'protection', 'justice', 'cutting'],
+    positiveInterpretation: 'Cutting through obstacles with clarity',
+    negativeInterpretation: 'Aggression or conflict',
+    spiritualMeaning: 'Spiritual protection and truth cutting through illusion',
+    psychologicalMeaning: 'Represents your ability to cut through confusion',
+    advice: 'Use your power wisely and cut through obstacles'
+  },
+  // Additional Places
+  'forest': {
+    symbol: 'forest',
+    category: 'places',
+    meanings: ['mystery', 'nature', 'exploration', 'wildness'],
+    positiveInterpretation: 'Exploring the unknown and connecting with nature',
+    negativeInterpretation: 'Feeling lost or overwhelmed by complexity',
+    spiritualMeaning: 'Sacred groves and spiritual exploration',
+    psychologicalMeaning: 'Represents your journey through life\'s mysteries',
+    advice: 'Explore the unknown with curiosity and courage'
+  },
+  'desert': {
+    symbol: 'desert',
+    category: 'places',
+    meanings: ['isolation', 'purification', 'spirituality', 'challenge'],
+    positiveInterpretation: 'Spiritual purification and inner strength',
+    negativeInterpretation: 'Feeling isolated or spiritually dry',
+    spiritualMeaning: 'Desert spirituality and divine testing',
+    psychologicalMeaning: 'Represents your need for solitude and clarity',
+    advice: 'Endure challenges and find strength in solitude'
+  },
+  'cave': {
+    symbol: 'cave',
+    category: 'places',
+    meanings: ['hidden', 'safety', 'introspection', 'mystery'],
+    positiveInterpretation: 'Safe place for introspection and healing',
+    negativeInterpretation: 'Hiding or avoiding reality',
+    spiritualMeaning: 'Sacred inner sanctuary and spiritual retreat',
+    psychologicalMeaning: 'Represents your need for safety and reflection',
+    advice: 'Take time for introspection but don\'t hide from life'
+  },
+  'island': {
+    symbol: 'island',
+    category: 'places',
+    meanings: ['isolation', 'independence', 'peace', 'self'],
+    positiveInterpretation: 'Independence and self-discovery',
+    negativeInterpretation: 'Feeling isolated or cut off',
+    spiritualMeaning: 'Sacred space for spiritual development',
+    psychologicalMeaning: 'Represents your need for independence and space',
+    advice: 'Embrace independence while staying connected'
+  },
+  'temple': {
+    symbol: 'temple',
+    category: 'places',
+    meanings: ['sacred', 'spirituality', 'worship', 'peace'],
+    positiveInterpretation: 'Spiritual connection and inner peace',
+    negativeInterpretation: 'Feeling disconnected from spirituality',
+    spiritualMeaning: 'Sacred space and divine connection',
+    psychologicalMeaning: 'Represents your need for spiritual fulfillment',
+    advice: 'Create sacred space in your life and connect with the divine'
+  },
+  'city': {
+    symbol: 'city',
+    category: 'places',
+    meanings: ['civilization', 'opportunity', 'complexity', 'life'],
+    positiveInterpretation: 'New opportunities and social connections',
+    negativeInterpretation: 'Feeling overwhelmed or lost in the crowd',
+    spiritualMeaning: 'Collective consciousness and urban spirituality',
+    psychologicalMeaning: 'Represents your relationship with society',
+    advice: 'Find balance between social engagement and personal space'
+  },
+  // Additional Actions
+  'running': {
+    symbol: 'running',
+    category: 'actions',
+    meanings: ['escape', 'freedom', 'energy', 'pursuit'],
+    positiveInterpretation: 'Moving forward with energy and purpose',
+    negativeInterpretation: 'Running from problems or responsibilities',
+    spiritualMeaning: 'Spiritual movement and divine pursuit',
+    psychologicalMeaning: 'Represents your drive and momentum',
+    advice: 'Keep moving forward but don\'t run from your problems'
+  },
+  'swimming': {
+    symbol: 'swimming',
+    category: 'actions',
+    meanings: ['emotions', 'flow', 'adaptation', 'movement'],
+    positiveInterpretation: 'Adapting to emotions and flowing with life',
+    negativeInterpretation: 'Struggling or drowning in emotions',
+    spiritualMeaning: 'Emotional flow and spiritual adaptation',
+    psychologicalMeaning: 'Represents your relationship with your emotions',
+    advice: 'Flow with your emotions and adapt to changes'
+  },
+  'dancing': {
+    symbol: 'dancing',
+    category: 'actions',
+    meanings: ['joy', 'expression', 'freedom', 'celebration'],
+    positiveInterpretation: 'Joyful expression and celebration of life',
+    negativeInterpretation: 'Lack of rhythm or feeling out of sync',
+    spiritualMeaning: 'Divine dance and spiritual celebration',
+    psychologicalMeaning: 'Represents your need for joy and expression',
+    advice: 'Express yourself joyfully and celebrate life'
+  },
+  'eating': {
+    symbol: 'eating',
+    category: 'actions',
+    meanings: ['nourishment', 'consumption', 'satisfaction', 'desire'],
+    positiveInterpretation: 'Nourishment and satisfaction of needs',
+    negativeInterpretation: 'Consuming or being consumed',
+    spiritualMeaning: 'Spiritual nourishment and divine sustenance',
+    psychologicalMeaning: 'Represents your needs and desires',
+    advice: 'Nourish yourself physically, emotionally, and spiritually'
+  },
+  'singing': {
+    symbol: 'singing',
+    category: 'actions',
+    meanings: ['expression', 'harmony', 'voice', 'communication'],
+    positiveInterpretation: 'Expressing yourself and finding your voice',
+    negativeInterpretation: 'Feeling unheard or unable to express',
+    spiritualMeaning: 'Divine expression and spiritual harmony',
+    psychologicalMeaning: 'Represents your need for expression and communication',
+    advice: 'Find your voice and express yourself authentically'
+  },
+  'crying': {
+    symbol: 'crying',
+    category: 'actions',
+    meanings: ['release', 'emotion', 'healing', 'sadness'],
+    positiveInterpretation: 'Emotional release and healing',
+    negativeInterpretation: 'Overwhelming sadness or inability to process',
+    spiritualMeaning: 'Spiritual cleansing and emotional purification',
+    psychologicalMeaning: 'Represents your need for emotional release',
+    advice: 'Allow yourself to feel and release your emotions'
+  },
+  'laughing': {
+    symbol: 'laughing',
+    category: 'actions',
+    meanings: ['joy', 'release', 'healing', 'happiness'],
+    positiveInterpretation: 'Joy and healing through laughter',
+    negativeInterpretation: 'Nervous laughter or avoiding seriousness',
+    spiritualMeaning: 'Divine joy and spiritual lightness',
+    psychologicalMeaning: 'Represents your need for joy and lightness',
+    advice: 'Find joy in life and laugh freely'
+  },
+  // Additional People
+  'child': {
+    symbol: 'child',
+    category: 'people',
+    meanings: ['innocence', 'potential', 'play', 'new'],
+    positiveInterpretation: 'New beginnings and innocent joy',
+    negativeInterpretation: 'Feeling childish or immature',
+    spiritualMeaning: 'Divine child and spiritual innocence',
+    psychologicalMeaning: 'Represents your inner child and potential',
+    advice: 'Embrace your inner child and maintain wonder'
+  },
+  'old person': {
+    symbol: 'old person',
+    category: 'people',
+    meanings: ['wisdom', 'age', 'experience', 'tradition'],
+    positiveInterpretation: 'Wisdom and life experience',
+    negativeInterpretation: 'Fear of aging or feeling outdated',
+    spiritualMeaning: 'Elder wisdom and spiritual tradition',
+    psychologicalMeaning: 'Represents accumulated wisdom and experience',
+    advice: 'Value wisdom and honor your journey'
+  },
+  'stranger': {
+    symbol: 'stranger',
+    category: 'people',
+    meanings: ['unknown', 'mystery', 'new', 'warning'],
+    positiveInterpretation: 'New encounters and unknown possibilities',
+    negativeInterpretation: 'Feeling threatened or suspicious',
+    spiritualMeaning: 'Divine messengers and spiritual encounters',
+    psychologicalMeaning: 'Represents unknown aspects of yourself',
+    advice: 'Be open to new encounters but trust your intuition'
+  },
+  'teacher': {
+    symbol: 'teacher',
+    category: 'people',
+    meanings: ['guidance', 'learning', 'wisdom', 'authority'],
+    positiveInterpretation: 'Receiving guidance and learning',
+    negativeInterpretation: 'Feeling judged or criticized',
+    spiritualMeaning: 'Spiritual teachers and divine guidance',
+    psychologicalMeaning: 'Represents your need for guidance and learning',
+    advice: 'Be open to learning and accept guidance'
+  },
+  // Colors
+  'red': {
+    symbol: 'red',
+    category: 'colors',
+    meanings: ['passion', 'energy', 'anger', 'vitality'],
+    positiveInterpretation: 'Passionate energy and vitality',
+    negativeInterpretation: 'Anger or overwhelming passion',
+    spiritualMeaning: 'Root chakra and life force energy',
+    psychologicalMeaning: 'Represents your passion and energy levels',
+    advice: 'Channel your passion constructively'
+  },
+  'blue': {
+    symbol: 'blue',
+    category: 'colors',
+    meanings: ['calm', 'communication', 'sadness', 'peace'],
+    positiveInterpretation: 'Peace and clear communication',
+    negativeInterpretation: 'Sadness or emotional suppression',
+    spiritualMeaning: 'Throat chakra and divine communication',
+    psychologicalMeaning: 'Represents your communication and emotional state',
+    advice: 'Express yourself clearly and find peace'
+  },
+  'green': {
+    symbol: 'green',
+    category: 'colors',
+    meanings: ['growth', 'nature', 'healing', 'balance'],
+    positiveInterpretation: 'Growth and healing',
+    negativeInterpretation: 'Envy or stagnation',
+    spiritualMeaning: 'Heart chakra and spiritual growth',
+    psychologicalMeaning: 'Represents your growth and healing process',
+    advice: 'Focus on growth and healing'
+  },
+  'yellow': {
+    symbol: 'yellow',
+    category: 'colors',
+    meanings: ['joy', 'intellect', 'wisdom', 'sun'],
+    positiveInterpretation: 'Joy and intellectual clarity',
+    negativeInterpretation: 'Anxiety or overthinking',
+    spiritualMeaning: 'Solar plexus chakra and divine wisdom',
+    psychologicalMeaning: 'Represents your mental state and joy',
+    advice: 'Cultivate joy and use your intellect wisely'
+  },
+  'black': {
+    symbol: 'black',
+    category: 'colors',
+    meanings: ['mystery', 'unknown', 'protection', 'end'],
+    positiveInterpretation: 'Mystery and protection',
+    negativeInterpretation: 'Fear or the unknown',
+    spiritualMeaning: 'Void and spiritual mystery',
+    psychologicalMeaning: 'Represents the unknown and hidden aspects',
+    advice: 'Embrace mystery and trust the unknown'
+  },
+  'white': {
+    symbol: 'white',
+    category: 'colors',
+    meanings: ['purity', 'spirit', 'light', 'beginning'],
+    positiveInterpretation: 'Purity and new beginnings',
+    negativeInterpretation: 'Void or emptiness',
+    spiritualMeaning: 'Divine light and spiritual purity',
+    psychologicalMeaning: 'Represents purity and clarity',
+    advice: 'Seek purity and clarity in your life'
+  },
+  // Numbers
+  'one': {
+    symbol: 'one',
+    category: 'numbers',
+    meanings: ['unity', 'beginning', 'self', 'independence'],
+    positiveInterpretation: 'New beginnings and independence',
+    negativeInterpretation: 'Isolation or self-centeredness',
+    spiritualMeaning: 'Divine unity and oneness',
+    psychologicalMeaning: 'Represents your individuality and independence',
+    advice: 'Embrace your uniqueness while staying connected'
+  },
+  'two': {
+    symbol: 'two',
+    category: 'numbers',
+    meanings: ['balance', 'partnership', 'duality', 'cooperation'],
+    positiveInterpretation: 'Harmony and balanced partnerships',
+    negativeInterpretation: 'Conflict or imbalance',
+    spiritualMeaning: 'Divine balance and sacred partnerships',
+    psychologicalMeaning: 'Represents your relationships and balance',
+    advice: 'Seek balance in all areas of your life'
+  },
+  'three': {
+    symbol: 'three',
+    category: 'numbers',
+    meanings: ['creativity', 'expression', 'trinity', 'growth'],
+    positiveInterpretation: 'Creative expression and growth',
+    negativeInterpretation: 'Scattered energy or lack of focus',
+    spiritualMeaning: 'Divine trinity and spiritual expression',
+    psychologicalMeaning: 'Represents your creativity and self-expression',
+    advice: 'Express yourself creatively and embrace growth'
+  },
+  // Additional Elements
+  'earth': {
+    symbol: 'earth',
+    category: 'elements',
+    meanings: ['grounding', 'stability', 'material', 'practical'],
+    positiveInterpretation: 'Stability and practical foundation',
+    negativeInterpretation: 'Feeling stuck or material attachment',
+    spiritualMeaning: 'Earth element and grounding energy',
+    psychologicalMeaning: 'Represents your need for stability and grounding',
+    advice: 'Stay grounded and build a stable foundation'
+  },
+  'air': {
+    symbol: 'air',
+    category: 'elements',
+    meanings: ['mind', 'communication', 'freedom', 'ideas'],
+    positiveInterpretation: 'Clear thinking and communication',
+    negativeInterpretation: 'Scattered thoughts or lack of grounding',
+    spiritualMeaning: 'Air element and mental clarity',
+    psychologicalMeaning: 'Represents your mental state and communication',
+    advice: 'Clear your mind and communicate clearly'
+  },
+  'storm': {
+    symbol: 'storm',
+    category: 'elements',
+    meanings: ['turmoil', 'change', 'power', 'cleansing'],
+    positiveInterpretation: 'Powerful change and emotional cleansing',
+    negativeInterpretation: 'Chaos or overwhelming emotions',
+    spiritualMeaning: 'Divine cleansing and spiritual transformation',
+    psychologicalMeaning: 'Represents emotional upheaval and change',
+    advice: 'Embrace change and allow emotional cleansing'
+  },
+  'sun': {
+    symbol: 'sun',
+    category: 'elements',
+    meanings: ['life', 'energy', 'consciousness', 'power'],
+    positiveInterpretation: 'Vitality and conscious awareness',
+    negativeInterpretation: 'Burnout or overwhelming energy',
+    spiritualMeaning: 'Divine light and spiritual consciousness',
+    psychologicalMeaning: 'Represents your consciousness and energy',
+    advice: 'Channel your energy wisely and stay conscious'
+  },
+  'moon': {
+    symbol: 'moon',
+    category: 'elements',
+    meanings: ['emotions', 'intuition', 'cycles', 'feminine'],
+    positiveInterpretation: 'Intuition and emotional understanding',
+    negativeInterpretation: 'Emotional overwhelm or moodiness',
+    spiritualMeaning: 'Lunar energy and divine intuition',
+    psychologicalMeaning: 'Represents your emotions and intuition',
+    advice: 'Trust your intuition and honor your emotional cycles'
+  },
+  'star': {
+    symbol: 'star',
+    category: 'elements',
+    meanings: ['hope', 'guidance', 'destiny', 'light'],
+    positiveInterpretation: 'Hope and divine guidance',
+    negativeInterpretation: 'Feeling lost or without direction',
+    spiritualMeaning: 'Divine guidance and spiritual destiny',
+    psychologicalMeaning: 'Represents your hopes and guidance',
+    advice: 'Follow your stars and trust in guidance'
   }
 }
 

@@ -17,12 +17,12 @@ export function PredictionHistoryCard({ items }: PredictionHistoryCardProps) {
   const router = useRouter()
   return (
     <section className="w-full">
-      <h3 className="text-xl font-serif text-amber-200 mb-4 px-2">Recent Predictions</h3>
+      <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 mb-4 px-2">Recent Predictions</h3>
       <div className="flex gap-4 overflow-x-auto pb-2">
         {items.slice(0, 3).map((item) => (
           <div
             key={item.id}
-            className="min-w-[260px] max-w-xs flex-shrink-0 rounded-2xl backdrop-blur-md bg-slate-900/40 border border-slate-700/50 shadow-lg p-6 flex flex-col gap-3 items-start justify-between"
+            className="min-w-[260px] max-w-xs flex-shrink-0 rounded-2xl backdrop-blur-sm bg-slate-900/30 border border-slate-700/50 shadow-lg p-6 flex flex-col gap-3 items-start justify-between"
           >
             <div className="text-xs text-slate-400 font-serif mb-1">{formatDate(item.date)}</div>
             <div className="text-lg font-serif text-amber-100 mb-2 line-clamp-2">{item.question}</div>

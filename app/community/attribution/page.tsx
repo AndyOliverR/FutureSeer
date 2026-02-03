@@ -7,8 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Eye, EyeOff, Send, X, ArrowUp, ArrowDown, Award, Flame, Crown, Sparkles, Zap, Moon, Sun } from 'lucide-react';
+import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Eye, EyeOff, Send, X, ArrowUp, ArrowDown, Award, Flame, Crown, Sparkles, Zap, Moon, Sun, Plus } from 'lucide-react';
+import { DiscussionCard } from '@/components/community/DiscussionCard';
+import { DiscussionForm } from '@/components/community/DiscussionForm';
 import { useToast } from '@/components/ui/use-toast';
+import { TopNavBar } from '@/components/TopNavBar';
 
 interface UserContribution {
   id: string;
@@ -96,245 +99,210 @@ export default function CommunityAttributionPage() {
   const [connectionRequest, setConnectionRequest] = useState({ topic: '', message: '' });
   const [activeTab, setActiveTab] = useState<'members' | 'discussions' | 'contributions'>('members');
   const [loading, setLoading] = useState(true);
+  const [showDiscussionForm, setShowDiscussionForm] = useState(false);
+  const [userVotes, setUserVotes] = useState<Record<string, 'up' | 'down'>>({});
 
   useEffect(() => {
-    // Simulate loading user attribution data
-    setTimeout(() => {
-      setAttribution({
-        contributions: [
-          {
-            id: '1',
-            type: 'suggestion',
-            title: 'Hamburger Menu Toggle',
-            description: 'Make hamburger icon a toggle instead of requiring external click to close',
-            status: 'implemented',
-            impact: 'high',
-            date: '2025-01-15',
-            implementedDate: '2025-01-20',
-            upvotes: 45,
-            downvotes: 2,
-            comments: 12
-          },
-          {
-            id: '2',
-            type: 'feature-request',
-            title: 'User Feedback Attribution',
-            description: 'Add attribution system for user contributions',
-            status: 'implemented',
-            impact: 'high',
-            date: '2025-01-10',
-            implementedDate: '2025-01-25',
-            upvotes: 67,
-            downvotes: 1,
-            comments: 18
-          },
-          {
-            id: '3',
-            type: 'suggestion',
-            title: 'Referral Sharing Mechanism',
-            description: 'Add share app functionality with tracking',
-            status: 'in-progress',
-            impact: 'medium',
-            date: '2025-01-12',
-            upvotes: 23,
-            downvotes: 3,
-            comments: 8
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    loadCommunityData();
+  }, [user]);
+
+  const loadCommunityData = async () => {
+    try {
+      setLoading(true);
+
+      // Auto-join user to community if signed in
+      if (user?.uid && user?.displayName) {
+        try {
+          await fetch('/api/community/members/auto-join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.uid,
+              userName: user.displayName || user.email || 'Anonymous',
+              email: user.email || null,
+              photoURL: user.photoURL || null,
+              joinDate: user.metadata?.creationTime || new Date().toISOString(),
+            }),
+          });
+        } catch (error) {
+          console.error('Error auto-joining community:', error);
+          // Continue even if auto-join fails
+        }
+      }
+
+      // Load community members
+      const membersResponse = await fetch('/api/community/members?limit=50');
+      if (membersResponse.ok) {
+        const membersData = await membersResponse.json();
+        if (membersData.success) {
+          setCommunityMembers(membersData.members.map((m: any) => ({
+            id: m.userId || m.id,
+            name: m.name,
+            contributions: m.contributions || 0,
+            impact: m.karma || 0, // Using karma as impact score
+            joinDate: m.joinDate,
+            lastActive: m.lastActive,
+            interests: m.interests || [],
+            isOnline: m.isOnline || false,
+            karma: m.karma || 0,
+            flair: m.flair || '',
+            badges: m.badges || [],
+            level: m.level || 'Novice',
+            streak: m.streak || 0,
+            reputation: m.reputation || 'Respected',
+          })));
+        }
+      }
+
+      // Load discussions
+      const discussionsResponse = await fetch('/api/community/discussions?status=active&limit=20');
+      if (discussionsResponse.ok) {
+        const discussionsData = await discussionsResponse.json();
+        if (discussionsData.success) {
+          setDiscussionThreads(discussionsData.discussions.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            content: d.content,
+            author: d.authorName,
+            authorId: d.authorId,
+            date: d.createdAt,
+            upvotes: d.upvotes || 0,
+            downvotes: d.downvotes || 0,
+            comments: d.commentCount || 0,
+            category: d.category,
+            priority: d.priority || 'medium',
+            status: d.status,
+            isHot: d.isHot || false,
+            isSticky: d.isSticky || false,
+          })));
+
+          // Load user votes for discussions
+          if (user?.uid) {
+            const votePromises = discussionsData.discussions.map(async (d: any) => {
+              const voteResponse = await fetch(
+                `/api/community/votes?userId=${user.uid}&discussionId=${d.id}`
+              );
+              if (voteResponse.ok) {
+                const voteData = await voteResponse.json();
+                if (voteData.success && voteData.hasVoted) {
+                  return { discussionId: d.id, voteType: voteData.voteType };
+                }
+              }
+              return null;
+            });
+
+            const votes = await Promise.all(votePromises);
+            const votesMap: Record<string, 'up' | 'down'> = {};
+            votes.forEach((vote) => {
+              if (vote) {
+                votesMap[vote.discussionId] = vote.voteType;
+              }
+            });
+            setUserVotes(votesMap);
           }
-        ],
-        referralStats: {
-          totalInvites: 5,
-          successfulSignups: 3,
-          pendingInvites: 2,
-          lastInviteDate: '2025-01-18'
-        },
-        totalImpact: 8,
-        thankYouMessages: [
-          "Thank you for helping make FutureSeer better! ✨",
-          "Your feedback directly improved the user experience 🌟",
-          "You're part of our mystical community's growth 🔮"
-        ]
-      });
-
-      // Simulate community members data with Reddit-inspired features
-      setCommunityMembers([
-        {
-          id: '1',
-          name: 'Sarah Johnson',
-          contributions: 12,
-          impact: 15,
-          joinDate: '2024-11-15',
-          lastActive: '2025-01-25',
-          interests: ['Astrology', 'Tarot', 'Numerology'],
-          isOnline: true,
-          karma: 2847,
-          flair: '🔮 Tarot Master',
-          badges: ['Early Adopter', 'Helpful', 'Verified Mystic'],
-          level: 'Master',
-          streak: 15,
-          reputation: 'Legendary'
-        },
-        {
-          id: '2',
-          name: 'Mike Chen',
-          contributions: 8,
-          impact: 12,
-          joinDate: '2024-12-01',
-          lastActive: '2025-01-24',
-          interests: ['Vedic Astrology', 'Palmistry'],
-          isOnline: false,
-          karma: 1567,
-          flair: '🌙 Vedic Sage',
-          badges: ['Contributor', 'Knowledgeable'],
-          level: 'Adept',
-          streak: 8,
-          reputation: 'Trusted'
-        },
-        {
-          id: '3',
-          name: 'Emma Davis',
-          contributions: 15,
-          impact: 20,
-          joinDate: '2024-10-20',
-          lastActive: '2025-01-25',
-          interests: ['Western Astrology', 'Dream Analysis'],
-          isOnline: true,
-          karma: 3421,
-          flair: '⭐ Astrology Expert',
-          badges: ['Top Contributor', 'Community Pillar', 'Mystical Guide'],
-          level: 'Grandmaster',
-          streak: 23,
-          reputation: 'Mystical'
-        },
-        {
-          id: '4',
-          name: 'Alex Rodriguez',
-          contributions: 6,
-          impact: 9,
-          joinDate: '2024-12-10',
-          lastActive: '2025-01-23',
-          interests: ['Kabbalah', 'Angel Numbers'],
-          isOnline: false,
-          karma: 892,
-          flair: '✨ Kabbalah Student',
-          badges: ['Newcomer', 'Curious'],
-          level: 'Apprentice',
-          streak: 5,
-          reputation: 'Respected'
-        },
-        {
-          id: '5',
-          name: 'Priya Patel',
-          contributions: 18,
-          impact: 25,
-          joinDate: '2024-09-15',
-          lastActive: '2025-01-25',
-          interests: ['Vedic Astrology', 'Gemstones', 'Mantras'],
-          isOnline: true,
-          karma: 4123,
-          flair: '💎 Gemstone Guru',
-          badges: ['Founding Member', 'Wisdom Keeper', 'Mystical Elder'],
-          level: 'Grandmaster',
-          streak: 31,
-          reputation: 'Mystical'
         }
-      ]);
+      }
 
-      // Simulate discussion threads focused on FutureSeer tools
-      setDiscussionThreads([
-        {
-          id: '1',
-          title: 'Vedic Astrology predictions accuracy - Career guidance success stories',
-          content: 'I\'ve been using the Vedic Astrology tool and it predicted my career change with incredible accuracy. The planetary positions analysis was spot-on! Anyone else have similar experiences with career guidance?',
-          author: 'Emma Davis',
-          authorId: '3',
-          date: '2025-01-25',
-          upvotes: 156,
-          downvotes: 3,
-          comments: 42,
-          category: 'vedic',
-          priority: 'high',
-          status: 'active',
-          isHot: true,
-          isSticky: false,
-          actionRequired: true,
-          adminNotes: 'High engagement - consider adding more Vedic career guidance features'
-        },
-        {
-          id: '2',
-          title: 'Tarot Reading Tips: How to interpret FutureSeer\'s AI-generated spreads',
-          content: 'As a tarot master, I wanted to share tips for interpreting FutureSeer\'s AI-generated tarot spreads. The key is to focus on your intention and trust your intuition while using the AI insights...',
-          author: 'Sarah Johnson',
-          authorId: '1',
-          date: '2025-01-24',
-          upvotes: 89,
-          downvotes: 1,
-          comments: 23,
-          category: 'tarot',
-          priority: 'medium',
-          status: 'active',
-          isHot: false,
-          isSticky: true
-        },
-        {
-          id: '3',
-          title: 'Numerology vs Angel Numbers: Which FutureSeer tool gives better insights?',
-          content: 'I\'ve been comparing the Numerology tool with Angel Numbers. Both are fascinating but serve different purposes. Numerology gives deeper life path insights while Angel Numbers provide daily guidance...',
-          author: 'Alex Rodriguez',
-          authorId: '4',
-          date: '2025-01-23',
-          upvotes: 67,
-          downvotes: 2,
-          comments: 18,
-          category: 'numerology',
-          priority: 'medium',
-          status: 'active',
-          isHot: false,
-          isSticky: false
-        },
-        {
-          id: '4',
-          title: 'Palmistry Reading Accuracy - Lines interpretation feedback',
-          content: 'The palmistry tool is amazing! The AI correctly identified my life line and heart line patterns. Has anyone else found the palm reading feature to be accurate?',
-          author: 'Priya Patel',
-          authorId: '5',
-          date: '2025-01-22',
-          upvotes: 45,
-          downvotes: 1,
-          comments: 12,
-          category: 'palmistry',
-          priority: 'low',
-          status: 'active',
-          isHot: false,
-          isSticky: false
-        },
-        {
-          id: '5',
-          title: 'Dream Analysis Tool: Symbol interpretation accuracy',
-          content: 'The dream analysis feature helped me understand recurring symbols in my dreams. The AI interpretation was surprisingly accurate and provided deep psychological insights...',
-          author: 'Mike Chen',
-          authorId: '2',
-          date: '2025-01-21',
-          upvotes: 34,
-          downvotes: 0,
-          comments: 8,
-          category: 'dream-analysis',
-          priority: 'low',
-          status: 'active',
-          isHot: false,
-          isSticky: false
+      // Load user attribution (contributions and referral stats)
+      if (user?.uid) {
+        try {
+          const attributionResponse = await fetch(`/api/community/attribution/${user.uid}`);
+          if (attributionResponse.ok) {
+            const attributionData = await attributionResponse.json();
+            if (attributionData.success && attributionData.attribution) {
+              setAttribution({
+                contributions: attributionData.attribution.contributions || [],
+                referralStats: attributionData.attribution.referralStats || {
+                  totalInvites: 0,
+                  successfulSignups: 0,
+                  pendingInvites: 0,
+                },
+                totalImpact: attributionData.attribution.totalImpact || 0,
+                thankYouMessages: attributionData.attribution.thankYouMessages || [
+                  "Thank you for helping make FutureSeer better! ✨",
+                  "Your feedback directly improved the user experience 🌟",
+                  "You're part of our mystical community's growth 🔮"
+                ]
+              });
+            } else {
+              // Fallback to empty data if API returns no data
+              setAttribution({
+                contributions: [],
+                referralStats: {
+                  totalInvites: 0,
+                  successfulSignups: 0,
+                  pendingInvites: 0,
+                },
+                totalImpact: 0,
+                thankYouMessages: [
+                  "Welcome to the FutureSeer community! 🌟",
+                  "Your contributions make a difference ✨",
+                  "Together we build the future of mystical insights 🔮"
+                ]
+              });
+            }
+          } else {
+            // Fallback if API fails
+            setAttribution({
+              contributions: [],
+              referralStats: {
+                totalInvites: 0,
+                successfulSignups: 0,
+                pendingInvites: 0,
+              },
+              totalImpact: 0,
+              thankYouMessages: [
+                "Welcome to the FutureSeer community! 🌟",
+                "Your contributions make a difference ✨",
+                "Together we build the future of mystical insights 🔮"
+              ]
+            });
+          }
+        } catch (error) {
+          console.error('Error loading user attribution:', error);
+          // Fallback to empty data on error
+          setAttribution({
+            contributions: [],
+            referralStats: {
+              totalInvites: 0,
+              successfulSignups: 0,
+              pendingInvites: 0,
+            },
+            totalImpact: 0,
+            thankYouMessages: [
+              "Welcome to the FutureSeer community! 🌟",
+              "Your contributions make a difference ✨",
+              "Together we build the future of mystical insights 🔮"
+            ]
+          });
         }
-      ]);
+      }
 
       setLoading(false);
-    }, 1000);
-  }, []);
+    } catch (error) {
+      console.error('Error loading community data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load community data",
+        variant: "destructive"
+      });
+      setLoading(false);
+    }
+  };
 
   const handleConnectionRequest = (member: CommunityMember) => {
     setSelectedMember(member);
     setShowConnectionModal(true);
   };
 
-  const sendConnectionRequest = () => {
+  const sendConnectionRequest = async () => {
+    if (!user?.uid || !selectedMember) return;
+
     if (!connectionRequest.topic.trim() || !connectionRequest.message.trim()) {
       toast({
         title: "Missing Information",
@@ -344,72 +312,221 @@ export default function CommunityAttributionPage() {
       return;
     }
 
-    toast({
-      title: "Connection Request Sent! 📤",
-      description: `Your request has been sent to ${selectedMember?.name}`,
-    });
+    try {
+      const response = await fetch('/api/community/connections', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromUserId: user.uid,
+          fromUserName: user.displayName || user.email || 'Anonymous',
+          toUserId: selectedMember.id,
+          toUserName: selectedMember.name,
+          topic: connectionRequest.topic.trim(),
+          message: connectionRequest.message.trim(),
+        }),
+      });
 
-    setShowConnectionModal(false);
-    setConnectionRequest({ topic: '', message: '' });
-    setSelectedMember(null);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send connection request');
+      }
+
+      toast({
+        title: "Connection Request Sent! 📤",
+        description: `Your request has been sent to ${selectedMember.name}`,
+      });
+
+      setShowConnectionModal(false);
+      setConnectionRequest({ topic: '', message: '' });
+      setSelectedMember(null);
+    } catch (error: any) {
+      console.error('Error sending connection request:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send connection request",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleVote = (threadId: string, voteType: 'up' | 'down') => {
-    setDiscussionThreads(prev => prev.map(thread => {
-      if (thread.id === threadId) {
-        return {
-          ...thread,
-          upvotes: voteType === 'up' ? thread.upvotes + 1 : thread.upvotes,
-          downvotes: voteType === 'down' ? thread.downvotes + 1 : thread.downvotes
-        };
+  const handleVote = async (threadId: string, voteType: 'up' | 'down') => {
+    if (!user?.uid) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to vote",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Optimistic update
+      setDiscussionThreads(prev => prev.map(thread => {
+        if (thread.id === threadId) {
+          const currentVote = (thread as any).userVote;
+          let upvoteDelta = 0;
+          let downvoteDelta = 0;
+
+          if (currentVote === voteType) {
+            // Remove vote
+            upvoteDelta = voteType === 'up' ? -1 : 0;
+            downvoteDelta = voteType === 'down' ? -1 : 0;
+            (thread as any).userVote = null;
+          } else if (currentVote) {
+            // Switch vote
+            upvoteDelta = voteType === 'up' ? 1 : -1;
+            downvoteDelta = voteType === 'down' ? 1 : -1;
+            (thread as any).userVote = voteType;
+          } else {
+            // New vote
+            upvoteDelta = voteType === 'up' ? 1 : 0;
+            downvoteDelta = voteType === 'down' ? 1 : 0;
+            (thread as any).userVote = voteType;
+          }
+
+          return {
+            ...thread,
+            upvotes: Math.max(0, thread.upvotes + upvoteDelta),
+            downvotes: Math.max(0, thread.downvotes + downvoteDelta)
+          };
+        }
+        return thread;
+      }));
+
+      // Send vote to API
+      const response = await fetch('/api/community/votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.uid,
+          discussionId: threadId,
+          voteType,
+        }),
+      });
+
+      if (!response.ok) {
+        // Revert optimistic update on error
+        loadCommunityData();
+        throw new Error('Failed to record vote');
       }
-      return thread;
-    }));
+
+      const result = await response.json();
+      if (result.success) {
+        // Update user votes
+        if (result.voted) {
+          setUserVotes(prev => ({ ...prev, [threadId]: voteType }));
+        } else {
+          setUserVotes(prev => {
+            const updated = { ...prev };
+            delete updated[threadId];
+            return updated;
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error voting:', error);
+      toast({
+        title: "Error",
+        description: "Failed to record vote",
+        variant: "destructive"
+      });
+      // Reload to get correct state
+      loadCommunityData();
+    }
+  };
+
+  const handleCreateDiscussion = async (data: {
+    title: string;
+    content: string;
+    category: string;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+  }) => {
+    if (!user?.uid) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to create a discussion",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/community/discussions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...data,
+          userId: user.uid,
+          authorName: user.displayName || user.email || 'Anonymous',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create discussion');
+      }
+
+      toast({
+        title: "Discussion Created! 🎉",
+        description: "Your discussion has been posted to the community",
+      });
+
+      setShowDiscussionForm(false);
+      await loadCommunityData();
+    } catch (error: any) {
+      console.error('Error creating discussion:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create discussion",
+        variant: "destructive"
+      });
+      throw error;
+    }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'implemented': return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'in-progress': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'under-review': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'declined': return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+      case 'implemented': return 'bg-green-100 text-green-800 border-green-500/40';
+      case 'in-progress': return 'bg-blue-100 text-blue-800 border-blue-500/40';
+      case 'under-review': return 'bg-amber-100 text-amber-800 border-amber-500/40';
+      case 'declined': return 'bg-red-100 text-red-800 border-red-500/40';
+      default: return 'bg-slate-100 text-slate-700 border-slate-500/30';
     }
   };
 
   const getImpactColor = (impact: string) => {
     switch (impact) {
-      case 'high': return 'text-red-400';
-      case 'medium': return 'text-yellow-400';
-      case 'low': return 'text-green-400';
-      default: return 'text-gray-400';
+      case 'high': return 'text-red-700';
+      case 'medium': return 'text-amber-700';
+      case 'low': return 'text-green-700';
+      default: return 'text-slate-700';
     }
   };
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case 'Grandmaster': return 'text-purple-400';
-      case 'Master': return 'text-red-400';
-      case 'Adept': return 'text-blue-400';
-      case 'Apprentice': return 'text-green-400';
-      case 'Novice': return 'text-gray-400';
-      default: return 'text-gray-400';
+      case 'Grandmaster': return 'text-purple-700';
+      case 'Master': return 'text-red-700';
+      case 'Adept': return 'text-blue-700';
+      case 'Apprentice': return 'text-green-700';
+      case 'Novice': return 'text-slate-700';
+      default: return 'text-slate-700';
     }
   };
 
   const getReputationIcon = (reputation: string) => {
     switch (reputation) {
-      case 'Mystical': return <Crown className="w-4 h-4 text-purple-400" />;
-      case 'Legendary': return <Flame className="w-4 h-4 text-red-400" />;
-      case 'Trusted': return <Star className="w-4 h-4 text-yellow-400" />;
-      case 'Respected': return <Sparkles className="w-4 h-4 text-blue-400" />;
-      default: return <Star className="w-4 h-4 text-gray-400" />;
+      case 'Mystical': return <Crown className="w-4 h-4 text-purple-600" />;
+      case 'Legendary': return <Flame className="w-4 h-4 text-red-600" />;
+      case 'Trusted': return <Star className="w-4 h-4 text-amber-600" />;
+      case 'Respected': return <Sparkles className="w-4 h-4 text-blue-600" />;
+      default: return <Star className="w-4 h-4 text-slate-600" />;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="starfield-ultra-sharp min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
           <p className="text-amber-200">Loading your mystical community...</p>
@@ -420,7 +537,7 @@ export default function CommunityAttributionPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950 flex items-center justify-center">
+      <div className="starfield-ultra-sharp min-h-screen flex items-center justify-center">
         <Card className="w-96 bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
           <CardContent className="p-6 text-center">
             <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-4" />
@@ -436,97 +553,118 @@ export default function CommunityAttributionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-purple-950 to-slate-950">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
+      <TopNavBar />
+      <div className="max-w-6xl mx-auto px-4 pt-20 pb-8">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 pt-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
             Mystical Community
           </h1>
-          <p className="text-gray-400 text-lg">
+          <p className="text-white text-lg">
             Connect, share, and grow with fellow mystics
           </p>
         </div>
 
         {/* Stats Overview */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="bg-amber-50/80 border-2 border-amber-300 shadow-sm">
             <CardContent className="p-6 text-center">
-              <Trophy className="w-8 h-8 text-amber-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-amber-200">{attribution?.totalImpact}</h3>
-              <p className="text-gray-400">Total Impact Score</p>
+              <Trophy className="w-8 h-8 text-amber-700 mx-auto mb-2" />
+              <h3 className="text-2xl font-bold text-amber-800">
+                {attribution?.totalImpact || 0}
+              </h3>
+              <p className="text-slate-700 text-sm font-medium">Total Impact Score</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="bg-blue-50/80 border-2 border-blue-300 shadow-sm">
             <CardContent className="p-6 text-center">
-              <Users className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-blue-200">{attribution?.referralStats.successfulSignups}</h3>
-              <p className="text-gray-400">Successful Referrals</p>
+              <Users className="w-8 h-8 text-blue-700 mx-auto mb-2" />
+              <h3 className="text-2xl font-bold text-blue-800">
+                {attribution?.referralStats.successfulSignups || 0}
+              </h3>
+              <p className="text-slate-700 text-sm font-medium">Successful Referrals</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="bg-purple-50/80 border-2 border-purple-300 shadow-sm">
             <CardContent className="p-6 text-center">
-              <Star className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-purple-200">{attribution?.contributions.filter(c => c.status === 'implemented').length}</h3>
-              <p className="text-gray-400">Implemented Suggestions</p>
+              <Star className="w-8 h-8 text-purple-700 mx-auto mb-2" />
+              <h3 className="text-2xl font-bold text-purple-800">
+                {attribution?.contributions.filter(c => c.status === 'implemented').length || 0}
+              </h3>
+              <p className="text-slate-700 text-sm font-medium">Implemented Suggestions</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="bg-pink-50/80 border-2 border-pink-300 shadow-sm">
             <CardContent className="p-6 text-center">
-              <Flame className="w-8 h-8 text-red-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-red-200">{communityMembers.length}</h3>
-              <p className="text-gray-400">Active Members</p>
+              <Flame className="w-8 h-8 text-pink-700 mx-auto mb-2" />
+              <h3 className="text-2xl font-bold text-pink-800">
+                {communityMembers.length || 0}
+              </h3>
+              <p className="text-slate-700 text-sm font-medium">Active Members</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-1 bg-slate-800/50 rounded-lg p-1 mb-8">
+        <div className="flex space-x-2 bg-transparent p-0 mb-8">
           <Button
-            variant={activeTab === 'members' ? 'default' : 'ghost'}
+            variant="ghost"
             onClick={() => setActiveTab('members')}
-            className="flex-1"
+            className={`flex-1 transition-all duration-300 rounded-xl px-4 py-2.5 text-sm font-medium relative overflow-hidden ${
+              activeTab === 'members'
+                ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+                : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
+            }`}
           >
-            <Users className="w-4 h-4 mr-2" />
+            <Users className={`w-4 h-4 mr-2 ${activeTab === 'members' ? 'text-amber-900' : 'text-amber-200'}`} />
             Community Members
           </Button>
           <Button
-            variant={activeTab === 'discussions' ? 'default' : 'ghost'}
+            variant="ghost"
             onClick={() => setActiveTab('discussions')}
-            className="flex-1"
+            className={`flex-1 transition-all duration-300 rounded-xl px-4 py-2.5 text-sm font-medium relative overflow-hidden ${
+              activeTab === 'discussions'
+                ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+                : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
+            }`}
           >
-            <MessageCircle className="w-4 h-4 mr-2" />
+            <MessageCircle className={`w-4 h-4 mr-2 ${activeTab === 'discussions' ? 'text-amber-900' : 'text-amber-200'}`} />
             Discussions
           </Button>
           <Button
-            variant={activeTab === 'contributions' ? 'default' : 'ghost'}
+            variant="ghost"
             onClick={() => setActiveTab('contributions')}
-            className="flex-1"
+            className={`flex-1 transition-all duration-300 rounded-xl px-4 py-2.5 text-sm font-medium relative overflow-hidden ${
+              activeTab === 'contributions'
+                ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+                : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
+            }`}
           >
-            <Star className="w-4 h-4 mr-2" />
+            <Star className={`w-4 h-4 mr-2 ${activeTab === 'contributions' ? 'text-amber-900' : 'text-amber-200'}`} />
             Your Contributions
           </Button>
         </div>
 
         {/* Community Members Tab */}
         {activeTab === 'members' && (
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20 mb-8">
+          <Card className="bg-blue-50/80 border-2 border-blue-300 shadow-sm mb-8">
             <CardHeader>
-              <CardTitle className="text-amber-200 flex items-center gap-2">
-                <Users className="w-5 h-5" />
+              <CardTitle className="text-blue-800 flex items-center gap-2 font-bold">
+                <Users className="w-5 h-5 text-blue-700" />
                 Community Members
               </CardTitle>
-              <p className="text-gray-400 text-sm">
+              <p className="text-slate-700 text-sm">
                 Connect with fellow mystics. Personal details are protected for privacy.
               </p>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4">
                 {communityMembers.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                  <div key={member.id} className="flex items-center justify-between p-4 bg-blue-100/60 rounded-lg border-2 border-blue-200">
                     <div className="flex items-center gap-4">
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
@@ -538,25 +676,25 @@ export default function CommunityAttributionPage() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-amber-200">{member.name}</h4>
+                          <h4 className="font-semibold text-slate-800">{member.name}</h4>
                           {getReputationIcon(member.reputation)}
-                          <Badge variant="outline" className="text-xs bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/30">
+                          <Badge variant="outline" className="text-xs bg-amber-100 border-amber-400/50 text-amber-800">
                             {member.flair}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-400 mb-1">
-                          <span>Karma: {member.karma.toLocaleString()}</span>
-                          <span className={getLevelColor(member.level)}>Level: {member.level}</span>
-                          <span>Streak: {member.streak} days</span>
+                        <div className="flex items-center gap-4 text-sm mb-1">
+                          <span className="text-slate-700 font-medium">Karma: <span className="text-amber-700">{member.karma.toLocaleString()}</span></span>
+                          <span className="text-slate-700">Level: <span className="font-semibold text-slate-800">{member.level}</span></span>
+                          <span className="text-slate-700">Streak: <span className="text-orange-700 font-semibold">{member.streak}</span> days</span>
                         </div>
                         <div className="flex gap-2">
                           {member.badges.slice(0, 2).map((badge, index) => (
-                            <Badge key={index} variant="outline" className="text-xs bg-slate-700/50">
+                            <Badge key={index} variant="outline" className="text-xs bg-purple-100/80 border-purple-400/40 text-purple-800">
                               {badge}
                             </Badge>
                           ))}
                           {member.badges.length > 2 && (
-                            <Badge variant="outline" className="text-xs bg-slate-700/50">
+                            <Badge variant="outline" className="text-xs bg-blue-100/80 border-blue-400/40 text-blue-800">
                               +{member.badges.length - 2} more
                             </Badge>
                           )}
@@ -565,7 +703,7 @@ export default function CommunityAttributionPage() {
                     </div>
                     <Button
                       onClick={() => handleConnectionRequest(member)}
-                      className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-200 hover:from-amber-500/30 hover:to-yellow-500/30"
+                      className="bg-amber-100 border border-amber-500/50 text-amber-800 hover:bg-amber-200/80"
                       size="sm"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />
@@ -580,147 +718,142 @@ export default function CommunityAttributionPage() {
 
         {/* Discussions Tab */}
         {activeTab === 'discussions' && (
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20 mb-8">
-            <CardHeader>
-              <CardTitle className="text-amber-200 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5" />
-                Community Discussions
-              </CardTitle>
-              <p className="text-gray-400 text-sm">
-                Share insights, ask questions, and learn from fellow mystics.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {discussionThreads.map((thread) => (
-                  <div key={thread.id} className="flex gap-4 p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                    {/* Voting */}
-                    <div className="flex flex-col items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleVote(thread.id, 'up')}
-                        className="text-gray-400 hover:text-green-400"
-                      >
-                        <ArrowUp className="w-5 h-5" />
-                      </Button>
-                      <span className="text-sm font-semibold text-amber-200">{thread.upvotes - thread.downvotes}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleVote(thread.id, 'down')}
-                        className="text-gray-400 hover:text-red-400"
-                      >
-                        <ArrowDown className="w-5 h-5" />
-                      </Button>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-amber-200">{thread.title}</h3>
-                        {thread.isHot && <Flame className="w-4 h-4 text-red-400" />}
-                        {thread.isSticky && <Award className="w-4 h-4 text-yellow-400" />}
-                      </div>
-                      <p className="text-gray-400 text-sm mb-3 line-clamp-2">{thread.content}</p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-4">
-                          <span>by {thread.author}</span>
-                          <span>{new Date(thread.date).toLocaleDateString()}</span>
-                          <span>{thread.comments} comments</span>
-                        </div>
-                                                 <div className="flex gap-1">
-                           <Badge variant="outline" className="text-xs bg-slate-700/50">
-                             {thread.category}
-                           </Badge>
-                           <Badge variant="outline" className={`text-xs ${
-                             thread.priority === 'critical' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                             thread.priority === 'high' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-                             thread.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
-                             'bg-green-500/20 text-green-400 border-green-500/30'
-                           }`}>
-                             {thread.priority}
-                           </Badge>
-                         </div>
-                      </div>
-                    </div>
+          <div className="mb-8">
+            <Card className="bg-purple-50/80 border-2 border-purple-300 shadow-sm mb-4">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-purple-800 flex items-center gap-2 font-bold">
+                      <MessageCircle className="w-5 h-5 text-purple-700" />
+                      Community Discussions
+                    </CardTitle>
+                    <p className="text-slate-700 text-sm mt-1">
+                      Share insights, ask questions, and learn from fellow mystics.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  {user && (
+                    <Button
+                      onClick={() => setShowDiscussionForm(!showDiscussionForm)}
+                      className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Discussion
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              {showDiscussionForm && (
+                <CardContent className="pt-0">
+                  <DiscussionForm
+                    onSubmit={handleCreateDiscussion}
+                    onCancel={() => setShowDiscussionForm(false)}
+                  />
+                </CardContent>
+              )}
+            </Card>
+
+            <Card className="bg-purple-50/80 border-2 border-purple-300 shadow-sm">
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {discussionThreads.length === 0 ? (
+                    <div className="text-center py-8">
+                      <MessageCircle className="w-12 h-12 text-purple-700 mx-auto mb-4" />
+                      <p className="text-slate-700">No discussions yet. Be the first to start one!</p>
+                    </div>
+                  ) : (
+                    discussionThreads.map((thread) => (
+                      <DiscussionCard
+                        key={thread.id}
+                        discussion={thread}
+                        onVote={handleVote}
+                        userVote={userVotes[thread.id] || null}
+                      />
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Contributions Tab */}
         {activeTab === 'contributions' && (
           <div className="grid lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+            <Card className="bg-amber-50/80 border-2 border-amber-300 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-amber-200 flex items-center gap-2">
-                  <Star className="w-5 h-5" />
+                <CardTitle className="text-amber-800 flex items-center gap-2 font-bold">
+                  <Star className="w-5 h-5 text-amber-700" />
                   Your Contributions
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {attribution?.contributions.map((contribution) => (
-                    <div key={contribution.id} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-amber-200">{contribution.title}</h4>
-                        <Badge className={getStatusColor(contribution.status)}>
-                          {contribution.status}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-400 text-sm mb-3">{contribution.description}</p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Impact: <span className={getImpactColor(contribution.impact)}>{contribution.impact}</span></span>
-                        <span>{new Date(contribution.date).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                        <span>👍 {contribution.upvotes}</span>
-                        <span>👎 {contribution.downvotes}</span>
-                        <span>💬 {contribution.comments}</span>
-                      </div>
-                      {contribution.implementedDate && (
-                        <div className="mt-2 text-xs text-green-400">
-                          ✅ Implemented on {new Date(contribution.implementedDate).toLocaleDateString()}
-                        </div>
-                      )}
+                  {attribution?.contributions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Star className="w-12 h-12 text-amber-700 mx-auto mb-4" />
+                      <p className="text-slate-700 mb-2">No contributions yet</p>
+                      <p className="text-slate-700 text-sm">Start contributing to see your impact!</p>
                     </div>
-                  ))}
+                  ) : (
+                    attribution?.contributions.map((contribution) => (
+                      <div key={contribution.id} className="p-4 bg-amber-100/60 rounded-lg border-2 border-amber-200">
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-amber-900">{contribution.title}</h4>
+                          <Badge className={getStatusColor(contribution.status)}>
+                            {contribution.status}
+                          </Badge>
+                        </div>
+                        <p className="text-slate-700 text-sm mb-3">{contribution.description}</p>
+                        <div className="flex items-center justify-between text-xs mb-2">
+                          <span className="text-slate-700">Impact: <span className={getImpactColor(contribution.impact)}>{contribution.impact}</span></span>
+                          <span className="text-slate-700">{new Date(contribution.date).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-4 mt-2 text-xs">
+                          <span className="text-green-700 font-medium">👍 {contribution.upvotes}</span>
+                          <span className="text-red-700 font-medium">👎 {contribution.downvotes}</span>
+                          <span className="text-blue-700 font-medium">💬 {contribution.comments}</span>
+                        </div>
+                        {contribution.implementedDate && (
+                          <div className="mt-2 text-xs text-green-700">
+                            ✅ Implemented on {new Date(contribution.implementedDate).toLocaleDateString()}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+            <Card className="bg-blue-50/80 border-2 border-blue-300 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-amber-200 flex items-center gap-2">
-                  <Share2 className="w-5 h-5" />
+                <CardTitle className="text-blue-800 flex items-center gap-2 font-bold">
+                  <Share2 className="w-5 h-5 text-blue-700" />
                   Referral Statistics
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                      <h4 className="text-2xl font-bold text-blue-200">{attribution?.referralStats.totalInvites}</h4>
-                      <p className="text-gray-400 text-sm">Total Invites</p>
+                    <div className="text-center p-4 bg-blue-100/60 rounded-lg border-2 border-blue-200">
+                      <h4 className="text-2xl font-bold text-blue-800">{attribution?.referralStats.totalInvites}</h4>
+                      <p className="text-slate-700 text-sm font-medium">Total Invites</p>
                     </div>
-                    <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                      <h4 className="text-2xl font-bold text-green-200">{attribution?.referralStats.successfulSignups}</h4>
-                      <p className="text-gray-400 text-sm">Successful Signups</p>
+                    <div className="text-center p-4 bg-blue-100/60 rounded-lg border-2 border-blue-200">
+                      <h4 className="text-2xl font-bold text-green-800">{attribution?.referralStats.successfulSignups}</h4>
+                      <p className="text-slate-700 text-sm font-medium">Successful Signups</p>
                     </div>
                   </div>
                   
-                  <div className="p-4 bg-slate-800/50 rounded-lg">
-                    <h4 className="font-semibold text-amber-200 mb-2">Recent Activity</h4>
-                    <p className="text-gray-400 text-sm">
-                      Last invite: {attribution?.referralStats.lastInviteDate ? 
+                  <div className="p-4 bg-blue-100/60 rounded-lg border-2 border-blue-200">
+                    <h4 className="font-semibold text-amber-900 mb-2">Recent Activity</h4>
+                    <p className="text-slate-700 text-sm">
+                      Last invite: <span className="text-cyan-700 font-medium">{attribution?.referralStats.lastInviteDate ? 
                         new Date(attribution.referralStats.lastInviteDate).toLocaleDateString() : 
-                        'No recent activity'}
+                        'No recent activity'}</span>
                     </p>
-                    <p className="text-gray-400 text-sm">
-                      Pending invites: {attribution?.referralStats.pendingInvites}
+                    <p className="text-slate-700 text-sm">
+                      Pending invites: <span className="text-purple-700 font-medium">{attribution?.referralStats.pendingInvites}</span>
                     </p>
                   </div>
 
@@ -734,23 +867,18 @@ export default function CommunityAttributionPage() {
           </div>
         )}
 
-        {/* Thank You Messages */}
-        <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20 mb-8">
+        {/* Thank you */}
+        <Card className="bg-pink-50/80 border-2 border-pink-300 shadow-sm mt-8 mb-8">
           <CardHeader>
-            <CardTitle className="text-amber-200 flex items-center gap-2">
-              <Heart className="w-5 h-5" />
-              Thank You Messages
+            <CardTitle className="text-pink-800 flex items-center gap-2 font-bold">
+              <Heart className="w-5 h-5 text-pink-700" />
+              Thank you
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {attribution?.thankYouMessages.map((message, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
-                  <MessageCircle className="w-5 h-5 text-amber-400" />
-                  <p className="text-gray-300">{message}</p>
-                </div>
-              ))}
-            </div>
+            <p className="text-slate-700">
+              Thank you for being part of the FutureSeer community. Your contributions and presence here mean a lot.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -758,27 +886,27 @@ export default function CommunityAttributionPage() {
       {/* Connection Request Modal */}
       {showConnectionModal && selectedMember && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md bg-slate-900/95 backdrop-blur-sm border-amber-500/20">
+          <Card className="w-full max-w-md bg-blue-50/80 border-2 border-blue-300 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-amber-200 flex items-center gap-2">
-                <UserPlus className="w-5 h-5" />
+              <CardTitle className="text-blue-800 flex items-center gap-2 font-bold">
+                <UserPlus className="w-5 h-5 text-blue-700" />
                 Connect with {selectedMember.name}
               </CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowConnectionModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-400 hover:text-red-400"
               >
                 <X className="w-4 h-4" />
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-4 bg-slate-800/50 rounded-lg">
-                <p className="text-gray-300 text-sm mb-2">
-                  <strong>Privacy Note:</strong> Your personal details will only be shared if {selectedMember.name} accepts your request.
+              <div className="p-4 bg-blue-100/60 rounded-lg border-2 border-blue-200">
+                <p className="text-slate-700 text-sm mb-2">
+                  <strong className="text-cyan-700">Privacy Note:</strong> Your personal details will only be shared if {selectedMember.name} accepts your request.
                 </p>
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-slate-700">
                   <p>• Your message will be sent privately</p>
                   <p>• {selectedMember.name} can choose to accept or decline</p>
                   <p>• Contact details are only shared upon mutual agreement</p>
@@ -786,26 +914,26 @@ export default function CommunityAttributionPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">
+                <label className="text-sm font-medium text-blue-700 mb-2 block">
                   Topic of Interest *
                 </label>
                 <Input
                   value={connectionRequest.topic}
                   onChange={(e) => setConnectionRequest({ ...connectionRequest, topic: e.target.value })}
                   placeholder="e.g., Vedic Astrology, Tarot Reading, etc."
-                  className="bg-slate-800/50 border-slate-600 text-gray-300"
+                  className="bg-white/80 border-2 border-blue-300 text-slate-900 placeholder:text-slate-400"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">
+                <label className="text-sm font-medium text-blue-700 mb-2 block">
                   Message *
                 </label>
                 <Textarea
                   value={connectionRequest.message}
                   onChange={(e) => setConnectionRequest({ ...connectionRequest, message: e.target.value })}
                   placeholder="Introduce yourself and explain why you'd like to connect..."
-                  className="bg-slate-800/50 border-slate-600 text-gray-300"
+                  className="bg-white/80 border-2 border-blue-300 text-slate-900 placeholder:text-slate-400"
                   rows={4}
                 />
               </div>

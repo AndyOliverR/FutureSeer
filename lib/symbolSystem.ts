@@ -460,7 +460,6 @@ export const TOOL_SYMBOL_MAP: Record<string, string> = {
   'medical-astrology': 'caduceus',
   'financial-astrology': 'dollar',
   'mundane-astrology': 'globe',
-  'hellenistic-astrology': 'temple',
   'kp-astrology': 'star',
   'bazi': 'dragon',
   'angel-numbers': 'angel',

@@ -23,6 +23,14 @@ export interface HouseOverlay {
   description: string
 }
 
+/** Per-person natal summary (Sun, Moon, Venus, Mars sign + house) for Ask the Seer dual chart state. */
+export interface PersonNatalSummary {
+  sun: { sign: string; house: number }
+  moon: { sign: string; house: number }
+  venus: { sign: string; house: number }
+  mars: { sign: string; house: number }
+}
+
 export interface CompatibilityScore {
   overall: number
   emotional: number
@@ -52,6 +60,10 @@ export interface SynastryCompatibility {
     futureHighlights: string[]
     advice: string
   }
+  /** Person 1 natal summary (Sun/Moon/Venus/Mars sign + house) for Ask the Seer. */
+  person1Natal?: PersonNatalSummary
+  /** Person 2 natal summary (Sun/Moon/Venus/Mars sign + house) for Ask the Seer. */
+  person2Natal?: PersonNatalSummary
 }
 
 export function useSynastry() {
@@ -76,16 +88,68 @@ export function useSynastry() {
       setError('Please provide all birth details for both people')
       return
     }
+    
+    // Validate date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+    if (!dateRegex.test(birthData1.birthDate) || !dateRegex.test(birthData2.birthDate)) {
+      setError('Invalid date format. Please use YYYY-MM-DD format.')
+      return
+    }
+    
+    // Validate time format (HH:MM)
+    const timeRegex = /^\d{2}:\d{2}$/
+    if (!timeRegex.test(birthData1.birthTime) || !timeRegex.test(birthData2.birthTime)) {
+      setError('Invalid time format. Please use HH:MM format (24-hour).')
+      return
+    }
+    
     setIsLoading(true)
     setError(null)
+    
     try {
-      // Placeholder: replace with real analysis
-      setTimeout(() => {
-        setAnalysis({ result: 'Sample synastry analysis' })
-        setIsLoading(false)
-      }, 1000)
+      console.log('💕 Starting synastry analysis...', {
+        person1: birthData1.name,
+        person2: birthData2.name
+      })
+      
+      // Import synastryIntelligence
+      const { synastryIntelligence } = await import('@/lib/synastryIntelligence')
+      
+      // Prepare PersonData objects
+      const person1: PersonData = {
+        name: birthData1.name,
+        birthTime: `${birthData1.birthDate} ${birthData1.birthTime}`, // Combine date and time
+        birthPlace: birthData1.birthLocation
+      }
+      
+      const person2: PersonData = {
+        name: birthData2.name,
+        birthTime: `${birthData2.birthDate} ${birthData2.birthTime}`, // Combine date and time
+        birthPlace: birthData2.birthLocation
+      }
+      
+      console.log('💕 Person data prepared:', { person1, person2 })
+      
+      // Perform synastry analysis
+      console.log('💕 Calling analyzeCompatibility...')
+      const compatibility = await synastryIntelligence.analyzeCompatibility(person1, person2)
+      
+      console.log('💕 Analysis completed:', compatibility)
+      console.log('💕 Compatibility score:', compatibility.overview.overallScore)
+      console.log('💕 Aspects count:', compatibility.aspects.length)
+      
+      setAnalysis(compatibility)
+      setIsLoading(false)
+      console.log('💕 Analysis state updated successfully')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to calculate compatibility')
+      console.error('❌ Synastry analysis error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to calculate compatibility'
+      console.error('❌ Error details:', {
+        message: errorMessage,
+        stack: err instanceof Error ? err.stack : 'No stack trace',
+        error: err
+      })
+      setError(errorMessage)
       setIsLoading(false)
     }
   }, [birthData1, birthData2])

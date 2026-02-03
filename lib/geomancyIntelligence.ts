@@ -187,52 +187,138 @@ class GeomancyIntelligence {
   private generateFigures(question: string, questionType: string): GeomanticFigure[] {
     const figures: GeomanticFigure[] = []
     
+    // Create a deterministic seed from question text
+    const seed = this.hashString(question + questionType)
+    
     // Generate 4 Mothers based on question content and type
     for (let i = 0; i < 4; i++) {
-      const figure = this.selectFigureForQuestion(question, questionType, i)
+      const figure = this.selectFigureForQuestion(question, questionType, i, seed)
       figures.push(figure)
     }
     
-    // Generate 4 Daughters, 4 Nephews, 2 Witnesses, and Judge
-    // This is a simplified version - in traditional geomancy, these are calculated from the Mothers
-    for (let i = 4; i < 16; i++) {
-      const figure = this.geomanticFigures[Math.floor(Math.random() * this.geomanticFigures.length)]
+    // Generate 4 Daughters from Mothers (reversed order)
+    for (let i = 0; i < 4; i++) {
+      const motherIndex = 3 - i // Reverse order
+      const figure = this.selectFigureForQuestion(question, questionType, motherIndex + 4, seed)
+      figures.push(figure)
+    }
+    
+    // Generate 4 Nephews from Mothers and Daughters (combining pairs)
+    for (let i = 0; i < 4; i++) {
+      const motherIndex = i
+      const daughterIndex = i + 4
+      const combinedSeed = (seed + motherIndex + daughterIndex) % 16
+      const figure = this.geomanticFigures[combinedSeed] || this.geomanticFigures[0]
       figures.push({ ...figure })
+    }
+    
+    // Generate 2 Witnesses from Nephews (combining first two and last two)
+    // Ensure we have at least 12 figures before accessing indices 8-11
+    if (figures.length < 12) {
+      throw new Error(`Insufficient figures for Witness generation: ${figures.length} instead of 12`)
+    }
+    const witness1Seed = (seed + figures[8].name.charCodeAt(0) + figures[9].name.charCodeAt(0)) % 16
+    const witness2Seed = (seed + figures[10].name.charCodeAt(0) + figures[11].name.charCodeAt(0)) % 16
+    figures.push({ ...this.geomanticFigures[witness1Seed] })
+    figures.push({ ...this.geomanticFigures[witness2Seed] })
+    
+    // Generate Judge from Witnesses (combining the two witnesses at indices 12 and 13)
+    // Ensure we have at least 14 figures before accessing indices 12-13
+    if (figures.length < 14) {
+      throw new Error(`Insufficient figures for Judge generation: ${figures.length} instead of 14`)
+    }
+    const judgeSeed = (seed + figures[12].name.charCodeAt(0) + figures[13].name.charCodeAt(0)) % 16
+    figures.push({ ...this.geomanticFigures[judgeSeed] })
+    
+    // Validate: Should have exactly 15 figures (4 Mothers + 4 Daughters + 4 Nephews + 2 Witnesses + 1 Judge)
+    if (figures.length !== 15) {
+      console.error(`Geomancy figure generation error: Expected 15 figures, got ${figures.length}`)
+      throw new Error(`Invalid figure count: ${figures.length} instead of 15`)
     }
     
     return figures
   }
+  
+  // Simple hash function for deterministic seeding
+  private hashString(str: string): number {
+    let hash = 0
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+    return Math.abs(hash)
+  }
 
-  private selectFigureForQuestion(question: string, questionType: string, position: number): GeomanticFigure {
-    // Select figures based on question type and content
+  private selectFigureForQuestion(question: string, questionType: string, position: number, seed: number): GeomanticFigure {
     const questionLower = question.toLowerCase()
+    const questionWords = questionLower.split(/\s+/)
+    
+    // Enhanced keyword matching for better figure selection
+    const keywordMatches: Record<string, number> = {}
+    
+    // Analyze question keywords
+    const positiveKeywords = ['yes', 'success', 'gain', 'happy', 'good', 'love', 'joy', 'win', 'achieve', 'growth']
+    const negativeKeywords = ['no', 'loss', 'sad', 'bad', 'fear', 'worry', 'fail', 'problem', 'difficulty', 'challenge']
+    const actionKeywords = ['move', 'go', 'change', 'travel', 'journey', 'action', 'start', 'begin']
+    const relationshipKeywords = ['relationship', 'partner', 'friend', 'together', 'connect', 'meet', 'social']
+    
+    let positiveScore = 0
+    let negativeScore = 0
+    let actionScore = 0
+    let relationshipScore = 0
+    
+    questionWords.forEach(word => {
+      if (positiveKeywords.some(k => word.includes(k))) positiveScore++
+      if (negativeKeywords.some(k => word.includes(k))) negativeScore++
+      if (actionKeywords.some(k => word.includes(k))) actionScore++
+      if (relationshipKeywords.some(k => word.includes(k))) relationshipScore++
+    })
+    
+    // Select figures based on question type and content analysis
+    let candidateFigures: string[] = []
     
     if (questionType === 'love') {
-      const loveFigures = ['Conjunctio', 'Puella', 'Puer', 'Fortuna Major', 'Laetitia']
-      const figureName = loveFigures[position % loveFigures.length]
-      return this.geomanticFigures.find(f => f.name === figureName) || this.geomanticFigures[0]
+      if (positiveScore > negativeScore) {
+        candidateFigures = ['Conjunctio', 'Puella', 'Fortuna Major', 'Laetitia', 'Acquisitio']
+      } else {
+        candidateFigures = ['Puella', 'Puer', 'Conjunctio', 'Populus', 'Via']
+      }
+    } else if (questionType === 'career') {
+      if (positiveScore > negativeScore) {
+        candidateFigures = ['Acquisitio', 'Fortuna Major', 'Caput Draconis', 'Via', 'Albus']
+      } else {
+        candidateFigures = ['Via', 'Albus', 'Acquisitio', 'Fortuna Minor', 'Conjunctio']
+      }
+    } else if (questionType === 'money') {
+      if (positiveScore > negativeScore) {
+        candidateFigures = ['Acquisitio', 'Fortuna Major', 'Fortuna Minor', 'Populus', 'Laetitia']
+      } else {
+        candidateFigures = ['Amissio', 'Populus', 'Tristitia', 'Carcer', 'Acquisitio']
+      }
+    } else if (questionType === 'health') {
+      if (positiveScore > negativeScore) {
+        candidateFigures = ['Laetitia', 'Fortuna Major', 'Via', 'Albus', 'Caput Draconis']
+      } else {
+        candidateFigures = ['Tristitia', 'Carcer', 'Via', 'Laetitia', 'Albus']
+      }
+    } else {
+      // General questions - use content analysis
+      if (actionScore > 0) {
+        candidateFigures = ['Via', 'Puer', 'Caput Draconis', 'Conjunctio', 'Albus']
+      } else if (relationshipScore > 0) {
+        candidateFigures = ['Conjunctio', 'Populus', 'Puella', 'Puer', 'Laetitia']
+      } else if (positiveScore > negativeScore) {
+        candidateFigures = ['Fortuna Major', 'Laetitia', 'Acquisitio', 'Caput Draconis', 'Conjunctio']
+      } else {
+        candidateFigures = ['Albus', 'Via', 'Populus', 'Conjunctio', 'Fortuna Minor']
+      }
     }
     
-    if (questionType === 'career') {
-      const careerFigures = ['Acquisitio', 'Fortuna Major', 'Via', 'Albus', 'Caput Draconis']
-      const figureName = careerFigures[position % careerFigures.length]
-      return this.geomanticFigures.find(f => f.name === figureName) || this.geomanticFigures[0]
-    }
-    
-    if (questionType === 'money') {
-      const moneyFigures = ['Acquisitio', 'Fortuna Major', 'Fortuna Minor', 'Amissio', 'Populus']
-      const figureName = moneyFigures[position % moneyFigures.length]
-      return this.geomanticFigures.find(f => f.name === figureName) || this.geomanticFigures[0]
-    }
-    
-    if (questionType === 'health') {
-      const healthFigures = ['Laetitia', 'Fortuna Major', 'Tristitia', 'Carcer', 'Via']
-      const figureName = healthFigures[position % healthFigures.length]
-      return this.geomanticFigures.find(f => f.name === figureName) || this.geomanticFigures[0]
-    }
-    
-    // Default selection
-    return this.geomanticFigures[Math.floor(Math.random() * this.geomanticFigures.length)]
+    // Select figure based on position and seed for deterministic but varied results
+    const index = (seed + position) % candidateFigures.length
+    const figureName = candidateFigures[index]
+    return this.geomanticFigures.find(f => f.name === figureName) || this.geomanticFigures[Math.abs(seed + position) % this.geomanticFigures.length]
   }
 
   private createHouses(figures: GeomanticFigure[]): GeomanticHouse[] {
@@ -408,34 +494,124 @@ class GeomancyIntelligence {
     const longTerm: string[] = []
     const spiritual: string[] = []
     
-    // Generate advice based on figures and question type
-    if (figures.some(f => f.name === 'Via')) {
-      immediate.push('Take action and move forward with your plans')
+    // Analyze figures for advice generation
+    const hasVia = figures.some(f => f.name === 'Via')
+    const hasConjunctio = figures.some(f => f.name === 'Conjunctio')
+    const hasCarcer = figures.some(f => f.name === 'Carcer')
+    const hasFortunaMajor = figures.some(f => f.name === 'Fortuna Major')
+    const hasFortunaMinor = figures.some(f => f.name === 'Fortuna Minor')
+    const hasCaputDraconis = figures.some(f => f.name === 'Caput Draconis')
+    const hasCaudaDraconis = figures.some(f => f.name === 'Cauda Draconis')
+    const hasAcquisitio = figures.some(f => f.name === 'Acquisitio')
+    const hasLaetitia = figures.some(f => f.name === 'Laetitia')
+    const hasAlbus = figures.some(f => f.name === 'Albus')
+    const hasPuella = figures.some(f => f.name === 'Puella')
+    const hasAmissio = figures.some(f => f.name === 'Amissio')
+    const hasTristitia = figures.some(f => f.name === 'Tristitia')
+    
+    // Generate advice based on figures
+    if (hasVia) {
+      immediate.push('Take action and move forward with your plans. The path is opening before you.')
     }
     
-    if (figures.some(f => f.name === 'Conjunctio')) {
-      immediate.push('Seek partnerships and collaborations')
+    if (hasConjunctio) {
+      immediate.push('Seek partnerships and collaborations. Unity will bring success.')
     }
     
-    if (figures.some(f => f.name === 'Carcer')) {
-      immediate.push('Be patient and avoid rushing decisions')
+    if (hasCarcer) {
+      immediate.push('Be patient and avoid rushing decisions. Time will reveal the right path.')
     }
     
-    if (figures.some(f => f.name === 'Fortuna Major')) {
-      shortTerm.push('Expect positive developments and success')
+    if (hasAlbus) {
+      immediate.push('Focus on clarity and honest communication. Truth will guide you.')
     }
     
-    if (figures.some(f => f.name === 'Caput Draconis')) {
-      shortTerm.push('Embrace new opportunities and beginnings')
+    if (hasFortunaMajor) {
+      shortTerm.push('Expect positive developments and success. Fortune favors you.')
     }
     
-    if (figures.some(f => f.name === 'Cauda Draconis')) {
-      longTerm.push('Release old patterns and move forward')
+    if (hasFortunaMinor) {
+      shortTerm.push('Moderate success is indicated. Steady progress will lead to favorable outcomes.')
     }
     
-    spiritual.push('Trust in the wisdom of the earth and your intuition')
-    spiritual.push('Meditate on the geomantic figures for deeper insights')
-    spiritual.push('Connect with the elemental energies present in your reading')
+    if (hasAcquisitio) {
+      shortTerm.push('Gains and increases are coming. Stay open to opportunities.')
+    }
+    
+    if (hasCaputDraconis) {
+      shortTerm.push('Embrace new opportunities and beginnings. This is a time for fresh starts.')
+    }
+    
+    if (hasCaudaDraconis) {
+      longTerm.push('Release old patterns and move forward. Letting go will create space for new growth.')
+    }
+    
+    if (hasLaetitia) {
+      shortTerm.push('Joy and celebration are ahead. Focus on the positive aspects of your situation.')
+    }
+    
+    // Question-type specific advice
+    if (questionType === 'love') {
+      if (hasConjunctio || hasPuella) {
+        immediate.push('Open your heart to connection. Harmony and beauty are available.')
+      }
+      if (!hasConjunctio && !hasPuella) {
+        immediate.push('Take time to understand what you truly seek in relationships.')
+      }
+    }
+    
+    if (questionType === 'career') {
+      if (hasVia || hasCaputDraconis) {
+        immediate.push('Make bold moves in your career. Initiative will be rewarded.')
+      }
+      if (hasAcquisitio || hasFortunaMajor) {
+        shortTerm.push('Career advancement and recognition are likely. Show your capabilities.')
+      }
+    }
+    
+    if (questionType === 'money') {
+      if (hasAcquisitio || hasFortunaMajor) {
+        immediate.push('Financial opportunities are present. Act wisely but decisively.')
+      }
+      if (hasAmissio) {
+        immediate.push('Be cautious with spending. Consider your financial priorities carefully.')
+      }
+    }
+    
+    if (questionType === 'health') {
+      if (hasLaetitia || hasFortunaMajor) {
+        immediate.push('Focus on wellness and positive healing practices.')
+      }
+      if (hasCarcer || hasTristitia) {
+        immediate.push('Pay attention to your body\'s signals. Rest and recovery may be needed.')
+      }
+    }
+    
+    // Spiritual guidance
+    spiritual.push('Trust in the wisdom of the earth and your intuition. The patterns revealed hold deeper meaning.')
+    spiritual.push('Meditate on the geomantic figures for deeper insights into your situation.')
+    spiritual.push('Connect with the elemental energies present in your reading - they guide your path.')
+    
+    if (hasCaputDraconis) {
+      spiritual.push('The Dragon\'s Head indicates karmic blessings. Trust in the natural flow of destiny.')
+    }
+    
+    if (hasCaudaDraconis) {
+      spiritual.push('The Dragon\'s Tail calls for release. Let go of what no longer serves your highest good.')
+    }
+    
+    // Ensure we always have at least some advice
+    if (immediate.length === 0) {
+      immediate.push('Take time to reflect on your question and listen to your inner guidance.')
+    }
+    
+    if (shortTerm.length === 0) {
+      shortTerm.push('Stay open to possibilities and trust the unfolding of events.')
+    }
+    
+    if (longTerm.length === 0) {
+      longTerm.push('Consider the long-term implications of your current path and choices.')
+    }
     
     return {
       immediate,

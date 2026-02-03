@@ -1,400 +1,476 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { KabbalisticNumerologyCoachInterface } from "@/components/KabbalisticNumerologyCoachInterface"
+import { useAuth } from "@/hooks/use-auth"
 import { useKabbalisticNumerology } from "@/hooks/use-kabbalistic-numerology"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card } from "@/components/ui/card"
+import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard"
+import {
+  Hash,
+  Info,
+  AlertTriangle,
+  RefreshCw,
+  User,
+  Calendar,
+  Sparkles,
+  Star,
+  Target,
+  Heart,
+  Brain,
+  BookOpen,
+  Compass,
+  TrendingUp,
+  Zap,
+  MessageCircle
+} from "lucide-react"
+import { NumberDisplay } from "@/components/kabbalistic/NumberDisplay"
+import { HebrewLetterGrid } from "@/components/kabbalistic/HebrewLetterGrid"
+import { GematriaVisualization } from "@/components/kabbalistic/GematriaVisualization"
+import { KabbalisticNumerologyCoachInterface } from "@/components/KabbalisticNumerologyCoachInterface"
+import { BackButton } from "@/components/navigation/BackButton"
+
+type TabId = "overview" | "gematria" | "soul" | "destiny" | "personality" | "hebrew" | "guidance" | "ask-the-seer"
 
 export default function KabbalisticNumerologyPage() {
-  const {
-    name,
-    birthDate,
-    analysis,
-    isLoading,
-    error,
-    setName,
-    setBirthDate,
-    performKabbalisticAnalysis,
-    resetData
-  } = useKabbalisticNumerology()
+  const { user, userProfile } = useAuth()
+  const { analysis, isLoading, error, refetch, hasRequiredDetails } = useKabbalisticNumerology()
+  const [activeTab, setActiveTab] = useState<TabId>("overview")
 
-  const [activeTab, setActiveTab] = useState("overview")
+  const stateCardClass = "bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 rounded-2xl shadow-lg"
+  const stateTitleClass = "m3-headline-small text-purple-900 mb-2"
+  const stateBodyClass = "m3-body-medium text-slate-700 mb-4"
+  const stateErrorTitleClass = "m3-headline-small text-red-700 mb-2"
+  const stateErrorBodyClass = "m3-body-medium text-red-600 mb-4"
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="relative min-h-screen">
+        <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
+        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+          <div className="mb-4">
+            <BackButton href="/tools" label="Back to Tools" />
+          </div>
+          <div className="flex items-center justify-center h-64">
+            <div className={`${stateCardClass} p-8 max-w-md mx-auto overflow-hidden`}>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+                <p className={stateBodyClass}>Calculating your Kabbalistic Numerology...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="relative min-h-screen">
+        <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
+        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+          <div className="mb-4">
+            <BackButton href="/tools" label="Back to Tools" />
+          </div>
+          <div className={`${stateCardClass} p-6 text-center max-w-2xl mx-auto overflow-hidden`}>
+            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className={stateErrorTitleClass}>Error Loading Kabbalistic Data</h3>
+            <p className={stateErrorBodyClass}>{error}</p>
+            <Button onClick={refetch} className="bg-purple-500 hover:bg-purple-600 text-white">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Profile incomplete state
+  if (!hasRequiredDetails) {
+    return (
+      <div className="relative min-h-screen">
+        <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
+        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+          <div className="mb-4">
+            <BackButton href="/tools" label="Back to Tools" />
+          </div>
+          <div className={`${stateCardClass} p-6 text-center max-w-2xl mx-auto overflow-hidden`}>
+            <Info className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+            <h3 className={stateTitleClass}>Complete Your Profile</h3>
+            <p className={stateBodyClass}>
+              Please complete your name and birth date in your profile to generate your Kabbalistic Numerology report.
+            </p>
+            <Button
+              onClick={() => window.location.href = '/profile'}
+              className="bg-purple-500 hover:bg-purple-600 text-white"
+            >
+              <User className="w-4 h-4 mr-2" />
+              Complete Profile
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // No data state (shouldn't happen with auto-gen, but just in case)
+  if (!analysis) {
+    return (
+      <div className="relative min-h-screen">
+        <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
+        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+          <div className="mb-4">
+            <BackButton href="/tools" label="Back to Tools" />
+          </div>
+          <div className={`${stateCardClass} p-6 text-center max-w-2xl mx-auto overflow-hidden`}>
+            <Info className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+            <h3 className={stateTitleClass}>Preparing Your Kabbalistic Analysis</h3>
+            <p className={stateBodyClass}>We&apos;re generating your Kabbalistic Numerology report automatically.</p>
+            <div className="flex items-center justify-center gap-3">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const tabConfig = [
+    { id: "overview" as const, label: "Overview", icon: Hash },
+    { id: "gematria" as const, label: "Gematria", icon: Sparkles },
+    { id: "soul" as const, label: "Soul", icon: Heart },
+    { id: "destiny" as const, label: "Destiny", icon: Target },
+    { id: "personality" as const, label: "Personality", icon: Brain },
+    { id: "hebrew" as const, label: "Hebrew", icon: BookOpen },
+    { id: "guidance" as const, label: "Guidance", icon: Compass },
+    { id: "ask-the-seer" as const, label: "Ask the Seer", icon: MessageCircle },
+  ]
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8 pt-8"
-        >
-          <motion.a
-            href="/tools"
-            className="text-soft hover:gold-glow mb-4 inline-block transition-all duration-300"
-            whileHover={{ x: -5 }}
-          >
-            ← Back to Tools
-          </motion.a>
-          <h1 className="text-5xl font-bold gold-glow mb-4">🔢 Kabbalistic Numerology</h1>
-          <p className="text-soft leading-relaxed text-lg mb-4">
-            Discover the mystical connection between Hebrew letters, numbers, and your soul's purpose
-          </p>
-          {/* Inspirational Quote */}
-          <div className="glass-card rounded-2xl p-6 border border-purple-500/20 max-w-2xl mx-auto">
-            <p className="text-xl italic text-purple-300 font-serif mb-2">
-              "The letters of the Hebrew alphabet are the building blocks of creation, each carrying divine energy."
-            </p>
-            <p className="text-soft/70 text-sm">— Sefer Yetzirah</p>
-          </div>
-        </motion.div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Input Section */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-1"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              <h2 className="text-2xl gold-glow mb-6 text-center">Soul Analysis</h2>
-              
-              {/* Name Input */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">📝</span>
-                  Your Name
-                </h3>
-                <input
-                  type="text"
-                  placeholder="Enter your full name..."
-                  value={name || ""}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                />
-              </div>
-
-              {/* Birth Date Input */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">📅</span>
-                  Birth Date
-                </h3>
-                <input
-                  type="date"
-                  value={birthDate || ""}
-                  onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                />
-              </div>
-
-              {/* Instructions */}
-              <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
-                <h4 className="text-soft font-semibold mb-2 flex items-center">
-                  <span className="mr-2">💡</span>
-                  Kabbalistic Insights
-                </h4>
-                <ul className="space-y-1 text-sm text-soft/80">
-                  <li>• Hebrew letter analysis</li>
-                  <li>• Gematria calculations</li>
-                  <li>• Soul number discovery</li>
-                  <li>• Divine purpose revelation</li>
-                </ul>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={performKabbalisticAnalysis}
-                  disabled={!(name ?? '').trim() || !(birthDate ?? '') || isLoading}
-                  className="w-full bg-gradient-to-r from-purple-500 to-blue-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-purple-600 hover:to-blue-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? "Analyzing..." : "🔢 Reveal Soul Numbers"}
-                </button>
-                
-                <button
-                  onClick={resetData}
-                  className="w-full bg-white/5 border border-white/20 text-soft py-3 px-6 rounded-xl font-semibold hover:bg-white/10 transition-all duration-300"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Results Section */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {["overview", "gematria", "soul", "destiny", "personality", "hebrew", "guidance"].map((tab) => (
-                  <motion.button
-                    key={tab}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      activeTab === tab
-                        ? "bg-gradient-to-r from-purple-500 to-blue-600 text-white"
-                        : "bg-white/5 text-soft hover:bg-white/10"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* Content */}
-              <AnimatePresence mode="wait">
-                {isLoading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="text-4xl mb-4"
-                    >
-                      🔢
-                    </motion.div>
-                    <p className="text-soft">Calculating your soul numbers...</p>
-                  </motion.div>
-                ) : error ? (
-                  <motion.div
-                    key="error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-red-400 text-4xl mb-4">⚠️</div>
-                    <p className="text-soft">{error}</p>
-                  </motion.div>
-                ) : analysis ? (
-                  <motion.div
-                    key="results"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-6"
-                  >
-                    {activeTab === "overview" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Kabbalistic Overview</h3>
-                        <p className="text-soft leading-relaxed mb-4">{analysis.overview}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="text-center p-4 glass-card rounded-xl">
-                            <div className="text-3xl mb-2">🔢</div>
-                            <div className="text-soft/70">Soul Number</div>
-                            <div className="gold-glow text-2xl">{analysis.soulNumber}</div>
-                          </div>
-                          <div className="text-center p-4 glass-card rounded-xl">
-                            <div className="text-3xl mb-2">⭐</div>
-                            <div className="text-soft/70">Destiny Number</div>
-                            <div className="gold-glow text-2xl">{analysis.destinyNumber}</div>
-                          </div>
-                          <div className="text-center p-4 glass-card rounded-xl">
-                            <div className="text-3xl mb-2">🌟</div>
-                            <div className="text-soft/70">Personality Number</div>
-                            <div className="gold-glow text-2xl">{analysis.personalityNumber}</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "gematria" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Gematria Analysis</h3>
-                        <p className="text-soft leading-relaxed mb-4">{analysis.gematria}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="glass-card rounded-xl p-4">
-                            <h4 className="font-semibold text-white mb-2">Name Value</h4>
-                            <div className="text-2xl gold-glow mb-2">{analysis.nameValue}</div>
-                            <p className="text-sm text-slate-400">{analysis.nameMeaning}</p>
-                          </div>
-                          <div className="glass-card rounded-xl p-4">
-                            <h4 className="font-semibold text-white mb-2">Birth Date Value</h4>
-                            <div className="text-2xl gold-glow mb-2">{analysis.birthValue}</div>
-                            <p className="text-sm text-slate-400">{analysis.birthMeaning}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "soul" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Soul Number Analysis</h3>
-                        <div className="glass-card rounded-xl p-6 mb-4">
-                          <h4 className="text-xl font-semibold text-white mb-4">Soul Number: {analysis.soulNumber}</h4>
-                          <p className="text-soft leading-relaxed mb-4">{analysis.soulDescription}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <h5 className="font-semibold text-white mb-2">Strengths</h5>
-                              <ul className="text-sm text-slate-400 space-y-1">
-                                {analysis.soulStrengths?.map((strength: string, index: number) => (
-                                  <li key={index}>• {strength}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <h5 className="font-semibold text-white mb-2">Challenges</h5>
-                              <ul className="text-sm text-slate-400 space-y-1">
-                                {analysis.soulChallenges?.map((challenge: string, index: number) => (
-                                  <li key={index}>• {challenge}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "destiny" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Destiny Number Analysis</h3>
-                        <div className="glass-card rounded-xl p-6 mb-4">
-                          <h4 className="text-xl font-semibold text-white mb-4">Destiny Number: {analysis.destinyNumber}</h4>
-                          <p className="text-soft leading-relaxed mb-4">{analysis.destinyDescription}</p>
-                          <div className="space-y-4">
-                            <div>
-                              <h5 className="font-semibold text-white mb-2">Life Purpose</h5>
-                              <p className="text-slate-400">{analysis.lifePurpose}</p>
-                            </div>
-                            <div>
-                              <h5 className="font-semibold text-white mb-2">Career Paths</h5>
-                              <ul className="text-sm text-slate-400 space-y-1">
-                                {analysis.careerPaths?.map((career: string, index: number) => (
-                                  <li key={index}>• {career}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "personality" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Personality Number Analysis</h3>
-                        <div className="glass-card rounded-xl p-6 mb-4">
-                          <h4 className="text-xl font-semibold text-white mb-4">Personality Number: {analysis.personalityNumber}</h4>
-                          <p className="text-soft leading-relaxed mb-4">{analysis.personalityDescription}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <h5 className="font-semibold text-white mb-2">Traits</h5>
-                              <ul className="text-sm text-slate-400 space-y-1">
-                                {analysis.personalityTraits?.map((trait: string, index: number) => (
-                                  <li key={index}>• {trait}</li>
-                                ))}
-                              </ul>
-                            </div>
-                            <div>
-                              <h5 className="font-semibold text-white mb-2">Expression</h5>
-                              <ul className="text-sm text-slate-400 space-y-1">
-                                {analysis.expressionModes?.map((mode: string, index: number) => (
-                                  <li key={index}>• {mode}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "hebrew" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Hebrew Letter Analysis</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {analysis.hebrewLetters?.map((letter: any, index: number) => (
-                            <div key={index} className="glass-card rounded-xl p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="font-semibold text-white text-lg">{letter.hebrew}</div>
-                                <div className="text-purple-400 font-semibold">{letter.value}</div>
-                              </div>
-                              <p className="text-sm text-slate-400 mb-2">{letter.english}</p>
-                              <p className="text-xs text-slate-500">{letter.meaning}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "guidance" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Spiritual Guidance</h3>
-                        <p className="text-soft leading-relaxed mb-4">{analysis.guidance}</p>
-                        <div className="space-y-3">
-                          {analysis.recommendations?.map((rec: string, index: number) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="text-purple-400 mt-1">•</div>
-                              <p className="text-soft/80">{rec}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-4xl mb-4">🔢</div>
-                    <h3 className="text-xl gold-glow mb-2">Ready for Kabbalistic Analysis</h3>
-                    <p className="text-soft">Enter your name and birth date to reveal your soul numbers.</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+    <div className="relative min-h-screen">
+      <div
+        className="fixed inset-0 -z-10"
+        style={{
+          backgroundImage: "var(--starfield-image)",
+          backgroundSize: "cover",
+          backgroundPosition: "center center",
+          backgroundRepeat: "no-repeat",
+          backgroundAttachment: "fixed",
+          backgroundColor: "#030711",
+          imageRendering: "-webkit-optimize-contrast",
+        }}
+      />
+      <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+        <div className="mb-4">
+          <BackButton href="/tools" label="Back to Tools" />
         </div>
-
-        {/* Features Section */}
+        {/* Header: plain h1 + subtitle, no container (match Numerology / Angel Numbers) */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-16"
+          transition={{ duration: 0.4 }}
+          className="text-center mb-8"
         >
-          <h2 className="text-3xl font-bold gold-glow text-center mb-8">Kabbalistic Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl mb-3">🔢</div>
-              <h4 className="text-soft font-semibold mb-2">Gematria</h4>
-              <p className="text-soft/70 text-sm">Hebrew letter values</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">⭐</div>
-              <h4 className="text-soft font-semibold mb-2">Soul Numbers</h4>
-              <p className="text-soft/70 text-sm">Inner essence</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">🌟</div>
-              <h4 className="text-soft font-semibold mb-2">Destiny Path</h4>
-              <p className="text-soft/70 text-sm">Life purpose</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">📜</div>
-              <h4 className="text-soft font-semibold mb-2">Hebrew Wisdom</h4>
-              <p className="text-soft/70 text-sm">Ancient knowledge</p>
-            </div>
-          </div>
+          <h1 className="text-5xl font-bold gold-glow mb-4 flex items-center justify-center gap-2">
+            <span className="text-3xl" role="img" aria-hidden>🪬</span>
+            Kabbalistic Numerology
+          </h1>
+          <p className="m3-body-large text-slate-300 leading-relaxed">
+            Hebrew mystical numerology revealing soul, destiny, and divine patterns
+          </p>
         </motion.div>
+
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
+          <TabsList className="flex flex-wrap gap-2 justify-center mb-6 h-auto bg-transparent p-0">
+            {tabConfig.map((tab) => {
+              const Icon = tab.icon
+              return (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="devotionist-tab-trigger flex items-center gap-2"
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6 mt-6"
+            >
+            {activeTab === "overview" && (
+              <div className="space-y-6">
+                <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 rounded-2xl shadow-lg p-6 overflow-hidden">
+                  <h3 className="m3-headline-small text-purple-900 mb-4">Kabbalistic Overview</h3>
+                  <p className="m3-body-large text-slate-700 leading-relaxed mb-0">
+                    {analysis.overview || "Your Kabbalistic Numerology analysis is being prepared. Please wait a moment or click Regenerate to refresh."}
+                  </p>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <NumberDisplay
+                    number={analysis.soulNumber}
+                    label="Soul Number"
+                    description="Inner Essence"
+                    size="md"
+                    delay={0.1}
+                    colorScheme="purple"
+                  />
+                  <NumberDisplay
+                    number={analysis.destinyNumber}
+                    label="Destiny Number"
+                    description="Life Path"
+                    size="md"
+                    delay={0.2}
+                    colorScheme="cyan"
+                  />
+                  <NumberDisplay
+                    number={analysis.personalityNumber}
+                    label="Personality Number"
+                    description="Outer Expression"
+                    size="md"
+                    delay={0.3}
+                    colorScheme="amber"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DevotionistStyleCard
+                    colorScheme="purple"
+                    icon={<Star className="w-5 h-5" />}
+                    title="Name Gematria"
+                    subtitle={String(analysis.nameValue)}
+                    summary={analysis.nameMeaning}
+                  />
+                  <DevotionistStyleCard
+                    colorScheme="cyan"
+                    icon={<Calendar className="w-5 h-5" />}
+                    title="Birth Date Value"
+                    subtitle={String(analysis.birthValue)}
+                    summary={analysis.birthMeaning}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "gematria" && (
+              <div className="space-y-6">
+                <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 rounded-2xl shadow-lg p-6 overflow-hidden">
+                  <h3 className="m3-headline-small text-purple-900 mb-4">Gematria Analysis</h3>
+                  <p className="m3-body-large text-slate-700 leading-relaxed mb-0">{analysis.gematria}</p>
+                </Card>
+
+                {analysis.hebrewLetters && analysis.hebrewLetters.length > 0 && (
+                  <GematriaVisualization
+                    name={userProfile?.fullName || userProfile?.displayName || user?.displayName || ""}
+                    nameValue={analysis.nameValue}
+                    birthValue={analysis.birthValue}
+                    letters={analysis.hebrewLetters}
+                    variant="light"
+                  />
+                )}
+              </div>
+            )}
+
+            {activeTab === "soul" && (
+              <div className="space-y-6">
+                <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 rounded-2xl shadow-lg p-6 overflow-hidden">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="m3-display-large text-purple-900">{analysis.soulNumber}</div>
+                    <div>
+                      <h4 className="m3-title-large text-purple-900 mb-2">Soul Number: {analysis.soulNumber}</h4>
+                      <p className="m3-body-medium text-slate-700">Your inner essence and spiritual gifts</p>
+                    </div>
+                  </div>
+                  <p className="m3-body-large text-slate-700 leading-relaxed mb-0">{analysis.soulDescription}</p>
+                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <DevotionistStyleCard
+                    colorScheme="green"
+                    icon={<TrendingUp className="w-5 h-5" />}
+                    title="Strengths"
+                    items={analysis.soulStrengths?.map((text) => ({ text, type: "positive" as const })) ?? []}
+                  />
+                  <DevotionistStyleCard
+                    colorScheme="orange"
+                    icon={<AlertTriangle className="w-5 h-5" />}
+                    title="Challenges"
+                    items={analysis.soulChallenges?.map((text) => ({ text, type: "challenge" as const })) ?? []}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "destiny" && (
+              <div className="space-y-6">
+                <Card className="bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50 border-2 border-cyan-200 rounded-2xl shadow-lg p-6 overflow-hidden">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="m3-display-large text-cyan-900">{analysis.destinyNumber}</div>
+                    <div>
+                      <h4 className="m3-title-large text-cyan-900 mb-2">Destiny Number: {analysis.destinyNumber}</h4>
+                      <p className="m3-body-medium text-slate-700">Your life path and purpose</p>
+                    </div>
+                  </div>
+                  <p className="m3-body-large text-slate-700 leading-relaxed mb-0">{analysis.destinyDescription}</p>
+                </Card>
+                <div className="space-y-4">
+                  <DevotionistStyleCard
+                    colorScheme="cyan"
+                    icon={<Target className="w-5 h-5" />}
+                    title="Life Purpose"
+                    summary={analysis.lifePurpose}
+                  />
+                  <DevotionistStyleCard
+                    colorScheme="blue"
+                    icon={<TrendingUp className="w-5 h-5" />}
+                    title="Career Paths"
+                    items={analysis.careerPaths?.map((text) => ({ text })) ?? []}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "personality" && (
+              <div className="space-y-6">
+                <Card className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-200 rounded-2xl shadow-lg p-6 overflow-hidden">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="m3-display-large text-amber-900">{analysis.personalityNumber}</div>
+                    <div>
+                      <h4 className="m3-title-large text-amber-900 mb-2">Personality Number: {analysis.personalityNumber}</h4>
+                      <p className="m3-body-medium text-slate-700">How others perceive you</p>
+                    </div>
+                  </div>
+                  <p className="m3-body-large text-slate-700 leading-relaxed mb-0">{analysis.personalityDescription}</p>
+                </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <DevotionistStyleCard
+                    colorScheme="purple"
+                    icon={<Brain className="w-5 h-5" />}
+                    title="Core Traits"
+                    items={analysis.personalityTraits?.map((text) => ({ text })) ?? []}
+                  />
+                  <DevotionistStyleCard
+                    colorScheme="pink"
+                    icon={<Sparkles className="w-5 h-5" />}
+                    title="Expression Modes"
+                    items={analysis.expressionModes?.map((text) => ({ text })) ?? []}
+                  />
+                </div>
+              </div>
+            )}
+
+            {activeTab === "hebrew" && (
+              <div className="space-y-6">
+                <h3 className="m3-headline-small text-slate-200 mb-6">Hebrew Letter Analysis</h3>
+                {analysis.hebrewLetters && analysis.hebrewLetters.length > 0 ? (
+                  <HebrewLetterGrid letters={analysis.hebrewLetters} variant="light" />
+                ) : (
+                  <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 shadow-lg overflow-hidden">
+                    <div className="text-center">
+                      <p className="m3-body-medium text-slate-700">No Hebrew letters available</p>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {activeTab === "guidance" && (
+              <div className="space-y-6">
+                <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl shadow-lg p-6 overflow-hidden">
+                  <h3 className="m3-headline-small text-cyan-900 mb-4">Spiritual Guidance</h3>
+                  <p className="m3-body-large text-slate-700 leading-relaxed mb-0">{analysis.guidance}</p>
+                </Card>
+                <div className="space-y-6">
+                  <h4 className="m3-title-large text-slate-200 mb-4 flex items-center gap-2">
+                    <Compass className="w-5 h-5 text-cyan-400" />
+                    Recommendations
+                  </h4>
+                  {analysis.recommendations && analysis.recommendations.length > 0 ? (
+                    analysis.recommendations.map((rec, index) => {
+                      const recommendation = typeof rec === "string"
+                        ? { title: rec, description: "", instructions: [] as string[], benefits: [] as string[] }
+                        : rec
+                      const instructionsAsItems = recommendation.instructions?.map((text) => ({ text })) ?? []
+                      const schemes: Array<"purple" | "cyan" | "green" | "pink"> = ["purple", "cyan", "green", "pink"]
+                      const colorScheme = schemes[index % schemes.length]
+                      return (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <DevotionistStyleCard
+                            variant="callout"
+                            colorScheme={colorScheme}
+                            icon={<Sparkles className="w-5 h-5" />}
+                            title={recommendation.title}
+                            summary={recommendation.description || undefined}
+                            items={instructionsAsItems}
+                          >
+                            {recommendation.benefits && recommendation.benefits.length > 0 && (
+                              <div className="mt-3">
+                                <h6 className="m3-label-medium text-slate-800 mb-2 flex items-center gap-2">
+                                  <TrendingUp className="w-4 h-4" />
+                                  Benefits:
+                                </h6>
+                                <div className="flex flex-wrap gap-2">
+                                  {recommendation.benefits.map((benefit, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-3 py-1 bg-amber-200/80 border border-amber-400/50 rounded-lg m3-label-small text-amber-900"
+                                    >
+                                      {benefit}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </DevotionistStyleCard>
+                        </motion.div>
+                      )
+                    })
+                  ) : (
+                    <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6 shadow-lg overflow-hidden">
+                      <div className="text-center">
+                        <p className="m3-body-medium text-slate-700">No recommendations available. Click &quot;Regenerate&quot; to generate your Kabbalistic analysis.</p>
+                      </div>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "ask-the-seer" && (
+              <div className="space-y-6">
+                <h3 className="m3-headline-small flex items-center gap-3 text-slate-200 mb-6">
+                  <Brain className="w-8 h-8 text-cyan-400" />
+                  Ask the Seer
+                </h3>
+                <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl shadow-lg p-6 overflow-hidden max-w-2xl mx-auto">
+                  <p className="m3-body-large text-slate-700 leading-relaxed mb-0 text-center">
+                    Ask me anything about your Kabbalistic Numerology analysis. I&apos;ll provide personalized answers based on your soul number, destiny number, Hebrew letters, and Gematria values.
+                  </p>
+                </Card>
+                <KabbalisticNumerologyCoachInterface analysis={analysis} variant="light" userProfile={userProfile} />
+              </div>
+            )}
+            </motion.div>
+          </AnimatePresence>
+        </Tabs>
       </div>
     </div>
   )

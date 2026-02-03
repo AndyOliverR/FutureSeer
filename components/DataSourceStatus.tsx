@@ -67,7 +67,7 @@ export function DataSourceStatus() {
       case 'astroapp':
         return {
           icon: <Database className="w-4 h-4" />,
-          label: 'AstroApp API',
+          label: 'FutureSeer AI',
           color: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
           description: 'Data from professional astrological API',
           reliability: 'High',

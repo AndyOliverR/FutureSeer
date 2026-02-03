@@ -2,90 +2,60 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
-
-interface KabbalisticAnalysis {
-  overview: string
-  soulNumber: number
-  destinyNumber: number
-  personalityNumber: number
-  gematria: string
-  nameValue: number
-  nameMeaning: string
-  birthValue: number
-  birthMeaning: string
-  soulDescription: string
-  soulStrengths: string[]
-  soulChallenges: string[]
-  destinyDescription: string
-  lifePurpose: string
-  careerPaths: string[]
-  personalityDescription: string
-  personalityTraits: string[]
-  expressionModes: string[]
-  hebrewLetters: Array<{
-    hebrew: string
-    english: string
-    value: number
-    meaning: string
-  }>
-  guidance: string
-  recommendations: string[]
-}
+import { useToolData, saveToolData } from "@/lib/toolStorageUtils"
+import type { SimplifiedKabbalisticAnalysis } from "@/lib/kabbalisticNumerologyIntelligence"
 
 export function useKabbalisticNumerology() {
-  const { user } = useAuth()
-  const [name, setName] = useState("")
-  const [birthDate, setBirthDate] = useState("")
-  const [analysis, setAnalysis] = useState<KabbalisticAnalysis | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { user, userProfile } = useAuth()
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false)
 
-  const performKabbalisticAnalysis = async () => {
-    if (!user?.uid || !name.trim() || !birthDate) {
-      setError("Please provide both name and birth date")
-      return
-    }
+  // Check if user has minimum required details (name and birth date)
+  const hasRequiredDetails = userProfile?.birthDate && (userProfile?.fullName || userProfile?.displayName || user?.displayName)
 
-    setIsLoading(true)
-    setError(null)
+  // Use localStorage-based hook to load saved data (refetch used after API save)
+  const { toolData: kabbalisticData, isLoading, error, refetch } = useToolData(
+    user?.uid,
+    'kabbalistic-numerology',
+    !!hasRequiredDetails
+  )
 
-    try {
-      // Import the Kabbalistic Numerology intelligence module
-      const { getKabbalisticAnalysis } = await import("@/lib/kabbalisticNumerologyIntelligence")
-      
-      const result = await getKabbalisticAnalysis(
-        user.uid,
-        {
-          name: name.trim(),
-          birthDate,
+  // Auto-generate Kabbalistic analysis when profile is complete and no data exists (via API to avoid slow client bundle + main-thread blocking)
+  useEffect(() => {
+    const shouldAutogen = !!hasRequiredDetails && !isLoading && !kabbalisticData && !!user?.uid && !isAutoGenerating
+    if (!shouldAutogen) return
+
+    const fullName = userProfile?.fullName || userProfile?.displayName || user?.displayName || ''
+    const birthDate = userProfile?.birthDate || ''
+    if (!fullName || !birthDate) return
+
+    setIsAutoGenerating(true)
+    ;(async () => {
+      try {
+        const res = await fetch('/api/tools/kabbalistic-numerology/analysis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: fullName, birthDate, userId: user?.uid }),
+        })
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.error || 'Analysis failed')
+        const result = json.data
+        if (user?.uid && result) {
+          saveToolData(user.uid, 'kabbalistic-numerology', result)
+          refetch()
         }
-      )
-
-      setAnalysis(result)
-    } catch (err: any) {
-      console.error("Error performing Kabbalistic analysis:", err)
-      setError(err.message || "Failed to perform Kabbalistic analysis")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const resetData = () => {
-    setName("")
-    setBirthDate("")
-    setAnalysis(null)
-    setError(null)
-  }
+      } catch (err: any) {
+        console.error('Kabbalistic numerology autogen failed:', err)
+      } finally {
+        setIsAutoGenerating(false)
+      }
+    })()
+  }, [hasRequiredDetails, isLoading, kabbalisticData, user?.uid, userProfile?.birthDate, userProfile?.displayName, userProfile?.fullName, user?.displayName, isAutoGenerating, refetch])
 
   return {
-    name,
-    setName,
-    birthDate,
-    setBirthDate,
-    analysis,
-    isLoading,
+    analysis: kabbalisticData as SimplifiedKabbalisticAnalysis | null,
+    isLoading: isLoading || isAutoGenerating,
     error,
-    performKabbalisticAnalysis,
-    resetData,
+    refetch,
+    hasRequiredDetails: !!hasRequiredDetails
   }
 } 

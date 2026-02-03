@@ -8,7 +8,7 @@ admin.initializeApp({
 const uid = '5bkccyY14NSU4ykMwOV3xcAcN5t1'; // <-- paste your full UID here
 
 // 3. Set the custom claim
-admin.auth().setCustomUserClaims(uid, { role: 'admin' })
+admin.auth().setCustomUserClaims(uid, { admin: true })
   .then(() => {
     console.log('Custom claim set for admin!');
     process.exit(0);

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Download, Search, UserCheck, Eye, ChevronLeft, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, Settings, FileText, Filter } from 'lucide-react';
+import { Header } from '@/components/header';
 
 // Dummy user data for scaffolding
 const dummyUsers = [
@@ -694,7 +695,8 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen p-8 bg-gradient-to-br from-slate-900 to-slate-800">
+    <div className="min-h-screen p-8 starfield-ultra-sharp">
+      <Header />
       <div className="max-w-5xl mx-auto">
         <h1 className="text-4xl font-bold mb-8 text-amber-300">God Mode Dashboard</h1>
         <Tabs defaultValue="users" className="w-full">
