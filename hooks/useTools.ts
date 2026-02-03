@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react';
+import { toolManager } from '@/lib/services/toolManager';
+import { ToolConfig } from '@/lib/types/toolSchemas';
 
+// Keep the existing Tool interface for backward compatibility
 export interface Tool {
   name: string;
   icon: string;
@@ -14,199 +17,43 @@ export function useTools() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const tools: Tool[] = [
-    // Astrological Tools
-    { 
-      name: "Vedic Astrology", 
-      icon: "🕉️", 
-      slug: "vedic-astrology",
-      category: "Astrology",
-      description: "Ancient Indian astrological system",
-      isPremium: true
-    },
-    { 
-      name: "KP Astrology", 
-      icon: "⭐", 
-      slug: "kp-astrology",
-      category: "Astrology", 
-      description: "Krishnamurti Paddhati system"
-    },
-    { 
-      name: "Western Astrology", 
-      icon: "♈", 
-      slug: "western-astrology",
-      category: "Astrology",
-      description: "Traditional Western zodiac system"
-    },
-    { 
-      name: "Hellenistic Astrology", 
-      icon: "🏛️", 
-      slug: "hellenistic-astrology",
-      category: "Astrology",
-      description: "Ancient Greek astrological traditions",
-      isPremium: true
-    },
-    { 
-      name: "13 Signs Zodiac", 
-      icon: "🐍", 
-      slug: "13-signs-zodiac",
-      category: "Astrology",
-      description: "Includes Ophiuchus for modern accuracy",
-      isPremium: true
-    },
-    { 
-      name: "Synastry", 
-      icon: "💕", 
-      slug: "synastry",
-      category: "Astrology",
-      description: "Relationship compatibility analysis",
-      isPremium: true
-    },
-    { 
-      name: "Financial Astrology", 
-      icon: "💰", 
-      slug: "financial-astrology",
-      category: "Astrology",
-      description: "Market timing and investment guidance",
-      isPremium: true
-    },
-    { 
-      name: "Medical Astrology", 
-      icon: "🏥", 
-      slug: "medical-astrology",
-      category: "Astrology",
-      description: "Health predictions and medical timing",
-      isPremium: true
-    },
-    { 
-      name: "Mundane Astrology", 
-      icon: "🌍", 
-      slug: "mundane-astrology",
-      category: "Astrology",
-      description: "World events and global predictions",
-      isPremium: true
-    },
-    { 
-      name: "Horary Astrology", 
-      icon: "⏰", 
-      slug: "horary",
-      category: "Astrology",
-      description: "Answer specific questions with timing"
-    },
-    { 
-      name: "Bazi", 
-      icon: "🐉", 
-      slug: "bazi",
-      category: "Chinese",
-      description: "Four Pillars of Destiny"
-    },
+  // Convert ToolConfig to Tool interface for backward compatibility
+  const tools: Tool[] = useMemo(() => {
+    const allTools = toolManager.getAllTools()
+      .filter((config) => {
+        // Hide tools that redirect to another tool or are marked to hide
+        if (config.redirectTo || config.hideFromMainList) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // Sort by popularity score (descending) - highest first
+        const scoreA = a.popularityScore ?? 0;
+        const scoreB = b.popularityScore ?? 0;
+        return scoreB - scoreA;
+      })
+      .map((config): Tool => ({
+        name: config.name,
+        icon: config.icon,
+        slug: config.slug,
+        category: config.category,
+        description: config.description,
+        isPremium: config.isPremium,
+        isComingSoon: config.isComingSoon
+      }));
     
-    // Numerology Tools
-    { 
-      name: "Chaldean Numerology", 
-      icon: "🔢", 
-      slug: "chaldean-numerology",
-      category: "Numerology",
-      description: "Ancient Babylonian number system"
-    },
-    { 
-      name: "Kabbalistic Numerology", 
-      icon: "✡️", 
-      slug: "kabbalistic-numerology",
-      category: "Numerology",
-      description: "Hebrew mystical number meanings"
-    },
-    { 
-      name: "Angel Numbers", 
-      icon: "👼", 
-      slug: "angel-numbers",
-      category: "Numerology",
-      description: "Divine numerical messages"
-    },
-    
-    // Divination Tools
-    { 
-      name: "Tarot", 
-      icon: "🃏", 
-      slug: "tarot",
-      category: "Divination",
-      description: "78-card mystical deck system"
-    },
-    { 
-      name: "Lenormand", 
-      icon: "🌸", 
-      slug: "lenormand",
-      category: "Divination",
-      description: "36-card fortune telling system"
-    },
-    { 
-      name: "Runes", 
-      icon: "ᚱ", 
-      slug: "runes",
-      category: "Divination",
-      description: "Ancient Norse alphabet divination"
-    },
-    { 
-      name: "I Ching", 
-      icon: "☯️", 
-      slug: "iching",
-      category: "Divination",
-      description: "Chinese Book of Changes"
-    },
-    { 
-      name: "Pendulum", 
-      icon: "⏳", 
-      slug: "pendulum",
-      category: "Divination",
-      description: "Dowsing and energy detection"
-    },
-    { 
-      name: "Geomancy", 
-      icon: "🌍", 
-      slug: "geomancy",
-      category: "Divination",
-      description: "Earth divination system"
-    },
-    
-    // Reading Tools
-    { 
-      name: "Palmistry", 
-      icon: "🤲", 
-      slug: "palmistry",
-      category: "Reading",
-      description: "Palm reading and hand analysis"
-    },
-    { 
-      name: "Face Reading", 
-      icon: "👤", 
-      slug: "face-reading",
-      category: "Reading",
-      description: "Physiognomy and facial analysis"
-    },
-    { 
-      name: "Name Analysis", 
-      icon: "📝", 
-      slug: "name-analysis",
-      category: "Reading",
-      description: "Numerological name interpretation"
-    },
-    { 
-      name: "Dream Symbols", 
-      icon: "💭", 
-      slug: "dream-symbols",
-      category: "Reading",
-      description: "Dream interpretation and symbolism"
-    },
-    
-    // Analysis Tools
-    { 
-      name: "Vastu", 
-      icon: "🏠", 
-      slug: "vastu",
-      category: "Analysis",
-      description: "Space harmony and architecture"
-    }
-  ];
+    // Remove duplicates by slug (safety check)
+    const seen = new Set<string>();
+    return allTools.filter((tool) => {
+      if (seen.has(tool.slug)) {
+        console.warn(`Duplicate tool found: ${tool.slug} - ${tool.name}`);
+        return false;
+      }
+      seen.add(tool.slug);
+      return true;
+    });
+  }, []);
 
   // Filter tools based on search and category
   const filteredTools = useMemo(() => {
@@ -237,6 +84,11 @@ export function useTools() {
       return acc;
     }, {} as Record<string, Tool[]>);
     
+    // Sort tools within each category by popularity (tools are already sorted globally)
+    Object.keys(grouped).forEach(category => {
+      // Tools are already sorted by popularity, so categories maintain that order
+    });
+    
     return grouped;
   }, [tools]);
 
@@ -253,7 +105,9 @@ export function useTools() {
       "Divination": "🔮",
       "Reading": "📖",
       "Analysis": "🔍",
-      "Chinese": "🐉"
+      "Chinese": "🐉",
+      "Indian": "🕉️",
+      "Energy": "✨"
     };
     return icons[category] || "✨";
   };
@@ -265,12 +119,44 @@ export function useTools() {
       "Divination": "from-pink-500 to-purple-600",
       "Reading": "from-green-500 to-emerald-600",
       "Analysis": "from-orange-500 to-red-600",
-      "Chinese": "from-red-500 to-orange-600"
+      "Chinese": "from-red-500 to-orange-600",
+      "Indian": "from-orange-500 to-yellow-600",
+      "Energy": "from-indigo-500 to-purple-600"
     };
     return colors[category] || "from-gray-500 to-slate-600";
   };
 
+  // New enhanced functions using toolManager
+  const getToolConfig = (slug: string): ToolConfig | undefined => {
+    return toolManager.getTool(slug);
+  };
+
+  const validateToolRequirements = (slug: string, userData: any) => {
+    return toolManager.validateToolRequirements(slug, userData);
+  };
+
+  const getToolEndpoint = (slug: string): string | null => {
+    return toolManager.getToolEndpoint(slug);
+  };
+
+  const getToolAnalysisTime = (slug: string): number => {
+    return toolManager.getToolAnalysisTime(slug);
+  };
+
+  const getToolsCount = (): number => {
+    return toolManager.getToolsCount();
+  };
+
+  const getPremiumToolsCount = (): number => {
+    return toolManager.getPremiumToolsCount();
+  };
+
+  const searchToolsAdvanced = (query: string): ToolConfig[] => {
+    return toolManager.searchTools(query);
+  };
+
   return {
+    // Existing properties for backward compatibility
     tools,
     filteredTools,
     toolsByCategory,
@@ -281,5 +167,17 @@ export function useTools() {
     setSearchTerm,
     getCategoryIcon,
     getCategoryColor,
+    
+    // New enhanced functions
+    getToolConfig,
+    validateToolRequirements,
+    getToolEndpoint,
+    getToolAnalysisTime,
+    getToolsCount,
+    getPremiumToolsCount,
+    searchToolsAdvanced,
+    
+    // Tool manager instance for advanced usage
+    toolManager
   };
 } 

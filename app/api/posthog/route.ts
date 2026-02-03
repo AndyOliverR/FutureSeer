@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +9,7 @@ export async function POST(request: NextRequest) {
     const posthogHost = process.env.POSTHOG_HOST || "https://app.posthog.com"
 
     if (!posthogKey) {
-      console.warn("[FutureSeer] PostHog API key not configured")
+      devLog.warn("[FutureSeer] PostHog API key not configured", undefined, 'posthog')
       return NextResponse.json({ success: false, error: "PostHog not configured" })
     }
 

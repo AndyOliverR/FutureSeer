@@ -1,23 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
+import { createAICompletion } from '@/lib/aiGateway';
 import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 import { securityEvents } from '@/lib/securityMonitor';
 
-// Initialize OpenAI only if API key is available
-let openai: OpenAI | null = null
-
-if (process.env.OPENAI_API_KEY) {
-  openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-}
-
 async function handleOpenAIRequest(request: NextRequest) {
   try {
-    // Check if OpenAI is configured
-    if (!openai) {
+    // Check if OpenAI is configured (either via Gateway or direct API)
+    if (!process.env.OPENAI_API_KEY && !process.env.AI_GATEWAY_API_KEY) {
+      console.error("OpenAI not configured - missing API key");
       return NextResponse.json(
-        { error: "AI services are currently unavailable. Please try again later." },
+        { error: "OpenAI API key is not configured. Please add OPENAI_API_KEY or AI_GATEWAY_API_KEY to your .env.local file." },
+        { status: 503 },
+      )
+    }
+
+    // Additional check for API key validity
+    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.length < 10) {
+      console.error("OpenAI API key is invalid or too short");
+      return NextResponse.json(
+        { error: "OpenAI API key is invalid. Please check your .env.local file." },
         { status: 503 },
       )
     }
@@ -64,9 +65,9 @@ Provide a comprehensive mystical reading that includes:
 3. Practical spiritual guidance
 4. Timing insights and next steps
 
-Keep the response mystical yet practical, around 200-300 words. Write in a wise, compassionate tone that offers hope and guidance.`
+For comprehensive interpretations, provide detailed analysis covering all life areas. For specific questions, keep responses focused and practical. Write in a wise, compassionate tone that offers hope and guidance.`
 
-    const completion = await openai.chat.completions.create({
+    const result = await createAICompletion({
       model: "gpt-4",
       messages: [
         {
@@ -79,12 +80,12 @@ Keep the response mystical yet practical, around 200-300 words. Write in a wise,
           content: prompt,
         },
       ],
-      max_tokens: 500,
+      maxTokens: 2000, // Increased for comprehensive interpretations
       temperature: 0.7,
     })
 
     const prediction =
-      completion.choices[0]?.message?.content ||
+      result.content ||
       "The cosmic energies are unclear at this moment. Please try asking your question again."
 
     // Log successful AI prediction
@@ -96,8 +97,8 @@ Keep the response mystical yet practical, around 200-300 words. Write in a wise,
         'create',
         {
           predictionLength: prediction.length,
-          tokensUsed: completion.usage?.total_tokens || 0,
-          model: completion.model,
+          tokensUsed: result.usage?.totalTokens || 0,
+          model: "gpt-4",
           timestamp: Date.now()
         }
       );
@@ -119,16 +120,42 @@ Keep the response mystical yet practical, around 200-300 words. Write in a wise,
       );
     }
 
-    // Return a more specific error message
-    if (error instanceof Error && error.message.includes("API key")) {
-      return NextResponse.json(
-        { error: "AI services are currently being configured. Please try again later." },
-        { status: 503 },
-      )
+    // Return more specific error messages based on the error type
+    if (error instanceof Error) {
+      if (error.message.includes("API key") || error.message.includes("authentication")) {
+        return NextResponse.json(
+          { error: "OpenAI API key is not configured or invalid. Please check your .env.local file." },
+          { status: 503 },
+        )
+      }
+      
+      if (error.message.includes("quota") || error.message.includes("rate limit")) {
+        return NextResponse.json(
+          { error: "OpenAI API quota exceeded. Please try again later." },
+          { status: 429 },
+        )
+      }
+      
+      if (error.message.includes("timeout")) {
+        return NextResponse.json(
+          { error: "Request timeout. Please try again." },
+          { status: 408 },
+        )
+      }
+      
+      // Log the actual error for debugging
+      console.error("Detailed OpenAI error:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
     }
 
     return NextResponse.json(
-      { error: "Unable to generate prediction at this time. The cosmic energies will realign shortly." },
+      { 
+        error: "Unable to generate prediction at this time. Please check your OpenAI API configuration.",
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 },
     )
   }

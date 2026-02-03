@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +8,7 @@ export async function POST(request: NextRequest) {
     const stabilityApiKey = process.env.STABILITY_API_KEY
 
     if (!stabilityApiKey || stabilityApiKey.trim() === "" || stabilityApiKey === "undefined") {
-      console.warn("[FutureSeer] Stability AI API key not configured")
+      devLog.warn("[FutureSeer] Stability AI API key not configured", undefined, 'stability')
       return NextResponse.json({
         success: false,
         error: "Image generation not configured",

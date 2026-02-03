@@ -1,0 +1,146 @@
+[
+  {
+    "id": "bai_du_wan",
+    "name": "Baidu Pills",
+    "meridians": ["Kidney", "Spleen", "Bladder"],
+    "points": ["KI3", "SP6", "BL40"],
+    "indications": ["cold_damp", "bi_syndrome", "joint_pain", "deficiency"],
+    "contraindications": ["heat_excess", "yin_deficiency"],
+    "zodiacCorrelation": "Capricorn",
+    "elementalBalance": "Earth-Water",
+    "seasonalTiming": "Winter solstice"
+  },
+  {
+    "id": "si_wu_tang",
+    "name": "Four Substance Decoction",
+    "meridians": ["Liver", "Heart", "Spleen"],
+    "points": ["LV3", "HT7", "SP6", "CV4"],
+    "indications": ["blood_deficiency", "irregular_menstruation", "fatigue", "anemia"],
+    "contraindications": ["damp_heat", "excess_patterns"],
+    "zodiacCorrelation": "Cancer",
+    "elementalBalance": "Water-Wood",
+    "seasonalTiming": "Full moon phase"
+  },
+  {
+    "id": "xiao_yao_san",
+    "name": "Free and Easy Wanderer",
+    "meridians": ["Liver", "Spleen", "Stomach"],
+    "points": ["LV3", "SP6", "ST36"],
+    "indications": ["liver_qi_stagnation", "depression", "irritability", "digestive_issues"],
+    "contraindications": ["qi_excess", "blood_stagnation"],
+    "zodiacCorrelation": "Scorpio",
+    "elementalBalance": "Wood-Earth",
+    "seasonalTiming": "Spring equinox"
+  },
+  {
+    "id": "liu_wei_di_huang",
+    "name": "Six Ingredients with Rehmannia",
+    "meridians": ["Kidney", "Liver", "Spleen"],
+    "points": ["KI3", "LV3", "SP6"],
+    "indications": ["kidney_yin_deficiency", "diabetes", "lower_back_pain", "menopause"],
+    "contraindications": ["damp_heat", "spleen_deficiency_with_dampness"],
+    "zodiacCorrelation": "Libra",
+    "elementalBalance": "Water-Wood",
+    "seasonalTiming": "Autumn equinox"
+  },
+  {
+    "id": "gan_cao_xie_xin",
+    "name": "Licorice, Ginger, Pinellia Combination",
+    "meridians": ["Stomach", "Spleen", "Heart"],
+    "points": ["ST36", "SP6", "HT7"],
+    "indications": ["stomach_heat", "acid_reflux", "nausea", "vomiting"],
+    "contraindications": ["cold_deficiency", "yang_deficiency"],
+    "zodiacCorrelation": "Virgo",
+    "elementalBalance": "Earth-Fire",
+    "seasonalTiming": "Late summer"
+  },
+  {
+    "id": "da_cheng_qi",
+    "name": "Major Rhubarb Combination",
+    "meridians": ["Large Intestine", "Stomach"],
+    "points": ["LI4", "LI11", "ST25"],
+    "indications": ["constipation", "fever", "abdominal_distention", "excess_heat"],
+    "contraindications": ["deficiency_patterns", "pregnancy"],
+    "zodiacCorrelation": "Gemini",
+    "elementalBalance": "Metal-Earth",
+    "seasonalTiming": "Late summer/early autumn"
+  },
+  {
+    "id": "gui_zhi_fuling_wan",
+    "name": "Cinnamon Twig and Poria Pills",
+    "meridians": ["Heart", "Kidney", "Spleen"],
+    "points": ["HT7", "KI3", "SP6"],
+    "indications": ["gynecological_stagnation", "fibroids", "irregular_menstruation", "blood_stasis"],
+    "contraindications": ["yin_deficiency", "heat_excess"],
+    "zodiacCorrelation": "Scorpio",
+    "elementalBalance": "Water-Fire",
+    "seasonalTiming": "Waxing moon phase"
+  },
+  {
+    "id": "sheng_ma_ge_gen",
+    "name": "Kudzu Decoction",
+    "meridians": ["Stomach", "Large Intestine", "Lung"],
+    "points": ["LI4", "LI11", "LU7"],
+    "indications": ["headache", "neck_stiffness", "common_cold", "fever"],
+    "contraindications": ["sweating", "deficiency_perspiration"],
+    "zodiacCorrelation": "Aries",
+    "elementalBalance": "Yang-Metal",
+    "seasonalTiming": "Spring, initial onset symptoms"
+  },
+  {
+    "id": "wu_mei_wan",
+    "name": "Mume Pills",
+    "meridians": ["Liver", "Stomach", "Large Intestine"],
+    "points": ["LV3", "ST36", "LI4"],
+    "indications": ["parasites", "abdominal_pain", "digestive_disorder", "chronic_diarrhea"],
+    "contraindications": ["acute_infections", "fever_with_diarrhea"],
+    "zodiacCorrelation": "Pisces",
+    "elementalBalance": "Wood-Earth",
+    "seasonalTiming": "Transitional periods"
+  },
+  {
+    "id": "zhen_gan_xi_feng",
+    "name": "Sedate Liver and Extinguish Wind",
+    "meridians": ["Liver", "Kidney", "Heart"],
+    "points": ["LV3", "KI3", "HT7", "GB20"],
+    "indications": ["hypertension", "stroke_prevention", "dizziness", "liver_yang_rising"],
+    "contraindications": ["deficiency_wind", "blood_deficiency"],
+    "zodiacCorrelation": "Leo",
+    "elementalBalance": "Wood-Water",
+    "seasonalTiming": "During stress periods"
+  },
+  {
+    "id": "bu_zhong_yi_qi",
+    "name": "Tonify Middle and Augment Qi",
+    "meridians": ["Spleen", "Stomach", "Lung"],
+    "points": ["SP6", "ST36", "LU9"],
+    "indications": ["spleen_qi_deficiency", "prolapse", "fatigue", "poor_digestion"],
+    "contraindications": ["excess_heat", "damp_heat"],
+    "zodiacCorrelation": "Virgo",
+    "elementalBalance": "Earth-Metal",
+    "seasonalTiming": "Late summer, spleen time"
+  },
+  {
+    "id": "yu_ping_feng",
+    "name": "Jade Windscreen",
+    "meridians": ["Lung", "Spleen"],
+    "points": ["LU9", "SP6", "LI4"],
+    "indications": ["frequent_colds", "weak_immunity", "sweating_easily", "respiratory_weakness"],
+    "contraindications": ["exterior_wind", "acute_infections"],
+    "zodiacCorrelation": "Gemini",
+    "elementalBalance": "Metal-Earth",
+    "seasonalTiming": "Preventive - before cold season"
+  },
+  {
+    "id": "zhu_ling_tang",
+    "name": "Poria Five Decoction",
+    "meridians": ["Kidney", "Bladder", "Spleen"],
+    "points": ["KI3", "BL40", "SP9"],
+    "indications": ["urinary_retention", "edema", "difficult_urination", "damp_cold"],
+    "contraindications": ["yin_deficiency", "hemorrhage"],
+    "zodiacCorrelation": "Libra",
+    "elementalBalance": "Water-Earth",
+    "seasonalTiming": "Winter, when cold and damp"
+  }
+]
+

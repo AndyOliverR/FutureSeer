@@ -1,266 +1,1494 @@
+// Streamlined Tarot page that integrates with comprehensive profile data and external Tarot API
 "use client"
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { TarotCoachInterface } from "@/components/TarotCoachInterface"
-import { useTarot } from "@/hooks/use-tarot"
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useRouter } from 'next/navigation'
+import ErrorBoundary from '@/components/ErrorBoundary'
+import { useAuth } from '@/hooks/use-auth'
+import { useTarot } from '@/hooks/use-tarot'
+import { tarotIntelligence } from '@/lib/tarotIntelligence'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
+import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab'
+import TarotSeerChatInterface from '@/components/TarotSeerChatInterface'
+import { TarotCard } from '@/lib/tarotIntelligence'
+import { SpreadType, CombinedSystemData, ProfileCardsData } from '@/types/tarot'
+import { TarotDashboardHero } from '@/components/tarot/TarotDashboardHero'
+import { TarotProfileDiagram } from '@/components/tarot/TarotProfileDiagram'
+import { TarotLifePathMap } from '@/components/tarot/TarotLifePathMap'
+import { ElementalBalanceWheel } from '@/components/tarot/ElementalBalanceWheel'
+import { ArcanaDistributionChart } from '@/components/tarot/ArcanaDistributionChart'
+import { TarotNumerologyIntegration } from '@/components/tarot/TarotNumerologyIntegration'
+import { DashboardSection } from '@/components/western/DashboardSection'
+import { 
+  Sparkles, 
+  Calendar,
+  Clock,
+  RefreshCw,
+  AlertTriangle,
+  Info,
+  Zap,
+  Brain,
+  User,
+  Target,
+  Activity,
+  BookOpen,
+  Star,
+  Loader2
+} from 'lucide-react'
+import { AffiliateLink } from '@/components/AffiliateLink'
+import { getTarotDeckAffiliateUrl } from '@/lib/affiliateConfig'
 
-export default function TarotPage() {
+function TarotPage() {
+  const router = useRouter()
+  const { user, userProfile } = useAuth()
+  const [activeTab, setActiveTab] = useState<'introduction' | 'tarot-profile' | 'reading' | 'cards' | 'combined-system' | 'compatibility' | 'ask-the-seer'>('introduction')
+  
+  // Use the tarot hook
   const {
     question,
-    spreadType,
-    cards,
-    analysis,
-    isLoading,
-    error,
     setQuestion,
+    spreadType,
     setSpreadType,
+    reading: currentReading,
+    isLoading: isReadingLoading,
+    error: readingError,
     performTarotReading,
-    resetData
+    resetData: resetReading
   } = useTarot()
 
-  const [activeTab, setActiveTab] = useState("overview")
+  // Get available spreads
+  const [availableSpreads, setAvailableSpreads] = useState<SpreadType[]>([])
+  const [allCards, setAllCards] = useState<TarotCard[]>([])
+  
+  // Combined System state
+  const [combinedSystemData, setCombinedSystemData] = useState<CombinedSystemData | null>(null)
+  const [isLoadingCombinedSystem, setIsLoadingCombinedSystem] = useState(false)
+  const [profileCardsError, setProfileCardsError] = useState<string | null>(null)
+  
+  useEffect(() => {
+    const spreads = tarotIntelligence.getAvailableSpreads()
+    setAvailableSpreads(spreads)
+    
+    // Get all cards from tarotIntelligence
+    const cards = tarotIntelligence.getAllCards()
+    setAllCards(cards)
+  }, [])
+
+  // Fetch Combined System analysis when profile is complete
+  const fetchCombinedSystemAnalysis = useCallback(async (abortController: AbortController) => {
+      if (!user?.uid || !userProfile?.birthDate || !userProfile?.fullName && !userProfile?.displayName) {
+        return
+      }
+
+      // Don't refetch if we already have data
+      if (combinedSystemData) {
+        return
+      }
+
+      setIsLoadingCombinedSystem(true)
+      try {
+        const fullName = userProfile.fullName || userProfile.displayName || ''
+        const response = await fetch('/api/tarot-combined-system/analysis', {
+          method: 'POST',
+          signal: abortController.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.uid,
+            birthDate: userProfile.birthDate,
+            birthTime: userProfile.birthTime,
+            birthPlace: userProfile.birthPlace,
+            fullName: fullName,
+          }),
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success && result.data) {
+            setCombinedSystemData(result.data)
+          }
+        } else {
+          console.error('Failed to fetch Combined System analysis:', response.status)
+        }
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error('Error fetching Combined System analysis:', error)
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setIsLoadingCombinedSystem(false)
+        }
+      }
+    }, [user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.fullName, userProfile?.displayName, combinedSystemData])
+
+  useEffect(() => {
+    const abortController = new AbortController()
+    fetchCombinedSystemAnalysis(abortController)
+    return () => abortController.abort()
+  }, [fetchCombinedSystemAnalysis])
+
+  // Calculate profile cards if birth date and name are available (memoized for performance)
+  const profileCards = useMemo((): ProfileCardsData | null => {
+    setProfileCardsError(null)
+    
+    if (!userProfile?.birthDate) return null
+    
+    // Use fullName if available, otherwise use displayName
+    const fullName = userProfile.fullName || userProfile.displayName || ''
+    if (!fullName) return null
+    
+    try {
+      return tarotIntelligence.calculateProfileCards(userProfile.birthDate, fullName)
+    } catch (error) {
+      // Profile card calculation failed - set error state
+      setProfileCardsError('Unable to calculate your profile cards. Please check your birth date and name.')
+      return null
+    }
+  }, [userProfile?.birthDate, userProfile?.fullName, userProfile?.displayName])
+
+  // Check for reduced motion preference
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }, [])
+
+  // Material 3 motion configuration - optimized for GPU acceleration
+  const motionConfig = useMemo(() => {
+    if (prefersReducedMotion) return { duration: 0 }
+    return { duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }
+  }, [prefersReducedMotion])
+
+  // Memoize tab configuration
+  const tabsConfig = useMemo(() => [
+    { value: 'introduction', label: 'Introduction', icon: null },
+    { value: 'tarot-profile', label: 'Tarot Profile', icon: User },
+    { value: 'reading', label: 'Reading', icon: Sparkles },
+    { value: 'cards', label: 'Cards', icon: BookOpen },
+    { value: 'combined-system', label: 'Combined', icon: Star },
+    { value: 'compatibility', label: 'Compare', icon: null },
+    { value: 'ask-the-seer', label: 'Ask the Seer', icon: Brain }
+  ], [])
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8 pt-8"
-        >
-          <motion.a
-            href="/tools"
-            className="text-soft hover:gold-glow mb-4 inline-block transition-all duration-300"
-            whileHover={{ x: -5 }}
-          >
-            ← Back to Tools
-          </motion.a>
-          <h1 className="text-5xl font-bold gold-glow mb-4">🃏 Tarot</h1>
-          <p className="text-soft leading-relaxed text-lg mb-4">
-            Ancient wisdom through divine card guidance and symbolic interpretation
+    <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+      <div className="relative z-10 max-w-7xl mx-auto py-8">
+        <div className="text-center mb-8 pt-4">
+          <h1 className="text-5xl font-serif font-semibold mb-6">
+            <span className="text-purple-300">🔮</span>{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-pink-400 to-purple-600">Tarot Divination</span>
+          </h1>
+          <p className="text-slate-200 leading-relaxed text-xl font-light">
+            Ancient wisdom through the sacred art of Tarot card reading
           </p>
-          {/* Inspirational Quote */}
-          <div className="glass-card rounded-2xl p-6 border border-red-500/20 max-w-2xl mx-auto">
-            <p className="text-xl italic text-red-300 font-serif mb-2">
-              "The tarot speaks in symbols that bypass the mind and speak directly to the soul, revealing what the heart already knows."
-            </p>
-            <p className="text-soft/70 text-sm">— Madame Lenormand</p>
-          </div>
-        </motion.div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Input Section */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-1"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              <h2 className="text-2xl gold-glow mb-6 text-center">Divine Guidance</h2>
-              
-              {/* Question Input */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">❓</span>
-                  Your Question
-                </h3>
-                <textarea
-                  placeholder="Ask the tarot for guidance on any aspect of your life..."
-                  value={question || ""}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400 transition-all duration-300 h-32 resize-none"
-                />
-              </div>
-
-              {/* Spread Type */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">🎴</span>
-                  Spread Type
-                </h3>
-                <select
-                  value={spreadType || ""}
-                  onChange={(e) => setSpreadType(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                >
-                  <option value="">Select Spread</option>
-                  <option value="single">Single Card</option>
-                  <option value="three-card">Three Card Spread</option>
-                  <option value="celtic-cross">Celtic Cross</option>
-                  <option value="horseshoe">Horseshoe Spread</option>
-                  <option value="tree-of-life">Tree of Life</option>
-                  <option value="custom">Custom Spread</option>
-                </select>
-              </div>
-
-              {/* Instructions */}
-              <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20">
-                <h4 className="text-soft font-semibold mb-2 flex items-center">
-                  <span className="mr-2">💡</span>
-                  Tarot Insights
-                </h4>
-                <ul className="space-y-1 text-sm text-soft/80">
-                  <li>• Divine card guidance</li>
-                  <li>• Symbolic interpretation</li>
-                  <li>• Intuitive wisdom</li>
-                  <li>• Ancient traditions</li>
-                </ul>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={performTarotReading}
-                  disabled={isLoading || !question.trim() || !spreadType}
-                  className="w-full bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
-                >
-                  {isLoading ? "🃏 Reading..." : "🃏 Read the Cards"}
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={resetData}
-                  className="w-full bg-white/5 border border-white/20 text-soft rounded-xl p-4 font-semibold hover:bg-white/10 transition-all duration-300"
-                >
-                  🔄 Reset
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Results Section */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {["overview", "cards", "interpretation", "guidance", "timing", "advice"].map((tab) => (
-                  <motion.button
-                    key={tab}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      activeTab === tab
-                        ? "bg-gradient-to-r from-red-500 to-orange-600 text-white"
-                        : "bg-white/5 text-soft hover:bg-white/10"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* Content */}
-              <AnimatePresence mode="wait">
-                {isLoading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="text-4xl mb-4"
-                    >
-                      🃏
-                    </motion.div>
-                    <p className="text-soft text-lg">Shuffling the cards and seeking divine guidance...</p>
-                  </motion.div>
-                ) : error ? (
-                  <motion.div
-                    key="error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-4xl mb-4">⚠️</div>
-                    <p className="text-red-400 text-lg mb-2">Reading Error</p>
-                    <p className="text-soft">{error}</p>
-                  </motion.div>
-                ) : analysis ? (
-                  <motion.div
-                    key="results"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <TarotCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      question={question}
-                      spreadType={spreadType}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-6xl mb-6">🃏</div>
-                    <h3 className="text-2xl gold-glow mb-4">Ready for Divine Guidance?</h3>
-                    <p className="text-soft leading-relaxed">
-                      Ask your question above to receive guidance through the ancient 
-                      wisdom of tarot cards and symbolic interpretation.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+          <p className="text-slate-400 text-sm mt-3">
+            <AffiliateLink href={getTarotDeckAffiliateUrl()} label="Shop tarot decks" className="text-amber-500/80 hover:text-amber-400" />
+          </p>
         </div>
 
-        {/* Features Highlight */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="glass-card rounded-3xl p-8 mt-12 border border-white/10"
-        >
-          <h3 className="text-2xl gold-glow mb-6 text-center">✨ Tarot Features</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl mb-3">🃏</div>
-              <h4 className="text-soft font-semibold mb-2">Divine Cards</h4>
-              <p className="text-soft/70 text-sm">Ancient tarot wisdom</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">🔮</div>
-              <h4 className="text-soft font-semibold mb-2">Multiple Spreads</h4>
-              <p className="text-soft/70 text-sm">Various reading layouts</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">💫</div>
-              <h4 className="text-soft font-semibold mb-2">Symbolic Meaning</h4>
-              <p className="text-soft/70 text-sm">Deep symbolic interpretation</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">✨</div>
-              <h4 className="text-soft font-semibold mb-2">Intuitive Guidance</h4>
-              <p className="text-soft/70 text-sm">Personal spiritual insight</p>
-            </div>
-          </div>
-        </motion.div>
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-7 bg-transparent p-0 gap-2">
+            {tabsConfig.map((tab) => {
+              const IconComponent = tab.icon
+              return (
+                <motion.div
+                  key={tab.value}
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                  transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                  className="relative"
+                >
+                  <TabsTrigger 
+                    value={tab.value} 
+                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden"
+                  >
+                    {IconComponent && <IconComponent className="w-4 h-4 mr-1.5" />}
+                    {tab.label}
+                    {activeTab === tab.value && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
+                        transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </TabsTrigger>
+                </motion.div>
+              )
+            })}
+          </TabsList>
+
+          {/* Tab Content with Material 3 Transitions */}
+          <AnimatePresence mode="wait">
+            {/* Introduction Tab */}
+            {activeTab === 'introduction' && (
+              <motion.div
+                key="introduction"
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                transition={motionConfig}
+              >
+                <TabsContent value="introduction" className="space-y-6">
+                  <ToolIntroductionTab toolSlug="tarot" />
+                </TabsContent>
+              </motion.div>
+            )}
+
+            {/* Compatibility Tab */}
+            {activeTab === 'compatibility' && (
+              <motion.div
+                key="compatibility"
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                transition={motionConfig}
+              >
+                <TabsContent value="compatibility" className="space-y-6">
+                  <CompatibilityTab toolSlug="tarot" />
+                </TabsContent>
+              </motion.div>
+            )}
+
+            {/* Tarot Profile Tab - Main Dashboard */}
+            {activeTab === 'tarot-profile' && (
+              <motion.div
+                key="tarot-profile"
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                transition={motionConfig}
+              >
+                <TabsContent value="tarot-profile" className="space-y-6 mt-6">
+            {/* Loading State for Combined System in Hero */}
+            {isLoadingCombinedSystem && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg rounded-2xl">
+                  <CardContent className="p-6 text-center">
+                    <motion.div
+                      className="relative w-12 h-12 mx-auto mb-3"
+                      animate={prefersReducedMotion ? {} : { rotate: 360 }}
+                      transition={prefersReducedMotion ? {} : { duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      style={{ willChange: prefersReducedMotion ? 'auto' : 'transform' }}
+                    >
+                      <svg className="w-12 h-12" viewBox="0 0 24 24" style={{ willChange: 'auto' }}>
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="8"
+                          stroke="rgba(217, 119, 6, 0.2)"
+                          strokeWidth="2"
+                          fill="none"
+                        />
+                        {!prefersReducedMotion && (
+                          <motion.circle
+                            cx="12"
+                            cy="12"
+                            r="8"
+                            stroke="#d97706"
+                            strokeWidth="2"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray="50 30"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                            style={{ transformOrigin: "12px 12px", willChange: 'transform' }}
+                          />
+                        )}
+                      </svg>
+                    </motion.div>
+                    <motion.p 
+                      className="text-slate-700 text-sm"
+                      initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                      animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                      transition={prefersReducedMotion ? {} : { delay: 0.2 }}
+                    >
+                      Loading your comprehensive profile...
+                    </motion.p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
+            {/* Error State for Profile Cards */}
+            {profileCardsError && !profileCards && (
+              <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-2 border-red-300 shadow-lg rounded-2xl">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-red-900 mb-2">Profile Cards Error</h3>
+                      <p className="text-red-700 text-sm mb-3">{profileCardsError}</p>
+                      <motion.div
+                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                      >
+                        <Button
+                          onClick={() => router.push('/profile-setup')}
+                          size="sm"
+                          className="bg-red-500 hover:bg-red-600 text-white relative overflow-hidden focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                        >
+                          <span className="relative z-10">Update Profile</span>
+                        </Button>
+                      </motion.div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Hero Section - Always visible */}
+            {!isLoadingCombinedSystem && (
+              <TarotDashboardHero 
+                profileCards={profileCards}
+                userProfile={userProfile}
+                combinedSystemData={combinedSystemData}
+              />
+            )}
+
+            {/* Dashboard Sections */}
+            {profileCards && !profileCardsError && (
+              <div className="space-y-6 mt-8">
+                {/* Section 1: Profile Cards Deep Dive */}
+                <DashboardSection 
+                  title="Your Profile Cards" 
+                  icon={<User className="w-6 h-6" />}
+                  badge="4 Sacred Cards"
+                  defaultExpanded={true}
+                  colorScheme="purple"
+                  storageKey="tarot-profile-cards"
+                >
+                  <TarotProfileDiagram profileCards={profileCards} />
+                </DashboardSection>
+
+                {/* Section 2: Recent Readings */}
+                <DashboardSection 
+                  title="Your Readings" 
+                  icon={<BookOpen className="w-6 h-6" />}
+                  badge="History"
+                  defaultExpanded={false}
+                  colorScheme="amber"
+                  storageKey="tarot-readings"
+                >
+                  {currentReading ? (
+                    <div className="space-y-4">
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={motionConfig}
+                        whileHover={prefersReducedMotion ? {} : { y: -4, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-2 border-blue-200 shadow-sm hover:shadow-md rounded-xl transition-shadow duration-300">
+                          <CardContent className="p-4">
+                            <p className="text-slate-700 text-sm mb-2">
+                              Last reading: <span className="font-semibold text-blue-800">{currentReading.spreadName}</span>
+                            </p>
+                            <div className="text-xs text-slate-600 mb-2">
+                              Question: {currentReading.question.substring(0, 100)}...
+                            </div>
+                            <div className="text-xs text-slate-500">
+                              {new Date(currentReading.timestamp).toLocaleDateString()}
+                            </div>
+                            <motion.div
+                              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                              whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                              transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                              className="mt-3"
+                            >
+                              <Button
+                                onClick={() => setActiveTab('reading')}
+                                size="sm"
+                                className="bg-blue-500 hover:bg-blue-600 text-white relative overflow-hidden focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                                aria-label="View your last tarot reading"
+                              >
+                                <span className="relative z-10">View Reading</span>
+                              </Button>
+                            </motion.div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Sparkles className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+                      <p className="text-slate-600 mb-4">No readings performed yet</p>
+                      <motion.div
+                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                      >
+                        <Button
+                          onClick={() => setActiveTab('reading')}
+                          className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                          aria-label="Navigate to reading tab to start your first tarot reading"
+                        >
+                          <BookOpen className="w-4 h-4 mr-2 relative z-10" />
+                          <span className="relative z-10">Start Your First Reading</span>
+                        </Button>
+                      </motion.div>
+                    </div>
+                  )}
+                </DashboardSection>
+
+                {/* Section 3: Life Journey & Timeline */}
+                <DashboardSection 
+                  title="Life Journey & Cycles" 
+                  icon={<Calendar className="w-6 h-6" />}
+                  badge="Your Timeline"
+                  defaultExpanded={false}
+                  colorScheme="cyan"
+                  storageKey="tarot-life-journey"
+                >
+                  <TarotLifePathMap 
+                    birthDate={userProfile?.birthDate || new Date().toISOString()}
+                    profileCards={profileCards}
+                    numerologyData={combinedSystemData?.numerology}
+                  />
+                </DashboardSection>
+
+                {/* Section 4: Elemental Balance */}
+                <DashboardSection 
+                  title="Elemental Energies" 
+                  icon={<Zap className="w-6 h-6" />}
+                  badge="Fire, Water, Air, Earth"
+                  defaultExpanded={false}
+                  colorScheme="green"
+                  storageKey="tarot-elements"
+                >
+                  <ElementalBalanceWheel 
+                    profileCards={profileCards}
+                    recentReadings={currentReading ? [currentReading] : []}
+                  />
+                </DashboardSection>
+
+                {/* Section 5: Arcana Distribution */}
+                <DashboardSection 
+                  title="Arcana Influence" 
+                  icon={<Sparkles className="w-6 h-6" />}
+                  badge="Major & Minor"
+                  defaultExpanded={false}
+                  colorScheme="pink"
+                  storageKey="tarot-arcana"
+                >
+                  <ArcanaDistributionChart profileCards={profileCards} />
+                </DashboardSection>
+
+                {/* Section 6: Tarot-Numerology Integration */}
+                <DashboardSection 
+                  title="Tarot & Numerology Synergy" 
+                  icon={<Star className="w-6 h-6" />}
+                  badge="Cross-System Insights"
+                  defaultExpanded={false}
+                  colorScheme="blue"
+                  storageKey="tarot-numerology"
+                >
+                  <TarotNumerologyIntegration 
+                    profileCards={profileCards}
+                    numerologyData={combinedSystemData?.numerology}
+                    combinedSystemData={combinedSystemData}
+                  />
+                </DashboardSection>
+
+                {/* Section 7: Quick Actions */}
+                <DashboardSection 
+                  title="Quick Actions" 
+                  icon={<Activity className="w-6 h-6" />}
+                  defaultExpanded={false}
+                  colorScheme="orange"
+                  storageKey="tarot-actions"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <motion.div
+                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                    >
+                      <Button
+                        onClick={() => setActiveTab('reading')}
+                        className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent w-full"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2 relative z-10" />
+                        <span className="relative z-10">New Reading</span>
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                    >
+                      <Button
+                        onClick={() => setActiveTab('cards')}
+                        variant="outline"
+                        className="border-2 border-blue-300 text-blue-700 hover:bg-blue-50 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent w-full"
+                      >
+                        <BookOpen className="w-4 h-4 mr-2" />
+                        Card Meanings
+                      </Button>
+                    </motion.div>
+                    <motion.div
+                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                    >
+                      <Button
+                        onClick={() => setActiveTab('combined-system')}
+                        variant="outline"
+                        className="border-2 border-purple-300 text-purple-700 hover:bg-purple-50 focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 focus:ring-offset-transparent w-full"
+                      >
+                        <Star className="w-4 h-4 mr-2" />
+                        Combined System
+                      </Button>
+                    </motion.div>
+                  </div>
+                </DashboardSection>
+              </div>
+            )}
+                </TabsContent>
+              </motion.div>
+            )}
+
+            {/* Reading Tab */}
+            {activeTab === 'reading' && (
+              <motion.div
+                key="reading"
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                transition={motionConfig}
+              >
+                <TabsContent value="reading" className="space-y-6 mt-6">
+            <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-amber-200 shadow-lg rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-amber-900 text-2xl font-serif flex items-center">
+                  <Sparkles className="w-6 h-6 mr-3 text-amber-600" />
+                  Tarot Reading
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {!currentReading ? (
+                  <div className="space-y-4">
+                    {/* Question Input */}
+                    <div>
+                      <label htmlFor="tarot-question" className="block text-slate-800 text-sm font-semibold mb-2">
+                        What would you like guidance on?
+                      </label>
+                      <textarea
+                        id="tarot-question"
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        placeholder="Ask your question here..."
+                        className="w-full p-4 bg-white border-2 border-amber-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200 transition-all duration-300"
+                        rows={3}
+                        aria-label="Enter your tarot reading question"
+                      />
+                    </div>
+
+                    {/* Spread Selection */}
+                    <div>
+                      <label className="block text-slate-800 text-sm font-semibold mb-3" id="spread-selection-label">
+                        Choose a spread
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {availableSpreads.map((spread, index) => (
+                          <motion.button
+                            key={spread.name}
+                            onClick={() => setSpreadType(spread.name)}
+                            initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                            animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                            transition={prefersReducedMotion ? {} : { duration: 0.3, delay: index * 0.1, ease: [0.4, 0, 0.2, 1] }}
+                            className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden ${
+                              spreadType === spread.name
+                                ? 'border-amber-400 bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+                                : 'border-amber-200 bg-white text-slate-700 hover:border-amber-300 hover:bg-amber-50'
+                            }`}
+                            aria-label={`Select ${spread.name} spread with ${spread.cardCount} cards`}
+                            aria-pressed={spreadType === spread.name}
+                            role="radio"
+                            aria-labelledby="spread-selection-label"
+                            whileHover={prefersReducedMotion ? {} : { scale: 1.02, y: -2 }}
+                            whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                          >
+                            {spreadType === spread.name && (
+                              <motion.div
+                                layoutId="selectedSpread"
+                                className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
+                                transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
+                              />
+                            )}
+                            <div className="font-semibold text-base mb-1 relative z-10">{spread.name}</div>
+                            <div className="text-xs text-slate-600 mt-1 mb-2 relative z-10">
+                              {spread.description}
+                            </div>
+                            <div className="text-xs font-medium text-amber-700 mt-1 relative z-10">
+                              {spread.cardCount} card{spread.cardCount > 1 ? 's' : ''}
+                            </div>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Perform Reading Button */}
+                  <motion.div
+                    whileHover={prefersReducedMotion || (!question.trim() || !spreadType || isReadingLoading) ? {} : { scale: 1.02 }}
+                    whileTap={prefersReducedMotion || (!question.trim() || !spreadType || isReadingLoading) ? {} : { scale: 0.98 }}
+                    transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                  >
+                    <Button
+                      onClick={performTarotReading}
+                      disabled={!question.trim() || !spreadType || isReadingLoading}
+                      className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shadow-lg relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                      aria-label="Perform tarot reading"
+                    >
+                      {isReadingLoading ? (
+                        <>
+                          <motion.div
+                            className="relative w-4 h-4 mr-2 inline-block"
+                            animate={prefersReducedMotion ? {} : { rotate: 360 }}
+                            transition={prefersReducedMotion ? {} : { duration: 1, repeat: Infinity, ease: "linear" }}
+                            style={{ willChange: prefersReducedMotion ? 'auto' : 'transform' }}
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24">
+                              <circle
+                                cx="12"
+                                cy="12"
+                                r="8"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                fill="none"
+                                strokeDasharray="20 10"
+                                opacity="0.3"
+                              />
+                              {!prefersReducedMotion && (
+                                <motion.circle
+                                  cx="12"
+                                  cy="12"
+                                  r="8"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  fill="none"
+                                  strokeLinecap="round"
+                                  strokeDasharray="20 10"
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                  style={{ transformOrigin: "12px 12px", willChange: 'transform' }}
+                                />
+                              )}
+                            </svg>
+                          </motion.div>
+                          Shuffling Cards...
+                        </>
+                      ) : (
+                        <>
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Draw Cards
+                        </>
+                      )}
+                    </Button>
+                  </motion.div>
+
+                    {readingError && (
+                      <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+                        <p className="text-red-700 text-sm font-medium">{readingError}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Reading Header */}
+                    <div className="text-center pb-4 border-b-2 border-amber-200">
+                      <h3 className="text-2xl font-serif font-semibold text-amber-900 mb-2">{currentReading.spreadName}</h3>
+                      <p className="text-slate-700 text-sm font-medium">Question: <span className="italic">{currentReading.question}</span></p>
+                    </div>
+
+                    {/* Cards Display */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {currentReading.cards.map((card: any, index: number) => (
+                        <motion.div
+                          key={index}
+                          initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                          animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                          transition={prefersReducedMotion ? {} : { duration: 0.3, delay: index * 0.1, ease: [0.4, 0, 0.2, 1] }}
+                          whileHover={prefersReducedMotion ? {} : { y: -4, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                          className="bg-gradient-to-br from-purple-50/80 to-pink-50/80 rounded-xl p-4 border-2 border-purple-200 shadow-sm hover:shadow-md transition-shadow duration-300"
+                        >
+                          <div className="text-center">
+                            <div className="text-sm font-semibold text-purple-800 mb-2 bg-purple-100 px-3 py-1 rounded-full inline-block">
+                              {card.position}
+                            </div>
+                            {/* Card Image */}
+                            <div className="mb-3 flex justify-center">
+                              <div className={`relative w-32 h-48 rounded-lg overflow-hidden border-2 border-purple-300 shadow-md bg-white ${!card.isUpright ? 'transform rotate-180' : ''}`}>
+                                <img
+                                  src={card.image || '/tarot/major_00_the_fool.png.png'}
+                                  alt={card.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <div className="text-lg font-bold text-purple-900 mb-2">
+                              {card.name}
+                            </div>
+                            <div className="text-xs text-slate-600 mb-2">
+                              {card.arcana === 'major' ? 'Major Arcana' : `${card.suit || ''}`} • {card.element ? card.element.charAt(0).toUpperCase() + card.element.slice(1) : 'Unknown'}
+                            </div>
+                            <div className="text-xs mb-2">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs border-2 font-semibold ${
+                                  card.isUpright 
+                                    ? 'bg-amber-100 text-amber-800 border-amber-300' 
+                                    : 'bg-purple-100 text-purple-800 border-purple-300'
+                                }`}
+                              >
+                                {card.isUpright ? 'Upright' : 'Reversed'}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-slate-700 mb-3 leading-relaxed">
+                              {card.isUpright ? card.upright : card.reversed}
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* Individual Card Readings */}
+                    {currentReading.individualCardReadings && currentReading.individualCardReadings.length > 0 && (
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={motionConfig}
+                        whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader>
+                          <CardTitle className="text-blue-900 text-xl font-semibold flex items-center">
+                            <Sparkles className="w-5 h-5 mr-2 text-blue-600" />
+                            Individual Card Interpretations
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {currentReading.individualCardReadings.map((cardReading: any, index: number) => (
+                              <div key={index} className="border-b-2 border-blue-200 pb-4 last:border-0 last:pb-0">
+                                <div className="flex items-start gap-3">
+                                  <div className={`mt-1 flex items-center justify-center w-8 h-8 rounded-full border-2 shadow-sm ${
+                                    cardReading.isUpright 
+                                      ? 'bg-amber-100 border-amber-300 text-amber-800' 
+                                      : 'bg-purple-100 border-purple-300 text-purple-800'
+                                  }`}>
+                                    <span className="text-sm font-bold">
+                                      {cardReading.isUpright ? '↑' : '↓'}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="font-semibold text-blue-900 text-base mb-2">
+                                      {cardReading.cardName} - {cardReading.position}
+                                    </div>
+                                    <p className="text-slate-700 text-sm leading-relaxed">
+                                      {cardReading.interpretation}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+                    )}
+
+                    {/* Detailed Interpretation */}
+                    {currentReading.detailedInterpretation && (
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={motionConfig}
+                        whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-amber-50/80 to-yellow-50/80 border-2 border-amber-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader>
+                          <CardTitle className="text-amber-900 text-xl font-semibold">Detailed Reading</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-slate-800 text-sm leading-relaxed whitespace-pre-line">
+                            {currentReading.detailedInterpretation}
+                          </div>
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+                    )}
+
+                    {/* Overall Reading Summary */}
+                    <motion.div
+                      initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                      animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                      transition={motionConfig}
+                      whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                    >
+                      <Card className="bg-gradient-to-br from-green-50/80 to-emerald-50/80 border-2 border-green-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                      <CardHeader>
+                        <CardTitle className="text-green-900 text-xl font-semibold flex items-center">
+                          <Star className="w-5 h-5 mr-2 text-green-600" />
+                          Reading Summary
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-slate-800 text-sm leading-relaxed">
+                          {currentReading.overallReading}
+                        </p>
+                      </CardContent>
+                    </Card>
+                    </motion.div>
+
+                    {/* Elemental Balance */}
+                    {currentReading.elementalBalance && (
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={motionConfig}
+                        whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-pink-50/80 to-rose-50/80 border-2 border-pink-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader>
+                          <CardTitle className="text-pink-900 text-xl font-semibold flex items-center">
+                            <Zap className="w-5 h-5 mr-2 text-pink-600" />
+                            Elemental Balance
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div className="bg-white/60 rounded-lg p-3 border-2 border-red-200">
+                              <div className="text-red-700 text-xs font-semibold mb-1">Fire</div>
+                              <div className="text-slate-800 font-bold text-lg">{currentReading.elementalBalance.fire}</div>
+                            </div>
+                            <div className="bg-white/60 rounded-lg p-3 border-2 border-blue-200">
+                              <div className="text-blue-700 text-xs font-semibold mb-1">Water</div>
+                              <div className="text-slate-800 font-bold text-lg">{currentReading.elementalBalance.water}</div>
+                            </div>
+                            <div className="bg-white/60 rounded-lg p-3 border-2 border-yellow-200">
+                              <div className="text-yellow-700 text-xs font-semibold mb-1">Air</div>
+                              <div className="text-slate-800 font-bold text-lg">{currentReading.elementalBalance.air}</div>
+                            </div>
+                            <div className="bg-white/60 rounded-lg p-3 border-2 border-green-200">
+                              <div className="text-green-700 text-xs font-semibold mb-1">Earth</div>
+                              <div className="text-slate-800 font-bold text-lg">{currentReading.elementalBalance.earth}</div>
+                            </div>
+                          </div>
+                          <div className="text-sm text-slate-700 pt-3 border-t-2 border-pink-200">
+                            Primary: <span className="font-semibold text-pink-800 capitalize">{currentReading.elementalBalance.primary}</span> • 
+                            Secondary: <span className="font-semibold text-pink-800 capitalize">{currentReading.elementalBalance.secondary}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+                    )}
+
+                    {/* Recommendations */}
+                    {currentReading.recommendations && currentReading.recommendations.length > 0 && (
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={motionConfig}
+                        whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-amber-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader>
+                          <CardTitle className="text-amber-900 text-xl font-semibold flex items-center">
+                            <Target className="w-5 h-5 mr-2 text-amber-600" />
+                            Recommendations
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="space-y-3">
+                            {currentReading.recommendations.map((rec: string, index: number) => (
+                              <li key={index} className="text-slate-800 text-sm flex items-start">
+                                <Star className="w-4 h-4 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
+                                <span>{rec}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+                    )}
+
+                    {/* Reset Button */}
+                    <div className="text-center pt-4">
+                      <motion.div
+                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                        transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                      >
+                        <Button
+                          onClick={resetReading}
+                          variant="outline"
+                          className="border-2 border-amber-300 text-amber-700 hover:bg-amber-50 font-semibold relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                          aria-label="Start a new tarot reading"
+                        >
+                          <span className="relative z-10 flex items-center">
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            New Reading
+                          </span>
+                        </Button>
+                      </motion.div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+                </TabsContent>
+              </motion.div>
+            )}
+
+            {/* Cards Tab */}
+            {activeTab === 'cards' && (
+              <motion.div
+                key="cards"
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                transition={motionConfig}
+              >
+                <TabsContent value="cards" className="space-y-6 mt-6">
+            <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-amber-200 shadow-lg rounded-3xl">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-amber-900 text-2xl font-serif flex items-center">
+                  <BookOpen className="w-6 h-6 mr-3 text-amber-600" />
+                  Tarot Card Meanings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-8">
+                  {/* Major Arcana Section */}
+                  <div>
+                    <div className="text-center mb-6 pb-4 border-b-2 border-amber-200">
+                      <h3 className="text-2xl font-serif font-semibold text-amber-900 mb-2">Major Arcana</h3>
+                      <p className="text-slate-700 text-sm">The 22 cards of the Major Arcana represent life's spiritual lessons and karmic influences</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {allCards.filter(card => card.arcana === 'major').map((card, index) => (
+                        <motion.div
+                          key={`major-${index}`}
+                          initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                          animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                          transition={prefersReducedMotion ? {} : { duration: 0.3, delay: index * 0.03, ease: [0.4, 0, 0.2, 1] }}
+                          whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                          className="bg-gradient-to-br from-purple-50/80 to-pink-50/80 rounded-xl p-4 border-2 border-purple-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all"
+                        >
+                          <div className="text-center">
+                            <div className="mb-3 flex justify-center">
+                              <div className="relative w-24 h-36 rounded-lg overflow-hidden border-2 border-purple-300 shadow-md bg-white">
+                                <img
+                                  src={card.image || '/tarot/major_00_the_fool.png.png'}
+                                  alt={card.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <div className="text-xs text-purple-700 font-semibold mb-1 bg-purple-100 px-2 py-0.5 rounded-full inline-block">
+                              {card.number !== undefined ? `Card ${card.number}` : 'Major Arcana'}
+                            </div>
+                            <h4 className="font-semibold text-purple-900 mb-2 text-sm">{card.name}</h4>
+                            <div className="text-xs text-slate-600 mb-2">
+                              {card.element ? card.element.charAt(0).toUpperCase() + card.element.slice(1) : 'Unknown'}
+                            </div>
+                            <div className="text-xs text-slate-700 mb-2 leading-relaxed">
+                              Upright: {card.upright.substring(0, 60)}...
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Minor Arcana Sections */}
+                  {['wands', 'cups', 'swords', 'pentacles'].map(suit => {
+                    const suitCards = allCards.filter(card => card.arcana === 'minor' && card.suit === suit)
+                    if (suitCards.length === 0) return null
+                    
+                    const suitName = suit.charAt(0).toUpperCase() + suit.slice(1)
+                    const elementMap: Record<string, string> = {
+                      wands: 'Fire',
+                      cups: 'Water',
+                      swords: 'Air',
+                      pentacles: 'Earth'
+                    }
+                    
+                    const suitColors: Record<string, { bg: string; border: string; text: string }> = {
+                      wands: { bg: 'from-red-50/80 to-orange-50/80', border: 'border-red-200', text: 'text-red-900' },
+                      cups: { bg: 'from-blue-50/80 to-cyan-50/80', border: 'border-blue-200', text: 'text-blue-900' },
+                      swords: { bg: 'from-yellow-50/80 to-amber-50/80', border: 'border-yellow-200', text: 'text-yellow-900' },
+                      pentacles: { bg: 'from-green-50/80 to-emerald-50/80', border: 'border-green-200', text: 'text-green-900' }
+                    }
+                    const colors = suitColors[suit] || suitColors.wands
+
+                    return (
+                      <div key={suit}>
+                        <div className="text-center mb-6 pb-4 border-b-2 border-amber-200">
+                          <h3 className={`text-2xl font-serif font-semibold ${colors.text} mb-2`}>{suitName} ({elementMap[suit]})</h3>
+                          <p className="text-slate-700 text-sm">The {suitName} suit represents {elementMap[suit].toLowerCase()} energy and practical aspects of life</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                          {suitCards.map((card, index) => (
+                            <motion.div
+                              key={`${suit}-${index}`}
+                              initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                              animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                              transition={prefersReducedMotion ? {} : { duration: 0.3, delay: index * 0.02, ease: [0.4, 0, 0.2, 1] }}
+                              whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                              className={`bg-gradient-to-br ${colors.bg} rounded-xl p-3 border-2 ${colors.border} shadow-sm hover:shadow-md transition-all`}
+                            >
+                              <div className="text-center">
+                                <div className="mb-2 flex justify-center">
+                                  <div className={`relative w-20 h-28 rounded-lg overflow-hidden border-2 ${colors.border} shadow-md bg-white`}>
+                                    <img
+                                      src={card.image || '/tarot/major_00_the_fool.png.png'}
+                                      alt={card.name}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                                <h4 className={`font-semibold ${colors.text} mb-1 text-xs`}>{card.name}</h4>
+                                <div className="text-xs text-slate-600 mb-1">
+                                  {card.number !== undefined ? `#${card.number}` : ''}
+                                </div>
+                                <div className="text-xs text-slate-700 leading-relaxed">
+                                  {card.upright.substring(0, 40)}...
+                                </div>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+                </TabsContent>
+              </motion.div>
+            )}
+
+                    {/* Combined System Tab */}
+            {activeTab === 'combined-system' && (
+              <motion.div
+                key="combined-system"
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                transition={motionConfig}
+              >
+                <TabsContent value="combined-system" className="space-y-6 mt-6">
+                  <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-amber-200 shadow-lg rounded-3xl p-6">
+              <CardHeader className="p-0 mb-4">
+                <div className="flex items-center gap-4">
+                  <Sparkles className="h-10 w-10 text-amber-500 flex-shrink-0" />
+                  <div>
+                    <CardTitle className="text-3xl font-serif text-amber-900">Combined Divination System</CardTitle>
+                    <p className="text-slate-600 mt-1">Integrating Tarot, Western Astrology & Numerology for holistic insights</p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {!userProfile?.birthDate || !userProfile?.fullName && !userProfile?.displayName ? (
+                  <div className="text-center py-8">
+                    <Info className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                    <p className="text-slate-700 mb-4">Complete your profile (birth date and name) to unlock the Combined Divination System</p>
+                    <motion.div
+                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                    >
+                      <Button
+                        onClick={() => router.push('/profile-setup')}
+                        className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                        aria-label="Navigate to profile setup page"
+                      >
+                        <span className="relative z-10">Complete Profile</span>
+                      </Button>
+                    </motion.div>
+                  </div>
+                ) : isLoadingCombinedSystem ? (
+                  <motion.div 
+                    className="text-center py-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <motion.div
+                      className="relative w-16 h-16 mx-auto mb-4"
+                      animate={prefersReducedMotion ? {} : { rotate: 360 }}
+                      transition={prefersReducedMotion ? {} : { duration: 1.5, repeat: Infinity, ease: "linear" }}
+                      style={{ willChange: prefersReducedMotion ? 'auto' : 'transform' }}
+                    >
+                      <svg className="w-16 h-16" viewBox="0 0 24 24" style={{ willChange: 'auto' }}>
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="rgba(251, 191, 36, 0.2)"
+                          strokeWidth="2"
+                          fill="none"
+                        />
+                        {!prefersReducedMotion && (
+                          <motion.circle
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="#fbbf24"
+                            strokeWidth="2"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeDasharray="60 40"
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                            style={{ transformOrigin: "12px 12px", willChange: 'transform' }}
+                          />
+                        )}
+                      </svg>
+                    </motion.div>
+                    <motion.p 
+                      className="text-slate-700"
+                      initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                      animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                      transition={prefersReducedMotion ? {} : { delay: 0.2 }}
+                    >
+                      Generating your comprehensive combined analysis...
+                    </motion.p>
+                  </motion.div>
+                ) : combinedSystemData ? (
+                  <div className="space-y-6">
+                    {/* Profile Summary Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Tarot Profile */}
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={prefersReducedMotion ? {} : { duration: 0.3, delay: 0, ease: [0.4, 0, 0.2, 1] }}
+                        whileHover={prefersReducedMotion ? {} : { y: -4, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-purple-50/80 to-pink-50/80 border-2 border-purple-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-purple-900 text-lg flex items-center">
+                            <BookOpen className="w-5 h-5 mr-2 text-purple-600" />
+                            Tarot Profile
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="text-sm">
+                            <span className="text-slate-600">Birth Card: </span>
+                            <span className="font-semibold text-purple-800">{combinedSystemData.tarotProfile?.birthCard?.name || 'N/A'}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-slate-600">Life Path Card: </span>
+                            <span className="font-semibold text-purple-800">{combinedSystemData.tarotProfile?.lifePathCard?.name || 'N/A'}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-slate-600">Soul Card: </span>
+                            <span className="font-semibold text-purple-800">{combinedSystemData.tarotProfile?.soulCard?.name || 'N/A'}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-slate-600">Personality Card: </span>
+                            <span className="font-semibold text-purple-800">{combinedSystemData.tarotProfile?.personalityCard?.name || 'N/A'}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+
+                      {/* Numerology */}
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={prefersReducedMotion ? {} : { duration: 0.3, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
+                        whileHover={prefersReducedMotion ? {} : { y: -4, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-blue-50/80 to-indigo-50/80 border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-blue-900 text-lg flex items-center">
+                            <Zap className="w-5 h-5 mr-2 text-blue-600" />
+                            Numerology
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <div className="text-sm">
+                            <span className="text-slate-600">Life Path: </span>
+                            <span className="font-semibold text-blue-800">{combinedSystemData.numerology?.lifePathNumber || 'N/A'}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-slate-600">Destiny: </span>
+                            <span className="font-semibold text-blue-800">{combinedSystemData.numerology?.destinyNumber || 'N/A'}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-slate-600">Soul: </span>
+                            <span className="font-semibold text-blue-800">{combinedSystemData.numerology?.soulNumber || 'N/A'}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-slate-600">Personality: </span>
+                            <span className="font-semibold text-blue-800">{combinedSystemData.numerology?.personalityNumber || 'N/A'}</span>
+                          </div>
+                          {combinedSystemData.numerology?.personalYearNumber && (
+                            <div className="text-sm pt-2 border-t border-blue-200">
+                              <span className="text-slate-600">Personal Year: </span>
+                              <span className="font-bold text-blue-900">{combinedSystemData.numerology.personalYearNumber}</span>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+
+                      {/* Western Astrology */}
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={prefersReducedMotion ? {} : { duration: 0.3, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                        whileHover={prefersReducedMotion ? {} : { y: -4, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-amber-50/80 to-yellow-50/80 border-2 border-amber-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-amber-900 text-lg flex items-center">
+                            <Star className="w-5 h-5 mr-2 text-amber-600" />
+                            Astrology
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          {combinedSystemData.westernAstrology?.sunSign ? (
+                            <>
+                              <div className="text-sm">
+                                <span className="text-slate-600">Sun: </span>
+                                <span className="font-semibold text-amber-800">{combinedSystemData.westernAstrology.sunSign}</span>
+                              </div>
+                              {combinedSystemData.westernAstrology.moonSign && (
+                                <div className="text-sm">
+                                  <span className="text-slate-600">Moon: </span>
+                                  <span className="font-semibold text-amber-800">{combinedSystemData.westernAstrology.moonSign}</span>
+                                </div>
+                              )}
+                              {combinedSystemData.westernAstrology.risingSign && (
+                                <div className="text-sm">
+                                  <span className="text-slate-600">Rising: </span>
+                                  <span className="font-semibold text-amber-800">{combinedSystemData.westernAstrology.risingSign}</span>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-slate-600 text-sm">Complete birth time & place for astrological data</p>
+                          )}
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+                    </div>
+
+                    {/* Holistic Analysis */}
+                    {combinedSystemData.holisticAnalysis && (
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={motionConfig}
+                        whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-green-50/80 to-emerald-50/80 border-2 border-green-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader>
+                          <CardTitle className="text-green-900 text-xl font-semibold">Holistic Analysis</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {combinedSystemData.holisticAnalysis.overview && (
+                            <div>
+                              <h4 className="font-semibold text-green-800 mb-2">Overview</h4>
+                              <p className="text-slate-700 text-sm leading-relaxed">{combinedSystemData.holisticAnalysis.overview}</p>
+                            </div>
+                          )}
+                          {combinedSystemData.holisticAnalysis.integration && (
+                            <div>
+                              <h4 className="font-semibold text-green-800 mb-2">Integration</h4>
+                              <p className="text-slate-700 text-sm leading-relaxed">{combinedSystemData.holisticAnalysis.integration}</p>
+                            </div>
+                          )}
+                          {combinedSystemData.holisticAnalysis.timing && (
+                            <div>
+                              <h4 className="font-semibold text-green-800 mb-2">Timing Insights</h4>
+                              <p className="text-slate-700 text-sm leading-relaxed">{combinedSystemData.holisticAnalysis.timing}</p>
+                            </div>
+                          )}
+                          {combinedSystemData.holisticAnalysis.guidance && (
+                            <div>
+                              <h4 className="font-semibold text-green-800 mb-2">Guidance</h4>
+                              <p className="text-slate-700 text-sm leading-relaxed">{combinedSystemData.holisticAnalysis.guidance}</p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+                    )}
+
+                    {/* Cross-References */}
+                    {combinedSystemData.crossReferences && (
+                      <div className="space-y-4">
+                        {combinedSystemData.crossReferences.tarotNumerologyLinks && combinedSystemData.crossReferences.tarotNumerologyLinks.length > 0 && (
+                          <motion.div
+                            initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                            animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                            transition={motionConfig}
+                            whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                          >
+                            <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-purple-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                            <CardHeader>
+                              <CardTitle className="text-purple-900 text-xl font-semibold">Tarot & Numerology Connections</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-3">
+                                {combinedSystemData.crossReferences.tarotNumerologyLinks.map((link: any, index: number) => (
+                                  <div key={index} className="border-l-4 border-purple-300 pl-4 py-2">
+                                    <p className="text-slate-800 text-sm leading-relaxed">
+                                      <span className="font-semibold text-purple-900">{link.tarotCard}</span> ↔ 
+                                      <span className="font-semibold text-purple-900"> Number {link.numerologyNumber}</span>
+                                      <br />
+                                      <span className="text-slate-600">{link.connection}</span>
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                          </motion.div>
+                        )}
+
+                        {combinedSystemData.crossReferences.timingInsights && (
+                          <motion.div
+                            initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                            animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                            transition={motionConfig}
+                            whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                          >
+                            <Card className="bg-gradient-to-br from-amber-50/80 to-yellow-50/80 border-2 border-amber-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                            <CardHeader>
+                              <CardTitle className="text-amber-900 text-xl font-semibold flex items-center">
+                                <Calendar className="w-5 h-5 mr-2" />
+                                Timing Insights
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-slate-800 text-sm leading-relaxed">{combinedSystemData.crossReferences.timingInsights}</p>
+                            </CardContent>
+                          </Card>
+                          </motion.div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Recommendations */}
+                    {combinedSystemData.recommendations && combinedSystemData.recommendations.length > 0 && (
+                      <motion.div
+                        initial={prefersReducedMotion ? {} : { opacity: 0, y: 10 }}
+                        animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                        transition={motionConfig}
+                        whileHover={prefersReducedMotion ? {} : { y: -2, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                      >
+                        <Card className="bg-gradient-to-br from-pink-50/80 to-rose-50/80 border-2 border-pink-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <CardHeader>
+                          <CardTitle className="text-pink-900 text-xl font-semibold flex items-center">
+                            <Target className="w-5 h-5 mr-2" />
+                            Recommendations
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="space-y-2">
+                            {combinedSystemData.recommendations.map((rec: string, index: number) => (
+                              <li key={index} className="text-slate-800 text-sm flex items-start">
+                                <Star className="w-4 h-4 text-pink-600 mr-2 mt-0.5 flex-shrink-0" />
+                                <span>{rec}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                      </motion.div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                    <p className="text-slate-700 mb-4">Unable to generate combined analysis. Please try again later.</p>
+                    <motion.div
+                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
+                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                    >
+                      <Button 
+                        onClick={() => {
+                          setCombinedSystemData(null)
+                          setIsLoadingCombinedSystem(false)
+                        }}
+                        className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
+                      >
+                        <span className="relative z-10">Retry</span>
+                      </Button>
+                    </motion.div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+                </TabsContent>
+              </motion.div>
+            )}
+
+            {/* Ask the Seer Tab */}
+            {activeTab === 'ask-the-seer' && (
+              <motion.div
+                key="ask-the-seer"
+                initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                transition={motionConfig}
+              >
+                <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+                  <div className="h-[800px] min-h-0">
+                    <TarotSeerChatInterface
+                      userId={user?.uid || ''}
+                      userProfile={userProfile}
+                      tarotProfileData={profileCards}
+                      combinedSystemData={combinedSystemData}
+                      currentReading={currentReading ?? undefined}
+                      sessionId={`tarot-seer-${user?.uid || 'anonymous'}-${Date.now()}`}
+                    />
+                  </div>
+                </TabsContent>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </Tabs>
       </div>
     </div>
   )
-} 
+}
+
+// Wrap with error boundary for stability
+export default function TarotPageWithErrorBoundary() {
+  return (
+    <ErrorBoundary>
+      <TarotPage />
+    </ErrorBoundary>
+  )
+}

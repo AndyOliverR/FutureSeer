@@ -30,7 +30,6 @@ import { getNameAnalysisReading } from './nameAnalysisIntelligence'
 import { getMedicalAstrologyReading } from './medicalAstrologyIntelligence'
 import { getMundaneAstrologyReading } from './mundaneAstrologyIntelligence'
 import { getFinancialAstrologyReading } from './financialAstrologyIntelligence'
-import { getHellenisticAstrologyReading } from './hellenisticAstrologyIntelligence'
 import { getHoraryAstrologyReading } from './horaryAstrologyIntelligence'
 import { getThirteenSignsReading } from './thirteenSignsZodiacIntelligence'
 
@@ -219,7 +218,6 @@ export class PredictionEngine {
       { name: 'Medical Astrology', fn: getMedicalAstrologyReading },
       { name: 'Mundane Astrology', fn: getMundaneAstrologyReading },
       { name: 'Financial Astrology', fn: getFinancialAstrologyReading },
-      { name: 'Hellenistic Astrology', fn: getHellenisticAstrologyReading },
       { name: 'Horary Astrology', fn: getHoraryAstrologyReading },
       { name: 'Thirteen Signs', fn: getThirteenSignsReading }
     ]

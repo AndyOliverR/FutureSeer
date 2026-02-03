@@ -406,8 +406,20 @@ class FaceReadingIntelligence {
     'Crystal healing for facial energy alignment'
   ]
 
-  async analyzeFace(age: number, gender: 'male' | 'female' | 'other'): Promise<FaceReadingAnalysis> {
-    // Select random features for each category
+  async analyzeFace(age: number, gender: 'male' | 'female' | 'other', imageUrl?: string): Promise<FaceReadingAnalysis> {
+    // If image URL is provided, log it for future AI integration (similar to palmistry pattern)
+    if (imageUrl) {
+      try {
+        console.log('👁️ Analyzing face image with AI...', { imageUrl });
+        // TODO: Add AI image analysis here in the future
+        // For now, fall through to manual/random analysis
+      } catch (error) {
+        console.error('⚠️ AI image analysis not yet implemented, falling back to manual analysis:', error);
+        // Fall through to manual analysis below
+      }
+    }
+    
+    // Select random features for each category (fallback for now)
     const selectedFeatures: FacialFeature[] = []
     const featureTypes = ['eyes', 'nose', 'mouth', 'forehead', 'cheeks', 'chin', 'ears', 'eyebrows', 'jawline', 'lips']
     
@@ -465,6 +477,10 @@ class FaceReadingIntelligence {
     const recommendations = this.remedies
       .sort(() => 0.5 - Math.random())
       .slice(0, 3)
+
+    const remedies = this.remedies
+      .sort(() => 0.5 - Math.random())
+      .slice(3, 6)
 
     const coaching = {
       strengths: [

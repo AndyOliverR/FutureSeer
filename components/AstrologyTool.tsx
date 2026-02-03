@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 
 export function AstrologyTool() {
-  const { astroData, loading, error, refresh, isStale } = useAstroData()
+  const { astroData, loading, error, refreshData, needsRefresh } = useAstroData()
 
   if (loading) {
     return (
@@ -75,10 +75,10 @@ export function AstrologyTool() {
         <CardTitle className="text-xl font-semibold text-white flex items-center gap-2">
           <Star className="w-5 h-5 text-purple-400" />
           Astrological Profile
-          {isStale && <Badge variant="secondary" className="ml-2">Stale</Badge>}
+          {needsRefresh && <Badge variant="secondary" className="ml-2">Needs Refresh</Badge>}
         </CardTitle>
         <Button
-          onClick={refresh}
+          onClick={refreshData}
           variant="outline"
           size="sm"
           className="border-purple-500 text-purple-400 hover:bg-purple-500/20"

@@ -1,13 +1,17 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuth } from './use-auth';
-import { getAskHistory, AskHistory } from '@/lib/firebase';
+import { getAskHistory, getUserActivity, getFirebaseAuth, AskHistory, UserActivityItem } from '@/lib/firebase';
+import { useDebounce } from '@/hooks/use-debounce';
 
 export function useHistory() {
   const { user } = useAuth();
   const [history, setHistory] = useState<AskHistory[]>([]);
+  const [activity, setActivity] = useState<UserActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingActivity, setLoadingActivity] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activityError, setActivityError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
 
@@ -29,9 +33,52 @@ export function useHistory() {
     }
   }, [user]);
 
+  const refreshActivity = useCallback(async () => {
+    if (!user?.uid) {
+      setActivity([]);
+      setActivityError(null);
+      setLoadingActivity(false);
+      return;
+    }
+    setLoadingActivity(true);
+    setActivityError(null);
+    try {
+      const auth = getFirebaseAuth();
+      const token = await auth?.currentUser?.getIdToken?.();
+      if (token) {
+        const res = await fetch('/api/activity', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = (await res.json()) as UserActivityItem[];
+          setActivity(Array.isArray(data) ? data : []);
+          setActivityError(null);
+          return;
+        }
+      }
+      const userActivity = await getUserActivity(user.uid, 50);
+      setActivity(userActivity);
+      if (userActivity.length === 0 && token) {
+        setActivityError('Activity couldn\'t be loaded. Index may still be building.');
+      } else {
+        setActivityError(null);
+      }
+    } catch {
+      setActivity([]);
+      setActivityError('Activity couldn\'t be loaded.');
+    } finally {
+      setLoadingActivity(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     refreshHistory();
   }, [refreshHistory]);
+
+  useEffect(() => {
+    refreshActivity();
+  }, [refreshActivity]);
 
   const getQuestionType = useCallback((question: string) => {
     const lowerQuestion = question.toLowerCase();
@@ -42,14 +89,15 @@ export function useHistory() {
     return 'General';
   }, []);
 
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const filteredHistory = useMemo(() => {
     return history.filter((item) => {
-      const matchesSearch = item.question.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = item.question.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesFilter = filterType === "all" || 
         getQuestionType(item.question).toLowerCase().includes(filterType.toLowerCase());
       return matchesSearch && matchesFilter;
     });
-  }, [history, searchTerm, filterType, getQuestionType]);
+  }, [history, debouncedSearchTerm, filterType, getQuestionType]);
 
   const formatDate = useCallback((timestamp: number) => {
     const now = Date.now();
@@ -67,23 +115,46 @@ export function useHistory() {
   const getTypeColor = useCallback((type: string) => {
     switch (type) {
       case 'Love':
-        return { bg: 'bg-pink-500/20', text: 'text-pink-300', border: 'border-pink-500/30' };
+        return { 
+          bg: 'bg-[var(--m3-primary-container)]', 
+          text: 'text-[var(--m3-on-primary-container)]', 
+          border: 'border-[var(--m3-primary)]/50' 
+        };
       case 'Career':
-        return { bg: 'bg-green-500/20', text: 'text-green-300', border: 'border-green-500/30' };
+        return { 
+          bg: 'bg-[var(--m3-tertiary-container)]', 
+          text: 'text-[var(--m3-on-tertiary-container)]', 
+          border: 'border-[var(--m3-tertiary)]/50' 
+        };
       case 'Health':
-        return { bg: 'bg-red-500/20', text: 'text-red-300', border: 'border-red-500/30' };
+        return { 
+          bg: 'bg-[var(--m3-secondary-container)]', 
+          text: 'text-[var(--m3-on-secondary-container)]', 
+          border: 'border-[var(--m3-secondary)]/50' 
+        };
       case 'Travel':
-        return { bg: 'bg-blue-500/20', text: 'text-blue-300', border: 'border-blue-500/30' };
+        return { 
+          bg: 'bg-[var(--m3-surface-container-low)]', 
+          text: 'text-[var(--m3-primary)]', 
+          border: 'border-[var(--m3-primary)]/30' 
+        };
       default:
-        return { bg: 'bg-purple-500/20', text: 'text-purple-300', border: 'border-purple-500/30' };
+        return { 
+          bg: 'bg-[var(--m3-surface-container-low)]', 
+          text: 'text-[var(--m3-on-surface-variant)]', 
+          border: 'border-[var(--m3-outline-variant)]' 
+        };
     }
   }, []);
 
   return {
     history,
     filteredHistory,
+    activity,
     loading,
+    loadingActivity,
     error,
+    activityError,
     searchTerm,
     setSearchTerm,
     filterType,
@@ -92,5 +163,6 @@ export function useHistory() {
     formatDate,
     getTypeColor,
     refreshHistory,
+    refreshActivity,
   };
 } 

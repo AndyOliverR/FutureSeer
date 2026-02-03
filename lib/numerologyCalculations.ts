@@ -86,7 +86,7 @@ function reduceToSingleDigit(num: number): number {
 }
 
 // Calculate Life Path Number from birth date
-function calculateLifePathNumber(birthDate: string): number {
+export function calculateLifePathNumber(birthDate: string): number {
   const date = new Date(birthDate)
   const day = date.getDate()
   const month = date.getMonth() + 1
@@ -101,7 +101,7 @@ function calculateLifePathNumber(birthDate: string): number {
 }
 
 // Calculate Destiny Number from full name
-function calculateDestinyNumber(fullName: string): number {
+export function calculateDestinyNumber(fullName: string): number {
   const nameArray = fullName.toUpperCase().replace(/\s+/g, '').split('')
   const sum = nameArray.reduce((total, letter) => {
     return total + (LETTER_VALUES[letter] || 0)
@@ -111,7 +111,7 @@ function calculateDestinyNumber(fullName: string): number {
 }
 
 // Calculate Soul Number from vowels in name
-function calculateSoulNumber(fullName: string): number {
+export function calculateSoulNumber(fullName: string): number {
   const vowels = ['A', 'E', 'I', 'O', 'U']
   const nameArray = fullName.toUpperCase().split('')
   const vowelLetters = nameArray.filter(letter => vowels.includes(letter))
@@ -124,7 +124,7 @@ function calculateSoulNumber(fullName: string): number {
 }
 
 // Calculate Personality Number from consonants in name
-function calculatePersonalityNumber(fullName: string): number {
+export function calculatePersonalityNumber(fullName: string): number {
   const vowels = ['A', 'E', 'I', 'O', 'U']
   const nameArray = fullName.toUpperCase().split('')
   const consonantLetters = nameArray.filter(letter => !vowels.includes(letter) && LETTER_VALUES[letter])
@@ -148,7 +148,7 @@ function calculateMaturityNumber(lifePathNumber: number, destinyNumber: number):
 }
 
 // Calculate Personal Year Number
-function calculatePersonalYearNumber(birthDate: string, targetYear?: number): number {
+export function calculatePersonalYearNumber(birthDate: string, targetYear?: number): number {
   const date = new Date(birthDate)
   const birthDay = date.getDate()
   const birthMonth = date.getMonth() + 1

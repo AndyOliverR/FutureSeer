@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
-import { signOutUser } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
+import { motion, AnimatePresence } from "framer-motion"
 import { 
   User, 
   Settings, 
@@ -16,7 +16,8 @@ import {
   Bell,
   Moon,
   ChevronDown,
-  Star
+  Star,
+  MessageSquare
 } from "lucide-react"
 
 interface UserMenuDropdownProps {
@@ -28,26 +29,8 @@ interface UserMenuDropdownProps {
 export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenuDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { user, userProfile } = useAuth()
+  const { user, userProfile, signOut } = useAuth()
   const router = useRouter()
-
-  // Debug: Log photo URL sources
-  React.useEffect(() => {
-    console.log('🔍 UserMenuDropdown Photo Debug:', {
-      userPhotoURL,
-      userProfilePhotoURL: userProfile?.photoURL,
-      userPhotoURL_direct: user?.photoURL,
-      userName,
-      userEmail,
-      finalPhotoURL: getPhotoURL(),
-      hasPhoto: !!getPhotoURL(),
-      photoSources: [
-        userPhotoURL,
-        userProfile?.photoURL,
-        user?.photoURL
-      ].filter(Boolean)
-    })
-  }, [userPhotoURL, userProfile?.photoURL, user?.photoURL, userName, userEmail])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -85,8 +68,9 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
 
   const handleSignOut = async () => {
     try {
-      await signOutUser()
-      router.push("/")
+      // Use the signOut from useAuth context which properly clears all state
+      // Note: signOut will reload the page automatically, no need for router.push
+      await signOut()
     } catch (error) {
       console.error("Error signing out:", error)
     }
@@ -109,8 +93,6 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
       user?.photoURL
     ].filter(Boolean)
     
-    console.log('📸 Available photo sources:', photoSources)
-    
     // Get the first available URL
     let photoURL = photoSources[0] || null
     
@@ -123,7 +105,6 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
       } else if (!photoURL.includes('sz=')) {
         photoURL = photoURL + (photoURL.includes('?') ? '&' : '?') + 'sz=400'
       }
-      console.log('🔄 Optimized Google photo URL:', photoURL)
     }
     
     return photoURL
@@ -137,7 +118,7 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
       {/* Avatar Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="group flex items-center gap-2 p-1 rounded-full hover:bg-slate-800/50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+        className="group flex items-center gap-2 p-1 pr-0 rounded-full hover:bg-[var(--m3-primary-container)] m3-transition-standard m3-ripple focus:outline-none focus:ring-2 focus:ring-[var(--m3-primary)] focus:ring-offset-2 focus:ring-offset-[var(--m3-surface)]"
         aria-label="User menu"
       >
         <div className="relative">
@@ -145,11 +126,11 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
             <img 
               src={finalPhotoURL} 
               alt={userName}
-              className="w-9 h-9 rounded-full object-cover border-2 border-amber-400/30 group-hover:border-amber-400/60 transition-colors"
+              className="w-9 h-9 rounded-full object-cover border-2 border-[var(--m3-outline-variant)] group-hover:border-[var(--m3-primary)] m3-transition-standard"
               crossOrigin="anonymous"
               referrerPolicy="no-referrer"
               onLoad={() => {
-                console.log('✅ Avatar image loaded successfully:', finalPhotoURL)
+                // Image loaded successfully - no need to log
               }}
               onError={(e) => {
                 console.error('❌ Avatar image failed to load:', {
@@ -164,31 +145,43 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
             />
           ) : null}
           <div 
-            className={`w-9 h-9 rounded-full bg-gradient-to-br from-amber-400/30 to-yellow-500/30 border-2 border-amber-400/30 group-hover:border-amber-400/60 flex items-center justify-center text-amber-200 font-serif font-bold text-sm transition-all ${finalPhotoURL ? 'hidden' : 'flex'}`}
+            className={`w-9 h-9 rounded-full bg-[var(--m3-primary-container)] border-2 border-[var(--m3-outline-variant)] group-hover:border-[var(--m3-primary)] flex items-center justify-center text-[var(--m3-on-primary-container)] m3-label-medium m3-transition-standard ${finalPhotoURL ? 'hidden' : 'flex'}`}
           >
             {getInitials(userName)}
           </div>
           {isPremium && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center">
-              <Crown className="w-2.5 h-2.5 text-slate-900" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--m3-primary)] rounded-full flex items-center justify-center m3-elevation-2">
+              <Crown className="w-2.5 h-2.5 text-[var(--m3-on-primary)]" />
             </div>
           )}
         </div>
-        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-[var(--m3-on-surface-variant)] m3-transition-standard ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-slate-900/95 backdrop-blur-md border border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden z-[9999] animate-in slide-in-from-top-2 duration-200">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 300, 
+              damping: 25,
+              ease: [0.2, 0, 0, 1]
+            }}
+            className="absolute right-0 top-full mt-2 w-80 bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] rounded-2xl overflow-hidden z-[9999] m3-elevation-3 m3-elevation-transition m3-gpu-accelerated"
+          >
           {/* User Info Header */}
-          <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-amber-500/10 to-yellow-500/10">
+          <div className="p-4 pb-3 border-b border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
             <div className="flex items-center gap-3">
               <div className="relative">
                 {finalPhotoURL ? (
                   <img 
                     src={finalPhotoURL} 
                     alt={userName}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-amber-400/40"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-[var(--m3-primary)]"
                     crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
                     onLoad={() => {
@@ -206,68 +199,68 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
                   />
                 ) : null}
                 <div 
-                  className={`w-12 h-12 rounded-full bg-gradient-to-br from-amber-400/30 to-yellow-500/30 border-2 border-amber-400/40 flex items-center justify-center text-amber-200 font-serif font-bold text-lg ${finalPhotoURL ? 'hidden' : 'flex'}`}
+                  className={`w-12 h-12 rounded-full bg-[var(--m3-primary-container)] border-2 border-[var(--m3-primary)] flex items-center justify-center text-[var(--m3-on-primary-container)] m3-title-small ${finalPhotoURL ? 'hidden' : 'flex'}`}
                 >
                   {getInitials(userName)}
                 </div>
                 {isPremium && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full flex items-center justify-center">
-                    <Crown className="w-3 h-3 text-slate-900" />
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-[var(--m3-primary)] rounded-full flex items-center justify-center m3-elevation-2">
+                    <Crown className="w-3 h-3 text-[var(--m3-on-primary)]" />
                   </div>
                 )}
               </div>
               <div className="flex-1">
-                <h3 className="font-serif font-semibold text-amber-200 text-lg">{userName}</h3>
+                <h3 className="m3-title-large text-[var(--m3-on-surface)]">{userName}</h3>
                 {userEmail && (
-                  <p className="text-slate-400 text-sm truncate">{userEmail}</p>
+                  <p className="m3-body-medium text-[var(--m3-on-surface-variant)] truncate">{userEmail}</p>
                 )}
                 {isPremium ? (
                   <div className="flex items-center gap-1 mt-1">
-                    <Star className="w-3 h-3 text-amber-400" />
-                    <span className="text-xs text-amber-400 font-medium">Premium Member</span>
+                    <Star className="w-3 h-3 text-[var(--m3-primary)]" />
+                    <span className="m3-label-small text-[var(--m3-primary)]">Premium Member</span>
                   </div>
                 ) : (
-                  <span className="text-xs text-slate-500">Free Trial</span>
+                  <span className="m3-label-small text-[var(--m3-on-surface-variant)]">Free Trial</span>
                 )}
               </div>
             </div>
           </div>
 
           {/* Menu Items */}
-          <div className="py-2">
+          <div className="py-1">
             <Link
               href="/profile"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 transition-colors group"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] m3-transition-standard group rounded-lg"
             >
-              <User className="w-5 h-5 text-slate-400 group-hover:text-amber-400 transition-colors" />
+              <User className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard" />
               <div>
-                <div className="text-slate-200 font-medium">Profile</div>
-                <div className="text-xs text-slate-500">Manage your account</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)]">Profile</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">Manage your account</div>
               </div>
             </Link>
 
             <Link
               href="/history"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 transition-colors group"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] m3-transition-standard group rounded-lg"
             >
-              <History className="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors" />
+              <History className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard" />
               <div>
-                <div className="text-slate-200 font-medium">Reading History</div>
-                <div className="text-xs text-slate-500">View past predictions</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)]">Reading History</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">View past predictions</div>
               </div>
             </Link>
 
             <Link
               href="/settings"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 transition-colors group"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] m3-transition-standard group rounded-lg"
             >
-              <Settings className="w-5 h-5 text-slate-400 group-hover:text-green-400 transition-colors" />
+              <Settings className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard" />
               <div>
-                <div className="text-slate-200 font-medium">Settings</div>
-                <div className="text-xs text-slate-500">Preferences & privacy</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)]">Settings</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">Preferences & privacy</div>
               </div>
             </Link>
 
@@ -275,57 +268,70 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
               <Link
                 href="/subscribe"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-gradient-to-r hover:from-amber-500/10 hover:to-yellow-500/10 transition-colors group border-l-2 border-transparent hover:border-amber-400"
+                className="flex items-center gap-3 px-4 py-2.5 bg-[var(--m3-primary-container)] hover:bg-[var(--m3-primary-container)]/80 m3-transition-standard group rounded-lg border-l-2 border-[var(--m3-primary)]"
               >
-                <Crown className="w-5 h-5 text-amber-400 group-hover:text-amber-300 transition-colors" />
+                <Crown className="w-5 h-5 text-[var(--m3-primary)] m3-transition-standard" />
                 <div>
-                  <div className="text-amber-200 font-medium">Upgrade to Premium</div>
-                  <div className="text-xs text-amber-400">Unlock all features</div>
+                  <div className="m3-label-large text-[var(--m3-on-primary-container)]">Upgrade to Premium</div>
+                  <div className="m3-body-small text-[var(--m3-primary)]">Unlock all features</div>
                 </div>
               </Link>
             )}
 
-            <div className="h-px bg-slate-700/50 my-2" />
+            <div className="h-px bg-[var(--m3-outline-variant)] my-1" />
 
             <Link
               href="/support"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 transition-colors group"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] m3-transition-standard group rounded-lg"
             >
-              <HelpCircle className="w-5 h-5 text-slate-400 group-hover:text-purple-400 transition-colors" />
+              <HelpCircle className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard" />
               <div>
-                <div className="text-slate-200 font-medium">Help & Support</div>
-                <div className="text-xs text-slate-500">Get assistance</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)]">Help & Support</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">Get assistance</div>
+              </div>
+            </Link>
+
+            <Link
+              href="/support/tickets"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] m3-transition-standard group rounded-lg"
+            >
+              <MessageSquare className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard" />
+              <div>
+                <div className="m3-label-large text-[var(--m3-on-surface)]">My Tickets</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">View your support queries</div>
               </div>
             </Link>
 
             <Link
               href="/privacy"
               onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 transition-colors group"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] m3-transition-standard group rounded-lg"
             >
-              <Shield className="w-5 h-5 text-slate-400 group-hover:text-indigo-400 transition-colors" />
+              <Shield className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard" />
               <div>
-                <div className="text-slate-200 font-medium">Privacy Policy</div>
-                <div className="text-xs text-slate-500">Your data protection</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)]">Privacy Policy</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">Your data protection</div>
               </div>
             </Link>
 
-            <div className="h-px bg-slate-700/50 my-2" />
+            <div className="h-px bg-[var(--m3-outline-variant)] my-1" />
 
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 transition-colors group text-left"
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-secondary-container)] m3-transition-standard group text-left rounded-lg"
             >
-              <LogOut className="w-5 h-5 text-slate-400 group-hover:text-red-400 transition-colors" />
+              <LogOut className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-secondary)] m3-transition-standard" />
               <div>
-                <div className="text-slate-200 group-hover:text-red-300 font-medium transition-colors">Sign Out</div>
-                <div className="text-xs text-slate-500">End your session</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)] group-hover:text-[var(--m3-secondary)] m3-transition-standard">Sign Out</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">End your session</div>
               </div>
             </button>
           </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

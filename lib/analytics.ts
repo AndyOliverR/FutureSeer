@@ -1,5 +1,8 @@
 import posthog from 'posthog-js'
 
+// Track if PostHog is actually enabled and initialized
+let isPostHogEnabled = false
+
 // Initialize PostHog only if API key is provided
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
   try {
@@ -15,8 +18,10 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
       enable_recording_console_log: false,
       enable_recording_network_payloads: false,
     })
+    isPostHogEnabled = true
   } catch (error) {
     console.warn('Failed to initialize PostHog analytics:', error)
+    isPostHogEnabled = false
   }
 }
 
@@ -38,6 +43,7 @@ export const ANALYTICS_EVENTS = {
   DAILY_GUIDANCE_VIEWED: 'daily_guidance_viewed',
   REMEDIES_VIEWED: 'remedies_viewed',
   COMMUNITY_ACCESSED: 'community_accessed',
+  HERO_CTA_CLICKED: 'hero_cta_clicked',
   
   // Engagement
   FEEDBACK_SUBMITTED: 'feedback_submitted',
@@ -113,7 +119,7 @@ export class AnalyticsService {
 
   // Core tracking methods
   trackEvent(event: string, properties?: Record<string, any>) {
-    if (typeof window === 'undefined' || !posthog) return
+    if (typeof window === 'undefined' || !isPostHogEnabled || !posthog) return
     
     try {
       posthog.capture(event, {
@@ -122,7 +128,10 @@ export class AnalyticsService {
         ...properties,
       })
     } catch (error) {
-      console.error('Analytics tracking failed:', error)
+      // Silently fail if PostHog is not available
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('Analytics tracking skipped:', error)
+      }
     }
   }
 
@@ -134,7 +143,7 @@ export class AnalyticsService {
   }
 
   identifyUser(userId: string, properties?: Record<string, any>) {
-    if (typeof window === 'undefined' || !posthog) return
+    if (typeof window === 'undefined' || !isPostHogEnabled || !posthog) return
     
     try {
       posthog.identify(userId, {
@@ -142,7 +151,10 @@ export class AnalyticsService {
         ...properties,
       })
     } catch (error) {
-      console.error('User identification failed:', error)
+      // Silently fail if PostHog is not available
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('User identification skipped:', error)
+      }
     }
   }
 

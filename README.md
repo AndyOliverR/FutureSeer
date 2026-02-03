@@ -9,7 +9,7 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
 ### Core Functionality
 - **AI-Powered Divination**: 18 different divination tools with AI interpretation
 - **Daily Insights**: Personalized daily horoscopes and cosmic guidance
-- **Ask the Seer**: Direct AI consultation for life questions
+- **Ask the Seer**: Direct AI consultation for life questions (timing and predictions combine Vedic, Western, Numerology, Tarot, and other systems—see [docs/MULTI_SYSTEM_PREDICTION.md](docs/MULTI_SYSTEM_PREDICTION.md))
 - **Notes & History**: Save and track your mystical journey
 - **Subscription System**: Premium access system (payment integration coming soon)
 - **Mobile Optimized**: Responsive design with touch-friendly interactions
@@ -98,6 +98,8 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
 
 6. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+   In development, the first load of each page can take several seconds (Next.js compiling that route). Subsequent loads are fast. For production-like performance, use `pnpm build && pnpm start`.
 
 ## 📱 Mobile Deployment
 
@@ -242,7 +244,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Documentation**: Check this README and inline code comments
 - **Issues**: Create an issue on GitHub
 - **Discussions**: Use GitHub Discussions for questions
-- **Email**: Contact support@futureseer.app
+- **Support**: Submit a query at [futureseer.app/contact](https://futureseer.app/contact)
 
 ## 🎯 Roadmap
 

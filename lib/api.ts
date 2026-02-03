@@ -13,7 +13,7 @@ if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
 // Updated AstroApp API functions to use comprehensive data service with fallback
 export async function getAstroData(birthDate: string, birthPlace: string, userId?: string) {
   try {
-    console.log("Getting astrological data using comprehensive service with fallback...")
+    console.log("Getting astrological data using comprehensive service...")
     
     // If we have a userId, try to get comprehensive data
     if (userId) {
@@ -48,7 +48,7 @@ export async function getAstroData(birthDate: string, birthPlace: string, userId
           currentTransits: comprehensiveData.currentTransits,
           metadata: {
             ...comprehensiveData.metadata,
-            source: comprehensiveData.metadata.isFallback ? 'internal_calculations' : 'astroapp'
+            source: comprehensiveData.metadata.isFallback ? 'internal_calculations' : 'universal_api'
           }
         }
       } catch (comprehensiveError) {
@@ -56,18 +56,24 @@ export async function getAstroData(birthDate: string, birthPlace: string, userId
       }
     }
     
-    // Fallback to direct AstroApp API call
-    console.log("Using direct AstroApp API call...")
+    // Fallback to Universal API call
+    console.log("Using Universal API call...")
     
-    const response = await fetch('/api/astroapp', {
+    const response = await fetch('/api/occult/universal', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        birthDate,
-        birthPlace,
-      }),
+        system: 'western',
+        birthData: {
+          birthDate,
+          birthTime: '12:00:00',
+          birthPlace,
+          latitude: 0,
+          longitude: 0
+        }
+      })
     })
 
     if (response.ok) {
@@ -75,106 +81,11 @@ export async function getAstroData(birthDate: string, birthPlace: string, userId
       console.log("Successfully got AstroApp data")
       return data
     } else {
-      console.log("AstroApp API failed, using internal calculations...")
-      
-      // Use internal calculations as final fallback
-      try {
-        const { generateFallbackAstroData } = await import('./astroFallback')
-        const fallbackData = await generateFallbackAstroData(birthDate, birthPlace)
-        console.log("Successfully generated fallback data using internal calculations")
-        return fallbackData
-      } catch (fallbackError) {
-        console.error("Fallback calculations failed:", fallbackError)
-        // Return basic fallback data
-        return {
-          sun_sign: "Aquarius",
-          moon_sign: "Taurus",
-          rising_sign: "Libra",
-          planets: [
-            { name: "Sun", sign: "Aquarius", degree: 15, house: 5 },
-            { name: "Moon", sign: "Taurus", degree: 8, house: 8 },
-            { name: "Mercury", sign: "Capricorn", degree: 28, house: 4 },
-            { name: "Venus", sign: "Pisces", degree: 3, house: 6 },
-            { name: "Mars", sign: "Sagittarius", degree: 22, house: 3 },
-            { name: "Jupiter", sign: "Gemini", degree: 12, house: 9 },
-            { name: "Saturn", sign: "Aquarius", degree: 18, house: 5 },
-            { name: "Uranus", sign: "Taurus", degree: 5, house: 8 },
-            { name: "Neptune", sign: "Pisces", degree: 25, house: 6 },
-            { name: "Pluto", sign: "Capricorn", degree: 30, house: 4 }
-          ],
-          houses: [
-            { number: 1, sign: "Libra", degree: 15 },
-            { number: 2, sign: "Scorpio", degree: 8 },
-            { number: 3, sign: "Sagittarius", degree: 22 },
-            { number: 4, sign: "Capricorn", degree: 28 },
-            { number: 5, sign: "Aquarius", degree: 18 },
-            { number: 6, sign: "Pisces", degree: 25 },
-            { number: 7, sign: "Aries", degree: 15 },
-            { number: 8, sign: "Taurus", degree: 8 },
-            { number: 9, sign: "Gemini", degree: 12 },
-            { number: 10, sign: "Cancer", degree: 5 },
-            { number: 11, sign: "Leo", degree: 22 },
-            { number: 12, sign: "Virgo", degree: 18 }
-          ],
-          aspects: [
-            { planet1: "Sun", planet2: "Moon", type: "Trine", orb: 3.2 },
-            { planet1: "Sun", planet2: "Jupiter", type: "Sextile", orb: 2.1 },
-            { planet1: "Moon", planet2: "Venus", type: "Conjunction", orb: 1.8 }
-          ],
-          metadata: {
-            source: 'emergency_fallback',
-            version: '1.0',
-            isFallback: true
-          }
-        }
-      }
+      throw new Error("AstroApp API is not available. Please try again later.")
     }
   } catch (error) {
     console.error("Error getting AstroApp data:", error)
-    console.log("Using emergency fallback data due to error")
-    
-    // Return emergency fallback data on error
-    return {
-      sun_sign: "Aquarius",
-      moon_sign: "Taurus",
-      rising_sign: "Libra",
-      planets: [
-        { name: "Sun", sign: "Aquarius", degree: 15, house: 5 },
-        { name: "Moon", sign: "Taurus", degree: 8, house: 8 },
-        { name: "Mercury", sign: "Capricorn", degree: 28, house: 4 },
-        { name: "Venus", sign: "Pisces", degree: 3, house: 6 },
-        { name: "Mars", sign: "Sagittarius", degree: 22, house: 3 },
-        { name: "Jupiter", sign: "Gemini", degree: 12, house: 9 },
-        { name: "Saturn", sign: "Aquarius", degree: 18, house: 5 },
-        { name: "Uranus", sign: "Taurus", degree: 5, house: 8 },
-        { name: "Neptune", sign: "Pisces", degree: 25, house: 6 },
-        { name: "Pluto", sign: "Capricorn", degree: 30, house: 4 }
-      ],
-      houses: [
-        { number: 1, sign: "Libra", degree: 15 },
-        { number: 2, sign: "Scorpio", degree: 8 },
-        { number: 3, sign: "Sagittarius", degree: 22 },
-        { number: 4, sign: "Capricorn", degree: 28 },
-        { number: 5, sign: "Aquarius", degree: 18 },
-        { number: 6, sign: "Pisces", degree: 25 },
-        { number: 7, sign: "Aries", degree: 15 },
-        { number: 8, sign: "Taurus", degree: 8 },
-        { number: 9, sign: "Gemini", degree: 12 },
-        { number: 10, sign: "Cancer", degree: 5 },
-        { number: 11, sign: "Leo", degree: 18 },
-        { number: 12, sign: "Virgo", degree: 25 }
-      ],
-      aspects: [
-        { planet1: "Sun", planet2: "Moon", type: "Trine", orb: 3.2 },
-        { planet1: "Venus", planet2: "Mars", type: "Sextile", orb: 1.8 },
-        { planet1: "Jupiter", planet2: "Saturn", type: "Square", orb: 2.1 }
-      ],
-      metadata: {
-        source: 'emergency_fallback',
-        version: '1.0',
-        isFallback: true
-      }
-    }
+    throw new Error("AstroApp API is not available. Please try again later.")
   }
 }
 

@@ -1,0 +1,421 @@
+/* Professional Visual System for FutureSeer */
+/* Inspired by Align27, Jothishi, CoStar Astrology, and Melooha */
+/* High-definition, crisp, professional visual elements */
+
+/* ===== PROFESSIONAL COLOR PALETTE ===== */
+:root {
+  /* Primary Colors - Golden Theme */
+  --fs-primary: #fbbf24;           /* Golden Yellow */
+  --fs-secondary: #ffd700;        /* Bright Gold */
+  --fs-accent: #ffff00;           /* Electric Yellow */
+  
+  /* Background Colors - Dark Theme */
+  --fs-bg-primary: #0f172a;       /* Darkest Blue */
+  --fs-bg-secondary: #1e293b;     /* Dark Blue */
+  --fs-bg-surface: #334155;        /* Medium Blue */
+  
+  /* Text Colors */
+  --fs-text-primary: #ffffff;     /* Pure White */
+  --fs-text-secondary: #e2e8f0;   /* Light Gray */
+  --fs-text-muted: #94a3b8;       /* Medium Gray */
+  
+  /* Chart Colors */
+  --fs-chart-lines: #ffd700;      /* Bright Gold */
+  --fs-chart-circles: #fbbf24;    /* Golden Yellow */
+  --fs-chart-planets: #ffff00;    /* Electric Yellow */
+  --fs-chart-signs: #ffff00;      /* Bright Yellow */
+  --fs-chart-houses: #fbbf24;     /* Golden Yellow */
+  
+  /* Status Colors */
+  --fs-success: #10b981;          /* Green */
+  --fs-warning: #f59e0b;          /* Orange */
+  --fs-error: #ef4444;            /* Red */
+  --fs-info: #3b82f6;             /* Blue */
+}
+
+/* ===== PROFESSIONAL TYPOGRAPHY ===== */
+.professional-font {
+  font-family: 'Inter', 'SF Pro Display', 'Arial', sans-serif;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+.professional-text-xs {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.professional-text-sm {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.professional-text-base {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.professional-text-lg {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.professional-text-xl {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.professional-text-2xl {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.professional-text-3xl {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ===== PROFESSIONAL SPACING ===== */
+.professional-spacing-xs { margin: 4px; padding: 4px; }
+.professional-spacing-sm { margin: 8px; padding: 8px; }
+.professional-spacing-md { margin: 16px; padding: 16px; }
+.professional-spacing-lg { margin: 24px; padding: 24px; }
+.professional-spacing-xl { margin: 32px; padding: 32px; }
+.professional-spacing-2xl { margin: 48px; padding: 48px; }
+
+/* ===== PROFESSIONAL SHADOWS AND EFFECTS ===== */
+.professional-shadow-sm {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.professional-shadow-md {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.professional-shadow-lg {
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.professional-shadow-glow {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+.professional-border-radius-sm { border-radius: 4px; }
+.professional-border-radius-md { border-radius: 8px; }
+.professional-border-radius-lg { border-radius: 12px; }
+.professional-border-radius-full { border-radius: 50%; }
+
+/* ===== PROFESSIONAL CHART STYLING ===== */
+.professional-chart-container {
+  background: var(--fs-bg-primary);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--fs-shadow-lg);
+}
+
+.professional-chart-title {
+  color: var(--fs-primary);
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 24px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.professional-chart-subtitle {
+  color: var(--fs-text-secondary);
+  font-size: 14px;
+  text-align: center;
+  opacity: 0.8;
+  margin-bottom: 32px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+/* ===== PROFESSIONAL VEDIC CHART STYLING ===== */
+.professional-vedic-chart {
+  background: var(--fs-bg-primary);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--fs-shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.professional-vedic-chart:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--fs-shadow-lg);
+}
+
+/* ===== PROFESSIONAL TABLE STYLING ===== */
+.professional-table {
+  font-family: 'Inter', 'SF Pro Display', 'Arial', sans-serif;
+  background: rgba(15, 23, 42, 0.95);
+  color: var(--fs-text-secondary);
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  box-shadow: var(--fs-shadow-lg);
+  margin: 16px 0;
+}
+
+.professional-table h3 {
+  color: var(--fs-primary);
+  margin-bottom: 24px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.professional-table h4 {
+  color: var(--fs-primary);
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.professional-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 32px;
+}
+
+.professional-table th {
+  padding: 12px 8px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  text-align: left;
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--fs-primary);
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.professional-table td {
+  padding: 12px 8px;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: var(--fs-text-secondary);
+}
+
+.professional-table tr:nth-child(even) {
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.professional-table tr:hover {
+  background: rgba(251, 191, 36, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+/* ===== PROFESSIONAL BUTTON STYLING ===== */
+.professional-button {
+  background: linear-gradient(135deg, var(--fs-primary), var(--fs-secondary));
+  color: var(--fs-bg-primary);
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', 'SF Pro Display', 'Arial', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--fs-shadow-sm);
+  text-shadow: none;
+}
+
+.professional-button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--fs-shadow-md);
+  background: linear-gradient(135deg, var(--fs-secondary), var(--fs-accent));
+}
+
+.professional-button:active {
+  transform: translateY(0);
+  box-shadow: var(--fs-shadow-sm);
+}
+
+.professional-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ===== PROFESSIONAL INPUT STYLING ===== */
+.professional-input {
+  background: var(--fs-bg-secondary);
+  color: var(--fs-text-primary);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: 'Inter', 'SF Pro Display', 'Arial', sans-serif;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.professional-input:focus {
+  outline: none;
+  border-color: var(--fs-primary);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+}
+
+.professional-input::placeholder {
+  color: var(--fs-text-muted);
+}
+
+/* ===== PROFESSIONAL CARD STYLING ===== */
+.professional-card {
+  background: var(--fs-bg-secondary);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--fs-shadow-md);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.professional-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--fs-shadow-lg);
+}
+
+.professional-card-header {
+  color: var(--fs-primary);
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.professional-card-content {
+  color: var(--fs-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ===== PROFESSIONAL LOADING ANIMATIONS ===== */
+.professional-loading-pulse {
+  animation: professional-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes professional-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.professional-loading-spin {
+  animation: professional-spin 2s linear infinite;
+}
+
+@keyframes professional-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ===== PROFESSIONAL GRADIENT BACKGROUNDS ===== */
+.professional-gradient-bg {
+  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0.95) 100%);
+}
+
+.professional-gradient-gold {
+  background: linear-gradient(135deg, var(--fs-primary) 0%, var(--fs-secondary) 50%, var(--fs-accent) 100%);
+}
+
+/* ===== PROFESSIONAL RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+  .professional-table {
+    padding: 16px;
+    font-size: 12px;
+  }
+  
+  .professional-table th,
+  .professional-table td {
+    padding: 8px 6px;
+  }
+  
+  .professional-chart-container {
+    padding: 16px;
+  }
+  
+  .professional-text-3xl {
+    font-size: 20px;
+  }
+  
+  .professional-text-2xl {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .professional-table {
+    padding: 12px;
+    font-size: 11px;
+  }
+  
+  .professional-table th,
+  .professional-table td {
+    padding: 6px 4px;
+  }
+  
+  .professional-chart-container {
+    padding: 12px;
+  }
+}
+
+/* ===== PROFESSIONAL ACCESSIBILITY ===== */
+.professional-focus-visible:focus-visible {
+  outline: 2px solid var(--fs-primary);
+  outline-offset: 2px;
+}
+
+.professional-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===== PROFESSIONAL PRINT STYLES ===== */
+@media print {
+  .professional-chart-container,
+  .professional-table,
+  .professional-card {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+    box-shadow: none !important;
+  }
+  
+  .professional-chart-title,
+  .professional-card-header {
+    color: black !important;
+    text-shadow: none !important;
+  }
+  
+  .professional-button {
+    background: white !important;
+    color: black !important;
+    border: 1px solid black !important;
+  }
+}

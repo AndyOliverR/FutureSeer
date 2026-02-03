@@ -1,27 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { initializeApp, getApps } from 'firebase/app';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-
-// Server-side Firebase config
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Initialize Firebase for server-side
-const getServerFirebaseDB = () => {
-  try {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    return getFirestore(app);
-  } catch (error) {
-    console.error('Failed to initialize Firebase on server:', error);
-    return null;
-  }
-};
+import { getFirebaseDB } from '@/lib/firebase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const db = getServerFirebaseDB();
+    const db = getFirebaseDB();
     if (!db) {
       return NextResponse.json(
         { error: 'Database not available' },
@@ -40,9 +18,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userDoc = await getDoc(doc(db, 'users', userId));
+    // Use the correct Firestore methods based on environment
+    let userDoc;
+    if (typeof window === 'undefined') {
+      // Server-side: Use Admin SDK
+      // Admin SDK uses db.collection().doc() or db.doc()
+      const userRef = db.collection('users').doc(userId);
+      userDoc = await userRef.get();
+    } else {
+      // Client-side: Use Client SDK
+      const { doc, getDoc } = require('firebase/firestore');
+      userDoc = await getDoc(doc(db, 'users', userId));
+    }
     
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       // Return empty advanced profile if user doesn't exist
       return NextResponse.json({
         success: true,
@@ -80,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getServerFirebaseDB();
+    const db = getFirebaseDB();
     if (!db) {
       return NextResponse.json(
         { error: 'Database not available' },
@@ -88,13 +77,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const userRef = doc(db, 'users', userId);
-    
-    // Update the user document with advanced profile data
-    await updateDoc(userRef, {
-      advancedProfile,
-      updatedAt: new Date().toISOString()
-    });
+    // Use the correct Firestore methods based on environment
+    if (typeof window === 'undefined') {
+      // Server-side: Use Admin SDK
+      // Admin SDK uses db.collection().doc() and .update()
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        advancedProfile,
+        updatedAt: new Date().toISOString()
+      });
+    } else {
+      // Client-side: Use Client SDK
+      const { doc, updateDoc } = require('firebase/firestore');
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        advancedProfile,
+        updatedAt: new Date().toISOString()
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -122,7 +122,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const db = getServerFirebaseDB();
+    const db = getFirebaseDB();
     if (!db) {
       return NextResponse.json(
         { error: 'Database not available' },
@@ -130,15 +130,27 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const userRef = doc(db, 'users', userId);
-    
-    // Merge the advanced profile data with existing data
-    await updateDoc(userRef, {
-      advancedProfile: {
-        ...advancedProfile,
-        updatedAt: new Date().toISOString()
-      }
-    });
+    // Use the correct Firestore methods based on environment
+    if (typeof window === 'undefined') {
+      // Server-side: Use Admin SDK
+      const userRef = db.collection('users').doc(userId);
+      await userRef.update({
+        advancedProfile: {
+          ...advancedProfile,
+          updatedAt: new Date().toISOString()
+        }
+      });
+    } else {
+      // Client-side: Use Client SDK
+      const { doc, updateDoc } = require('firebase/firestore');
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        advancedProfile: {
+          ...advancedProfile,
+          updatedAt: new Date().toISOString()
+        }
+      });
+    }
 
     return NextResponse.json({
       success: true,

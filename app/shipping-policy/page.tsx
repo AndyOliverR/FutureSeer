@@ -1,6 +1,10 @@
+import Link from "next/link"
+import { MinimalNav } from "@/components/navigation/MinimalNav"
+
 export default function ShippingPolicyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
+    <div className="min-h-screen py-12 px-4 starfield-ultra-sharp">
+      <MinimalNav />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -122,7 +126,7 @@ export default function ShippingPolicyPage() {
               </p>
               <p>
                 <strong>Contact Information:</strong> You can reach our support team at 
-                <span className="text-amber-400"> support@futureseer.com</span> for any questions or assistance.
+                <Link href="/contact" className="text-amber-400 hover:underline">our contact form</Link> for any questions or assistance.
               </p>
               <p>
                 <strong>Help Resources:</strong> We provide comprehensive help documentation and tutorials 
@@ -156,11 +160,10 @@ export default function ShippingPolicyPage() {
         {/* Contact Information */}
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>
-            For questions about this policy, please contact us at: 
-            <span className="text-amber-400"> support@futureseer.com</span>
+            For questions about this policy, please <Link href="/contact" className="text-amber-400 hover:underline">contact us</Link>.
           </p>
           <p className="mt-2">
-            Last updated: January 1, 2025
+            Last updated: February 3, 2025
           </p>
         </div>
       </div>

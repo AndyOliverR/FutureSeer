@@ -4,6 +4,7 @@
 import { generateAngelNumbersProfile, validateAngelNumbersData } from './angelNumbersCalculations'
 import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
+import { CACHE_TTL } from './cacheConstants';
 
 interface AngelNumbersData {
   userId: string
@@ -91,7 +92,9 @@ class AngelNumbersIntelligence {
     birthDate: string,
     forceExternal: boolean = false
   ): Promise<AngelNumbersData> {
-    console.log('👼 AngelNumbersIntelligence: Starting intelligent calculation...')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👼 AngelNumbersIntelligence: Starting intelligent calculation...')
+    }
     
     // Validate input data
     const validation = validateAngelNumbersData(fullName, birthDate)
@@ -102,8 +105,10 @@ class AngelNumbersIntelligence {
     // Check cache first
     if (this.angelNumbersCache.has(userId)) {
       const cached = this.angelNumbersCache.get(userId)!
-      if (Date.now() - cached.lastFetched < 24 * 60 * 60 * 1000) {
-        console.log('Using cached angel numbers data for user:', userId)
+      if (Date.now() - cached.lastFetched < CACHE_TTL.REPORTS) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Using cached angel numbers data for user:', userId)
+        }
         return cached
       }
     }
@@ -116,20 +121,26 @@ class AngelNumbersIntelligence {
       
       if (docSnap.exists()) {
         const storedData = docSnap.data() as AngelNumbersData
-        if (Date.now() - storedData.lastFetched < 24 * 60 * 60 * 1000 &&
+        if (Date.now() - storedData.lastFetched < CACHE_TTL.REPORTS &&
             storedData.fullName === fullName &&
             storedData.birthDate === birthDate) {
-          console.log('Using stored angel numbers data for user:', userId)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Using stored angel numbers data for user:', userId)
+          }
           this.angelNumbersCache.set(userId, storedData)
           return storedData
         }
       }
     } catch (error) {
-      console.warn('Error checking stored angel numbers data:', error)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Error checking stored angel numbers data:', error)
+      }
     }
 
     // Generate internal calculation
-    console.log('👼 AngelNumbersIntelligence: Using internal calculations...')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👼 AngelNumbersIntelligence: Using internal calculations...')
+    }
     const internalProfile = generateAngelNumbersProfile(userId, fullName, birthDate)
     
     // Transform to comprehensive format
@@ -170,9 +181,13 @@ class AngelNumbersIntelligence {
       const db = getFirebaseDB();
       const docRef = doc(db, 'users', userId, 'angelNumbersProfile', 'comprehensive')
       await setDoc(docRef, angelNumbersData)
-      console.log('Stored intelligent angel numbers data in Firebase for user:', userId)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Stored intelligent angel numbers data in Firebase for user:', userId)
+      }
     } catch (storageError) {
-      console.warn('Error storing angel numbers data in Firebase:', storageError)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Error storing angel numbers data in Firebase:', storageError)
+      }
     }
 
     // Store in cache
@@ -184,7 +199,9 @@ class AngelNumbersIntelligence {
 
   // Provide personalized angel numbers coaching
   async provideCoaching(context: AngelNumbersCoachingContext): Promise<AngelNumbersCoachingResponse> {
-    console.log('👼 AngelNumbersIntelligence: Providing personalized coaching...')
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👼 AngelNumbersIntelligence: Providing personalized coaching...')
+    }
     
     const { angelNumbersData, userQuery } = context
     const query = userQuery.toLowerCase()

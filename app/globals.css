@@ -1,29 +1,727 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* GLOBAL STARRY BACKGROUND ENFORCEMENT - Apply to ALL pages */
-* {
-  background-image: url('/assets/bg/Starry BG.png') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
+/* ===== MATERIAL 3 MOTION CURVES ===== */
+:root {
+  /* Material 3 motion curves - from Material Design 3 specification */
+  --m3-standard: cubic-bezier(0.2, 0, 0, 1);
+  --m3-emphasized: cubic-bezier(0.2, 0, 1, 1);
+  --m3-decelerated: cubic-bezier(0, 0, 0.2, 1);
+  --m3-accelerated: cubic-bezier(0.4, 0, 1, 1);
+  
+  /* Material 3 Primary Colors */
+  --m3-primary: #F59E0B; /* amber-500 */
+  --m3-on-primary: #0F172A; /* slate-900 */
+  --m3-primary-container: rgba(245, 158, 11, 0.2);
+  --m3-on-primary-container: #FDE68A; /* amber-200 */
+  
+  /* Material 3 Secondary Colors */
+  --m3-secondary: #EF4444; /* red-500 */
+  --m3-on-secondary: #FFFFFF;
+  --m3-secondary-container: rgba(239, 68, 68, 0.2);
+  --m3-on-secondary-container: #FECACA; /* red-200 */
+  
+  /* Material 3 Tertiary Colors */
+  --m3-tertiary: #EAB308; /* yellow-400 */
+  --m3-on-tertiary: #0F172A; /* slate-900 */
+  --m3-tertiary-container: rgba(234, 179, 8, 0.2);
+  --m3-on-tertiary-container: #FEF08A; /* yellow-200 */
+  
+  /* Material 3 Surface Colors */
+  --m3-surface: #0F172A; /* slate-900 */
+  --m3-surface-bright: #1E293B; /* slate-800 */
+  --m3-surface-dim: #020617; /* slate-950 */
+  --m3-surface-container-lowest: rgba(15, 23, 42, 0.3);
+  --m3-surface-container-low: rgba(30, 41, 59, 0.5);
+  --m3-surface-container: #1E293B; /* slate-800 */
+  --m3-surface-container-high: #334155; /* slate-700 */
+  --m3-surface-container-highest: #475569; /* slate-600 */
+  
+  /* Material 3 On-Surface Colors */
+  --m3-on-surface: #FFFFFF;
+  --m3-on-surface-variant: #CBD5E1; /* slate-300 */
+  --m3-outline: #475569; /* slate-600 */
+  --m3-outline-variant: rgba(51, 65, 85, 0.5); /* slate-700/50 */
+  
+  /* Material 3 elevation system - shadow values for elevation levels 0-5 */
+  --m3-elevation-0: none;
+  --m3-elevation-1: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --m3-elevation-2: 0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --m3-elevation-3: 0px 1px 3px 0px rgba(0, 0, 0, 0.3), 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
+  --m3-elevation-4: 0px 2px 3px 0px rgba(0, 0, 0, 0.3), 0px 6px 10px 4px rgba(0, 0, 0, 0.15);
+  --m3-elevation-5: 0px 4px 4px 0px rgba(0, 0, 0, 0.3), 0px 8px 12px 6px rgba(0, 0, 0, 0.15);
+  
+  /* Material 3 Typography Scale */
+  /* Display - Large hero text (Cinzel for headings) */
+  --m3-display-large: 3.5625rem; /* 57px */
+  --m3-display-large-line: 4rem; /* 64px */
+  --m3-display-medium: 2.8125rem; /* 45px */
+  --m3-display-medium-line: 3.25rem; /* 52px */
+  --m3-display-small: 2.25rem; /* 36px */
+  --m3-display-small-line: 2.75rem; /* 44px */
+  
+  /* Headline - Section titles (Cinzel for headings) */
+  --m3-headline-large: 2rem; /* 32px */
+  --m3-headline-large-line: 2.5rem; /* 40px */
+  --m3-headline-medium: 1.75rem; /* 28px */
+  --m3-headline-medium-line: 2.25rem; /* 36px */
+  --m3-headline-small: 1.5rem; /* 24px */
+  --m3-headline-small-line: 2rem; /* 32px */
+  
+  /* Title - Card titles (Cinzel for headings) */
+  --m3-title-large: 1.375rem; /* 22px */
+  --m3-title-large-line: 1.75rem; /* 28px */
+  --m3-title-medium: 1rem; /* 16px */
+  --m3-title-medium-line: 1.5rem; /* 24px */
+  --m3-title-small: 0.875rem; /* 14px */
+  --m3-title-small-line: 1.25rem; /* 20px */
+  
+  /* Body - Main content (Inter for body) */
+  --m3-body-large: 1rem; /* 16px */
+  --m3-body-large-line: 1.5rem; /* 24px */
+  --m3-body-medium: 0.875rem; /* 14px */
+  --m3-body-medium-line: 1.25rem; /* 20px */
+  --m3-body-small: 0.75rem; /* 12px */
+  --m3-body-small-line: 1rem; /* 16px */
+  
+  /* Label - Buttons, labels (Inter) */
+  --m3-label-large: 0.875rem; /* 14px */
+  --m3-label-large-line: 1.25rem; /* 20px */
+  --m3-label-medium: 0.75rem; /* 12px */
+  --m3-label-medium-line: 1rem; /* 16px */
+  --m3-label-small: 0.6875rem; /* 11px */
+  --m3-label-small-line: 1rem; /* 16px */
 }
 
-/* Ensure body and html always have the starry background */
-html, body {
-  background-image: url('/assets/bg/Starry BG.png') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
-  min-height: 100vh;
+/* Material 3 utility classes for motion */
+.m3-transition-standard {
+  transition-timing-function: var(--m3-standard);
+}
+
+.m3-transition-emphasized {
+  transition-timing-function: var(--m3-emphasized);
+}
+
+.m3-transition-decelerated {
+  transition-timing-function: var(--m3-decelerated);
+}
+
+.m3-transition-accelerated {
+  transition-timing-function: var(--m3-accelerated);
+}
+
+/* Material 3 elevation utility classes */
+.m3-elevation-0 {
+  box-shadow: var(--m3-elevation-0);
+}
+
+.m3-elevation-1 {
+  box-shadow: var(--m3-elevation-1);
+}
+
+.m3-elevation-2 {
+  box-shadow: var(--m3-elevation-2);
+}
+
+.m3-elevation-3 {
+  box-shadow: var(--m3-elevation-3);
+}
+
+.m3-elevation-4 {
+  box-shadow: var(--m3-elevation-4);
+}
+
+.m3-elevation-5 {
+  box-shadow: var(--m3-elevation-5);
+}
+
+/* Material 3 elevation transitions */
+.m3-elevation-transition {
+  transition: box-shadow 0.2s var(--m3-standard);
+}
+
+/* Material 3 Typography Utility Classes */
+/* Display - Large hero text */
+.m3-display-large {
+  font-size: var(--m3-display-large);
+  line-height: var(--m3-display-large-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.m3-display-medium {
+  font-size: var(--m3-display-medium);
+  line-height: var(--m3-display-medium-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.m3-display-small {
+  font-size: var(--m3-display-small);
+  line-height: var(--m3-display-small-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Headline - Section titles */
+.m3-headline-large {
+  font-size: var(--m3-headline-large);
+  line-height: var(--m3-headline-large-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.m3-headline-medium {
+  font-size: var(--m3-headline-medium);
+  line-height: var(--m3-headline-medium-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.m3-headline-small {
+  font-size: var(--m3-headline-small);
+  line-height: var(--m3-headline-small-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+/* Title - Card titles */
+.m3-title-large {
+  font-size: var(--m3-title-large);
+  line-height: var(--m3-title-large-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.m3-title-medium {
+  font-size: var(--m3-title-medium);
+  line-height: var(--m3-title-medium-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.m3-title-small {
+  font-size: var(--m3-title-small);
+  line-height: var(--m3-title-small-line);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+  font-weight: 400;
+}
+
+/* Body - Main content */
+.m3-body-large {
+  font-size: var(--m3-body-large);
+  line-height: var(--m3-body-large-line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+}
+
+.m3-body-medium {
+  font-size: var(--m3-body-medium);
+  line-height: var(--m3-body-medium-line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+}
+
+.m3-body-small {
+  font-size: var(--m3-body-small);
+  line-height: var(--m3-body-small-line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+}
+
+/* Label - Buttons, labels */
+.m3-label-large {
+  font-size: var(--m3-label-large);
+  line-height: var(--m3-label-large-line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.00625em;
+}
+
+.m3-label-medium {
+  font-size: var(--m3-label-medium);
+  line-height: var(--m3-label-medium-line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.03125em;
+}
+
+.m3-label-small {
+  font-size: var(--m3-label-small);
+  line-height: var(--m3-label-small-line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.03125em;
+}
+
+/* Material 3 Ripple Effect */
+@keyframes m3-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.m3-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.m3-ripple::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  width: 100px;
+  height: 100px;
+  margin-top: -50px;
+  margin-left: -50px;
+  top: 50%;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.m3-ripple:active::after {
+  animation: m3-ripple 0.6s var(--m3-standard);
+  opacity: 0.3;
+}
+
+/* Material 3 Bouncy Button Animation */
+@keyframes m3-bounce-in {
+  0% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.m3-button-bounce:active {
+  animation: m3-bounce-in 0.3s var(--m3-emphasized);
+}
+
+/* Material 3 Input Focus States */
+.m3-input-focus {
+  transition: border-color 0.2s var(--m3-standard), box-shadow 0.2s var(--m3-standard);
+  will-change: border-color, box-shadow;
+}
+
+.m3-input-focus:focus-visible {
+  outline: none;
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+}
+
+.m3-input-focus:focus {
+  outline: none;
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+}
+
+/* Material 3 Performance Optimizations */
+.m3-gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+/* Optimize Material 3 animations for 60fps */
+.m3-animated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Material 3 card hover optimization */
+.m3-card-hover {
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
+}
+
+/* Performance optimizations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Animation keyframes for signup page */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ===== DEVOTIONAL DASHBOARD STYLING ===== */
+
+/* Sacred glow effect for cards */
+.card-sacred-glow {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.1), 
+              0 0 40px rgba(255, 165, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.card-sacred-glow:hover {
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.15), 
+              0 0 60px rgba(255, 165, 0, 0.08);
+}
+
+/* Sacred button glow */
+.button-sacred-glow {
+  box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.button-sacred-glow:hover {
+  box-shadow: 0 6px 25px rgba(255, 165, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Sanskrit-inspired font imports (using existing fonts with mystical feel) */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap');
+
+/* Base heading styles - Apply Cinzel to all headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+}
+
+/* Weight hierarchy for headings */
+h1 {
+  font-weight: 700; /* Bold for main headings */
+}
+
+h2 {
+  font-weight: 600; /* Semi-bold for section headings */
+}
+
+h3, h4 {
+  font-weight: 500; /* Medium for sub-headings */
+}
+
+h5, h6 {
+  font-weight: 400; /* Regular for minor headings */
+}
+
+.font-sacred-heading {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.05em;
+}
+
+.font-sacred-heading-light {
+  font-family: 'Cinzel', serif;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+}
+
+.font-sacred-heading-bold {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.font-sacred-body {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+}
+
+/* Sacred geometry background patterns */
+.sacred-geometry-bg {
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(255, 165, 0, 0.03) 0%, transparent 50%);
+}
+
+/* Devotional color classes */
+.text-sacred-gold {
+  color: #FFD700;
+}
+
+.text-sacred-amber {
+  color: #FFA500;
+}
+
+.bg-sacred-gold {
+  background-color: rgba(255, 215, 0, 0.1);
+}
+
+.bg-sacred-amber {
+  background-color: rgba(255, 165, 0, 0.1);
+}
+
+.border-sacred-gold {
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.border-sacred-amber {
+  border-color: rgba(255, 165, 0, 0.3);
+}
+
+/* Smooth sacred transitions */
+@media (prefers-reduced-motion: no-preference) {
+  .sacred-transition {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Sacred divider with gradient */
+.sacred-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 215, 0, 0.3) 20%,
+    rgba(255, 165, 0, 0.5) 50%,
+    rgba(255, 215, 0, 0.3) 80%,
+    transparent 100%
+  );
+}
+
+/* Mystical pulse animation */
+@keyframes mysticPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-mystic-pulse {
+  animation: mysticPulse 3s ease-in-out infinite;
+}
+
+/* Sacred glow text */
+.text-sacred-glow {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5),
+               0 0 20px rgba(255, 165, 0, 0.3);
+}
+
+/* Will-change optimizations for animated elements */
+.card-depth,
+[data-feature-card],
+[data-how-it-works],
+.sticky-cta {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 :root {
-  --background: 0 0% 100%;
+  /* GLOBAL: Set background to transparent/black for all pages to ensure starfield shows through */
+  --background: 0 0% 0% / 0;
   --foreground: 222.2 84% 4.9%;
+  /* 8K UHD starfield texture - 7680×4320 pixels */
+  --starfield-image: url('/assets/bg/starfieldn-8k.png');
+  --starfield-overlay: linear-gradient(180deg, rgba(3, 7, 18, 0.65) 0%, rgba(2, 6, 23, 0.75) 35%, rgba(3, 7, 18, 0.92) 100%);
+}
+
+/* Fix for modal/dialog layout shift - reserve space for scrollbar */
+html {
+  scrollbar-gutter: stable;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  scrollbar-gutter: stable;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure navbar and footer extend edge-to-edge - BREAK OUT OF CONTAINERS */
+footer {
+  position: relative !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: calc(-50vw + 50%) !important;
+  margin-right: calc(-50vw + 50%) !important;
+  left: 0 !important;
+  right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Header - EXACTLY match footer CSS since footer works */
+header {
+  position: relative !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: calc(-50vw + 50%) !important;
+  margin-right: calc(-50vw + 50%) !important;
+  left: 0 !important;
+  right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Navbar inside header - just needs to fill the header */
+nav[role="navigation"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-right: calc(1rem + 17px) !important;
+}
+
+/* Prevent any parent container from adding margins/padding to navbar/footer */
+body > * > header,
+body > * > nav,
+body > * > footer,
+[data-page="landing"] > * > header,
+[data-page="landing"] > * > nav,
+[data-page="landing"] > * > footer,
+[data-page="landing"] > div > header,
+[data-page="landing"] > div > nav,
+[data-page="landing"] > div > footer,
+header > nav,
+header > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure landing page wrapper doesn't add margins but allow header to extend */
+[data-page="landing"] > div {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow-x: visible !important; /* Changed to visible to allow header to extend */
+  overflow-y: visible !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Force dashboard navigation to full width */
+nav[role="navigation"] {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  z-index: 100 !important;
+}
+
+/* Allow header to break out of parent containers - override all constraints */
+[data-page="landing"] > div > header,
+[data-page="landing"] > div > header > nav,
+header[style*="100vw"],
+header[style*="calc"] {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-width: none !important;
+  width: 100vw !important;
+  min-width: 100vw !important;
+}
+
+/* Remove scrollbar gutter for edge-to-edge elements - they should extend fully */
+nav[role="navigation"],
+footer {
+  scrollbar-gutter: auto !important;
+}
+
+/* Ensure navbar content doesn't get cut off by accounting for scrollbar */
+nav[role="navigation"] {
+  padding-right: max(1rem, calc(1rem + 17px)) !important;
+}
+
+/* Override --background for landing page - use transparent black to avoid white backgrounds */
+:root:has([data-page="landing"]) {
+  /* Use black with 0% opacity to avoid any white background issues */
+  --background: 0 0% 0% / 0;
 }
 
 /* Light theme variables */
@@ -47,7 +745,7 @@ html, body {
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 222.2 84% 4.9%;
-  --radius: 0.5rem;
+  --radius: 1rem;
 }
 
 /* Mystical Feedback Animations */
@@ -89,6 +787,19 @@ html, body {
   }
 }
 
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
@@ -103,6 +814,76 @@ html, body {
 
 .animate-mystical-glow {
   animation: mystical-glow 3s ease-in-out infinite;
+}
+
+/* Gold Glow Effect for Text - Enhanced for strong glossy glow */
+.gold-glow {
+  color: #fbbf24;
+  text-shadow: none;
+  filter: none;
+  transition: all 0.3s ease;
+}
+
+.gold-glow:hover,
+.group:hover .gold-glow {
+  text-shadow: 
+    0 0 15px rgba(251, 191, 36, 1),
+    0 0 30px rgba(251, 191, 36, 0.9),
+    0 0 45px rgba(251, 191, 36, 0.7),
+    0 0 60px rgba(251, 191, 36, 0.5),
+    0 0 75px rgba(251, 191, 36, 0.3);
+  filter: drop-shadow(0 0 12px rgba(251, 191, 36, 1)) drop-shadow(0 0 24px rgba(251, 191, 36, 0.8));
+}
+
+/* Enhanced Neon Glow for Western Astrology Header - Thin, Elegant Neon Style */
+.neon-glow-western {
+  color: #60e5ff; /* Bright cyan */
+  font-family: 'Great Vibes', 'Dancing Script', 'Playfair Display', cursive, serif;
+  font-weight: 400; /* Light, elegant weight */
+  font-style: normal;
+  text-shadow: 
+    0 0 5px rgba(96, 229, 255, 1),
+    0 0 10px rgba(96, 229, 255, 0.9),
+    0 0 20px rgba(96, 229, 255, 0.8),
+    0 0 30px rgba(96, 229, 255, 0.7),
+    0 0 40px rgba(96, 229, 255, 0.6),
+    0 0 60px rgba(96, 229, 255, 0.5),
+    0 0 80px rgba(96, 229, 255, 0.4),
+    0 0 100px rgba(96, 229, 255, 0.3);
+  letter-spacing: 0.03em;
+  transition: all 0.3s ease;
+  filter: brightness(1.1) saturate(1.2);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.neon-glow-western:hover {
+  text-shadow: 
+    0 0 8px rgba(96, 229, 255, 1),
+    0 0 15px rgba(96, 229, 255, 0.95),
+    0 0 25px rgba(96, 229, 255, 0.9),
+    0 0 35px rgba(96, 229, 255, 0.8),
+    0 0 50px rgba(96, 229, 255, 0.7),
+    0 0 70px rgba(96, 229, 255, 0.6),
+    0 0 90px rgba(96, 229, 255, 0.5),
+    0 0 120px rgba(96, 229, 255, 0.4);
+  filter: brightness(1.2) saturate(1.3);
+}
+
+/* Card Glow Effect */
+.card-glow {
+  transition: all 0.3s ease;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.card-glow:hover {
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(251, 191, 36, 0.1),
+    0 0 20px rgba(251, 191, 36, 0.1);
+  transform: translateY(-2px);
 }
 
 /* Dark theme variables */
@@ -128,9 +909,9 @@ html, body {
   --ring: 212.7 26.8% 83.9%;
 }
 
-/* Crystal Clear Starfield Background */
+/* Crystal Clear Starfield Background - 8K UHD Display */
 .starfield-background {
-  /* Sharp, clear image rendering */
+  /* Sharp, clear image rendering for 8K display */
   image-rendering: crisp-edges;
   image-rendering: -webkit-crisp-edges;
   image-rendering: -webkit-optimize-contrast;
@@ -139,14 +920,18 @@ html, body {
   transform: translateZ(0);
   backface-visibility: hidden;
   
-  /* Subtle enhancement without over-processing */
-  filter: contrast(1.05) brightness(1.02);
+  /* Enhanced vibrant appearance */
+  filter: contrast(1.1) brightness(1.1) saturate(1.15);
   
-  /* Perfect background positioning - FIXED: Use cover instead of 100% 100% */
-  background-attachment: fixed;
-  background-repeat: no-repeat;
+  /* Consistent starfield background color - medium-dark navy blue */
+  background-color: #141932;
+  
+  /* 8K background positioning - cover to fill viewport without tiling */
+  background-attachment: scroll; /* Changed from fixed to scroll for better performance */
   background-position: center center;
-  background-size: cover; /* Changed from 100% 100% to maintain aspect ratio */
+  background-image: var(--starfield-image);
+  background-size: cover;
+  background-repeat: no-repeat;
   
   /* Additional optimization for sharp rendering */
   -webkit-backface-visibility: hidden;
@@ -155,21 +940,59 @@ html, body {
   -moz-transform: translateZ(0);
 }
 
-/* Subtle starfield enhancement without overwhelming effects */
-.starfield-background::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    radial-gradient(ellipse at 30% 70%, rgba(100, 150, 255, 0.08) 0%, transparent 70%),
-    radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
-  pointer-events: none;
-  opacity: 0.4;
-  z-index: 1;
+/* Enhanced Glass Morphism Button */
+.glass-button-enhanced {
+  position: relative !important;
+  background: rgba(255, 215, 0, 0.15) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 215, 0, 0.3) !important;
+  box-shadow: 
+    0 8px 32px 0 rgba(255, 215, 0, 0.2),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s ease !important;
+  overflow: hidden !important;
 }
+
+.glass-button-enhanced:hover {
+  background: rgba(255, 215, 0, 0.25) !important;
+  border: 1px solid rgba(255, 215, 0, 0.5) !important;
+  box-shadow: 
+    0 12px 40px 0 rgba(255, 215, 0, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-2px) !important;
+}
+
+.glass-button-enhanced::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+}
+
+.glass-button-enhanced::after {
+  content: '' !important;
+  position: absolute !important;
+  top: 1px !important;
+  left: 1px !important;
+  right: 1px !important;
+  bottom: 1px !important;
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 255, 0, 0.1) 100%) !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+.glass-button-enhanced:hover::after {
+  opacity: 1 !important;
+}
+
+/* Gradient overlay removed - using clean starfield only */
 
 /* Clean text rendering on starfield */
 .starfield-background * {
@@ -223,74 +1046,51 @@ html, body {
   color: #ea580c !important;
 }
 
-/* Remove all button borders and outlines */
+/* Accessibility: Visible focus indicators for keyboard navigation */
+/* Focus indicators use amber/gold to match brand and meet WCAG AA standards */
+
+/* Skip to content link for accessibility */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #fbbf24;
+  color: #000;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 10000;
+  border-radius: 4px;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* Default button styles - remove default borders but keep accessibility */
 button {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
+  border: none;
 }
 
-button:focus {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-button:hover {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Specific styling for hamburger menu */
-.hamburger-button {
-  border: none !important;
-  outline: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.hamburger-button:focus {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-.hamburger-button:hover {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Aggressively remove ALL blue borders and focus rings */
-* {
-  --tw-ring-color: transparent !important;
-  --tw-ring-offset-color: transparent !important;
-}
-
-*:focus {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-*:focus-visible {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-/* Remove any browser default focus styles */
+/* Proper focus indicators for accessibility - WCAG AA compliant */
 button:focus-visible,
+a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  ring: none !important;
+  outline: 2px solid #fbbf24 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* Special handling for buttons with existing focus styles */
+button[class*="focus-visible:outline"]:focus-visible {
+  /* Respect component-level focus styles */
+}
+
+/* Remove default ring but keep our custom outline */
+* {
+  --tw-ring-color: transparent;
+  --tw-ring-offset-color: transparent;
 }
 
 /* SPECIFIC FIX FOR HAMBURGER MENU BLUE BORDER */
@@ -315,63 +1115,74 @@ textarea:focus-visible {
   padding: 6px !important;
   position: relative !important;
   z-index: 1000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
-/* Ensure hamburger lines are visible */
+/* Ensure hamburger lines are visible - Amber color for better contrast */
 .hamburger-button span {
-  background-color: white !important;
-  height: 2px !important;
+  background-color: #fbbf24 !important; /* Amber for better visibility */
+  color: #fbbf24 !important;
+  height: 2px !important; /* Changed from 3px to match Lucide icons */
   width: 24px !important;
   display: block !important;
-  margin: 2px 0 !important;
+  margin: 2px 0 !important; /* Changed from 3px for tighter spacing */
   transition: all 0.3s ease !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-/* Remove blue border from menu container */
-div[class*="absolute right-0 top-12"] {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  --tw-ring-color: transparent !important;
-  --tw-ring-offset-color: transparent !important;
-  --tw-ring-offset-width: 0 !important;
-  --tw-ring-width: 0 !important;
+/* Hover state for better discoverability */
+.hamburger-button:hover span {
+  background-color: #fcd34d !important; /* Lighter amber on hover */
+  opacity: 1 !important;
 }
 
-/* SPECIFIC HAMBURGER MENU CLASS */
+/* FutureSeer Logo - Matches disclaimer card styling (text-amber-400 font-semibold) */
+.futureseer-logo {
+  color: #fbbf24; /* amber-400 */
+  transition: color 0.2s ease;
+  
+  font-weight: 600; /* font-semibold - matches disclaimer */
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.futureseer-logo:hover {
+  color: #fcd34d; /* amber-300 on hover, matching button hover state */
+}
+
+/* Accessibility: Focus indicator for logo link */
+.futureseer-logo:focus-visible {
+  outline: 2px solid #ffd700 !important;
+  outline-offset: 4px !important;
+  border-radius: 4px;
+}
+
+/* Hamburger menu - remove default borders but keep focus indicators */
 .hamburger-menu {
   border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
   background: transparent !important;
+  box-shadow: none !important;
   --tw-ring-color: transparent !important;
   --tw-ring-offset-color: transparent !important;
   --tw-ring-offset-width: 0 !important;
   --tw-ring-width: 0 !important;
 }
 
-.hamburger-menu:focus,
-.hamburger-menu:hover,
-.hamburger-menu:active {
+/* Menu items - transparent background but keep focus indicators for accessibility */
+.hamburger-menu a {
   border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
   background: transparent !important;
+  box-shadow: none !important;
 }
 
-/* Remove any potential blue borders from menu items */
-.hamburger-menu a,
-.hamburger-menu a:focus,
-.hamburger-menu a:hover,
-.hamburger-menu a:active {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
-  --tw-ring-color: transparent !important;
-  --tw-ring-offset-color: transparent !important;
-  --tw-ring-offset-width: 0 !important;
-  --tw-ring-width: 0 !important;
+.hamburger-menu a:focus-visible {
+  outline: 2px solid #fbbf24 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
 }
 
 /* Force white color for specific profile icons */
@@ -393,11 +1204,10 @@ div[class*="absolute right-0 top-12"] {
   stroke: #ffffff !important;
 }
 
-/* Sharp image rendering for starfield backgrounds */
+/* Sharp image rendering for starfield backgrounds - 8K UHD */
 .starfield-sharp {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  image-rendering: pixelated;
   -webkit-image-rendering: crisp-edges;
   -moz-image-rendering: crisp-edges;
   -o-image-rendering: crisp-edges;
@@ -405,90 +1215,106 @@ div[class*="absolute right-0 top-12"] {
   -webkit-backface-visibility: hidden;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+  /* Consistent starfield background color - medium-dark navy blue */
+  background-color: #141932;
+  background-image: var(--starfield-image);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
 }
 
-/* NEW: Ultra-sharp starfield background for high-definition stars */
+/* NEW: Ultra-sharp starfield background for 8K UHD display */
 .starfield-ultra-sharp {
-  /* Optimal image rendering for HD starfield backgrounds */
+  /* Optimal image rendering for 8K starfield backgrounds */
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  image-rendering: high-quality;
   -webkit-image-rendering: -webkit-optimize-contrast;
   -moz-image-rendering: crisp-edges;
   -o-image-rendering: crisp-edges;
   
-  /* Hardware acceleration */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
+  /* Hardware acceleration - REMOVED from body to prevent containing block */
+  /* transform: translateZ(0); - Moved to override rule for body */
+  /* -webkit-transform: translateZ(0); - Moved to override rule for body */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   
-  /* Background optimization - FIXED: No more moving stars */
-  background-attachment: scroll !important;
-  background-repeat: no-repeat !important;
-  background-position: center center !important;
-  background-size: cover !important; /* Changed back to cover to ensure no missing sections */
+  /* Enhanced star definition for 8K images - vibrant appearance */
+  /* filter: contrast(1.1) brightness(1.1) saturate(1.15); - REMOVED from body to prevent containing block */
+  /* Applied via pseudo-element in body.starfield-ultra-sharp::before instead */
   
-  /* Enhanced star definition for HD images */
-  filter: contrast(1.05) brightness(1.02) saturate(1.03);
+  /* Consistent starfield background color - richer dark blue */
+  background-color: #0a0f1f;
   
-  /* Prevent any blurring effects */
-  -webkit-filter: contrast(1.05) brightness(1.02) saturate(1.03);
-  -moz-filter: contrast(1.05) brightness(1.02) saturate(1.03);
-  
-  /* Background image will be handled by inline styles in layout.tsx */
-  
-  /* FORCE background image to be visible */
-  background-image: url('/assets/bg/Starry BG.png') !important;
+  /* Background-image on body as fallback - ::before pseudo-element overlays with filter */
+  /* Having it on both ensures background shows even if pseudo-element doesn't render */
+  background-image: var(--starfield-image);
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
 }
 
-/* CRITICAL: Force starry background on ALL pages and override any conflicting styles */
-html, body, .starfield-ultra-sharp, [class*="starfield"], [class*="cosmic"] {
-  background-image: url('/assets/bg/Starry BG.png') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
+.glass-panel {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 25px 45px rgba(2, 6, 23, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-/* Override any Tailwind bg- classes that might interfere */
-[class*="bg-"] {
-  background-image: url('/assets/bg/Starry BG.png') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
+.glass-panel-light {
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 15px 35px rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-/* Ensure admin pages also get the starry background */
-.app\/admin\/\* {
-  background-image: url('/assets/bg/Starry BG.png') !important;
-  background-size: cover !important;
-  background-position: center center !important;
-  background-repeat: no-repeat !important;
-  background-attachment: scroll !important;
+/* Fixed starfield background - 8K UHD */
+.starfield-fixed {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  /* Consistent starfield background color - medium-dark navy blue */
+  background-color: #141932;
+  background-image: var(--starfield-image);
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: scroll; /* Changed from fixed to scroll for better performance */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  overflow: hidden;
 }
 
-/* Responsive starfield scaling for different screen sizes */
+/* Responsive starfield - all viewports use cover, no scaling needed */
 @media (max-width: 768px) {
-  .starfield-ultra-sharp {
-    background-size: cover; /* Keep cover for mobile */
+  .starfield-ultra-sharp,
+  .starfield-background,
+  .starfield-sharp {
     background-attachment: scroll; /* Better mobile performance */
+    /* Reduce blur effects on mobile for better performance */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
-}
-
-@media (min-width: 1920px) {
-  .starfield-ultra-sharp {
-    background-size: cover; /* Maintain sharpness on ultra-wide screens */
+  
+  /* Reduce blur effects in navigation on mobile */
+  nav[class*="backdrop-blur"] {
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+  
+  /* Optimize logo for mobile - slightly reduce effects */
+  .futureseer-logo {
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5), 0 0 16px rgba(218, 165, 32, 0.3);
   }
 }
 
 /* EXTREME ZOOM-OUT: Alternative class for maximum starfield zoom-out effect */
 .starfield-extreme-zoom {
-  /* Optimal image rendering for HD starfield backgrounds */
+  /* Optimal image rendering for 8K starfield backgrounds */
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  image-rendering: high-quality;
   -webkit-image-rendering: -webkit-optimize-contrast;
   -moz-image-rendering: crisp-edges;
   -o-image-rendering: crisp-edges;
@@ -499,24 +1325,773 @@ html, body, .starfield-ultra-sharp, [class*="starfield"], [class*="cosmic"] {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   
-  /* MAXIMUM ZOOM-OUT: Use contain for even more zoom-out than cover */
-  background-attachment: fixed !important;
-  background-repeat: no-repeat !important;
-  background-position: center center !important;
-  background-size: contain !important; /* Shows entire image, maximum zoom-out */
-  
-  /* Enhanced star definition for HD images */
+  /* Enhanced star definition for 8K images */
   filter: contrast(1.03) brightness(1.01) saturate(1.02);
   
   /* Prevent any blurring effects */
-  -webkit-filter: contrast(1.03) brightness(1.01) saturate(1.02);
+  -webkit-filter: contrast(1.03) brightness(1.02) saturate(1.02);
   -moz-filter: contrast(1.03) brightness(1.01) saturate(1.02);
   
-  /* Background image will be handled by inline styles in layout.tsx */
+  /* Consistent starfield background color - medium-dark navy blue */
+  background-color: #141932;
   
-  /* FORCE background image to be visible */
-  background-image: url('/assets/bg/Starry BG.png') !important;
+  /* Zoomed-out version - still uses cover for proper display */
+  background-image: var(--starfield-image);
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
 } 
+
+/* ============================================
+   LANDING PAGE BACKGROUND OVERRIDES
+   ============================================ */
+
+/* Override CSS variables for landing page - use transparent/black to avoid white backgrounds */
+html:has([data-page="landing"]),
+body:has([data-page="landing"]),
+:root:has([data-page="landing"]) {
+  /* Use black with 0 opacity instead of white to avoid any white background issues */
+  --background: 0 0% 0%;
+  --card: 0 0% 0% / 0;
+  --popover: 0 0% 0% / 0;
+}
+
+/* Override Tailwind base styles directly - bypass variable system for landing page */
+@layer base {
+  html:has([data-page="landing"]),
+  body:has([data-page="landing"]) {
+    background-color: #0a0f1f !important;
+    /* Background image handled by pseudo-element to avoid containing block */
+    background-image: none !important;
+    background-position: center center;
+    background-size: cover;
+    background-attachment: scroll; /* Changed from fixed to scroll for better performance */
+    background-repeat: no-repeat;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Ensure landing page also gets the filtered background via pseudo-element */
+body:has([data-page="landing"]).starfield-ultra-sharp::before {
+  content: '' !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  /* Apply filter to enhance colors - creates rich glossy dark blue with enhanced stars */
+  filter: contrast(1.1) brightness(1.1) saturate(1.15);
+  -webkit-filter: contrast(1.1) brightness(1.1) saturate(1.15);
+  -moz-filter: contrast(1.1) brightness(1.1) saturate(1.15);
+  /* Show filtered background-image */
+  background-image: var(--starfield-image);
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  background-color: transparent;
+  /* Ensure it renders */
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-image-rendering: -webkit-optimize-contrast;
+  -moz-image-rendering: crisp-edges;
+}
+
+.landing-background {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: var(--starfield-image);
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-attachment: scroll; /* Changed from fixed to scroll for better performance */
+  background-color: #0F1428;
+  z-index: 0;
+  pointer-events: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Ensure landing page container doesn't have white background */
+[data-page="landing"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  position: relative !important;
+  /* Ensure no white background is applied */
+  isolation: isolate;
+}
+
+/* Ensure footer keeps its dark background on landing page - consolidated rule */
+body:has([data-page="landing"]) footer,
+body:has([data-page="landing"]) footer.bg-slate-950,
+body:has([data-page="landing"]) footer[class*="bg-slate-950"],
+body:has([data-page="landing"]) [data-page="landing"] footer {
+  /* Removed background overrides to allow footer gradient to display */
+  /* background: rgb(2, 6, 23) !important; */
+  /* background-color: rgb(2, 6, 23) !important; */
+  position: relative !important;
+  z-index: 20 !important; /* Ensure footer is above background */
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  /* Ensure footer content is visible */
+  color: inherit !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  /* Ensure footer sits flush at the bottom with no extra space */
+  margin-top: auto !important;
+  /* Ensure footer scrolls with content, not fixed to viewport */
+  top: auto !important;
+  bottom: auto !important;
+}
+
+/* Prevent footer from creating stacking context that affects feedback button */
+
+/* Glossy slate effects for landing page - replaces dull slate with glossy appearance */
+/* Scoped to landing page using data-page attribute and starfield-ultra-sharp class */
+
+/* Glossy text effects for slate colors */
+[data-page="landing"] .text-slate-300,
+.starfield-ultra-sharp .text-slate-300 {
+  text-shadow: 0 0 8px rgba(148, 163, 184, 0.3),
+               0 0 16px rgba(148, 163, 184, 0.2),
+               0 1px 2px rgba(255, 255, 255, 0.1);
+  filter: brightness(1.1) saturate(1.2);
+}
+
+[data-page="landing"] .text-slate-400,
+.starfield-ultra-sharp .text-slate-400 {
+  text-shadow: 0 0 6px rgba(148, 163, 184, 0.25),
+               0 0 12px rgba(148, 163, 184, 0.15),
+               0 1px 2px rgba(255, 255, 255, 0.1);
+  filter: brightness(1.1) saturate(1.15);
+}
+
+[data-page="landing"] .text-slate-500,
+.starfield-ultra-sharp .text-slate-500 {
+  text-shadow: 0 0 4px rgba(148, 163, 184, 0.2),
+               0 0 8px rgba(148, 163, 184, 0.1);
+  filter: brightness(1.05) saturate(1.1);
+}
+
+/* Glossy background effects for slate colors - use ::before pseudo-element for gradient overlay */
+[data-page="landing"] .bg-slate-800,
+.starfield-ultra-sharp .bg-slate-800 {
+  position: relative;
+  backdrop-filter: blur(8px);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-page="landing"] .bg-slate-800::before,
+.starfield-ultra-sharp .bg-slate-800::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.05) 0%, 
+    rgba(255, 255, 255, 0.08) 50%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+[data-page="landing"] .bg-slate-900,
+.starfield-ultra-sharp .bg-slate-900 {
+  position: relative;
+  backdrop-filter: blur(8px);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-page="landing"] .bg-slate-900::before,
+.starfield-ultra-sharp .bg-slate-900::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.05) 0%, 
+    rgba(255, 255, 255, 0.08) 50%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure content in glossy backgrounds is above the pseudo-element */
+[data-page="landing"] .bg-slate-800 > *,
+.starfield-ultra-sharp .bg-slate-800 > *,
+[data-page="landing"] .bg-slate-900 > *,
+.starfield-ultra-sharp .bg-slate-900 > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Glossy border effects */
+[data-page="landing"] .border-slate-700,
+.starfield-ultra-sharp .border-slate-700 {
+  box-shadow: 
+    0 0 4px rgba(51, 65, 85, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-page="landing"] .border-slate-800,
+.starfield-ultra-sharp .border-slate-800 {
+  box-shadow: 
+    0 0 4px rgba(30, 41, 59, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+footer {
+  isolation: auto !important;
+  z-index: 20 !important;
+  transform: none !important;
+  will-change: auto !important;
+  contain: none !important;
+}
+
+/* Completely isolate feedback button from footer - fixed to viewport, floating on starfield */
+/* CRITICAL: This element MUST be positioned relative to viewport, not body or any parent */
+[data-feedback-widget="true"] {
+  /* Positioning - fixed to viewport, stays visible while scrolling */
+  /* Using fixed positioning relative to initial containing block (viewport) */
+  position: fixed !important;
+  bottom: 80px !important;
+  left: 16px !important;
+  top: auto !important;
+  right: auto !important;
+  
+  /* Stacking - above everything including footer - maximum z-index */
+  z-index: 2147483647 !important; /* Maximum z-index value */
+  
+  /* Isolation - create new stacking context, prevent footer interference */
+  isolation: isolate !important;
+  contain: none !important; /* Remove any containment */
+  
+  /* Hardware acceleration - but ensure it doesn't create containing block for children */
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  
+  /* Spacing - no margins or padding that could affect position */
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Visibility - ensure always visible */
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  
+  /* Interaction */
+  pointer-events: auto !important;
+}
+
+/* Header variant - remove all positioning and transform styles */
+[data-feedback-widget="true"][data-variant="header"] {
+  position: relative !important;
+  bottom: auto !important;
+  left: auto !important;
+  top: auto !important;
+  right: auto !important;
+  inset: auto !important;
+  transform: none !important;
+  will-change: auto !important;
+  isolation: auto !important;
+  contain: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: auto !important;
+  min-height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* Explicitly prevent footer from affecting feedback button (defensive rules) */
+body:has(footer) [data-feedback-widget="true"],
+body:has([data-page="landing"]) [data-feedback-widget="true"],
+footer ~ [data-feedback-widget="true"],
+footer + [data-feedback-widget="true"],
+footer [data-feedback-widget="true"] {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  isolation: isolate !important;
+  contain: none !important;
+  transform: translateZ(0) !important;
+}
+
+/* Ensure feedback widget is always fixed to viewport - maximum specificity */
+body > [data-feedback-widget="true"],
+html > body > [data-feedback-widget="true"],
+:root > body > [data-feedback-widget="true"] {
+  position: fixed !important;
+  bottom: 80px !important;
+  left: 16px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 2147483647 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateZ(0) !important;
+}
+
+/* Ultimate override - ensure fixed positioning works no matter what */
+[data-feedback-widget="true"]:not([data-variant="header"]) {
+  position: fixed !important;
+  bottom: 80px !important;
+  left: 16px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 2147483647 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  isolation: isolate !important;
+  contain: none !important;
+}
+
+/* Maximum isolation - ensure button is never affected by footer */
+/* CRITICAL: Ensure fixed positioning is relative to viewport, not any parent */
+html [data-feedback-widget="true"],
+body [data-feedback-widget="true"],
+* [data-feedback-widget="true"] {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  isolation: isolate !important;
+  contain: none !important;
+  /* Force viewport-relative positioning even if parent has transform */
+  transform: translateZ(0) !important;
+  /* Ensure it's positioned relative to initial containing block (viewport) */
+  top: auto !important;
+  right: auto !important;
+  bottom: 80px !important;
+  left: 16px !important;
+}
+
+/* Ensure footer cannot create any context that affects the button */
+footer * {
+  isolation: auto !important;
+  z-index: auto !important;
+}
+
+/* ============================================
+   FLOATING TIP JAR BUTTON - GLOBAL ACCESS
+   ============================================ */
+
+/* Completely isolate Tip Jar button from footer - fixed to viewport, floating on starfield */
+/* CRITICAL: This element MUST be positioned relative to viewport, not body or any parent */
+/* Positioned bottom-left above feedback button (feedback is at bottom: 80px, tip jar at bottom: 144px) */
+[data-tip-jar-widget="true"] {
+  /* Positioning - fixed to viewport, stays visible while scrolling */
+  /* Using fixed positioning relative to initial containing block (viewport) */
+  /* Positioned above feedback icon on the left side */
+  position: fixed !important;
+  bottom: 144px !important;
+  left: 16px !important;
+  top: auto !important;
+  right: auto !important;
+  
+  /* Stacking - above everything including footer, just below feedback widget */
+  z-index: 2147483646 !important; /* Just below feedback widget (2147483647) */
+  
+  /* Isolation - create new stacking context, prevent footer interference */
+  isolation: isolate !important;
+  contain: none !important; /* Remove any containment */
+  
+  /* Hardware acceleration - but ensure it doesn't create containing block for children */
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
+  
+  /* Spacing - no margins or padding that could affect position */
+  margin: 0 !important;
+  padding: 0 !important;
+  
+  /* Visibility - ensure always visible */
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  
+  /* Interaction */
+  pointer-events: auto !important;
+}
+
+/* Explicitly prevent footer from affecting Tip Jar button (defensive rules) */
+body:has(footer) [data-tip-jar-widget="true"],
+body:has([data-page="landing"]) [data-tip-jar-widget="true"],
+footer ~ [data-tip-jar-widget="true"],
+footer + [data-tip-jar-widget="true"],
+footer [data-tip-jar-widget="true"] {
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  isolation: isolate !important;
+  contain: none !important;
+  transform: translateZ(0) !important;
+}
+
+/* Ensure Tip Jar widget is always fixed to viewport - maximum specificity */
+body > [data-tip-jar-widget="true"],
+html > body > [data-tip-jar-widget="true"],
+:root > body > [data-tip-jar-widget="true"] {
+  position: fixed !important;
+  bottom: 144px !important;
+  left: 16px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 2147483646 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateZ(0) !important;
+}
+
+/* Ultimate override - ensure fixed positioning works no matter what */
+[data-tip-jar-widget="true"] {
+  position: fixed !important;
+  bottom: 144px !important;
+  left: 16px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 2147483646 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+  isolation: isolate !important;
+  contain: none !important;
+}
+
+/* Maximum isolation - ensure Tip Jar button is never affected by footer */
+/* CRITICAL: Ensure fixed positioning is relative to viewport, not any parent */
+html [data-tip-jar-widget="true"],
+body [data-tip-jar-widget="true"],
+* [data-tip-jar-widget="true"] {
+  position: fixed !important;
+  z-index: 2147483646 !important;
+  isolation: isolate !important;
+  contain: none !important;
+  /* Force viewport-relative positioning even if parent has transform */
+  transform: translateZ(0) !important;
+  /* Ensure it's positioned relative to initial containing block (viewport) */
+  top: auto !important;
+  right: auto !important;
+  bottom: 144px !important;
+  left: 16px !important;
+}
+
+/* Mobile optimization for Tip Jar button */
+@media (max-width: 768px) {
+  [data-tip-jar-widget="true"] {
+    bottom: 144px !important;
+    left: 12px !important;
+    /* Positioned above feedback icon on mobile */
+  }
+  
+  [data-tip-jar-widget="true"] button {
+    width: 3.5rem !important; /* 56px */
+    height: 3.5rem !important; /* 56px */
+  }
+}
+
+/* Safe area support for devices with notches */
+@supports (padding: max(0px)) or (padding: env(safe-area-inset-bottom)) {
+  [data-tip-jar-widget="true"] {
+    bottom: max(144px, calc(144px + env(safe-area-inset-bottom))) !important;
+    left: max(16px, calc(16px + env(safe-area-inset-left))) !important;
+  }
+}
+
+/* Ensure html doesn't interfere with fixed positioning */
+html {
+  position: static !important;
+  transform: none !important;
+  isolation: auto !important;
+  contain: none !important;
+}
+
+/* CRITICAL: Prevent body transform from creating containing block for fixed elements */
+/* Fixed elements need to be positioned relative to viewport, not body */
+body {
+  /* Keep position static to avoid creating containing block */
+  position: static !important;
+  /* Remove transform to prevent containing block - starfield effect handled differently */
+  transform: none !important;
+  isolation: auto !important;
+  contain: none !important;
+}
+
+/* CRITICAL: Override starfield-ultra-sharp transform and filter when applied to body */
+/* Both transform AND filter create containing blocks for fixed elements */
+/* Maximum specificity to ensure override works */
+html body.starfield-ultra-sharp,
+body.starfield-ultra-sharp,
+:root body.starfield-ultra-sharp {
+  transform: none !important;
+  -webkit-transform: none !important;
+  -moz-transform: none !important;
+  -o-transform: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  -moz-filter: none !important;
+  -o-filter: none !important;
+  /* Move hardware acceleration to a wrapper approach */
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+  position: static !important;
+  /* Background-image on body as base (unfiltered) - doesn't create containing block */
+  /* The ::before pseudo-element overlays with filtered version for rich glossy effect */
+  background-image: var(--starfield-image) !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+  /* Use richer dark blue instead of slate */
+  background-color: #0a0f1f !important;
+}
+
+/* Apply filter effect via ::before pseudo-element overlay */
+/* This enhances the body's background with filter without creating containing block */
+/* The pseudo-element overlays the body background and applies filter enhancement */
+/* GLOBAL: Applies to all pages since body has starfield-ultra-sharp class */
+body.starfield-ultra-sharp::before {
+  content: '' !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  /* z-index: 0 ensures it's above body background but below content (content has z-index > 0) */
+  z-index: 0 !important;
+  /* Apply filter to enhance colors - creates rich glossy dark blue with enhanced stars */
+  filter: contrast(1.1) brightness(1.1) saturate(1.15);
+  -webkit-filter: contrast(1.1) brightness(1.1) saturate(1.15);
+  -moz-filter: contrast(1.1) brightness(1.1) saturate(1.15);
+  /* Show filtered background-image - this overlays body's unfiltered version */
+  background-image: var(--starfield-image);
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  background-color: transparent;
+  /* Ensure it renders - critical properties */
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  /* Image rendering for sharp display */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  -webkit-image-rendering: -webkit-optimize-contrast;
+  -moz-image-rendering: crisp-edges;
+  /* This pseudo-element overlays the filtered background without affecting fixed positioning */
+}
+
+/* Ensure all pages get consistent starfield background - override any page-specific backgrounds */
+/* This ensures the starfield shows through on all pages, not just landing page */
+html body.starfield-ultra-sharp,
+body.starfield-ultra-sharp {
+  /* Ensure background is always visible */
+  background-color: #0a0f1f !important;
+  background-image: var(--starfield-image) !important;
+  background-position: center center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+  background-attachment: scroll !important;
+}
+
+/* Ensure page containers don't override the body background */
+/* Allow transparent backgrounds so starfield shows through */
+body.starfield-ultra-sharp > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Override any white or light backgrounds on page containers */
+/* This ensures the starfield background shows through on all pages */
+body.starfield-ultra-sharp [class*="min-h-screen"]:not([data-page="landing"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Ensure html element also has transparent background to show starfield */
+html.starfield-ultra-sharp,
+html:has(body.starfield-ultra-sharp) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Global override: Ensure no white backgrounds appear on any page */
+/* This catches any pages that might have missed the starfield class */
+body.starfield-ultra-sharp [class*="bg-white"]:not([class*="bg-white/"]):not(button):not(input):not(select):not(textarea) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Ensure hero section and other sections are visible */
+body:has([data-page="landing"]) section,
+body:has([data-page="landing"]) [data-page="landing"] section {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Ensure hero section content is visible - ensure section is visible */
+body:has([data-page="landing"]) section[class*="min-h-"],
+body:has([data-page="landing"]) [data-page="landing"] section[class*="min-h-"],
+body:has([data-page="landing"]) section[class*="min-h-70vh"],
+body:has([data-page="landing"]) section[class*="min-h-80vh"] {
+  visibility: visible !important;
+  display: flex !important;
+  position: relative !important;
+  z-index: 10 !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Ensure hero section inner content div is visible and not hidden - override opacity-0 class */
+body:has([data-page="landing"]) section[class*="min-h-"] > div,
+body:has([data-page="landing"]) [data-page="landing"] section[class*="min-h-"] > div,
+body:has([data-page="landing"]) section[class*="min-h-"] > div[class*="opacity-"],
+body:has([data-page="landing"]) section[class*="min-h-"] > div.opacity-0,
+body:has([data-page="landing"]) section[class*="min-h-"] > div.opacity-100 {
+  visibility: visible !important;
+  display: block !important;
+  position: relative !important;
+  z-index: 10 !important;
+  opacity: 1 !important;
+  /* Override opacity-0 class to ensure content is visible */
+  transform: translateY(0) !important;
+  /* Ensure content is visible even if parent has opacity transition */
+}
+
+/* Ensure hero section heading "Ask the Seer" is visible - override any opacity */
+body:has([data-page="landing"]) section h1,
+body:has([data-page="landing"]) [data-page="landing"] section h1,
+body:has([data-page="landing"]) section[class*="min-h-"] h1,
+body:has([data-page="landing"]) section[class*="min-h-"] > div h1 {
+  visibility: visible !important;
+  display: block !important;
+  position: relative !important;
+  z-index: 10 !important;
+  opacity: 1 !important;
+  color: #fbbf24 !important;
+  -webkit-text-fill-color: #fbbf24 !important;
+  background: none !important;
+  background-clip: unset !important;
+  -webkit-background-clip: unset !important;
+  /* Ensure heading is always visible */
+}
+
+/* Ensure the landing page content wrapper is transparent and has proper z-index */
+body:has([data-page="landing"]) [data-page="landing"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  position: relative !important;
+  z-index: 10 !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  min-height: 100vh !important;
+}
+
+/* Remove any bottom spacing from body/html on landing page */
+body:has([data-page="landing"]) {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+html:has([data-page="landing"]) {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Remove any bottom spacing from the last element before footer */
+body:has([data-page="landing"]) [data-page="landing"] > div:last-child:not(footer) {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Make sure the fixed background div is visible and behind content */
+body:has([data-page="landing"]) div[class*="fixed"][class*="inset-0"][class*="bg-"]:first-of-type {
+  z-index: 0 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Remove white/light background classes from landing page elements */
+body:has([data-page="landing"]) [class*="bg-white"]:not([class*="bg-white/"]),
+body:has([data-page="landing"]) [class*="bg-white"]:not([class*="bg-white/"]),
+body:has([data-page="landing"]) [class*="bg-slate-50"],
+body:has([data-page="landing"]) [class*="bg-gray-50"],
+body:has([data-page="landing"]) [class*="bg-zinc-50"] {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Remove white backgrounds from landing page sections (preserve transparent/semi-transparent) */
+body:has([data-page="landing"]) section[style*="background"]:not([style*="transparent"]):not([style*="rgba"]):not([style*="rgb"]),
+[data-page="landing"] section[style*="background"]:not([style*="transparent"]):not([style*="rgba"]):not([style*="rgb"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Remove performance bottlenecks for landing page - no fixed attachments */
+body:has([data-page="landing"]) [class*="bg-"],
+[data-page="landing"] [class*="bg-"] {
+  background-attachment: scroll !important;
+}
+
+/* Optimize PNG background rendering for landing page - ensure it's visible and performant */
+/* Specifically target any element with inline style setting white background */
+body:has([data-page="landing"]) [style*="background: white"],
+body:has([data-page="landing"]) [style*="background: #fff"],
+body:has([data-page="landing"]) [style*="background: #ffffff"],
+body:has([data-page="landing"]) [style*="background-color: white"],
+body:has([data-page="landing"]) [style*="background-color: #fff"],
+body:has([data-page="landing"]) [style*="background-color: #ffffff"] {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 
 /* Custom Scrollbar Styles for Feedback Panel */
 .scrollbar-thin {
@@ -543,10 +2118,458 @@ html, body, .starfield-ultra-sharp, [class*="starfield"], [class*="cosmic"] {
   background: rgba(245, 158, 11, 0.5);
 }
 
+/* ============================================
+   MOBILE-FIRST OPTIMIZATIONS
+   ============================================ */
+
+/* Touch manipulation for better mobile performance */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reduced motion support - respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .animate-float,
+  .animate-sparkle,
+  .animate-cosmic-pulse,
+  .animate-mystical-glow {
+    animation: none !important;
+  }
+}
+
+/* Mobile typography scaling with clamp() for fluid responsive text */
+@media (max-width: 768px) {
+  h1 {
+    font-size: clamp(2rem, 8vw, 3rem);
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: clamp(1.5rem, 6vw, 2.25rem);
+    line-height: 1.3;
+  }
+  
+  h3 {
+    font-size: clamp(1.25rem, 5vw, 1.75rem);
+    line-height: 1.4;
+  }
+  
+  p {
+    font-size: clamp(0.875rem, 3vw, 1rem);
+    line-height: 1.6;
+  }
+}
+
+/* Minimum touch target sizes (WCAG 2.1 AA: 44x44px minimum) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile-specific spacing improvements */
+@media (max-width: 768px) {
+  /* Better vertical rhythm */
+  section {
+    padding-top: clamp(2rem, 5vw, 3rem);
+    padding-bottom: clamp(2rem, 5vw, 3rem);
+  }
+  
+  /* Improved container padding */
+  .container,
+  [class*="max-w"] {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Better gap spacing for mobile */
+  .gap-8 {
+    gap: 1.5rem;
+  }
+  
+  .gap-6 {
+    gap: 1rem;
+  }
+}
+
+/* Performance optimizations for mobile */
+@media (max-width: 768px) {
+  /* Disable expensive effects on mobile */
+  * {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  
+  /* Optimize transforms for GPU acceleration */
+  [class*="hover:scale"],
+  [class*="hover:translate"] {
+    will-change: transform;
+  }
+  
+  /* Reduce blur effects on mobile for performance */
+  [class*="backdrop-blur"] {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  
+  /* Ensure containers don't exceed viewport width */
+  [class*="max-w"],
+  section,
+  div[class*="container"] {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Prevent any element from causing horizontal overflow */
+  * {
+    max-width: 100%;
+  }
+}
+
+/* Safe area support for mobile devices with notches */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-area-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Improved text readability on mobile */
+@media (max-width: 768px) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Better line height for mobile reading */
+  p, li, span {
+    line-height: 1.6;
+  }
+  
+  /* Improved contrast for small text */
+  .text-sm,
+  .text-xs {
+    font-weight: 400;
+  }
+}
+
+/* Mobile-first button improvements */
+@media (max-width: 768px) {
+  button {
+    /* Larger tap targets */
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    
+    /* Better visual feedback */
+    transition: background-color 0.2s ease, transform 0.1s ease;
+  }
+  
+  button:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Optimize images on mobile */
+@media (max-width: 768px) {
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Smooth scrolling with performance consideration */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Global overflow-x fix to prevent horizontal scrollbar */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Mobile viewport fixes */
+@media (max-width: 768px) {
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  /* Better input handling on mobile */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+    -webkit-appearance: none;
+    border-radius: 0.5rem;
+  }
+}
+
+/* Loading state optimizations */
+@media (max-width: 768px) {
+  [class*="loading"] {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Grid improvements for mobile */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Card spacing on mobile */
+@media (max-width: 768px) {
+  [class*="rounded-2xl"],
+  [class*="rounded-xl"] {
+    padding: 1.25rem;
+  }
+}
+
 .scrollbar-thumb-amber-500\/30::-webkit-scrollbar-thumb {
   background: rgba(245, 158, 11, 0.3);
 }
 
 .scrollbar-track-transparent::-webkit-scrollbar-track {
   background: transparent;
-} 
+}
+
+/* ============================================
+   ENHANCEMENT ANIMATIONS
+   ============================================ */
+
+/* Shimmer effect for hero text - subtle and slow */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shimmer 10s linear infinite;
+  background-image: linear-gradient(
+    90deg,
+    rgba(251, 191, 36, 0.05) 0%,
+    rgba(251, 191, 36, 0.15) 50%,
+    rgba(251, 191, 36, 0.05) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+/* Metallic Gold Gradient with Shimmer */
+@keyframes metallicShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.metallic-gold {
+  background: linear-gradient(
+    135deg,
+    #fef08a 0%,
+    #fde047 15%,
+    #fbbf24 30%,
+    #f59e0b 50%,
+    #fbbf24 70%,
+    #fde047 85%,
+    #fef08a 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: metallicShimmer 8s linear infinite;
+  filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.05));
+}
+
+.metallic-gold-button {
+  background: linear-gradient(
+    135deg,
+    #fef08a 0%,
+    #fde047 15%,
+    #fbbf24 30%,
+    #f59e0b 50%,
+    #fbbf24 70%,
+    #fde047 85%,
+    #fef08a 100%
+  );
+  background-size: 200% auto;
+  animation: metallicShimmer 8s linear infinite;
+  box-shadow: 
+    0 1px 3px rgba(217, 119, 6, 0.08),
+    0 0 4px rgba(253, 224, 71, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.metallic-gold-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+}
+
+/* Fade in on scroll */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* Material 3 scroll indicator animation - expressive bounce with glow */
+@keyframes scrollIndicator {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.8;
+    filter: brightness(1);
+  }
+  50% {
+    transform: translateY(10px) scale(1.05);
+    opacity: 1;
+    filter: brightness(1.4);
+  }
+}
+
+.animate-scroll-indicator {
+  animation: scrollIndicator 2.5s var(--m3-emphasized) infinite;
+}
+
+/* Parallax effect utility */
+.parallax-slow {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Enhanced card depth */
+.card-depth {
+  box-shadow: 
+    0 1px 2px -1px rgba(0, 0, 0, 0.03),
+    0 0 0 1px rgba(251, 191, 36, 0.01);
+  transition: box-shadow 0.3s ease;
+}
+
+.card-depth:hover {
+  box-shadow: 
+    0 2px 3px -1px rgba(0, 0, 0, 0.03),
+    0 0 0 1px rgba(251, 191, 36, 0.02),
+    0 0 4px rgba(251, 191, 36, 0.02);
+}
+
+/* Ripple effect for buttons */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  width: 100px;
+  height: 100px;
+  margin-top: -50px;
+  margin-left: -50px;
+  top: 50%;
+  left: 50%;
+  animation: ripple 0.6s;
+  opacity: 0;
+}
+
+.ripple-effect:active::after {
+  animation: ripple 0.6s;
+}
+
+/* ===== DEVOTIONIST TAB STYLING ===== */
+/* Consistent tab trigger styling for tools pages - Material 3 + devotionist spec */
+/* Uses @apply only for Tailwind utilities; M3 elevation/transition/typography via plain CSS */
+.devotionist-tab-trigger {
+  @apply rounded-xl flex justify-center items-center px-3 py-2 text-xs sm:text-sm
+         text-slate-300 hover:text-slate-100 hover:bg-slate-800/30
+         data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100
+         data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900;
+  box-shadow: var(--m3-elevation-0);
+  transition: box-shadow 0.2s var(--m3-standard);
+  transition-timing-function: var(--m3-standard);
+  font-size: var(--m3-label-medium);
+  line-height: var(--m3-label-medium-line);
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.03125em;
+}
+
+.devotionist-tab-trigger[data-state="active"] {
+  box-shadow: var(--m3-elevation-1);
+}
+
+.devotionist-tab-trigger:hover {
+  box-shadow: var(--m3-elevation-1);
+}

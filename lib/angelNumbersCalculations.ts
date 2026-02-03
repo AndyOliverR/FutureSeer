@@ -331,6 +331,171 @@ function analyzeRepeatingPatterns(numbers: number[]): string[] {
   return patterns
 }
 
+// Helper function to generate grammatically correct action steps
+function generateActionSteps(keywords: string[]): string[] {
+  // Return fallback if no keywords
+  if (!keywords || keywords.length === 0) {
+    return [
+      'Focus on your spiritual growth through daily practice',
+      'Practice meditation and mindfulness regularly',
+      'Trust in divine timing and guidance',
+      'Express gratitude for your spiritual journey'
+    ]
+  }
+  
+  // Map keywords to proper action phrases
+  const keywordActions: { [key: string]: string } = {
+    'awakening': 'Focus on your spiritual awakening through daily mindfulness',
+    'enlightenment': 'Seek enlightenment through meditation and self-reflection',
+    'lightworker': 'Embrace your role as a lightworker and serve others',
+    'intuition': 'Trust your intuition and inner guidance',
+    'spiritual': 'Deepen your spiritual practice and connection',
+    'manifestation': 'Practice conscious manifestation of your desires',
+    'creation': 'Express your creative potential in all you do',
+    'balance': 'Maintain balance between all areas of your life',
+    'harmony': 'Create harmony in your relationships and environment',
+    'partnerships': 'Nurture meaningful partnerships and connections',
+    'trust': 'Cultivate trust in yourself and the divine plan',
+    'faith': 'Strengthen your faith through daily spiritual practice',
+    'creativity': 'Express your creativity in all aspects of life',
+    'joy': 'Embrace joy and celebrate life\'s blessings',
+    'protection': 'Call upon divine protection in your daily life',
+    'masters': 'Connect with ascended masters through meditation',
+    'expression': 'Express your authentic self with confidence',
+    'stability': 'Build solid foundations for lasting success',
+    'foundation': 'Establish strong foundations in all you do',
+    'hard work': 'Commit to your goals with dedication and effort',
+    'support': 'Accept support from the universe and others',
+    'structure': 'Create structure and organization in your life',
+    'change': 'Embrace change as an opportunity for growth',
+    'freedom': 'Honor your need for freedom and independence',
+    'adventure': 'Welcome new adventures and experiences',
+    'courage': 'Act with courage in pursuing your dreams',
+    'transformation': 'Trust in the transformation process',
+    'love': 'Open your heart to giving and receiving love',
+    'family': 'Nurture your family connections and bonds',
+    'responsibility': 'Embrace your responsibilities with grace',
+    'nurturing': 'Provide nurturing care to yourself and others',
+    'wisdom': 'Seek wisdom through spiritual study and practice',
+    'divine': 'Connect with the divine through prayer and meditation',
+    'abundance': 'Open yourself to receiving divine abundance',
+    'prosperity': 'Align with prosperity consciousness',
+    'wealth': 'Cultivate a mindset of wealth and abundance',
+    'possibilities': 'Explore infinite possibilities available to you',
+    'infinity': 'Recognize the infinite nature of your potential',
+    'completion': 'Complete unfinished projects and cycles',
+    'service': 'Serve humanity with compassion and love',
+    'compassion': 'Practice compassion for yourself and others',
+    'endings': 'Release what no longer serves your highest good',
+    'purpose': 'Align with your soul\'s purpose and mission',
+    'power': 'Claim your personal power with integrity',
+    'guidance': 'Ask for and receive divine guidance',
+    'right path': 'Trust that you are on your divine path',
+    'perfection': 'Recognize divine perfection in all situations',
+    'rapid': 'Act swiftly on divine inspirations',
+    'timing': 'Trust in perfect divine timing',
+    'major': 'Prepare for major positive changes',
+    'evolution': 'Embrace your spiritual evolution',
+    'material': 'Balance material and spiritual needs',
+    'integration': 'Integrate all aspects of yourself'
+  }
+  
+  const steps: string[] = []
+  
+  // Use first 4 keywords with proper mappings
+  for (let i = 0; i < Math.min(4, keywords.length); i++) {
+    const keyword = keywords[i]
+    const action = keywordActions[keyword] || `Cultivate ${keyword} in your daily spiritual practice`
+    steps.push(action)
+  }
+  
+  return steps
+}
+
+// Helper function to generate grammatically correct affirmations
+function generateAffirmations(keywords: string[]): string[] {
+  // Return fallback if no keywords
+  if (!keywords || keywords.length === 0) {
+    return [
+      'I am divinely guided and protected',
+      'I trust in my spiritual journey',
+      'I am open to receiving divine messages',
+      'I manifest my highest good with ease'
+    ]
+  }
+  
+  // Map keywords to proper affirmation phrases
+  const keywordAffirmations: { [key: string]: string } = {
+    'awakening': 'I am experiencing a profound spiritual awakening',
+    'enlightenment': 'I am on the path to enlightenment and wisdom',
+    'lightworker': 'I embrace my role as a lightworker with love',
+    'intuition': 'I trust my intuition and inner wisdom',
+    'spiritual': 'I am deepening my spiritual connection daily',
+    'manifestation': 'I manifest my highest desires with ease',
+    'creation': 'I am a powerful creator of my reality',
+    'balance': 'I maintain perfect balance in all areas of life',
+    'harmony': 'I create harmony wherever I go',
+    'partnerships': 'I attract supportive partnerships into my life',
+    'trust': 'I trust in the divine plan for my life',
+    'faith': 'My faith grows stronger each day',
+    'creativity': 'I express my creativity freely and joyfully',
+    'joy': 'I am filled with divine joy and happiness',
+    'protection': 'I am protected by divine forces at all times',
+    'masters': 'I am guided by ascended masters and angels',
+    'expression': 'I express my authentic self with confidence',
+    'stability': 'I am grounded, stable, and secure',
+    'foundation': 'I build strong foundations for lasting success',
+    'hard work': 'I accomplish great things through dedicated effort',
+    'support': 'I am supported by the universe in all I do',
+    'structure': 'I create beneficial structure in my life',
+    'change': 'I welcome positive change with open arms',
+    'freedom': 'I am free to be my authentic self',
+    'adventure': 'I embrace life\'s adventures with enthusiasm',
+    'courage': 'I am courageous and confident',
+    'transformation': 'I trust in my spiritual transformation',
+    'love': 'I am surrounded by divine love and light',
+    'family': 'I am blessed with loving family connections',
+    'responsibility': 'I fulfill my responsibilities with grace',
+    'nurturing': 'I nurture myself and others with compassion',
+    'wisdom': 'I am growing in wisdom and understanding',
+    'divine': 'I am connected to divine source energy',
+    'abundance': 'I am open to receiving unlimited abundance',
+    'prosperity': 'Prosperity flows to me effortlessly',
+    'wealth': 'I am wealthy in all areas of my life',
+    'possibilities': 'I am open to infinite possibilities',
+    'infinity': 'My potential is infinite and unlimited',
+    'completion': 'I complete all things with excellence',
+    'service': 'I serve others with love and compassion',
+    'compassion': 'I am a beacon of compassion and kindness',
+    'endings': 'I release what no longer serves me',
+    'new beginnings': 'I embrace new beginnings with excitement',
+    'purpose': 'I am aligned with my divine purpose',
+    'power': 'I claim my spiritual power with integrity',
+    'guidance': 'I receive clear guidance from the universe',
+    'right path': 'I am on my perfect spiritual path',
+    'perfection': 'I recognize divine perfection in all things',
+    'rapid': 'I act on divine inspiration immediately',
+    'timing': 'I trust in perfect divine timing',
+    'major': 'I am ready for major positive transformations',
+    'evolution': 'I am evolving spiritually every day',
+    'material': 'I balance my material and spiritual life',
+    'integration': 'I integrate all aspects of my being',
+    'leadership': 'I am a confident and inspiring leader',
+    'independence': 'I honor my independence and autonomy'
+  }
+  
+  const affirmations: string[] = []
+  
+  // Use first 4 keywords with proper mappings
+  for (let i = 0; i < Math.min(4, keywords.length); i++) {
+    const keyword = keywords[i]
+    const affirmation = keywordAffirmations[keyword] || `I embody the energy of ${keyword} in my life`
+    affirmations.push(affirmation)
+  }
+  
+  return affirmations
+}
+
 // Generate angelic guidance
 function generateAngelicGuidance(interpretations: AngelNumberInterpretation[]): AngelNumbersProfile['angelicGuidance'] {
   const primary = interpretations[0]
@@ -339,19 +504,11 @@ function generateAngelicGuidance(interpretations: AngelNumberInterpretation[]): 
   const primaryMessage = primary.spiritualMessage
   const secondaryMessages = secondary.map(interp => interp.spiritualMessage)
   
-  const actionSteps = [
-    `Focus on ${primary.keywords[0]} in your daily life`,
-    `Practice ${primary.keywords[1]} meditation or prayer`,
-    `Trust in ${primary.keywords[2]} and divine timing`,
-    `Express gratitude for ${primary.keywords[3]} in your life`
-  ]
+  // Generate grammatically correct action steps
+  const actionSteps = generateActionSteps(primary.keywords)
   
-  const affirmations = [
-    `I am ${primary.keywords[0]} and ${primary.keywords[1]}`,
-    `I trust in divine ${primary.keywords[2]}`,
-    `I am guided by ${primary.keywords[3]} and love`,
-    `I manifest ${primary.keywords[4]} in my life`
-  ]
+  // Generate grammatically correct affirmations
+  const affirmations = generateAffirmations(primary.keywords)
   
   return {
     primaryMessage,

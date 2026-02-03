@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './use-auth';
 import { getIntelligentAngelNumbersData } from '@/lib/angelNumbersIntelligence';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { getFirebaseDB } from '@/lib/firebase';
 
 interface AngelNumbersData {
   userId: string
@@ -48,7 +50,7 @@ interface UseAngelNumbersDataReturn {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  clearCache: () => void;
+  clearCache: () => Promise<void>;
   isStale: boolean;
 }
 
@@ -89,10 +91,24 @@ export function useAngelNumbersData(): UseAngelNumbersDataReturn {
     await fetchAngelNumbersData();
   }, [fetchAngelNumbersData]);
 
-  const clearCache = useCallback(() => {
+  const clearCache = useCallback(async () => {
+    // Delete Firebase cached document first
+    if (user?.uid) {
+      try {
+        const db = getFirebaseDB();
+        const docRef = doc(db, 'users', user.uid, 'angelNumbersProfile', 'comprehensive');
+        await deleteDoc(docRef);
+        console.log('✅ Successfully cleared angel numbers cache from Firebase');
+      } catch (error) {
+        console.warn('⚠️ Error clearing angel numbers cache:', error);
+        // Don't throw - clearing cache failure shouldn't break the UI
+      }
+    }
+    
+    // Then clear local state
     setAngelNumbersData(null);
     setError(null);
-  }, []);
+  }, [user]);
 
   // Check if data is stale (older than 24 hours)
   const isStale = angelNumbersData ? 

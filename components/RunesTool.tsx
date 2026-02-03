@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useRunesData } from '@/hooks/use-runes'
+import { useRunes } from '@/hooks/use-runes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -27,10 +27,29 @@ import {
 } from 'lucide-react'
 
 export function RunesTool() {
-  const { runesData, loading, error, refresh, castRunes } = useRunesData()
-  const [question, setQuestion] = useState('What guidance do the runes offer for my current path?')
-  const [spreadType, setSpreadType] = useState('three')
+  const { 
+    question, 
+    setQuestion, 
+    spreadType, 
+    setSpreadType, 
+    reading, 
+    isLoading, 
+    error, 
+    performRuneReading, 
+    resetData 
+  } = useRunes()
   const [isCasting, setIsCasting] = useState(false)
+  
+  // Use reading data for display
+  const runesData = reading ? {
+    spreadName: reading.spreadName,
+    energyScore: reading.energyScore,
+    overallReading: reading.overallReading,
+    recommendations: reading.recommendations,
+    runes: reading.runes,
+    elementalBalance: reading.elementalBalance,
+    timing: reading.timing,
+  } : null
 
   const runeSpreads = [
     {
@@ -62,7 +81,7 @@ export function RunesTool() {
   const handleCastRunes = async () => {
     setIsCasting(true)
     try {
-      await castRunes(question, spreadType)
+      await performRuneReading()
     } catch (error) {
       console.error('Error casting runes:', error)
     } finally {
@@ -70,13 +89,13 @@ export function RunesTool() {
     }
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Card className="bg-slate-800/50 border-slate-600">
         <CardContent className="p-6">
           <div className="flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-400"></div>
-            <span className="ml-3 text-slate-300">Casting the ancient runes...</span>
+            <span className="ml-3 text-amber-300">Casting the ancient runes...</span>
           </div>
         </CardContent>
       </Card>
@@ -88,10 +107,14 @@ export function RunesTool() {
       <Card className="bg-slate-800/50 border-slate-600">
         <CardContent className="p-6 text-center">
           <Sparkles className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Profile Required</h3>
-          <p className="text-slate-400 mb-4">{error}</p>
-          <Button variant="outline" className="border-amber-500 text-amber-400 hover:bg-amber-500/20">
-            Complete Profile
+          <h3 className="text-lg font-semibold bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-2">Error</h3>
+          <p className="text-amber-200 mb-4">{error}</p>
+          <Button 
+            variant="outline" 
+            className="border-amber-500 text-amber-400 hover:bg-amber-500/20"
+            onClick={resetData}
+          >
+            Try Again
           </Button>
         </CardContent>
       </Card>
@@ -102,9 +125,9 @@ export function RunesTool() {
     return (
       <Card className="bg-slate-800/50 border-slate-600">
         <CardContent className="p-6 text-center">
-          <Sparkles className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No Rune Data</h3>
-          <p className="text-slate-400">Complete your profile to generate your rune reading</p>
+          <Sparkles className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-2">No Rune Data</h3>
+          <p className="text-amber-200">Ask a question and cast the runes to begin</p>
         </CardContent>
       </Card>
     )
@@ -132,7 +155,7 @@ export function RunesTool() {
   return (
     <Card className="bg-slate-800/50 border-slate-600">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-xl font-semibold text-white flex items-center gap-2">
+        <CardTitle className="text-xl font-semibold bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-amber-400" />
           Rune Casting
         </CardTitle>
@@ -140,8 +163,9 @@ export function RunesTool() {
           <Button
             variant="outline"
             size="sm"
-            onClick={refresh}
+            onClick={handleCastRunes}
             className="border-amber-500 text-amber-400 hover:bg-amber-500/20"
+            disabled={isCasting || isLoading}
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -151,22 +175,22 @@ export function RunesTool() {
         {/* Casting Form */}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-300">Your Question</label>
+            <label className="block text-sm font-medium mb-2 text-amber-300">Your Question</label>
             <Textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask the runes for guidance..."
-              className="bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400"
+              className="bg-slate-700/50 border-slate-600 text-amber-200 placeholder:text-amber-400/50"
               rows={3}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-slate-300">Rune Spread</label>
+            <label className="block text-sm font-medium mb-2 text-amber-300">Rune Spread</label>
             <select
               value={spreadType}
               onChange={(e) => setSpreadType(e.target.value)}
-              className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
             >
               {runeSpreads.map(spread => (
                 <option key={spread.key} value={spread.key}>
@@ -178,10 +202,10 @@ export function RunesTool() {
 
           <Button
             onClick={handleCastRunes}
-            disabled={isCasting || !question.trim()}
+            disabled={isCasting || isLoading || !question.trim() || !spreadType}
             className="w-full bg-amber-600 hover:bg-amber-700 text-white"
           >
-            {isCasting ? (
+            {isCasting || isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Casting the runes...
@@ -211,10 +235,10 @@ export function RunesTool() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="w-4 h-4 text-amber-400" />
-                    <span className="text-sm font-medium text-slate-300">Spread</span>
+                    <span className="text-sm font-medium text-amber-300">Spread</span>
                   </div>
-                  <p className="text-white font-semibold">{runesData.spreadName}</p>
-                  <p className="text-sm text-slate-400">{selectedSpread.description}</p>
+                  <p className="text-amber-200 font-semibold">{runesData.spreadName}</p>
+                  <p className="text-sm text-amber-300/80">{selectedSpread.description}</p>
                 </CardContent>
               </Card>
 
@@ -222,7 +246,7 @@ export function RunesTool() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Activity className="w-4 h-4 text-amber-400" />
-                    <span className="text-sm font-medium text-slate-300">Energy Score</span>
+                    <span className="text-sm font-medium text-amber-300">Energy Score</span>
                   </div>
                   <p className={`text-2xl font-bold ${getEnergyColor(runesData.energyScore)}`}>
                     {runesData.energyScore}/100
@@ -236,21 +260,21 @@ export function RunesTool() {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Lightbulb className="w-4 h-4 text-amber-400" />
-                  <span className="text-sm font-medium text-slate-300">Runic Wisdom</span>
+                  <span className="text-sm font-medium text-amber-300">Runic Wisdom</span>
                 </div>
-                <p className="text-slate-300 text-sm leading-relaxed">{runesData.overallReading}</p>
+                <p className="text-amber-200 text-sm leading-relaxed">{runesData.overallReading}</p>
               </CardContent>
             </Card>
 
             {/* Recommendations */}
             <Card className="bg-slate-700/50 border-slate-600">
               <CardContent className="p-4">
-                <h4 className="font-semibold text-white mb-4">Runic Recommendations</h4>
+                <h4 className="font-semibold bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">Runic Recommendations</h4>
                 <div className="space-y-2">
                   {runesData.recommendations.map((recommendation, index) => (
                     <div key={index} className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 bg-amber-400 rounded-full mt-2 flex-shrink-0"></div>
-                      <span className="text-sm text-slate-300">{recommendation}</span>
+                      <span className="text-sm text-amber-200">{recommendation}</span>
                     </div>
                   ))}
                 </div>
@@ -268,8 +292,8 @@ export function RunesTool() {
                         <div className="flex items-center gap-2">
                           <span className="text-2xl font-bold">{rune.symbol}</span>
                           <div>
-                            <h4 className="font-semibold text-white">{rune.name}</h4>
-                            <p className="text-xs text-slate-400">{rune.position}</p>
+                            <h4 className="font-semibold bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent">{rune.name}</h4>
+                            <p className="text-xs text-amber-300">{rune.position}</p>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-1">
@@ -282,14 +306,14 @@ export function RunesTool() {
                         </div>
                       </div>
                       <div className="space-y-2 text-sm">
-                        <div><span className="font-medium text-slate-300">Meaning:</span> <span className="text-white">{rune.meaning}</span></div>
-                        <div><span className="font-medium text-slate-300">Energy:</span> <span className={`font-medium ${getEnergyColor(rune.energy * 10)}`}>{rune.energy}/10</span></div>
-                        <div><span className="font-medium text-slate-300">Deity:</span> <span className="text-white">{rune.deity}</span></div>
+                        <div><span className="font-medium text-amber-300">Meaning:</span> <span className="text-amber-200">{rune.meaning}</span></div>
+                        <div><span className="font-medium text-amber-300">Energy:</span> <span className={`font-medium ${getEnergyColor(rune.energy * 10)}`}>{rune.energy}/10</span></div>
+                        <div><span className="font-medium text-amber-300">Deity:</span> <span className="text-amber-200">{rune.deity}</span></div>
                       </div>
-                      <p className="text-slate-300 mt-3 text-sm">
+                      <p className="text-amber-200 mt-3 text-sm">
                         {rune.isReversed ? rune.reversed : rune.upright}
                       </p>
-                      <p className="text-slate-400 mt-2 text-xs">{rune.timing}</p>
+                      <p className="text-amber-300/70 mt-2 text-xs">{rune.timing}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -300,37 +324,37 @@ export function RunesTool() {
           <TabsContent value="elements" className="space-y-4">
             <Card className="bg-slate-700/50 border-slate-600">
               <CardContent className="p-4">
-                <h4 className="font-semibold text-white mb-4">Elemental Balance</h4>
+                <h4 className="font-semibold bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">Elemental Balance</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <div className="text-center">
                     <div className={`text-2xl font-bold ${getElementColor('fire')}`}>{runesData.elementalBalance.fire}</div>
-                    <div className="text-sm text-slate-400">Fire</div>
+                    <div className="text-sm text-amber-300">Fire</div>
                   </div>
                   <div className="text-center">
                     <div className={`text-2xl font-bold ${getElementColor('earth')}`}>{runesData.elementalBalance.earth}</div>
-                    <div className="text-sm text-slate-400">Earth</div>
+                    <div className="text-sm text-amber-300">Earth</div>
                   </div>
                   <div className="text-center">
                     <div className={`text-2xl font-bold ${getElementColor('air')}`}>{runesData.elementalBalance.air}</div>
-                    <div className="text-sm text-slate-400">Air</div>
+                    <div className="text-sm text-amber-300">Air</div>
                   </div>
                   <div className="text-center">
                     <div className={`text-2xl font-bold ${getElementColor('water')}`}>{runesData.elementalBalance.water}</div>
-                    <div className="text-sm text-slate-400">Water</div>
+                    <div className="text-sm text-amber-300">Water</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="text-sm text-slate-300">Primary:</span>
+                      <span className="text-sm text-amber-300">Primary:</span>
                       <span className={`font-medium ${getElementColor(runesData.elementalBalance.primary)}`}>
                         {runesData.elementalBalance.primary}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-yellow-400" />
-                      <span className="text-sm text-slate-300">Secondary:</span>
+                      <span className="text-sm text-amber-300">Secondary:</span>
                       <span className={`font-medium ${getElementColor(runesData.elementalBalance.secondary)}`}>
                         {runesData.elementalBalance.secondary}
                       </span>
@@ -339,14 +363,14 @@ export function RunesTool() {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <Shield className="w-4 h-4 text-red-400" />
-                      <span className="text-sm text-slate-300">Conflict:</span>
+                      <span className="text-sm text-amber-300">Conflict:</span>
                       <span className={`font-medium ${getElementColor(runesData.elementalBalance.conflict)}`}>
                         {runesData.elementalBalance.conflict}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-green-400" />
-                      <span className="text-sm text-slate-300">Harmony:</span>
+                      <span className="text-sm text-amber-300">Harmony:</span>
                       <span className={`font-medium ${getElementColor(runesData.elementalBalance.harmony)}`}>
                         {runesData.elementalBalance.harmony}
                       </span>
@@ -360,42 +384,42 @@ export function RunesTool() {
           <TabsContent value="timing" className="space-y-4">
             <Card className="bg-slate-700/50 border-slate-600">
               <CardContent className="p-4">
-                <h4 className="font-semibold text-white mb-4">Timing Analysis</h4>
+                <h4 className="font-semibold bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">Timing Analysis</h4>
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-amber-400" />
-                    <span className="text-sm text-slate-300">Current Phase:</span>
-                    <span className="text-white font-medium">{runesData.timing.currentPhase}</span>
+                    <span className="text-sm text-amber-300">Current Phase:</span>
+                    <span className="text-amber-200 font-medium">{runesData.timing.currentPhase}</span>
                   </div>
                   <div>
-                    <span className="text-sm text-slate-300">Favorable Periods:</span>
+                    <span className="text-sm text-amber-300">Favorable Periods:</span>
                     <div className="mt-1 space-y-1">
                       {runesData.timing.favorablePeriods.map((period, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-1 h-1 bg-green-400 rounded-full"></div>
-                          <span className="text-sm text-slate-300">{period}</span>
+                          <span className="text-sm text-amber-200">{period}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <span className="text-sm text-slate-300">Challenges:</span>
+                    <span className="text-sm text-amber-300">Challenges:</span>
                     <div className="mt-1 space-y-1">
                       {runesData.timing.challenges.map((challenge, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-1 h-1 bg-yellow-400 rounded-full"></div>
-                          <span className="text-sm text-slate-300">{challenge}</span>
+                          <span className="text-sm text-amber-200">{challenge}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <span className="text-sm text-slate-300">Opportunities:</span>
+                    <span className="text-sm text-amber-300">Opportunities:</span>
                     <div className="mt-1 space-y-1">
                       {runesData.timing.opportunities.map((opportunity, index) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
-                          <span className="text-sm text-slate-300">{opportunity}</span>
+                          <span className="text-sm text-amber-200">{opportunity}</span>
                         </div>
                       ))}
                     </div>

@@ -137,9 +137,19 @@ export const clearLocalData = (): void => {
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
-    console.log('Cleared all local data');
+    console.log('✅ Cleared all local data');
   } catch (error) {
     console.error('Error clearing local data:', error);
+  }
+};
+
+// Clear only user profile from local storage
+export const clearLocalUserProfile = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+    console.log('✅ Cleared user profile from local storage');
+  } catch (error) {
+    console.error('Error clearing user profile from local storage:', error);
   }
 };
 

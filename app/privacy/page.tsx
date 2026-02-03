@@ -1,26 +1,32 @@
+import Link from "next/link"
+import { Header } from "@/components/header"
+import { EnhancedFooter } from "@/components/enhanced-footer"
+
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-amber-300 mb-4">
-            Privacy Policy 🛡️
-          </h1>
-          <p className="text-gray-300 text-lg">
-            How we collect, use, and protect your information
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col starfield-ultra-sharp">
+      <Header />
+      <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full">
+        <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-20 pb-20">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-2xl font-bold text-amber-400 mb-2">
+              Privacy Policy
+            </h1>
+            <p className="text-sm text-white/80 font-light">
+              How we collect, use, and protect your information
+            </p>
+          </div>
 
-        {/* Main Content */}
-        <div className="bg-slate-800/50 rounded-lg p-8 border border-slate-700 space-y-8">
+          {/* Main Content */}
+          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 p-8 transition-all duration-300 space-y-8">
           
           {/* Introduction */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               1. Introduction
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 FutureSeer ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy 
                 explains how we collect, use, disclose, and safeguard your information when you use our 
@@ -35,10 +41,10 @@ export default function PrivacyPage() {
 
           {/* Information We Collect */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               2. Information We Collect
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 <strong>Personal Information:</strong> We may collect the following personal information:
               </p>
@@ -73,10 +79,10 @@ export default function PrivacyPage() {
 
           {/* How We Use Information */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               3. How We Use Your Information
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>We use the collected information for the following purposes:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li><strong>Service Provision:</strong> To provide and maintain our mystical insights service</li>
@@ -93,10 +99,10 @@ export default function PrivacyPage() {
 
           {/* Information Sharing */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               4. Information Sharing and Disclosure
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 <strong>We do not sell your personal information.</strong> We may share your information 
                 only in the following circumstances:
@@ -119,10 +125,10 @@ export default function PrivacyPage() {
 
           {/* Data Security */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               5. Data Security
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 We implement appropriate technical and organizational measures to protect your personal information:
               </p>
@@ -142,10 +148,10 @@ export default function PrivacyPage() {
 
           {/* Data Retention */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               6. Data Retention
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 We retain your personal information only as long as necessary to fulfill the purposes 
                 outlined in this policy:
@@ -166,10 +172,10 @@ export default function PrivacyPage() {
 
           {/* Your Rights */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               7. Your Rights
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>You have the following rights regarding your personal information:</p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li><strong>Access:</strong> Request access to your personal information</li>
@@ -181,18 +187,18 @@ export default function PrivacyPage() {
                 <li><strong>Withdrawal:</strong> Withdraw consent where processing is based on consent</li>
               </ul>
               <p>
-                <strong>Exercise Rights:</strong> To exercise these rights, contact us at 
-                <span className="text-amber-400"> privacy@futureseer.com</span>
+                <strong>Exercise Rights:</strong> To exercise these rights,{' '}
+                <Link href="/contact?type=privacy" className="text-amber-400 hover:underline">submit a privacy query</Link>.
               </p>
             </div>
           </section>
 
           {/* Cookies and Tracking */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               8. Cookies and Tracking Technologies
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 We use cookies and similar technologies to enhance your experience:
               </p>
@@ -211,10 +217,10 @@ export default function PrivacyPage() {
 
           {/* International Transfers */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               9. International Data Transfers
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 Your information may be transferred to and processed in countries other than your own. 
                 We ensure appropriate safeguards are in place for such transfers:
@@ -229,10 +235,10 @@ export default function PrivacyPage() {
 
           {/* Children's Privacy */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               10. Children's Privacy
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 Our Service is not intended for children under 18 years of age. We do not knowingly 
                 collect personal information from children under 18.
@@ -246,10 +252,10 @@ export default function PrivacyPage() {
 
           {/* Changes to Policy */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               11. Changes to This Privacy Policy
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 We may update this Privacy Policy from time to time. We will notify you of any changes by:
               </p>
@@ -267,35 +273,35 @@ export default function PrivacyPage() {
 
           {/* Contact Information */}
           <section>
-            <h2 className="text-2xl font-semibold text-amber-300 mb-4">
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
               12. Contact Information
             </h2>
-            <div className="space-y-4 text-gray-300">
+            <div className="space-y-4 text-white/80">
               <p>
                 If you have questions about this Privacy Policy or our data practices, please contact us:
               </p>
               <p>
-                <strong>Email:</strong> privacy@futureseer.com<br />
-                <strong>Support:</strong> support@futureseer.com<br />
+                <strong>Privacy:</strong> <Link href="/contact?type=privacy" className="text-amber-400 hover:underline">Submit a privacy query</Link><br />
+                <strong>Support:</strong> <Link href="/contact" className="text-amber-400 hover:underline">Submit a support query</Link><br />
+                <strong>Data Protection Officer:</strong> <Link href="/contact?type=dpo" className="text-amber-400 hover:underline">Submit a DPO query</Link><br />
                 <strong>Response Time:</strong> Within 48 hours
-              </p>
-              <p>
-                <strong>Data Protection Officer:</strong> dpo@futureseer.com
               </p>
             </div>
           </section>
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>
-            This Privacy Policy is effective as of January 1, 2025.
-          </p>
-          <p className="mt-2">
-            Last updated: January 1, 2025
-          </p>
+          {/* Footer */}
+          <div className="mt-8 text-center text-sm text-white/60 font-light">
+            <p>
+              This Privacy Policy is effective as of January 1, 2025.
+            </p>
+            <p className="mt-2">
+              Last updated: February 3, 2025
+            </p>
+          </div>
         </div>
       </div>
+      <EnhancedFooter />
     </div>
   )
 } 

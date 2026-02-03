@@ -12,8 +12,8 @@ interface SymbolicPatternHighlightsProps {
 
 export function SymbolicPatternHighlights({ insights }: SymbolicPatternHighlightsProps) {
   return (
-    <section className="w-full rounded-2xl backdrop-blur-md bg-slate-900/30 border border-slate-700/50 shadow-lg p-6 flex flex-col gap-3 items-center mb-2 card-glow">
-      <h3 className="text-xl font-serif text-amber-200 mb-2">Symbolic Patterns</h3>
+    <section className="w-full rounded-2xl backdrop-blur-sm bg-slate-900/30 border border-slate-700/50 shadow-lg p-6 flex flex-col gap-3 items-center mb-2 card-glow">
+      <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 mb-2">Symbolic Patterns</h3>
       <div className="flex flex-wrap gap-4 justify-center w-full">
         {insights.map((insight, i) => (
           <div

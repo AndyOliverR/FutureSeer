@@ -1,12 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useSubscribe } from "@/hooks/useSubscribe";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Star, Zap, Users, Crown, Sparkles, TrendingUp, Shield, BookOpen, Heart } from "lucide-react";
+import { Check, Star, Zap, Users, Crown, Sparkles, TrendingUp, Shield, BookOpen, Heart, LogIn } from "lucide-react";
+import { Header } from "@/components/header";
+
+const PLAN_DISPLAY_NAME: Record<string, string> = {
+  'power-user-trial': 'Trial',
+  'buy-coffee': 'Coffee',
+  'treat-me': 'Treat',
+  'festive-hamper': 'Hamper',
+};
 
 export default function SubscribePage() {
+  const { user } = useAuth();
   const {
     loading,
     error,
@@ -61,8 +72,26 @@ export default function SubscribePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
+    <div className="min-h-screen py-12 px-4 starfield-ultra-sharp">
+      <Header />
       <div className="max-w-7xl mx-auto">
+        {/* Sign-in CTA for guests */}
+        {!user && (
+          <Card className="mb-8 border-amber-500/40 bg-amber-500/10">
+            <CardContent className="py-4 flex flex-wrap items-center justify-center gap-4">
+              <p className="text-amber-200 font-medium">
+                Sign in to choose a paid plan and support FutureSeer.
+              </p>
+              <Button asChild className="bg-amber-600 hover:bg-amber-500 text-slate-900">
+                <Link href="/signin?redirect=/subscribe">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign in
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-5xl md:text-6xl font-bold text-amber-300 mb-6">
@@ -116,7 +145,7 @@ export default function SubscribePage() {
               className={`relative overflow-hidden transition-all duration-300 hover:scale-105 ${
                 plan.popular
                   ? "border-2 border-amber-500 shadow-lg shadow-amber-500/20"
-                  : plan.id === "seeker"
+                  : plan.id === "power-user-trial"
                   ? "border-2 border-green-500 shadow-lg shadow-green-500/20"
                   : "border border-gray-700"
               }`}
@@ -128,7 +157,7 @@ export default function SubscribePage() {
                 </div>
               )}
               
-              {plan.id === "seeker" && (
+              {plan.id === "power-user-trial" && (
                 <div className="absolute top-0 right-0 bg-gradient-to-r from-green-500 to-emerald-500 text-black px-4 py-2 text-sm font-bold rounded-bl-lg">
                   <Zap className="w-4 h-4 inline mr-1" />
                   Free Forever
@@ -144,7 +173,7 @@ export default function SubscribePage() {
                     "Free"
                   ) : (
                     <>
-                      ${plan.price}
+                      {plan.formatted ?? `${plan.currencySymbol ?? '$'}${plan.price}`}
                       <span className="text-lg text-gray-400 font-normal">
                         /{plan.interval}
                       </span>
@@ -180,7 +209,7 @@ export default function SubscribePage() {
                   onClick={() => handleSubscribe(plan.id)}
                   disabled={!subscriptionConfig.available}
                   className={`w-full ${
-                    plan.id === "seeker"
+                    plan.id === "power-user-trial"
                       ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
                       : plan.popular
                       ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:from-amber-600 hover:to-yellow-600"
@@ -188,7 +217,7 @@ export default function SubscribePage() {
                   }`}
                 >
                   {subscriptionConfig.available ? (
-                    plan.id === "seeker" ? "Start Free" : `Choose ${plan.name}`
+                    plan.id === "power-user-trial" ? "Start Free" : `Choose ${plan.name}`
                   ) : (
                     "Coming Soon"
                   )}
@@ -224,7 +253,7 @@ export default function SubscribePage() {
                     <div className="flex flex-wrap gap-1 justify-center">
                       {feature.availableIn.map((plan) => (
                         <Badge key={plan} variant="outline" className="text-xs">
-                          {plan}
+                          {PLAN_DISPLAY_NAME[plan] ?? plan}
                         </Badge>
                       ))}
                     </div>

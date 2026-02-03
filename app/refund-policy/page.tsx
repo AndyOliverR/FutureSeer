@@ -1,6 +1,10 @@
+import Link from "next/link"
+import { MinimalNav } from "@/components/navigation/MinimalNav"
+
 export default function RefundPolicyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4">
+    <div className="min-h-screen py-12 px-4 starfield-ultra-sharp">
+      <MinimalNav />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -37,7 +41,7 @@ export default function RefundPolicyPage() {
               </p>
               <ul className="list-disc list-inside space-y-2 ml-4">
                 <li>Your account settings on our website</li>
-                <li>Contacting our support team at support@futureseer.com</li>
+                <li>Contacting our support team via the <Link href="/contact" className="text-amber-400 hover:underline">contact form</Link></li>
                 <li>Using the cancellation option in your subscription management</li>
               </ul>
               <p>
@@ -94,7 +98,7 @@ export default function RefundPolicyPage() {
                 <strong>How to Request a Refund:</strong>
               </p>
               <ol className="list-decimal list-inside space-y-2 ml-4">
-                <li>Contact our support team at support@futureseer.com</li>
+                <li>Contact our support team via the <Link href="/contact" className="text-amber-400 hover:underline">contact form</Link></li>
                 <li>Include your account email and reason for refund</li>
                 <li>Provide any relevant details about your experience</li>
                 <li>Our team will review your request within 3-5 business days</li>
@@ -221,12 +225,12 @@ export default function RefundPolicyPage() {
                 For questions about cancellations and refunds, please contact us:
               </p>
               <p>
-                <strong>Email:</strong> support@futureseer.com<br />
+                <strong>Support:</strong> <Link href="/contact" className="text-amber-400 hover:underline">Submit a query</Link><br />
                 <strong>Response Time:</strong> Within 24 hours<br />
                 <strong>Business Hours:</strong> 24/7 Support Available
               </p>
               <p>
-                <strong>For Billing Issues:</strong> billing@futureseer.com
+                <strong>For Billing Issues:</strong> <Link href="/contact?type=billing" className="text-amber-400 hover:underline">Submit a billing query</Link>
               </p>
             </div>
           </section>
@@ -238,7 +242,7 @@ export default function RefundPolicyPage() {
             This Cancellations and Refunds Policy is effective as of January 1, 2025.
           </p>
           <p className="mt-2">
-            Last updated: January 1, 2025
+            Last updated: February 3, 2025
           </p>
         </div>
       </div>

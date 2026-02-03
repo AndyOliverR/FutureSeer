@@ -1,237 +1,367 @@
-import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { 
-  Send, 
-  Calendar, 
-  Lightbulb, 
-  Target, 
-  Heart, 
-  TrendingUp, 
-  Sparkles,
-  MessageCircle,
-  User,
-  Bot,
-  Leaf
-} from 'lucide-react'
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/hooks/use-auth';
+import type { BaziReading } from '@/lib/baziIntelligence';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface BaZiMessage {
-  id: string
-  type: 'user' | 'coach'
-  content: string
-  timestamp: Date
-  coachingResponse?: any
+  id: string;
+  type: 'user' | 'seer';
+  content: string;
+  timestamp: number;
 }
 
-export function BaZiCoachInterface() {
-  const { user } = useAuth()
-  const [messages, setMessages] = useState<BaZiMessage[]>([])
-  const [inputValue, setInputValue] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [suggestedQuestions] = useState([
-    "What do my Four Pillars reveal about my destiny?",
-    "How can I work with my dominant element?",
-    "What does my BaZi chart say about my career?",
-    "How should I balance my weak elements?",
-    "What timing is favorable for my decisions?",
-    "How can I enhance my luck through BaZi?",
-    "What does my chart reveal about relationships?",
-    "How can I use BaZi for health optimization?"
-  ])
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+interface BaZiCoachInterfaceProps {
+  reading: BaziReading | null;
+}
+
+const SEE_MORE_THRESHOLD = 320;
+const PREVIEW_LENGTH = 320;
+const STREAM_INTERVAL_MS = 90;
+
+const REGENERATE_MESSAGE =
+  'Generate your BaZi reading first to use Ask the Seer.';
+
+const BAZI_STARTER_QUESTIONS = [
+  'What does my chart say about career?',
+  'When is a good decade for wealth?',
+];
+
+export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<BaZiMessage[]>([]);
+  const [question, setQuestion] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(
+    new Set()
+  );
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(
+    null
+  );
+  const [streamingDisplayLength, setStreamingDisplayLength] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamingLengthRef = useRef(0);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    if (!streamingMessageId) return;
+    const interval = setInterval(() => {
+      setStreamingDisplayLength((prev) =>
+        Math.min(prev + 1, streamingLengthRef.current)
+      );
+    }, STREAM_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [streamingMessageId]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || !user || isLoading) return
+  const sendMessage = async (questionText?: string) => {
+    const messageToSend = questionText ?? question.trim();
+    if (!messageToSend || isLoading || !reading) return;
 
     const userMessage: BaZiMessage = {
-      id: Date.now().toString(),
+      id: `user_${Date.now()}`,
       type: 'user',
-      content: inputValue.trim(),
-      timestamp: new Date()
-    }
+      content: messageToSend,
+      timestamp: Date.now(),
+    };
 
-    setMessages(prev => [...prev, userMessage])
-    setInputValue('')
-    setIsLoading(true)
+    setMessages((prev) => [...prev, userMessage]);
+    setQuestion('');
+    setIsLoading(true);
+
+    const aiMessageId = `seer_${Date.now()}`;
+    const aiMessage: BaZiMessage = {
+      id: aiMessageId,
+      type: 'seer',
+      content: '',
+      timestamp: Date.now(),
+    };
+
+    setMessages((prev) => [...prev, aiMessage]);
+    setStreamingMessageId(aiMessageId);
+    setStreamingDisplayLength(0);
+    streamingLengthRef.current = 0;
 
     try {
-      // Mock response for now - replace with actual BaZi intelligence
-      const mockResponse = {
-        guidance: `In BaZi (Four Pillars of Destiny), your question about "${inputValue.trim()}" would be analyzed through the four pillars: Year, Month, Day, and Hour. Each pillar contains a Heavenly Stem and Earthly Branch, revealing your elemental composition and life path. The interaction between these elements determines your destiny and optimal timing for various life events.`,
-        elements: ['Wood', 'Fire', 'Earth', 'Metal'],
-        pillars: ['Year: Wood Dragon', 'Month: Fire Horse', 'Day: Earth Rat', 'Hour: Metal Rooster'],
-        advice: 'Focus on strengthening your weak elements and timing activities with favorable elements.'
+      const response = await fetch('/api/ask-bazi-seer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.uid ?? '',
+          question: messageToSend,
+          baziReading: reading,
+        }),
+      });
+
+      if (!response.ok) {
+        setStreamingMessageId(null);
+        if (response.status === 400) {
+          const errorData = await response.json().catch(() => ({}));
+          const errorMessage = (errorData?.error ?? '') as string;
+          if (
+            errorMessage.toLowerCase().includes('reading') ||
+            errorMessage.toLowerCase().includes('generate')
+          ) {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === aiMessageId
+                  ? { ...msg, content: REGENERATE_MESSAGE }
+                  : msg
+              )
+            );
+            return;
+          }
+        }
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? {
+                  ...msg,
+                  content:
+                    'BaZi Seer is unavailable. Please try again.',
+                }
+              : msg
+          )
+        );
+        return;
       }
 
-      const coachMessage: BaZiMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'coach',
-        content: mockResponse.guidance,
-        timestamp: new Date(),
-        coachingResponse: mockResponse
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedContent = '';
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          accumulatedContent += chunk;
+          streamingLengthRef.current = accumulatedContent.length;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, content: accumulatedContent }
+                : msg
+            )
+          );
+        }
       }
-
-      setMessages(prev => [...prev, coachMessage])
-    } catch (error) {
-      console.error('Error getting BaZi coaching:', error)
-      const errorMessage: BaZiMessage = {
-        id: (Date.now() + 1).toString(),
-        type: 'coach',
-        content: "I'm having trouble accessing the BaZi insights right now. Please try again in a moment.",
-        timestamp: new Date()
-      }
-      setMessages(prev => [...prev, errorMessage])
+      setStreamingMessageId(null);
+    } catch (err) {
+      console.error('BaZi Seer error:', err);
+      setStreamingMessageId(null);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? {
+                ...msg,
+                content: 'BaZi Seer is unavailable. Please try again.',
+              }
+            : msg
+        )
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
+      e.preventDefault();
+      sendMessage();
     }
-  }
+  };
 
-  const handleSuggestedQuestion = (question: string) => {
-    setInputValue(question)
-    inputRef.current?.focus()
+  const formatMessage = (message: BaZiMessage) => {
+    if (message.type === 'user') {
+      return (
+        <motion.div
+          key={message.id}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex justify-end"
+        >
+          <div className="max-w-[80%] rounded-xl p-4 bg-blue-50 border-2 border-blue-200 text-slate-800">
+            <div className="whitespace-pre-wrap">{message.content}</div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    const isStreaming = message.id === streamingMessageId;
+    const contentToShow = isStreaming
+      ? message.content.slice(0, streamingDisplayLength)
+      : message.content;
+    const isLong = message.content.length > SEE_MORE_THRESHOLD;
+    const isExpanded = expandedMessageIds.has(message.id);
+    const showPreview = !isStreaming && isLong && !isExpanded;
+    const displayContent = showPreview
+      ? message.content.slice(0, PREVIEW_LENGTH) +
+        (message.content.length > PREVIEW_LENGTH ? '…' : '')
+      : contentToShow;
+
+    return (
+      <motion.div
+        key={message.id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex justify-start"
+      >
+        <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
+          <div className="whitespace-pre-wrap leading-relaxed">
+            {displayContent}
+          </div>
+          {!isStreaming && isLong && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-2 text-amber-700 hover:text-amber-900 hover:bg-amber-100 p-0 h-auto font-normal flex items-center gap-1"
+              onClick={() => toggleExpanded(message.id)}
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  See less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  See more
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
+  if (!reading) {
+    return (
+      <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 min-h-[50vh] max-h-[85vh] overflow-hidden">
+        <CardHeader className="border-b border-amber-200 bg-white/80 shrink-0">
+          <CardTitle className="flex items-center gap-2 text-amber-900">
+            <MessageCircle className="w-5 h-5 text-amber-700" />
+            Ask the Seer — BaZi
+          </CardTitle>
+          <p className="text-sm text-amber-800 mt-1">
+            Life direction, career, wealth, timing by phase. Four Pillars wisdom.
+          </p>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
+          <MessageCircle className="w-12 h-12 text-amber-600 mb-4" />
+          <p className="text-amber-900 font-medium text-center">
+            {REGENERATE_MESSAGE}
+          </p>
+          <p className="text-sm text-amber-700 mt-2 text-center">
+            Generate your BaZi reading first to get personalized guidance.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <Card className="bg-slate-800/50 border-slate-600">
-        <CardHeader>
-          <CardTitle className="text-purple-400 flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Your BaZi Guide
-          </CardTitle>
-          <p className="text-sm text-slate-400">
-            Ask me about the Four Pillars of Destiny and Chinese elemental wisdom.
-          </p>
-        </CardHeader>
-      </Card>
-
-      {/* Chat Interface */}
-      <Card className="bg-slate-800/50 border-slate-600 h-96">
-        <CardContent className="p-0 h-full flex flex-col">
-          {/* Messages Area */}
-          <ScrollArea className="flex-1 p-4">
-            {messages.length === 0 ? (
-              <div className="text-center py-8">
-                <MessageCircle className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">Begin Your BaZi Journey</h3>
-                <p className="text-slate-400 mb-6">
-                  I'm here to guide you through the Four Pillars of Destiny and elemental wisdom.
-                </p>
-                
-                {/* Suggested Questions */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                  {suggestedQuestions.map((question, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      className="text-left h-auto p-3 border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:border-purple-500"
-                      onClick={() => handleSuggestedQuestion(question)}
-                    >
-                      <Lightbulb className="w-4 h-4 mr-2 text-purple-400 flex-shrink-0" />
-                      <span className="text-xs">{question}</span>
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+    <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg min-h-[50vh] max-h-[85vh] overflow-hidden">
+      <CardHeader className="border-b border-amber-200 bg-white/80 shrink-0">
+        <CardTitle className="flex items-center gap-2 text-amber-900">
+          <MessageCircle className="w-5 h-5 text-amber-700" />
+          Ask the Seer — BaZi
+        </CardTitle>
+        <p className="text-sm text-amber-800 mt-1">
+          Life direction, career, wealth, relationships, health constitution, timing by decade.
+        </p>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
+          {messages.length === 0 && !isLoading ? (
+            <div className="text-center py-8">
+              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
+              <p className="text-amber-900 font-medium mb-2">
+                Ask about life direction, career, wealth, timing…
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
+                {BAZI_STARTER_QUESTIONS.map((q, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => sendMessage(q)}
+                    disabled={isLoading}
+                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
                   >
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg ${
-                        message.type === 'user'
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-slate-700 text-slate-200'
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      {message.coachingResponse?.elements && (
-                        <div className="mt-2 pt-2 border-t border-slate-600">
-                          <p className="text-xs text-slate-400">
-                            Elements: {message.coachingResponse.elements.join(', ')}
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            Advice: {message.coachingResponse.advice}
-                          </p>
-                        </div>
-                      )}
+                    {q}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <AnimatePresence>
+                {messages.map((message) => (
+                  <div key={message.id}>{formatMessage(message)}</div>
+                ))}
+              </AnimatePresence>
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+                      Consulting your Four Pillars…
                     </div>
                   </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </ScrollArea>
-
-          {/* Input Area */}
-          <div className="border-t border-slate-600 p-4">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Ask about BaZi and the Four Pillars..."
-                className="flex-1 bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-purple-500"
-                disabled={isLoading || !user}
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading || !user}
-                className="bg-purple-600 hover:bg-purple-700 text-white"
-              >
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMessage();
+            }}
+            className="flex gap-2"
+          >
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Ask about life direction, career, wealth, timing…"
+              disabled={isLoading}
+              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !question.trim()}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
                 <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Personalization Info */}
-      <Card className="bg-slate-800/50 border-slate-600">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span className="text-sm text-slate-300">Four Pillars wisdom</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="border-purple-500 text-purple-400">
-                Elements
-              </Badge>
-              <Badge variant="outline" className="border-blue-500 text-blue-400">
-                Timing
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
-} 
+              )}
+            </Button>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

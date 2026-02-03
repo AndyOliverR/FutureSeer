@@ -1,0 +1,111 @@
+"use client";
+
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Heart, Loader2 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+
+interface CancelSubscriptionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => Promise<void>;
+}
+
+export function CancelSubscriptionModal({
+  isOpen,
+  onClose,
+  onConfirm,
+}: CancelSubscriptionModalProps) {
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [feedback, setFeedback] = useState('');
+
+  const handleConfirm = async () => {
+    setIsCancelling(true);
+    try {
+      await onConfirm();
+    } catch (error) {
+      console.error('Error cancelling:', error);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-slate-900 border-amber-500/30 max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-white text-2xl font-serif flex items-center gap-2">
+            <Heart className="w-6 h-6 text-amber-400" />
+            We're Sorry to See You Go
+          </DialogTitle>
+          <DialogDescription className="text-slate-300 font-serif">
+            You can always come back and rejoin the innovation experiment anytime!
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-4">
+          <p className="text-sm text-slate-300">
+            Your contribution cancellation will take effect at the end of your current billing cycle.
+            You'll continue to have access until then.
+          </p>
+
+          <div className="space-y-2">
+            <Label htmlFor="feedback" className="text-slate-300">
+              Optional: Help us improve (What could we do better?)
+            </Label>
+            <Textarea
+              id="feedback"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Your feedback helps us improve..."
+              className="bg-slate-800/50 border-slate-600 text-white placeholder:text-slate-400"
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <Button
+              onClick={onClose}
+              variant="outline"
+              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-800"
+              disabled={isCancelling}
+            >
+              Keep My Contribution
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              variant="destructive"
+              className="flex-1 bg-red-600 hover:bg-red-700"
+              disabled={isCancelling}
+            >
+              {isCancelling ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Cancelling...
+                </>
+              ) : (
+                <>
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel Contribution
+                </>
+              )}
+            </Button>
+          </div>
+
+          <p className="text-xs text-center text-slate-400 pt-2">
+            Remember: You can rejoin anytime and continue supporting the innovation experiment!
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

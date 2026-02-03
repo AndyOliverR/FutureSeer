@@ -26,9 +26,11 @@ import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import { updateUserProfile } from '@/lib/firebase'
+import { BackButton } from '@/components/navigation/BackButton'
 
 interface ProfileData {
   // Step 1: Basic Info
+  displayName: string
   fullName: string
   email: string
   gender: 'male' | 'female' | 'non-binary' | ''
@@ -70,6 +72,7 @@ export default function ProfileSetupPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [profileData, setProfileData] = useState<ProfileData>({
+    displayName: '',
     fullName: '',
     email: '',
     gender: '',
@@ -94,7 +97,8 @@ export default function ProfileSetupPage() {
     if (userProfile) {
       setProfileData(prev => ({
         ...prev,
-        fullName: userProfile.displayName || '',
+        displayName: userProfile.displayName || '',
+        fullName: userProfile.fullName || '',
         email: userProfile.email || '',
         birthDate: userProfile.birthDate || '',
         birthTime: userProfile.birthTime || '',
@@ -190,7 +194,7 @@ export default function ProfileSetupPage() {
     try {
       // Save profile data to Firebase
       const updateData: any = {
-        displayName: profileData.fullName,
+        displayName: profileData.displayName || profileData.fullName,
         fullName: profileData.fullName,
         birthDate: profileData.birthDate,
         birthTime: profileData.birthTime,
@@ -204,10 +208,40 @@ export default function ProfileSetupPage() {
       
       await updateUserProfile(user.uid, updateData)
       
+      // Generate comprehensive astrological profile with single AstroApp API call
+      console.log('🌟 Generating comprehensive astrological profile...')
       toast({
-        title: 'Profile Setup Complete! 🌟',
-        description: 'Your mystical journey is now personalized just for you.',
+        title: 'Generating Your Mystical Profile...',
+        description: 'Calling AstroApp API to create your comprehensive astrological data.',
       })
+      
+      try {
+        const { getComprehensiveAstroData } = await import('@/lib/astroDataService')
+        const comprehensiveData = await getComprehensiveAstroData(
+          user.uid,
+          profileData.birthDate,
+          profileData.birthPlace,
+          profileData.birthTime,
+          true // Force refresh to get fresh data
+        )
+        
+        console.log('✅ Comprehensive astrological profile generated:', {
+          planets: comprehensiveData.planets.length,
+          houses: comprehensiveData.houses.length,
+          source: comprehensiveData.metadata.source
+        })
+        
+        toast({
+          title: 'Profile Setup Complete! 🌟',
+          description: 'Your mystical journey is now personalized with comprehensive astrological data.',
+        })
+      } catch (astroError) {
+        console.warn('AstroApp API call failed, but profile is saved:', astroError)
+        toast({
+          title: 'Profile Setup Complete! 🌟',
+          description: 'Your mystical journey is now personalized. Astrological data will be generated when needed.',
+        })
+      }
       
       router.push('/dashboard')
     } catch (error) {
@@ -240,6 +274,19 @@ export default function ProfileSetupPage() {
             
             <div className="space-y-4">
               <div>
+                <Label htmlFor="displayName" className="text-white">Display Name</Label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  value={profileData.displayName}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
+                  placeholder="Enter your preferred display name"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                />
+                <p className="text-xs text-gray-300 mt-1">How you'd like to be addressed in the app (optional)</p>
+              </div>
+              
+              <div>
                 <Label htmlFor="fullName" className="text-white">Full Name *</Label>
                 <Input
                   id="fullName"
@@ -249,6 +296,7 @@ export default function ProfileSetupPage() {
                   placeholder="Enter your full name"
                   className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                 />
+                <p className="text-xs text-gray-300 mt-1">Used for numerological and astrological calculations</p>
               </div>
               
               <div>
@@ -572,8 +620,12 @@ export default function ProfileSetupPage() {
   }
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-4 starfield-ultra-sharp" data-onboarding="profile">
       <div className="max-w-2xl mx-auto">
+        {/* Back Navigation */}
+        <div className="mb-6">
+          <BackButton href="/profile" label="Back to Profile" />
+        </div>
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">

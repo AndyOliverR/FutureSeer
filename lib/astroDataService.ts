@@ -1,8 +1,10 @@
-import { getBirthChart } from './astroapp'
+import { generateChartData } from './astrology'
 import { generateFallbackAstroData, isFallbackDataReliable } from './astroFallback'
 import { getIntelligentAstroData, getSystemStatus } from './astroIntelligence'
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
+import { devLog, devWarn } from './devLogger';
+import { CACHE_TTL } from './cacheConstants';
 
 // Comprehensive astrological data structure
 export interface ComprehensiveAstroData {
@@ -55,6 +57,14 @@ export interface ComprehensiveAstroData {
     water: number
   }
   
+  // Chart images
+  chartImage?: string
+  vedicCharts?: {
+    north_indian_chart?: string
+    south_indian_chart?: string
+    navamsa_chart?: string
+  }
+  
   modalities: {
     cardinal: number
     fixed: number
@@ -84,7 +94,7 @@ export interface ComprehensiveAstroData {
   metadata: {
     reportId: string
     version: string
-    source: 'astroapp' | 'internal_calculations' | 'fallback' | 'emergency_fallback' | 'intelligent_system' | 'external_with_learning'
+    source: 'internal_calculations' | 'fallback' | 'emergency_fallback' | 'intelligent_system' | 'external_with_learning'
     isComprehensive: true
     isFallback?: boolean
     systemConfidence?: number
@@ -104,17 +114,23 @@ export async function getComprehensiveAstroData(
   forceRefresh: boolean = false
 ): Promise<ComprehensiveAstroData> {
   
+  // Clear cache if force refresh is requested
+  if (forceRefresh) {
+    devLog.info('🔄 Force refresh requested - clearing cache for user:', userId, 'astroData')
+    astroDataCache.delete(userId)
+  }
+  
   // Check cache first
   if (!forceRefresh && astroDataCache.has(userId)) {
     const cached = astroDataCache.get(userId)!
     // Check if data is still valid (less than 24 hours old)
-    if (Date.now() - cached.lastFetched < 24 * 60 * 60 * 1000) {
-      console.log('Using cached astrological data for user:', userId)
+    if (Date.now() - cached.lastFetched < CACHE_TTL.REPORTS) {
+      devLog.info('Using cached astrological data for user:', userId, 'astroData')
       return cached
     }
   }
   
-  // Check Firebase storage
+  // Check Firebase storage (skip if force refresh)
   if (!forceRefresh) {
     try {
       const db = getFirebaseDB()
@@ -123,26 +139,33 @@ export async function getComprehensiveAstroData(
       
       if (docSnap.exists()) {
         const storedData = docSnap.data() as ComprehensiveAstroData
-        // Check if data is still valid and matches current birth details
-        if (Date.now() - storedData.lastFetched < 24 * 60 * 60 * 1000 &&
-            storedData.birthDate === birthDate &&
-            storedData.birthPlace === birthPlace &&
-            storedData.birthTime === birthTime) {
-          console.log('Using stored astrological data for user:', userId)
-          astroDataCache.set(userId, storedData)
-          return storedData
-        }
+        // TEMPORARILY DISABLED: Check if data is still valid and matches current birth details
+        // if (Date.now() - storedData.lastFetched < 24 * 60 * 60 * 1000 &&
+        //     storedData.birthDate === birthDate &&
+        //     storedData.birthPlace === birthPlace &&
+        //     storedData.birthTime === birthTime) {
+        //   console.log('Using stored astrological data for user:', userId)
+        //   astroDataCache.set(userId, storedData)
+        //   return storedData
+        // }
+        devLog.info('🚫 CACHING DISABLED: Skipping stored astrological data for user:', userId, 'astroData')
       }
     } catch (error) {
-      console.warn('Error checking stored astro data:', error)
+      devWarn('Error checking stored astro data:', error)
     }
+  } else {
+    devLog.info('🔄 Force refresh - skipping Firebase cache check', undefined, 'astroData')
   }
   
   // Use intelligent system for optimal data generation
-  console.log('🤖 Using intelligent astrological system for user:', userId)
+  devLog.info('🤖 Using intelligent astrological system for user:', userId, 'astroData')
   
   try {
     const intelligentData = await getIntelligentAstroData(userId, birthDate, birthPlace, birthTime)
+    
+    // Extract Sun and Moon from planets array as fallback for Vedic data
+    const sunPlanet = intelligentData.planets?.find((p: any) => p.name === 'Sun' || p.name === 'sun');
+    const moonPlanet = intelligentData.planets?.find((p: any) => p.name === 'Moon' || p.name === 'moon');
     
     // Transform to comprehensive format
     const comprehensiveData: ComprehensiveAstroData = {
@@ -152,15 +175,17 @@ export async function getComprehensiveAstroData(
       birthPlace,
       lastFetched: Date.now(),
       
-      sunSign: intelligentData.sun_sign,
-      moonSign: intelligentData.moon_sign,
-      risingSign: intelligentData.rising_sign,
+      // Support both Western (direct fields) and Vedic (extracted from planets)
+      sunSign: intelligentData.sun_sign || sunPlanet?.sign || sunPlanet?.signName || 'Unknown',
+      moonSign: intelligentData.moon_sign || moonPlanet?.sign || moonPlanet?.signName || 'Unknown',
+      risingSign: intelligentData.rising_sign || intelligentData.ascendant?.signName || intelligentData.ascendant?.sign || 'Unknown',
       
-      planets: intelligentData.planets,
-      houses: intelligentData.houses,
-      aspects: intelligentData.aspects,
-      elements: intelligentData.elements,
-      modalities: intelligentData.modalities,
+      // Ensure all arrays have defaults
+      planets: intelligentData.planets || [],
+      houses: intelligentData.houses || [],
+      aspects: intelligentData.aspects || [],
+      elements: intelligentData.elements || { fire: 0, earth: 0, air: 0, water: 0 },
+      modalities: intelligentData.modalities || { cardinal: 0, fixed: 0, mutable: 0 },
       
       personalityTraits: intelligentData.personalityTraits || [],
       lifePath: intelligentData.lifePath || '',
@@ -168,6 +193,10 @@ export async function getComprehensiveAstroData(
       strengths: intelligentData.strengths || [],
       compatibility: intelligentData.compatibility || { bestMatches: [], challengingMatches: [] },
       currentTransits: intelligentData.currentTransits || [],
+      
+      // Include chart images (ensure no undefined values)
+      chartImage: intelligentData.chartImage || null,
+      vedicCharts: intelligentData.vedicCharts || {},
       
       metadata: {
         reportId: `intelligent_${userId}_${Date.now()}`,
@@ -185,9 +214,9 @@ export async function getComprehensiveAstroData(
       const db = getFirebaseDB()
       const docRef = doc(db, 'users', userId, 'astroProfile', 'comprehensive')
       await setDoc(docRef, comprehensiveData)
-      console.log('Stored intelligent astro data in Firebase for user:', userId)
+      devLog.info('Stored intelligent astro data in Firebase for user:', userId, 'astroData')
     } catch (storageError) {
-      console.warn('Error storing intelligent astro data in Firebase:', storageError)
+      devWarn('Error storing intelligent astro data in Firebase:', storageError)
     }
     
     // Store in cache
@@ -196,66 +225,8 @@ export async function getComprehensiveAstroData(
     return comprehensiveData
     
   } catch (intelligentError) {
-    console.warn('Intelligent system failed, falling back to basic calculations:', intelligentError)
-    
-    // Fallback to basic calculations
-    try {
-      const fallbackData = await generateFallbackAstroData(birthDate, birthPlace, birthTime || "12:00")
-      
-      const comprehensiveData: ComprehensiveAstroData = {
-        userId,
-        birthDate,
-        birthTime,
-        birthPlace,
-        lastFetched: Date.now(),
-        
-        sunSign: fallbackData.sun_sign,
-        moonSign: fallbackData.moon_sign,
-        risingSign: fallbackData.rising_sign,
-        
-        planets: fallbackData.planets,
-        houses: fallbackData.houses,
-        aspects: fallbackData.aspects,
-        elements: fallbackData.elements,
-        modalities: fallbackData.modalities,
-        
-        personalityTraits: fallbackData.personalityTraits,
-        lifePath: fallbackData.lifePath,
-        challenges: fallbackData.challenges,
-        strengths: fallbackData.strengths,
-        compatibility: fallbackData.compatibility,
-        currentTransits: [],
-        
-        metadata: {
-          reportId: `fallback_${userId}_${Date.now()}`,
-          version: fallbackData.metadata.version,
-          source: 'internal_calculations',
-          isComprehensive: true,
-          isFallback: true,
-          systemConfidence: 0.75,
-          learningApplied: false
-        }
-      }
-      
-      // Store in Firebase
-      try {
-        const db = getFirebaseDB()
-        const docRef = doc(db, 'users', userId, 'astroProfile', 'comprehensive')
-        await setDoc(docRef, comprehensiveData)
-        console.log('Stored fallback astro data in Firebase for user:', userId)
-      } catch (storageError) {
-        console.warn('Error storing fallback astro data in Firebase:', storageError)
-      }
-      
-      // Store in cache
-      astroDataCache.set(userId, comprehensiveData)
-      
-      return comprehensiveData
-      
-    } catch (fallbackError) {
-      console.error('Error generating fallback astrological data:', fallbackError)
-      throw new Error(`Failed to generate astrological data: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`)
-    }
+    console.error('Intelligent system failed:', intelligentError)
+    throw new Error('Astrological data service is not available. Please try again later.')
   }
 }
 
@@ -331,7 +302,7 @@ async function transformToComprehensiveData(
     metadata: {
       reportId: `astro_${userId}_${Date.now()}`,
       version: '1.0',
-      source: 'astroapp',
+      source: 'internal_calculations',
       isComprehensive: true
     }
   }
