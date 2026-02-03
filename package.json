@@ -2,6 +2,7 @@
   "name": "my-v0-project",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@9.15.0",
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --webpack",
@@ -19,6 +20,12 @@
     "cap:add:android": "npx cap add android",
     "cap:sync": "npx cap sync",
     "mobile:build": "pnpm run build:capacitor && npx cap sync"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": ["swisseph"]
   },
   "dependencies": {
     "@astrodraw/astrochart": "^3.0.2",
