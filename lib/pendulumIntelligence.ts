@@ -3,28 +3,24 @@ import { getFirebaseDB } from './firebase';
 
 export interface PendulumData {
   question: string
-  pendulumType: 'crystal' | 'metal' | 'wood' | 'stone'
-  material?: string
-  length?: number
-  userIntention: string
-}
-
-export interface PendulumResponse {
-  direction: 'yes' | 'no' | 'maybe' | 'neutral'
-  strength: number
-  confidence: number
-  interpretation: string
-  advice: string
+  pendulumType?: 'crystal' | 'metal' | 'wood' | 'stone'
+  userIntention?: string
 }
 
 export interface PendulumAnalysis {
   question: string
-  pendulumType: string
-  responses: PendulumResponse[]
-  summary: string
-  overallDirection: 'yes' | 'no' | 'maybe' | 'neutral'
+  pendulumType?: string
+  answer: 'yes' | 'no' | 'maybe'
   confidence: number
+  swingDirection: 'front-back' | 'side-side' | 'clockwise' | 'counterclockwise'
+  interpretation: string
+  summary: string
   advice: string[]
+  guidance?: {
+    programming?: string
+    usage?: string[]
+    cleansing?: string
+  }
 }
 
 export interface PendulumQuestion {
@@ -71,8 +67,22 @@ const PENDULUM_TYPES = {
 class PendulumIntelligence {
   private cache = new Map<string, PendulumAnalysis>()
 
+  // Hash function for deterministic answers (same question = same answer)
+  private hashQuestion(question: string): number {
+    let hash = 0
+    const normalizedQuestion = question.toLowerCase().trim().replace(/[^\w\s]/g, '')
+    
+    for (let i = 0; i < normalizedQuestion.length; i++) {
+      const char = normalizedQuestion.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
+    
+    return Math.abs(hash)
+  }
+
   async analyzePendulum(data: PendulumData): Promise<PendulumAnalysis> {
-    const cacheKey = `${data.question}-${data.pendulumType}-${data.userIntention}`
+    const cacheKey = `${data.question.trim().toLowerCase()}-${data.pendulumType || 'general'}`
     
     if (this.cache.has(cacheKey)) {
       return this.cache.get(cacheKey)!
@@ -85,195 +95,184 @@ class PendulumIntelligence {
   }
 
   private async calculatePendulum(data: PendulumData): Promise<PendulumAnalysis> {
-    // Simulate multiple pendulum swings for accuracy
-    const responses: PendulumResponse[] = []
+    // Generate deterministic answer based on question hash
+    const questionHash = this.hashQuestion(data.question)
+    const normalizedHash = questionHash % 100
     
-    for (let i = 0; i < 3; i++) {
-      const direction = this.getRandomDirection()
-      const strength = Math.floor(Math.random() * 40) + 60 // 60-100
-      const confidence = Math.floor(Math.random() * 20) + 80 // 80-100
-      
-      responses.push({
-        direction,
-        strength,
-        confidence,
-        interpretation: this.getInterpretation(direction, data.question),
-        advice: this.getAdvice(direction, data.pendulumType)
-      })
+    // Analyze question sentiment and structure
+    const questionLower = data.question.toLowerCase()
+    const hasPositiveWords = /\b(yes|will|can|should|good|better|best|success|happy|love)\b/.test(questionLower)
+    const hasNegativeWords = /\b(no|not|never|bad|worse|worst|fail|sad|hate|avoid)\b/.test(questionLower)
+    const hasUncertaintyWords = /\b(maybe|perhaps|might|could|possibly|uncertain|unclear)\b/.test(questionLower)
+    const questionLength = data.question.trim().length
+
+    // Determine answer based on multiple factors
+    let answer: 'yes' | 'no' | 'maybe'
+    let confidence = 75
+    
+    // Use hash + sentiment analysis
+    if (hasUncertaintyWords || (normalizedHash >= 30 && normalizedHash < 50)) {
+      answer = 'maybe'
+      confidence = 70 + (normalizedHash % 10)
+    } else if (hasNegativeWords || (normalizedHash >= 50)) {
+      answer = 'no'
+      confidence = 75 + (normalizedHash % 15)
+    } else {
+      answer = 'yes'
+      confidence = 80 + (normalizedHash % 15)
     }
 
-    // Calculate overall direction based on majority
-    const directionCounts = responses.reduce((acc, response) => {
-      acc[response.direction] = (acc[response.direction] || 0) + 1
-      return acc
-    }, {} as Record<string, number>)
+    // Ensure confidence is in valid range
+    confidence = Math.max(70, Math.min(95, confidence))
 
-    const overallDirection = Object.entries(directionCounts)
-      .sort(([,a], [,b]) => b - a)[0][0] as 'yes' | 'no' | 'maybe' | 'neutral'
+    // Determine swing direction based on answer
+    const swingDirection = this.getSwingDirection(answer, normalizedHash)
 
-    const averageConfidence = responses.reduce((sum, r) => sum + r.confidence, 0) / responses.length
+    // Generate interpretation and summary
+    const interpretation = this.getInterpretation(answer, data.question, data.pendulumType)
+    const summary = this.generateSummary(data.question, answer, confidence)
+    const advice = this.generateAdvice(answer, data.pendulumType, data.question)
 
-    const summary = this.generateSummary(data.question, overallDirection, responses)
-    const advice = this.generateAdvice(overallDirection, data.pendulumType, data.question)
+    // Add guidance based on pendulum divination practices
+    const guidance = this.generateGuidance(data.pendulumType)
 
     return {
       question: data.question,
-      pendulumType: PENDULUM_TYPES[data.pendulumType].name,
-      responses,
+      pendulumType: data.pendulumType ? PENDULUM_TYPES[data.pendulumType].name : undefined,
+      answer,
+      confidence,
+      swingDirection,
+      interpretation,
       summary,
-      overallDirection,
-      confidence: Math.round(averageConfidence),
-      advice
+      advice,
+      guidance
     }
   }
 
-  private getRandomDirection(): 'yes' | 'no' | 'maybe' | 'neutral' {
-    const directions: ('yes' | 'no' | 'maybe' | 'neutral')[] = ['yes', 'no', 'maybe', 'neutral']
-    const weights = [0.4, 0.3, 0.2, 0.1] // Bias towards yes/no answers
-    
-    const random = Math.random()
-    let cumulative = 0
-    
-    for (let i = 0; i < directions.length; i++) {
-      cumulative += weights[i]
-      if (random <= cumulative) {
-        return directions[i]
+  private getSwingDirection(answer: 'yes' | 'no' | 'maybe', hash: number): 'front-back' | 'side-side' | 'clockwise' | 'counterclockwise' {
+    if (answer === 'yes') {
+      return 'front-back' // Like a head nod
+    } else if (answer === 'no') {
+      return 'side-side' // Like a head shake
+    } else {
+      // Maybe can be either clockwise or counterclockwise
+      return hash % 2 === 0 ? 'clockwise' : 'counterclockwise'
+    }
+  }
+
+  private getInterpretation(answer: 'yes' | 'no' | 'maybe', question: string, pendulumType?: string): string {
+    const baseInterpretations = {
+      'yes': 'The pendulum swings forward and back (like a head nod), indicating a positive response aligned with your question.',
+      'no': 'The pendulum swings side to side (like a head shake), suggesting this may not be in your best interest at this time.',
+      'maybe': 'The pendulum moves in a circular motion, showing uncertainty. The energy around this question is not yet clear.'
+    }
+
+    let interpretation = baseInterpretations[answer]
+
+    if (pendulumType) {
+      const typeSpecific = {
+        'crystal': ' Your crystal pendulum amplifies spiritual energy, connecting deeply with your higher self.',
+        'metal': ' Your metal pendulum grounds practical energy, reflecting material and physical considerations.',
+        'wood': ' Your wooden pendulum resonates with natural cycles and organic growth patterns.',
+        'stone': ' Your stone pendulum draws from earth energy, emphasizing stability and foundation.'
       }
+      interpretation += typeSpecific[pendulumType] || ''
     }
-    
-    return 'maybe'
+
+    return interpretation
   }
 
-  private getInterpretation(direction: string, question: string): string {
-    const interpretations: { [key: string]: string } = {
-      'yes': 'The pendulum indicates a positive response. This suggests alignment with your question.',
-      'no': 'The pendulum indicates a negative response. This suggests reconsideration may be needed.',
-      'maybe': 'The pendulum shows uncertainty. More clarity may be needed before proceeding.',
-      'neutral': 'The pendulum shows neutrality. The energy is balanced around this question.'
+  private generateSummary(question: string, answer: 'yes' | 'no' | 'maybe', confidence: number): string {
+    const answerText = {
+      'yes': 'YES',
+      'no': 'NO',
+      'maybe': 'MAYBE (Uncertain)'
+    }[answer]
+
+    const confidenceText = confidence >= 85 ? 'strong' : confidence >= 75 ? 'moderate' : 'somewhat clear'
+
+    return `The pendulum's response to "${question}" is **${answerText}** with ${confidence}% confidence. The ${confidenceText} swing indicates ${this.getSwingDescription(answer)}.`
+  }
+
+  private getSwingDescription(answer: 'yes' | 'no' | 'maybe'): string {
+    const descriptions = {
+      'yes': 'a forward-backward motion (like a head nod), suggesting alignment and positive energy',
+      'no': 'a side-to-side motion (like a head shake), indicating this path may not serve your highest good',
+      'maybe': 'a circular motion, showing the energy is still forming and more clarity may be needed'
     }
-    return interpretations[direction] || interpretations['maybe']
+    return descriptions[answer]
   }
 
-  private getAdvice(direction: string, pendulumType: string): string {
-    const adviceMap: { [key: string]: { [key: string]: string } } = {
-      'yes': {
-        'crystal': 'Proceed with confidence, your spiritual guidance is clear.',
-        'metal': 'Take action, the practical path is open to you.',
-        'wood': 'Move forward naturally, growth is supported.',
-        'stone': 'Ground yourself and proceed with stability.'
-      },
-      'no': {
-        'crystal': 'Reconsider from a spiritual perspective.',
-        'metal': 'The practical obstacles suggest waiting.',
-        'wood': 'This may not be the right time for growth.',
-        'stone': 'The foundation isn\'t stable for this path.'
-      },
-      'maybe': {
-        'crystal': 'Seek more spiritual clarity before deciding.',
-        'metal': 'Gather more practical information.',
-        'wood': 'Allow more time for natural development.',
-        'stone': 'Build a stronger foundation first.'
-      },
-      'neutral': {
-        'crystal': 'The spiritual energy is balanced.',
-        'metal': 'The practical factors are evenly weighted.',
-        'wood': 'Natural forces are in equilibrium.',
-        'stone': 'The foundation is stable but neutral.'
-      }
-    }
-    return adviceMap[direction]?.[pendulumType] || 'Consider your intuition.'
-  }
-
-  private generateSummary(question: string, direction: string, responses: PendulumResponse[]): string {
-    const directionText = {
-      'yes': 'positive',
-      'no': 'negative',
-      'maybe': 'uncertain',
-      'neutral': 'neutral'
-    }[direction]
-
-    const consistency = responses.filter(r => r.direction === direction).length / responses.length
-    const consistencyText = consistency >= 0.67 ? 'strong' : consistency >= 0.33 ? 'moderate' : 'weak'
-
-    return `The pendulum shows a ${consistencyText} ${directionText} response to your question about "${question}". The energy suggests ${this.getInterpretation(direction, question).toLowerCase()}`
-  }
-
-  private generateAdvice(direction: string, pendulumType: string, question: string): string[] {
+  private generateAdvice(answer: 'yes' | 'no' | 'maybe', pendulumType?: string, question?: string): string[] {
     const baseAdvice = [
       'Trust your intuition alongside the pendulum\'s guidance.',
-      'Consider the timing and energy of your question.',
-      'Remember that the pendulum reflects current energy patterns.'
+      'The pendulum reflects current energy patterns - circumstances may change.',
+      'Remain open and neutral about outcomes for the most accurate readings.'
     ]
 
     const directionAdvice = {
       'yes': [
         'Proceed with confidence and positive intention.',
-        'Take action while maintaining awareness.',
-        'Use this positive energy to manifest your desires.'
+        'Take action while maintaining awareness of the path ahead.',
+        'This positive energy supports manifestation of your desires.'
       ],
       'no': [
         'Consider what obstacles or lessons may be present.',
-        'Look for alternative approaches or timing.',
-        'Use this as an opportunity for reflection and growth.'
+        'Look for alternative approaches or timing that may serve you better.',
+        'This response invites reflection on whether this path aligns with your highest good.'
       ],
       'maybe': [
-        'Seek additional clarity before making decisions.',
-        'Consider gathering more information.',
-        'Trust that timing will become clearer.'
-      ],
-      'neutral': [
-        'The energy is balanced - trust your own judgment.',
-        'Consider both sides of the situation.',
-        'Use this neutral energy for contemplation.'
+        'Seek additional clarity before making important decisions.',
+        'Consider gathering more information or waiting for clearer timing.',
+        'The energy around this question is still forming - patience may be needed.'
       ]
     }
 
-    const pendulumAdvice = {
-      'crystal': [
-        'Cleanse your crystal pendulum regularly.',
-        'Work with the pendulum during meditation.',
-        'Trust the spiritual guidance it provides.'
-      ],
-      'metal': [
-        'Keep your metal pendulum clean and charged.',
-        'Use it for practical decision-making.',
-        'Ground yourself before asking questions.'
-      ],
-      'wood': [
-        'Connect with nature when using your wooden pendulum.',
-        'Allow natural timing for answers.',
-        'Trust the organic flow of energy.'
-      ],
-      'stone': [
-        'Use your stone pendulum for grounding work.',
-        'Connect with earth energy.',
-        'Focus on stability and protection.'
-      ]
+    const advice = [...baseAdvice, ...directionAdvice[answer]]
+
+    if (pendulumType && PENDULUM_TYPES[pendulumType]) {
+      const typeInfo = PENDULUM_TYPES[pendulumType]
+      advice.push(`Your ${typeInfo.name} is best for: ${typeInfo.bestFor.join(', ')}.`)
     }
 
-    return [
-      ...baseAdvice,
-      ...directionAdvice[direction],
-      ...pendulumAdvice[pendulumType]
-    ]
+    return advice
   }
 
-  async answerQuestion(question: string, category: PendulumQuestion['category'] = 'general', urgency: PendulumQuestion['urgency'] = 'medium'): Promise<PendulumAnswer> {
+  private generateGuidance(pendulumType?: string): {
+    programming?: string
+    usage?: string[]
+    cleansing?: string
+  } {
+    const guidance: {
+      programming?: string
+      usage?: string[]
+      cleansing?: string
+    } = {
+      programming: 'Before using your pendulum, program it by demonstrating each signal. Say "When the answer is yes, move forward and back" while swinging it forward-back. Do the same for "no" (side-to-side) and "maybe" (circular motion).',
+      usage: [
+        'Clear your mind of worries and distractions before asking.',
+        'Hold the pendulum steady with your arm supported.',
+        'Focus on your question, but remain detached from the outcome.',
+        'Be patient and wait for the pendulum to move.',
+        'Clear the pendulum between questions by touching it to your palm.'
+      ],
+      cleansing: pendulumType && PENDULUM_TYPES[pendulumType] 
+        ? PENDULUM_TYPES[pendulumType].care 
+        : 'Cleanse your pendulum regularly with salt water, moonlight, or smudging to clear any lingering energy.'
+    }
+
+    return guidance
+  }
+
+  // Public method for simple question answering
+  async answerQuestion(question: string, pendulumType?: 'crystal' | 'metal' | 'wood' | 'stone'): Promise<PendulumAnalysis> {
     const pendulumData: PendulumData = {
       question,
-      pendulumType: 'crystal',
+      pendulumType: pendulumType || undefined,
       userIntention: 'Seeking guidance'
     }
 
-    const analysis = await this.analyzePendulum(pendulumData)
-    
-    return {
-      question,
-      answer: analysis.summary,
-      direction: analysis.overallDirection,
-      confidence: analysis.confidence,
-      advice: analysis.advice
-    }
+    return await this.analyzePendulum(pendulumData)
   }
 
   async saveAnalysis(userId: string, analysis: PendulumAnalysis): Promise<void> {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useTools } from '@/hooks/useTools'
 import { useAnalytics } from '@/lib/analytics'
@@ -9,13 +9,18 @@ import { MysticalCard } from '@/components/MysticalBackground'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Sparkles, Star, Clock, Users, TrendingUp } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
+import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab'
+import { ToolPageHeader } from '@/components/navigation/ToolPageHeader'
+import { Sparkles, Star, Clock, Users, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ToolPage() {
   const params = useParams()
   const { tools } = useTools()
   const { trackToolAccess, trackPageView } = useAnalytics()
+  const [activeTab, setActiveTab] = useState<'introduction' | 'about' | 'compatibility'>('introduction')
   
   const slug = params.slug as string
   const tool = tools.find(t => t.slug === slug)
@@ -42,7 +47,6 @@ export default function ToolPage() {
           <p className="text-gray-400 mb-6">The mystical tool you're looking for doesn't exist.</p>
           <Link href="/tools">
             <Button className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600">
-              <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Tools
             </Button>
           </Link>
@@ -52,42 +56,51 @@ export default function ToolPage() {
   }
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-4 starfield-ultra-sharp">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <Link href="/tools" className="inline-flex items-center gap-2 text-amber-200 hover:text-amber-300 transition-colors mb-6 group">
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to Tools</span>
-          </Link>
-          
-          <div className="flex items-center gap-4 mb-4">
-            <ToolSymbol
-              toolName={slug}
-              size="lg"
-              variant="glow"
-              animated={true}
-            />
-            <div>
-              <h1 className="text-4xl font-bold gold-glow mb-2">{tool.name}</h1>
-              <p className="text-soft text-lg">{tool.description}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Badge variant={tool.isPremium ? "default" : "secondary"}>
-              {tool.isPremium ? "Premium" : "Free"}
-            </Badge>
-            {tool.isComingSoon && (
-              <Badge variant="outline" className="text-amber-400 border-amber-400">
-                Coming Soon
-              </Badge>
-            )}
-            <Badge variant="outline">{tool.category}</Badge>
-          </div>
-        </div>
+        <ToolPageHeader
+          toolName={tool.name}
+          toolSlug={slug}
+          toolDescription={tool.description}
+          toolCategory={tool.category}
+          isPremium={tool.isPremium}
+          isComingSoon={tool.isComingSoon}
+        />
 
         {/* Tool Content */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 border-amber-500/50 backdrop-blur-md rounded-2xl p-1 mb-6">
+            <TabsTrigger 
+              value="introduction" 
+              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-3 py-2"
+            >
+              Introduction
+            </TabsTrigger>
+            <TabsTrigger 
+              value="compatibility" 
+              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-3 py-2"
+            >
+              Compare Profiles
+            </TabsTrigger>
+            <TabsTrigger 
+              value="about" 
+              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-3 py-2"
+            >
+              About & Use
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Introduction Tab */}
+          <TabsContent value="introduction" className="space-y-6">
+            <ToolIntroductionTab toolSlug={slug} />
+          </TabsContent>
+
+          <TabsContent value="compatibility" className="space-y-6">
+            <CompatibilityTab toolSlug={slug} />
+          </TabsContent>
+
+          <TabsContent value="about" className="space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
@@ -220,6 +233,8 @@ export default function ToolPage() {
             </Card>
           </div>
         </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

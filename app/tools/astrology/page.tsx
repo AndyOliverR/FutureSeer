@@ -68,27 +68,27 @@ async function fetchAstroData({ birthDate, birthTime, birthPlace, displayName }:
 
 export default function AstrologyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen starfield-ultra-sharp">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-4">
+            <h1 className="text-4xl font-bold gold-glow mb-4">
               Astrological Insights
             </h1>
-            <p className="text-xl text-slate-300">
+            <p className="text-soft text-xl leading-relaxed">
               Discover your cosmic blueprint and unlock the secrets of the stars
             </p>
           </div>
           
           <Tabs defaultValue="chart" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border-slate-600">
-              <TabsTrigger value="chart" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+            <TabsList className="grid w-full grid-cols-3 bg-slate-800/50 border border-amber-500/30 rounded-xl">
+              <TabsTrigger value="chart" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white rounded-lg">
                 Birth Chart
               </TabsTrigger>
-              <TabsTrigger value="coach" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+              <TabsTrigger value="coach" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white rounded-lg">
                 AI Coach
               </TabsTrigger>
-              <TabsTrigger value="status" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+              <TabsTrigger value="status" className="data-[state=active]:bg-amber-600 data-[state=active]:text-white rounded-lg">
                 System Status
               </TabsTrigger>
             </TabsList>

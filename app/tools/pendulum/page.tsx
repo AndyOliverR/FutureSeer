@@ -1,11 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { PendulumCoachInterface } from "@/components/PendulumCoachInterface"
+import PendulumSeerChatInterface from "@/components/PendulumSeerChatInterface"
 import { usePendulum } from "@/hooks/use-pendulum"
+import { useAuth } from "@/hooks/use-auth"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2, AlertCircle, MessageCircle } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function PendulumPage() {
+  const { user, userProfile } = useAuth()
   const {
     question,
     pendulumType,
@@ -18,183 +25,230 @@ export default function PendulumPage() {
     resetData
   } = usePendulum()
 
+  const [pageTab, setPageTab] = useState<"cast" | "ask-the-seer">("cast")
   const [activeTab, setActiveTab] = useState("overview")
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="relative min-h-screen starfield-ultra-sharp">
+      
+      <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8 pt-8"
+          transition={{ duration: 0.5 }}
+          className="mb-8 pt-4 text-center"
         >
-          <motion.a
-            href="/tools"
-            className="text-soft hover:gold-glow mb-4 inline-block transition-all duration-300"
-            whileHover={{ x: -5 }}
-          >
-            ← Back to Tools
-          </motion.a>
-          <h1 className="text-5xl font-bold gold-glow mb-4">⏳ Pendulum</h1>
-          <p className="text-soft leading-relaxed text-lg mb-4">
-            Ancient tool of divination that bridges the conscious and subconscious mind
+          <h1 className="text-3xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-2">🌀 Pendulum Divination</h1>
+          <p className="text-slate-300">
+            Answer yes/no questions through the ancient art of pendulum divination
           </p>
-          {/* Inspirational Quote */}
-          <div className="glass-card rounded-2xl p-6 border border-silver-500/20 max-w-2xl mx-auto">
-            <p className="text-xl italic text-silver-300 font-serif mb-2">
-              "The pendulum swings between yes and no, revealing the hidden wisdom that lies within your own subconscious mind."
-            </p>
-            <p className="text-soft/70 text-sm">— Ancient Divination Wisdom</p>
-          </div>
         </motion.div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Input Section */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-1"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              <h2 className="text-2xl gold-glow mb-6 text-center">Subconscious Bridge</h2>
-              
-              {/* Question Input */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">❓</span>
-                  Your Question
-                </h3>
-                <textarea
-                  placeholder="Ask your question with clarity and focus..."
-                  value={question || ""}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400 transition-all duration-300 h-32 resize-none"
+        {/* Page-level tabs: Cast Reading | Ask the Seer */}
+        <Tabs value={pageTab} onValueChange={(v) => setPageTab(v as "cast" | "ask-the-seer")} className="mb-6">
+          <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-1">
+            <TabsTrigger value="cast" className="rounded-xl data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300">Cast Reading</TabsTrigger>
+            <TabsTrigger value="ask-the-seer" className="rounded-xl data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Ask the Seer
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="ask-the-seer" className="mt-6">
+            <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg rounded-3xl h-[600px] overflow-hidden">
+              <div className="h-full bg-gradient-to-b from-transparent to-white/30 p-4">
+                <PendulumSeerChatInterface
+                  userId={user?.uid || ""}
+                  userProfile={userProfile}
+                  pendulumAnalysis={analysis}
+                  sessionId={`pendulum_${Date.now()}`}
                 />
               </div>
+            </Card>
+          </TabsContent>
 
-              {/* Pendulum Type */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">⏳</span>
-                  Pendulum Type
-                </h3>
-                <select
-                  value={pendulumType || ""}
-                  onChange={(e) => setPendulumType(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                >
-                  <option value="">Select Pendulum</option>
-                  <option value="crystal">Crystal Pendulum</option>
-                  <option value="metal">Metal Pendulum</option>
-                  <option value="wooden">Wooden Pendulum</option>
-                  <option value="gemstone">Gemstone Pendulum</option>
-                  <option value="digital">Digital Pendulum</option>
-                </select>
-              </div>
-
-              {/* Instructions */}
-              <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-silver-500/10 to-gray-500/10 border border-silver-500/20">
-                <h4 className="text-soft font-semibold mb-2 flex items-center">
-                  <span className="mr-2">💡</span>
-                  Pendulum Insights
-                </h4>
-                <ul className="space-y-1 text-sm text-soft/80">
-                  <li>• Subconscious connection</li>
-                  <li>• Yes/No answers</li>
-                  <li>• Energy sensitivity</li>
-                  <li>• Intuitive guidance</li>
-                </ul>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={performPendulumReading}
-                  disabled={isLoading || !(question ?? '').trim() || !(pendulumType ?? '')}
-                  className="w-full bg-gradient-to-r from-silver-500 to-gray-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
-                >
-                  {isLoading ? "⏳ Reading..." : "⏳ Cast Pendulum"}
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={resetData}
-                  className="w-full bg-white/5 border border-white/20 text-soft rounded-xl p-4 font-semibold hover:bg-white/10 transition-all duration-300"
-                >
-                  🔄 Reset
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Results Section */}
+          <TabsContent value="cast" className="mt-0">
+        {/* Question Input Form */}
+        {!analysis && (
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-4xl mx-auto mb-8"
           >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {["overview", "answer", "energy", "guidance", "interpretation", "advice"].map((tab) => (
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+              <CardContent className="p-8">
+                <h2 className="text-3xl font-bold text-amber-900 mb-6 text-center">Ask Your Pendulum Question</h2>
+                <p className="text-slate-700 text-center mb-8">
+                  The pendulum connects you to your higher self and subconscious mind, providing clear yes/no/maybe answers to your questions.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Question Input */}
+                  <div className="md:col-span-2">
+                    <label className="block text-slate-700 font-semibold mb-3">
+                      <span className="mr-2">❓</span>
+                      Your Question
+                    </label>
+                    <textarea
+                      placeholder="Ask a specific yes/no question... (e.g., 'Is it in my best interest to accept this job offer?')"
+                      value={question || ""}
+                      onChange={(e) => setQuestion(e.target.value)}
+                      className="w-full bg-white border-2 border-amber-300 rounded-2xl p-4 text-slate-800 placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-all duration-300 h-32 resize-none"
+                    />
+                    <p className="text-slate-600 text-sm mt-2">
+                      Be specific and clear. Phrase questions to be answered with yes or no. Avoid using "should" or "supposed to."
+                    </p>
+                  </div>
+
+                  {/* Pendulum Type - Optional */}
+                  <div>
+                    <label className="block text-slate-700 font-semibold mb-3">
+                      <span className="mr-2">🌀</span>
+                      Pendulum Type (Optional)
+                    </label>
+                    <select
+                      value={pendulumType || ""}
+                      onChange={(e) => setPendulumType(e.target.value)}
+                      className="w-full bg-white border-2 border-amber-300 rounded-2xl p-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300"
+                    >
+                      <option value="">Select Pendulum (Optional)</option>
+                      <option value="crystal">Crystal Pendulum</option>
+                      <option value="metal">Metal Pendulum</option>
+                      <option value="wood">Wooden Pendulum</option>
+                      <option value="stone">Stone Pendulum</option>
+                    </select>
+                    <p className="text-slate-600 text-sm mt-2">
+                      Choose your pendulum type or leave blank for general reading
+                    </p>
+                  </div>
+
+                  {/* Placeholder for future: Time/Place */}
+                  <div className="opacity-60">
+                    <label className="block text-slate-600 font-semibold mb-3">
+                      <span className="mr-2">⏰</span>
+                      Question Time (Auto-detected)
+                    </label>
+                    <input
+                      type="text"
+                      value="Current Time"
+                      disabled
+                      className="w-full bg-slate-100 border-2 border-amber-200 rounded-2xl p-4 text-slate-500 cursor-not-allowed"
+                    />
+                  </div>
+
+                  {/* Generate Button */}
+                  <div className="md:col-span-2 text-center">
+                    <motion.button
+                      onClick={performPendulumReading}
+                      disabled={isLoading || !(question ?? '').trim()}
+                      className="bg-gradient-to-r from-amber-600 to-yellow-600 text-white px-8 py-3 rounded-2xl font-semibold hover:from-amber-500 hover:to-yellow-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-amber-500 flex items-center justify-center gap-2 mx-auto"
+                      whileHover={{ scale: isLoading ? 1 : 1.05 }}
+                      whileTap={{ scale: isLoading ? 1 : 0.95 }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Consulting Pendulum...
+                        </>
+                      ) : (
+                        <>
+                          <span>🌀</span>
+                          Cast Pendulum Reading
+                        </>
+                      )}
+                    </motion.button>
+                    <p className="text-slate-600 text-sm mt-2">
+                      Click to receive your pendulum answer
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 max-w-4xl mx-auto"
+          >
+            <Alert variant="destructive" className="bg-red-50 border-2 border-red-200">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-900">{error}</AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="max-w-md mx-auto py-16"
+          >
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md p-12 text-center">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="text-6xl mb-6"
+              >
+                🌀
+              </motion.div>
+              <h3 className="text-2xl font-bold text-amber-900 mb-2">Consulting the Pendulum</h3>
+              <p className="text-slate-700">Connecting to your higher self...</p>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Results Section */}
+        {analysis && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="max-w-6xl mx-auto"
+          >
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+              <CardContent className="p-6">
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-4 mb-6">
                   <motion.button
-                    key={tab}
+                    onClick={resetData}
+                    className="flex items-center gap-2 bg-white border-2 border-amber-300 text-slate-800 py-2 px-4 rounded-2xl font-semibold hover:bg-amber-50 transition-all duration-300"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      activeTab === tab
-                        ? "bg-gradient-to-r from-silver-500 to-gray-600 text-white"
-                        : "bg-white/5 text-soft hover:bg-white/10"
-                    }`}
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    Ask New Question
                   </motion.button>
-                ))}
-              </div>
+                </div>
 
-              {/* Content */}
-              <AnimatePresence mode="wait">
-                {isLoading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="text-4xl mb-4"
+                {/* Tabs */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                  {["overview", "answer", "interpretation", "guidance"].map((tab) => (
+                    <motion.button
+                      key={tab}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-4 py-2 rounded-2xl font-medium transition-all duration-300 ${
+                        activeTab === tab
+                          ? "bg-gradient-to-r from-amber-600 to-yellow-600 text-white border-2 border-amber-500"
+                          : "bg-white text-slate-700 hover:bg-amber-100/50 border-2 border-amber-200"
+                      }`}
                     >
-                      ⏳
-                    </motion.div>
-                    <p className="text-soft text-lg">Connecting to your subconscious mind...</p>
-                  </motion.div>
-                ) : error ? (
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </motion.button>
+                  ))}
+                </div>
+
+                {/* Content */}
+                <AnimatePresence mode="wait">
                   <motion.div
-                    key="error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-4xl mb-4">⚠️</div>
-                    <p className="text-red-400 text-lg mb-2">Reading Error</p>
-                    <p className="text-soft">{error}</p>
-                  </motion.div>
-                ) : analysis ? (
-                  <motion.div
-                    key="results"
+                    key={activeTab}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -206,58 +260,47 @@ export default function PendulumPage() {
                       pendulumType={pendulumType}
                     />
                   </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-6xl mb-6">⏳</div>
-                    <h3 className="text-2xl gold-glow mb-4">Ready to Access Your Subconscious?</h3>
-                    <p className="text-soft leading-relaxed">
-                      Ask your question above and choose your pendulum to bridge 
-                      the gap between your conscious mind and hidden wisdom.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                </AnimatePresence>
+              </CardContent>
+            </Card>
           </motion.div>
-        </div>
+        )}
 
-        {/* Features Highlight */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="glass-card rounded-3xl p-8 mt-12 border border-white/10"
-        >
-          <h3 className="text-2xl gold-glow mb-6 text-center">✨ Pendulum Features</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl mb-3">⏳</div>
-              <h4 className="text-soft font-semibold mb-2">Subconscious</h4>
-              <p className="text-soft/70 text-sm">Hidden wisdom</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">🔮</div>
-              <h4 className="text-soft font-semibold mb-2">Yes/No</h4>
-              <p className="text-soft/70 text-sm">Clear answers</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">⚡</div>
-              <h4 className="text-soft font-semibold mb-2">Energy</h4>
-              <p className="text-soft/70 text-sm">Sensitive tool</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">✨</div>
-              <h4 className="text-soft font-semibold mb-2">Ancient</h4>
-              <p className="text-soft/70 text-sm">Timeless wisdom</p>
-            </div>
-          </div>
-        </motion.div>
+        {/* Info Section - Only show when no analysis */}
+        {!analysis && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="max-w-4xl mx-auto mt-8"
+          >
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-bold text-amber-900 mb-4 text-center">How to Use Your Pendulum</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-slate-700">
+                  <div>
+                    <h4 className="text-amber-800 font-semibold mb-2">Clear Your Mind</h4>
+                    <p className="text-sm">Free yourself from distractions and focus on your question.</p>
+                  </div>
+                  <div>
+                    <h4 className="text-amber-800 font-semibold mb-2">Be Specific</h4>
+                    <p className="text-sm">Phrase questions clearly to get accurate yes/no/maybe answers.</p>
+                  </div>
+                  <div>
+                    <h4 className="text-amber-800 font-semibold mb-2">Trust the Answer</h4>
+                    <p className="text-sm">The pendulum connects to your higher self for guidance.</p>
+                  </div>
+                  <div>
+                    <h4 className="text-amber-800 font-semibold mb-2">Stay Open</h4>
+                    <p className="text-sm">Remain neutral about the outcome to receive unbiased answers.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

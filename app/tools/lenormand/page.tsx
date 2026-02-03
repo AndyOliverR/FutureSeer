@@ -1,340 +1,645 @@
+// Lenormand Divination page with Material 3 Devotionist styling
 "use client"
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { LenormandCoachInterface } from "@/components/LenormandCoachInterface"
-import { useLenormand } from "@/hooks/use-lenormand-hook"
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { useAuth } from '@/hooks/use-auth'
+import { useLenormand } from '@/hooks/use-lenormand-hook'
+import { lenormandIntelligence } from '@/lib/lenormandIntelligence'
+import { getCardDisplay, getCardImage } from '@/lib/lenormandImageMapper'
+import { LenormandCoachInterface } from '@/components/LenormandCoachInterface'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { 
+  Flower, 
+  BookOpen,
+  Sparkles,
+  Target,
+  Brain,
+  Loader2,
+  RefreshCw,
+  Eye,
+  Clock,
+  Activity,
+  Star,
+  CheckCircle
+} from 'lucide-react'
 
 export default function LenormandPage() {
+  const { user, userProfile } = useAuth()
+  const [activeTab, setActiveTab] = useState<'overview' | 'reading' | 'cards' | 'guidance' | 'ask-the-seer'>('overview')
+  
+  // Use the lenormand hook
   const {
     question,
-    spreadType,
-    cards,
-    analysis,
-    isLoading,
-    error,
     setQuestion,
+    spreadType,
     setSpreadType,
+    reading: currentReading,
+    isLoading: isReadingLoading,
+    error: readingError,
     performLenormandReading,
-    resetData
+    resetData: resetReading
   } = useLenormand()
 
-  const [activeTab, setActiveTab] = useState("overview")
+  // Get available spreads
+  const [availableSpreads, setAvailableSpreads] = useState<any[]>([])
+  const [allCards, setAllCards] = useState<any[]>([])
+  
+  useEffect(() => {
+    const spreads = lenormandIntelligence.getAvailableSpreads()
+    setAvailableSpreads(spreads)
+    
+    // Get all cards from lenormandIntelligence
+    const cards = lenormandIntelligence.getAllCards()
+    setAllCards(cards)
+  }, [])
+  
+  const displayName = userProfile?.displayName || user?.displayName || "Seeker"
+
+  // Color schemes for cycling through colorful gradients
+  const colorSchemes = [
+    { bg: 'from-amber-50 to-yellow-50', border: 'border-amber-200', text: 'text-amber-900', textSecondary: 'text-amber-700', textMuted: 'text-slate-600' },
+    { bg: 'from-cyan-50 to-blue-50', border: 'border-cyan-200', text: 'text-cyan-900', textSecondary: 'text-cyan-700', textMuted: 'text-slate-600' },
+    { bg: 'from-blue-50 to-indigo-50', border: 'border-blue-200', text: 'text-blue-900', textSecondary: 'text-blue-700', textMuted: 'text-slate-600' },
+    { bg: 'from-purple-50 to-pink-50', border: 'border-purple-200', text: 'text-purple-900', textSecondary: 'text-purple-700', textMuted: 'text-slate-600' },
+  ]
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="relative min-h-screen starfield-ultra-sharp">
+      
+      <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8 pt-8"
-        >
-          <motion.a
-            href="/tools"
-            className="text-soft hover:gold-glow mb-4 inline-block transition-all duration-300"
-            whileHover={{ x: -5 }}
-          >
-            ← Back to Tools
-          </motion.a>
-          <h1 className="text-5xl font-bold gold-glow mb-4">🌸 Lenormand</h1>
-          <p className="text-soft leading-relaxed text-lg mb-4">
-            36-card fortune telling system with precise symbolic meanings
-          </p>
-          {/* Inspirational Quote */}
-          <div className="glass-card rounded-2xl p-6 border border-pink-500/20 max-w-2xl mx-auto">
-            <p className="text-xl italic text-pink-300 font-serif mb-2">
-              "The Lenormand cards speak with the voice of everyday wisdom, revealing the hidden patterns in the fabric of daily life."
-            </p>
-            <p className="text-soft/70 text-sm">— Mademoiselle Lenormand</p>
-          </div>
-        </motion.div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Input Section */}
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-1"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              <h2 className="text-2xl gold-glow mb-6 text-center">Fortune Telling</h2>
-              
-              {/* Question Input */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">❓</span>
-                  Your Question
-                </h3>
-                <textarea
-                  placeholder="Ask the Lenormand cards for guidance..."
-                  value={question || ""}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400 transition-all duration-300 h-32 resize-none"
-                />
-              </div>
-
-              {/* Spread Type */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">🌸</span>
-                  Spread Type
-                </h3>
-                <select
-                  value={spreadType || ""}
-                  onChange={(e) => setSpreadType(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                >
-                  <option value="">Select Spread</option>
-                  <option value="single">Single Card</option>
-                  <option value="three-card">Three Card Spread</option>
-                  <option value="nine-card">Nine Card Spread</option>
-                  <option value="grand-tableau">Grand Tableau</option>
-                  <option value="line-of-five">Line of Five</option>
-                  <option value="custom">Custom Spread</option>
-                </select>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={performLenormandReading}
-                  disabled={!(question ?? '').trim() || !(spreadType ?? '') || isLoading}
-                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 px-6 rounded-xl font-semibold hover:from-pink-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? "Reading Cards..." : "🔮 Read the Cards"}
-                </button>
-                
-                <button
-                  onClick={resetData}
-                  className="w-full bg-white/5 border border-white/20 text-soft py-3 px-6 rounded-xl font-semibold hover:bg-white/10 transition-all duration-300"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Results Section */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {["overview", "cards", "interpretation", "guidance", "timing", "advice"].map((tab) => (
-                  <motion.button
-                    key={tab}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      activeTab === tab
-                        ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                        : "bg-white/5 text-soft hover:bg-white/10"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* Content */}
-              <AnimatePresence mode="wait">
-                {isLoading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="text-4xl mb-4"
-                    >
-                      🌸
-                    </motion.div>
-                    <p className="text-soft">Consulting the Lenormand cards...</p>
-                  </motion.div>
-                ) : error ? (
-                  <motion.div
-                    key="error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-red-400 text-4xl mb-4">⚠️</div>
-                    <p className="text-soft">{error}</p>
-                  </motion.div>
-                ) : analysis ? (
-                  <motion.div
-                    key="results"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-6"
-                  >
-                    {activeTab === "overview" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Card Reading Overview</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                          <div className="text-center p-4 glass-card rounded-xl">
-                            <div className="text-3xl mb-2">🌸</div>
-                            <div className="text-soft/70">Cards Drawn</div>
-                            <div className="gold-glow">{cards?.length || 0}</div>
-                          </div>
-                          <div className="text-center p-4 glass-card rounded-xl">
-                            <div className="text-3xl mb-2">🔮</div>
-                            <div className="text-soft/70">Spread Type</div>
-                            <div className="gold-glow">{spreadType}</div>
-                          </div>
-                          <div className="text-center p-4 glass-card rounded-xl">
-                            <div className="text-3xl mb-2">✨</div>
-                            <div className="text-soft/70">Reading Type</div>
-                            <div className="gold-glow">Fortune Telling</div>
-                          </div>
-                        </div>
-                        <p className="text-soft leading-relaxed">{analysis.overview}</p>
-                      </div>
-                    )}
-
-                    {activeTab === "cards" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Cards Drawn</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {cards?.map((card: any, index: number) => (
-                            <div key={index} className="glass-card rounded-xl p-4 text-center">
-                              <div className="text-3xl mb-2">{card.symbol}</div>
-                              <h4 className="gold-glow font-semibold mb-2">{card.name}</h4>
-                              <p className="text-soft/70 text-sm mb-2">{card.keyword}</p>
-                              <p className="text-soft/80 text-xs">{card.meaning}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "interpretation" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Card Interpretation</h3>
-                        <p className="text-soft leading-relaxed mb-4">{analysis.interpretation}</p>
-                        <div className="space-y-3">
-                          {analysis.cardMeanings?.map((meaning: any, index: number) => (
-                            <div key={index} className="glass-card rounded-xl p-4">
-                              <h4 className="gold-glow font-semibold mb-2">{meaning.card}</h4>
-                              <p className="text-soft/80">{meaning.meaning}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "guidance" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Guidance & Advice</h3>
-                        <p className="text-soft leading-relaxed mb-4">{analysis.guidance}</p>
-                        <div className="space-y-3">
-                          {analysis.advice?.map((advice: string, index: number) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="text-pink-400 mt-1">•</div>
-                              <p className="text-soft/80">{advice}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "timing" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Timing & Events</h3>
-                        <p className="text-soft leading-relaxed mb-4">{analysis.timing}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="glass-card rounded-xl p-4">
-                            <h4 className="gold-glow font-semibold mb-2">Short Term</h4>
-                            <p className="text-soft/80">{analysis.shortTerm}</p>
-                          </div>
-                          <div className="glass-card rounded-xl p-4">
-                            <h4 className="gold-glow font-semibold mb-2">Long Term</h4>
-                            <p className="text-soft/80">{analysis.longTerm}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeTab === "advice" && (
-                      <div>
-                        <h3 className="text-2xl gold-glow mb-4">Practical Advice</h3>
-                        <p className="text-soft leading-relaxed mb-4">{analysis.practicalAdvice}</p>
-                        <div className="space-y-3">
-                          {analysis.actions?.map((action: string, index: number) => (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="text-pink-400 mt-1">→</div>
-                              <p className="text-soft/80">{action}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-4xl mb-4">🌸</div>
-                    <h3 className="text-xl gold-glow mb-2">Ready for Your Reading</h3>
-                    <p className="text-soft">Enter your question and select a spread to begin your Lenormand reading.</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Features Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-16"
+          transition={{ duration: 0.5 }}
+          className="mb-8 text-center"
         >
-          <h2 className="text-3xl font-bold gold-glow text-center mb-8">Lenormand Features</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl mb-3">🌸</div>
-              <h4 className="text-soft font-semibold mb-2">36 Traditional Cards</h4>
-              <p className="text-soft/70 text-sm">Complete Lenormand deck</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">🔮</div>
-              <h4 className="text-soft font-semibold mb-2">Multiple Spreads</h4>
-              <p className="text-soft/70 text-sm">Various reading layouts</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">💫</div>
-              <h4 className="text-soft font-semibold mb-2">Symbolic Meanings</h4>
-              <p className="text-soft/70 text-sm">Deep symbolic interpretation</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">✨</div>
-              <h4 className="text-soft font-semibold mb-2">Practical Guidance</h4>
-              <p className="text-soft/70 text-sm">Everyday life wisdom</p>
-            </div>
-          </div>
+          <h1 className="text-3xl font-serif mb-2 flex items-center justify-center gap-2">
+            <span className="text-3xl">🍀</span>
+            <span className="bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent">
+              Lenormand Divination
+            </span>
+          </h1>
+          <p className="text-slate-300 mt-2">
+            Discover practical guidance through the 36-card Lenormand system
+          </p>
         </motion.div>
+
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 gap-2">
+            <TabsTrigger value="overview" className="devotionist-tab-trigger">
+              <Eye className="w-4 h-4 mr-1" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="reading" className="devotionist-tab-trigger">
+              <Sparkles className="w-4 h-4 mr-1" />
+              Reading
+            </TabsTrigger>
+            <TabsTrigger value="cards" className="devotionist-tab-trigger">
+              <BookOpen className="w-4 h-4 mr-1" />
+              Cards
+            </TabsTrigger>
+            <TabsTrigger value="guidance" className="devotionist-tab-trigger">
+              <Target className="w-4 h-4 mr-1" />
+              Guidance
+            </TabsTrigger>
+            <TabsTrigger value="ask-the-seer" className="devotionist-tab-trigger">
+              <Brain className="w-4 h-4 mr-1" />
+              Ask the seer
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Lenormand Profile Summary */}
+              <Card elevation={2} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-amber-900 text-lg flex items-center">
+                    <Flower className="w-5 h-5 mr-2" />
+                    Your Lenormand Profile
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {user ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-700">Welcome,</span>
+                        <span className="text-amber-900 font-bold">{displayName}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-700">Ready to read?</span>
+                        <Badge variant="outline" className="border-amber-500 text-amber-700 bg-amber-100">
+                          Yes
+                        </Badge>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-slate-700 text-sm">Sign in to personalize your readings</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Recent Readings */}
+              <Card elevation={2} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-amber-900 text-lg flex items-center">
+                    <Clock className="w-5 h-5 mr-2" />
+                    Recent Readings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {currentReading ? (
+                    <div className="space-y-2">
+                      <p className="text-slate-700 text-sm">
+                        Last reading completed
+                      </p>
+                      <div className="text-xs text-slate-600">
+                        {new Date(currentReading.timestamp).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-slate-700 text-sm">No readings performed yet</p>
+                      <p className="text-xs text-slate-600">
+                        Start your first reading to begin
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Quick Stats */}
+              <Card elevation={2} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-amber-900 text-lg flex items-center">
+                    <Activity className="w-5 h-5 mr-2" />
+                    Deck Info
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-amber-700">Cards:</span>
+                      <span className="text-slate-900 font-semibold">36</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-amber-700">Spreads:</span>
+                      <span className="text-slate-900 font-semibold">5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-amber-700">Style:</span>
+                      <span className="text-slate-900 font-semibold">Practical</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <Card elevation={2} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-amber-900 text-lg flex items-center">
+                  <Activity className="w-5 h-5 mr-2" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button
+                    onClick={() => setActiveTab('reading')}
+                    className="bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white rounded-xl"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    New Reading
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('cards')}
+                    variant="outline"
+                    className="border-amber-600 text-amber-700 hover:bg-amber-100 rounded-xl"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Card Meanings
+                  </Button>
+                  <Button
+                    onClick={() => setActiveTab('guidance')}
+                    variant="outline"
+                    className="border-amber-600 text-amber-700 hover:bg-amber-100 rounded-xl"
+                  >
+                    <Target className="w-4 h-4 mr-2" />
+                    Daily Guidance
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Reading Tab */}
+          <TabsContent value="reading" className="space-y-6">
+            <Card elevation={2} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
+              <CardHeader>
+                <CardTitle className="text-amber-900 text-lg flex items-center">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Lenormand Reading
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {!currentReading ? (
+                  <div className="space-y-4">
+                    {/* Question Input */}
+                    <div>
+                      <label className="block text-amber-900 text-sm font-medium mb-2">
+                        What would you like guidance on, {displayName}?
+                      </label>
+                      <textarea
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        placeholder="Ask your question here..."
+                        className="w-full p-3 bg-white border-2 border-amber-200 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300"
+                        rows={3}
+                      />
+                    </div>
+
+                    {/* Spread Selection */}
+                    <div>
+                      <label className="block text-amber-900 text-sm font-medium mb-2">
+                        Choose a spread
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {availableSpreads.map((spread) => (
+                          <button
+                            key={spread.name}
+                            onClick={() => setSpreadType(spread.value)}
+                            className={`p-3 rounded-xl border-2 text-left transition-colors ${
+                              spreadType === spread.value
+                                ? 'bg-gradient-to-br from-amber-100 to-yellow-100 border-amber-300 text-amber-900 shadow-md'
+                                : 'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-200 text-slate-700 hover:border-amber-300 hover:shadow-sm'
+                            }`}
+                          >
+                            <div className="font-medium">{spread.name}</div>
+                            <div className="text-xs text-slate-600 mt-1">
+                              {spread.description}
+                            </div>
+                            <div className={`text-xs mt-1 ${spreadType === spread.value ? 'text-amber-700' : 'text-amber-600'}`}>
+                              {spread.cardCount} card{spread.cardCount > 1 ? 's' : ''}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Perform Reading Button */}
+                    <Button
+                      onClick={performLenormandReading}
+                      disabled={!question.trim() || !spreadType || isReadingLoading}
+                      className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white"
+                    >
+                      {isReadingLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Consulting the Cards...
+                        </>
+                      ) : (
+                        <>
+                          <Flower className="w-4 h-4 mr-2" />
+                          Draw Cards
+                        </>
+                      )}
+                    </Button>
+
+                    {readingError && (
+                      <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
+                        <p className="text-red-400 text-sm">{readingError}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Reading Header */}
+                    <div className="text-center">
+                      <h3 className="text-xl font-semibold bg-gradient-to-b from-amber-600 via-yellow-600 to-amber-700 bg-clip-text text-transparent mb-2">
+                        {currentReading.cards.length} Card Reading
+                      </h3>
+                      <p className="text-slate-700 text-sm">Question: {currentReading.question}</p>
+                      <p className="text-slate-600 text-xs">Reading ID: {currentReading.id}</p>
+                    </div>
+
+                    {/* Cards Display */}
+                    <div className={`grid gap-4 ${
+                      currentReading.spreadType === 'nine' 
+                        ? 'grid-cols-3' 
+                        : currentReading.spreadType === 'grandTableau'
+                        ? 'grid-cols-9'
+                        : currentReading.spreadType === 'lineOfFive'
+                        ? 'grid-cols-5'
+                        : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                    }`}>
+                      {currentReading.cards.map((card: any, index: number) => {
+                        const scheme = colorSchemes[index % colorSchemes.length]
+                        return (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className={`bg-gradient-to-br ${scheme.bg} rounded-xl p-4 border-2 ${scheme.border} shadow-md hover:shadow-xl transition-shadow`}
+                          >
+                            <div className="text-center">
+                              <div className={`text-sm font-medium ${scheme.textSecondary} mb-2`}>
+                                {currentReading.positions[index]}
+                              </div>
+                              {/* Card Display */}
+                              <div className="mb-3 flex justify-center">
+                                <img 
+                                  src={getCardImage(card)} 
+                                  alt={card.name}
+                                  className="w-32 h-auto rounded-lg shadow-lg"
+                                  onError={(e) => {
+                                    // Fallback to emoji if image fails to load
+                                    e.currentTarget.style.display = 'none'
+                                    const fallback = e.currentTarget.nextElementSibling as HTMLElement
+                                    if (fallback) fallback.style.display = 'block'
+                                  }}
+                                />
+                                <div className="text-6xl hidden">
+                                  {getCardDisplay(card)}
+                                </div>
+                              </div>
+                              <div className={`text-lg font-bold ${scheme.text} mb-2`}>
+                                {card.name}
+                              </div>
+                              <div className={`text-xs ${scheme.textMuted} mb-2`}>
+                                {card.number}. {card.keywords.join(' • ')}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Overall Reading Summary */}
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-4 border-2 border-amber-200 shadow-md">
+                      <h4 className="font-semibold text-amber-900 mb-3">Overall Reading</h4>
+                      <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">
+                        {currentReading.overallReading}
+                      </p>
+                    </div>
+
+                    {/* Individual Card Readings */}
+                    {currentReading.individualCardReadings && currentReading.individualCardReadings.length > 0 && (
+                      <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 border-2 border-cyan-200 shadow-md">
+                        <h4 className="font-semibold text-cyan-900 mb-3">Individual Card Interpretations</h4>
+                        <div className="space-y-3">
+                          {currentReading.individualCardReadings.map((cardReading: any, index: number) => (
+                            <div key={index} className="border-b border-cyan-200/50 pb-3 last:border-0">
+                              <div className="flex items-start gap-3">
+                                <div className="mt-1 flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 border border-cyan-400/50 shadow-lg shadow-cyan-500/20">
+                                  <span className="text-xs font-bold text-white">
+                                    {index + 1}
+                                  </span>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-cyan-900 text-sm mb-1">
+                                    {cardReading.cardName} - {cardReading.position}
+                                  </div>
+                                  <p className="text-slate-700 text-sm leading-relaxed">
+                                    {cardReading.interpretation}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Card Combinations */}
+                    {currentReading.combinations && currentReading.combinations.length > 0 && (
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
+                        <h4 className="font-semibold text-blue-900 mb-3">Card Combinations</h4>
+                        <div className="space-y-2">
+                          {currentReading.combinations.map((combo: any, index: number) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <Star className="w-4 h-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                              <p className="text-slate-700 text-sm">
+                                <span className="font-semibold text-blue-900">{combo.cards.join(' + ')}:</span> {combo.meaning}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Timing Insights */}
+                    {currentReading.timing && (
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border-2 border-purple-200 shadow-md">
+                        <h4 className="font-semibold text-purple-900 mb-3">Timing</h4>
+                        <p className="text-slate-700 text-sm">
+                          {currentReading.timing}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Advice */}
+                    {currentReading.advice && currentReading.advice.length > 0 && (
+                      <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-4 border-2 border-amber-200 shadow-md">
+                        <h4 className="font-semibold text-amber-900 mb-3">Practical Advice</h4>
+                        <ul className="space-y-2">
+                          {currentReading.advice.map((advice: string, index: number) => (
+                            <li key={index} className="text-slate-700 text-sm flex items-start">
+                              <CheckCircle className="w-4 h-4 text-amber-600 mr-2 mt-0.5 flex-shrink-0" />
+                              {advice}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Reset Button */}
+                    <div className="text-center">
+                      <Button
+                        onClick={resetReading}
+                        variant="outline"
+                        className="border-amber-600 text-amber-700 hover:bg-amber-100 rounded-xl"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        New Reading
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Cards Tab */}
+          <TabsContent value="cards" className="space-y-6">
+            <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 rounded-2xl shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-purple-900 text-lg flex items-center">
+                  <BookOpen className="w-5 h-5 mr-2" />
+                  Lenormand Card Meanings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {allCards.map((card, index) => {
+                    const scheme = colorSchemes[index % colorSchemes.length]
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        className={`bg-gradient-to-br ${scheme.bg} rounded-xl p-4 border-2 ${scheme.border} shadow-md hover:shadow-xl transition-all`}
+                      >
+                        <div className="text-center">
+                          <div className="mb-3 flex justify-center">
+                            <img 
+                              src={getCardImage(card)} 
+                              alt={card.name}
+                              className="w-24 h-auto rounded-lg shadow-lg"
+                              onError={(e) => {
+                                // Fallback to emoji if image fails to load
+                                e.currentTarget.style.display = 'none'
+                                const fallback = e.currentTarget.nextElementSibling as HTMLElement
+                                if (fallback) fallback.style.display = 'block'
+                              }}
+                            />
+                            <div className="text-5xl hidden">
+                              {getCardDisplay(card)}
+                            </div>
+                          </div>
+                          <div className={`text-xs ${scheme.textSecondary} mb-1`}>
+                            Card {card.number}
+                          </div>
+                          <h4 className={`font-semibold ${scheme.text} mb-2 text-sm`}>{card.name}</h4>
+                          <div className={`text-xs ${scheme.textMuted} mb-2`}>
+                            {card.playingCard || 'N/A'}
+                          </div>
+                          <div className={`text-xs ${scheme.textMuted} mb-2`}>
+                            Keywords: {card.keywords.join(', ')}
+                          </div>
+                          <div className={`text-xs ${scheme.textMuted} mb-2`}>
+                            {card.description.substring(0, 100)}...
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Guidance Tab */}
+          <TabsContent value="guidance" className="space-y-6">
+            <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 border-2 border-purple-200 rounded-2xl shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-purple-900 text-lg flex items-center">
+                  <Target className="w-5 h-5 mr-2" />
+                  Daily Guidance
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {currentReading?.advice && currentReading.advice.length > 0 ? (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-purple-900 mb-2">Guidance from Your Reading</h4>
+                      <p className="text-slate-700 text-sm">
+                        Based on your latest reading, here are practical insights and recommendations.
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-purple-900 mb-2">Recommendations</h4>
+                      <div className="space-y-2">
+                        {currentReading.advice.map((advice: string, index: number) => (
+                          <div key={index} className="flex items-start">
+                            <CheckCircle className="w-4 h-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                            <p className="text-slate-700 text-sm">{advice}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-purple-900 mb-3">Welcome to Lenormand Guidance</h4>
+                      <p className="text-slate-700 text-sm mb-4">
+                        Lenormand cards offer practical, direct guidance for everyday life. Here are essential principles to help you get the most from your readings.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-slate-700 text-sm font-semibold">Card Combinations</p>
+                          <p className="text-slate-600 text-xs">Lenormand meaning comes from how cards combine. Cards modify each other to create a narrative.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-slate-700 text-sm font-semibold">Practical Focus</p>
+                          <p className="text-slate-600 text-xs">Focus on the what, when, and where rather than deep psychology. Lenormand answers concrete questions.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-slate-700 text-sm font-semibold">Position Matters</p>
+                          <p className="text-slate-600 text-xs">In multi-card spreads, position determines meaning. Ask clear, specific questions for best results.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-slate-700 text-sm font-semibold">No Reversals</p>
+                          <p className="text-slate-600 text-xs">Lenormand cards don't have reversed meanings. Context comes from surrounding cards and position.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-purple-600 mr-2 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="text-slate-700 text-sm font-semibold">Timing Indicators</p>
+                          <p className="text-slate-600 text-xs">Certain cards suggest timing. The Sun, Moon, and Stars often relate to days, weeks, or months.</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-6 p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl shadow-md">
+                      <p className="text-amber-900 text-sm font-semibold mb-2">Ready to begin?</p>
+                      <p className="text-slate-700 text-xs">
+                        Perform your first Lenormand reading to receive personalized guidance based on your cards and situation.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Ask the Seer Tab */}
+          <TabsContent value="ask-the-seer" className="space-y-6">
+            <LenormandCoachInterface
+              reading={currentReading ?? null}
+              userProfile={userProfile}
+              onSwitchToReading={() => setActiveTab('reading')}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
-} 
+}

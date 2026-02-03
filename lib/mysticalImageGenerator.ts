@@ -83,14 +83,19 @@ const TOOL_THEMES = {
   'medical-astrology': 'healing symbols, medical astrology, wellness patterns',
   'financial-astrology': 'prosperity symbols, abundance energy, wealth patterns',
   'mundane-astrology': 'world events, global patterns, collective consciousness',
-  'hellenistic-astrology': 'ancient Greek symbols, classical wisdom, traditional astrology',
   'kp-astrology': 'KP astrology symbols, sub-lord logic, precision astrology',
   'bazi': 'Chinese astrology, four pillars, destiny patterns',
   'angel-numbers': 'angelic symbols, divine messages, spiritual guidance',
   'dream-symbols': 'dream imagery, subconscious patterns, symbolic meanings',
   'name-analysis': 'letter symbolism, name energy, personal vibration',
   'geomancy': 'earth divination, geomantic figures, natural patterns',
-  '13-signs-zodiac': 'Ophiuchus symbol, 13th sign, expanded zodiac'
+  '13-signs-zodiac': 'Ophiuchus symbol, 13th sign, expanded zodiac',
+  'vedastro': 'Vedic astrology symbols, AI astrologer, cosmic calculations',
+  'kerykeion': 'data-driven astrology, Swiss Ephemeris, SVG charts',
+  'astrochart': 'astrological charts, planetary positions, celestial data',
+  'iztro': 'Purple Star Astrology, Chinese symbols, imperial wisdom',
+  'sortilege': 'multiple divination tools, mystical symbols, ancient wisdom',
+  'bibliomancy': 'sacred texts, ancient books, divine wisdom'
 }
 
 // Generate mystical image using Stability AI

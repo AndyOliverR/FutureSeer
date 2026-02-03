@@ -27,10 +27,10 @@ export function usePlan() {
     }
 
     // Check if user should bypass trial/upgrade prompts
-    const shouldBypassUpgrade = isSuperadmin || isAdmin || user.email === 'andyrozario7@gmail.com';
+    const shouldBypassUpgrade = isSuperadmin || isAdmin;
     
     if (shouldBypassUpgrade) {
-      // For admin users and special users, set them as paid users
+      // For admin users, set them as paid users
       setPlan('premium');
       setTrialStartedAt(null);
       setTrialTimeLeft(null);

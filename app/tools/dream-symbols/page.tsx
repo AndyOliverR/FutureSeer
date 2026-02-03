@@ -1,12 +1,23 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { DreamSymbolsCoachInterface } from "@/components/DreamSymbolsCoachInterface"
 import { useDreamSymbols } from "@/hooks/use-dream-symbols"
+import { useAuth } from "@/hooks/use-auth"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToolIntroductionTab } from "@/components/ToolIntroductionTab"
+import DreamSymbolsSeerChatInterface from "@/components/DreamSymbolsSeerChatInterface"
+import { Moon, Sparkles, Loader2, ArrowLeft, MessageCircle } from "lucide-react"
 
 export default function DreamSymbolsPage() {
+  const { user, userProfile } = useAuth()
   const {
+    profileData,
+    profileLoading,
+    profileError,
     dreamDescription,
     symbols,
     analysis,
@@ -15,39 +26,44 @@ export default function DreamSymbolsPage() {
     setDreamDescription,
     setSymbols,
     performDreamAnalysis,
-    resetData
+    resetData,
+    refetchProfile
   } = useDreamSymbols()
 
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState<'introduction' | 'overview' | 'symbols' | 'meaning' | 'guidance' | 'archetypes' | 'ask-the-seer'>('introduction')
+  const [patternType, setPatternType] = useState<'dreams' | 'tea-leaves' | 'bone-throwing'>('dreams')
+  
+  // Check if user has complete birth details (similar to tarot page pattern)
+  const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthPlace
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen starfield-ultra-sharp text-white p-4 overflow-hidden">
+      <div className="relative z-10 max-w-7xl mx-auto py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-8 pt-8"
+          className="text-center mb-8 pt-4"
         >
-          <motion.a
-            href="/tools"
-            className="text-soft hover:gold-glow mb-4 inline-block transition-all duration-300"
-            whileHover={{ x: -5 }}
-          >
-            ← Back to Tools
-          </motion.a>
-          <h1 className="text-5xl font-bold gold-glow mb-4">🌙 Dream Symbols</h1>
-          <p className="text-soft leading-relaxed text-lg mb-4">
+          <div className="flex items-center justify-center mb-4">
+            <h1 className="text-5xl font-serif font-semibold mb-6">
+              <span className="text-yellow-400">🌙</span>{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Dream Symbols</span>
+            </h1>
+          </div>
+          <p className="text-slate-200 leading-relaxed text-xl font-light mb-8">
             Unlock the hidden messages of your subconscious through ancient dream symbolism
           </p>
           {/* Inspirational Quote */}
-          <div className="glass-card rounded-2xl p-6 border border-purple-500/20 max-w-2xl mx-auto">
-            <p className="text-xl italic text-purple-300 font-serif mb-2">
-              "Dreams are the royal road to the unconscious, where symbols speak the language of the soul."
-            </p>
-            <p className="text-soft/70 text-sm">— Carl Jung</p>
-          </div>
+          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl max-w-2xl mx-auto">
+            <CardContent className="p-6">
+              <p className="text-xl italic text-amber-900 font-serif mb-2">
+                "Dreams are the royal road to the unconscious, where symbols speak the language of the soul."
+              </p>
+              <p className="text-slate-600 text-sm">— Carl Jung</p>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Main Content */}
@@ -59,73 +75,84 @@ export default function DreamSymbolsPage() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="lg:col-span-1"
           >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              <h2 className="text-2xl gold-glow mb-6 text-center">Subconscious Messages</h2>
-              
-              {/* Dream Description */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">🌙</span>
-                  Your Dream
-                </h3>
-                <textarea
-                  placeholder="Describe your dream in detail, including emotions and key elements..."
-                  value={dreamDescription || ""}
-                  onChange={(e) => setDreamDescription(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400 transition-all duration-300 h-32 resize-none"
-                />
-              </div>
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100 rounded-t-3xl">
+                <CardTitle className="text-2xl text-amber-900 text-center">Subconscious Messages</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 bg-gradient-to-br from-amber-50 to-yellow-50">
+                {/* Dream Description */}
+                <div>
+                  <h3 className="text-lg text-amber-700 mb-4 flex items-center">
+                    <Moon className="w-5 h-5 mr-2" />
+                    Your Dream
+                  </h3>
+                  <textarea
+                    placeholder="Describe your dream in detail, including emotions and key elements..."
+                    value={dreamDescription || ""}
+                    onChange={(e) => setDreamDescription(e.target.value)}
+                    className="w-full bg-white border-2 border-amber-200 rounded-lg p-3 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300 h-32 resize-none"
+                  />
+                </div>
 
-              {/* Key Symbols */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">🔮</span>
-                  Key Symbols
-                </h3>
-                <textarea
-                  placeholder="List the main symbols, objects, or themes from your dream..."
-                  value={symbols || ""}
-                  onChange={(e) => setSymbols(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft placeholder-white/50 focus:outline-none focus:border-yellow-400 transition-all duration-300 h-24 resize-none"
-                />
-              </div>
+                {/* Key Symbols */}
+                <div>
+                  <h3 className="text-lg text-amber-700 mb-4 flex items-center">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Key Symbols
+                  </h3>
+                  <textarea
+                    placeholder="List the main symbols, objects, or themes from your dream..."
+                    value={symbols || ""}
+                    onChange={(e) => setSymbols(e.target.value)}
+                    className="w-full bg-white border-2 border-amber-200 rounded-lg p-3 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-300 h-24 resize-none"
+                  />
+                </div>
 
-              {/* Instructions */}
-              <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20">
-                <h4 className="text-soft font-semibold mb-2 flex items-center">
-                  <span className="mr-2">💡</span>
-                  Dream Insights
-                </h4>
-                <ul className="space-y-1 text-sm text-soft/80">
-                  <li>• Subconscious messages</li>
-                  <li>• Archetypal symbols</li>
-                  <li>• Personal meaning</li>
-                  <li>• Life guidance</li>
-                </ul>
-              </div>
+                {/* Instructions */}
+                <div className="p-4 rounded-lg bg-amber-100 border-2 border-amber-300">
+                  <h4 className="text-amber-800 font-semibold mb-2 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Dream Insights
+                  </h4>
+                  <ul className="space-y-1 text-sm text-slate-700">
+                    <li>• Subconscious messages</li>
+                    <li>• Archetypal symbols</li>
+                    <li>• Personal meaning</li>
+                    <li>• Life guidance</li>
+                  </ul>
+                </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={performDreamAnalysis}
-                  disabled={isLoading || !dreamDescription.trim()}
-                  className="w-full bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
-                >
-                  {isLoading ? "🌙 Analyzing..." : "🌙 Interpret Dream"}
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={resetData}
-                  className="w-full bg-white/5 border border-white/20 text-soft rounded-xl p-4 font-semibold hover:bg-white/10 transition-all duration-300"
-                >
-                  🔄 Reset
-                </motion.button>
-              </div>
-            </div>
+                {/* Action Buttons */}
+                <div className="space-y-4">
+                  <Button
+                    onClick={performDreamAnalysis}
+                    disabled={isLoading || !dreamDescription.trim()}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="w-4 h-4 mr-2" />
+                        Interpret Dream
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    onClick={resetData}
+                    variant="outline"
+                    className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Reset
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
           {/* Results Section */}
@@ -135,89 +162,480 @@ export default function DreamSymbolsPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="lg:col-span-2"
           >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {["overview", "symbols", "meaning", "guidance", "archetypes", "advice"].map((tab) => (
-                  <motion.button
-                    key={tab}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      activeTab === tab
-                        ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
-                        : "bg-white/5 text-soft hover:bg-white/10"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* Content */}
-              <AnimatePresence mode="wait">
-                {isLoading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="text-4xl mb-4"
-                    >
-                      🌙
-                    </motion.div>
-                    <p className="text-soft text-lg">Decoding the symbols of your subconscious...</p>
-                  </motion.div>
-                ) : error ? (
-                  <motion.div
-                    key="error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-4xl mb-4">⚠️</div>
-                    <p className="text-red-400 text-lg mb-2">Analysis Error</p>
-                    <p className="text-soft">{error}</p>
-                  </motion.div>
-                ) : analysis ? (
-                  <motion.div
-                    key="results"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <DreamSymbolsCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      dreamDescription={dreamDescription}
-                      symbols={symbols}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-6xl mb-6">🌙</div>
-                    <h3 className="text-2xl gold-glow mb-4">Ready to Decode Your Dreams?</h3>
-                    <p className="text-soft leading-relaxed">
-                      Share your dream above and let us unlock the hidden messages 
-                      from your subconscious mind through ancient symbolism.
+            <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden">
+              <CardContent className="p-6 bg-gradient-to-br from-amber-50 to-yellow-50">
+                {/* Pattern Reading Type Selector */}
+                <div className="mb-6">
+                  <h3 className="text-lg text-amber-800 mb-4 flex items-center">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Pattern Reading Type
+                  </h3>
+                  <div className="flex gap-2 mb-4">
+                    {[
+                      { value: 'dreams' as const, label: 'Dream Symbols', icon: '🌙' },
+                      { value: 'tea-leaves' as const, label: 'Tea Leaves', icon: '🍵' },
+                      { value: 'bone-throwing' as const, label: 'Bone Throwing', icon: '🦴' }
+                    ].map((type) => (
+                      <motion.button
+                        key={type.value}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setPatternType(type.value)}
+                        className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
+                          patternType === type.value
+                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-md"
+                            : "bg-white border-2 border-amber-200 text-slate-700 hover:border-amber-300"
+                        }`}
+                      >
+                        <span className="mr-2">{type.icon}</span>
+                        {type.label}
+                      </motion.button>
+                    ))}
+                  </div>
+                  <div className="p-3 bg-amber-100 border-2 border-amber-300 rounded-lg">
+                    <p className="text-sm text-slate-700">
+                      {patternType === 'dreams' && "Interpret subconscious symbols and archetypal meanings from your dreams."}
+                      {patternType === 'tea-leaves' && "Read patterns formed by tea leaves (tasseography) for divinatory insights."}
+                      {patternType === 'bone-throwing' && "Traditional bone throwing divination interpreting the patterns of cast bones."}
                     </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  </div>
+                </div>
+
+                {/* Tabs */}
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                  <TabsList className="grid w-full grid-cols-7 bg-transparent p-0 gap-2">
+                    <TabsTrigger 
+                      value="introduction" 
+                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    >
+                      Introduction
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="overview" 
+                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    >
+                      Overview
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="symbols" 
+                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    >
+                      Symbols
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="meaning" 
+                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    >
+                      Meaning
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="guidance" 
+                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    >
+                      Guidance
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="archetypes" 
+                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    >
+                      Archetypes
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="ask-the-seer" 
+                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    >
+                      Ask the Seer
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Introduction Tab */}
+                  <TabsContent value="introduction" className="space-y-6">
+                    <ToolIntroductionTab toolSlug="dream-symbols" />
+                  </TabsContent>
+
+                  {/* Overview Tab */}
+                  <TabsContent value="overview" className="space-y-6">
+                    <AnimatePresence mode="wait">
+                      {isLoading ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <motion.div
+                            animate={{ 
+                              rotate: 360,
+                              scale: [1, 1.2, 1]
+                            }}
+                            transition={{ 
+                              rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+                              scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                            }}
+                            className="mb-4 inline-block"
+                          >
+                            <Moon className="w-16 h-16 text-amber-400" />
+                          </motion.div>
+                          <motion.p 
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="text-slate-700 text-lg mt-4"
+                          >
+                            Decoding the symbols of your subconscious...
+                          </motion.p>
+                          <div className="flex justify-center gap-2 mt-6">
+                            {[0, 1, 2].map((i) => (
+                              <motion.div
+                                key={i}
+                                className="w-2 h-2 bg-amber-400 rounded-full"
+                                animate={{
+                                  scale: [1, 1.5, 1],
+                                  opacity: [0.5, 1, 0.5]
+                                }}
+                                transition={{
+                                  duration: 1.5,
+                                  repeat: Infinity,
+                                  delay: i * 0.2
+                                }}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      ) : error ? (
+                        <motion.div
+                          key="error"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <div className="text-6xl mb-4 animate-pulse">⚠️</div>
+                          <p className="text-red-600 text-lg mb-2 font-semibold">Analysis Error</p>
+                          <p className="text-slate-700 mb-4">{error}</p>
+                          <Button
+                            onClick={performDreamAnalysis}
+                            className="bg-amber-500 hover:bg-amber-600 text-slate-900"
+                          >
+                            Try Again
+                          </Button>
+                        </motion.div>
+                      ) : analysis ? (
+                        <motion.div
+                          key="results"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <DreamSymbolsCoachInterface 
+                            analysis={analysis}
+                            activeTab={activeTab}
+                            dreamDescription={dreamDescription}
+                            symbols={symbols}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="empty"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <motion.div
+                            animate={{ 
+                              y: [0, -10, 0],
+                              rotate: [0, 5, -5, 0]
+                            }}
+                            transition={{ 
+                              duration: 3,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            className="mb-6 inline-block"
+                          >
+                            <Moon className="w-20 h-20 text-amber-400" />
+                          </motion.div>
+                          <h3 className="text-3xl font-bold text-amber-800 mb-4">Ready to Decode Your Dreams?</h3>
+                          <p className="text-slate-700 leading-relaxed text-lg mb-6 max-w-2xl mx-auto">
+                            Share your dream above and let us unlock the hidden messages 
+                            from your subconscious mind through ancient symbolism and Jungian archetypes.
+                          </p>
+                          {!hasCompleteDetails && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="mt-6 p-4 bg-amber-100 border-2 border-amber-300 rounded-xl max-w-md mx-auto"
+                            >
+                              <p className="text-sm text-amber-800">
+                                💡 For enhanced interpretations, complete your profile with birth details
+                              </p>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </TabsContent>
+
+                  {/* Symbols Tab */}
+                  <TabsContent value="symbols" className="space-y-6">
+                    <AnimatePresence mode="wait">
+                      {isLoading ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <motion.div
+                            animate={{ 
+                              rotate: 360,
+                              scale: [1, 1.2, 1]
+                            }}
+                            transition={{ 
+                              rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+                              scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                            }}
+                            className="mb-4 inline-block"
+                          >
+                            <Moon className="w-16 h-16 text-amber-400" />
+                          </motion.div>
+                          <motion.p 
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="text-slate-700 text-lg mt-4"
+                          >
+                            Decoding the symbols of your subconscious...
+                          </motion.p>
+                        </motion.div>
+                      ) : error ? (
+                        <motion.div
+                          key="error"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <div className="text-6xl mb-4 animate-pulse">⚠️</div>
+                          <p className="text-red-600 text-lg mb-2 font-semibold">Analysis Error</p>
+                          <p className="text-slate-700 mb-4">{error}</p>
+                        </motion.div>
+                      ) : analysis ? (
+                        <motion.div
+                          key="results"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <DreamSymbolsCoachInterface 
+                            analysis={analysis}
+                            activeTab={activeTab}
+                            dreamDescription={dreamDescription}
+                            symbols={symbols}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="empty"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <Moon className="w-20 h-20 text-amber-400 mx-auto mb-4" />
+                          <p className="text-slate-700">Complete dream analysis to view symbols</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </TabsContent>
+
+                  {/* Meaning Tab */}
+                  <TabsContent value="meaning" className="space-y-6">
+                    <AnimatePresence mode="wait">
+                      {isLoading ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <Moon className="w-16 h-16 text-amber-400 mx-auto mb-4 animate-spin" />
+                          <p className="text-slate-700 text-lg">Decoding the symbols of your subconscious...</p>
+                        </motion.div>
+                      ) : error ? (
+                        <motion.div
+                          key="error"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <div className="text-6xl mb-4 animate-pulse">⚠️</div>
+                          <p className="text-red-600 text-lg mb-2 font-semibold">Analysis Error</p>
+                          <p className="text-slate-700 mb-4">{error}</p>
+                        </motion.div>
+                      ) : analysis ? (
+                        <motion.div
+                          key="results"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <DreamSymbolsCoachInterface 
+                            analysis={analysis}
+                            activeTab={activeTab}
+                            dreamDescription={dreamDescription}
+                            symbols={symbols}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="empty"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <Moon className="w-20 h-20 text-amber-400 mx-auto mb-4" />
+                          <p className="text-slate-700">Complete dream analysis to view meaning</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </TabsContent>
+
+                  {/* Guidance Tab */}
+                  <TabsContent value="guidance" className="space-y-6">
+                    <AnimatePresence mode="wait">
+                      {isLoading ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <Moon className="w-16 h-16 text-amber-400 mx-auto mb-4 animate-spin" />
+                          <p className="text-slate-700 text-lg">Decoding the symbols of your subconscious...</p>
+                        </motion.div>
+                      ) : error ? (
+                        <motion.div
+                          key="error"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <div className="text-6xl mb-4 animate-pulse">⚠️</div>
+                          <p className="text-red-600 text-lg mb-2 font-semibold">Analysis Error</p>
+                          <p className="text-slate-700 mb-4">{error}</p>
+                        </motion.div>
+                      ) : analysis ? (
+                        <motion.div
+                          key="results"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <DreamSymbolsCoachInterface 
+                            analysis={analysis}
+                            activeTab={activeTab}
+                            dreamDescription={dreamDescription}
+                            symbols={symbols}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="empty"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <Moon className="w-20 h-20 text-amber-400 mx-auto mb-4" />
+                          <p className="text-slate-700">Complete dream analysis to view guidance</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </TabsContent>
+
+                  {/* Archetypes Tab */}
+                  <TabsContent value="archetypes" className="space-y-6">
+                    <AnimatePresence mode="wait">
+                      {isLoading ? (
+                        <motion.div
+                          key="loading"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <Moon className="w-16 h-16 text-amber-400 mx-auto mb-4 animate-spin" />
+                          <p className="text-slate-700 text-lg">Decoding the symbols of your subconscious...</p>
+                        </motion.div>
+                      ) : error ? (
+                        <motion.div
+                          key="error"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <div className="text-6xl mb-4 animate-pulse">⚠️</div>
+                          <p className="text-red-600 text-lg mb-2 font-semibold">Analysis Error</p>
+                          <p className="text-slate-700 mb-4">{error}</p>
+                        </motion.div>
+                      ) : analysis ? (
+                        <motion.div
+                          key="results"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          <DreamSymbolsCoachInterface 
+                            analysis={analysis}
+                            activeTab={activeTab}
+                            dreamDescription={dreamDescription}
+                            symbols={symbols}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="empty"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="text-center py-16"
+                        >
+                          <Moon className="w-20 h-20 text-amber-400 mx-auto mb-4" />
+                          <p className="text-slate-700">Complete dream analysis to view archetypes</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </TabsContent>
+
+                  {/* Ask the Seer Tab */}
+                  <TabsContent value="ask-the-seer" className="space-y-6">
+                    {user?.uid ? (
+                      <DreamSymbolsSeerChatInterface
+                        analysis={analysis ?? undefined}
+                        userId={user.uid}
+                        userProfile={userProfile}
+                        sessionId={undefined}
+                      />
+                    ) : (
+                      <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden">
+                        <CardContent className="bg-gradient-to-br from-amber-50 to-yellow-50 text-center py-12">
+                          <MessageCircle className="w-12 h-12 text-amber-700 mx-auto mb-4" />
+                          <p className="text-slate-700 mb-4">Please sign in to ask The Seer about your dreams</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
 
@@ -226,31 +644,40 @@ export default function DreamSymbolsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="glass-card rounded-3xl p-8 mt-12 border border-white/10"
+          className="mt-12"
         >
-          <h3 className="text-2xl gold-glow mb-6 text-center">✨ Dream Symbol Features</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl mb-3">🌙</div>
-              <h4 className="text-soft font-semibold mb-2">Subconscious</h4>
-              <p className="text-soft/70 text-sm">Hidden messages</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">🔮</div>
-              <h4 className="text-soft font-semibold mb-2">Archetypes</h4>
-              <p className="text-soft/70 text-sm">Universal symbols</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">💭</div>
-              <h4 className="text-soft font-semibold mb-2">Personal</h4>
-              <p className="text-soft/70 text-sm">Individual meaning</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">✨</div>
-              <h4 className="text-soft font-semibold mb-2">Jungian</h4>
-              <p className="text-soft/70 text-sm">Depth psychology</p>
-            </div>
-          </div>
+          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100 rounded-t-3xl">
+              <CardTitle className="text-2xl text-amber-900 text-center flex items-center justify-center gap-2">
+                <Sparkles className="w-6 h-6" />
+                Dream Symbol Features
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="bg-gradient-to-br from-amber-50 to-yellow-50">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-4xl mb-3">🌙</div>
+                  <h4 className="text-amber-800 font-semibold mb-2">Subconscious</h4>
+                  <p className="text-slate-600 text-sm">Hidden messages</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl mb-3">🔮</div>
+                  <h4 className="text-amber-800 font-semibold mb-2">Archetypes</h4>
+                  <p className="text-slate-600 text-sm">Universal symbols</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl mb-3">💭</div>
+                  <h4 className="text-amber-800 font-semibold mb-2">Personal</h4>
+                  <p className="text-slate-600 text-sm">Individual meaning</p>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl mb-3">✨</div>
+                  <h4 className="text-amber-800 font-semibold mb-2">Jungian</h4>
+                  <p className="text-slate-600 text-sm">Depth psychology</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
       </div>
     </div>

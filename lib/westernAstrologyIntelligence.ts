@@ -3,6 +3,7 @@
 
 import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';
 import { getFirebaseDB } from './firebase';
+import { generatePersonalizedInsights, generateCareerGuidance, generateRelationshipInsights } from './western/interpretationEngine';
 
 export interface WesternAstrologyReading {
   id: string;
@@ -277,7 +278,32 @@ function calculateModalities(planets: { [key: string]: string }): { modalities: 
   return { modalities: modalityCounts, dominantModality };
 }
 
-function generatePersonalityInsights(sunSign: string, moonSign: string, risingSign: string, elements: any): WesternAstrologyReading['personality'] {
+function generatePersonalityInsights(sunSign: string, moonSign: string, risingSign: string, elements: any, chartData?: any): WesternAstrologyReading['personality'] {
+  // Use the new interpretation engine if chart data is available
+  if (chartData) {
+    const insights = generatePersonalizedInsights(chartData);
+    const careerGuidance = generateCareerGuidance(chartData);
+    const relationshipInsights = generateRelationshipInsights(chartData);
+    
+    return {
+      strengths: [
+        ...(insights.coreIdentity.interpretation?.strengths || []),
+        ...(insights.emotionalNature.interpretation?.strengths || []),
+        ...(insights.publicPersona.interpretation?.strengths || [])
+      ].slice(0, 5), // Limit to top 5
+      challenges: [
+        ...(insights.coreIdentity.interpretation?.challenges || []),
+        ...(insights.emotionalNature.interpretation?.challenges || []),
+        ...(insights.publicPersona.interpretation?.challenges || [])
+      ].slice(0, 5), // Limit to top 5
+      lifePurpose: insights.coreIdentity.interpretation?.shortInterpretation || 'Discover your unique life purpose through self-exploration',
+      careerGuidance: careerGuidance.primaryCareerPaths.join(', ') || 'Explore careers that align with your natural talents',
+      relationshipInsights: relationshipInsights.loveStyle || 'Develop healthy relationship patterns',
+      spiritualPath: insights.coreIdentity.interpretation?.growthPath || 'Embrace your spiritual journey with openness and wisdom'
+    };
+  }
+  
+  // Fallback to original logic if no chart data
   const strengths: string[] = [];
   const challenges: string[] = [];
   
@@ -364,7 +390,14 @@ function generateCurrentTransits(): WesternAstrologyReading['currentTransits'] {
   return transits;
 }
 
-function generateCoachingInsights(sunSign: string, elements: any): WesternAstrologyReading['coaching'] {
+function generateCoachingInsights(
+  sunSign: string, 
+  elementAnalysis: { 
+    elements: any; 
+    dominantElement: string; 
+    missingElements: string[] 
+  }
+): WesternAstrologyReading['coaching'] {
   const sunSignData = ZODIAC_SIGNS[sunSign as keyof typeof ZODIAC_SIGNS];
   
   let currentFocus = 'Focus on balancing your elemental energies and living your sun sign purpose';
@@ -384,8 +417,8 @@ function generateCoachingInsights(sunSign: string, elements: any): WesternAstrol
   }
   
   // Recommendations
-  if (elements.missingElements.length > 0) {
-    recommendations.push(`Balance missing elements: ${elements.missingElements.join(', ')}`);
+  if (elementAnalysis.missingElements.length > 0) {
+    recommendations.push(`Balance missing elements: ${elementAnalysis.missingElements.join(', ')}`);
   }
   recommendations.push('Study your natal chart to understand your unique gifts');
   recommendations.push('Work with current transits to maximize opportunities');
@@ -440,6 +473,8 @@ export async function getIntelligentWesternAstrologyData(
           cachedData.birthPlace === birthPlace) {
         console.log('Returning cached Western Astrology data for user:', userId);
         return cachedData;
+      } else {
+        console.log('Cache invalid - forcing recalculation for user:', userId);
       }
     }
   } catch (error) {
@@ -460,9 +495,22 @@ export async function getIntelligentWesternAstrologyData(
   const { elements, dominantElement, missingElements } = calculateElements(planetaryPositions);
   const { modalities, dominantModality } = calculateModalities(planetaryPositions);
   
-  const personality = generatePersonalityInsights(sunSign, moonSign, risingSign, elements);
+  // Convert object to array for interpretation engine
+  const planetsArray = Object.entries(planetaryPositions).map(([name, data]: [string, any]) => ({
+    name: name.charAt(0).toUpperCase() + name.slice(1),  // Capitalize: sun → Sun
+    ...data
+  }));
+  
+  const personality = generatePersonalityInsights(sunSign, moonSign, risingSign, elements, { 
+    planets: planetsArray,  // Now an array
+    houses: [], // Houses not needed for basic interpretations
+    sunSign,
+    moonSign,
+    risingSign
+  });
   const currentTransits = generateCurrentTransits();
-  const coaching = generateCoachingInsights(sunSign, elements);
+  const elementAnalysis = { elements, dominantElement, missingElements };
+  const coaching = generateCoachingInsights(sunSign, elementAnalysis);
   
   // Create comprehensive reading
   const reading: WesternAstrologyReading = {

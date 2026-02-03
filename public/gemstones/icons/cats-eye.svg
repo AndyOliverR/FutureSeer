@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="catseyeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#84CC16;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#65A30D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4D7C0F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <ellipse cx="32" cy="32" rx="20" ry="14" fill="url(#catseyeGrad)" stroke="#4D7C0F" stroke-width="1.5"/>
+  <ellipse cx="32" cy="32" rx="12" ry="8" fill="#D9F99D" opacity="0.4"/>
+  <line x1="20" y1="32" x2="44" y2="32" stroke="#FEF3C7" stroke-width="2" opacity="0.6"/>
+</svg>

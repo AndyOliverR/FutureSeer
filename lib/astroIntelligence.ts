@@ -3,7 +3,6 @@
 
 import { generateAstrologicalChart, validateBirthData } from './astroCalculations'
 import { generateFallbackAstroData } from './astroFallback'
-import { getBirthChart } from './astroapp'
 import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
 
@@ -60,36 +59,12 @@ class AstroIntelligence {
     const internalData = await this.generateInternalCalculation(birthDate, birthPlace, birthTime)
     
     // Decide whether to use external API based on intelligence
-    const shouldUseExternal = this.shouldUseExternalAPI(forceExternal)
+    const shouldUseExternal = this.shouldUseExternalAPI(forceExternal, birthDate)
     
-    if (shouldUseExternal) {
-      try {
-        console.log('🤖 AstroIntelligence: Using external API for learning opportunity...')
-        const externalData = await this.fetchExternalData(birthDate, birthPlace, birthTime)
-        
-        // Compare and learn from external data
-        await this.learnFromComparison(userId, birthDate, birthPlace, birthTime, internalData, externalData)
-        
-        // Return external data but mark it for learning
-        return {
-          ...externalData,
-          metadata: {
-            ...externalData.metadata,
-            source: 'external_with_learning',
-            internalConfidence: this.systemMetrics.confidence,
-            learningApplied: true
-          }
-        }
-      } catch (externalError) {
-        console.log('🤖 AstroIntelligence: External API failed, using internal with confidence boost')
-        this.updateMetrics('external_failure')
-        return this.enhanceInternalData(internalData, 'external_fallback')
-      }
-    } else {
-      console.log('🤖 AstroIntelligence: Using internal calculations with high confidence')
-      this.updateMetrics('internal_success')
-      return this.enhanceInternalData(internalData, 'intelligent_choice')
-    }
+    // Always use internal calculations - no direct API calls from fallback
+    console.log('🤖 AstroIntelligence: Using internal calculations with high confidence')
+    this.updateMetrics('internal_success')
+    return this.enhanceInternalData(internalData, 'intelligent_choice')
   }
 
   // Generate internal calculation with confidence scoring
@@ -111,7 +86,7 @@ class AstroIntelligence {
   }
 
   // Intelligent decision making for external API usage
-  private shouldUseExternalAPI(forceExternal: boolean): boolean {
+  private shouldUseExternalAPI(forceExternal: boolean, birthDate?: string): boolean {
     if (forceExternal) return true
     
     // Use external API for learning opportunities (10% of requests)
@@ -128,13 +103,15 @@ class AstroIntelligence {
     }
     
     // Use external API for new birth date ranges (learning edge cases)
-    const currentDate = new Date()
-    const birthYear = new Date(birthDate).getFullYear()
-    const yearDiff = currentDate.getFullYear() - birthYear
-    
-    if (yearDiff < 18 || yearDiff > 80) {
-      console.log('🤖 AstroIntelligence: Edge case detected, using external for learning')
-      return true
+    if (birthDate) {
+      const currentDate = new Date()
+      const birthYear = new Date(birthDate).getFullYear()
+      const yearDiff = currentDate.getFullYear() - birthYear
+      
+      if (yearDiff < 18 || yearDiff > 80) {
+        console.log('🤖 AstroIntelligence: Edge case detected, using external for learning')
+        return true
+      }
     }
     
     return false
@@ -143,9 +120,31 @@ class AstroIntelligence {
   // Fetch external data for learning
   private async fetchExternalData(birthDate: string, birthPlace: string, birthTime: string) {
     try {
-      const externalData = await getBirthChart(birthDate, birthPlace)
+      // Use Universal API instead of astroapp
+      const response = await fetch('/api/occult/universal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          system: 'western',
+          birthData: {
+            birthDate,
+            birthTime,
+            birthPlace,
+            latitude: 0, // Will be calculated by the API
+            longitude: 0 // Will be calculated by the API
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Universal API error: ${response.status}`);
+      }
+      
+      const result = await response.json();
       this.updateMetrics('external_success')
-      return externalData
+      return result.data
     } catch (error) {
       this.updateMetrics('external_failure')
       throw error
@@ -384,7 +383,334 @@ export async function getIntelligentAstroData(
   birthPlace: string,
   birthTime?: string
 ) {
-  return astroIntelligence.calculateAstroData(userId, birthDate, birthPlace, birthTime || "12:00")
+  console.log('🔮 getIntelligentAstroData: Starting with comprehensive data integration...')
+  
+      try {
+        // Use Universal API instead of astroapp
+        console.log('📡 Calling Universal API for astrological data...')
+        const response = await fetch('/api/occult/universal', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            system: 'vedic',
+            birthData: {
+              birthDate,
+              birthTime: birthTime || '12:00:00',
+              birthPlace,
+              latitude: 0, // Will be calculated by the API
+              longitude: 0 // Will be calculated by the API
+            }
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error(`Universal API failed: ${response.status}`)
+        }
+
+        const universalData = await response.json()
+    
+    if (universalData && universalData.data && universalData.data.planets && universalData.data.planets.length > 0) {
+      console.log('✅ Successfully retrieved comprehensive astrological data:', {
+        planets: universalData.data.planets.length,
+        hasChart: !!universalData.data.chart_image,
+        hasAscendant: !!universalData.data.ascendant,
+        hasDasha: !!universalData.data.dasha,
+        hasCurrentDasha: !!universalData.data.currentDasha,
+        chartType: universalData.data.chartType,
+        samplePlanet: universalData.data.planets[0]
+      })
+      
+      // Note: Chart rendering is now handled by VedicNorthChart and VedicSouthChart components
+      // using astronomia-vedic.ts for accurate calculations. No need to fetch chart images.
+      console.log('📊 Chart rendering will be handled by SVG components (VedicNorthChart, VedicSouthChart)');
+      
+      // Detect if this is Vedic data - check for Vedic-specific fields
+      const isVedicFormat = (
+        universalData.data.dasha || 
+        universalData.data.currentDasha || 
+        universalData.data.chartType === 'D1' ||
+        (universalData.data.planets && universalData.data.planets.some((p: any) => p.nakshatra))
+      );
+      
+      let transformedData;
+      
+      if (isVedicFormat) {
+        console.log('🔮 Detected Vedic format data - transforming to unified structure');
+        
+        // Transform Vedic format to include Western-compatible fields
+        const sunPlanet = universalData.data.planets?.find((p: any) => 
+          p.name?.toLowerCase() === 'sun' || p.name === 'Sun'
+        );
+        const moonPlanet = universalData.data.planets?.find((p: any) => 
+          p.name?.toLowerCase() === 'moon' || p.name === 'Moon'
+        );
+        
+        // Convert ascendant degree to sign
+        const ascendantDegree = typeof universalData.data.ascendant === 'number' 
+          ? universalData.data.ascendant 
+          : universalData.data.ascendant?.degreeInSign || 0;
+        const ascendantSign = getZodiacSignFromLongitude(ascendantDegree);
+        
+        transformedData = {
+          // Add Western-compatible fields extracted from Vedic data
+          sun_sign: sunPlanet?.sign || 'Unknown',
+          moon_sign: moonPlanet?.sign || 'Unknown',
+          rising_sign: ascendantSign,
+          
+          // Preserve all Vedic fields
+          ascendant: {
+            sign: ascendantSign,
+            degree: ascendantDegree,
+            signName: ascendantSign
+          },
+          dasha: universalData.data.dasha || [],
+          currentDasha: universalData.data.currentDasha || null,
+          divisionalCharts: universalData.data.divisionalCharts || {},
+          
+          // Planets - preserve Vedic structure
+          planets: universalData.data.planets || [],
+          
+          // Houses - preserve Vedic structure
+          houses: universalData.data.houses || [],
+          
+          // Calculate elements and modalities from planets
+          elements: calculateElementsFromPlanets(universalData.data.planets),
+          modalities: calculateModalitiesFromPlanets(universalData.data.planets),
+          
+          // Generate insights using extracted signs
+          personalityTraits: generatePersonalityTraits(
+            sunPlanet?.sign || sunPlanet?.signName,
+            moonPlanet?.sign || moonPlanet?.signName,
+            universalData.data.ascendant?.signName
+          ),
+          lifePath: generateLifePath(
+            sunPlanet?.sign || sunPlanet?.signName,
+            moonPlanet?.sign || moonPlanet?.signName
+          ),
+          challenges: generateChallenges(universalData.data.planets),
+          strengths: generateStrengths(universalData.data.planets),
+          compatibility: generateCompatibility(sunPlanet?.sign || sunPlanet?.signName),
+          
+          aspects: [],
+          currentTransits: [],
+          chartImage: null,
+          
+          metadata: {
+            version: '2.0',
+            source: 'universal_api_vedic',
+            systemConfidence: 0.95,
+            learningApplied: false,
+            isVedicFormat: true
+          }
+        };
+      } else {
+        console.log('🌟 Detected Western format data - using direct fields');
+        
+        // Western format - use existing code path
+        transformedData = {
+          sun_sign: universalData.data.sun_sign,
+          moon_sign: universalData.data.moon_sign,
+          rising_sign: universalData.data.rising_sign,
+          planets: universalData.data.planets.map((planet: any) => ({
+            name: planet.name,
+            sign: getZodiacSignFromLongitude(planet.longitude),
+            degree: planet.longitude % 30,
+            house: calculateHouseFromLongitude(planet.longitude, universalData.data.houses),
+            longitude: planet.longitude,
+            latitude: planet.latitude,
+            speed: planet.speed,
+            isRetrograde: planet.speed < 0
+          })),
+          houses: universalData.data.houses.map((house: any, index: number) => ({
+            number: index + 1,
+            sign: getZodiacSignFromLongitude(house.cusp),
+            degree: house.cusp % 30,
+            cusp: house.cusp
+          })),
+          aspects: [],
+          elements: calculateElementsFromPlanets(universalData.data.planets),
+          modalities: calculateModalitiesFromPlanets(universalData.data.planets),
+          personalityTraits: generatePersonalityTraits(universalData.data.sun_sign, universalData.data.moon_sign, universalData.data.rising_sign),
+          lifePath: generateLifePath(universalData.data.sun_sign, universalData.data.moon_sign),
+          challenges: generateChallenges(universalData.data.planets),
+          strengths: generateStrengths(universalData.data.planets),
+          compatibility: generateCompatibility(universalData.data.sun_sign),
+          currentTransits: [],
+          chartImage: universalData.data.chart_image,
+          metadata: {
+            version: '2.0',
+            source: 'universal_api',
+            systemConfidence: 0.95,
+            learningApplied: false
+          }
+        };
+      }
+      
+      return transformedData
+    }
+    
+    throw new Error('AstroApp API returned invalid data')
+    
+  } catch (astroAppError) {
+    console.warn('⚠️ Universal API failed, falling back to internal calculations:', astroAppError)
+    
+    // Fallback to internal calculations
+    return astroIntelligence.calculateAstroData(userId, birthDate, birthPlace, birthTime || "12:00")
+  }
+}
+
+// Helper function to convert longitude to zodiac sign
+function getZodiacSignFromLongitude(longitude: number): string {
+  const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
+                'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+  const signIndex = Math.floor(longitude / 30)
+  return signs[signIndex] || 'Unknown'
+}
+
+// Helper function to calculate house from longitude
+function calculateHouseFromLongitude(longitude: number, houses: any[]): number {
+  for (let i = 0; i < houses.length; i++) {
+    const currentCusp = houses[i].cusp
+    const nextCusp = houses[(i + 1) % houses.length].cusp
+    
+    if (longitude >= currentCusp && longitude < nextCusp) {
+      return i + 1
+    }
+  }
+  return 1 // Default to first house
+}
+
+// Helper function to calculate elements from planets
+function calculateElementsFromPlanets(planets: any[]): any {
+  const elements = { fire: 0, earth: 0, air: 0, water: 0 }
+  
+  planets.forEach(planet => {
+    const sign = getZodiacSignFromLongitude(planet.longitude)
+    switch (sign) {
+      case 'Aries':
+      case 'Leo':
+      case 'Sagittarius':
+        elements.fire++
+        break
+      case 'Taurus':
+      case 'Virgo':
+      case 'Capricorn':
+        elements.earth++
+        break
+      case 'Gemini':
+      case 'Libra':
+      case 'Aquarius':
+        elements.air++
+        break
+      case 'Cancer':
+      case 'Scorpio':
+      case 'Pisces':
+        elements.water++
+        break
+    }
+  })
+  
+  return elements
+}
+
+// Helper function to calculate modalities from planets
+function calculateModalitiesFromPlanets(planets: any[]): any {
+  const modalities = { cardinal: 0, fixed: 0, mutable: 0 }
+  
+  planets.forEach(planet => {
+    const sign = getZodiacSignFromLongitude(planet.longitude)
+    switch (sign) {
+      case 'Aries':
+      case 'Cancer':
+      case 'Libra':
+      case 'Capricorn':
+        modalities.cardinal++
+        break
+      case 'Taurus':
+      case 'Leo':
+      case 'Scorpio':
+      case 'Aquarius':
+        modalities.fixed++
+        break
+      case 'Gemini':
+      case 'Virgo':
+      case 'Sagittarius':
+      case 'Pisces':
+        modalities.mutable++
+        break
+    }
+  })
+  
+  return modalities
+}
+
+// Helper functions for personality analysis
+function generatePersonalityTraits(sunSign?: string, moonSign?: string, risingSign?: string): string[] {
+  const traits: string[] = [];
+  
+  if (sunSign) {
+    traits.push(`${sunSign} Sun - Natural leadership and ${sunSign.toLowerCase()} energy`);
+  }
+  if (moonSign) {
+    traits.push(`${moonSign} Moon - Emotional nature and ${moonSign.toLowerCase()} intuition`);
+  }
+  if (risingSign) {
+    traits.push(`${risingSign} Rising - First impression and ${risingSign.toLowerCase()} approach`);
+  }
+  
+  // Fallback if no signs provided
+  if (traits.length === 0) {
+    traits.push('Unique personality traits based on planetary positions');
+  }
+  
+  return traits;
+}
+
+function generateLifePath(sunSign?: string, moonSign?: string): string {
+  if (sunSign && moonSign) {
+    return `Your life path combines ${sunSign} determination with ${moonSign} intuition, creating a unique journey of self-discovery and growth`;
+  }
+  return 'Your life path is a unique journey of self-discovery and growth based on your planetary positions';
+}
+
+function generateChallenges(planets: any[]): string[] {
+  return [
+    'Balancing personal needs with responsibilities',
+    'Managing emotional fluctuations',
+    'Developing patience and persistence'
+  ]
+}
+
+function generateStrengths(planets: any[]): string[] {
+  return [
+    'Natural intuition and insight',
+    'Strong determination and willpower',
+    'Ability to adapt and grow'
+  ]
+}
+
+function generateCompatibility(sunSign?: string): any {
+  const compatibleSigns = {
+    'Aries': ['Leo', 'Sagittarius', 'Gemini', 'Aquarius'],
+    'Taurus': ['Virgo', 'Capricorn', 'Cancer', 'Pisces'],
+    'Gemini': ['Libra', 'Aquarius', 'Aries', 'Leo'],
+    'Cancer': ['Scorpio', 'Pisces', 'Taurus', 'Virgo'],
+    'Leo': ['Sagittarius', 'Aries', 'Gemini', 'Libra'],
+    'Virgo': ['Capricorn', 'Taurus', 'Cancer', 'Scorpio'],
+    'Libra': ['Aquarius', 'Gemini', 'Leo', 'Sagittarius'],
+    'Scorpio': ['Pisces', 'Cancer', 'Virgo', 'Capricorn'],
+    'Sagittarius': ['Aries', 'Leo', 'Libra', 'Aquarius'],
+    'Capricorn': ['Taurus', 'Virgo', 'Scorpio', 'Pisces'],
+    'Aquarius': ['Gemini', 'Libra', 'Sagittarius', 'Aries'],
+    'Pisces': ['Cancer', 'Scorpio', 'Capricorn', 'Taurus']
+  }
+  
+  return {
+    bestMatches: sunSign ? (compatibleSigns[sunSign as keyof typeof compatibleSigns] || []) : [],
+    challengingMatches: []
+  }
 }
 
 export function getSystemStatus() {

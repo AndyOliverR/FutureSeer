@@ -1,22 +1,33 @@
-import { PersonData, SynastryCompatibility, SynastryAspect, HouseOverlay } from '@/hooks/useSynastry'
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
-import { getFirebaseDB } from './firebase';
+'use client'
+
+import { PersonData, SynastryCompatibility, SynastryAspect, HouseOverlay, PersonNatalSummary } from '@/hooks/useSynastry'
+import { universalOccultService, BirthData } from './universalOccultService'
+import { getCoordinatesWithFallback } from './geocoding'
 
 class SynastryIntelligence {
-  private async getAstroData(birthData: PersonData) {
+  private async getAstroData(birthData: PersonData): Promise<any> {
     try {
-      const response = await fetch('/api/astroapp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'natal',
-          birthTime: birthData.birthTime,
-          birthPlace: birthData.birthPlace
-        })
+      // Geocode birth location if needed
+      const coords = await getCoordinatesWithFallback(birthData.birthPlace)
+      
+      const birthDataFormatted: BirthData = {
+        birthDate: '', // Will be provided by caller
+        birthTime: birthData.birthTime,
+        birthPlace: birthData.birthPlace,
+        latitude: coords.latitude,
+        longitude: coords.longitude
+      }
+      
+      const result = await universalOccultService.calculateWesternChart(birthDataFormatted, {
+        houseSystem: 'placidus',
+        includeAspects: true
       })
       
-      if (!response.ok) throw new Error('Failed to fetch astro data')
-      return await response.json()
+      if (!result.success) {
+        throw new Error('Failed to calculate birth chart')
+      }
+      
+      return result.data
     } catch (error) {
       console.error('Error fetching astro data:', error)
       throw new Error('Unable to calculate birth chart')
@@ -25,81 +36,248 @@ class SynastryIntelligence {
 
   async analyzeCompatibility(person1: PersonData, person2: PersonData): Promise<SynastryCompatibility> {
     try {
-      // Get birth charts for both people
-      const [chart1, chart2] = await Promise.all([
-        this.getAstroData(person1),
-        this.getAstroData(person2)
+      console.log('💕 SynastryIntelligence.analyzeCompatibility called', { person1, person2 })
+      
+      // Parse birth dates from birthTime strings (format: "YYYY-MM-DD HH:MM" or separate date/time)
+      // BirthTime format can be "YYYY-MM-DD HH:MM" or just "HH:MM"
+      let person1Date = ''
+      let person1Time = person1.birthTime
+      let person2Date = ''
+      let person2Time = person2.birthTime
+      
+      // Check if birthTime includes date
+      if (person1.birthTime.includes('T') || person1.birthTime.includes(' ')) {
+        const parts = person1.birthTime.split(/[T ]/)
+        person1Date = parts[0]
+        person1Time = parts[1] || person1.birthTime
+      }
+      
+      if (person2.birthTime.includes('T') || person2.birthTime.includes(' ')) {
+        const parts = person2.birthTime.split(/[T ]/)
+        person2Date = parts[0]
+        person2Time = parts[1] || person2.birthTime
+      }
+      
+      // If no date in birthTime, we need to get it from caller - for now use today's date as fallback
+      if (!person1Date) {
+        console.warn('⚠️ No birth date found in person1.birthTime, using today as fallback')
+        person1Date = new Date().toISOString().split('T')[0]
+      }
+      
+      if (!person2Date) {
+        console.warn('⚠️ No birth date found in person2.birthTime, using today as fallback')
+        person2Date = new Date().toISOString().split('T')[0]
+      }
+      
+      console.log('💕 Parsed dates and times:', {
+        person1: { date: person1Date, time: person1Time },
+        person2: { date: person2Date, time: person2Time }
+      })
+      
+      // Geocode birth locations
+      console.log('💕 Geocoding locations...', {
+        person1Location: person1.birthPlace,
+        person2Location: person2.birthPlace
+      })
+      
+      const [coords1, coords2] = await Promise.all([
+        getCoordinatesWithFallback(person1.birthPlace),
+        getCoordinatesWithFallback(person2.birthPlace)
       ])
+      
+      console.log('💕 Geocoding complete:', { coords1, coords2 })
+      
+      // Prepare birth data for both persons
+      const birthData1: BirthData = {
+        birthDate: person1Date,
+        birthTime: person1Time,
+        birthPlace: person1.birthPlace,
+        latitude: coords1.latitude,
+        longitude: coords1.longitude
+      }
+      
+      const birthData2: BirthData = {
+        birthDate: person2Date,
+        birthTime: person2Time,
+        birthPlace: person2.birthPlace,
+        latitude: coords2.latitude,
+        longitude: coords2.longitude
+      }
+      
+      // Get birth charts for both people using universalOccultService
+      console.log('💕 Calculating Western charts...')
+      const [chart1Result, chart2Result] = await Promise.all([
+        universalOccultService.calculateWesternChart(birthData1, {
+          houseSystem: 'placidus',
+          includeAspects: true
+        }),
+        universalOccultService.calculateWesternChart(birthData2, {
+          houseSystem: 'placidus',
+          includeAspects: true
+        })
+      ])
+      
+      console.log('💕 Chart calculations complete:', {
+        chart1Success: chart1Result.success,
+        chart2Success: chart2Result.success,
+        chart1Planets: chart1Result.data?.planets?.length || 0,
+        chart2Planets: chart2Result.data?.planets?.length || 0
+      })
+      
+      if (!chart1Result.success || !chart2Result.success) {
+        const errorMsg = `Failed to calculate charts: chart1=${chart1Result.success ? 'OK' : 'FAIL'}, chart2=${chart2Result.success ? 'OK' : 'FAIL'}`
+        console.error('❌', errorMsg)
+        throw new Error(errorMsg)
+      }
+      
+      const chart1 = chart1Result.data
+      const chart2 = chart2Result.data
 
       // Calculate aspects between charts
+      console.log('💕 Calculating aspects...')
       const aspects = this.calculateAspects(chart1, chart2)
+      console.log('💕 Calculated', aspects.length, 'aspects')
       
       // Calculate house overlays
+      console.log('💕 Calculating house overlays...')
       const houseOverlays = this.calculateHouseOverlays(chart1, chart2)
+      console.log('💕 Calculated', houseOverlays.length, 'house overlays')
       
       // Calculate composite chart
+      console.log('💕 Calculating composite chart...')
       const composite = this.calculateComposite(chart1, chart2)
+      console.log('💕 Composite chart:', composite)
       
       // Generate overview
+      console.log('💕 Generating overview...')
       const overview = this.generateOverview(aspects, houseOverlays, composite)
+      console.log('💕 Overview generated:', overview)
       
       // Generate timing insights
+      console.log('💕 Generating timing insights...')
       const timing = this.generateTimingInsights(chart1, chart2)
+      console.log('💕 Timing insights generated')
 
-      return {
+      // Build per-person natal summaries (Sun/Moon/Venus/Mars sign + house) for Ask the Seer
+      const person1Natal = this.buildNatalSummary(chart1)
+      const person2Natal = this.buildNatalSummary(chart2)
+
+      const result = {
         overview,
         aspects,
         houseOverlays,
         composite,
-        timing
+        timing,
+        person1Natal,
+        person2Natal
       }
+      
+      console.log('✅ Synastry analysis complete:', {
+        score: overview.overallScore,
+        aspectsCount: aspects.length,
+        houseOverlaysCount: houseOverlays.length
+      })
+      
+      return result
     } catch (error) {
-      console.error('Synastry analysis error:', error)
-      throw new Error('Failed to analyze compatibility')
+      console.error('❌ Synastry analysis error:', error)
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+      throw new Error(`Failed to analyze compatibility: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
   private calculateAspects(chart1: any, chart2: any): SynastryAspect[] {
     const aspects: SynastryAspect[] = []
-    const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+    const planets1 = chart1.planets || []
+    const planets2 = chart2.planets || []
     
-    for (const planet1 of planets) {
-      for (const planet2 of planets) {
-        const pos1 = chart1.planets?.[planet1]?.position || 0
-        const pos2 = chart2.planets?.[planet2]?.position || 0
+    // Create planet maps for quick lookup
+    const planetMap1: Record<string, any> = {}
+    const planetMap2: Record<string, any> = {}
+    
+    planets1.forEach((p: any) => { planetMap1[p.name] = p })
+    planets2.forEach((p: any) => { planetMap2[p.name] = p })
+    
+    const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+    
+    for (const planet1Name of planetNames) {
+      for (const planet2Name of planetNames) {
+        const planet1 = planetMap1[planet1Name]
+        const planet2 = planetMap2[planet2Name]
         
-        const aspect = this.calculateAspect(pos1, pos2)
+        if (!planet1 || !planet2) continue
+        
+        const lon1 = planet1.longitude || 0
+        const lon2 = planet2.longitude || 0
+        
+        const aspect = this.calculateAspect(lon1, lon2, planet1Name, planet2Name)
         if (aspect) {
           aspects.push({
-            planet1,
-            planet2,
+            planet1: planet1Name,
+            planet2: planet2Name,
             aspect: aspect.type,
             orb: aspect.orb,
             influence: aspect.influence,
-            description: this.getAspectDescription(planet1, planet2, aspect.type, aspect.influence)
+            description: this.getAspectDescription(planet1Name, planet2Name, aspect.type, aspect.influence)
           })
         }
       }
     }
     
-    return aspects.sort((a, b) => b.orb - a.orb) // Sort by orb (closest aspects first)
+    return aspects.sort((a, b) => a.orb - b.orb) // Sort by orb (closest aspects first)
   }
 
-  private calculateAspect(pos1: number, pos2: number) {
-    const diff = Math.abs(pos1 - pos2)
-    const orb = Math.min(diff, 360 - diff)
+  private calculateAspect(lon1: number, lon2: number, planet1Name: string, planet2Name: string) {
+    const diff = Math.abs(lon1 - lon2)
+    const normalizedAngle = Math.min(diff, 360 - diff)
     
-    // Major aspects
-    if (orb <= 8) { // Conjunction
-      return { type: 'Conjunction', orb, influence: 'neutral' as const }
-    } else if (orb >= 172 && orb <= 188) { // Opposition
-      return { type: 'Opposition', orb: Math.abs(orb - 180), influence: 'challenging' as const }
-    } else if (orb >= 58 && orb <= 62) { // Sextile
-      return { type: 'Sextile', orb: Math.abs(orb - 60), influence: 'harmonious' as const }
-    } else if (orb >= 88 && orb <= 92) { // Square
-      return { type: 'Square', orb: Math.abs(orb - 90), influence: 'challenging' as const }
-    } else if (orb >= 118 && orb <= 122) { // Trine
-      return { type: 'Trine', orb: Math.abs(orb - 120), influence: 'harmonious' as const }
+    // Variable orbs based on planet importance
+    const importantPlanets = ['Sun', 'Moon', 'Venus', 'Mars']
+    const outerPlanets = ['Uranus', 'Neptune', 'Pluto']
+    
+    let maxOrbConjunction = 8
+    let maxOrbMajor = 8
+    let maxOrbMinor = 6
+    
+    if (importantPlanets.includes(planet1Name) || importantPlanets.includes(planet2Name)) {
+      maxOrbConjunction += 2
+      maxOrbMajor += 2
+      maxOrbMinor += 2
+    }
+    
+    if (outerPlanets.includes(planet1Name) || outerPlanets.includes(planet2Name)) {
+      maxOrbConjunction += 2
+      maxOrbMajor += 2
+      maxOrbMinor += 2
+    }
+    
+    // Check for conjunction
+    if (normalizedAngle <= maxOrbConjunction) {
+      return { type: 'conjunction', orb: normalizedAngle, influence: 'neutral' as const }
+    }
+    
+    // Check for opposition
+    const oppDiff = Math.abs(normalizedAngle - 180)
+    if (oppDiff <= maxOrbMajor) {
+      return { type: 'opposition', orb: oppDiff, influence: 'challenging' as const }
+    }
+    
+    // Check for trine
+    const trineDiff = Math.abs(normalizedAngle - 120)
+    if (trineDiff <= maxOrbMajor) {
+      return { type: 'trine', orb: trineDiff, influence: 'harmonious' as const }
+    }
+    
+    // Check for square
+    const squareDiff = Math.abs(normalizedAngle - 90)
+    if (squareDiff <= maxOrbMajor) {
+      return { type: 'square', orb: squareDiff, influence: 'challenging' as const }
+    }
+    
+    // Check for sextile
+    const sextileDiff = Math.abs(normalizedAngle - 60)
+    if (sextileDiff <= maxOrbMinor) {
+      return { type: 'sextile', orb: sextileDiff, influence: 'harmonious' as const }
     }
     
     return null
@@ -140,32 +318,35 @@ class SynastryIntelligence {
 
   private calculateHouseOverlays(chart1: any, chart2: any): HouseOverlay[] {
     const overlays: HouseOverlay[] = []
-    const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+    const planets1 = chart1.planets || []
+    const planets2 = chart2.planets || []
+    const houses1 = chart1.houses || []
+    const houses2 = chart2.houses || []
     
     // Person 1's planets in Person 2's houses
-    for (const planet of planets) {
-      const planetPos = chart1.planets?.[planet]?.position || 0
-      const house = this.calculateHouse(planetPos, chart2.houses || [])
+    for (const planet of planets1) {
+      const planetLongitude = planet.longitude || 0
+      const house = this.calculateHouse(planetLongitude, houses2)
       if (house) {
         overlays.push({
-          planet,
+          planet: planet.name,
           house,
           person: 'person2',
-          description: this.getHouseOverlayDescription(planet, house, 'person2')
+          description: this.getHouseOverlayDescription(planet.name, house, 'person2')
         })
       }
     }
     
     // Person 2's planets in Person 1's houses
-    for (const planet of planets) {
-      const planetPos = chart2.planets?.[planet]?.position || 0
-      const house = this.calculateHouse(planetPos, chart1.houses || [])
+    for (const planet of planets2) {
+      const planetLongitude = planet.longitude || 0
+      const house = this.calculateHouse(planetLongitude, houses1)
       if (house) {
         overlays.push({
-          planet,
+          planet: planet.name,
           house,
           person: 'person1',
-          description: this.getHouseOverlayDescription(planet, house, 'person1')
+          description: this.getHouseOverlayDescription(planet.name, house, 'person1')
         })
       }
     }
@@ -173,22 +354,40 @@ class SynastryIntelligence {
     return overlays
   }
 
-  private calculateHouse(planetPos: number, houses: any[]): number | null {
+  private calculateHouse(planetLongitude: number, houses: any[]): number | null {
     if (!houses || houses.length === 0) return null
+    
+    const normalizedLongitude = ((planetLongitude % 360) + 360) % 360
     
     for (let i = 0; i < houses.length; i++) {
       const currentHouse = houses[i]
       const nextHouse = houses[(i + 1) % houses.length]
       
-      if (planetPos >= currentHouse.position && planetPos < nextHouse.position) {
-        return i + 1
+      // Handle different house data formats
+      const currentCusp = currentHouse.longitude || currentHouse.cusp || currentHouse.degree || 0
+      const nextCusp = nextHouse.longitude || nextHouse.cusp || nextHouse.degree || 0
+      
+      const currentCuspNorm = ((currentCusp % 360) + 360) % 360
+      const nextCuspNorm = ((nextCusp % 360) + 360) % 360
+      
+      // Handle crossing 0 degrees
+      if (currentCuspNorm > nextCuspNorm) {
+        // We're crossing the 0 degree point
+        if (normalizedLongitude >= currentCuspNorm || normalizedLongitude < nextCuspNorm) {
+          return i + 1
+        }
+      } else {
+        // Normal case
+        if (normalizedLongitude >= currentCuspNorm && normalizedLongitude < nextCuspNorm) {
+          return i + 1
+        }
       }
     }
     
-    return 1 // Default to first house
+    return 1 // Default to first house if not found
   }
 
-  private getHouseOverlayDescription(planet: string, house: number, person: string): string {
+  private getHouseOverlayDescription(planet: string, house: number, person: 'person1' | 'person2'): string {
     const houseMeanings = {
       1: 'identity and self-expression',
       2: 'values and material security',
@@ -230,27 +429,102 @@ class SynastryIntelligence {
     }
   }
 
+  /** Build PersonNatalSummary (Sun/Moon/Venus/Mars sign + house) from a chart for Ask the Seer. */
+  private buildNatalSummary(chart: any): PersonNatalSummary {
+    const planets = chart.planets || []
+    const houses = chart.houses || []
+    const planetMap: Record<string, { sign?: string; longitude?: number; house?: number }> = {}
+    planets.forEach((p: any) => {
+      planetMap[p.name] = {
+        sign: p.sign,
+        longitude: p.longitude,
+        house: p.house
+      }
+    })
+
+    const getEntry = (name: string): { sign: string; house: number } => {
+      const p = planetMap[name]
+      if (!p) return { sign: 'Unknown', house: 1 }
+      const sign = p.sign || (p.longitude != null ? this.getSign(p.longitude) : 'Unknown')
+      const house = p.house ?? (p.longitude != null && houses.length ? this.calculateHouse(p.longitude, houses) ?? 1 : 1)
+      return { sign, house }
+    }
+
+    return {
+      sun: getEntry('Sun'),
+      moon: getEntry('Moon'),
+      venus: getEntry('Venus'),
+      mars: getEntry('Mars')
+    }
+  }
+
   private calculateComposite(chart1: any, chart2: any) {
-    // Simplified composite calculation
-    const sun1 = chart1.planets?.Sun?.position || 0
-    const sun2 = chart2.planets?.Sun?.position || 0
-    const moon1 = chart1.planets?.Moon?.position || 0
-    const moon2 = chart2.planets?.Moon?.position || 0
+    const planets1 = chart1.planets || []
+    const planets2 = chart2.planets || []
     
-    const compositeSun = (sun1 + sun2) / 2
-    const compositeMoon = (moon1 + moon2) / 2
+    // Create planet maps
+    const planetMap1: Record<string, any> = {}
+    const planetMap2: Record<string, any> = {}
+    
+    planets1.forEach((p: any) => { planetMap1[p.name] = p })
+    planets2.forEach((p: any) => { planetMap2[p.name] = p })
+    
+    // Calculate midpoint for each planet
+    const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+    let compositeSun = 0
+    let compositeMoon = 0
+    let compositeAsc = 0
+    
+    for (const name of planetNames) {
+      const p1 = planetMap1[name]
+      const p2 = planetMap2[name]
+      
+      if (p1 && p2) {
+        let lon1 = p1.longitude || 0
+        let lon2 = p2.longitude || 0
+        
+        // Normalize longitudes
+        lon1 = ((lon1 % 360) + 360) % 360
+        lon2 = ((lon2 % 360) + 360) % 360
+        
+        // Calculate midpoint (handle 0° crossing)
+        let compositeLon = (lon1 + lon2) / 2
+        if (Math.abs(lon1 - lon2) > 180) {
+          compositeLon = (lon1 + lon2 + 360) / 2
+          compositeLon = compositeLon % 360
+        }
+        compositeLon = ((compositeLon % 360) + 360) % 360
+        
+        if (name === 'Sun') compositeSun = compositeLon
+        if (name === 'Moon') compositeMoon = compositeLon
+      }
+    }
+    
+    // Calculate composite Ascendant (midpoint of both ascendants)
+    const asc1Lon = chart1.houses?.[0]?.longitude || chart1.ascendant || 0
+    const asc2Lon = chart2.houses?.[0]?.longitude || chart2.ascendant || 0
+    let asc1Norm = ((asc1Lon % 360) + 360) % 360
+    let asc2Norm = ((asc2Lon % 360) + 360) % 360
+    
+    let ascMidpoint = (asc1Norm + asc2Norm) / 2
+    if (Math.abs(asc1Norm - asc2Norm) > 180) {
+      ascMidpoint = (asc1Norm + asc2Norm + 360) / 2
+      ascMidpoint = ascMidpoint % 360
+    }
+    compositeAsc = ((ascMidpoint % 360) + 360) % 360
     
     return {
       sunSign: this.getSign(compositeSun),
       moonSign: this.getSign(compositeMoon),
-      ascendant: 'Libra', // Simplified
+      ascendant: this.getSign(compositeAsc),
       description: `Your composite chart shows a ${this.getSign(compositeSun)} Sun and ${this.getSign(compositeMoon)} Moon, indicating a relationship focused on ${this.getCompositeFocus(compositeSun, compositeMoon)}`
     }
   }
 
-  private getSign(position: number): string {
+  private getSign(longitude: number): string {
     const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
-    const signIndex = Math.floor(position / 30)
+    const normalizedLongitude = ((longitude % 360) + 360) % 360
+    const signIndex = Math.floor(normalizedLongitude / 30)
     return signs[signIndex] || 'Aries'
   }
 

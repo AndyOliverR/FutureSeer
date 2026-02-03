@@ -55,6 +55,9 @@ const config: Config = {
         sans: ["Inter", "sans-serif"],
         poppins: ["Poppins", "sans-serif"],
         serif: ["var(--font-cormorant)", "Times New Roman", "serif"],
+        heading: ["Cinzel", "serif"],
+        'sacred-heading': ["Cinzel", "serif"],
+        'sacred-body': ["Cormorant Garamond", "serif"],
       },
       spacing: {
         "18": "4.5rem",

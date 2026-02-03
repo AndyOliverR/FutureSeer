@@ -11,8 +11,8 @@ interface DailySeerPreviewProps {
 export function DailySeerPreview({ date, summary, callToAction }: DailySeerPreviewProps) {
   const router = useRouter()
   return (
-    <section className="w-full rounded-2xl backdrop-blur-md bg-slate-900/30 border border-slate-700/50 shadow-lg p-6 flex flex-col items-center mb-2 card-glow">
-      <h3 className="text-xl font-serif text-amber-200 mb-2">Today’s Seer Preview</h3>
+    <section className="w-full rounded-2xl backdrop-blur-sm bg-slate-900/30 border border-slate-700/50 shadow-lg p-6 flex flex-col items-center mb-2 card-glow">
+      <h3 className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 mb-2">Today's Seer Preview</h3>
       <div className="text-xs text-slate-400 font-serif mb-1">{date}</div>
       <div className="text-lg font-serif text-amber-100 mb-3 text-center max-w-xl">{summary}</div>
       <button

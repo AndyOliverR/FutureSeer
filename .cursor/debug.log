@@ -1,0 +1,23 @@
+{"location":"firebase.ts:signInWithGoogle","message":"Sign-in starting","data":{"forceReauth":false},"timestamp":1768980180468,"sessionId":"debug-session","hypothesisId":"G"}
+{"location":"firebase.ts:signInWithGoogle","message":"Configured provider for normal signin","data":{"prompt":"select_account"},"timestamp":1768980180468,"sessionId":"debug-session","hypothesisId":"I"}
+{"location":"firebase.ts:signInWithGoogle","message":"Popup authentication succeeded","data":{"userEmail":"andyrozario7@gmail.com","providerId":"google.com"},"timestamp":1768980186587,"sessionId":"debug-session","hypothesisId":"J"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980193189,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Redirecting to Google signout","data":{},"timestamp":1768980193189,"sessionId":"debug-session","hypothesisId":"L"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980218521,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980218523,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signInWithGoogle","message":"Sign-in starting","data":{"forceReauth":false},"timestamp":1768980225204,"sessionId":"debug-session","hypothesisId":"G"}
+{"location":"firebase.ts:signInWithGoogle","message":"Configured provider for normal signin","data":{"prompt":"select_account"},"timestamp":1768980225205,"sessionId":"debug-session","hypothesisId":"I"}
+{"location":"firebase.ts:signInWithGoogle","message":"Popup authentication succeeded","data":{"userEmail":"andyrozario7@gmail.com","providerId":"google.com"},"timestamp":1768980231174,"sessionId":"debug-session","hypothesisId":"J"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980240024,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Redirecting to Google signout","data":{},"timestamp":1768980240024,"sessionId":"debug-session","hypothesisId":"L"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980329731,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980329733,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signInWithGoogle","message":"Sign-in starting","data":{"forceReauth":false},"timestamp":1768980337039,"sessionId":"debug-session","hypothesisId":"G"}
+{"location":"firebase.ts:signInWithGoogle","message":"Configured provider for normal signin","data":{"prompt":"select_account"},"timestamp":1768980337039,"sessionId":"debug-session","hypothesisId":"I"}
+{"location":"firebase.ts:signInWithGoogle","message":"Popup authentication succeeded","data":{"userEmail":"andyrozario7@gmail.com","providerId":"google.com"},"timestamp":1768980342739,"sessionId":"debug-session","hypothesisId":"J"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980364002,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Redirecting to Google signout","data":{},"timestamp":1768980364002,"sessionId":"debug-session","hypothesisId":"L"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980376023,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980376024,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980392287,"sessionId":"debug-session","hypothesisId":"K"}
+{"location":"firebase.ts:signOutUser","message":"Starting signout process","data":{},"timestamp":1768980392288,"sessionId":"debug-session","hypothesisId":"K"}

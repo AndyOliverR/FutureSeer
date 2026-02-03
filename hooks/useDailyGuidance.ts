@@ -82,6 +82,7 @@ export function useDailyGuidance() {
           const remedySymbolicData = getSymbolicData(remedyQuestion, astroData);
           const remedyPrediction = await generateAIPrediction(remedyQuestion, astroData, remedySymbolicData);
           const data = {
+            userId: user.uid, // Add userId for Firestore security rules
             themes: themePredictions,
             symbol: {
               icon: '🔮',

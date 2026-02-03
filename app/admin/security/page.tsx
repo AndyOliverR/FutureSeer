@@ -1,11 +1,43 @@
+"use client";
+
+import { useAuth } from '@/hooks/use-auth';
 import { SecurityDashboard } from '@/components/admin/SecurityDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Header } from '@/components/header';
 
 export default function AdminSecurityPage() {
+  const { isAdmin, isSuperadmin, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center cosmic-background-restored">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4" />
+          <p className="text-amber-200">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin && !isSuperadmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center cosmic-background-restored">
+        <Card className="w-96 bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <CardContent className="p-6 text-center">
+            <Shield className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-amber-200 mb-2">Admin Access Required</h2>
+            <p className="text-gray-400 mb-4">You need admin or superadmin privileges to access this page.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen cosmic-background-restored p-4">
+      <Header />
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">

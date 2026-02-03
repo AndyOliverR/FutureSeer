@@ -1,14 +1,101 @@
 /** @type {import('next').NextConfig} */
+const isCapacitorBuild = process.env.CAPACITOR_BUILD === '1';
+
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  serverExternalPackages: ['firebase-admin'],
+  // Static export for Capacitor (mobile) only; default build keeps API routes and SSR
+  ...(isCapacitorBuild ? { output: 'export' } : {}),
+  // Use webpack instead of Turbopack (project has custom webpack config)
+  turbopack: {},
+  webpack: (config, { dev, isServer }) => {
+    // Suppress source map warnings for Firebase Admin SDK
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings || []),
+      /Invalid source map/,
+      /Only conformant source maps can be used/,
+    ];
+    
+    // Allow JSON assertions for ESM (astronomia VSOP data)
+    config.module.rules.push({
+      test: /\.json$/,
+      type: "json",
+    });
+    
+    // Handle astronomia imports for browser compatibility
+    config.resolve.extensionAlias = {
+      '.js': ['.js', '.ts', '.tsx'],
+    };
+    
+    // Optimize Firebase Admin SDK for server-side
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('firebase-admin');
+    }
+    
+    // Handle Node.js modules in browser environment
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        'fs/promises': false,
+        path: false,
+        crypto: false,
+        stream: false,
+        util: false,
+        buffer: false,
+        process: false,
+      };
+    }
+    
+    // Optimize development builds for faster compilation
+    if (dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        splitChunks: false,
+      };
+    }
+    
+    // Optimize production builds for better chunk splitting and preload strategy
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Create separate chunks for below-the-fold components
+            featureBlocks: {
+              name: 'feature-blocks',
+              test: /[\\/]components[\\/]feature-blocks/,
+              priority: 10,
+              reuseExistingChunk: true,
+            },
+            stickyCTA: {
+              name: 'sticky-cta',
+              test: /[\\/]components[\\/]sticky-cta/,
+              priority: 10,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      };
+    }
+    
+    return config;
   },
-  typescript: {
-    ignoreBuildErrors: true,
+  experimental: {
+    esmExternals: true,
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
-  images: {
-    unoptimized: true,
+  // Optimize on-demand entries to reduce recompilations
+  onDemandEntries: {
+    maxInactiveAge: 60 * 1000, // Keep pages in memory longer (60 seconds)
+    pagesBufferLength: 5, // Increase buffer to reduce recompilations
   },
+  // Add security headers to fix Cross-Origin-Opener-Policy warnings
   async headers() {
     return [
       {
@@ -36,8 +123,8 @@ const nextConfig = {
           },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

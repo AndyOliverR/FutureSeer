@@ -29,48 +29,53 @@ export default function SignInPage() {
   const router = useRouter()
 
   const handleGoogleSignIn = async () => {
+    // Prevent multiple clicks
+    if (isLoading || activeProvider === 'google') {
+      return;
+    }
+    
     setIsLoading(true)
     setError(null)
+    setActiveProvider('google')
     
     try {
       await signInWithGoogle()
       router.push("/dashboard")
     } catch (error: any) {
-      setError(error.message)
+      // Handle specific popup errors with better user feedback
+      if (error.message && error.message.includes('Redirect initiated')) {
+        // This is expected when redirect method is used
+        console.log('🔄 Redirect authentication initiated');
+        return; // Don't show error for redirect
+      }
+      
+      // Handle "Target ID already exists" error gracefully
+      if (error.message?.includes('Target ID already exists') || 
+          error.message?.includes('already exists') ||
+          error.message?.includes('Sign-in is already in progress')) {
+        // Don't show error, just wait - the existing sign-in will complete
+        console.log('ℹ️ Sign-in already in progress');
+        return;
+      }
+      
+      // Use enhanced error handling
+      const errorMessage = error.code ? 
+        (error.code === 'auth/popup-closed-by-user' ? 'Sign-in was cancelled. Please try again.' :
+         error.code === 'auth/popup-blocked' ? 'Pop-up was blocked. Please allow pop-ups for this site or try again.' :
+         error.message) : error.message;
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
+      setActiveProvider(null)
     }
   }
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (!email || !password) {
-      setError("Please fill in all fields")
-      return
-    }
-
-    // Check for TEST credentials
-    if (email === 'TEST' && password === 'TEST') {
-      setIsLoading(true)
-      setError(null)
-      
-      try {
-        // Set test mode in localStorage
-        localStorage.setItem('testMode', 'Test Mode')
-        localStorage.setItem('testModeEmail', 'test@futureseer.com')
-        localStorage.setItem('testClaims', JSON.stringify({
-          superadmin: true, admin: true, support: true, userManagement: true, logs: true,
-          codeEditor: true, billing: true, featureFlags: true, dataExport: true,
-          impersonate: true, deleteUser: true, testMode: true
-        }))
-
-        // Redirect to dashboard
-        router.push("/dashboard")
-      } catch (error: any) {
-        setError("Test login failed. Please try again.")
-      } finally {
-        setIsLoading(false)
-      }
+      setError("Please enter both email and password")
       return
     }
 
@@ -133,13 +138,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-fixed bg-center bg-no-repeat overflow-hidden"
-         style={{ 
-           backgroundImage: "url('/assets/bg/starfield.avif')",
-           backgroundSize: "cover",
-           imageRendering: "crisp-edges"
-         } as React.CSSProperties}>
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-transparent to-slate-950/40" />
+    <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp">
       
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
         <motion.div
@@ -151,13 +150,13 @@ export default function SignInPage() {
           {/* Back to Home */}
           <Link 
             href="/"
-            className="inline-flex items-center gap-2 text-amber-200 hover:text-amber-300 transition-colors mb-6 group"
+            className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors mb-6 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="font-serif">Back to FutureSeer</span>
+            <span>Back to <span className="text-amber-400 font-semibold">FutureSeer</span></span>
           </Link>
 
-          <Card className="backdrop-blur-md bg-slate-900/40 border border-slate-700/50 shadow-xl card-glow">
+          <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
             <CardHeader className="text-center">
               <motion.div
                 initial={{ scale: 0 }}
@@ -167,10 +166,10 @@ export default function SignInPage() {
               >
                 🔮
               </motion.div>
-              <CardTitle className="text-2xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">
+              <CardTitle className="text-2xl font-bold font-serif text-amber-400">
                 Welcome Back, Seeker
               </CardTitle>
-              <CardDescription className="text-slate-300 font-serif">
+              <CardDescription className="text-sm text-white/80 font-serif">
                 Continue your mystical journey with the cosmos
               </CardDescription>
             </CardHeader>
@@ -184,7 +183,7 @@ export default function SignInPage() {
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
                 <div className="flex flex-col items-center mb-2">
-                  <span className="text-slate-300 font-serif mb-2">Continue with</span>
+                  <span className="text-sm text-amber-400 font-serif mb-2">Continue with</span>
                   <div className="flex justify-center">
                     <Button
                       size="icon"
@@ -202,7 +201,7 @@ export default function SignInPage() {
               {/* Divider */}
               <div className="flex items-center my-4">
                 <span className="flex-grow border-t border-slate-600" />
-                <span className="mx-2 text-xs text-slate-400 font-serif">or sign in with email</span>
+                <span className="mx-2 text-xs text-amber-400 font-serif">or sign in with email</span>
                 <span className="flex-grow border-t border-slate-600" />
               </div>
               {/* Error Alert */}
@@ -214,8 +213,13 @@ export default function SignInPage() {
                 >
                   <Alert variant="destructive" className="border-red-500/30 bg-red-500/10">
                     <AlertDescription className="text-red-300 font-serif">
-                      {typeof error === 'string' ? error : 'An error occurred. Please try again or use another sign-in method.'}
+                      {error}
                     </AlertDescription>
+                    {error.includes('pop-up was blocked') && (
+                      <div className="mt-2 text-xs text-red-200">
+                        💡 Tip: Try refreshing the page or check your browser's popup settings.
+                      </div>
+                    )}
                   </Alert>
                 </motion.div>
               )}
@@ -240,18 +244,11 @@ export default function SignInPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.5 }}
-                onSubmit={handleEmailSignIn}
+                onSubmit={handleSubmit}
                 className="space-y-4"
               >
-                {/* TEST Login Note */}
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                  <p className="text-xs text-amber-300 text-center">
-                    💡 <strong>Quick Test:</strong> Use <code className="bg-amber-500/20 px-1 rounded">TEST</code> / <code className="bg-amber-500/20 px-1 rounded">TEST</code> for instant access
-                  </p>
-                </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-amber-200 font-serif">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-semibold text-amber-400 font-serif">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                     <Input
@@ -267,7 +264,7 @@ export default function SignInPage() {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-amber-200 font-serif">Password</Label>
+                  <Label htmlFor="password" className="text-sm font-semibold text-amber-400 font-serif">Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                     <Input
@@ -301,7 +298,7 @@ export default function SignInPage() {
                     type="button"
                     onClick={handlePasswordReset}
                     disabled={isResetting}
-                    className="text-sm text-amber-300 hover:text-amber-200 font-serif transition-colors"
+                    className="text-sm text-amber-400 hover:text-amber-300 font-serif transition-colors"
                   >
                     {isResetting ? (
                       <Loader2 className="inline h-3 w-3 animate-spin mr-1" />
@@ -335,7 +332,7 @@ export default function SignInPage() {
                   Don't have an account?{" "}
                   <Link 
                     href="/signup"
-                    className="text-amber-300 hover:text-amber-200 font-semibold transition-colors"
+                    className="text-amber-400 hover:text-amber-300 font-semibold transition-colors"
                   >
                     Sign up here
                   </Link>

@@ -1,10 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from 'firebase/auth';
-import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { getIdTokenResult } from 'firebase/auth';
+import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile, ensureFirestoreConnection, getRedirectResult } from '@/lib/firebase';
+import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -15,64 +14,10 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   isSuperadmin: boolean;
   isAdmin: boolean;
-  isTestMode: boolean;
+  isSpecialUser: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock user for test mode
-const createMockUser = (): User => ({
-  uid: 'test-user-123',
-  email: 'test@futureseer.com',
-  displayName: 'Test User',
-  photoURL: null,
-  emailVerified: true,
-  isAnonymous: false,
-  metadata: {
-    creationTime: Date.now().toString(),
-    lastSignInTime: Date.now().toString(),
-  },
-  providerData: [],
-  refreshToken: 'test-refresh-token',
-  tenantId: null,
-  phoneNumber: null,
-  providerId: 'test',
-  delete: async () => {},
-  getIdToken: async () => 'test-id-token',
-  getIdTokenResult: async () => ({
-    authTime: new Date().toISOString(),
-    claims: { superadmin: true, admin: true, testMode: true },
-    expirationTime: new Date(Date.now() + 3600000).toISOString(),
-    issuedAtTime: new Date().toISOString(),
-    signInProvider: 'test',
-    signInSecondFactor: null,
-    token: 'test-token',
-  }),
-  reload: async () => {},
-  toJSON: () => ({}),
-});
-
-// Mock user profile for test mode
-const createMockUserProfile = (): UserProfile => ({
-  uid: 'test-user-123',
-  email: 'test@futureseer.com',
-  displayName: 'Test User',
-  photoURL: '',
-  isSubscribed: true,
-  isTipped: false,
-  trialStartTime: Date.now(),
-  trialEndTime: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year
-  createdAt: Date.now(),
-  lastLoginAt: Date.now(),
-  emailVerified: true,
-  providerData: [],
-  lastSignInTime: Date.now(),
-  creationTime: Date.now(),
-  // Add some test data for orientation
-  birthDate: '1990-01-01',
-  birthTime: '12:00',
-  birthPlace: 'Mumbai, India',
-});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -80,28 +25,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [isTestMode, setIsTestMode] = useState(false);
+  const [isSpecialUser, setIsSpecialUser] = useState(false);
 
   // Admin role checking function
   const checkAdminRoles = (email: string | null) => {
-    if (!email) return { isSuperadmin: false, isAdmin: false };
+    if (!email) return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
     
     // Super admin (God Mode)
     if (email === 'andyrozario@hotmail.com') {
-      return { isSuperadmin: true, isAdmin: true };
+      return { isSuperadmin: true, isAdmin: true, isSpecialUser: false };
     }
     
     // Admin (Mary Mode)
     if (email === 'andyoliverrozario2@gmail.com') {
-      return { isSuperadmin: false, isAdmin: true };
+      return { isSuperadmin: false, isAdmin: true, isSpecialUser: false };
     }
     
-    // Special user (no upgrade prompts)
-    if (email === 'andyrozario7@gmail.com') {
-      return { isSuperadmin: false, isAdmin: false };
-    }
-    
-    return { isSuperadmin: false, isAdmin: false };
+    return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
   };
 
   const signIn = async () => {
@@ -115,64 +55,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Clear test mode if active
-      if (isTestMode) {
-        localStorage.removeItem('testMode');
-        localStorage.removeItem('testModeEmail');
-        localStorage.removeItem('testClaims');
-        setIsTestMode(false);
-        setUser(null);
-        setUserProfile(null);
-        setIsSuperadmin(false);
-        setIsAdmin(false);
-        return;
-      }
-      
-      await signOutUser();
+      // Clear user profile state first
       setUserProfile(null);
+      
+      // Then sign out from Firebase (this also clears localStorage now)
+      await signOutUser();
+      
+      console.log('✅ User signed out successfully');
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;
     }
   };
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       try {
+        // Fetch first, then update - don't clear existing profile to prevent UI flash
         const profile = await getUserProfile(user.uid);
         setUserProfile(profile);
+        return profile;
       } catch (error) {
         console.error('Error refreshing profile:', error);
+        throw error;
       }
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    const checkTestMode = () => {
-      if (typeof window !== 'undefined') {
-        const testMode = localStorage.getItem('testMode');
-        return !!testMode;
-      }
-      return false;
-    };
-
     const initializeAuth = async () => {
-      const testModeActive = checkTestMode();
-      
-      if (testModeActive) {
-        // Set up test mode
-        setIsTestMode(true);
-        const mockUser = createMockUser();
-        const mockProfile = createMockUserProfile();
-        
-        setUser(mockUser);
-        setUserProfile(mockProfile);
-        setIsSuperadmin(true);
-        setIsAdmin(true);
-        setLoading(false);
-        return;
+      // Ensure Firestore connection is stable before proceeding
+      try {
+        await ensureFirestoreConnection();
+      } catch (connectionError) {
+        console.warn('⚠️ Firestore connection check failed during auth initialization:', connectionError);
       }
-
+      
+      // Check for redirect result first
+      try {
+        const redirectResult = await getRedirectResult();
+        if (redirectResult) {
+          console.log('✅ Redirect authentication completed successfully');
+        }
+      } catch (redirectError) {
+        console.log('ℹ️ No redirect result or redirect error:', redirectError);
+      }
+      
       // Regular Firebase authentication
       const auth = getFirebaseAuth();
       if (!auth) {
@@ -189,6 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const adminRoles = checkAdminRoles(firebaseUser.email);
             setIsSuperadmin(adminRoles.isSuperadmin);
             setIsAdmin(adminRoles.isAdmin);
+            setIsSpecialUser(adminRoles.isSpecialUser);
             
             // Also check for Firebase custom claims (for future use)
             const token = await getIdTokenResult(firebaseUser, true);
@@ -198,11 +127,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (token.claims.admin) {
               setIsAdmin(true);
             }
+            if (token.claims.role === 'admin') {
+              setIsAdmin(true);
+            }
           } catch (e) {
             // Fallback to email-based role checking
             const adminRoles = checkAdminRoles(firebaseUser.email);
             setIsSuperadmin(adminRoles.isSuperadmin);
             setIsAdmin(adminRoles.isAdmin);
+            setIsSpecialUser(adminRoles.isSpecialUser);
           }
           
           const profile = await getUserProfile(firebaseUser.uid);
@@ -211,6 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUserProfile(null);
           setIsSuperadmin(false);
           setIsAdmin(false);
+          setIsSpecialUser(false);
         }
         
         setLoading(false);
@@ -231,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshProfile,
     isSuperadmin,
     isAdmin,
-    isTestMode,
+    isSpecialUser,
   };
 
   return (

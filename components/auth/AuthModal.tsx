@@ -10,6 +10,7 @@ import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { CountrySelector } from '@/components/CountrySelector';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -29,12 +30,18 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState<string>('');
   
   const { signIn } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
 
   const handleGoogleSignIn = async () => {
+    // Prevent multiple clicks
+    if (isLoading) {
+      return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -47,6 +54,21 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
       onClose();
       router.push('/profile-setup');
     } catch (error: any) {
+      // Handle "Target ID already exists" error gracefully
+      if (error.message?.includes('Target ID already exists') || 
+          error.message?.includes('already exists') ||
+          error.message?.includes('Sign-in is already in progress')) {
+        // Don't show error, just wait - the existing sign-in will complete
+        console.log('ℹ️ Sign-in already in progress');
+        return;
+      }
+      
+      // Handle redirect initiated
+      if (error.message && error.message.includes('Redirect initiated')) {
+        console.log('🔄 Redirect authentication initiated');
+        return;
+      }
+      
       setError(error.message);
       toast({
         title: "Sign-in failed",
@@ -90,7 +112,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !confirmPassword || !displayName) {
+    if (!email || !password || !confirmPassword || !displayName || !selectedCountry) {
       setError('Please fill in all fields');
       return;
     }
@@ -109,7 +131,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     setError(null);
     
     try {
-      await signUpWithEmail(email, password, displayName);
+      await signUpWithEmail(email, password, displayName, selectedCountry);
       toast({
         title: "Welcome to FutureSeer! 🌟",
         description: "Your mystical journey begins now.",
@@ -162,6 +184,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     setPassword('');
     setConfirmPassword('');
     setDisplayName('');
+    setSelectedCountry('');
     setError(null);
     setShowPassword(false);
     setShowConfirmPassword(false);
@@ -344,6 +367,14 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                        onChange={(e) => setDisplayName(e.target.value)}
                        className="bg-blue-800/50 border-amber-500/30 text-white placeholder-gray-400 focus:border-amber-500/50"
                        required
+                     />
+                   </div>
+
+                   <div className="space-y-2">
+                     <CountrySelector 
+                       value={selectedCountry}
+                       onChange={setSelectedCountry}
+                       autoDetect={true}
                      />
                    </div>
 

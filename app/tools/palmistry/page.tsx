@@ -1,286 +1,552 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { PalmistryCoachInterface } from "@/components/PalmistryCoachInterface"
 import { usePalmistry } from "@/hooks/use-palmistry"
+import { useAuth } from "@/hooks/use-auth"
+import { ToolIntroductionTab } from "@/components/ToolIntroductionTab"
+import { PalmistryRemedies } from "@/components/palmistry/PalmistryRemedies"
+import { PalmistryDashboardHero } from "@/components/palmistry/PalmistryDashboardHero"
+import { LineAnalysisCard } from "@/components/palmistry/LineAnalysisCard"
+import { MountDashboard } from "@/components/palmistry/MountDashboard"
+import { FingerAnalysisCard } from "@/components/palmistry/FingerAnalysisCard"
+import PalmistrySeerChatInterface from "@/components/palmistry/PalmistrySeerChatInterface"
+import { DashboardSection } from "@/components/western/DashboardSection"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent } from "@/components/ui/card"
+import { Activity, Star, Hand, Brain, Heart, Clock, Sparkles } from "lucide-react"
 
 export default function PalmistryPage() {
+  const { user, userProfile } = useAuth()
   const {
-    handType,
-    palmData,
     analysis,
     isLoading,
-    error,
-    setHandType,
-    setPalmData,
-    performPalmistryAnalysis,
-    resetData
+    error
   } = usePalmistry()
 
-  const [activeTab, setActiveTab] = useState("overview")
+  const [activeTab, setActiveTab] = useState<'introduction' | 'palmistry-analysis' | 'timing-guidance' | 'remedies' | 'ask-the-seer'>('introduction')
+
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as typeof activeTab)
+  }, [])
+
+  const handleNavigateToTab = useCallback((tab: string) => {
+    setActiveTab(tab as typeof activeTab)
+  }, [])
+
+  // Memoize analysis data to prevent unnecessary re-renders
+  const analysisData = useMemo(() => analysis, [analysis])
+
+  // Animation variants
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 }
+  }
+
+  const cardVariants = {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 }
+  }
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="max-w-7xl mx-auto">
+    <motion.div
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      variants={pageVariants}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="starfield-ultra-sharp min-h-screen p-4 pt-4 overflow-hidden"
+    >
+      <div className="relative z-10 max-w-7xl mx-auto py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-8 pt-8"
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-center mb-8"
         >
-          <motion.a
-            href="/tools"
-            className="text-soft hover:gold-glow mb-4 inline-block transition-all duration-300"
-            whileHover={{ x: -5 }}
-          >
-            ← Back to Tools
-          </motion.a>
-          <h1 className="text-5xl font-bold gold-glow mb-4">🤲 Palmistry</h1>
-          <p className="text-soft leading-relaxed text-lg mb-4">
-            Read the lines of destiny written in the palms of your hands
-          </p>
-          {/* Inspirational Quote */}
-          <div className="glass-card rounded-2xl p-6 border border-orange-500/20 max-w-2xl mx-auto">
-            <p className="text-xl italic text-orange-300 font-serif mb-2">
-              "The lines upon your palm are the map of your soul's journey, written by the hand of destiny itself."
-            </p>
-            <p className="text-soft/70 text-sm">— Ancient Palmistry Wisdom</p>
-          </div>
+          <h1 className="text-5xl font-serif font-semibold mb-6">
+            <span className="text-amber-400">🤲</span>{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600">Palmistry</span>
+          </h1>
+          <p className="text-slate-200 leading-relaxed text-xl font-light">Ancient wisdom revealed in the lines of your hands</p>
         </motion.div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Input Section */}
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="lg:col-span-1"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
           >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              <h2 className="text-2xl gold-glow mb-6 text-center">Hand Reading</h2>
-              
-              {/* Hand Type */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">🤲</span>
-                  Hand Type
-                </h3>
-                <select
-                  value={handType || ""}
-                  onChange={(e) => setHandType(e.target.value)}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                >
-                  <option value="">Select Hand Type</option>
-                  <option value="dominant">Dominant Hand</option>
-                  <option value="non-dominant">Non-Dominant Hand</option>
-                  <option value="both">Both Hands</option>
-                </select>
-              </div>
-
-              {/* Palm Features */}
-              <div className="mb-6">
-                <h3 className="text-lg text-soft mb-4 flex items-center">
-                  <span className="mr-2">📏</span>
-                  Palm Features
-                </h3>
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    placeholder="Life Line Length"
-                    value={palmData.lifeLine || ""}
-                    onChange={(e) => setPalmData({ ...palmData, lifeLine: e.target.value })}
-                    className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Heart Line Type"
-                    value={palmData.heartLine || ""}
-                    onChange={(e) => setPalmData({ ...palmData, heartLine: e.target.value })}
-                    className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Head Line Position"
-                    value={palmData.headLine || ""}
-                    onChange={(e) => setPalmData({ ...palmData, headLine: e.target.value })}
-                    className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Fate Line Presence"
-                    value={palmData.fateLine || ""}
-                    onChange={(e) => setPalmData({ ...palmData, fateLine: e.target.value })}
-                    className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
-                  />
-                </div>
-              </div>
-
-              {/* Instructions */}
-              <div className="mb-8 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20">
-                <h4 className="text-soft font-semibold mb-2 flex items-center">
-                  <span className="mr-2">💡</span>
-                  Palmistry Insights
-                </h4>
-                <ul className="space-y-1 text-sm text-soft/80">
-                  <li>• Life line analysis</li>
-                  <li>• Heart line reading</li>
-                  <li>• Head line interpretation</li>
-                  <li>• Fate line guidance</li>
-                </ul>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-4">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={performPalmistryAnalysis}
-                  disabled={isLoading || !handType || !palmData.lifeLine || !palmData.heartLine || !palmData.headLine}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl p-4 font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300"
-                >
-                  {isLoading ? "🤲 Reading..." : "🤲 Read Your Palm"}
-                </motion.button>
-                
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={resetData}
-                  className="w-full bg-white/5 border border-white/20 text-soft rounded-xl p-4 font-semibold hover:bg-white/10 transition-all duration-300"
-                >
-                  🔄 Reset
-                </motion.button>
-              </div>
-            </div>
+            <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 gap-2" role="tablist" aria-label="Palmistry navigation tabs">
+              <TabsTrigger 
+                value="introduction" 
+                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
+                role="tab"
+                aria-label="Introduction to Palmistry"
+              >
+                Introduction
+              </TabsTrigger>
+              <TabsTrigger 
+                value="palmistry-analysis" 
+                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
+                role="tab"
+                aria-label="View your comprehensive palm analysis"
+              >
+                Palm Analysis
+              </TabsTrigger>
+              <TabsTrigger 
+                value="timing-guidance" 
+                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
+                role="tab"
+                aria-label="View timing and life guidance"
+              >
+                Timing & Guidance
+              </TabsTrigger>
+              <TabsTrigger 
+                value="remedies" 
+                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
+                role="tab"
+                aria-label="View personalized palmistry remedies"
+              >
+                Remedies
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ask-the-seer" 
+                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
+                role="tab"
+                aria-label="Ask palmistry questions to the expert seer"
+              >
+                Ask the Seer
+              </TabsTrigger>
+            </TabsList>
           </motion.div>
 
-          {/* Results Section */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:col-span-2"
-          >
-            <div className="glass-card rounded-3xl p-6 border border-white/10">
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {["overview", "life-line", "heart-line", "head-line", "fate-line", "advice"].map((tab) => (
-                  <motion.button
-                    key={tab}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
-                      activeTab === tab
-                        ? "bg-gradient-to-r from-orange-500 to-red-600 text-white"
-                        : "bg-white/5 text-soft hover:bg-white/10"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </motion.button>
-                ))}
-              </div>
+          {/* Introduction Tab */}
+          <AnimatePresence mode="wait">
+            <TabsContent key="introduction" value="introduction" className="space-y-6 mt-6">
+              <motion.div
+                variants={cardVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+              >
+                <ToolIntroductionTab toolSlug="palmistry" />
+              </motion.div>
+            </TabsContent>
+          </AnimatePresence>
 
-              {/* Content */}
-              <AnimatePresence mode="wait">
-                {isLoading ? (
-                  <motion.div
-                    key="loading"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="text-4xl mb-4"
+          {/* Palmistry Analysis Tab */}
+          <AnimatePresence mode="wait">
+            <TabsContent key="palmistry-analysis" value="palmistry-analysis" className="space-y-6 mt-6">
+              {isLoading ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-8"
+                >
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
+                  <p className="text-slate-200">Analyzing your palm...</p>
+                </motion.div>
+              ) : error ? (
+                <motion.div
+                  variants={cardVariants}
+                  initial="initial"
+                  animate="animate"
+                >
+                  <Card className="bg-gradient-to-br from-red-50 to-amber-50 border-2 border-red-300 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                    <CardContent className="p-8 text-center">
+                      <div className="text-4xl mb-4">⚠️</div>
+                      <p className="text-red-700 mb-4">{error}</p>
+                      {!userProfile?.palmPhotoUrl && (
+                        <motion.a
+                          href="/profile"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="inline-block bg-gradient-to-r from-amber-500 to-red-600 text-white rounded-xl px-6 py-3 font-semibold hover:shadow-xl transition-all duration-300"
+                        >
+                          Upload Palm Image →
+                        </motion.a>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ) : analysisData ? (
+                <motion.div
+                  variants={cardVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.3 }}
+                >
+                  {/* Hero Section */}
+                  <PalmistryDashboardHero 
+                    analysis={analysisData}
+                    userProfile={userProfile}
+                  />
+
+                  {/* Dashboard Sections */}
+                  <div className="space-y-6 mt-8">
+                    
+                    {/* Major Lines */}
+                    <DashboardSection 
+                      title="Major Lines" 
+                      icon={<Activity className="w-6 h-6" />}
+                      badge={`${analysisData.lines?.length || 0} Lines`}
+                      defaultExpanded={true}
+                      colorScheme="purple"
+                      storageKey="major-lines"
                     >
-                      🤲
-                    </motion.div>
-                    <p className="text-soft text-lg">Reading the lines of destiny in your palm...</p>
-                  </motion.div>
-                ) : error ? (
-                  <motion.div
-                    key="error"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-4xl mb-4">⚠️</div>
-                    <p className="text-red-400 text-lg mb-2">Reading Error</p>
-                    <p className="text-soft">{error}</p>
-                  </motion.div>
-                ) : analysis ? (
-                  <motion.div
-                    key="results"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <PalmistryCoachInterface 
-                      analysis={analysis}
-                      activeTab={activeTab}
-                      handType={handType}
-                      palmData={palmData}
-                    />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="empty"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="text-center py-16"
-                  >
-                    <div className="text-6xl mb-6">🤲</div>
-                    <h3 className="text-2xl gold-glow mb-4">Ready to Read Your Destiny?</h3>
-                    <p className="text-soft leading-relaxed">
-                      Enter your palm features above to discover the destiny written 
-                      in the lines of your hands.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {analysisData.lines?.map((line, index) => (
+                          <motion.div
+                            key={line.name}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                          >
+                            <LineAnalysisCard line={line} />
+                          </motion.div>
+                        ))}
+                      </div>
+                    </DashboardSection>
 
-        {/* Features Highlight */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="glass-card rounded-3xl p-8 mt-12 border border-white/10"
-        >
-          <h3 className="text-2xl gold-glow mb-6 text-center">✨ Palmistry Features</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="text-3xl mb-3">📏</div>
-              <h4 className="text-soft font-semibold mb-2">Life Line</h4>
-              <p className="text-soft/70 text-sm">Your vitality and life path</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">❤️</div>
-              <h4 className="text-soft font-semibold mb-2">Heart Line</h4>
-              <p className="text-soft/70 text-sm">Love and emotional nature</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">🧠</div>
-              <h4 className="text-soft font-semibold mb-2">Head Line</h4>
-              <p className="text-soft/70 text-sm">Intellect and thinking style</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl mb-3">⭐</div>
-              <h4 className="text-soft font-semibold mb-2">Fate Line</h4>
-              <p className="text-soft/70 text-sm">Destiny and life purpose</p>
-            </div>
-          </div>
-        </motion.div>
+                    {/* Mounts */}
+                    <DashboardSection 
+                      title="Palm Mounts" 
+                      icon={<Star className="w-6 h-6" />}
+                      badge={`${analysisData.mounts?.length || 0} Mounts`}
+                      defaultExpanded={false}
+                      colorScheme="green"
+                      storageKey="mounts"
+                    >
+                      <MountDashboard mounts={analysisData.mounts || []} />
+                    </DashboardSection>
+
+                    {/* Fingers & Hand Shape */}
+                    <DashboardSection 
+                      title="Fingers & Hand Shape" 
+                      icon={<Hand className="w-6 h-6" />}
+                      badge="5 Fingers"
+                      defaultExpanded={false}
+                      colorScheme="blue"
+                      storageKey="fingers"
+                    >
+                      <FingerAnalysisCard fingers={analysisData.fingers} />
+                    </DashboardSection>
+
+                    {/* Life Path & Overall Reading */}
+                    <DashboardSection 
+                      title="Life Path & Overall Reading" 
+                      icon={<Sparkles className="w-6 h-6" />}
+                      defaultExpanded={false}
+                      colorScheme="pink"
+                      storageKey="life-path"
+                    >
+                      <div className="space-y-4">
+                        {analysisData.lifePath && (
+                          <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4 }}
+                          >
+                            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200">
+                              <CardContent className="p-6">
+                                <h4 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                                  <Star className="w-4 h-4" />
+                                  Your Life Path
+                                </h4>
+                                <p className="text-slate-700 leading-relaxed">{analysisData.lifePath}</p>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        )}
+                        
+                        {analysisData.overallReading && (
+                          <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.4, delay: 0.1 }}
+                          >
+                            <Card className="bg-gradient-to-br from-amber-50 to-amber-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200">
+                              <CardContent className="p-6">
+                                <h4 className="font-bold text-amber-900 mb-3 flex items-center gap-2">
+                                  <Sparkles className="w-4 h-4" />
+                                  Overall Reading
+                                </h4>
+                                <p className="text-slate-700 leading-relaxed">{analysisData.overallReading}</p>
+                              </CardContent>
+                            </Card>
+                          </motion.div>
+                        )}
+                      </div>
+                    </DashboardSection>
+
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  variants={cardVariants}
+                  initial="initial"
+                  animate="animate"
+                >
+                  <Card className="bg-gradient-to-br from-amber-50 to-amber-50 border-2 border-amber-300 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                    <CardContent className="p-8 text-center">
+                      <div className="text-6xl mb-6">🤲</div>
+                      <h3 className="text-2xl font-bold text-amber-900 mb-4">Upload Your Palm Image</h3>
+                      <p className="text-slate-700 mb-6">
+                        Upload a clear palm photo to receive your personalized palmistry analysis
+                      </p>
+                      <motion.a
+                        href="/profile"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="inline-block bg-gradient-to-r from-amber-500 to-red-600 text-white rounded-xl px-6 py-3 font-semibold hover:shadow-xl transition-all duration-300"
+                      >
+                        Go to Profile →
+                      </motion.a>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </TabsContent>
+          </AnimatePresence>
+
+          {/* Timing & Guidance Tab */}
+          <AnimatePresence mode="wait">
+            <TabsContent key="timing-guidance" value="timing-guidance" className="space-y-6 mt-6">
+              {analysisData ? (
+                <motion.div
+                  variants={cardVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.3 }}
+                  className="space-y-6"
+                >
+                  {/* Current Life Phase */}
+                  <DashboardSection 
+                    title="Current Life Phase" 
+                    icon={<Clock className="w-6 h-6" />}
+                    defaultExpanded={true}
+                    colorScheme="cyan"
+                    storageKey="life-phase"
+                  >
+                    <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200">
+                      <CardContent className="p-6">
+                        <h3 className="text-xl font-bold text-cyan-900 mb-3">{analysisData.timing?.currentPhase}</h3>
+                        <p className="text-slate-700 leading-relaxed">{analysisData.overallReading}</p>
+                        
+                        {/* Favorable Periods */}
+                        {analysisData.timing?.favorablePeriods && analysisData.timing.favorablePeriods.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-cyan-300">
+                            <h4 className="font-semibold text-cyan-900 mb-2">Favorable Periods</h4>
+                            <ul className="space-y-1">
+                              {analysisData.timing.favorablePeriods.map((period, idx) => (
+                                <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                  <span className="text-cyan-600">✦</span>
+                                  {period}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Opportunities */}
+                        {analysisData.timing?.opportunities && analysisData.timing.opportunities.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-cyan-300">
+                            <h4 className="font-semibold text-cyan-900 mb-2">Opportunities</h4>
+                            <ul className="space-y-1">
+                              {analysisData.timing.opportunities.map((opp, idx) => (
+                                <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                  <span className="text-green-600">+</span>
+                                  {opp}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </DashboardSection>
+
+                  {/* Life Guidance */}
+                  <DashboardSection 
+                    title="Life Guidance" 
+                    icon={<Sparkles className="w-6 h-6" />}
+                    defaultExpanded={true}
+                    colorScheme="purple"
+                    storageKey="guidance"
+                  >
+                    <div className="space-y-4">
+                      {/* Strengths */}
+                      {analysisData.coaching?.strengths && analysisData.coaching.strengths.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200">
+                            <CardContent className="p-4">
+                              <h4 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+                                <Star className="w-4 h-4" />
+                                Your Strengths
+                              </h4>
+                              <ul className="space-y-2">
+                                {analysisData.coaching.strengths.map((strength, idx) => (
+                                  <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                    <span className="text-green-600 mt-1">✓</span>
+                                    {strength}
+                                  </li>
+                                ))}
+                              </ul>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      )}
+
+                      {/* Growth Areas */}
+                      {analysisData.coaching?.growthAreas && analysisData.coaching.growthAreas.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.1 }}
+                        >
+                          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200">
+                            <CardContent className="p-4">
+                              <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                <Brain className="w-4 h-4" />
+                                Growth Areas
+                              </h4>
+                              <ul className="space-y-2">
+                                {analysisData.coaching.growthAreas.map((area, idx) => (
+                                  <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                    <span className="text-blue-600 mt-1">→</span>
+                                    {area}
+                                  </li>
+                                ))}
+                              </ul>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      )}
+
+                      {/* Affirmations */}
+                      {analysisData.coaching?.affirmations && analysisData.coaching.affirmations.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.2 }}
+                        >
+                          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200">
+                            <CardContent className="p-4">
+                              <h4 className="font-bold text-amber-900 mb-3 flex items-center gap-2">
+                                <Heart className="w-4 h-4" />
+                                Daily Affirmations
+                              </h4>
+                              <div className="space-y-2">
+                                {analysisData.coaching.affirmations.map((affirmation, idx) => (
+                                  <p key={idx} className="text-sm text-slate-700 italic bg-white/60 p-3 rounded-lg">
+                                    "{affirmation}"
+                                  </p>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      )}
+
+                      {/* Recommendations */}
+                      {analysisData.recommendations && analysisData.recommendations.length > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: 0.3 }}
+                        >
+                          <Card className="bg-gradient-to-br from-pink-50 to-rose-50 border-2 border-pink-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-200">
+                            <CardContent className="p-4">
+                              <h4 className="font-bold text-pink-900 mb-3 flex items-center gap-2">
+                                <Sparkles className="w-4 h-4" />
+                                Recommendations
+                              </h4>
+                              <ul className="space-y-2">
+                                {analysisData.recommendations.map((rec, idx) => (
+                                  <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                    <span className="text-pink-600 mt-1">◆</span>
+                                    {rec}
+                                  </li>
+                                ))}
+                              </ul>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      )}
+                    </div>
+                  </DashboardSection>
+                </motion.div>
+              ) : (
+                <motion.div
+                  variants={cardVariants}
+                  initial="initial"
+                  animate="animate"
+                >
+                  <Card className="bg-gradient-to-br from-amber-50 to-amber-50 border-2 border-amber-300 rounded-3xl shadow-lg hover:shadow-xl transition-shadow duration-200">
+                    <CardContent className="p-8 text-center">
+                      <Clock className="w-16 h-16 text-amber-600 mx-auto mb-4" />
+                      <p className="text-slate-700">Complete your palm analysis to view timing and guidance.</p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </TabsContent>
+          </AnimatePresence>
+
+          {/* Remedies Tab */}
+          <AnimatePresence mode="wait">
+            <TabsContent key="remedies" value="remedies" className="space-y-6 mt-6">
+              <motion.div
+                variants={cardVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+              >
+                <PalmistryRemedies 
+                  palmistryData={analysisData}
+                  onNavigateToTab={handleNavigateToTab}
+                />
+              </motion.div>
+            </TabsContent>
+          </AnimatePresence>
+
+          {/* Ask the Seer Tab */}
+          <AnimatePresence mode="wait">
+            <TabsContent key="ask-the-seer" value="ask-the-seer" className="space-y-6 mt-6">
+              <motion.div
+                variants={cardVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-3xl h-[800px] overflow-hidden">
+                  <div className="h-full bg-gradient-to-b from-transparent to-white/30">
+                    <PalmistrySeerChatInterface
+                      userId={user?.uid || ''}
+                      userProfile={userProfile}
+                      palmistryAnalysis={analysisData || undefined}
+                    />
+                  </div>
+                </Card>
+              </motion.div>
+            </TabsContent>
+          </AnimatePresence>
+        </Tabs>
       </div>
-    </div>
+    </motion.div>
   )
-} 
+}

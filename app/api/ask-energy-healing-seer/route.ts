@@ -1,0 +1,125 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createAIStream } from '@/lib/aiGateway';
+import {
+  buildEnergyState,
+  classifyEnergyQuestion,
+  getEnergySliceForQuestionType,
+  ENERGY_REFUSAL_DATA_PHRASE,
+  ENERGY_REFUSAL_MEDICAL_PHRASE,
+  type EnergyQuestionType,
+} from '@/lib/energyHealingSeerState';
+
+interface EnergyHealingSeerRequest {
+  question: string;
+  analysis?: any;
+  conversationHistory?: Array<{ question: string; answer: string }>;
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { question, analysis, conversationHistory = [] }: EnergyHealingSeerRequest =
+      await request.json();
+
+    if (!question?.trim()) {
+      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json(
+        { error: 'GROQ_API_KEY is not configured' },
+        { status: 500 }
+      );
+    }
+
+    // Data requirement: need sufficient analysis
+    let state;
+    try {
+      state = buildEnergyState(analysis);
+    } catch {
+      return NextResponse.json(
+        { error: ENERGY_REFUSAL_DATA_PHRASE },
+        { status: 400 }
+      );
+    }
+
+    const questionType = classifyEnergyQuestion(question.trim()) as EnergyQuestionType;
+
+    if (questionType === 'refusal') {
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(
+              new TextEncoder().encode(ENERGY_REFUSAL_MEDICAL_PHRASE)
+            );
+            controller.close();
+          },
+        }),
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            Connection: 'keep-alive',
+          },
+        }
+      );
+    }
+
+    const systemPrompt = getEnergySliceForQuestionType(questionType, state);
+
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      ...conversationHistory.flatMap((item) => [
+        { role: 'user' as const, content: item.question },
+        { role: 'assistant' as const, content: item.answer },
+      ]),
+      { role: 'user' as const, content: question.trim() },
+    ];
+
+    const stream = await createAIStream({
+      model: 'llama-3.3-70b-versatile',
+      messages,
+      temperature: 0.6,
+      maxTokens: 800,
+    });
+
+    return new Response(
+      new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of stream) {
+              const content = chunk.choices?.[0]?.delta?.content ?? '';
+              if (content) {
+                controller.enqueue(new TextEncoder().encode(content));
+              }
+            }
+          } catch (error) {
+            console.error('Error during energy healing seer streaming:', error);
+            controller.enqueue(
+              new TextEncoder().encode(
+                'I apologize, but I encountered an error. Please try again.'
+              )
+            );
+          } finally {
+            controller.close();
+          }
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      }
+    );
+  } catch (error: unknown) {
+    console.error('Error in energy healing seer:', error);
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : 'Failed to get response',
+      },
+      { status: 500 }
+    );
+  }
+}

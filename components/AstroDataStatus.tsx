@@ -45,10 +45,10 @@ export function AstroDataStatus() {
 
   if (!hasValidBirthDetails) {
     return (
-      <Card className="bg-slate-800/50 border-slate-600 rounded-2xl">
+      <Card className="bg-slate-900/30 border-slate-700/50 rounded-2xl backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-amber-400 flex items-center gap-2">
-            <Star className="w-5 h-5" />
+          <CardTitle className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 flex items-center gap-2">
+            <Star className="w-5 h-5 text-amber-400" />
             Astrological Data
           </CardTitle>
         </CardHeader>
@@ -66,10 +66,10 @@ export function AstroDataStatus() {
   }
 
   return (
-    <Card className="bg-slate-800/50 border-slate-600 rounded-2xl">
+    <Card className="bg-slate-900/30 border-slate-700/50 rounded-2xl backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-amber-400 flex items-center gap-2">
-          <Star className="w-5 h-5" />
+        <CardTitle className="text-xl font-serif text-transparent bg-clip-text bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 flex items-center gap-2">
+          <Star className="w-5 h-5 text-amber-400" />
           Astrological Data Status
         </CardTitle>
       </CardHeader>
@@ -84,7 +84,7 @@ export function AstroDataStatus() {
             ) : (
               <AlertCircle className="w-4 h-4 text-red-400" />
             )}
-            <span className="text-slate-300">
+            <span className="text-slate-400">
               {loading ? 'Loading...' : astroData ? 'Data Available' : 'No Data'}
             </span>
           </div>

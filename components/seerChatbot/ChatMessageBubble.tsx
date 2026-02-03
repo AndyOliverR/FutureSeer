@@ -4,6 +4,7 @@ import { ChatMessage } from '@/lib/seerChatbot/seerChatbot';
 import { ConfidenceMeter } from './ConfidenceMeter';
 import { ModuleBadges } from './ModuleBadges';
 import { TimingDisplay } from './TimingDisplay';
+import { SlowRevealText } from '@/components/chat/SlowRevealText';
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -25,7 +26,16 @@ export function ChatMessageBubble({ message, showMetadata = false }: ChatMessage
         >
           {/* Message Content */}
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            {message.content}
+            {isUser ? (
+              message.content
+            ) : (
+              <SlowRevealText
+                content={message.content}
+                minThinkingMs={2000}
+                delayPerWord={85}
+                thinkingLabel="Consulting the stars..."
+              />
+            )}
           </div>
           
           {/* Metadata for Seer messages */}

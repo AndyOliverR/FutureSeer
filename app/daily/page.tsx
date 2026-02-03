@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useDailyGuidance } from "@/hooks/useDailyGuidance"
 import { CosmicLoader } from "@/components/cosmic-loader"
 import { motion, AnimatePresence } from "framer-motion"
+import { Header } from "@/components/header"
 
 export default function DailyPage() {
   const { loading, error, dailyData } = useDailyGuidance()
@@ -21,7 +22,8 @@ export default function DailyPage() {
   }
 
   return (
-    <div className="min-h-screen p-4">
+    <div className="min-h-screen p-4 starfield-ultra-sharp">
+      <Header />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 pt-8">

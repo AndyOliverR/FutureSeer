@@ -137,7 +137,6 @@ export function ToolSymbol({
     'medical-astrology': 'caduceus',
     'financial-astrology': 'dollar',
     'mundane-astrology': 'globe',
-    'hellenistic-astrology': 'temple',
     'kp-astrology': 'star',
     'bazi': 'dragon',
     'angel-numbers': 'angel',

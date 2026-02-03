@@ -365,7 +365,7 @@ class RunesIntelligence {
     'Creating positive life transformations'
   ]
 
-  async castRunes(question: string, spreadType: string): Promise<RuneReading> {
+  async castRunes(question: string, spreadType: string, displayName?: string): Promise<RuneReading> {
     // Get the spread configuration
     const spread = this.runeSpreads.find(s => s.key === spreadType) || this.runeSpreads[0]
     
@@ -394,7 +394,7 @@ class RunesIntelligence {
     }
 
     // Generate overall reading
-    const overallReading = this.generateOverallReading(runes, question, spread)
+    const overallReading = this.generateOverallReading(runes, question, spread, displayName)
 
     // Generate recommendations
     const recommendations = this.generateRecommendations(runes, elementalBalance, timing)
@@ -517,12 +517,275 @@ class RunesIntelligence {
     }
   }
 
-  private generateOverallReading(runes: (Rune & { isReversed: boolean; position: string })[], question: string, spread: any): string {
-    const primaryRune = runes.find(r => r.position === 'Present' || r.position === 'Situation' || r.position === 'Message')
+  private generateOverallReading(runes: (Rune & { isReversed: boolean; position: string })[], question: string, spread: any, displayName?: string): string {
+    // Analyze question theme for context
+    const questionTheme = this.analyzeQuestionTheme(question)
+    
+    // Get key runes based on position
+    const selfRune = runes.find(r => r.position === 'Self')
+    const primaryRune = runes.find(r => r.position === 'Present' || r.position === 'Situation' || r.position === 'Message') || selfRune || runes[0]
     const adviceRune = runes.find(r => r.position === 'Advice')
     const outcomeRune = runes.find(r => r.position === 'Outcome' || r.position === 'Future')
-
-    return `The runes reveal wisdom for your question: "${question}". Your ${spread.name.toLowerCase()} shows that ${primaryRune ? `the ${primaryRune.name} rune (${primaryRune.symbol}) in the ${primaryRune.position.toLowerCase()} position indicates ${primaryRune.isReversed ? primaryRune.reversed.toLowerCase() : primaryRune.upright.toLowerCase()}` : 'the runes speak of ancient wisdom'}. ${adviceRune ? `The ${adviceRune.name} rune advises ${adviceRune.isReversed ? adviceRune.reversed.toLowerCase() : adviceRune.upright.toLowerCase()}` : 'Listen to the guidance of the runes'}. ${outcomeRune ? `The outcome shows ${outcomeRune.isReversed ? outcomeRune.reversed.toLowerCase() : outcomeRune.upright.toLowerCase()}` : 'The future holds promise for those who follow the runic path'}. The elemental balance of ${this.getElementalDescription(runes)} suggests ${this.getElementalGuidance(runes)}. Trust in the wisdom of the Elder Futhark and let the runes guide your path.`
+    const environmentRune = runes.find(r => r.position === 'Environment')
+    const hopesRune = runes.find(r => r.position === 'Hopes')
+    const fearsRune = runes.find(r => r.position === 'Fears')
+    const pastRune = runes.find(r => r.position === 'Past')
+    const hiddenRune = runes.find(r => r.position === 'Hidden')
+    
+    // Start with open-ended, exploratory introduction - personalize with display name if provided
+    const greeting = displayName ? `${displayName}, ` : ''
+    let interpretation = `${greeting}As you explore your question "${question}", the runes offer perspectives to consider rather than fixed answers. The future is not predetermined—these symbols illuminate possibilities and influences based on your current path, leaving room for your own intuition and free will to guide your decisions. `
+    
+    // Analyze rune relationships for contextual nuance
+    const runeRelationships = this.analyzeRuneRelationships(runes)
+    
+    // For yes/no or specific date questions: reframe as guidance about variables
+    if (this.isSpecificDateQuestion(question) || this.isYesNoQuestion(question)) {
+      interpretation += `Rather than predicting a fixed outcome, the runes invite you to consider the variables and influences that could shape this situation. `
+      
+      if (primaryRune) {
+        const primaryMeaning = primaryRune.isReversed ? primaryRune.reversed : primaryRune.upright
+        interpretation += `The ${primaryRune.name} rune (${primaryRune.symbol}) ${primaryRune.isReversed ? 'reversed' : 'upright'} may point toward aspects of ${primaryMeaning.toLowerCase()}. `
+        interpretation += `Consider: what in your current circumstances relates to these themes? `
+      }
+      
+      if (environmentRune) {
+        const envMeaning = environmentRune.isReversed ? environmentRune.reversed : environmentRune.upright
+        interpretation += `The surrounding influences could involve ${envMeaning.toLowerCase()}. `
+        interpretation += `Reflect on how external factors might be affecting this situation. `
+      }
+      
+      if (adviceRune) {
+        const adviceMeaning = adviceRune.isReversed ? adviceRune.reversed : adviceRune.upright
+        interpretation += `The guidance here suggests considering ${adviceMeaning.toLowerCase()}. `
+        interpretation += `What actions or perspectives might help align you with this energy? `
+      }
+      
+      if (outcomeRune) {
+        const outcomeMeaning = outcomeRune.isReversed ? outcomeRune.reversed : outcomeRune.upright
+        interpretation += `Potential outcomes could involve ${outcomeMeaning.toLowerCase()}, though your choices and actions will significantly influence how these energies manifest. `
+      }
+      
+    } else if (questionTheme.requiresEvaluation) {
+      // For evaluation questions: explore factors rather than give definitive answers
+      const partnerName = questionTheme.mentionedNames?.[0] || 'this person'
+      interpretation += `When exploring this question, the runes invite you to examine various factors and dynamics rather than seeking a simple yes or no. `
+      
+      if (selfRune) {
+        const selfMeaning = selfRune.isReversed ? selfRune.reversed : selfRune.upright
+        interpretation += `Consider what you bring to this situation: the ${selfRune.name} rune suggests themes of ${selfMeaning.toLowerCase()}. `
+        interpretation += `How do these qualities relate to your involvement here? `
+      }
+      
+      if (environmentRune) {
+        const envMeaning = environmentRune.isReversed ? environmentRune.reversed : environmentRune.upright
+        interpretation += `The circumstances around this situation may involve ${envMeaning.toLowerCase()}. `
+        interpretation += `What does your intuition tell you about these environmental factors? `
+      }
+      
+      // Analyze partnership-related runes in context
+      const geboRune = runes.find(r => r.name === 'Gebo')
+      const ehwazRune = runes.find(r => r.name === 'Ehwaz')
+      const mannazRune = runes.find(r => r.name === 'Mannaz')
+      
+      if (geboRune) {
+        if (!geboRune.isReversed) {
+          interpretation += `Gebo, the gift rune, appears—this could indicate potential for mutual exchange and balance. `
+        } else {
+          interpretation += `Gebo reversed invites reflection on whether there might be imbalance or unmet expectations. `
+        }
+        interpretation += `What does balanced exchange look like in this context? `
+      }
+      
+      if (ehwazRune) {
+        if (!ehwazRune.isReversed) {
+          interpretation += `Ehwaz, representing partnership movement, suggests there could be potential for trust and harmonious progress. `
+        } else {
+          interpretation += `Ehwaz reversed points toward concerns about trust, movement, or partnership dynamics that may need attention. `
+        }
+        interpretation += `What factors contribute to—or hinder—trust and forward movement? `
+      }
+      
+      if (mannazRune && !mannazRune.isReversed) {
+        interpretation += `Mannaz emphasizes community and cooperation—consider how collaboration might play a role. `
+      }
+      
+      if (hopesRune) {
+        const hopesMeaning = hopesRune.isReversed ? hopesRune.reversed : hopesRune.upright
+        interpretation += `Your hopes may center on ${hopesMeaning.toLowerCase()}. `
+        interpretation += `How do these aspirations align with what you're seeking? `
+      }
+      
+      if (fearsRune) {
+        const fearsMeaning = fearsRune.isReversed ? fearsRune.reversed : fearsRune.upright
+        interpretation += `Your concerns might involve ${fearsMeaning.toLowerCase()}. `
+        interpretation += `What steps could address or transform these fears into awareness? `
+      }
+      
+    } else {
+      // General open-ended interpretation
+      if (pastRune) {
+        const pastMeaning = pastRune.isReversed ? pastRune.reversed : pastRune.upright
+        interpretation += `Reflecting on what has come before, ${pastRune.name} suggests themes of ${pastMeaning.toLowerCase()} have influenced your path. `
+        interpretation += `How might understanding these past influences inform your present choices? `
+      }
+      
+      if (primaryRune) {
+        const primaryMeaning = primaryRune.isReversed ? primaryRune.reversed : primaryRune.upright
+        interpretation += `In your current circumstances, ${primaryRune.name} (${primaryRune.symbol}) ${primaryRune.isReversed ? 'reversed' : 'upright'} may indicate aspects of ${primaryMeaning.toLowerCase()}. `
+        interpretation += `What resonates with you about this symbol's meaning? `
+      }
+      
+      if (adviceRune) {
+        const adviceMeaning = adviceRune.isReversed ? adviceRune.reversed : adviceRune.upright
+        interpretation += `The guidance offered suggests considering ${adviceMeaning.toLowerCase()}. `
+        interpretation += `How might you integrate this wisdom into your approach? `
+      }
+      
+      if (outcomeRune) {
+        const outcomeMeaning = outcomeRune.isReversed ? outcomeRune.reversed : outcomeRune.upright
+        interpretation += `Potential future directions could involve ${outcomeMeaning.toLowerCase()}, though remember that your choices actively shape how these energies unfold. `
+      }
+      
+      if (hiddenRune) {
+        const hiddenMeaning = hiddenRune.isReversed ? hiddenRune.reversed : hiddenRune.upright
+        interpretation += `Beneath the surface, ${hiddenRune.name} points toward ${hiddenMeaning.toLowerCase()}—what might be calling for deeper awareness or acknowledgment? `
+      }
+    }
+    
+    // Add rune relationship insights for nuanced understanding
+    if (runeRelationships.conflicts.length > 0) {
+      interpretation += `Notice how different runes interact: some energies may create tension or require balancing. `
+      interpretation += `What does this dynamic reveal about the complexity of your situation? `
+    }
+    
+    if (runeRelationships.harmonies.length > 0) {
+      interpretation += `There are also harmonious connections between certain runes—where do you see alignment or support? `
+    }
+    
+    // Add elemental guidance with exploratory language
+    const elementalDesc = this.getElementalDescription(runes)
+    const elementalGuidance = this.getElementalGuidance(runes)
+    interpretation += `The ${elementalDesc} present in your spread could suggest ${elementalGuidance}, though how this manifests depends on your actions and awareness. `
+    
+    // Self-reflection prompts
+    interpretation += `Take a moment to reflect: what insights arise when you connect these runic symbols to your personal experience? `
+    interpretation += `Trust your intuition—the runes offer perspectives, but your inner wisdom knows what resonates most deeply. `
+    
+    // Empowering closing that acknowledges free will
+    interpretation += `Remember, the runes illuminate possibilities, not fixed outcomes. You have the power to shape your path through conscious choices, awareness, and action. `
+    interpretation += `May this guidance support you in finding clarity and empowerment as you navigate your journey.`
+    
+    return interpretation
+  }
+  
+  private isSpecificDateQuestion(question: string): boolean {
+    const lowerQuestion = question.toLowerCase()
+    // Check for date patterns like "by November 30th", "by date", "by [month] [day]", "within X days/weeks/months"
+    return /by\s+(?:november|december|january|february|march|april|may|june|july|august|september|october)\s+\d+|by\s+\d+|\d+\s+(?:days?|weeks?|months?)/i.test(lowerQuestion)
+  }
+  
+  private isYesNoQuestion(question: string): boolean {
+    const lowerQuestion = question.toLowerCase()
+    return /^(will|can|should|is|are|do|does|did|would|could)\s+/i.test(lowerQuestion.trim()) ||
+           /\?(?:\s*$)/.test(question) && /will|can|should/i.test(lowerQuestion)
+  }
+  
+  private analyzeRuneRelationships(runes: (Rune & { isReversed: boolean; position: string })[]): {
+    conflicts: string[]
+    harmonies: string[]
+    influences: string[]
+  } {
+    const conflicts: string[] = []
+    const harmonies: string[] = []
+    const influences: string[] = []
+    
+    // Analyze element conflicts and harmonies
+    const elements = runes.map(r => r.element)
+    const fireCount = elements.filter(e => e === 'fire').length
+    const waterCount = elements.filter(e => e === 'water').length
+    const airCount = elements.filter(e => e === 'air').length
+    const earthCount = elements.filter(e => e === 'earth').length
+    
+    // Fire and Water can create tension
+    if (fireCount > 0 && waterCount > 0) {
+      conflicts.push('Fire and Water energies may create dynamic tension between passion and emotion')
+    }
+    
+    // Air and Earth can balance
+    if (airCount > 0 && earthCount > 0) {
+      harmonies.push('Air and Earth create balance between thought and stability')
+    }
+    
+    // Reversed runes may indicate conflicting energies
+    const reversedCount = runes.filter(r => r.isReversed).length
+    const uprightCount = runes.length - reversedCount
+    
+    if (reversedCount > uprightCount) {
+      influences.push('Multiple reversed runes suggest internal reflection may be needed to transform challenges')
+    }
+    
+    // Check for specific rune pairings
+    const hasGebo = runes.some(r => r.name === 'Gebo' && !r.isReversed)
+    const hasEhwaz = runes.some(r => r.name === 'Ehwaz' && !r.isReversed)
+    if (hasGebo && hasEhwaz) {
+      harmonies.push('Gebo and Ehwaz together emphasize partnership and balanced exchange')
+    }
+    
+    const hasFehu = runes.some(r => r.name === 'Fehu')
+    const hasNaudhiz = runes.some(r => r.name === 'Naudhiz' && !r.isReversed)
+    if (hasFehu && hasNaudhiz) {
+      influences.push('Fehu and Naudhiz together suggest wealth may come through necessity and constraint')
+    }
+    
+    return { conflicts, harmonies, influences }
+  }
+  
+  private analyzeQuestionTheme(question: string): {
+    isPartnership: boolean
+    isBusiness: boolean
+    isRelationship: boolean
+    isLove: boolean
+    isCareer: boolean
+    requiresEvaluation: boolean
+    mentionedNames?: string[]
+  } {
+    const lowerQuestion = question.toLowerCase()
+    
+    // Extract mentioned names (simple heuristic - capitalize words after "is", "will", "going to be")
+    const nameMatches = question.match(/(?:is|will|going to be)\s+([A-Z][a-z]+)/gi)
+    const mentionedNames = nameMatches 
+      ? nameMatches.map(m => m.match(/([A-Z][a-z]+)/)?.[0]).filter(Boolean) as string[]
+      : undefined
+    
+    return {
+      isPartnership: /partner|partnership|collaborat|work together|team up/i.test(lowerQuestion),
+      isBusiness: /business|venture|enterprise|company|commercial|profit|financial|invest/i.test(lowerQuestion),
+      isRelationship: /relationship|romance|love|dating|couple|marriage|significant other/i.test(lowerQuestion),
+      isLove: /love|romance|heart|affection|feelings for/i.test(lowerQuestion),
+      isCareer: /career|job|work|profession|occupation|employment/i.test(lowerQuestion),
+      requiresEvaluation: /is.*good|will.*work|should.*|worth|wise|good idea|recommend/i.test(lowerQuestion),
+      mentionedNames
+    }
+  }
+  
+  private getPositionContext(position: string): string {
+    const contexts: Record<string, string> = {
+      'Past': 'Reflecting on what has come before,',
+      'Present': 'In your current circumstances,',
+      'Future': 'Looking ahead,',
+      'Situation': 'Regarding your current situation,',
+      'Self': 'In relation to yourself,',
+      'Environment': 'The surrounding circumstances reveal',
+      'Challenge': 'The obstacles you face suggest',
+      'Advice': 'The guidance being offered is',
+      'Outcome': 'Concerning the likely outcome,',
+      'Hidden': 'Beneath the surface,',
+      'Hopes': 'Your hopes and aspirations show',
+      'Fears': 'Your concerns and fears indicate',
+      'Message': 'The message for you is'
+    }
+    return contexts[position] || 'In this position,'
   }
 
   private getElementalDescription(runes: (Rune & { isReversed: boolean; position: string })[]): string {
@@ -678,6 +941,26 @@ class RunesIntelligence {
     const db = getFirebaseDB();
     const docRef = doc(db, 'users', userId, 'rune-coaching', coaching.id)
     await setDoc(docRef, coaching)
+  }
+
+  getAllRunes(): Rune[] {
+    // Return all runes with default energy, timing, and keywords for reference display
+    return this.elderFutharkRunes.map(rune => {
+      // Get keywords using the private method
+      let keywords: string[] = []
+      try {
+        keywords = this.getRuneKeywords(rune.name, false)
+      } catch {
+        keywords = ['wisdom', 'guidance', 'transformation']
+      }
+      
+      return {
+        ...rune,
+        energy: 5, // Default energy for reference
+        timing: 'Timing varies with context',
+        keywords
+      }
+    })
   }
 
   getSystemStatus() {
