@@ -15,6 +15,13 @@ interface DiscussionData {
   priority?: 'low' | 'medium' | 'high' | 'critical';
 }
 
+/** Firestore doc data for community discussions; timestamp fields may be Timestamp or string */
+interface CommunityDiscussionDoc extends Record<string, unknown> {
+  createdAt?: { toDate?: () => Date } | string;
+  updatedAt?: { toDate?: () => Date } | string;
+  lastActivityAt?: { toDate?: () => Date } | string;
+}
+
 // GET - Fetch discussions with filters
 export async function GET(request: NextRequest) {
   try {
@@ -110,7 +117,7 @@ export async function GET(request: NextRequest) {
           throw error;
         }
       }
-      const discussions = snapshot.docs.map((doc: { id: string; data: () => Record<string, unknown> }) => ({
+      const discussions = snapshot.docs.map((doc: { id: string; data: () => CommunityDiscussionDoc }) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
