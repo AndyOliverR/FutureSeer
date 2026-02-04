@@ -120,10 +120,12 @@ export async function POST(request: NextRequest) {
           role: 'system',
           content: buildVedicSystemPrompt(chartSlice, questionType)
         },
-        ...conversationHistory.map(h => [
-          { role: 'user' as const, content: h.question },
-          { role: 'assistant' as const, content: h.answer }
-        ]).flat(),
+        ...conversationHistory.flatMap((h) =>
+          h ? [
+            { role: 'user' as const, content: h.question },
+            { role: 'assistant' as const, content: h.answer },
+          ] : []
+        ),
         {
           role: 'user',
           content: question
@@ -186,7 +188,9 @@ export async function POST(request: NextRequest) {
               followUpQuestions: generateFollowUpQuestions(String(questionType), {
                 userProfile,
                 vedicChart: vedicChartData,
-                conversationHistory
+                conversationHistory: conversationHistory
+                  .filter((h): h is NonNullable<typeof h> => h != null)
+                  .map((h) => ({ question: h.question, answer: h.answer, timestamp: 'timestamp' in h && typeof (h as { timestamp?: number }).timestamp === 'number' ? (h as { timestamp: number }).timestamp : 0 }))
               })
             });
 

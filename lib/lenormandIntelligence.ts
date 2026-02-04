@@ -61,7 +61,7 @@ export interface LenormandReading {
   timestamp: Date
 }
 
-const LENORMAND_DECK: LenormandCard[] = [
+export const LENORMAND_DECK: LenormandCard[] = [
   { number: 1, name: 'Rider', keywords: ['news', 'messages', 'movement', 'visitor'], description: 'The Rider brings news, messages, swift changes, and arrivals. A messenger of fresh information and movement in your life.', advice: 'Be open to new information and opportunities coming your way.', playingCard: '9♠', timing: 'Very soon (hours to days)', element: 'air' },
   { number: 2, name: 'Clover', keywords: ['luck', 'opportunity', 'chance', 'fleeting'], description: 'The Clover brings luck, small opportunities, serendipity, and brief moments of joy.', advice: 'Take advantage of lucky breaks while they last.', playingCard: '6♦', timing: 'Very soon', element: 'fire' },
   { number: 3, name: 'Ship', keywords: ['travel', 'journey', 'commerce', 'distance'], description: 'The Ship brings travel, journeys, business ventures, and distant connections.', advice: 'Explore new horizons and embrace change.', playingCard: '10♠', timing: 'Weeks to months', element: 'water' },

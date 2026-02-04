@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(items)
   } catch (err: unknown) {
-    const code = err && typeof err === 'object' && 'code' in err ? (err as { code?: number }).code : undefined
+    const code = err && typeof err === 'object' && 'code' in err ? (err as { code?: number | string }).code : undefined
     const msg = err instanceof Error ? err.message : String(err)
     const isIndexRequired = code === 9 || code === 'failed-precondition' || msg.includes('index')
     if (isIndexRequired) {

@@ -293,10 +293,12 @@ export async function POST(request: NextRequest) {
           role: 'system',
           content: buildChaldeanSystemPrompt(chartSlice, questionType),
         },
-        ...conversationHistory.map((h) => [
-          { role: 'user' as const, content: h.question },
-          { role: 'assistant' as const, content: h.answer },
-        ]).flat(),
+        ...conversationHistory.flatMap((h) =>
+          h ? [
+            { role: 'user' as const, content: h.question },
+            { role: 'assistant' as const, content: h.answer },
+          ] : []
+        ),
         {
           role: 'user',
           content: question,
