@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAICompletion } from '@/lib/aiGateway';
-import { adminAuth, adminDB } from '@/lib/firebaseAdmin';
+import { getAuth, adminDb } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Check cache first
     try {
-      const cacheRef = adminDB
+      const cacheRef = adminDb
         .collection('users')
         .doc(userId)
         .collection('palmistry-comprehensive')
@@ -153,7 +153,7 @@ Provide only valid JSON in your response.`;
 
     // Cache the result
     try {
-      const cacheRef = adminDB
+      const cacheRef = adminDb
         .collection('users')
         .doc(userId)
         .collection('palmistry-comprehensive')
