@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger'
+import { adminDb } from '@/lib/firebase-admin'
 
 interface ToolInterestData {
   techniqueName: string
@@ -22,13 +23,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // TODO: In production, you would:
-    // 1. Save to your database (Firebase Firestore, PostgreSQL, etc.)
-    // 2. Send notification to your team
-    // 3. Add user authentication/authorization
-    // 4. Track interest metrics for prioritization
-    
     const timestamp = body.timestamp || new Date().toISOString()
+    
+    if (adminDb) {
+      await adminDb.collection('toolInterests').add({
+        techniqueName: String(body.techniqueName).trim(),
+        techniqueSlug: String(body.techniqueSlug).trim(),
+        email: body.email ? String(body.email).trim() : undefined,
+        message: body.message ? String(body.message).trim() : undefined,
+        userId: body.userId || undefined,
+        createdAt: new Date(),
+      })
+    }
     
     devLog.info('✨ Tool Interest Received:', {
       techniqueName: body.techniqueName,
@@ -39,10 +45,6 @@ export async function POST(request: NextRequest) {
       timestamp: timestamp,
       url: request.headers.get('referer') || 'Unknown'
     }, 'tools')
-
-    // For now, we'll just log the interest
-    // In production, implement proper storage and notification system
-    // Example: await saveToFirestore('tool_interests', { ...body, timestamp })
     
     return NextResponse.json(
       { 
