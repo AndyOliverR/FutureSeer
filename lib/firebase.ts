@@ -559,6 +559,9 @@ export const getAuthErrorMessage = (error: AuthError): string => {
       return 'Password should be at least 6 characters long.';
     case 'auth/invalid-email':
       return 'Please enter a valid email address.';
+    case 'auth/invalid-credential':
+    case 'auth/invalid-login-credentials':
+      return 'Invalid email or password. Please check your credentials. If you signed up with Google, use "Continue with Google" instead.';
     case 'auth/too-many-requests':
       return 'Too many failed attempts. Please try again later.';
     case 'auth/network-request-failed':
@@ -839,22 +842,20 @@ export const signInWithEmail = async (email: string, password: string): Promise<
 
     const result: UserCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = result.user;
-    
-    // Update last login
+
+    // Update last login in background so sign-in never blocks on Firestore (avoids hang on "Unexpected state")
     const db = getFirebaseDB();
     if (db) {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), {
-          lastLoginAt: Date.now(),
-          lastSignInTime: user.metadata.lastSignInTime ? parseInt(user.metadata.lastSignInTime) : Date.now(),
-        });
-        saveUserActivity(user.uid, 'sign_in').catch(() => {});
-      } catch (error) {
+      updateDoc(doc(db, 'users', user.uid), {
+        lastLoginAt: Date.now(),
+        lastSignInTime: user.metadata.lastSignInTime ? parseInt(user.metadata.lastSignInTime) : Date.now(),
+      }).catch(async (error) => {
         const { firestoreErrorHandler } = await import('./firestoreErrorHandler');
         firestoreErrorHandler.handleError(error as Error, 'updateLastLogin', 'users', user.uid);
-      }
+      });
+      saveUserActivity(user.uid, 'sign_in').catch(() => {});
     }
-    
+
     return user;
   } catch (error: any) {
     console.error('Error signing in with email:', error);
@@ -1159,20 +1160,36 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
           // Client-side: Firebase Client SDK with retry logic for offline errors
           console.log('🔧 Using Firebase Client SDK to fetch profile');
           const { doc, getDoc } = await import('firebase/firestore');
-          
+          const PROFILE_FETCH_TIMEOUT_MS = 5000;
+
           // Retry logic with exponential backoff for offline errors
           let retries = 0;
           const maxRetries = 3;
           const retryDelays = [100, 200, 400]; // Exponential backoff in ms
           let lastError: any = null;
-          
+          let profileFetchTimedOut = false;
+
           while (retries <= maxRetries) {
             try {
-              userDoc = await getDoc(doc(db, 'users', uid));
+              const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Profile fetch timeout')), PROFILE_FETCH_TIMEOUT_MS)
+              );
+              userDoc = await Promise.race([
+                getDoc(doc(db, 'users', uid)),
+                timeoutPromise,
+              ]);
               break; // Success, exit retry loop
             } catch (docFetchError: any) {
+              if (docFetchError?.message === 'Profile fetch timeout') {
+                profileFetchTimedOut = true;
+                userDoc = undefined;
+                if (process.env.NODE_ENV === 'development') {
+                  console.warn('⚠️ Profile fetch timed out; using fallback.');
+                }
+                break;
+              }
               lastError = docFetchError;
-              
+
               // Only retry if it's an offline error
               if (isOfflineError(docFetchError) && retries < maxRetries) {
                 retries++;
@@ -1183,14 +1200,22 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
               }
-              
+
               // Not an offline error or max retries reached, throw
               throw docFetchError;
             }
           }
-          
+
           if (userDoc && userDoc.exists()) {
             profileData = userDoc.data() as UserProfile;
+          }
+
+          if (profileFetchTimedOut && typeof window !== 'undefined') {
+            const localProfile = getLocalUserProfile();
+            if (localProfile && localProfile.birthTime) {
+              localProfile.birthTime = cleanupCorruptedBirthTime(localProfile.birthTime);
+            }
+            return respondWithCache(localProfile);
           }
         }
 

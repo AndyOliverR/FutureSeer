@@ -40,6 +40,10 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          setError('Complete your profile to get a referral code.');
+          return;
+        }
         throw new Error('Failed to generate referral code');
       }
 

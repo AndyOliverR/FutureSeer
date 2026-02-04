@@ -48,8 +48,8 @@ export default function PendulumPage() {
         {/* Page-level tabs: Cast Reading | Ask the Seer */}
         <Tabs value={pageTab} onValueChange={(v) => setPageTab(v as "cast" | "ask-the-seer")} className="mb-6">
           <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-1">
-            <TabsTrigger value="cast" className="rounded-xl data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300">Cast Reading</TabsTrigger>
-            <TabsTrigger value="ask-the-seer" className="rounded-xl data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-300 flex items-center gap-2">
+            <TabsTrigger value="cast" className="rounded-xl data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Cast Reading</TabsTrigger>
+            <TabsTrigger value="ask-the-seer" className="rounded-xl data-[state=active]:text-amber-100 data-[state=active]:font-semibold flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Ask the Seer
             </TabsTrigger>

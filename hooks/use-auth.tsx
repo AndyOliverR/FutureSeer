@@ -108,46 +108,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
+      const PROFILE_LOAD_TIMEOUT_MS = 5000; // 5s so Firestore hang does not block UI forever
+
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         setUser(firebaseUser);
         
-        if (firebaseUser) {
-          try {
-            // Check for admin roles based on email
-            const adminRoles = checkAdminRoles(firebaseUser.email);
-            setIsSuperadmin(adminRoles.isSuperadmin);
-            setIsAdmin(adminRoles.isAdmin);
-            setIsSpecialUser(adminRoles.isSpecialUser);
+        try {
+          if (firebaseUser) {
+            try {
+              // Check for admin roles based on email
+              const adminRoles = checkAdminRoles(firebaseUser.email);
+              setIsSuperadmin(adminRoles.isSuperadmin);
+              setIsAdmin(adminRoles.isAdmin);
+              setIsSpecialUser(adminRoles.isSpecialUser);
+              
+              // Also check for Firebase custom claims (for future use)
+              const token = await getIdTokenResult(firebaseUser, true);
+              if (token.claims.superadmin) {
+                setIsSuperadmin(true);
+              }
+              if (token.claims.admin) {
+                setIsAdmin(true);
+              }
+              if (token.claims.role === 'admin') {
+                setIsAdmin(true);
+              }
+            } catch (e) {
+              // Fallback to email-based role checking
+              const adminRoles = checkAdminRoles(firebaseUser.email);
+              setIsSuperadmin(adminRoles.isSuperadmin);
+              setIsAdmin(adminRoles.isAdmin);
+              setIsSpecialUser(adminRoles.isSpecialUser);
+            }
             
-            // Also check for Firebase custom claims (for future use)
-            const token = await getIdTokenResult(firebaseUser, true);
-            if (token.claims.superadmin) {
-              setIsSuperadmin(true);
-            }
-            if (token.claims.admin) {
-              setIsAdmin(true);
-            }
-            if (token.claims.role === 'admin') {
-              setIsAdmin(true);
-            }
-          } catch (e) {
-            // Fallback to email-based role checking
-            const adminRoles = checkAdminRoles(firebaseUser.email);
-            setIsSuperadmin(adminRoles.isSuperadmin);
-            setIsAdmin(adminRoles.isAdmin);
-            setIsSpecialUser(adminRoles.isSpecialUser);
+            const timeoutPromise = new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error('Profile load timeout')), PROFILE_LOAD_TIMEOUT_MS)
+            );
+            const profile = await Promise.race([
+              getUserProfile(firebaseUser.uid),
+              timeoutPromise,
+            ]);
+            setUserProfile(profile);
+          } else {
+            setUserProfile(null);
+            setIsSuperadmin(false);
+            setIsAdmin(false);
+            setIsSpecialUser(false);
           }
-          
-          const profile = await getUserProfile(firebaseUser.uid);
-          setUserProfile(profile);
-        } else {
-          setUserProfile(null);
-          setIsSuperadmin(false);
-          setIsAdmin(false);
-          setIsSpecialUser(false);
+        } catch (e) {
+          if (e instanceof Error && e.message === 'Profile load timeout') {
+            console.warn('⚠️ Profile load timed out; continuing without profile.');
+            setUserProfile(null);
+          }
+          if (firebaseUser) {
+            setUserProfile(null);
+          } else {
+            setUserProfile(null);
+            setIsSuperadmin(false);
+            setIsAdmin(false);
+            setIsSpecialUser(false);
+          }
+        } finally {
+          setLoading(false);
         }
-        
-        setLoading(false);
       });
 
       return () => unsubscribe();

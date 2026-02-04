@@ -3,6 +3,8 @@
 **Date**: February 3, 2026  
 **Scope**: Safe, non-destructive cleanup; all items moved to `_backup_deleted/` (no permanent deletes).
 
+**Update (February 4, 2026):** The `_backup_deleted/` folder was removed to free space. Nothing in the app referenced it; backups are no longer available on disk.
+
 ---
 
 ## 1. What Was Moved

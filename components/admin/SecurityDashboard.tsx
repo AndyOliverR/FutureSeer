@@ -87,12 +87,14 @@ export function SecurityDashboard() {
     refreshData();
   };
 
+  const adminCardClass = "rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01]";
+
   if (!securityReport) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-500">Loading security data...</p>
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-amber-400/60" />
+          <p className="text-white/80 text-sm">Loading security data...</p>
         </div>
       </div>
     );
@@ -106,7 +108,7 @@ export function SecurityDashboard() {
           <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">
             Security Dashboard
           </h2>
-          <p className="text-gray-500">Monitor your application's security status</p>
+          <p className="text-gray-400">Monitor your application's security status</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -114,6 +116,7 @@ export function SecurityDashboard() {
             disabled={isLoading}
             variant="outline"
             size="sm"
+            className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
@@ -122,7 +125,7 @@ export function SecurityDashboard() {
             onClick={clearEvents}
             variant="outline"
             size="sm"
-            className="text-red-600 hover:text-red-700"
+            className="border-red-500/50 text-red-300 hover:bg-red-500/20"
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Clear Events
@@ -132,57 +135,57 @@ export function SecurityDashboard() {
 
       {/* Security Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className={adminCardClass}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Events</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-amber-200">Total Events</CardTitle>
+            <Activity className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{securityReport.totalEvents}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white/90">{securityReport.totalEvents}</div>
+            <p className="text-xs text-gray-400">
               All time security events
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={adminCardClass}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Events</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-amber-200">Recent Events</CardTitle>
+            <Clock className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{securityReport.recentEvents}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold text-white/90">{securityReport.recentEvents}</div>
+            <p className="text-xs text-gray-400">
               Last 24 hours
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={adminCardClass}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">High Severity</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-amber-200">High Severity</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-orange-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-orange-400">
               {securityReport.highSeverityEvents}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-400">
               High/Critical events
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className={adminCardClass}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Alerts Sent</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-amber-200">Alerts Sent</CardTitle>
+            <Shield className="h-4 w-4 text-gray-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-red-400">
               {securityReport.alertCount}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-400">
               Security alerts triggered
             </p>
           </CardContent>
@@ -191,9 +194,9 @@ export function SecurityDashboard() {
 
       {/* Security Alerts */}
       {securityReport.highSeverityEvents > 0 && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-800">
+        <Alert className="border-orange-500/40 bg-orange-500/10">
+          <AlertTriangle className="h-4 w-4 text-orange-400" />
+          <AlertDescription className="text-orange-200">
             <strong>{securityReport.highSeverityEvents}</strong> high severity security events detected in the last 24 hours. 
             Review the events below and take appropriate action.
           </AlertDescription>
@@ -202,44 +205,44 @@ export function SecurityDashboard() {
 
       {/* Events Tabs */}
       <Tabs defaultValue="recent" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="recent">Recent Events</TabsTrigger>
-          <TabsTrigger value="suspicious">Suspicious Activity</TabsTrigger>
-          <TabsTrigger value="auth">Authentication</TabsTrigger>
+        <TabsList className="bg-slate-800/90 border border-amber-500/30 rounded-xl p-1 text-amber-200">
+          <TabsTrigger value="recent" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Recent Events</TabsTrigger>
+          <TabsTrigger value="suspicious" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Suspicious Activity</TabsTrigger>
+          <TabsTrigger value="auth" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Authentication</TabsTrigger>
         </TabsList>
 
         <TabsContent value="recent" className="space-y-4">
-          <Card>
+          <Card className={adminCardClass}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-amber-400">
                 <Activity className="h-5 w-5" />
                 Recent Security Events
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-400">
                 Security events from the last 24 hours
               </CardDescription>
             </CardHeader>
             <CardContent>
               {recentEvents.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Shield className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No security events in the last 24 hours</p>
-                  <p className="text-sm">Your application appears to be secure</p>
+                <div className="text-center py-8">
+                  <Shield className="h-12 w-12 mx-auto mb-4 text-amber-400/60" />
+                  <p className="text-white/80 text-sm">No security events in the last 24 hours</p>
+                  <p className="text-sm text-gray-400">Your application appears to be secure</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {recentEvents.slice(0, 20).map((event, index) => (
                     <div
                       key={index}
-                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+                      className="flex items-center justify-between p-3 border border-slate-600 rounded-lg hover:bg-slate-700/50 text-white/90"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-lg">{getEventTypeIcon(event.eventType)}</span>
                         <div>
-                          <div className="font-medium capitalize">
+                          <div className="font-medium capitalize text-white/90">
                             {event.eventType.replace('_', ' ')}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-gray-400">
                             {event.userId ? `User: ${event.userId}` : 'Anonymous'}
                           </div>
                           {showDetails && (
@@ -253,7 +256,7 @@ export function SecurityDashboard() {
                         <Badge className={getSeverityColor(event.severity)}>
                           {event.severity}
                         </Badge>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-400">
                           {formatTimestamp(event.timestamp)}
                         </div>
                       </div>
@@ -266,22 +269,22 @@ export function SecurityDashboard() {
         </TabsContent>
 
         <TabsContent value="suspicious" className="space-y-4">
-          <Card>
+          <Card className={adminCardClass}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
+              <CardTitle className="flex items-center gap-2 text-amber-400">
+                <AlertTriangle className="h-5 w-5 text-orange-400" />
                 Suspicious Activity
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-400">
                 Potentially malicious or suspicious activities
               </CardDescription>
             </CardHeader>
             <CardContent>
               {recentEvents.filter(e => e.eventType === 'suspicious_activity').length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Shield className="h-12 w-12 mx-auto mb-4 text-green-300" />
-                  <p>No suspicious activity detected</p>
-                  <p className="text-sm">Your security measures are working well</p>
+                <div className="text-center py-8">
+                  <Shield className="h-12 w-12 mx-auto mb-4 text-amber-400/60" />
+                  <p className="text-white/80 text-sm">No suspicious activity detected</p>
+                  <p className="text-sm text-gray-400">Your security measures are working well</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -290,20 +293,20 @@ export function SecurityDashboard() {
                     .map((event, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 border border-orange-200 rounded-lg bg-orange-50"
+                        className="flex items-center justify-between p-3 border border-orange-500/40 rounded-lg bg-orange-500/10 text-orange-200"
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-lg">🚨</span>
                           <div>
-                            <div className="font-medium text-orange-800">
+                            <div className="font-medium text-orange-200">
                               Suspicious Activity Detected
                             </div>
-                            <div className="text-sm text-orange-600">
+                            <div className="text-sm text-orange-300/80">
                               {event.userId ? `User: ${event.userId}` : 'Anonymous'}
                             </div>
                           </div>
                         </div>
-                        <div className="text-xs text-orange-600">
+                        <div className="text-xs text-orange-300/80">
                           {formatTimestamp(event.timestamp)}
                         </div>
                       </div>
@@ -315,21 +318,21 @@ export function SecurityDashboard() {
         </TabsContent>
 
         <TabsContent value="auth" className="space-y-4">
-          <Card>
+          <Card className={adminCardClass}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-amber-400">
                 <Users className="h-5 w-5" />
                 Authentication Events
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-400">
                 Login attempts and authentication activities
               </CardDescription>
             </CardHeader>
             <CardContent>
               {recentEvents.filter(e => e.eventType.includes('auth')).length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>No authentication events in the last 24 hours</p>
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-amber-400/60" />
+                  <p className="text-white/80 text-sm">No authentication events in the last 24 hours</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -338,10 +341,10 @@ export function SecurityDashboard() {
                     .map((event, index) => (
                       <div
                         key={index}
-                        className={`flex items-center justify-between p-3 border rounded-lg ${
+                        className={`flex items-center justify-between p-3 border rounded-lg text-white/90 ${
                           event.eventType === 'auth_failure' 
-                            ? 'border-red-200 bg-red-50' 
-                            : 'border-green-200 bg-green-50'
+                            ? 'border-red-500/40 bg-red-500/10' 
+                            : 'border-green-500/40 bg-green-500/10'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -352,12 +355,12 @@ export function SecurityDashboard() {
                             <div className="font-medium">
                               {event.eventType === 'auth_success' ? 'Successful Login' : 'Failed Login'}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-400">
                               {event.userId || 'Unknown user'}
                             </div>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-400">
                           {formatTimestamp(event.timestamp)}
                         </div>
                       </div>
@@ -375,6 +378,7 @@ export function SecurityDashboard() {
           onClick={() => setShowDetails(!showDetails)}
           variant="outline"
           size="sm"
+          className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20"
         >
           {showDetails ? (
             <>

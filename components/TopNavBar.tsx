@@ -24,7 +24,8 @@ const navLinks = [
   { name: "Remedies", href: "/remedies", icon: "💎" },
   { name: "Ask the Seer", href: "/ask-the-seer", icon: "🔮" },
   { name: "Community", href: "/community", icon: "🏆" },
-  { name: "Admin", href: "/admin/community-management", icon: "👑" },
+  { name: "Admin Dashboard", href: "/admin/dashboard", icon: "👑" },
+  { name: "Admin", href: "/admin/community-management", icon: "🛡️" },
   { name: "Support Desk", href: "/admin/support", icon: "📋" },
   { name: "Feedback", href: "/admin/feedback", icon: "💬" },
 ];
@@ -38,7 +39,7 @@ export function TopNavBar() {
 
   const visibleNavLinks = navLinks.filter(
     (link) =>
-      (link.name !== "Admin" && link.name !== "Support Desk" && link.name !== "Feedback") ||
+      (link.name !== "Admin Dashboard" && link.name !== "Admin" && link.name !== "Support Desk" && link.name !== "Feedback") ||
       isAdmin ||
       isSuperadmin
   );
@@ -87,7 +88,7 @@ export function TopNavBar() {
             <TooltipTrigger asChild>
               <Link
                 href="/about"
-                className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-[var(--m3-primary)] hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
+                className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-amber-400 text-[var(--m3-primary)] hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
                 aria-label="Learn about FutureSeer"
               >
                 <Info className="w-5 h-5 text-current" />
@@ -105,7 +106,7 @@ export function TopNavBar() {
                 <button
                   ref={shareButtonRef}
                   onClick={() => setShowShareModal(true)}
-                  className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-[var(--m3-primary)] hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
+                  className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-amber-400 text-[var(--m3-primary)] hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
                   aria-label="Share FutureSeer with others"
                 >
                   <Share2 className="w-5 h-5 text-current" />
@@ -175,7 +176,7 @@ export function TopNavBar() {
               ref={menuRef}
               id="main-navigation-menu"
               role="menu"
-              className="hamburger-menu absolute right-0 top-12 flex flex-col items-end z-[9999] bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] rounded-lg p-2 m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated min-w-[240px]"
+              className="hamburger-menu nav-menu-scroll absolute right-0 top-12 flex flex-col items-end z-[9999] bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] rounded-lg p-2 m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated min-w-[240px] max-h-[min(90vh,36rem)] overflow-y-auto overflow-x-hidden"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -282,6 +283,15 @@ export function TopNavBar() {
         nav div[ref] {
           border: none !important;
           box-shadow: none !important;
+        }
+
+        /* Hide scrollbar on nav menu but keep scroll (wheel, touch, keyboard) */
+        :global(.nav-menu-scroll) {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        :global(.nav-menu-scroll)::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
       </nav>

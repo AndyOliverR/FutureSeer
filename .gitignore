@@ -29,7 +29,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# backup folder is now tracked for cleanup traceability
-# Firebase key in backup (secrets - do not commit)
-_backup_deleted/futureseer-7abcd5-firebase-adminsdk-fbsvc-75b6b3cfeb.json
