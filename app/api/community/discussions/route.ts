@@ -22,6 +22,14 @@ interface CommunityDiscussionDoc extends Record<string, unknown> {
   lastActivityAt?: { toDate?: () => Date } | string;
 }
 
+function timestampToISO(
+  val: CommunityDiscussionDoc['createdAt']
+): string | undefined {
+  if (val == null) return undefined;
+  if (typeof val === 'string') return val;
+  return val.toDate?.()?.toISOString();
+}
+
 // GET - Fetch discussions with filters
 export async function GET(request: NextRequest) {
   try {
@@ -120,9 +128,9 @@ export async function GET(request: NextRequest) {
       const discussions = snapshot.docs.map((doc: { id: string; data: () => CommunityDiscussionDoc }) => ({
         id: doc.id,
         ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
-        lastActivityAt: doc.data().lastActivityAt?.toDate?.()?.toISOString() || doc.data().lastActivityAt,
+        createdAt: timestampToISO(doc.data().createdAt) ?? doc.data().createdAt,
+        updatedAt: timestampToISO(doc.data().updatedAt) ?? doc.data().updatedAt,
+        lastActivityAt: timestampToISO(doc.data().lastActivityAt) ?? doc.data().lastActivityAt,
       }));
 
       return NextResponse.json({
