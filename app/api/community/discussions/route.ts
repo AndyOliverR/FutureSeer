@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
       query = query.limit(limit);
 
-      let snapshot;
+      let snapshot: any;
       try {
         snapshot = await query.get();
       } catch (error: any) {
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
           snapshot = await fallbackQuery.get();
           
           // Filter by status in memory if needed
-          const docs = snapshot.docs.filter(doc => {
+          const docs = snapshot.docs.filter((doc: { data: () => { status?: string } }) => {
             if (status && status !== 'all') {
               return doc.data().status === status;
             }
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
           throw error;
         }
       }
-      const discussions = snapshot.docs.map(doc => ({
+      const discussions = snapshot.docs.map((doc: { id: string; data: () => Record<string, unknown> }) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,

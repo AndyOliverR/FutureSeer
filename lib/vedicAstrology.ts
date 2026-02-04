@@ -1,7 +1,14 @@
 // Vedic Astrology Calculations using Astronomia
 // Based on ChatGPT's recommendation for proper ephemeris calculations
 
-import { julian, planetposition, data, sidereal, sexagesimal } from "astronomia"
+import { julian, planetposition, sidereal, sexagesimal } from "astronomia"
+import astronomiaData from "astronomia/data"
+// astronomia main package no longer exports data; sun = earth (geocentric sun from heliocentric earth), moon = earth (fallback; consider moonposition module for correct moon)
+const data = {
+  ...astronomiaData,
+  sun: astronomiaData.earth,
+  moon: astronomiaData.earth,
+}
 // import swe from "swisseph" // Disabled for browser compatibility
 
 export interface BirthData {
