@@ -24,6 +24,8 @@ export function FirestoreErrorSuppressor() {
         'FIRESTORE (12.1.0)',
         'Unexpected state (ID: ca9)',
         'Unexpected state (ID: b815)',
+        'Unexpected state (ID: da08)',
+        'Unexpected state (ID:', // generic match for any "Unexpected state (ID: ...)"
         've":-1',
         '__PRIVATE__fail',
         '__PRIVATE_TargetState',
@@ -51,6 +53,27 @@ export function FirestoreErrorSuppressor() {
 
     // Patch console.error to catch errors before Next.js overlay
     const originalConsoleError = console.error;
+    let corruptionRecoveryTriggered = false;
+
+    const triggerCorruptionRecovery = () => {
+      if (corruptionRecoveryTriggered || typeof window === 'undefined') return;
+      corruptionRecoveryTriggered = true;
+      console.warn('🔄 Critical Firestore corruption detected. Clearing cache and reloading...');
+      indexedDB.databases?.()
+        .then((databases: { name?: string }[]) => {
+          databases.forEach((db) => {
+            if (db.name?.includes('firestore')) {
+              indexedDB.deleteDatabase(db.name);
+              console.log('🗑️ Deleted corrupted Firestore DB:', db.name);
+            }
+          });
+        })
+        .catch(() => console.warn('Could not clear IndexedDB'));
+      setTimeout(() => {
+        window.location.href = window.location.pathname;
+      }, 500);
+    };
+
     console.error = (...args: any[]) => {
       const errorMessage = args.join(' ');
       
@@ -84,6 +107,12 @@ export function FirestoreErrorSuppressor() {
       
       if (isFirestoreInternalError({ message: errorMessage })) {
         console.warn('⚠️ FirestoreErrorSuppressor suppressed console.error:', errorMessage);
+        if (
+          (errorMessage.includes('INTERNAL ASSERTION FAILED') && errorMessage.includes('Unexpected state')) ||
+          errorString.includes('Unexpected state (ID:')
+        ) {
+          triggerCorruptionRecovery();
+        }
         return;
       }
       

@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
             const userRef = doc(db, 'users', userId);
             await updateDoc(userRef, {
               subscriptionStatus: 'active',
+              subscriptionId: subscription.id,
               subscriptionActivatedAt: serverTimestamp(),
               nextBillingDate: subscription.current_end,
               updatedAt: serverTimestamp(),
@@ -61,15 +62,19 @@ export async function POST(request: NextRequest) {
         if (payload.subscription?.entity) {
           const subscription = payload.subscription.entity;
           const userId = subscription.notes?.customer_id || subscription.customer_id;
+          const paymentId = payload.payment?.entity?.id;
 
           if (userId) {
             const userRef = doc(db, 'users', userId);
-            await updateDoc(userRef, {
+            const updates: Record<string, unknown> = {
               subscriptionStatus: 'active',
+              subscriptionId: subscription.id,
               lastBillingDate: serverTimestamp(),
               nextBillingDate: subscription.current_end,
               updatedAt: serverTimestamp(),
-            });
+            };
+            if (paymentId) updates.lastPaymentId = paymentId;
+            await updateDoc(userRef, updates);
           }
         }
         break;

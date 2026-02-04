@@ -3,6 +3,7 @@
 
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 // Initialize Firebase Admin SDK
 let adminApp;
@@ -27,6 +28,9 @@ if (getApps().length === 0) {
 
 // Get Firestore instance
 export const adminDb = adminApp ? getFirestore(adminApp) : null;
+
+// Firebase Admin Auth (uses default app; for verifyIdToken, listUsers, setCustomUserClaims, createCustomToken)
+export { getAuth };
 
 // Helper function to check if admin is available
 export function isAdminAvailable(): boolean {

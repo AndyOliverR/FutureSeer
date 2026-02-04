@@ -350,7 +350,7 @@ export default function RemediesPage() {
   return (
     <div className="starfield-ultra-sharp min-h-screen py-12 px-4 overflow-hidden">
       <Header />
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto pt-20">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
