@@ -85,9 +85,7 @@ export async function POST(request: NextRequest) {
 
     devLog.info(
       '🔮 Horary Seer API: Question type',
-      questionType,
-      'verdict',
-      verdict,
+      { questionType, verdict },
       'ask-horary-seer'
     );
 

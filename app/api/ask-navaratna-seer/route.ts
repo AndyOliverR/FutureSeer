@@ -156,14 +156,10 @@ export async function POST(request: NextRequest) {
               model: 'llama-3.3-70b-versatile',
               messages: [
                 { role: 'system', content: systemPrompt },
-                ...conversationHistory.map(item => ({
-                  role: 'user' as const,
-                  content: item.question
-                })),
-                ...conversationHistory.map(item => ({
-                  role: 'assistant' as const,
-                  content: item.answer.substring(0, 500) + '...'
-                })),
+                ...conversationHistory.filter((item): item is NonNullable<typeof item> => item != null).flatMap(item => [
+                  { role: 'user' as const, content: item.question },
+                  { role: 'assistant' as const, content: item.answer.substring(0, 500) + '...' }
+                ]),
                 { role: 'user', content: question }
               ],
               temperature: 0.7,

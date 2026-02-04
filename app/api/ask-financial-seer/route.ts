@@ -51,7 +51,7 @@ function normalizeToFinancialPayload(
   if (houses.some((h: any) => h.house != null)) {
     housesArr = houses;
   } else {
-    housesArr = houses.map((h: { number?: number; sign?: string }) => ({
+    housesArr = houses.map((h: { number?: number; house?: number; sign?: string }) => ({
       house: h.number ?? h.house,
       sign: h.sign,
     }));
@@ -186,10 +186,12 @@ export async function POST(request: NextRequest) {
       model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
-        ...conversationHistory.flatMap((h: { question: string; answer: string }) => [
-          { role: 'user' as const, content: h.question },
-          { role: 'assistant' as const, content: h.answer },
-        ]),
+        ...conversationHistory.flatMap((h: { question: string; answer: string } | null) =>
+          h ? [
+            { role: 'user' as const, content: h.question },
+            { role: 'assistant' as const, content: h.answer },
+          ] : []
+        ),
         { role: 'user', content: question },
       ],
       temperature: 0.6,
