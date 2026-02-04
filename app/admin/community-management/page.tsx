@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, CheckCircle, Clock, TrendingUp, Users, MessageCircle, Star, Zap, Filter, Search, Flag, Archive, Pin, Crown } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, TrendingUp, Users, MessageCircle, Star, Zap, Filter, Search, Flag, Archive, Pin, Crown, Loader2, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Header } from '@/components/header';
 
@@ -48,130 +49,112 @@ export default function CommunityManagementPage() {
   const [selectedDiscussion, setSelectedDiscussion] = useState<DiscussionThread | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
   const [actionData, setActionData] = useState({ priority: '', status: '', notes: '', action: '' });
-  const [filters, setFilters] = useState({ category: '', priority: '', status: '', search: '' });
+  const [filters, setFilters] = useState({ category: 'all', priority: 'all', status: 'all', search: '' });
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      const mockDiscussions: DiscussionThread[] = [
-        {
-          id: '1',
-          title: 'Vedic Astrology predictions accuracy - Career guidance success stories',
-          content: 'I\'ve been using the Vedic Astrology tool and it predicted my career change with incredible accuracy. The planetary positions analysis was spot-on! Anyone else have similar experiences with career guidance?',
-          author: 'Emma Davis',
-          authorId: '3',
-          date: '2025-01-25',
-          upvotes: 156,
-          downvotes: 3,
-          comments: 42,
-          category: 'vedic',
-          priority: 'high',
-          status: 'active',
-          isHot: true,
-          isSticky: false,
-          actionRequired: true,
-          adminNotes: 'High engagement - consider adding more Vedic career guidance features'
-        },
-        {
-          id: '2',
-          title: 'Tarot Reading Tips: How to interpret FutureSeer\'s AI-generated spreads',
-          content: 'As a tarot master, I wanted to share tips for interpreting FutureSeer\'s AI-generated tarot spreads. The key is to focus on your intention and trust your intuition while using the AI insights...',
-          author: 'Sarah Johnson',
-          authorId: '1',
-          date: '2025-01-24',
-          upvotes: 89,
-          downvotes: 1,
-          comments: 23,
-          category: 'tarot',
-          priority: 'medium',
-          status: 'active',
-          isHot: false,
-          isSticky: true
-        },
-        {
-          id: '3',
-          title: 'Numerology vs Angel Numbers: Which FutureSeer tool gives better insights?',
-          content: 'I\'ve been comparing the Numerology tool with Angel Numbers. Both are fascinating but serve different purposes. Numerology gives deeper life path insights while Angel Numbers provide daily guidance...',
-          author: 'Alex Rodriguez',
-          authorId: '4',
-          date: '2025-01-23',
-          upvotes: 67,
-          downvotes: 2,
-          comments: 18,
-          category: 'numerology',
-          priority: 'medium',
-          status: 'active',
-          isHot: false,
-          isSticky: false
-        },
-        {
-          id: '4',
-          title: 'Palmistry Reading Accuracy - Lines interpretation feedback',
-          content: 'The palmistry tool is amazing! The AI correctly identified my life line and heart line patterns. Has anyone else found the palm reading feature to be accurate?',
-          author: 'Priya Patel',
-          authorId: '5',
-          date: '2025-01-22',
-          upvotes: 45,
-          downvotes: 1,
-          comments: 12,
-          category: 'palmistry',
-          priority: 'low',
-          status: 'active',
-          isHot: false,
-          isSticky: false
-        },
-        {
-          id: '5',
-          title: 'Dream Analysis Tool: Symbol interpretation accuracy',
-          content: 'The dream analysis feature helped me understand recurring symbols in my dreams. The AI interpretation was surprisingly accurate and provided deep psychological insights...',
-          author: 'Mike Chen',
-          authorId: '2',
-          date: '2025-01-21',
-          upvotes: 34,
-          downvotes: 0,
-          comments: 8,
-          category: 'dream-analysis',
-          priority: 'low',
-          status: 'active',
-          isHot: false,
-          isSticky: false
-        }
-      ];
-
-      setDiscussions(mockDiscussions);
-      setFilteredDiscussions(mockDiscussions);
-
-      setStats({
-        totalDiscussions: mockDiscussions.length,
-        activeDiscussions: mockDiscussions.filter(d => d.status === 'active').length,
-        criticalIssues: mockDiscussions.filter(d => d.priority === 'critical').length,
-        highPriorityRequests: mockDiscussions.filter(d => d.priority === 'high').length,
-        averageEngagement: Math.round(mockDiscussions.reduce((acc, d) => acc + d.upvotes + d.comments, 0) / mockDiscussions.length),
-        topCategories: [
-          { category: 'vedic', count: 1 },
-          { category: 'tarot', count: 1 },
-          { category: 'numerology', count: 1 },
-          { category: 'palmistry', count: 1 },
-          { category: 'dream-analysis', count: 1 }
-        ]
-      });
-
+    if (!isAdmin && !isSuperadmin) {
       setLoading(false);
-    }, 1000);
-  }, []);
+      return;
+    }
+    const fetchDiscussions = async () => {
+      setLoading(true);
+      setFetchError(null);
+      try {
+        const res = await fetch('/api/community/discussions?status=active&limit=50');
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+        if (!data.success || !Array.isArray(data.discussions)) {
+          setDiscussions([]);
+          setFilteredDiscussions([]);
+          setStats({
+            totalDiscussions: 0,
+            activeDiscussions: 0,
+            criticalIssues: 0,
+            highPriorityRequests: 0,
+            averageEngagement: 0,
+            topCategories: []
+          });
+          setLoading(false);
+          return;
+        }
+        const list: DiscussionThread[] = data.discussions.map((d: Record<string, unknown>) => {
+          const createdAt = d.createdAt as string | undefined;
+          const dateStr = createdAt ? (createdAt.slice ? createdAt.slice(0, 10) : new Date(createdAt).toISOString().slice(0, 10)) : '';
+          return {
+            id: String(d.id ?? ''),
+            title: String(d.title ?? ''),
+            content: String(d.content ?? ''),
+            author: String(d.authorName ?? d.author ?? ''),
+            authorId: String(d.userId ?? d.authorId ?? ''),
+            date: dateStr,
+            upvotes: Number(d.upvotes ?? 0),
+            downvotes: Number(d.downvotes ?? 0),
+            comments: Number(d.commentCount ?? d.comments ?? 0),
+            category: (d.category as DiscussionThread['category']) ?? 'general',
+            priority: (d.priority as DiscussionThread['priority']) ?? 'medium',
+            status: (d.status as DiscussionThread['status']) ?? 'active',
+            isHot: Boolean(d.isHot),
+            isSticky: Boolean(d.isSticky),
+            adminNotes: d.adminNotes as string | undefined,
+            actionRequired: Boolean(d.actionRequired)
+          };
+        });
+        setDiscussions(list);
+        setFilteredDiscussions(list);
+        const active = list.filter(d => d.status === 'active');
+        const totalEngagement = list.reduce((acc, d) => acc + d.upvotes + d.comments, 0);
+        const categoryCounts: Record<string, number> = {};
+        list.forEach(d => {
+          categoryCounts[d.category] = (categoryCounts[d.category] ?? 0) + 1;
+        });
+        setStats({
+          totalDiscussions: list.length,
+          activeDiscussions: active.length,
+          criticalIssues: list.filter(d => d.priority === 'critical').length,
+          highPriorityRequests: list.filter(d => d.priority === 'high').length,
+          averageEngagement: list.length ? Math.round(totalEngagement / list.length) : 0,
+          topCategories: Object.entries(categoryCounts)
+            .map(([category, count]) => ({ category, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 10)
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Failed to load discussions';
+        setFetchError(msg);
+        setDiscussions([]);
+        setFilteredDiscussions([]);
+        setStats({
+          totalDiscussions: 0,
+          activeDiscussions: 0,
+          criticalIssues: 0,
+          highPriorityRequests: 0,
+          averageEngagement: 0,
+          topCategories: []
+        });
+        toast({ title: 'Error', description: msg, variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDiscussions();
+  }, [isAdmin, isSuperadmin]);
 
   useEffect(() => {
     let filtered = discussions;
 
-    if (filters.category) {
+    if (filters.category && filters.category !== 'all') {
       filtered = filtered.filter(d => d.category === filters.category);
     }
-    if (filters.priority) {
+    if (filters.priority && filters.priority !== 'all') {
       filtered = filtered.filter(d => d.priority === filters.priority);
     }
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(d => d.status === filters.status);
     }
     if (filters.search) {
@@ -268,7 +251,14 @@ export default function CommunityManagementPage() {
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
       <Header />
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 pt-20 pb-8">
+        <Link
+          href="/admin/dashboard"
+          className="inline-flex items-center gap-1 text-amber-400/90 hover:text-amber-300 text-sm font-medium mb-8"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back to Admin Dashboard
+        </Link>
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
@@ -278,6 +268,12 @@ export default function CommunityManagementPage() {
             Monitor discussions, prioritize actions, and manage community engagement
           </p>
         </div>
+
+        {fetchError && (
+          <div className="mb-6 rounded-xl bg-red-500/20 border border-red-500/50 p-4 text-red-400 text-sm">
+            {fetchError}
+          </div>
+        )}
 
         {/* Stats Overview */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -344,7 +340,7 @@ export default function CommunityManagementPage() {
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     <SelectItem value="vedic">Vedic Astrology</SelectItem>
                     <SelectItem value="tarot">Tarot</SelectItem>
                     <SelectItem value="numerology">Numerology</SelectItem>
@@ -362,7 +358,7 @@ export default function CommunityManagementPage() {
                     <SelectValue placeholder="All Priorities" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Priorities</SelectItem>
+                    <SelectItem value="all">All Priorities</SelectItem>
                     <SelectItem value="critical">Critical</SelectItem>
                     <SelectItem value="high">High</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
@@ -378,7 +374,7 @@ export default function CommunityManagementPage() {
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="resolved">Resolved</SelectItem>
                     <SelectItem value="archived">Archived</SelectItem>
@@ -399,7 +395,13 @@ export default function CommunityManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {filteredDiscussions.map((discussion) => (
+              {filteredDiscussions.length === 0 ? (
+                <div className="py-12 text-center text-gray-400">
+                  <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No discussions yet.</p>
+                </div>
+              ) : (
+              filteredDiscussions.map((discussion) => (
                 <div key={discussion.id} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -445,7 +447,9 @@ export default function CommunityManagementPage() {
                     </div>
                   )}
                 </div>
-              ))}
+              ))
+            )
+            }
             </div>
           </CardContent>
         </Card>

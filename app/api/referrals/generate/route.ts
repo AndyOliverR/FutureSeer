@@ -31,13 +31,6 @@ export async function POST(request: NextRequest) {
       const userRef = db.collection('users').doc(userId);
       const userDoc = await userRef.get();
 
-      if (!userDoc.exists) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
-
       const userData = userDoc.data();
 
       // If user already has a referral code, return it
@@ -52,11 +45,14 @@ export async function POST(request: NextRequest) {
       // Generate new referral code
       const referralCode = generateReferralCode(userId);
 
-      // Update user profile with referral code
-      await userRef.update({
-        referralCode: referralCode,
-        updatedAt: Date.now()
-      });
+      // Create or update user document with referral code (merge so we don't overwrite existing data)
+      await userRef.set(
+        {
+          referralCode,
+          updatedAt: Date.now()
+        },
+        { merge: true }
+      );
 
       return NextResponse.json({
         success: true,

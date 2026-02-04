@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Star, ExternalLink, Image, Crown, Loader2 } from 'lucide-react';
+import { MessageSquare, Star, ExternalLink, Image, Crown, Loader2, ChevronLeft } from 'lucide-react';
 import { Header } from '@/components/header';
 
 function formatDate(ms?: number): string {
@@ -92,7 +93,14 @@ export default function AdminFeedbackPage() {
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
       <Header />
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-20">
+        <Link
+          href="/admin/dashboard"
+          className="inline-flex items-center gap-1 text-amber-400/90 hover:text-amber-300 text-sm font-medium mb-8"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back to Admin Dashboard
+        </Link>
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
             User Feedback
@@ -109,17 +117,15 @@ export default function AdminFeedbackPage() {
         )}
 
         {submissions.length === 0 && !error && (
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
-            <CardContent className="p-8 text-center text-gray-400">
-              <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No feedback submissions yet.</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01] p-8 text-center">
+            <MessageSquare className="w-12 h-12 text-amber-400/60 mx-auto mb-4" />
+            <p className="text-white/80 text-sm">No feedback submissions yet.</p>
+          </div>
         )}
 
         <div className="space-y-4">
           {submissions.map((s) => (
-            <Card key={s.id} className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+            <Card key={s.id} className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01]">
               <CardHeader className="pb-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">

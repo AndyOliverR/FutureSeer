@@ -63,11 +63,11 @@ export function PersonalNote() {
             transition={{ delay: 0.2 }}
           >
             <p className="text-sm text-white/80">
-              I've always been fascinated by culture, curious about the many wonders of the occult world, and drawn to the mysteries that have guided humanity for millennia. Throughout my journey, I've noticed something profound: while the wealthy and powerful have quietly relied on these ancient sciences—astrology, numerology, tarot, vastu, and countless other divination practices—most of us have been left in the dark, unable to access this wisdom at an affordable price.
+              I've always been fascinated by culture, curious about the many wonders of the occult world, and drawn to the mysteries that have guided humanity for millennia. Throughout my journey, I've noticed something profound: while the wealthy and powerful have quietly relied on these ancient sciences—astrology, numerology, tarot, vastu, and countless other divination practices—most of us have been left in the dark, with little access to this wisdom in our daily lives.
             </p>
 
             <p className="text-sm text-white/80">
-              This observation isn't just my own. As one <Link href="https://www.instagram.com/reel/DTGwc16AjHZ/?igsh=MTE0cml2dWFyeWlpdQ==" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline transition-colors">influencer recently highlighted</Link>, billionaires and the world's elite have been using astrology and these ancient practices to guide their decisions for generations. Yet traditional consultations come at a premium, making regular access unaffordable for most people. The knowledge that could help us all navigate life's complexities has remained locked away, accessible only to those who can pay premium prices.
+              This observation isn't just my own. As one <Link href="https://www.instagram.com/reel/DTGwc16AjHZ/?igsh=MTE0cml2dWFyeWlpdQ==" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline transition-colors">influencer recently highlighted</Link>, billionaires and the world's elite have been using astrology and these ancient practices to guide their decisions for generations. Yet traditional one-on-one consultations have stayed scarce and out of reach for most people. The knowledge that could help us all navigate life's complexities has remained locked away—until now.
             </p>
 
             <p className="text-sm text-white/80">
@@ -92,7 +92,7 @@ export function PersonalNote() {
                 </li>
                 <li className="flex items-start gap-2">
                   <Heart className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <span><strong className="text-amber-400">Affordable Access:</strong> At just ₹99 per month, we make personalized guidance accessible to everyone, disrupting the costly consultation model that has excluded so many.</span>
+                  <span><strong className="text-amber-400">Inclusive Access:</strong> One platform, clear plans, and personalized guidance for everyone—starting at ₹99 per month. No gatekeeping, no fragmentation.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Users className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -106,11 +106,11 @@ export function PersonalNote() {
             </p>
 
             <p className="text-sm text-white/80">
-              I've built FutureSeer because I believe that the wisdom that has guided the world's most successful people shouldn't be a luxury. It should be accessible, affordable, and available to anyone with the curiosity to explore. Whether you're a spiritual seeker looking for personal guidance, someone seeking affordable alternatives to expensive consultations, or a digital native exploring these ancient practices for the first time—FutureSeer is here for you.
+              I've built FutureSeer because I believe that the wisdom that has guided the world's most successful people shouldn't be reserved for a few. It should be accessible and available to anyone with the curiosity to explore. Whether you're a spiritual seeker looking for personal guidance, someone weaving these practices into your daily life, or a digital native discovering them for the first time—FutureSeer is here for you.
             </p>
 
             <p className="text-sm text-white/80">
-              With your support, your contributions, and your trust, we can only get better. Every feature we add, every tool we refine, every insight we provide—it all comes from understanding what you need and delivering it at a price that makes sense.
+              With your support, your contributions, and your trust, we can only get better. Every feature we add, every tool we refine, every insight we provide—it all comes from understanding what you need and delivering it in a way that works for you.
             </p>
 
             <div className="my-8 p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-xl text-center transition-all duration-300 hover:scale-105">
@@ -128,7 +128,7 @@ export function PersonalNote() {
             </div>
 
             <p className="text-sm text-amber-400 italic text-center mt-8">
-              Thank you for being part of this mission. Together, we're making ancient wisdom accessible to everyone.
+              Thank you for being part of this mission. Together, we're bringing ancient wisdom to everyone.
             </p>
           </motion.div>
         </CardContent>
