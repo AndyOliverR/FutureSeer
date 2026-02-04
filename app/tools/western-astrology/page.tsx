@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,8 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { universalOccultService, BirthData } from '@/lib/universalOccultService'
 import { convertObjectToWestern } from '@/lib/western/westernTerminology'
 import WesternSeerChatInterface from '@/components/WesternSeerChatInterface'
-import { AdvancedTechniqueModal } from '@/components/western/AdvancedTechniqueModal';
-import { getAdvancedTechnique, getAllAdvancedTechniques } from '@/lib/data/advancedTechniques';
+import Link from 'next/link'
+import { getAllAdvancedTechniques } from '@/lib/data/advancedTechniques';
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
 import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab';
 import AstroNumerologyTab from '@/components/western/AstroNumerologyTab';
@@ -38,11 +39,18 @@ import {
 
 export default function WesternAstrologyPage() {
   const { user, userProfile } = useAuth()
+  const searchParams = useSearchParams()
   const [analysis, setAnalysis] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'introduction' | 'compatibility' | 'western-astrology' | 'advanced' | 'astro-numerology' | 'ask-the-seer'>('introduction')
-  const [selectedTechnique, setSelectedTechnique] = useState<string | null>(null)
+
+  // Open Advanced tab when ?tab=advanced is in the URL (e.g. from "Back to Advanced")
+  useEffect(() => {
+    if (searchParams.get('tab') === 'advanced') {
+      setActiveTab('advanced')
+    }
+  }, [searchParams])
 
   // Comprehensive report state - persisted across tab switches
   const [comprehensiveWesternReport, setComprehensiveWesternReport] = useState<any>(null)
@@ -800,7 +808,7 @@ export default function WesternAstrologyPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-700 text-sm mb-6 leading-relaxed">
-                    Explore specialized astrological systems and techniques for deeper insights into your cosmic blueprint.
+                    Explore specialized astrological systems and techniques for deeper insights into your cosmic blueprint. Suggest which tools you'd like us to implement next—we use your feedback to prioritize new features.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {getAllAdvancedTechniques().map((technique, index) => (
@@ -831,14 +839,12 @@ export default function WesternAstrologyPage() {
                               whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                               transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                             >
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="w-full bg-white hover:bg-amber-50 border-2 border-amber-400 text-amber-700 hover:border-amber-500 transition-all rounded-xl"
-                                onClick={() => setSelectedTechnique(technique.slug)}
+                              <Link
+                                href={`/tools/western-astrology/advanced/${technique.slug}`}
+                                className="flex w-full items-center justify-center rounded-xl border-2 border-amber-400 bg-white px-4 py-2 text-sm font-medium text-amber-700 transition-all hover:border-amber-500 hover:bg-amber-50"
                               >
                                 Learn More →
-                              </Button>
+                              </Link>
                             </motion.div>
                           </CardContent>
                         </Card>
@@ -885,13 +891,6 @@ export default function WesternAstrologyPage() {
             )}
           </AnimatePresence>
         </Tabs>
-
-        {/* Advanced Technique Modal */}
-        <AdvancedTechniqueModal
-          technique={selectedTechnique ? getAdvancedTechnique(selectedTechnique) || null : null}
-          isOpen={!!selectedTechnique}
-          onClose={() => setSelectedTechnique(null)}
-        />
       </div>
     </div>
   )

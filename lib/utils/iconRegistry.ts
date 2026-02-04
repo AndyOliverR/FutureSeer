@@ -36,8 +36,8 @@ function getIconPath(category: IconCategory, value: string, subfolder?: string):
     zodiac: `${basePath}/astrology/western/zodiac`,
     planet: `${basePath}/astrology/western/planets`,
     aspect: `${basePath}/astrology/western/aspects`,
-    number: `${basePath}/numerology/pythagorean/numbers`,
-    'master-number': `${basePath}/numerology/pythagorean/master-numbers`
+    number: `/numerology/pythagorean/numbers`,
+    'master-number': `/numerology/pythagorean/master numbers`
   }
   
   const folder = subfolder ? `${categoryPaths[category]}/${subfolder}` : categoryPaths[category]
@@ -129,26 +129,26 @@ export const ASPECT_ICONS: Record<string, string> = {
  * Number icon mappings
  */
 export const NUMBER_ICONS: Record<string, string> = {
-  '0': '/icons/numerology/pythagorean/numbers/0.svg',
-  '1': '/icons/numerology/pythagorean/numbers/1.svg',
-  '2': '/icons/numerology/pythagorean/numbers/2.svg',
-  '3': '/icons/numerology/pythagorean/numbers/3.svg',
-  '4': '/icons/numerology/pythagorean/numbers/4.svg',
-  '5': '/icons/numerology/pythagorean/numbers/5.svg',
-  '6': '/icons/numerology/pythagorean/numbers/6.svg',
-  '7': '/icons/numerology/pythagorean/numbers/7.svg',
-  '8': '/icons/numerology/pythagorean/numbers/8.svg',
-  '9': '/icons/numerology/pythagorean/numbers/9.svg'
+  '0': '/numerology/pythagorean/numbers/0.svg',
+  '1': '/numerology/pythagorean/numbers/1.svg',
+  '2': '/numerology/pythagorean/numbers/2.svg',
+  '3': '/numerology/pythagorean/numbers/3.svg',
+  '4': '/numerology/pythagorean/numbers/4.svg',
+  '5': '/numerology/pythagorean/numbers/5.svg',
+  '6': '/numerology/pythagorean/numbers/6.svg',
+  '7': '/numerology/pythagorean/numbers/7.svg',
+  '8': '/numerology/pythagorean/numbers/8.svg',
+  '9': '/numerology/pythagorean/numbers/9.svg'
 }
 
 /**
  * Master number icon mappings (11, 22, 33)
- * Using "master numbers" (space) folder name as that's what user has
+ * Path matches public folder: public/numerology/pythagorean/master numbers/
  */
 export const MASTER_NUMBER_ICONS: Record<string, string> = {
-  '11': '/icons/numerology/pythagorean/master numbers/11.svg',
-  '22': '/icons/numerology/pythagorean/master numbers/22.svg',
-  '33': '/icons/numerology/pythagorean/master numbers/33.svg'
+  '11': '/numerology/pythagorean/master numbers/11.svg',
+  '22': '/numerology/pythagorean/master numbers/22.svg',
+  '33': '/numerology/pythagorean/master numbers/33.svg'
 }
 
 /**
@@ -173,11 +173,10 @@ export function getIconPathWithFallback(category: IconCategory, value: string): 
       basePath = `/icons/astrology/western/aspects/${normalizedValue}`
       break
     case 'number':
-      basePath = `/icons/numerology/pythagorean/numbers/${normalizedValue}`
+      basePath = `/numerology/pythagorean/numbers/${normalizedValue}`
       break
     case 'master-number':
-      // Handle both "master-numbers" (hyphen) and "master numbers" (space)
-      basePath = `/icons/numerology/pythagorean/master-numbers/${normalizedValue}`
+      basePath = `/numerology/pythagorean/master numbers/${normalizedValue}`
       break
   }
   
@@ -225,7 +224,7 @@ export function getAspectIconPath(aspectName: string): string {
  */
 export function getNumberIconPath(number: number | string): string {
   const numStr = String(number)
-  return NUMBER_ICONS[numStr] || `/icons/numerology/pythagorean/numbers/${numStr}.svg`
+  return NUMBER_ICONS[numStr] || `/numerology/pythagorean/numbers/${numStr}.svg`
 }
 
 /**
@@ -235,5 +234,5 @@ export function getNumberIconPath(number: number | string): string {
 export function getMasterNumberIconPath(number: number | string): string {
   const numStr = String(number)
   // Use "master numbers" (space) folder name as that's what the user has
-  return MASTER_NUMBER_ICONS[numStr] || `/icons/numerology/pythagorean/master numbers/${numStr}.svg`
+  return MASTER_NUMBER_ICONS[numStr] || `/numerology/pythagorean/master numbers/${numStr}.svg`
 }

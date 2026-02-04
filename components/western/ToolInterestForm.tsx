@@ -13,9 +13,10 @@ interface ToolInterestFormProps {
   techniqueName: string;
   techniqueSlug: string;
   onSuccess?: () => void;
+  variant?: 'light' | 'dark';
 }
 
-export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess }: ToolInterestFormProps) {
+export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess, variant = 'dark' }: ToolInterestFormProps) {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -43,12 +44,12 @@ export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess }: To
       })
 
       if (!response.ok) {
-        throw new Error('Failed to submit interest')
+        throw new Error('Failed to submit suggestion')
       }
 
       toast({
-        title: "✨ Interest Expressed! ✨",
-        description: `Thank you for your interest in ${techniqueName}. We'll notify you when this tool becomes available!`,
+        title: "Suggestion received!",
+        description: `Thank you for suggesting ${techniqueName}. We'll notify you when this tool becomes available!`,
       })
 
       // Reset form
@@ -70,23 +71,25 @@ export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess }: To
     }
   }
 
+  const isLight = variant === 'light'
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 mt-6 pt-6 border-t border-amber-500/20">
+    <form onSubmit={handleSubmit} className={`space-y-4 mt-6 pt-6 border-t ${isLight ? 'border-amber-300' : 'border-amber-500/20'}`}>
       <div className="space-y-2">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <Label htmlFor="interest-email" className="text-amber-200 font-semibold">
-            Interested in this tool?
+          <Sparkles className={`w-4 h-4 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
+          <Label htmlFor="interest-email" className={isLight ? 'text-amber-900 font-semibold' : 'text-amber-200 font-semibold'}>
+            Suggest we implement this tool
           </Label>
         </div>
-        <p className="text-sm text-slate-400 mb-4">
-          Let us know if you'd like to see {techniqueName} added as a full tool! We'll notify you when it becomes available.
+        <p className={`text-sm mb-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+          Let us know if you'd like to see {techniqueName} added as a full tool! We'll notify you when it becomes available. Your suggestion helps us prioritize which tools to build next.
         </p>
       </div>
 
       {!user && (
         <div className="space-y-2">
-          <Label htmlFor="interest-email" className="text-slate-300">
+          <Label htmlFor="interest-email" className={isLight ? 'text-slate-700' : 'text-slate-300'}>
             Email (optional)
           </Label>
           <Input
@@ -95,14 +98,14 @@ export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess }: To
             placeholder="your.email@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="bg-slate-800/50 border-slate-700/50 text-slate-200"
+            className={isLight ? 'bg-white border-slate-300 text-slate-800 placeholder:text-slate-500' : 'bg-slate-800/50 border-slate-700/50 text-slate-200'}
             disabled={isSubmitting}
           />
         </div>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="interest-message" className="text-slate-300">
+        <Label htmlFor="interest-message" className={isLight ? 'text-slate-700' : 'text-slate-300'}>
           Additional Comments (optional)
         </Label>
         <Textarea
@@ -110,7 +113,7 @@ export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess }: To
           placeholder="Tell us what you'd like to see in this tool..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="bg-slate-800/50 border-slate-700/50 text-slate-200 min-h-[100px]"
+          className={isLight ? 'bg-white border-slate-300 text-slate-800 placeholder:text-slate-500 min-h-[100px]' : 'bg-slate-800/50 border-slate-700/50 text-slate-200 min-h-[100px]'}
           disabled={isSubmitting}
         />
       </div>
@@ -128,7 +131,7 @@ export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess }: To
         ) : (
           <>
             <Send className="w-4 h-4 mr-2" />
-            Express Interest
+            Suggest this tool
           </>
         )}
       </Button>

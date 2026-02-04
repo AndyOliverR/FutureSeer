@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/use-auth'
 import { Header } from '@/components/header'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, Crown, Loader2, Send, Star, Image, ExternalLink, ChevronLeft } from 'lucide-react'
+import { MessageSquare, Crown, Loader2, Send, Star, Image, ExternalLink, ChevronLeft, Sparkles } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
 function formatDate(ms?: number | null): string {
@@ -42,11 +42,22 @@ interface FeedbackSubmission {
   screenshots: string[]
 }
 
+interface ToolInterestSubmission {
+  id: string
+  techniqueName: string
+  techniqueSlug: string
+  email?: string
+  message?: string
+  userId?: string
+  createdAt: number | null
+}
+
 export default function AdminSupportPage() {
   const { user, isAdmin, isSuperadmin, loading: authLoading } = useAuth()
-  const [activeTab, setActiveTab] = useState<'tickets' | 'feedback'>('tickets')
+  const [activeTab, setActiveTab] = useState<'tickets' | 'feedback' | 'tool-interest'>('tickets')
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [feedback, setFeedback] = useState<FeedbackSubmission[]>([])
+  const [toolInterest, setToolInterest] = useState<ToolInterestSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [responseText, setResponseText] = useState<Record<string, string>>({})
@@ -62,9 +73,10 @@ export default function AdminSupportPage() {
         setLoading(true)
         setError(null)
         const token = await user.getIdToken()
-        const [ticketsRes, feedbackRes] = await Promise.all([
+        const [ticketsRes, feedbackRes, toolInterestRes] = await Promise.all([
           fetch('/api/support-tickets', { headers: { Authorization: `Bearer ${token}` } }),
           fetch('/api/admin/feedback?limit=100', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/admin/tool-interest?limit=100', { headers: { Authorization: `Bearer ${token}` } }),
         ])
         if (!ticketsRes.ok) {
           const data = await ticketsRes.json().catch(() => ({}))
@@ -78,6 +90,12 @@ export default function AdminSupportPage() {
           const feedbackData = await feedbackRes.json()
           if (feedbackData.success && Array.isArray(feedbackData.submissions)) {
             setFeedback(feedbackData.submissions)
+          }
+        }
+        if (toolInterestRes.ok) {
+          const toolInterestData = await toolInterestRes.json()
+          if (toolInterestData.success && Array.isArray(toolInterestData.submissions)) {
+            setToolInterest(toolInterestData.submissions)
           }
         }
       } catch (e) {
@@ -170,7 +188,7 @@ export default function AdminSupportPage() {
             Support Desk
           </h1>
           <p className="text-gray-400 text-lg">
-            Support, legal, and DPO queries, plus feedback from the share feedback icon
+            Support, legal, and DPO queries, feedback, and tool interest from users
           </p>
         </div>
 
@@ -195,6 +213,16 @@ export default function AdminSupportPage() {
           >
             Feedback
           </button>
+          <button
+            onClick={() => setActiveTab('tool-interest')}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              activeTab === 'tool-interest'
+                ? 'bg-amber-500/20 border border-amber-500/50 text-amber-400'
+                : 'bg-slate-800/50 border border-slate-600 text-white/70 hover:border-amber-500/30'
+            }`}
+          >
+            Tool interest
+          </button>
         </div>
 
         {error && (
@@ -214,6 +242,13 @@ export default function AdminSupportPage() {
           <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01] p-12 text-center">
             <Star className="w-12 h-12 text-amber-400/60 mx-auto mb-4" />
             <p className="text-white/80 text-sm">No feedback submissions yet.</p>
+          </div>
+        )}
+
+        {activeTab === 'tool-interest' && toolInterest.length === 0 && !error && (
+          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01] p-12 text-center">
+            <Sparkles className="w-12 h-12 text-amber-400/60 mx-auto mb-4" />
+            <p className="text-white/80 text-sm">No tool interest submissions yet.</p>
           </div>
         )}
 
@@ -286,6 +321,34 @@ export default function AdminSupportPage() {
                     )}
                   </Button>
                 </div>
+              )}
+            </div>
+          ))}
+        </div>
+        )}
+
+        {activeTab === 'tool-interest' && (
+        <div className="space-y-4">
+          {toolInterest.map((s) => (
+            <div
+              key={s.id}
+              className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01] p-6"
+            >
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                  Tool interest
+                </span>
+                <span className="text-white/50 text-xs ml-auto">{formatDate(s.createdAt)}</span>
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-1">{s.techniqueName}</h3>
+              {s.techniqueSlug && (
+                <p className="text-xs text-white/50 mb-2">{s.techniqueSlug}</p>
+              )}
+              <p className="text-xs text-white/60 mb-2">
+                {s.email || (s.userId ? `${s.userId.slice(0, 8)}…` : 'Anonymous')}
+              </p>
+              {s.message && (
+                <p className="text-sm text-white/80 font-light whitespace-pre-wrap">{s.message}</p>
               )}
             </div>
           ))}
