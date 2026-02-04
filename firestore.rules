@@ -99,5 +99,12 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if false; // Only server/admin can write
     }
+    
+    // Tool interest submissions (from Western Astrology Advanced modal)
+    // Server writes via Admin SDK; client create allowed for optional future use
+    match /toolInterests/{interestId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
+    }
   }
 }

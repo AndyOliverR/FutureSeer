@@ -13,10 +13,16 @@ export function ToolsLayoutClient({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
+  const isWesternAstrologyAdvanced = pathname?.startsWith("/tools/western-astrology/advanced/")
+
   return (
     <>
       <div className="pt-1 px-4 sm:px-6">
-        <BackButton href="/tools" label="Back to Tools" />
+        {isWesternAstrologyAdvanced ? (
+          <BackButton href="/tools/western-astrology?tab=advanced" label="Back to Western Astrology" />
+        ) : (
+          <BackButton href="/tools" label="Back to Tools" />
+        )}
       </div>
       {children}
     </>
