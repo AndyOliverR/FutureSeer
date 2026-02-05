@@ -74,7 +74,7 @@ export function NavamsaChartSVG({ planets }: { planets: Array<{ planet: string, 
               fill="#ffff00" 
               fontWeight="700"
               fontFamily="'Inter', 'SF Pro Display', 'Arial', sans-serif"
-              textShadow="2px 2px 4px rgba(0,0,0,0.8)"
+              style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}
               filter="url(#navamsa-glow)"
             >
               {house}
@@ -91,7 +91,7 @@ export function NavamsaChartSVG({ planets }: { planets: Array<{ planet: string, 
                 fill="#e2e8f0"
                 fontWeight="500"
                 fontFamily="'Inter', 'SF Pro Display', 'Arial', sans-serif"
-                textShadow="1px 1px 2px rgba(0,0,0,0.8)"
+                style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}
               >
                 {vedicSymbols[pl] || pl}
               </text>

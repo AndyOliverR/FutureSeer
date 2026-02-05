@@ -242,7 +242,8 @@ Make each section comprehensive yet concise. Focus on practical guidance, self-a
 }
 
 // Parse Groq response and extract structured data
-function parseGroqResponse(response: string, numerologyData: ComprehensiveNumerologyRequest['numerologyData']): ComprehensiveNumerologyResponse['data']['comprehensiveAnalysis'] {
+type ComprehensiveAnalysis = NonNullable<ComprehensiveNumerologyResponse['data']>['comprehensiveAnalysis'];
+function parseGroqResponse(response: string, numerologyData: ComprehensiveNumerologyRequest['numerologyData']): ComprehensiveAnalysis {
   devLog.debug('🔍 Parsing Groq response for numerology', undefined, 'numerology');
   
   if (!response || response.length === 0) {

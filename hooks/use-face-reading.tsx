@@ -181,4 +181,16 @@ export function useFaceReading() {
     performFaceReading,
     resetData,
   };
+}
+
+/** Alias for components that expect { faceReadingData, loading, error, refresh, isStale }. */
+export function useFaceReadingData() {
+  const r = useFaceReading();
+  return {
+    faceReadingData: r.analysis,
+    loading: r.isLoading,
+    error: r.error,
+    refresh: r.resetData,
+    isStale: false,
+  };
 } 

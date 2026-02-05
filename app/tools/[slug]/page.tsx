@@ -112,14 +112,14 @@ export default function ToolPage() {
               <div className="space-y-6">
                 <div>
                   <h2 className="text-2xl font-semibold text-white mb-4">About {tool.name}</h2>
-                  <p className="text-soft leading-relaxed">{tool.longDescription}</p>
+                  <p className="text-soft leading-relaxed">{tool.longDescription ?? tool.description ?? 'No long description available.'}</p>
                 </div>
                 
-                {tool.features && (
+                {tool.features && tool.features.length > 0 && (
                   <div>
                     <h3 className="text-xl font-semibold text-white mb-3">Key Features</h3>
                     <ul className="space-y-2">
-                      {tool.features.map((feature, index) => (
+                      {tool.features.map((feature: string, index: number) => (
                         <li key={index} className="flex items-center gap-2 text-soft">
                           <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
                           {feature}

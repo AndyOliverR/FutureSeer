@@ -13,10 +13,20 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { AdvancedUserProfile } from '@/lib/advancedPersonalization';
 
+/** Form state shape used by this component (nested objects for wizard steps). Submitted profile is cast to AdvancedUserProfile for API. */
+export interface AdvancedProfileFormState extends Partial<AdvancedUserProfile> {
+  lifestyle?: { sleepSchedule: string; diet: string; exercise: string; stressLevel: string; workLifeBalance: string };
+  spiritualBeliefs?: { religion: string; spiritualPractices: string[]; meditationFrequency: string; beliefInDestiny: string; opennessToMystical: string };
+  lifeGoals?: { shortTerm: string[]; longTerm: string[]; career: string; relationships: string; personalGrowth: string };
+  currentContext?: { lifePhase: string; majorChanges: string[]; challenges: string[]; achievements: string[]; relationships: { romantic: string; family: string; friends: string; work: string } };
+  preferences?: { colors: string[]; numbers: string[]; elements: string[]; activities: string[]; environments: string[] };
+  healthProfile?: { physicalHealth: string; mentalHealth: string; energyLevels: string; stressTriggers: string[]; copingMechanisms: string[] };
+}
+
 interface AdvancedProfileSetupProps {
   onComplete?: (profile: AdvancedUserProfile) => void;
   onCancel?: () => void;
-  initialData?: Partial<AdvancedUserProfile>;
+  initialData?: Partial<AdvancedProfileFormState>;
 }
 
 export default function AdvancedProfileSetup({ 
@@ -29,7 +39,7 @@ export default function AdvancedProfileSetup({
   const [progress, setProgress] = useState(20);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [profile, setProfile] = useState<AdvancedUserProfile>({
+  const [profile, setProfile] = useState<AdvancedProfileFormState>({
     // Personality & Psychology
     mbtiType: initialData.mbtiType || '',
     enneagramType: initialData.enneagramType || '',
@@ -107,11 +117,14 @@ export default function AdvancedProfileSetup({
     setProgress((currentStep / totalSteps) * 100);
   }, [currentStep]);
 
-  const updateProfile = (section: keyof AdvancedUserProfile, data: any) => {
-    setProfile(prev => ({
-      ...prev,
-      [section]: { ...prev[section], ...data }
-    }));
+  const updateProfile = (section: keyof AdvancedProfileFormState, data: Record<string, unknown>) => {
+    setProfile(prev => {
+      const current = prev[section];
+      const next = typeof current === 'object' && current !== null && !Array.isArray(current)
+        ? { ...current, ...data }
+        : data;
+      return { ...prev, [section]: next };
+    });
   };
 
   const handleNext = () => {
@@ -141,7 +154,7 @@ export default function AdvancedProfileSetup({
       });
 
       if (response.ok) {
-        onComplete?.(profile);
+        onComplete?.(profile as AdvancedUserProfile);
       } else {
         throw new Error('Failed to save profile');
       }

@@ -92,6 +92,7 @@ function TarotPage() {
 
       setIsLoadingCombinedSystem(true)
       try {
+        if (!user?.uid || !userProfile) return
         const fullName = userProfile.fullName || userProfile.displayName || ''
         const response = await fetch('/api/tarot-combined-system/analysis', {
           method: 'POST',

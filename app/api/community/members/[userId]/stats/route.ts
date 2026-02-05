@@ -32,14 +32,15 @@ export async function GET(
         .limit(50)
         .get();
 
-      const discussions = discussionsSnapshot.docs.map(doc => ({
+      type DocData = () => Record<string, unknown> & { title?: string; category?: string; upvotes?: number; downvotes?: number; commentCount?: number; createdAt?: { toDate?: () => Date } | string };
+      const discussions = discussionsSnapshot.docs.map((doc: { id: string; data: DocData }) => ({
         id: doc.id,
         title: doc.data().title,
         category: doc.data().category,
-        upvotes: doc.data().upvotes || 0,
-        downvotes: doc.data().downvotes || 0,
-        commentCount: doc.data().commentCount || 0,
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+        upvotes: (doc.data().upvotes as number) || 0,
+        downvotes: (doc.data().downvotes as number) || 0,
+        commentCount: (doc.data().commentCount as number) || 0,
+        createdAt: (doc.data().createdAt as { toDate?: () => Date })?.toDate?.()?.toISOString() ?? (doc.data().createdAt as string),
       }));
 
       // Get comment count (simplified - check recent discussions)
@@ -53,19 +54,19 @@ export async function GET(
           .where('authorId', '==', userId)
           .get();
         commentCount += commentsSnapshot.size;
-        commentsSnapshot.docs.forEach(commentDoc => {
-          totalCommentUpvotes += commentDoc.data().upvotes || 0;
+        commentsSnapshot.docs.forEach((commentDoc: { data: () => Record<string, unknown> & { upvotes?: number } }) => {
+          totalCommentUpvotes += (commentDoc.data().upvotes as number) || 0;
         });
       }
 
       // Calculate total upvotes received
-      const totalUpvotesReceived = discussions.reduce((sum, d) => sum + d.upvotes, 0) + totalCommentUpvotes;
+      const totalUpvotesReceived = discussions.reduce((sum: number, d: { upvotes: number }) => sum + d.upvotes, 0) + totalCommentUpvotes;
 
       // Get recent activity
       const recentActivity: any[] = [];
       
       // Recent discussions
-      discussions.slice(0, 10).forEach(discussion => {
+      discussions.slice(0, 10).forEach((discussion: { id: string; title: string; createdAt: string | undefined }) => {
         recentActivity.push({
           type: 'discussion',
           id: discussion.id,
@@ -83,13 +84,15 @@ export async function GET(
           .limit(5)
           .get();
         
-        commentsSnapshot.docs.forEach(commentDoc => {
+        commentsSnapshot.docs.forEach((commentDoc: { id: string; data: () => Record<string, unknown> & { title?: string; createdAt?: { toDate?: () => Date } | string } }) => {
+          const d = commentDoc.data();
+          const created = (d.createdAt as { toDate?: () => Date })?.toDate?.()?.toISOString() ?? (d.createdAt as string);
           recentActivity.push({
             type: 'comment',
             id: commentDoc.id,
             discussionId: discussionDoc.id,
-            discussionTitle: discussionDoc.data().title,
-            date: commentDoc.data().createdAt?.toDate?.()?.toISOString() || commentDoc.data().createdAt,
+            discussionTitle: d.title,
+            date: created,
           });
         });
       }

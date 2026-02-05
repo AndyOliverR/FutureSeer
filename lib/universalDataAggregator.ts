@@ -2599,6 +2599,8 @@ export interface UniversalDivinationData {
 
 
   profile: UserProfile;
+  /** Optional numerology data (from comprehensive profile) */
+  numerology?: Record<string, unknown>;
 
 
 

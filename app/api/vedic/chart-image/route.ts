@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateVedicChart, generateDivisionalChart, BirthData } from '@/lib/vedicAstrology'
+import { generateVedicChart, generateDivisionalChart, BirthData, VedicChart } from '@/lib/vedicAstrology'
 import { devLog } from '@/lib/devLogger'
 
 // Vedic Chart Image Generation API
@@ -123,9 +123,12 @@ export async function GET(request: NextRequest) {
       timezone: 'Asia/Kolkata'
     }
     
-    // Generate the chart image using proper Vedic calculations
+    // Generate the chart for metadata and the chart image
+    const chart: VedicChart = chartType === 'D1'
+      ? generateVedicChart(birthData, chartType)
+      : generateDivisionalChart(birthData, chartType)
     const imageDataUrl = generateChartImage(chartType, birthData, style)
-    
+
     return NextResponse.json({
       success: true,
       chartType,
@@ -134,8 +137,8 @@ export async function GET(request: NextRequest) {
         generatedAt: new Date().toISOString(),
         source: 'FutureSeer Internal API',
         style,
-        planetsCount: chartData.data?.planets?.length || 0,
-        housesCount: chartData.data?.houses?.length || 0
+        planetsCount: chart.planets?.length ?? 0,
+        housesCount: chart.houses?.length ?? 0
       }
     })
     
@@ -175,9 +178,12 @@ export async function POST(request: NextRequest) {
       timezone: 'Asia/Kolkata'
     }
     
-    // Generate the chart image using proper Vedic calculations
+    // Generate the chart for metadata and the chart image
+    const chart: VedicChart = type === 'D1'
+      ? generateVedicChart(birthData, type)
+      : generateDivisionalChart(birthData, type)
     const imageDataUrl = generateChartImage(type, birthData, style)
-    
+
     return NextResponse.json({
       success: true,
       chartType: type,
@@ -186,8 +192,8 @@ export async function POST(request: NextRequest) {
         generatedAt: new Date().toISOString(),
         source: 'FutureSeer Internal API',
         style,
-        planetsCount: chartData.data?.planets?.length || 0,
-        housesCount: chartData.data?.houses?.length || 0
+        planetsCount: chart.planets?.length ?? 0,
+        housesCount: chart.houses?.length ?? 0
       }
     })
     

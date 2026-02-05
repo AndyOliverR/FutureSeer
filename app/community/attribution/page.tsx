@@ -51,7 +51,7 @@ interface CommunityMember {
   reputation: 'Respected' | 'Trusted' | 'Legendary' | 'Mystical';
 }
 
-interface DiscussionThread {
+export interface DiscussionThread {
   id: string;
   title: string;
   content: string;

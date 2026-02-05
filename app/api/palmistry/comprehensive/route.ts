@@ -20,6 +20,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!adminDb) {
+      return NextResponse.json(
+        { success: false, error: 'Database not available' },
+        { status: 500 }
+      );
+    }
+
     // Check cache first
     try {
       const cacheRef = adminDb

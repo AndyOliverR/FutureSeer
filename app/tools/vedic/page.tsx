@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -55,7 +55,7 @@ const TransitsOverlay = dynamic(() => import("@/components/vedic/TransitsOverlay
 const VedicAstroNumerologyTab = dynamic(() => import("@/components/vedic/VedicAstroNumerologyTab"), { ssr: false });
 import { NAKSHATRAS } from "@/lib/nakshatraData";
 import { calculateNakshatraAnalysis } from "@/lib/nakshatraCalculator";
-import { generateComprehensiveRemedies } from "@/lib/comprehensiveRemedyGenerator";
+import { generateHolisticRemedies } from "@/lib/comprehensiveRemedyGenerator";
 import { calculateTransitData } from "@/lib/transitCalculator";
 import { calculateVedicNumerologyProfile } from "@/lib/vedicNumerologyCalculations";
 
@@ -246,7 +246,7 @@ function getSignName(signIndexOrName: number | string): string {
   return signIndexOrName;
 }
 
-export default function VedicAstrologyPage() {
+function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'introduction' | 'compatibility' | 'overview' | 'report' | 'charts' | 'divisional' | 'planets' | 'houses' | 'dasha' | 'panchanga' | 'yogas' | 'nakshatras' | 'remedies' | 'interpretations' | 'transits' | 'astro-numerology'>('introduction');
@@ -349,6 +349,7 @@ export default function VedicAstrologyPage() {
 
   // Regenerate invalid planets
   const regenerateInvalidPlanets = async (invalidPlanets: string[], existingCache: any) => {
+    if (!user?.uid) return;
     if (process.env.NODE_ENV === 'development') {
       console.log(`🔄 Regenerating ${invalidPlanets.length} invalid planets`);
     }
@@ -385,6 +386,7 @@ export default function VedicAstrologyPage() {
 
   // Regenerate invalid Dasha
   const regenerateInvalidDasha = async (existingCache: any) => {
+    if (!user?.uid) return;
     console.log('🔄 Regenerating invalid Dasha content');
     
     try {
@@ -4092,5 +4094,17 @@ export default function VedicAstrologyPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function VedicAstrologyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center starfield-ultra-sharp">
+        <div className="animate-pulse text-amber-400">Loading...</div>
+      </div>
+    }>
+      <VedicAstrologyPageContent />
+    </Suspense>
   );
 }
