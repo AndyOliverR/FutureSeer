@@ -13,6 +13,7 @@ import { MysticalFeedback } from "@/components/MysticalFeedback"
 import { FloatingTipJar } from "@/components/FloatingTipJar"
 import { SchemaMarkup } from "@/components/schema-markup"
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -285,6 +286,7 @@ export default function RootLayout({
             </I18nProvider>
           </ClientProviders>
         </ErrorBoundary>
+        <SpeedInsights />
       </body>
     </html>
   )

@@ -25,7 +25,9 @@
     "node": "22.x"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": ["swisseph"]
+    "ignoredBuiltDependencies": [
+      "swisseph"
+    ]
   },
   "dependencies": {
     "@astrodraw/astrochart": "^3.0.2",
@@ -63,6 +65,7 @@
     "@radix-ui/react-tooltip": "latest",
     "@react-pdf/renderer": "^4.3.0",
     "@rrweb/types": "latest",
+    "@vercel/speed-insights": "^1.3.1",
     "@xyflow/react": "^12.10.0",
     "ai": "^4.0.0",
     "astronomia": "^4.2.0",
