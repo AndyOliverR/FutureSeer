@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, ArrowLeft, User, Calendar, Clock, MapPin, Mail, Edit3, Save, X, LogOut, Crown, Camera, Hand, Sparkles, Heart, Users } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
-import { TIME_PERIODS } from "@/lib/birthTimeResolver"
+import { TIME_PERIODS, type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
 import { getUserProfile, updateUserProfile, markProfileAsGenerated, resetProfileGenerationStatus, hasProfileDataChanged, calculateProfileDataHash, getFirebaseDB, cleanupCorruptedBirthTime } from "@/lib/firebase"
@@ -51,7 +51,7 @@ export default function ProfilePage() {
     birthTime: "",
     birthTimeAMPM: "AM",
     birthTimeKnown: false,
-    birthTimePeriod: undefined as string | undefined,
+    birthTimePeriod: undefined as BirthTimePeriodId | undefined,
     birthTimeNote: "",
     birthPlace: "",
     currentLocation: "",
@@ -1095,7 +1095,7 @@ export default function ProfilePage() {
 
                 {/* Birth Time Corruption Warning */}
                 {birthTimeCorrupted && (
-                  <Alert variant="warning" className="border-[var(--m3-tertiary)]/30 bg-[var(--m3-tertiary-container)] backdrop-blur-sm">
+                  <Alert variant="default" className="border-[var(--m3-tertiary)]/30 bg-[var(--m3-tertiary-container)] backdrop-blur-sm">
                     <AlertDescription className="text-[var(--m3-tertiary)] m3-body-medium">
                       ⚠️ Your birth time data needs to be re-entered. Please enter your correct birth time below.
                     </AlertDescription>

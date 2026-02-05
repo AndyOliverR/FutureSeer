@@ -1,6 +1,6 @@
 "use client"
 
-import { CompatibilityReport } from '@/lib/types/profileTypes'
+import type { CompatibilityReport } from '@/lib/types/profileTypes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'

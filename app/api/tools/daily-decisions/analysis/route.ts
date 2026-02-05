@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Geocode birth place server-side
-    let latitude: number
-    let longitude: number
+    let latitude = 19.0760
+    let longitude = 72.8777
 
     try {
       const { geocodePlace } = await import('@/services/geocoding')

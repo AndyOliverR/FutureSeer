@@ -425,7 +425,11 @@ export interface UserProfile {
   birthLatitude?: number;
   birthLongitude?: number;
   coordinatesResolvedAt?: number;
-  
+  /** Current or birth place latitude (used by tools when birth coords not set) */
+  latitude?: number;
+  /** Current or birth place longitude (used by tools when birth coords not set) */
+  longitude?: number;
+
   currentLocation?: string; // Current location for transit charts
   country?: string; // Country code (e.g., 'IN', 'US', 'GB') for pricing
   gender?: 'male' | 'female' | 'non-binary'; // Gender for palm reading

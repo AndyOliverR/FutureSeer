@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown, MessageCircle, Flame, Award } from 'lucide-react';
-import { DiscussionThread } from '@/app/community/attribution/page';
+import type { DiscussionThread } from '@/app/community/attribution/page';
 
 interface DiscussionCardProps {
   discussion: DiscussionThread;

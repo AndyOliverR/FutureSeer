@@ -50,7 +50,7 @@ const ASK_THE_SEER_STARTERS = [
 ];
 
 export default function AskTheSeerPage() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { profile: comprehensiveProfile } = useComprehensiveMysticalProfile();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -108,7 +108,7 @@ export default function AskTheSeerPage() {
           query: userMessage,
           context: {
             session_id: sessionId,
-            birth_data: user.birthData || null,
+            birth_data: userProfile ? { birthDate: userProfile.birthDate, birthTime: userProfile.birthTime, birthPlace: userProfile.birthPlace } : null,
             comprehensiveProfile: comprehensiveProfile ?? undefined,
             conversationHistory: messages.slice(-4).map((m) => ({
               type: m.type,

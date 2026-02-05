@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
 import { useSettings } from "@/hooks/useSettings"
 import { useAuth } from "@/hooks/use-auth"
-import { updateUserProfile } from "@/lib/firebase"
+import { updateUserProfile, type UserProfile } from "@/lib/firebase"
 import { formatBirthDate, formatBirthTime, formatBirthPlace } from "@/lib/formatUtils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -323,8 +323,10 @@ export default function SettingsPage() {
                   value={userProfile?.relationshipStatus || ""}
                   onChange={async (e) => {
                     if (user?.uid) {
+                      const val = e.target.value;
+                      const relationshipStatus: UserProfile['relationshipStatus'] = (val === 'single' || val === 'in-relationship' || val === 'married' || val === 'divorced' || val === 'widowed' || val === 'prefer-not-to-say') ? val : undefined;
                       try {
-                        await updateUserProfile(user.uid, { relationshipStatus: e.target.value || undefined });
+                        await updateUserProfile(user.uid, { relationshipStatus });
                         await refreshProfile();
                       } catch (error) {
                         console.error('Failed to update relationship status:', error);
@@ -465,16 +467,19 @@ export default function SettingsPage() {
                     <div className="text-white/60 text-xs">{pref.description}</div>
                   </div>
                   <Switch
-                    checked={userProfile?.notificationPreferences?.[pref.key as keyof typeof userProfile.notificationPreferences] ?? 
+                    checked={userProfile?.notificationPreferences?.[pref.key as keyof NonNullable<UserProfile['notificationPreferences']>] ?? 
                       (pref.key === 'communityUpdates' ? false : true)}
                     onCheckedChange={async (checked) => {
                       if (user?.uid) {
+                        const current = userProfile?.notificationPreferences;
+                        const defaults = { dailyInsights: true, weeklyPredictions: true, monthlyHoroscope: true, communityUpdates: false, newFeatures: true };
                         try {
                           await updateUserProfile(user.uid, { 
                             notificationPreferences: {
-                              ...userProfile?.notificationPreferences,
+                              ...defaults,
+                              ...current,
                               [pref.key]: checked
-                            }
+                            } as UserProfile['notificationPreferences']
                           });
                           await refreshProfile();
                         } catch (error) {

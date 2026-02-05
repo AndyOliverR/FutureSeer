@@ -25,23 +25,25 @@ export default function NotesPage() {
   ]
 
   const handleSaveNote = async () => {
-    if (!noteTitle.trim() || !newNote.trim()) return
+    const title = noteTitle.trim()
+    const content = newNote.trim()
+    if (!title || !content) return
 
     setIsSubmitting(true)
     try {
-      if (editingNote) {
+      if (editingNote?.id) {
         // Update existing note
         await updateNote(editingNote.id, {
-          title: noteTitle,
-          content: newNote,
+          title,
+          content,
           color: selectedColor,
           updatedAt: Date.now(),
         })
       } else {
         // Create new note
         await createNote({
-          title: noteTitle,
-          content: newNote,
+          title,
+          content,
           color: selectedColor,
           tags: [],
           createdAt: Date.now(),

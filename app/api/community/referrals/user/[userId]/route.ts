@@ -111,7 +111,7 @@ export async function GET(
             successfulSignups = referredUsersSnapshot.size;
             
             if (referredUsersSnapshot.size > 0) {
-              referredUsersSnapshot.docs.forEach(doc => {
+              referredUsersSnapshot.docs.forEach((doc: { data: () => Record<string, unknown> }) => {
                 const data = doc.data();
                 const createdAt = data.createdAt || data.creationTime;
                 if (createdAt) {

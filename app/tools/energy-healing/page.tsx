@@ -69,6 +69,7 @@ export default function EnergyHealingPage() {
     }
 
     const generateAllAnalyses = async () => {
+      if (!user?.uid || !userProfile) return
       const methods = ['chakra', 'aura', 'reiki', 'crystal', 'energy'] as const
       const currentProfileHash = createProfileHash(userProfile)
 
@@ -96,7 +97,7 @@ export default function EnergyHealingPage() {
           const result = await energyHealingIntelligence.performHealingAnalysis(
             method,
             userProfile,
-            userProfile.facePhotoUrl
+            userProfile?.facePhotoUrl
           )
 
           // Extract the specific analysis from the result
