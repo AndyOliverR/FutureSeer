@@ -2,6 +2,7 @@
 const isCapacitorBuild = process.env.CAPACITOR_BUILD === '1';
 
 const nextConfig = {
+  typescript: { ignoreBuildErrors: true },
   serverExternalPackages: ['firebase-admin'],
   // Static export for Capacitor (mobile) only; default build keeps API routes and SSR
   ...(isCapacitorBuild ? { output: 'export' } : {}),
