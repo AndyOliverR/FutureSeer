@@ -18,8 +18,11 @@ interface EnergyHealingResponse {
 }
 
 export async function POST(request: NextRequest) {
+  let method: EnergyHealingRequest['method'] | undefined;
   try {
-    const { method, userProfile, imageUrl, question }: EnergyHealingRequest = await request.json();
+    const body: EnergyHealingRequest = await request.json();
+    method = body.method;
+    const { userProfile, imageUrl, question } = body;
 
     if (!method) {
       return NextResponse.json(
@@ -217,7 +220,7 @@ Return JSON.`;
       );
     }
     
-    console.error(`❌ ${method} analysis error:`, error);
+    console.error(`❌ ${method ?? 'energy-healing'} analysis error:`, error);
     return NextResponse.json(
       {
         success: false,

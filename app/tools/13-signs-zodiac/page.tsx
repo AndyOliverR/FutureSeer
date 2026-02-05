@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { Badge } from "@/components/ui/badge"
 import { ThirteenSignsZodiacCoachInterface } from "@/components/ThirteenSignsZodiacCoachInterface"
 import { useThirteenSignsZodiac } from "@/hooks/use-thirteen-signs-zodiac"
 

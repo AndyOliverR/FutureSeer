@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/use-auth'
-import { AdditionalProfile, CompatibilityReport } from '@/lib/types/profileTypes'
+import type { AdditionalProfile, CompatibilityReport } from '@/lib/types/profileTypes'
 import { ProfileList } from '@/components/profiles/ProfileList'
 import { CompatibilityReport as CompatibilityReportComponent } from '@/components/compatibility/CompatibilityReport'
 import { TipJarEncouragement } from '@/components/compatibility/TipJarEncouragement'

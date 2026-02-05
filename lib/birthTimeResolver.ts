@@ -87,6 +87,8 @@ export const TIME_PERIODS: TimePeriodInfo[] = [
   }
 ];
 
+export type BirthTimePeriodId = (typeof TIME_PERIODS)[number]['id'];
+
 export interface ResolvedBirthTime {
   time: string; // HH:mm format
   method: 'exact' | 'sunrise' | 'noon' | 'sunset' | 'moonChart' | 'default';

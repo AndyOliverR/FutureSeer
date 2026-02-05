@@ -71,7 +71,7 @@ export function FinancialAstrologyCoachInterface({
             Key Strengths
           </h3>
           <ul className="space-y-2">
-            {analysis.overview.keyStrengths.map((strength, index) => (
+            {analysis.overview.keyStrengths.map((strength: string, index: number) => (
               <li key={index} className="text-soft flex items-start">
                 <span className="text-green-400 mr-2">•</span>
                 {strength}
@@ -86,7 +86,7 @@ export function FinancialAstrologyCoachInterface({
             Potential Risks
           </h3>
           <ul className="space-y-2">
-            {analysis.overview.potentialRisks.map((risk, index) => (
+            {analysis.overview.potentialRisks.map((risk: string, index: number) => (
               <li key={index} className="text-soft flex items-start">
                 <span className="text-red-400 mr-2">•</span>
                 {risk}
@@ -103,7 +103,7 @@ export function FinancialAstrologyCoachInterface({
           Recommendations
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {analysis.overview.recommendations.map((rec, index) => (
+          {analysis.overview.recommendations.map((rec: string, index: number) => (
             <div key={index} className="flex items-start">
               <span className="text-blue-400 mr-2 mt-1">💎</span>
               <p className="text-soft text-sm">{rec}</p>

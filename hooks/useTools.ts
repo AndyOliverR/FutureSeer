@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { toolManager } from '@/lib/services/toolManager';
 import { ToolConfig } from '@/lib/types/toolSchemas';
+import { getToolIntroduction } from '@/lib/data/toolIntroductions';
 
 // Keep the existing Tool interface for backward compatibility
 export interface Tool {
@@ -11,6 +12,9 @@ export interface Tool {
   description: string;
   isPremium?: boolean;
   isComingSoon?: boolean;
+  longDescription?: string;
+  features?: string[];
+  quote?: string;
 }
 
 export function useTools() {
@@ -33,15 +37,21 @@ export function useTools() {
         const scoreB = b.popularityScore ?? 0;
         return scoreB - scoreA;
       })
-      .map((config): Tool => ({
-        name: config.name,
-        icon: config.icon,
-        slug: config.slug,
-        category: config.category,
-        description: config.description,
-        isPremium: config.isPremium,
-        isComingSoon: config.isComingSoon
-      }));
+      .map((config): Tool => {
+        const intro = getToolIntroduction(config.slug);
+        return {
+          name: config.name,
+          icon: config.icon,
+          slug: config.slug,
+          category: config.category,
+          description: config.description,
+          isPremium: config.isPremium,
+          isComingSoon: config.isComingSoon,
+          longDescription: intro?.overview,
+          features: intro?.keyConcepts,
+          quote: undefined
+        };
+      });
     
     // Remove duplicates by slug (safety check)
     const seen = new Set<string>();

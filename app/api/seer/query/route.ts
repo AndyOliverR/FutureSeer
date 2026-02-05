@@ -257,6 +257,13 @@ export async function POST(request: NextRequest) {
       if (memoryError instanceof Error && memoryError.stack) console.error(memoryError.stack);
     }
 
+    if (!universalData) {
+      return NextResponse.json(
+        { error: 'Failed to load divination data' },
+        { status: 500 }
+      );
+    }
+
     // Process through comprehensive seer engine with expert aggregation
     const seerEngine = new ComprehensiveSeerEngine(
       universalData,

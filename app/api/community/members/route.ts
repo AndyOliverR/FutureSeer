@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       const snapshot = await query.get();
       const founderUid = process.env.FOUNDER_UID?.trim();
       const founderEmail = process.env.FOUNDER_EMAIL?.trim()?.toLowerCase();
-      const members = snapshot.docs.map(doc => {
+      const members = snapshot.docs.map((doc: { id: string; data: () => Record<string, unknown> }) => {
         const data = doc.data();
         const userId = data.userId || doc.id;
         const memberEmail = (data.email || '').trim().toLowerCase();

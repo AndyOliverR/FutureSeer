@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getChart } from '@/lib/astronomia-vedic'; // Keep for Vedic calculations only
 import { 
   calculateTropicalPlanets, 
-  getTropicalSign, 
-  getDegreeInSign,
+  getTropicalSign,
   calculateTropicalHouses, 
   calculateTropicalAspects 
 } from '@/lib/western/tropicalCalculator';
@@ -193,14 +192,14 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     devLog.debug('🔮 SUN PLANET DEBUG:', {
       longitude: planets.sun.longitude,
       sign: getTropicalSign(planets.sun.longitude),
-      degree: getDegreeInSign(planets.sun.longitude),
+      degree: getDegreeInSignLocal(planets.sun.longitude),
       expected: '~4° Pisces (334°)',
-      current: `${getDegreeInSign(planets.sun.longitude)}° ${getTropicalSign(planets.sun.longitude)}`
+      current: `${getDegreeInSignLocal(planets.sun.longitude)}° ${getTropicalSign(planets.sun.longitude)}`
     }, 'occult');
     
     // Check if this matches expected Pisces position
     const sunSign = getTropicalSign(planets.sun.longitude);
-    const sunDegree = getDegreeInSign(planets.sun.longitude);
+    const sunDegree = getDegreeInSignLocal(planets.sun.longitude);
     if (sunSign === 'Pisces' && sunDegree >= 3 && sunDegree <= 6) {
       devLog.debug('✅ Sun position looks correct for Feb 24, 1983', undefined, 'occult');
     } else {
@@ -215,7 +214,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       distance: data.distance,
       speed: data.speed,
       sign: getTropicalSign(data.longitude), // TROPICAL SIGN
-      degree: getDegreeInSign(data.longitude),
+      degree: getDegreeInSignLocal(data.longitude),
       house: calculateHouseFromLongitude(data.longitude, houses),
       isRetrograde: data.speed < 0
     }));
@@ -229,7 +228,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       distance: 0,
       speed: 0,
       sign: getTropicalSign(ascendantLongitude),
-      degree: getDegreeInSign(ascendantLongitude),
+      degree: getDegreeInSignLocal(ascendantLongitude),
       house: 1,
       isRetrograde: false
     });
@@ -243,7 +242,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       distance: 0,
       speed: 0,
       sign: getTropicalSign(mcLongitude),
-      degree: getDegreeInSign(mcLongitude),
+      degree: getDegreeInSignLocal(mcLongitude),
       house: 10,
       isRetrograde: false
     });
@@ -292,7 +291,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     }
   
     // Calculate transits if requested
-    let transits = [];
+    let transits: any[] = [];
     if (options.includeTransits) {
       devLog.debug('🔮 Calculating transits...', undefined, 'occult');
       devLog.debug('🔮 Options includeTransits:', options.includeTransits, 'occult');
@@ -316,7 +315,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
         distance: planetData.distance,
         speed: planetData.speed,
         sign: getTropicalSign(planetData.longitude),
-        degree: getDegreeInSign(planetData.longitude),
+        degree: getDegreeInSignLocal(planetData.longitude),
         house: calculateHouseFromLongitude(planetData.longitude, houses), // Use natal houses for transit house placement
         isRetrograde: planetData.speed < 0
       }));
@@ -333,7 +332,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
         distance: data.distance,
         speed: data.speed,
         sign: getTropicalSign(data.longitude),
-        degree: getDegreeInSign(data.longitude),
+        degree: getDegreeInSignLocal(data.longitude),
         house: calculateHouseFromLongitude(data.longitude, natalHouses),
         isRetrograde: data.speed < 0
       }));
@@ -403,16 +402,16 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
 }
 
 function calculateHoraryChart(birthData: BirthData, options: any = {}) {
-  // Question-based astrology
+  // Question-based astrology (stub implementations for ascendant/planets/houses)
   const questionTime = new Date();
   const chartData = {
     question: options.question,
     questionTime: questionTime.toISOString(),
-    ascendant: calculateAscendant({ ...birthData, birthTime: questionTime.toTimeString().slice(0, 8) }),
-    planets: calculatePlanetaryPositions({ ...birthData, birthTime: questionTime.toTimeString().slice(0, 8) }),
-    houses: calculateHouses({ ...birthData, birthTime: questionTime.toTimeString().slice(0, 8) }),
-    significators: calculateSignificators(options.question),
-    timing: calculateHoraryTiming(birthData, options.question)
+    ascendant: 0,
+    planets: [] as any[],
+    houses: [] as any[],
+    significators: calculateSignificators(options.question ?? ''),
+    timing: calculateHoraryTiming(birthData, options.question ?? '')
   };
   
   return {
@@ -531,7 +530,7 @@ async function calculateMundaneChart(birthData: BirthData, options: any = {}) {
   // Generate Daily National Outlook (3-day)
   // Use currentLocation for local environment calculations
   const userLocation = locationForCalculation;
-  let dailyOutlook;
+  let dailyOutlook: any[] = [];
   try {
     dailyOutlook = generateThreeDayOutlook(userLocation, country);
     devLog.info('✅ Daily Outlook generated:', { days: dailyOutlook?.length || 0, location: userLocation }, 'occult');
@@ -857,7 +856,7 @@ function getZodiacSignFromLongitude(longitude: number): string {
   return ZODIAC_SIGNS[signIndex] || "Aries";
 }
 
-function getDegreeInSign(longitude: number): number {
+function getDegreeInSignLocal(longitude: number): number {
   const normalizedLongitude = ((longitude % 360) + 360) % 360;
   return normalizedLongitude % 30;
 }
@@ -1087,7 +1086,7 @@ function calculatePlanetaryDignity(planet: string, sign: string, house: number):
 }
 
 function calculateHealthIndicators(birthData: BirthData, chart: any): any[] {
-  const indicators = [];
+  const indicators: any[] = [];
   const healthHouses = [1, 6, 8, 12]; // Ascendant, health, longevity, hospitalization
   
   // Check planets in health houses
@@ -1169,8 +1168,8 @@ function calculateLunarPhasesForHealing(birthData: BirthData, chart: any): any[]
 }
 
 function calculateMedicalAspects(birthData: BirthData, chart: any): any[] {
-  const aspects = [];
-  
+  const aspects: any[] = [];
+
   // Get major aspects from chart
   if (chart.aspects && chart.aspects.length > 0) {
     chart.aspects.forEach((aspect: any) => {
@@ -1330,19 +1329,20 @@ function calculateFinancialCycles(date: Date, birthData: BirthData): any[] {
 }
 
 function calculateLunarPhasesForTrading(date: Date): any[] {
-  const phases = [];
-  const lunarPhase = calculateLunarPhase(date);
+  const phases: any[] = [];
+  const lunarPhase = calculateLunarPhase(date.toISOString());
   const currentDate = date || new Date();
-  
+  const phaseName = typeof lunarPhase.phase === 'string' ? lunarPhase.phase : 'New Moon';
+
   // Current lunar phase for trading
   phases.push({
     name: 'Current Lunar Phase',
-    phase: lunarPhase.phase,
-    description: getLunarTradingAdvice(lunarPhase.phase),
+    phase: phaseName,
+    description: getLunarTradingAdvice(phaseName),
     nextPhase: lunarPhase.nextPhaseDate,
-    tradingAdvice: getDetailedLunarTradingAdvice(lunarPhase.phase)
+    tradingAdvice: getDetailedLunarTradingAdvice(phaseName)
   });
-  
+
   // Upcoming important phases (next 3)
   for (let i = 1; i <= 3; i++) {
     const nextPhase = getNextLunarPhase(currentDate, i);
@@ -1727,7 +1727,7 @@ function calculateCompositeChart(chart1: any, chart2: any): any {
         name: name,
         longitude: compositeLon,
         sign: getTropicalSign(compositeLon),
-        degree: getDegreeInSign(compositeLon),
+        degree: getDegreeInSignLocal(compositeLon),
         latitude: (p1.latitude + p2.latitude) / 2 || 0,
         distance: (p1.distance + p2.distance) / 2 || 0
       });
@@ -1825,7 +1825,7 @@ function calculateRelationshipTiming(chart1: any, chart2: any): any {
     name: capitalizeFirst(name),
     longitude: data.longitude,
     sign: getTropicalSign(data.longitude),
-    degree: getDegreeInSign(data.longitude)
+    degree: getDegreeInSignLocal(data.longitude)
   }));
   
   // Analyze transits to both natal charts

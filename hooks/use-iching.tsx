@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { ichingIntelligence, IChingAnalysis } from "@/lib/ichingIntelligence";
 
@@ -77,6 +77,33 @@ export function useIChing() {
     setError(null);
   }
 
+  const consultIChing = useCallback(async (q: string, m: "coins" | "yarrow" | "random") => {
+    if (!q?.trim()) {
+      setError("Please enter a question");
+      return;
+    }
+    setQuestion(q);
+    setMethod(m);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await ichingIntelligence.consultIChing(q.trim(), m);
+      setAnalysis(result);
+      if (user?.uid && result) {
+        try {
+          await ichingIntelligence.saveAnalysis(user.uid, result);
+        } catch {
+          // Saving is optional
+        }
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to perform I Ching consultation");
+      setAnalysis(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user?.uid]);
+
   return {
     question,
     method,
@@ -88,5 +115,18 @@ export function useIChing() {
     setMethod,
     performIChingReading,
     resetData,
+    consultIChing,
+  };
+}
+
+/** Alias for components that expect { ichingData, loading, refresh, consultIChing }. */
+export function useIChingData() {
+  const r = useIChing();
+  return {
+    ichingData: r.analysis,
+    loading: r.isLoading,
+    error: r.error,
+    refresh: r.resetData,
+    consultIChing: r.consultIChing,
   };
 } 

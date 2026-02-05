@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { Suspense, useState, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
@@ -37,7 +37,7 @@ import {
   Sparkles
 } from 'lucide-react'
 
-export default function WesternAstrologyPage() {
+function WesternAstrologyPageContent() {
   const { user, userProfile } = useAuth()
   const searchParams = useSearchParams()
   const [analysis, setAnalysis] = useState<any>(null)
@@ -893,5 +893,17 @@ export default function WesternAstrologyPage() {
         </Tabs>
       </div>
     </div>
+  )
+}
+
+export default function WesternAstrologyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center starfield-ultra-sharp">
+        <div className="animate-pulse text-amber-400">Loading...</div>
+      </div>
+    }>
+      <WesternAstrologyPageContent />
+    </Suspense>
   )
 }

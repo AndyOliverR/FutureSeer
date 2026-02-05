@@ -132,7 +132,6 @@ export function DashboardEmptyState({ userName = 'Seeker' }: DashboardEmptyState
           >
             <Link
               href="/profile"
-              variant="filled"
               className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-[var(--m3-primary)] hover:bg-[var(--m3-primary)]/90 text-[var(--m3-on-primary)] font-semibold m3-label-large m3-transition-emphasized m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition m3-gpu-accelerated button-glow"
             >
               <Sparkles className="w-6 h-6" />

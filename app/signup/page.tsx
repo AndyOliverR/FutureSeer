@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { Suspense, useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
@@ -25,7 +25,7 @@ const SignupFlow = dynamic(() => import("@/components/SignupFlow").then(mod => (
   )
 })
 
-export default function SignUpPage() {
+function SignUpPageContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -540,5 +540,17 @@ export default function SignUpPage() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen overflow-hidden starfield-ultra-sharp relative flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-400" />
+      </div>
+    }>
+      <SignUpPageContent />
+    </Suspense>
   )
 } 
