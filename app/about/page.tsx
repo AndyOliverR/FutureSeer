@@ -74,7 +74,7 @@ export default function AboutPage() {
           <AboutFAQ />
           
           {/* CTA Section */}
-          <section className="text-center py-12 px-4 sm:px-6">
+          <section className="text-center py-12 px-3 sm:px-4 md:px-6">
             <Link href="/signup">
               <Button variant="filled" className="bg-gradient-to-r from-[var(--m3-primary)] to-[var(--m3-tertiary)] text-[var(--m3-on-primary)] hover:from-[var(--m3-primary)]/90 hover:to-[var(--m3-tertiary)]/90 font-semibold px-8 py-4 m3-label-large rounded-xl m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition m3-transition-emphasized m3-gpu-accelerated hover:scale-105">
                 Join the Innovation Experiment

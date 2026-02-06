@@ -171,7 +171,7 @@ export default function DashboardPage() {
   if (!hasProfile) {
     return (
       <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-6">
           {/* Free-floating Avatar */}
           <motion.div 
             className="absolute top-20 right-4 z-[100]"
@@ -210,7 +210,7 @@ export default function DashboardPage() {
   return (
     <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp sacred-geometry-bg pt-16">
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-6">
         {/* Free-floating Avatar above everything */}
         <motion.div 
           className="absolute top-20 right-4 z-[100]"

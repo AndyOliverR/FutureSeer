@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShareAppModal } from "./ShareAppModal";
 import { Share2, Info, Heart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTipJar } from "@/components/TipJarContext";
@@ -40,9 +39,7 @@ export function TopNavBar() {
   const { open: openFeedback } = useFeedback();
   const isMobile = useIsMobile();
   const [showMenu, setShowMenu] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const shareButtonRef = useRef<HTMLButtonElement>(null);
 
   const visibleNavLinks = navLinks.filter(
     (link) =>
@@ -84,12 +81,13 @@ export function TopNavBar() {
       <nav className="bg-[var(--m3-surface)] backdrop-blur-xl border-b border-[var(--m3-outline-variant)] py-2 flex items-center justify-between z-[100] sticky top-0 left-0 right-0" role="navigation" aria-label="Main navigation" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', paddingLeft: '1rem', paddingRight: 'max(1rem, calc(1rem + 17px))', boxSizing: 'border-box' }}>
         <Link 
           href="/" 
-          className="futureseer-logo text-2xl font-semibold tracking-wide hover:scale-105 transition-transform text-amber-400 relative z-[101] flex items-center h-10 focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
+          className="futureseer-logo text-2xl font-semibold tracking-wide hover:scale-105 transition-transform text-amber-400 relative z-[101] flex items-center h-10 flex-shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
           aria-label="FutureSeer - Home"
         >
           FutureSeer
         </Link>
-        <div className="flex items-center gap-4 relative z-[101]">
+        <div className="flex-1 min-w-2" aria-hidden="true" />
+        <div className="flex items-center gap-2 relative z-[101] flex-shrink-0">
           {/* About Button with Tooltip */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -128,25 +126,13 @@ export function TopNavBar() {
           {/* Share Button with Tooltip */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="relative">
-                <button
-                  ref={shareButtonRef}
-                  onClick={() => setShowShareModal(true)}
-                  className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-amber-400 text-[var(--m3-primary)] hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
-                  aria-label="Share FutureSeer with others"
-                >
-                  <Share2 className="w-5 h-5 text-current" />
-                </button>
-                
-                {/* Share Popup - Positioned near share button */}
-                {showShareModal && (
-                  <ShareAppModal 
-                    isOpen={showShareModal} 
-                    onClose={() => setShowShareModal(false)}
-                    buttonRef={shareButtonRef as React.RefObject<HTMLButtonElement>}
-                  />
-                )}
-              </div>
+              <Link
+                href="/share"
+                className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-amber-400 text-[var(--m3-primary)] hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
+                aria-label="Share FutureSeer with others"
+              >
+                <Share2 className="w-5 h-5 text-current" />
+              </Link>
             </TooltipTrigger>
             <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
               <p>Share FutureSeer</p>

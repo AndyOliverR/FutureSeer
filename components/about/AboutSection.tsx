@@ -12,7 +12,7 @@ interface AboutSectionProps {
 export function AboutSection({ title, subtitle, children, className = "" }: AboutSectionProps) {
   return (
     <motion.section 
-      className={`mb-20 px-4 sm:px-6 ${className} m3-gpu-accelerated`}
+      className={`mb-20 px-3 sm:px-4 md:px-6 ${className} m3-gpu-accelerated`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ ease: [0, 0, 0.2, 1], duration: 0.4 }}
