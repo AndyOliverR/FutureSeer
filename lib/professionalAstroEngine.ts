@@ -395,7 +395,7 @@ export class ProfessionalAstroEngine {
       }
     }
 
-    return elements[planet] || elements['Sun']
+    return elements[planet as keyof typeof elements] ?? elements['Sun']
   }
 
   // Calculate position from orbital elements using Kepler's equation
@@ -582,7 +582,7 @@ export class ProfessionalAstroEngine {
       'Saturn': { 'Capricorn': 'Domicile', 'Aquarius': 'Domicile', 'Libra': 'Exaltation', 'Cancer': 'Detriment', 'Leo': 'Detriment', 'Aries': 'Fall' }
     }
     
-    return dignities[planet]?.[sign] || 'Neutral'
+    return (dignities as Record<string, Record<string, string>>)[planet]?.[sign] ?? 'Neutral'
   }
 
   // Calculate retrograde status
@@ -599,9 +599,9 @@ export class ProfessionalAstroEngine {
       'Pluto': 170 // days
     }
     
-    if (!retrogradePeriods[planet]) return false
-    
-    const period = retrogradePeriods[planet]
+if (!(planet in retrogradePeriods)) return false
+
+    const period = retrogradePeriods[planet as keyof typeof retrogradePeriods]
     const cyclePosition = (julianDay % (period * 2)) / (period * 2)
     
     return cyclePosition > 0.5 // Simplified - would need actual orbital mechanics

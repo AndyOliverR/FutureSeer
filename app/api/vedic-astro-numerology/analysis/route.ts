@@ -158,7 +158,7 @@ User Profile:
 - Life Path Number: ${numerologyProfile.lifePathNumber} (Ruled by ${rulingPlanet})
 - Destiny Number: ${numerologyProfile.destinyNumber} (Ruled by ${destinyPlanet})
 - Soul Number: ${numerologyProfile.soulNumber} (Ruled by ${soulPlanet})
-- Personality Number: ${numerologyProfile.personalityNumber} (Ruled by ${personalityPlanet})
+- Personality Number: ${numerologyProfile.personalityNumber ?? numerologyProfile.nameNumber} (Ruled by ${personalityPlanet})
 - Birth Day Number: ${numerologyProfile.birthDayNumber} (Ruled by ${birthDayPlanet})
 - Karmic Lessons: ${karmicLessonsText}
 - Birth Date: ${birthDate}
@@ -191,7 +191,8 @@ Write in the voice of a Vedic seer addressing the person directly (use "you" not
 }
 
 // Parse Groq response and extract structured data
-function parseGroqResponse(response: string): VedicAstroNumerologyResponse['data']['comprehensiveAnalysis'] {
+type VedicComprehensiveAnalysis = NonNullable<VedicAstroNumerologyResponse['data']>['comprehensiveAnalysis'];
+function parseGroqResponse(response: string): VedicComprehensiveAnalysis {
   try {
     // Try to extract JSON from the response
     const jsonMatch = response.match(/\{[\s\S]*\}/);

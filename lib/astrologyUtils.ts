@@ -33,7 +33,7 @@ export async function generatePlacements(
     // Try unified Swiss Ephemeris first for D1 charts
     if (chartType === 'D1') {
       try {
-        chart = await generateVedicChartUnified(birthData, chartType)
+        chart = await generateVedicChartUnified(birthData, chartType) as unknown as import('@/lib/vedicAstrology').VedicChart
       } catch (error) {
         console.warn('Unified Swiss Ephemeris failed, falling back to Astronomia:', error)
         chart = generateVedicChart(birthData, chartType)

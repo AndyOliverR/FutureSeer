@@ -134,7 +134,7 @@ export class ProfessionalChartGenerator {
         <!-- Planets -->
         ${planets.map((planet, index) => {
           const angle = planet.longitude - 90
-          const glyph = planetGlyphs[planet.planet] || planet.planet.charAt(0)
+          const glyph = (planetGlyphs as Record<string, string>)[planet.planet] ?? planet.planet.charAt(0)
           
           // Move icons much further inside the chart
           const iconRadius = innerRadius - 40 // Position icons well inside the inner circle

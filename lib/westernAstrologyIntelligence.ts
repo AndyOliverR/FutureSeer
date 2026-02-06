@@ -464,7 +464,8 @@ export async function getIntelligentWesternAstrologyData(
     if (docSnap.exists()) {
       const cachedData = docSnap.data() as WesternAstrologyReading;
       const lastUpdated = cachedData.metadata.lastUpdated;
-      const hoursSinceUpdate = (new Date().getTime() - lastUpdated.toDate().getTime()) / (1000 * 60 * 60);
+      const lastUpdatedMs = lastUpdated instanceof Date ? lastUpdated.getTime() : (lastUpdated as { toDate(): Date }).toDate().getTime();
+      const hoursSinceUpdate = (new Date().getTime() - lastUpdatedMs) / (1000 * 60 * 60);
       
       // Return cached data if less than 24 hours old and birth data hasn't changed
       if (hoursSinceUpdate < 24 && 

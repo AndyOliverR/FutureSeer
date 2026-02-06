@@ -1,0 +1,1249 @@
+﻿app/api/community/members/route.ts(47,48): error TS2339: Property 'trim' does not exist on type '{}'.
+app/api/community/members/route.ts(51,41): error TS2339: Property 'toDate' does not exist on type '{}'.
+app/api/community/members/route.ts(51,64): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number'.
+app/api/community/members/route.ts(68,42): error TS2339: Property 'toDate' does not exist on type '{}'.
+app/api/community/members/route.ts(82,36): error TS2345: Argument of type '{}' is not assignable to parameter of type 'number'.
+app/api/community/members/route.ts(86,40): error TS2339: Property 'toDate' does not exist on type '{}'.
+app/api/community/members/route.ts(89,37): error TS2345: Argument of type '{}' is not assignable to parameter of type 'number'.
+app/api/community/referrals/user/[userId]/route.ts(118,48): error TS2339: Property 'toDate' does not exist on type '{}'.
+app/api/community/referrals/user/[userId]/route.ts(118,86): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type '{}' is not assignable to parameter of type 'string | number'.
+app/api/seer/query/route.ts(164,11): error TS2353: Object literal may only specify known properties, and 'humanDesign' does not exist in type 'UniversalDivinationData'.
+app/api/seer/query/route.ts(221,74): error TS18047: 'universalData' is possibly 'null'.
+app/api/seer/query/route.ts(222,83): error TS18047: 'universalData' is possibly 'null'.
+app/api/seer/query/route.ts(223,81): error TS18047: 'universalData' is possibly 'null'.
+app/api/seer/query/route.ts(239,40): error TS2345: Argument of type 'UniversalDivinationData | null' is not assignable to parameter of type 'UniversalDivinationData'.
+  Type 'null' is not assignable to type 'UniversalDivinationData'.
+app/api/tools/horary-astrology/current-transits/route.ts(42,25): error TS2339: Property 'meaning' does not exist on type 'PlanetaryPosition'.
+app/api/tools/horary-astrology/current-transits/route.ts(49,29): error TS2339: Property 'description' does not exist on type 'AspectData'.
+app/api/tools/horary-astrology/generate-custom/route.ts(193,10): error TS7053: Element implicitly has an 'any' type because expression of type 'number' can't be used to index type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+  No index signature with a parameter of type 'number' was found on type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+app/api/tools/kp-astrology/current-transits/route.ts(118,7): error TS2353: Object literal may only specify known properties, and 'system' does not exist in type '{ houseSystem?: "whole-sign" | "equal" | "placidus" | undefined; ayanamsha?: string | number | undefined; nodeType?: "mean" | "true" | undefined; }'.
+app/api/vedic-astro-numerology/analysis/route.ts(161,43): error TS2339: Property 'personalityNumber' does not exist on type 'VedicNumerologyProfile'.
+app/api/vedic-astro-numerology/analysis/route.ts(194,84): error TS2339: Property 'comprehensiveAnalysis' does not exist on type '{ moonSign: string; lagnaSign: string; sunSign: string; lifePathNumber: number; rulingPlanet: string; comprehensiveAnalysis: { personalitySynthesis: string; karmicInsights: string; remedies: string; ... 6 more ...; yearlyForecast: string; }; timestamp: number; } | undefined'.
+app/api/western-astrology/comprehensive/route.ts(296,153): error TS2339: Property 'comprehensiveAnalysis' does not exist on type '{ comprehensiveAnalysis: { chartOverview: string; planetaryAnalysis: { planet: string; analysis: string; }[]; houseAnalysis: { house: number; analysis: string; }[]; aspectAnalysis: { aspect: string; analysis: string; }[]; transitAnalysis: string; predictiveInsights: string | { ...; }; }; timestamp: number; } | undef...'.
+app/api/western-astrology/comprehensive/route.ts(359,113): error TS2554: Expected 1-3 arguments, but got 5.
+app/notes/page.tsx(218,57): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/profile/page.tsx(274,61): error TS2345: Argument of type '{ displayName: string; fullName: string; email: string; gender: "male" | "female" | "non-binary" | undefined; birthDate: string; birthTime: string; birthTimeAMPM: string; birthTimeKnown: boolean; ... 12 more ...; notificationPreferences: { ...; }; }' is not assignable to parameter of type 'Partial<UserProfile>'.
+  Types of property 'birthTimePeriod' are incompatible.
+    Type 'string | undefined' is not assignable to type '"early-morning" | "morning" | "noon" | "afternoon" | "evening" | "night" | "late-night" | "unknown" | undefined'.
+      Type 'string' is not assignable to type '"early-morning" | "morning" | "noon" | "afternoon" | "evening" | "night" | "late-night" | "unknown" | undefined'.
+app/profile/page.tsx(414,11): error TS2322: Type 'string | undefined' is not assignable to type '"early-morning" | "morning" | "noon" | "afternoon" | "evening" | "night" | "late-night" | "unknown" | undefined'.
+  Type 'string' is not assignable to type '"early-morning" | "morning" | "noon" | "afternoon" | "evening" | "night" | "late-night" | "unknown" | undefined'.
+app/settings/page.tsx(53,28): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/astroscribe/page.tsx(285,23): error TS2322: Type '{ interpretation: AstroScribeInterpretation; activeTab: string; scribeData: ScribeData; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'interpretation' does not exist on type 'IntrinsicAttributes'.
+app/tools/chinese-astrology/page.tsx(399,82): error TS2339: Property 'nameChinese' does not exist on type 'ChineseZodiac'.
+app/tools/dream-symbols/page.tsx(205,41): error TS2322: Type 'Dispatch<SetStateAction<"guidance" | "meaning" | "symbols" | "ask-the-seer" | "overview" | "introduction" | "archetypes">>' is not assignable to type '(value: string) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'string' is not assignable to type 'SetStateAction<"guidance" | "meaning" | "symbols" | "ask-the-seer" | "overview" | "introduction" | "archetypes">'.
+app/tools/energy-healing/page.tsx(463,19): error TS2739: Type '{ chakraAnalysis: ChakraAnalysis | undefined; auraReading: AuraReading | undefined; reikiAnalysis: ReikiAnalysis | undefined; crystalRecommendation: CrystalRecommendation | undefined; energyBalance: EnergyBalanceAnalysis | undefined; }' is missing the following properties from type 'EnergyHealingAnalysis': method, timestamp, overallInsights, recommendations
+app/tools/hellenistic-astrology/page.tsx(73,9): error TS18047: 'userProfile' is possibly 'null'.
+app/tools/hellenistic-astrology/page.tsx(74,9): error TS18047: 'userProfile' is possibly 'null'.
+app/tools/hellenistic-astrology/page.tsx(75,9): error TS18047: 'userProfile' is possibly 'null'.
+app/tools/hellenistic-astrology/page.tsx(76,9): error TS18047: 'userProfile' is possibly 'null'.
+app/tools/hellenistic-astrology/page.tsx(77,9): error TS18047: 'userProfile' is possibly 'null'.
+app/tools/i-ching/page.tsx(360,46): error TS2345: Argument of type 'string' is not assignable to parameter of type 'SetStateAction<"" | "coins" | "yarrow" | "random">'.
+app/tools/iching/page.tsx(348,48): error TS2345: Argument of type 'string' is not assignable to parameter of type 'SetStateAction<"" | "coins" | "yarrow" | "random">'.
+app/tools/kerykeion/page.tsx(72,9): error TS18047: 'user' is possibly 'null'.
+app/tools/kerykeion/page.tsx(177,35): error TS2322: Type 'Dispatch<SetStateAction<"synastry" | "aspects" | "chart" | "transits" | "overview">>' is not assignable to type '(value: string) => void'.
+  Types of parameters 'value' and 'value' are incompatible.
+    Type 'string' is not assignable to type 'SetStateAction<"synastry" | "aspects" | "chart" | "transits" | "overview">'.
+app/tools/kp-astrology/page.tsx(421,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/kp-astrology/page.tsx(422,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/kp-astrology/page.tsx(423,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/numerology/page.tsx(75,5): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+app/tools/numerology/page.tsx(409,17): error TS2322: Type 'Record<string, unknown> | null' is not assignable to type 'ComprehensiveAnalysis | null | undefined'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'ComprehensiveAnalysis': profileOverview, coreNumbersAnalysis, lifePathAnalysis, expressionAnalysis, and 6 more.
+app/tools/numerology/page.tsx(740,19): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+app/tools/tarot/page.tsx(75,25): error TS2345: Argument of type '{ name: string; key: string; description: string; cardCount: number; }[]' is not assignable to parameter of type 'SetStateAction<SpreadType[]>'.
+  Type '{ name: string; key: string; description: string; cardCount: number; }[]' is not assignable to type 'SpreadType[]'.
+    Property 'positions' is missing in type '{ name: string; key: string; description: string; cardCount: number; }' but required in type 'SpreadType'.
+app/tools/vedic/page.tsx(193,47): error TS2503: Cannot find namespace 'JSX'.
+app/tools/vedic/page.tsx(370,40): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Rahu: string; Ketu: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Rahu: string; Ketu: string; }'.
+app/tools/vedic/page.tsx(439,44): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(533,44): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(664,65): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(679,75): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(701,80): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(726,21): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(745,21): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(764,21): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(783,21): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(849,44): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(895,19): error TS18047: 'user' is possibly 'null'.
+app/tools/vedic/page.tsx(1044,45): error TS2339: Property 'sun' does not exist on type 'Record<string, any> | {}'.
+  Property 'sun' does not exist on type '{}'.
+app/tools/vedic/page.tsx(1048,38): error TS2339: Property 'sun' does not exist on type 'Record<string, any> | {}'.
+  Property 'sun' does not exist on type '{}'.
+app/tools/vedic/page.tsx(1069,25): error TS7053: Element implicitly has an 'any' type because expression of type '"Rahu"' can't be used to index type 'Record<string, any> | {}'.
+  Property 'Rahu' does not exist on type 'Record<string, any> | {}'.
+app/tools/vedic/page.tsx(1069,52): error TS7053: Element implicitly has an 'any' type because expression of type '"rahu"' can't be used to index type 'Record<string, any> | {}'.
+  Property 'rahu' does not exist on type 'Record<string, any> | {}'.
+app/tools/vedic/page.tsx(1070,25): error TS7053: Element implicitly has an 'any' type because expression of type '"Ketu"' can't be used to index type 'Record<string, any> | {}'.
+  Property 'Ketu' does not exist on type 'Record<string, any> | {}'.
+app/tools/vedic/page.tsx(1070,52): error TS7053: Element implicitly has an 'any' type because expression of type '"ketu"' can't be used to index type 'Record<string, any> | {}'.
+  Property 'ketu' does not exist on type 'Record<string, any> | {}'.
+app/tools/vedic/page.tsx(1138,43): error TS7006: Parameter 'house' implicitly has an 'any' type.
+app/tools/vedic/page.tsx(1138,50): error TS7006: Parameter 'index' implicitly has an 'any' type.
+app/tools/vedic/page.tsx(1587,9): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/vedic/page.tsx(2080,72): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+app/tools/vedic/page.tsx(2080,77): error TS7006: Parameter 'house' implicitly has an 'any' type.
+app/tools/vedic/page.tsx(2222,43): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/vedic/page.tsx(2223,43): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/vedic/page.tsx(2224,43): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/tools/vedic/page.tsx(2525,41): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: ShadbalaAnalysisProps, context?: any): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type '{ data: any; }' is not assignable to type 'IntrinsicAttributes & ShadbalaAnalysisProps'.
+      Property 'data' does not exist on type 'IntrinsicAttributes & ShadbalaAnalysisProps'.
+  Overload 2 of 2, '(props: ShadbalaAnalysisProps): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type '{ data: any; }' is not assignable to type 'IntrinsicAttributes & ShadbalaAnalysisProps'.
+      Property 'data' does not exist on type 'IntrinsicAttributes & ShadbalaAnalysisProps'.
+app/tools/vedic/page.tsx(3273,38): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: NakshatraAnalysisProps, context?: any): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type 'NakshatraAnalysis | null' is not assignable to type 'NakshatraAnalysis | undefined'.
+      Type 'null' is not assignable to type 'NakshatraAnalysis | undefined'.
+  Overload 2 of 2, '(props: NakshatraAnalysisProps): string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | ... 4 more ... | undefined', gave the following error.
+    Type 'NakshatraAnalysis | null' is not assignable to type 'NakshatraAnalysis | undefined'.
+      Type 'null' is not assignable to type 'NakshatraAnalysis | undefined'.
+app/tools/vedic/page.tsx(3421,50): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Gemini: { mercury: { houses: number[]; priority: number; role: string; }; venus: { houses: number[]; priority: number; role: string; }; jupiter: { houses: number[]; priority: number; role: string; }; moon: { houses: number[]; priority: number; role: string; }; saturn: { ...; }; sun: { ...; }; mars: { ...; }; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Gemini: { mercury: { houses: number[]; priority: number; role: string; }; venus: { houses: number[]; priority: number; role: string; }; jupiter: { houses: number[]; priority: number; role: string; }; moon: { houses: number[]; priority: number; role: string; }; saturn: { ...; }; sun: { ...; }; mars: { ...; }; }; }'.
+app/tools/vedic/page.tsx(3831,54): error TS2339: Property 'special' does not exist on type '{ gem: string; benefit: string; day: string; time: string; metal: string; finger: string; hand: string; pendant: string; skinContact: string; purification: string; mantra: string; chanting: string; ... 5 more ...; weightNote: string; } | ... 7 more ... | { ...; }'.
+  Property 'special' does not exist on type '{ gem: string; benefit: string; day: string; time: string; metal: string; finger: string; hand: string; pendant: string; skinContact: string; purification: string; mantra: string; chanting: string; paksha: string; ... 4 more ...; weightNote: string; }'.
+app/tools/vedic/page.tsx(3834,88): error TS2339: Property 'special' does not exist on type '{ gem: string; benefit: string; day: string; time: string; metal: string; finger: string; hand: string; pendant: string; skinContact: string; purification: string; mantra: string; chanting: string; ... 5 more ...; weightNote: string; } | ... 7 more ... | { ...; }'.
+  Property 'special' does not exist on type '{ gem: string; benefit: string; day: string; time: string; metal: string; finger: string; hand: string; pendant: string; skinContact: string; purification: string; mantra: string; chanting: string; paksha: string; ... 4 more ...; weightNote: string; }'.
+components/AdvancedProfileSetup.tsx(17,18): error TS2430: Interface 'AdvancedProfileFormState' incorrectly extends interface 'Partial<AdvancedUserProfile>'.
+  Types of property 'spiritualBeliefs' are incompatible.
+    Type '{ religion: string; spiritualPractices: string[]; meditationFrequency: string; beliefInDestiny: string; opennessToMystical: string; } | undefined' is not assignable to type '"spiritual" | "mystical" | "atheist" | "agnostic" | "religious" | undefined'.
+      Type '{ religion: string; spiritualPractices: string[]; meditationFrequency: string; beliefInDestiny: string; opennessToMystical: string; }' is not assignable to type '"spiritual" | "mystical" | "atheist" | "agnostic" | "religious" | undefined'.
+components/AdvancedProfileSetup.tsx(157,22): error TS2352: Conversion of type 'AdvancedProfileFormState' to type 'AdvancedUserProfile' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Types of property 'spiritualBeliefs' are incompatible.
+    Type '{ religion: string; spiritualPractices: string[]; meditationFrequency: string; beliefInDestiny: string; opennessToMystical: string; } | undefined' is not comparable to type '"spiritual" | "mystical" | "atheist" | "agnostic" | "religious"'.
+      Type '{ religion: string; spiritualPractices: string[]; meditationFrequency: string; beliefInDestiny: string; opennessToMystical: string; }' is not comparable to type '"spiritual" | "mystical" | "atheist" | "agnostic" | "religious"'.
+components/AdvancedProfileSetup.tsx(182,73): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, unknown>'.
+components/AdvancedProfileSetup.tsx(200,78): error TS2345: Argument of type 'string' is not assignable to parameter of type 'Record<string, unknown>'.
+components/AdvancedProfileSetup.tsx(217,35): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(o: { [s: string]: number; } | ArrayLike<number>): [string, number][]', gave the following error.
+    Argument of type '{ openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number; } | undefined' is not assignable to parameter of type '{ [s: string]: number; } | ArrayLike<number>'.
+      Type 'undefined' is not assignable to type '{ [s: string]: number; } | ArrayLike<number>'.
+  Overload 2 of 2, '(o: {}): [string, any][]', gave the following error.
+    Argument of type '{ openness: number; conscientiousness: number; extraversion: number; agreeableness: number; neuroticism: number; } | undefined' is not assignable to parameter of type '{}'.
+      Type 'undefined' is not assignable to type '{}'.
+components/AdvancedProfileSetup.tsx(255,28): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(273,28): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(293,28): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(312,28): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(332,26): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(351,28): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(375,28): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(400,34): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(403,35): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(404,31): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(418,28): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(436,28): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(470,30): error TS18048: 'profile.lifeGoals' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(472,43): error TS18048: 'profile.lifeGoals' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(488,30): error TS18048: 'profile.lifeGoals' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(490,43): error TS18048: 'profile.lifeGoals' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(504,28): error TS18048: 'profile.lifeGoals' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(513,28): error TS18048: 'profile.lifeGoals' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(523,26): error TS18048: 'profile.lifeGoals' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(541,26): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(565,30): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(567,45): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(583,30): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(585,48): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(598,28): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(600,43): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(619,28): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(621,43): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(655,34): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(658,35): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(659,31): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(676,34): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(676,71): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+components/AdvancedProfileSetup.tsx(679,35): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(680,31): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(680,71): error TS2367: This comparison appears to be unintentional because the types 'string' and 'number' have no overlap.
+components/AdvancedProfileSetup.tsx(697,34): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(700,35): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(701,31): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(719,34): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(722,35): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(723,31): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(747,28): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(765,28): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(783,28): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(806,30): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(808,46): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(824,30): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(826,48): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(852,54): error TS18048: 'profile.spiritualBeliefs' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(853,56): error TS18048: 'profile.currentContext' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(856,51): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(857,54): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(858,58): error TS18048: 'profile.lifestyle' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(859,61): error TS18048: 'profile.healthProfile' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(867,22): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(870,26): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(875,22): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(878,26): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(883,22): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/AdvancedProfileSetup.tsx(886,26): error TS18048: 'profile.preferences' is possibly 'undefined'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(56,12): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(58,11): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(58,34): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(60,31): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(60,56): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(73,52): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(86,60): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(99,60): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(105,8): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(114,18): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(133,9): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(133,37): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(133,55): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(138,12): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(142,65): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(146,12): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(150,63): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(154,12): error TS18047: 'result' is possibly 'null'.
+components/angel-numbers/AngelNumbersLookupResults.tsx(158,57): error TS18047: 'result' is possibly 'null'.
+components/AngelNumbersCoachInterface.tsx(111,30): error TS2339: Property 'birthDate' does not exist on type 'User'.
+components/AskTheSeerChatInterface.tsx(304,70): error TS2339: Property 'faceReadingAnalysis' does not exist on type 'object'.
+components/AskTheSeerChatInterface.tsx(305,72): error TS2339: Property 'dreamSymbolsAnalysis' does not exist on type 'object'.
+components/AskTheSeerChatInterface.tsx(307,67): error TS2339: Property 'humanDesignChart' does not exist on type 'object'.
+components/AskTheSeerChatInterface.tsx(308,56): error TS2339: Property 'oghamReport' does not exist on type 'object'.
+components/AskTheSeerChatInterface.tsx(309,69): error TS2339: Property 'bibliomancyReading' does not exist on type 'object'.
+components/bazi/BaziDashboardHero.tsx(157,17): error TS2322: Type '{ icon: Element; label: string; value: string; subValue: string; colorScheme: "green"; tooltip: string; }' is not assignable to type 'IntrinsicAttributes & CosmicMetricCardProps'.
+  Property 'subValue' does not exist on type 'IntrinsicAttributes & CosmicMetricCardProps'.
+components/bazi/BaziDashboardHero.tsx(168,19): error TS2322: Type '{ icon: Element; label: string; value: string; subValue: string; colorScheme: "orange"; tooltip: string; }' is not assignable to type 'IntrinsicAttributes & CosmicMetricCardProps'.
+  Property 'subValue' does not exist on type 'IntrinsicAttributes & CosmicMetricCardProps'.
+components/bazi/BaziDashboardHero.tsx(179,17): error TS2322: Type '{ icon: Element; label: string; value: string; subValue: string; colorScheme: "purple"; tooltip: string; }' is not assignable to type 'IntrinsicAttributes & CosmicMetricCardProps'.
+  Property 'subValue' does not exist on type 'IntrinsicAttributes & CosmicMetricCardProps'.
+components/ChartDisplay.tsx(188,27): error TS18047: 'e.currentTarget.parentElement' is possibly 'null'.
+components/ChartDisplay.tsx(289,33): error TS18047: 'e.currentTarget.parentElement' is possibly 'null'.
+components/chinese/ZiWeiReportGenerator.tsx(474,37): error TS2339: Property 'palace' does not exist on type 'Star'.
+components/chinese/ZiWeiReportGenerator.tsx(476,99): error TS2339: Property 'palace' does not exist on type 'Star'.
+components/chinese/ZiWeiReportGenerator.tsx(522,37): error TS2339: Property 'palace' does not exist on type 'Star'.
+components/chinese/ZiWeiReportGenerator.tsx(524,99): error TS2339: Property 'palace' does not exist on type 'Star'.
+components/ContributionTiers.tsx(110,7): error TS2322: Type '"quarterly"' is not assignable to type '"limited" | "allFeatures" | "annual" | undefined'.
+components/DataSourceStatus.tsx(67,12): error TS2678: Type '"astroapp"' is not comparable to type '"internal_calculations" | "fallback" | "emergency_fallback" | "intelligent_system" | "external_with_learning"'.
+components/FaceReadingCoachInterface.tsx(749,56): error TS7006: Parameter 'insight' implicitly has an 'any' type.
+components/FaceReadingCoachInterface.tsx(749,65): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(4,10): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'FinancialAnalysis'.
+components/FinancialAstrologyCoachInterface.tsx(4,29): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'UserData'.
+components/FinancialAstrologyCoachInterface.tsx(4,39): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'MarketData'.
+components/FinancialAstrologyCoachInterface.tsx(150,50): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(150,57): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(164,50): error TS7006: Parameter 'period' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(164,58): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(195,48): error TS7006: Parameter 'sector' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(195,56): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(209,50): error TS7006: Parameter 'sector' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(209,58): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(223,46): error TS7006: Parameter 'sector' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(223,54): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(250,47): error TS7006: Parameter 'transit' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(250,56): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(265,48): error TS7006: Parameter 'transit' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(265,57): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(295,38): error TS7006: Parameter 'prediction' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(295,50): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(338,46): error TS7006: Parameter 'event' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(338,53): error TS7006: Parameter 'eventIndex' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(368,47): error TS7006: Parameter 'advice' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(368,55): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(383,47): error TS7006: Parameter 'advice' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(383,55): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(398,46): error TS7006: Parameter 'advice' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(398,54): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(413,52): error TS7006: Parameter 'advice' implicitly has an 'any' type.
+components/FinancialAstrologyCoachInterface.tsx(413,60): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/FinancialSeerChatInterface.tsx(230,13): error TS2322: Type '(messageText?: string) => Promise<void>' is not assignable to type 'MouseEventHandler<HTMLButtonElement>'.
+  Types of parameters 'messageText' and 'event' are incompatible.
+    Type 'MouseEvent<HTMLButtonElement, MouseEvent>' is not assignable to type 'string'.
+components/medical/MedicalSeerChat.tsx(183,15): error TS2322: Type '(messageText?: string) => Promise<void>' is not assignable to type 'MouseEventHandler<HTMLButtonElement>'.
+  Types of parameters 'messageText' and 'event' are incompatible.
+    Type 'MouseEvent<HTMLButtonElement, MouseEvent>' is not assignable to type 'string'.
+components/MedicalAstrologyCoachInterface.tsx(4,26): error TS2305: Module '"@/hooks/useMedicalAstrology"' has no exported member 'UserData'.
+components/MedicalAstrologyCoachInterface.tsx(4,36): error TS2305: Module '"@/hooks/useMedicalAstrology"' has no exported member 'HealthData'.
+components/MundaneAstrologyCoachInterface.tsx(4,27): error TS2305: Module '"@/hooks/useMundaneAstrology"' has no exported member 'AnalysisData'.
+components/MysticalFeedback.tsx(124,9): error TS2322: Type '(element: Element) => true | Element | null' is not assignable to type '(element: Element) => boolean'.
+  Type 'true | Element | null' is not assignable to type 'boolean'.
+    Type 'null' is not assignable to type 'boolean'.
+components/MysticalFeedback.tsx(435,25): error TS17001: JSX elements cannot have multiple attributes with the same name.
+components/NameAnalysisCoachInterface.tsx(620,57): error TS7006: Parameter 'harmony' implicitly has an 'any' type.
+components/NameAnalysisCoachInterface.tsx(620,66): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+components/NameAnalysisCoachInterface.tsx(662,51): error TS7006: Parameter 'insight' implicitly has an 'any' type.
+components/NameAnalysisCoachInterface.tsx(662,60): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+components/NameAnalysisCoachInterface.tsx(698,53): error TS7006: Parameter 'insight' implicitly has an 'any' type.
+components/NameAnalysisCoachInterface.tsx(698,62): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+components/NameAnalysisSeerChatInterface.tsx(315,15): error TS2322: Type '(questionText?: string) => Promise<void>' is not assignable to type 'MouseEventHandler<HTMLButtonElement>'.
+  Types of parameters 'questionText' and 'event' are incompatible.
+    Type 'MouseEvent<HTMLButtonElement, MouseEvent>' is not assignable to type 'string'.
+components/navaratna/GemstoneRecommendationCard.tsx(282,42): error TS2339: Property 'color' does not exist on type 'GemstoneRecommendation'.
+components/numerology/NumerologySeerChatInterface.tsx(123,77): error TS2551: Property 'life_path_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'lifePathNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(123,112): error TS2339: Property 'life_path' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'.
+components/numerology/NumerologySeerChatInterface.tsx(124,81): error TS2551: Property 'expression_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'expressionNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(124,117): error TS2551: Property 'destiny_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'destinyNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(125,77): error TS2339: Property 'soul_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'.
+components/numerology/NumerologySeerChatInterface.tsx(125,107): error TS2339: Property 'soul_urge' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'.
+components/numerology/NumerologySeerChatInterface.tsx(126,83): error TS2551: Property 'personality_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'personalityNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(127,75): error TS2551: Property 'destiny_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'destinyNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(128,77): error TS2551: Property 'birthday_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'birthdayNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(129,77): error TS2551: Property 'maturity_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'maturityNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(130,85): error TS2551: Property 'personal_year_number' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'. Did you mean 'personalYearNumber'?
+components/numerology/NumerologySeerChatInterface.tsx(131,39): error TS2339: Property 'breakdown' does not exist on type '{ lifePathNumber?: number | undefined; expressionNumber?: number | undefined; soulUrgeNumber?: number | undefined; personalityNumber?: number | undefined; destinyNumber?: number | undefined; birthdayNumber?: number | undefined; maturityNumber?: number | undefined; personalYearNumber?: number | undefined; }'.
+components/NumerologyCoachInterface.tsx(32,11): error TS2339: Property 'numerologyData' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/NumerologyCoachInterface.tsx(32,27): error TS2339: Property 'loading' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/NumerologyTool.tsx(24,11): error TS2339: Property 'numerologyData' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/NumerologyTool.tsx(24,27): error TS2339: Property 'loading' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/NumerologyTool.tsx(24,43): error TS2339: Property 'refresh' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/NumerologyTool.tsx(24,52): error TS2339: Property 'isStale' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/NumerologyTool.tsx(349,56): error TS7006: Parameter 'number' implicitly has an 'any' type.
+components/NumerologyTool.tsx(349,64): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(373,54): error TS7006: Parameter 'number' implicitly has an 'any' type.
+components/NumerologyTool.tsx(373,62): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(401,59): error TS7006: Parameter 'strength' implicitly has an 'any' type.
+components/NumerologyTool.tsx(401,69): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(421,60): error TS7006: Parameter 'challenge' implicitly has an 'any' type.
+components/NumerologyTool.tsx(421,71): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(441,61): error TS7006: Parameter 'career' implicitly has an 'any' type.
+components/NumerologyTool.tsx(441,69): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(461,63): error TS7006: Parameter 'compat' implicitly has an 'any' type.
+components/NumerologyTool.tsx(461,71): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(486,50): error TS7006: Parameter 'pinnacle' implicitly has an 'any' type.
+components/NumerologyTool.tsx(486,60): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(508,51): error TS7006: Parameter 'challenge' implicitly has an 'any' type.
+components/NumerologyTool.tsx(508,62): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/NumerologyTool.tsx(535,63): error TS2322: Type 'unknown' is not assignable to type 'ReactI18NextChildren | Iterable<ReactI18NextChildren>'.
+components/PaymentMethodCapture.tsx(165,23): error TS2345: Argument of type 'Error' is not assignable to parameter of type 'string'.
+components/PendulumSeerChatInterface.tsx(229,13): error TS2322: Type '(messageText?: string) => Promise<void>' is not assignable to type 'MouseEventHandler<HTMLButtonElement>'.
+  Types of parameters 'messageText' and 'event' are incompatible.
+    Type 'MouseEvent<HTMLButtonElement, MouseEvent>' is not assignable to type 'string'.
+components/PersonalizedRemedyCard.tsx(248,21): error TS2339: Property 'precautions' does not exist on type 'ComprehensiveRemedy'.
+components/PersonalizedRemedyCard.tsx(252,41): error TS2339: Property 'precautions' does not exist on type 'ComprehensiveRemedy'.
+components/PersonalizedRemedyCard.tsx(253,28): error TS2339: Property 'precautions' does not exist on type 'ComprehensiveRemedy'.
+components/PersonalizedRemedyCard.tsx(253,45): error TS7006: Parameter 'precaution' implicitly has an 'any' type.
+components/PersonalizedRemedyCard.tsx(253,57): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/PersonalizedRemedyCard.tsx(260,52): error TS2339: Property 'precautions' does not exist on type 'ComprehensiveRemedy'.
+components/PersonalizedRemedyCard.tsx(267,21): error TS2339: Property 'relatedSystems' does not exist on type 'ComprehensiveRemedy'.
+components/PersonalizedRemedyCard.tsx(267,46): error TS2339: Property 'relatedSystems' does not exist on type 'ComprehensiveRemedy'.
+components/PersonalizedRemedyCard.tsx(271,27): error TS2339: Property 'relatedSystems' does not exist on type 'ComprehensiveRemedy'.
+components/PersonalizedRemedyCard.tsx(271,47): error TS7006: Parameter 'system' implicitly has an 'any' type.
+components/PlanSelectionStep.tsx(115,7): error TS2322: Type '"quarterly"' is not assignable to type '"limited" | "allFeatures" | "annual" | undefined'.
+components/ReadyToUseVedicChart.tsx(123,17): error TS2322: Type '{ children: string; key: number; x: number; y: number; textAnchor: string; fill: string; fontSize: string; title: string; }' is not assignable to type 'SVGTextElementAttributes<SVGTextElement>'.
+  Property 'title' does not exist on type 'SVGTextElementAttributes<SVGTextElement>'.
+components/ReadyToUseVedicChart.tsx(233,17): error TS2322: Type '{ children: string; key: number; x: number; y: number; textAnchor: string; fill: string; fontSize: string; title: string; }' is not assignable to type 'SVGTextElementAttributes<SVGTextElement>'.
+  Property 'title' does not exist on type 'SVGTextElementAttributes<SVGTextElement>'.
+components/ReadyToUseVedicChart.tsx(409,34): error TS2367: This comparison appears to be unintentional because the types '"north" | "south"' and '"both"' have no overlap.
+components/ReferralBenefitsSection.tsx(105,11): error TS2322: Type 'RefObject<HTMLButtonElement | null>' is not assignable to type 'RefObject<HTMLButtonElement>'.
+  Type 'HTMLButtonElement | null' is not assignable to type 'HTMLButtonElement'.
+    Type 'null' is not assignable to type 'HTMLButtonElement'.
+components/SignupFlow.tsx(112,9): error TS2353: Object literal may only specify known properties, and 'subscriptionId' does not exist in type '{ selectedPlan: "power-user-trial" | "buy-coffee" | "treat-me" | "festive-hamper"; paymentMethodId: string; autoMandateAccepted: boolean; }'.
+components/sortilege/SortilegeCastingInterface.tsx(288,69): error TS2345: Argument of type 'string | number' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+components/tarot/ArcanaDistributionChart.tsx(46,17): error TS2345: Argument of type '(card: TarotCard) => void' is not assignable to parameter of type '(value: TarotCard | null, index: number, array: (TarotCard | null)[]) => void'.
+  Types of parameters 'card' and 'value' are incompatible.
+    Type 'TarotCard | null' is not assignable to type 'TarotCard'.
+      Type 'null' is not assignable to type 'TarotCard'.
+components/tarot/ArcanaDistributionChart.tsx(63,47): error TS2503: Cannot find namespace 'JSX'.
+components/tarot/ElementalBalanceWheel.tsx(36,17): error TS2345: Argument of type '(card: TarotCard) => void' is not assignable to parameter of type '(value: TarotCard | null, index: number, array: (TarotCard | null)[]) => void'.
+  Types of parameters 'card' and 'value' are incompatible.
+    Type 'TarotCard | null' is not assignable to type 'TarotCard'.
+      Type 'null' is not assignable to type 'TarotCard'.
+components/tarot/ElementalBalanceWheel.tsx(46,94): error TS2503: Cannot find namespace 'JSX'.
+components/tarot/TarotDashboardHero.tsx(29,44): error TS2503: Cannot find namespace 'JSX'.
+components/tarot/TarotDashboardHero.tsx(30,31): error TS2503: Cannot find namespace 'JSX'.
+components/tarot/TarotDashboardHero.tsx(52,17): error TS2345: Argument of type '(card: TarotCard) => void' is not assignable to parameter of type '(value: TarotCard | null, index: number, array: (TarotCard | null)[]) => void'.
+  Types of parameters 'card' and 'value' are incompatible.
+    Type 'TarotCard | null' is not assignable to type 'TarotCard'.
+      Type 'null' is not assignable to type 'TarotCard'.
+components/tarot/TarotDashboardHero.tsx(79,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: TarotCard | null, index: number, array: (TarotCard | null)[]) => value is TarotCard | null, thisArg?: any): (TarotCard | null)[]', gave the following error.
+    Argument of type '(c: TarotCard) => boolean' is not assignable to parameter of type '(value: TarotCard | null, index: number, array: (TarotCard | null)[]) => value is TarotCard | null'.
+      Types of parameters 'c' and 'value' are incompatible.
+        Type 'TarotCard | null' is not assignable to type 'TarotCard'.
+          Type 'null' is not assignable to type 'TarotCard'.
+  Overload 2 of 2, '(predicate: (value: TarotCard | null, index: number, array: (TarotCard | null)[]) => unknown, thisArg?: any): (TarotCard | null)[]', gave the following error.
+    Argument of type '(c: TarotCard) => boolean' is not assignable to parameter of type '(value: TarotCard | null, index: number, array: (TarotCard | null)[]) => unknown'.
+      Types of parameters 'c' and 'value' are incompatible.
+        Type 'TarotCard | null' is not assignable to type 'TarotCard'.
+          Type 'null' is not assignable to type 'TarotCard'.
+components/tarot/TarotDashboardHero.tsx(80,30): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: TarotCard | null, index: number, array: (TarotCard | null)[]) => value is TarotCard | null, thisArg?: any): (TarotCard | null)[]', gave the following error.
+    Argument of type '(c: TarotCard) => boolean' is not assignable to parameter of type '(value: TarotCard | null, index: number, array: (TarotCard | null)[]) => value is TarotCard | null'.
+      Types of parameters 'c' and 'value' are incompatible.
+        Type 'TarotCard | null' is not assignable to type 'TarotCard'.
+          Type 'null' is not assignable to type 'TarotCard'.
+  Overload 2 of 2, '(predicate: (value: TarotCard | null, index: number, array: (TarotCard | null)[]) => unknown, thisArg?: any): (TarotCard | null)[]', gave the following error.
+    Argument of type '(c: TarotCard) => boolean' is not assignable to parameter of type '(value: TarotCard | null, index: number, array: (TarotCard | null)[]) => unknown'.
+      Types of parameters 'c' and 'value' are incompatible.
+        Type 'TarotCard | null' is not assignable to type 'TarotCard'.
+          Type 'null' is not assignable to type 'TarotCard'.
+components/TarotCoachInterface.tsx(24,11): error TS2339: Property 'tarotData' does not exist on type '{ question: string; setQuestion: Dispatch<SetStateAction<string>>; spreadType: string; setSpreadType: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/TarotCoachInterface.tsx(24,22): error TS2339: Property 'coaching' does not exist on type '{ question: string; setQuestion: Dispatch<SetStateAction<string>>; spreadType: string; setSpreadType: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/TarotCoachInterface.tsx(24,32): error TS2339: Property 'getCoaching' does not exist on type '{ question: string; setQuestion: Dispatch<SetStateAction<string>>; spreadType: string; setSpreadType: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/TarotCoachInterface.tsx(24,45): error TS2339: Property 'loading' does not exist on type '{ question: string; setQuestion: Dispatch<SetStateAction<string>>; spreadType: string; setSpreadType: Dispatch<SetStateAction<string>>; ... 4 more ...; resetData: () => void; }'.
+components/TarotCoachInterface.tsx(149,58): error TS7006: Parameter 'strength' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(149,68): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(166,59): error TS7006: Parameter 'challenge' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(166,70): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(183,60): error TS7006: Parameter 'area' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(183,66): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(200,61): error TS7006: Parameter 'affirmation' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(200,74): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(248,34): error TS7006: Parameter 'session' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(272,56): error TS7006: Parameter 'insight' implicitly has an 'any' type.
+components/TarotCoachInterface.tsx(272,65): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotTool.tsx(2,10): error TS2724: '"@/hooks/use-tarot"' has no exported member named 'useTarotData'. Did you mean 'useTarot'?
+components/TarotTool.tsx(218,51): error TS7006: Parameter 'recommendation' implicitly has an 'any' type.
+components/TarotTool.tsx(218,67): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotTool.tsx(231,39): error TS7006: Parameter 'card' implicitly has an 'any' type.
+components/TarotTool.tsx(231,45): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotTool.tsx(338,63): error TS7006: Parameter 'period' implicitly has an 'any' type.
+components/TarotTool.tsx(338,71): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotTool.tsx(349,57): error TS7006: Parameter 'challenge' implicitly has an 'any' type.
+components/TarotTool.tsx(349,68): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/TarotTool.tsx(360,60): error TS7006: Parameter 'opportunity' implicitly has an 'any' type.
+components/TarotTool.tsx(360,73): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/ThirteenSignsZodiacCoachInterface.tsx(10,3): error TS2305: Module '"lucide-react"' has no exported member 'Snake'.
+components/ui/calendar.tsx(57,9): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+components/ui/chart.tsx(119,7): error TS2339: Property 'payload' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; includeHidden?: boolean | undefined; ... 17 more ...; axisId?: AxisId | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(124,7): error TS2339: Property 'label' does not exist on type 'Omit<Omit<Props<ValueType, NameType>, PropertiesReadFromContext> & { active?: boolean | undefined; includeHidden?: boolean | undefined; ... 17 more ...; axisId?: AxisId | undefined; } & ClassAttributes<...> & HTMLAttributes<...> & { ...; }, "ref">'.
+components/ui/chart.tsx(188,25): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/chart.tsx(188,31): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/ui/chart.tsx(264,41): error TS2344: Type '"payload" | "verticalAlign"' does not satisfy the constraint '"string" | "filter" | "fill" | "values" | "id" | "content" | "color" | "in" | "method" | "type" | "name" | "children" | "role" | "style" | "media" | "spacing" | "order" | "height" | ... 428 more ... | "onBBoxUpdate"'.
+  Type '"payload"' is not assignable to type '"string" | "filter" | "fill" | "values" | "id" | "content" | "color" | "in" | "method" | "type" | "name" | "children" | "role" | "style" | "media" | "spacing" | "order" | "height" | ... 428 more ... | "onBBoxUpdate"'.
+components/ui/chart.tsx(275,19): error TS2339: Property 'length' does not exist on type '{}'.
+components/ui/chart.tsx(288,18): error TS2339: Property 'map' does not exist on type '{}'.
+components/ui/chart.tsx(288,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/ui/fab.tsx(40,8): error TS2322: Type '{ children: Element[]; disabled?: boolean | undefined; form?: string | undefined; formAction?: string | ((formData: FormData) => void | Promise<void>) | undefined; ... 290 more ...; transition: { ...; }; }' is not assignable to type 'Omit<HTMLMotionProps<"button">, "ref">'.
+  Types of property 'onDrag' are incompatible.
+    Type 'DragEventHandler<HTMLButtonElement> | undefined' is not assignable to type '((event: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) => void) | undefined'.
+      Type 'DragEventHandler<HTMLButtonElement>' is not assignable to type '(event: PointerEvent | MouseEvent | TouchEvent, info: PanInfo) => void'.
+        Types of parameters 'event' and 'event' are incompatible.
+          Type 'PointerEvent | MouseEvent | TouchEvent' is not assignable to type 'DragEvent<HTMLButtonElement>'.
+            Type 'PointerEvent' is missing the following properties from type 'DragEvent<HTMLButtonElement>': dataTransfer, nativeEvent, isDefaultPrevented, isPropagationStopped, persist
+components/VastuTool.tsx(26,35): error TS2339: Property 'loading' does not exist on type '{ propertyData: { type: string; propertyType: string; plotShape: string; entranceDirection: string; constructionYear: string; analysisFocus: string; rooms: {}; }; setPropertyData: Dispatch<SetStateAction<{ type: string; ... 5 more ...; rooms: {}; }>>; ... 7 more ...; user: User | null; }'.
+components/vedic/DivisionalChartsViewer.tsx(146,28): error TS2339: Property 'degreeInSign' does not exist on type 'VedicPlanetaryPosition'.
+components/vedic/DivisionalChartsViewer.tsx(147,28): error TS2339: Property 'dignity' does not exist on type 'VedicPlanetaryPosition'.
+components/vedic/DivisionalChartsViewer.tsx(152,26): error TS2339: Property 'ascendant' does not exist on type 'VedicChart'.
+components/vedic/DivisionalChartsViewer.tsx(434,23): error TS2322: Type '{ name: string; sign: string; degreeInSign: any; isRetrograde: any; }[]' is not assignable to type 'PlanetData[]'.
+  Type '{ name: string; sign: string; degreeInSign: any; isRetrograde: any; }' is not assignable to type 'PlanetData'.
+    Types of property 'sign' are incompatible.
+      Type 'string' is not assignable to type 'number'.
+components/vedic/NakshatraAnalysis.tsx(172,38): error TS2339: Property 'sanskritName' does not exist on type 'NakshatraData'.
+components/vedic/ShadbalaAnalysis.tsx(263,38): error TS2304: Cannot find name 'ChevronUp'.
+components/vedic/ShadbalaAnalysis.tsx(263,74): error TS2304: Cannot find name 'ChevronDown'.
+components/VedicChartNorthPro.tsx(32,35): error TS2345: Argument of type 'SVGSVGElement' is not assignable to parameter of type 'HTMLElement'.
+  Type 'SVGSVGElement' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, autocorrect, and 26 more.
+components/VedicChartSouthPro.tsx(31,35): error TS2345: Argument of type 'SVGSVGElement' is not assignable to parameter of type 'HTMLElement'.
+  Type 'SVGSVGElement' is missing the following properties from type 'HTMLElement': accessKey, accessKeyLabel, autocapitalize, autocorrect, and 26 more.
+components/VedicCoachInterface.tsx(38,11): error TS2339: Property 'vedicData' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 8 more ...; resetData: () => void; }'.
+components/VimshottariPanel.tsx(4,10): error TS2305: Module '"@/lib/astrology"' has no exported member 'DashaPeriod'.
+components/western/AstroChartWrapper.tsx(109,62): error TS2345: Argument of type 'AstroChartAspect[]' is not assignable to parameter of type 'TransitAspect[]'.
+  Type 'AstroChartAspect' is missing the following properties from type 'TransitAspect': transitPlanet, natalPlanet, aspectType, exactness, and 3 more.
+components/western/AstroChartWrapper.tsx(111,19): error TS2345: Argument of type 'AstroChartAspect[]' is not assignable to parameter of type 'SetStateAction<TransitAspect[]>'.
+  Type 'AstroChartAspect[]' is not assignable to type 'TransitAspect[]'.
+    Type 'AstroChartAspect' is missing the following properties from type 'TransitAspect': transitPlanet, natalPlanet, aspectType, exactness, and 3 more.
+components/western/ComprehensiveWesternReport.tsx(38,3): error TS2305: Module '"lucide-react"' has no exported member 'Mercury'.
+components/western/ComprehensiveWesternReport.tsx(39,3): error TS2305: Module '"lucide-react"' has no exported member 'Venus'.
+components/western/ComprehensiveWesternReport.tsx(40,3): error TS2305: Module '"lucide-react"' has no exported member 'Mars'.
+components/western/ComprehensiveWesternReport.tsx(41,3): error TS2305: Module '"lucide-react"' has no exported member 'Jupiter'.
+components/western/ComprehensiveWesternReport.tsx(42,3): error TS2305: Module '"lucide-react"' has no exported member 'Saturn'.
+components/western/ComprehensiveWesternReport.tsx(43,3): error TS2305: Module '"lucide-react"' has no exported member 'Uranus'.
+components/western/ComprehensiveWesternReport.tsx(44,3): error TS2305: Module '"lucide-react"' has no exported member 'Neptune'.
+components/WesternAstrologyCoachInterface.tsx(34,11): error TS2339: Property 'data' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 8 more ...; resetData: () => void; }'.
+components/WesternAstrologyTool.tsx(23,11): error TS2339: Property 'data' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 8 more ...; resetData: () => void; }'.
+components/WesternAstrologyTool.tsx(23,17): error TS2339: Property 'loading' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 8 more ...; resetData: () => void; }'.
+components/WesternAstrologyTool.tsx(23,33): error TS2339: Property 'analyze' does not exist on type '{ name: string; setName: Dispatch<SetStateAction<string>>; birthDate: string; setBirthDate: Dispatch<SetStateAction<string>>; ... 8 more ...; resetData: () => void; }'.
+components/WesternAstrologyTool.tsx(247,45): error TS7006: Parameter 'planet' implicitly has an 'any' type.
+components/WesternAstrologyTool.tsx(247,53): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/WesternAstrologyTool.tsx(293,42): error TS7006: Parameter 'transit' implicitly has an 'any' type.
+components/WesternAstrologyTool.tsx(293,51): error TS7006: Parameter 'index' implicitly has an 'any' type.
+components/YogaPanel.tsx(23,16): error TS2305: Module '"@/lib/enhancedYogaDetection"' has no exported member 'getYogaSignificance'.
+components/YogaPanel.tsx(23,37): error TS2305: Module '"@/lib/enhancedYogaDetection"' has no exported member 'getYogaEffects'.
+components/YogaPanel.tsx(311,34): error TS2304: Cannot find name 'isInGoldenPeriod'.
+components/YogaPanel.tsx(311,65): error TS2304: Cannot find name 'isInGoldenPeriod'.
+components/YogaPanelSimplified.tsx(26,16): error TS2305: Module '"@/lib/enhancedYogaDetection"' has no exported member 'getYogaSignificance'.
+components/YogaPanelSimplified.tsx(26,37): error TS2305: Module '"@/lib/enhancedYogaDetection"' has no exported member 'getYogaEffects'.
+hooks/use-dream-symbols.tsx(78,28): error TS2304: Cannot find name 'DreamSymbol'.
+hooks/use-dream-symbols.tsx(98,55): error TS2304: Cannot find name 'DreamSymbol'.
+hooks/use-intersection-observer.ts(53,11): error TS2322: Type 'RefObject<T | null>' is not assignable to type 'RefObject<T>'.
+  Type 'T | null' is not assignable to type 'T'.
+    'T' could be instantiated with an arbitrary type which could be unrelated to 'T | null'.
+hooks/use-intersection-observer.ts(107,11): error TS2322: Type 'number[]' is not assignable to type 'boolean[]'.
+  Type 'number' is not assignable to type 'boolean'.
+hooks/use-name-analysis.tsx(101,5): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+hooks/use-name-analysis.tsx(107,5): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+hooks/use-name-analysis.tsx(113,5): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'boolean'.
+  Type 'undefined' is not assignable to type 'boolean'.
+hooks/use-palmistry.tsx(47,14): error TS2367: This comparison appears to be unintentional because the types '"right"' and '"left"' have no overlap.
+hooks/use-palmistry.tsx(77,9): error TS2345: Argument of type '"male" | "female" | "non-binary" | "other"' is not assignable to parameter of type '"male" | "female" | "other"'.
+  Type '"non-binary"' is not assignable to type '"male" | "female" | "other"'.
+hooks/use-thirteen-signs-zodiac.tsx(68,15): error TS2339: Property 'getThirteenSignsAnalysis' does not exist on type 'typeof import("C:/FutureSeer/lib/thirteenSignsZodiacIntelligence")'.
+hooks/use-trichakra.tsx(32,12): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(32,38): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(32,64): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(40,19): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(41,20): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(42,20): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(43,21): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(44,19): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-trichakra.tsx(45,20): error TS18047: 'userProfile' is possibly 'null'.
+hooks/use-vedic-enhanced.tsx(157,5): error TS1117: An object literal cannot have multiple properties with the same name.
+hooks/useAstroScribe.tsx(91,51): error TS2345: Argument of type 'ScribeData' is not assignable to parameter of type 'string'.
+hooks/useAstroScribe.tsx(92,25): error TS2345: Argument of type '{ summary: string; input: string; }' is not assignable to parameter of type 'SetStateAction<AstroScribeInterpretation | null>'.
+  Type '{ summary: string; input: string; }' is missing the following properties from type 'AstroScribeInterpretation': overview, analysis, insights, lifeAreas, and 2 more.
+hooks/useFinancialAstrology.tsx(19,21): error TS2353: Object literal may only specify known properties, and 'result' does not exist in type '(prevState: null) => null'.
+hooks/usePlacements.ts(4,39): error TS2305: Module '"@/lib/astrology"' has no exported member 'ChartData'.
+hooks/usePlacements.ts(99,61): error TS7006: Parameter 'p' implicitly has an 'any' type.
+hooks/usePlacements.ts(103,52): error TS7006: Parameter 'house' implicitly has an 'any' type.
+hooks/usePlacements.ts(105,34): error TS7006: Parameter 'planet' implicitly has an 'any' type.
+hooks/usePlacements.ts(125,51): error TS7006: Parameter 'h' implicitly has an 'any' type.
+hooks/usePlacements.ts(125,72): error TS7006: Parameter 'p' implicitly has an 'any' type.
+hooks/useVedicChart.ts(44,28): error TS2554: Expected 2 arguments, but got 1.
+hooks/useVedicChart.ts(49,9): error TS2353: Object literal may only specify known properties, and 'time' does not exist in type '{ date: string | number | Date; latitude: number; longitude: number; name?: string | undefined; place?: string | undefined; birthDate?: string | number | Date | undefined; }'.
+hooks/useVedicStorage.tsx(76,16): error TS2345: Argument of type '(prev: VedicStorageState) => { vedicData: VedicReportSchema | null; isLoading: false; hasExistingData: boolean; error: string | null; isStoring: boolean; birthDataChanged: boolean; currentBirthDataHash: string | null; }' is not assignable to parameter of type 'SetStateAction<VedicStorageState>'.
+  Type '(prev: VedicStorageState) => { vedicData: VedicReportSchema | null; isLoading: false; hasExistingData: boolean; error: string | null; isStoring: boolean; birthDataChanged: boolean; currentBirthDataHash: string | null; }' is not assignable to type '(prevState: VedicStorageState) => VedicStorageState'.
+    Call signature return types '{ vedicData: VedicReportSchema | null; isLoading: false; hasExistingData: boolean; error: string | null; isStoring: boolean; birthDataChanged: boolean; currentBirthDataHash: string | null; }' and 'VedicStorageState' are incompatible.
+      The types of 'vedicData' are incompatible between these types.
+        Type 'VedicReportSchema | null' is not assignable to type 'UserVedicData | null'.
+          Type 'VedicReportSchema' is missing the following properties from type 'UserVedicData': birthDate, birthTime, birthPlace, planetaryPositions, and 4 more.
+hooks/useVedicStorage.tsx(106,9): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'string'.
+hooks/useVedicStorage.tsx(170,29): error TS2339: Property 'clearUserData' does not exist on type 'UserDataStorage'.
+lib/aiGateway.ts(84,9): error TS2322: Type 'string' is not assignable to type 'LanguageModelV1'.
+lib/aiGateway.ts(85,9): error TS2322: Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'CoreMessage[] | Omit<Message, "id">[] | undefined'.
+  Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'CoreMessage[]'.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'CoreMessage'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'CoreSystemMessage | CoreUserMessage | CoreAssistantMessage'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'CoreAssistantMessage'.
+          Types of property 'role' are incompatible.
+            Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+              Type '"user"' is not assignable to type '"assistant"'.
+lib/aiGateway.ts(130,7): error TS2769: No overload matches this call.
+  Overload 3 of 3, '(body: ChatCompletionCreateParamsBase, options?: RequestOptions<unknown> | undefined): APIPromise<ChatCompletion | Stream<...>>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+lib/aiGateway.ts(140,5): error TS2322: Type 'ChatCompletion & Stream<ChatCompletionChunk>' is not assignable to type 'AsyncIterable<{ choices: { delta: { content?: string | undefined; }; }[]; }>'.
+  The types returned by '[Symbol.asyncIterator]().next(...)' are incompatible between these types.
+    Type 'Promise<IteratorResult<ChatCompletionChunk, any>>' is not assignable to type 'Promise<IteratorResult<{ choices: { delta: { content?: string | undefined; }; }[]; }, any>>'.
+      Type 'IteratorResult<ChatCompletionChunk, any>' is not assignable to type 'IteratorResult<{ choices: { delta: { content?: string | undefined; }; }[]; }, any>'.
+        Type 'IteratorYieldResult<ChatCompletionChunk>' is not assignable to type 'IteratorResult<{ choices: { delta: { content?: string | undefined; }; }[]; }, any>'.
+          Type 'IteratorYieldResult<ChatCompletionChunk>' is not assignable to type 'IteratorYieldResult<{ choices: { delta: { content?: string | undefined; }; }[]; }>'.
+            Type 'ChatCompletionChunk' is not assignable to type '{ choices: { delta: { content?: string | undefined; }; }[]; }'.
+              Types of property 'choices' are incompatible.
+                Type 'Choice[]' is not assignable to type '{ delta: { content?: string | undefined; }; }[]'.
+                  Type 'Choice' is not assignable to type '{ delta: { content?: string | undefined; }; }'.
+                    The types of 'delta.content' are incompatible between these types.
+                      Type 'string | null | undefined' is not assignable to type 'string | undefined'.
+                        Type 'null' is not assignable to type 'string | undefined'.
+lib/aiGateway.ts(149,7): error TS2769: No overload matches this call.
+  Overload 3 of 3, '(body: ChatCompletionCreateParamsBase, options?: RequestOptions | undefined): APIPromise<ChatCompletion | Stream<...>>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+lib/aiGateway.ts(186,9): error TS2322: Type 'string' is not assignable to type 'LanguageModelV1'.
+lib/aiGateway.ts(187,9): error TS2322: Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'CoreMessage[] | Omit<Message, "id">[] | undefined'.
+  Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'CoreMessage[]'.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'CoreMessage'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'CoreSystemMessage | CoreUserMessage | CoreAssistantMessage'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'CoreAssistantMessage'.
+          Types of property 'role' are incompatible.
+            Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+              Type '"user"' is not assignable to type '"assistant"'.
+lib/aiGateway.ts(194,20): error TS7006: Parameter 'chunk' implicitly has an 'any' type.
+lib/aiGateway.ts(232,7): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(body: ChatCompletionCreateParamsNonStreaming, options?: RequestOptions<unknown> | undefined): APIPromise<ChatCompletion>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+  Overload 2 of 3, '(body: ChatCompletionCreateParamsStreaming, options?: RequestOptions<unknown> | undefined): APIPromise<Stream<ChatCompletionChunk>>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+  Overload 3 of 3, '(body: ChatCompletionCreateParamsBase, options?: RequestOptions<unknown> | undefined): APIPromise<ChatCompletion | Stream<...>>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+lib/aiGateway.ts(259,7): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(body: ChatCompletionCreateParamsNonStreaming, options?: RequestOptions | undefined): APIPromise<ChatCompletion>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+  Overload 2 of 3, '(body: ChatCompletionCreateParamsStreaming, options?: RequestOptions | undefined): APIPromise<Stream<ChatCompletionChunk>>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+  Overload 3 of 3, '(body: ChatCompletionCreateParamsBase, options?: RequestOptions | undefined): APIPromise<ChatCompletion | Stream<...>>', gave the following error.
+    Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }[]' is not assignable to type 'ChatCompletionMessageParam[]'.
+      Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionMessageParam'.
+        Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionSystemMessageParam | ChatCompletionUserMessageParam | ChatCompletionAssistantMessageParam'.
+          Type '{ role: "user" | "system" | "assistant"; content: string | { type: "text" | "image_url"; text?: string | undefined; image_url?: { url: string; } | undefined; }[]; }' is not assignable to type 'ChatCompletionAssistantMessageParam'.
+            Types of property 'role' are incompatible.
+              Type '"user" | "system" | "assistant"' is not assignable to type '"assistant"'.
+                Type '"user"' is not assignable to type '"assistant"'.
+lib/aiInterpretation.ts(37,53): error TS2345: Argument of type '{ [key: string]: unknown; planet?: string | undefined; shadbala?: number | undefined; strength?: string | undefined; }[] | undefined' is not assignable to parameter of type 'any[]'.
+  Type 'undefined' is not assignable to type 'any[]'.
+lib/aiInterpretation.ts(38,47): error TS2345: Argument of type '{ [key: string]: unknown; house?: number | undefined; strength?: string | undefined; }[] | undefined' is not assignable to parameter of type 'any[]'.
+  Type 'undefined' is not assignable to type 'any[]'.
+lib/aiInterpretation.ts(47,49): error TS2345: Argument of type '{ [key: string]: unknown; house?: number | undefined; strength?: string | undefined; }[] | undefined' is not assignable to parameter of type 'any[]'.
+  Type 'undefined' is not assignable to type 'any[]'.
+lib/aiInterpretation.ts(48,62): error TS2345: Argument of type '{ [key: string]: unknown; house?: number | undefined; strength?: string | undefined; }[] | undefined' is not assignable to parameter of type 'any[]'.
+  Type 'undefined' is not assignable to type 'any[]'.
+lib/aiInterpretation.ts(49,49): error TS2345: Argument of type '{ [key: string]: unknown; house?: number | undefined; strength?: string | undefined; }[] | undefined' is not assignable to parameter of type 'any[]'.
+  Type 'undefined' is not assignable to type 'any[]'.
+lib/aiInterpretation.ts(50,55): error TS2345: Argument of type '{ [key: string]: unknown; house?: number | undefined; strength?: string | undefined; }[] | undefined' is not assignable to parameter of type 'any[]'.
+  Type 'undefined' is not assignable to type 'any[]'.
+lib/aiInterpretation.ts(51,77): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'any[]'.
+lib/aiInterpretation.ts(268,50): error TS2339: Property 'length' does not exist on type '{}'.
+lib/aiInterpretation.ts(269,40): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+lib/aiInterpretation.ts(269,76): error TS7053: Element implicitly has an 'any' type because expression of type '0' can't be used to index type '{}'.
+  Property '0' does not exist on type '{}'.
+lib/aiInterpretation.ts(291,78): error TS2339: Property 'planet' does not exist on type 'string'.
+lib/aiInterpretation.ts(291,122): error TS2339: Property 'planet' does not exist on type 'string'.
+lib/analytics.ts(19,7): error TS2353: Object literal may only specify known properties, and 'enable_recording_network_payloads' does not exist in type 'Partial<PostHogConfig>'.
+lib/analytics.ts(113,29): error TS2339: Property 'PAGE_NAME' does not exist on type '{ readonly TOOL_NAME: "tool_name"; readonly TOOL_CATEGORY: "tool_category"; readonly ANALYSIS_TYPE: "analysis_type"; readonly RESULT_QUALITY: "result_quality"; readonly USER_TYPE: "user_type"; ... 9 more ...; readonly CONNECTION_SPEED: "connection_speed"; }'.
+lib/analytics.ts(141,29): error TS2339: Property 'PAGE_NAME' does not exist on type '{ readonly TOOL_NAME: "tool_name"; readonly TOOL_CATEGORY: "tool_category"; readonly ANALYSIS_TYPE: "analysis_type"; readonly RESULT_QUALITY: "result_quality"; readonly USER_TYPE: "user_type"; ... 9 more ...; readonly CONNECTION_SPEED: "connection_speed"; }'.
+lib/astroCalculations.ts(50,9): error TS7034: Variable 'planets' implicitly has type 'any[]' in some locations where its type cannot be determined.
+lib/astroCalculations.ts(69,10): error TS7005: Variable 'planets' implicitly has an 'any[]' type.
+lib/astroCoach.ts(276,45): error TS2339: Property 'type' does not exist on type '{ planet: string; aspect: string; targetPlanet: string; orb: number; effect: string; }'.
+lib/astroCoach.ts(276,67): error TS2339: Property 'type' does not exist on type '{ planet: string; aspect: string; targetPlanet: string; orb: number; effect: string; }'.
+lib/astroCoach.ts(277,42): error TS2339: Property 'type' does not exist on type '{ planet: string; aspect: string; targetPlanet: string; orb: number; effect: string; }'.
+lib/astroCoach.ts(277,65): error TS2339: Property 'type' does not exist on type '{ planet: string; aspect: string; targetPlanet: string; orb: number; effect: string; }'.
+lib/astrologyUnified.ts(5,10): error TS2305: Module '"astronomia"' has no exported member 'julian'.
+lib/astrologyUnified.ts(5,18): error TS2305: Module '"astronomia"' has no exported member 'planetposition'.
+lib/astrologyUnified.ts(5,34): error TS2305: Module '"astronomia"' has no exported member 'data'.
+lib/astrologyUnified.ts(111,36): error TS2339: Property 'swe' does not exist on type 'typeof import("swisseph-wasm")'.
+lib/astrologyUnified.ts(113,11): error TS2348: Value of type 'typeof SwissEph' is not callable. Did you mean to include 'new'?
+lib/astrologyUtils.ts(36,9): error TS2322: Type 'import("C:/FutureSeer/lib/astrologyUnified").VedicChart' is not assignable to type 'import("C:/FutureSeer/lib/vedicAstrology").VedicChart'.
+  Types of property 'ascendant' are incompatible.
+    Type '{ longitude: number; sign: string; degree: number; minute: number; }' is not assignable to type 'number'.
+lib/astronomia-vedic.ts(73,13): error TS18046: 'julian' is of type 'unknown'.
+lib/astronomia-vedic.ts(84,16): error TS18046: 'planetposition' is of type 'unknown'.
+lib/astronomia-vedic.ts(101,70): error TS18046: 'solarxyz' is of type 'unknown'.
+lib/astronomia-vedic.ts(145,15): error TS18046: 'moonposition' is of type 'unknown'.
+lib/astronomia-vedic.ts(179,16): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ lahiri: number; raman: number; kp: number; yukteshwar: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ lahiri: number; raman: number; kp: number; yukteshwar: number; }'.
+lib/astronomia-vedic.ts(307,47): error TS2345: Argument of type 'number' is not assignable to parameter of type 'never'.
+lib/astronomia-vedic.ts(428,54): error TS2345: Argument of type 'string | number | Date' is not assignable to parameter of type 'Date'.
+  Type 'string' is not assignable to type 'Date'.
+lib/astronomia-vedic.ts(690,40): error TS2345: Argument of type 'string | number | Date' is not assignable to parameter of type 'Date | undefined'.
+  Type 'string' is not assignable to type 'Date'.
+lib/astronomia-vedic.ts(693,59): error TS18047: 'houses.ascendant' is possibly 'null'.
+lib/astronomia-vedic.ts(928,13): error TS2339: Property 'antardashas' does not exist on type '{ planet: string; startDate: string; endDate: string; duration: number; dashaType: string; isCurrent: boolean; progress: number; effects: never[]; }'.
+lib/astronomia-vedic.ts(945,9): error TS7034: Variable 'antardashas' implicitly has type 'any[]' in some locations where its type cannot be determined.
+lib/astronomia-vedic.ts(977,10): error TS7005: Variable 'antardashas' implicitly has an 'any[]' type.
+lib/baziIntelligence.ts(1221,77): error TS2554: Expected 1 arguments, but got 3.
+lib/baziIntelligence.ts(1289,32): error TS2339: Property 'recommendations' does not exist on type 'CareerAnalysis'.
+lib/birthTimeResolver.ts(202,10): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ sunrise: string; noon: string; sunset: string; moonChart: string; default: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ sunrise: string; noon: string; sunset: string; moonChart: string; default: string; }'.
+lib/chartImageService.ts(345,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Jupiter: { positive: string; negative: string; neutral: string; }; Saturn: { positive: string; negative: string; neutral: string; }; Mars: { positive: string; negative: string; neutral: string; }; Mercury: { ...; }; Venus: { ...; }; Sun: { ...; }; Moon: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Jupiter: { positive: string; negative: string; neutral: string; }; Saturn: { positive: string; negative: string; neutral: string; }; Mars: { positive: string; negative: string; neutral: string; }; Mercury: { ...; }; Venus: { ...; }; Sun: { ...; }; Moon: { ...; }; }'.
+lib/chartStorage.ts(244,73): error TS2345: Argument of type 'string' is not assignable to parameter of type '"astroapp-api" | "professional-generator" | "futureseer-generator"'.
+lib/chinese/chineseAstrologyService.ts(544,54): error TS2345: Argument of type '{ heavenlyStem: string; earthlyBranch: string; element: string; }[]' is not assignable to parameter of type 'FourPillars'.
+  Type '{ heavenlyStem: string; earthlyBranch: string; element: string; }[]' is missing the following properties from type 'FourPillars': year, month, day, hour, elementBalance
+lib/comprehensiveRemedyDatabase.ts(7,50): error TS2305: Module '"lucide-react"' has no exported member 'Foot'.
+lib/comprehensiveRemedyDatabase.ts(8,36): error TS2724: '"lucide-react"' has no exported member named 'Tree'. Did you mean 'Trees'?
+lib/comprehensiveRemedyDatabase.ts(8,60): error TS2305: Module '"lucide-react"' has no exported member 'Ocean'.
+lib/comprehensiveRemedyDatabase.ts(8,67): error TS2305: Module '"lucide-react"' has no exported member 'Fire'.
+lib/comprehensiveRemedyDatabase.ts(8,73): error TS2305: Module '"lucide-react"' has no exported member 'Lightning'.
+lib/comprehensiveRemedyGenerator.ts(11,3): error TS2614: Module '"./comprehensiveRemedyDatabase"' has no exported member 'MODERN_HOLISTIC_REMEDIES'. Did you mean to use 'import MODERN_HOLISTIC_REMEDIES from "./comprehensiveRemedyDatabase"' instead?
+lib/comprehensiveRemedyGenerator.ts(12,3): error TS2614: Module '"./comprehensiveRemedyDatabase"' has no exported member 'LIFESTYLE_REMEDIES'. Did you mean to use 'import LIFESTYLE_REMEDIES from "./comprehensiveRemedyDatabase"' instead?
+lib/comprehensiveRemedyGenerator.ts(133,45): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/comprehensiveRemedyGenerator.ts(188,29): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ ashwini: { title: string; description: string; instructions: string[]; benefits: string[]; planetaryRulers: string[]; chakraAssociations: string[]; }; bharani: { title: string; description: string; instructions: string[]; benefits: string[]; planetaryRulers: string[]; chakraAssociations: string[]; }; }'.
+lib/comprehensiveRemedyGenerator.ts(211,25): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ vata: { title: string; description: string; instructions: string[]; benefits: string[]; elementalAssociations: string[]; modernUses: string[]; }; pitta: { title: string; description: string; instructions: string[]; benefits: string[]; elementalAssociations: string[]; modernUses: string[]; }; kapha: { ...; }; }'.
+lib/comprehensiveRemedyGenerator.ts(242,27): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ aries: { title: string; description: string; instructions: string[]; benefits: string[]; planetaryRulers: string[]; elementalAssociations: string[]; modernUses: string[]; }; taurus: { title: string; description: string; ... 4 more ...; modernUses: string[]; }; ... 9 more ...; pisces: { ...; }; }'.
+lib/comprehensiveRemedyGenerator.ts(273,28): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ sun: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; moon: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ sun: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; moon: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; }'.
+lib/comprehensiveRemedyGenerator.ts(307,35): error TS7053: Element implicitly has an 'any' type because expression of type 'number' can't be used to index type '{ 1: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; gemstones: string[]; colors: string[]; daysOfWeek: string[]; mantras: string[]; }; 2: { title: string; description: string; ... 6 more ...; mantras: string[]; }; ... 6 more ...; 9: { ...; }; }'.
+  No index signature with a parameter of type 'number' was found on type '{ 1: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; gemstones: string[]; colors: string[]; daysOfWeek: string[]; mantras: string[]; }; 2: { title: string; description: string; ... 6 more ...; mantras: string[]; }; ... 6 more ...; 9: { ...; }; }'.
+lib/comprehensiveRemedyGenerator.ts(330,28): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ 1: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; gemstones: string[]; colors: string[]; daysOfWeek: string[]; mantras: string[]; }; 2: { title: string; description: string; ... 6 more ...; mantras: string[]; }; ... 8 more ...; 22: { ...; }; }'.
+lib/comprehensiveRemedyGenerator.ts(358,28): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ "111": { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; "222": { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; }'.
+lib/comprehensiveRemedyGenerator.ts(391,26): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ fool: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; magician: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ fool: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; magician: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; }'.
+lib/comprehensiveRemedyGenerator.ts(425,53): error TS2339: Property 'lineEnhancement' does not exist on type '{ lineRemedies: { lifeLineWeak: { title: string; description: string; instructions: string[]; benefits: string[]; gemstones: string[]; colors: string[]; mantras: string[]; practices: string[]; timing: string; frequency: string; priority: string; palmistryTriggers: string[]; }; ... 22 more ...; mercuryLineBroken: { ....'.
+lib/comprehensiveRemedyGenerator.ts(459,31): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ north: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; east: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ north: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; east: { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; }; }'.
+lib/comprehensiveRemedyGenerator.ts(761,17): error TS2345: Argument of type '{ id: string; system: string; category: string; title: string; description: string; icon: string; priority: string; instructions: string[]; benefits: string[]; modernUses: string[]; cost: string; difficulty: string; }' is not assignable to parameter of type 'ComprehensiveRemedy'.
+  Types of property 'priority' are incompatible.
+    Type 'string' is not assignable to type '"medium" | "high" | "low" | "critical"'.
+lib/comprehensiveRemedyGenerator.ts(808,3): error TS2693: 'UserSystemData' only refers to a type, but is being used as a value here.
+lib/comprehensiveSeerEngine.ts(708,11): error TS7034: Variable 'responses' implicitly has type 'any[]' in some locations where its type cannot be determined.
+lib/comprehensiveSeerEngine.ts(709,11): error TS7034: Variable 'sources' implicitly has type 'any[]' in some locations where its type cannot be determined.
+lib/comprehensiveSeerEngine.ts(753,63): error TS7005: Variable 'responses' implicitly has an 'any[]' type.
+lib/comprehensiveSeerEngine.ts(759,7): error TS7005: Variable 'sources' implicitly has an 'any[]' type.
+lib/comprehensiveSeerEngine.ts(775,11): error TS7034: Variable 'responses' implicitly has type 'any[]' in some locations where its type cannot be determined.
+lib/comprehensiveSeerEngine.ts(776,11): error TS7034: Variable 'sources' implicitly has type 'any[]' in some locations where its type cannot be determined.
+lib/comprehensiveSeerEngine.ts(814,61): error TS7005: Variable 'responses' implicitly has an 'any[]' type.
+lib/comprehensiveSeerEngine.ts(820,7): error TS7005: Variable 'sources' implicitly has an 'any[]' type.
+lib/comprehensiveSeerEngine.ts(1027,25): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+lib/comprehensiveSeerEngine.ts(1027,217): error TS18050: The value 'undefined' cannot be used here.
+lib/comprehensiveSeerEngine.ts(1028,35): error TS2339: Property 'planet' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1028,79): error TS2339: Property 'mahadasha' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1029,51): error TS2339: Property 'mahadasha' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1029,73): error TS2339: Property 'planet' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1030,42): error TS2339: Property 'antardasha' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1030,80): error TS2339: Property 'antardashas' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1030,103): error TS2339: Property 'antardashas' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1032,51): error TS2339: Property 'startDate' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1033,49): error TS2339: Property 'endDate' does not exist on type 'number'.
+lib/comprehensiveSeerEngine.ts(1898,44): error TS2339: Property 'planets' does not exist on type '{ chart: any; reading: any; dashas: any; yogas: any; nakshatras: any; transits: any; panchanga: any; }'.
+lib/dailyDecisionsIntelligence.ts(125,54): error TS2339: Property 'signName' does not exist on type '{ name: string; sign: string; degree: number; house: number; nakshatra: string; pada: number; isRetrograde: boolean; lord: string; }'.
+lib/dailyDecisionsIntelligence.ts(131,51): error TS2339: Property 'signName' does not exist on type '{ name: string; sign: string; degree: number; house: number; nakshatra: string; pada: number; isRetrograde: boolean; lord: string; }'.
+lib/dailyDecisionsIntelligence.ts(136,57): error TS2339: Property 'signName' does not exist on type '{ name: string; sign: string; degree: number; house: number; nakshatra: string; pada: number; isRetrograde: boolean; lord: string; }'.
+lib/dailyDecisionsIntelligence.ts(161,7): error TS2322: Type 'null' is not assignable to type 'string | number | Date | undefined'.
+lib/dailyDecisionsIntelligence.ts(263,48): error TS2339: Property 'signName' does not exist on type '{ sign: string; degree: number; lord: string; }'.
+lib/dailyDecisionsIntelligence.ts(501,27): error TS2345: Argument of type 'string' is not assignable to parameter of type '"Wednesday" | "Friday" | "Monday" | "Thursday"'.
+lib/dailyDecisionsIntelligence.ts(506,28): error TS2345: Argument of type 'string' is not assignable to parameter of type '"Saturday" | "Tuesday" | "Sunday"'.
+lib/dashboardDataExtractor.ts(228,27): error TS2339: Property 'western' does not exist on type 'ComprehensiveMysticalProfile | ExtendedMysticalProfile'.
+  Property 'western' does not exist on type 'ComprehensiveMysticalProfile'.
+lib/dashboardDataExtractor.ts(301,30): error TS2339: Property 'numerology' does not exist on type 'ComprehensiveMysticalProfile | ExtendedMysticalProfile'.
+  Property 'numerology' does not exist on type 'ComprehensiveMysticalProfile'.
+lib/dashboardDataExtractor.ts(347,25): error TS2339: Property 'tarot' does not exist on type 'ComprehensiveMysticalProfile | ExtendedMysticalProfile'.
+  Property 'tarot' does not exist on type 'ComprehensiveMysticalProfile'.
+lib/dashboardDataExtractor.ts(384,26): error TS2339: Property 'iching' does not exist on type 'ComprehensiveMysticalProfile | ExtendedMysticalProfile'.
+  Property 'iching' does not exist on type 'ComprehensiveMysticalProfile'.
+lib/dashboardDataExtractor.ts(423,28): error TS2339: Property 'geomancy' does not exist on type 'ComprehensiveMysticalProfile | ExtendedMysticalProfile'.
+  Property 'geomancy' does not exist on type 'ComprehensiveMysticalProfile'.
+lib/dashboardDataExtractor.ts(459,32): error TS2339: Property 'angelNumbers' does not exist on type 'ComprehensiveMysticalProfile | ExtendedMysticalProfile'.
+  Property 'angelNumbers' does not exist on type 'ComprehensiveMysticalProfile'.
+lib/dashboardDataExtractor.ts(495,32): error TS2339: Property 'nameAnalysis' does not exist on type 'ComprehensiveMysticalProfile | ExtendedMysticalProfile'.
+  Property 'nameAnalysis' does not exist on type 'ComprehensiveMysticalProfile'.
+lib/data/toolIntroductions.ts(946,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/dreamSymbolsSeerState.ts(56,5): error TS2869: Right operand of ?? is unreachable because the left operand is never nullish.
+lib/energyHealing/userProfileExtractor.ts(72,33): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/energyHealing/userProfileExtractor.ts(82,33): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/enhancedPanchangaCalculator.ts(222,5): error TS2322: Type 'null' is not assignable to type 'string | number | Date | undefined'.
+lib/enhancedPanchangaCalculator.ts(225,3): error TS2322: Type 'AccuratePanchangaData | null' is not assignable to type 'AccuratePanchangaData'.
+  Type 'null' is not assignable to type 'AccuratePanchangaData'.
+lib/enhancedToolIntegration.ts(441,23): error TS2339: Property 'position' does not exist on type '{ name: string; meaning: string; significance: string; }'.
+lib/faceReadingIntelligence.ts(432,11): error TS2322: Type 'string' is not assignable to type 'string[]'.
+lib/financialAstrologyIntelligence.ts(1,10): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'UserData'.
+lib/financialAstrologyIntelligence.ts(1,20): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'MarketData'.
+lib/financialAstrologyIntelligence.ts(1,32): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'FinancialAnalysis'.
+lib/financialAstrologyIntelligence.ts(1,51): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'FinancialTiming'.
+lib/financialAstrologyIntelligence.ts(1,68): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'SectorAnalysis'.
+lib/financialAstrologyIntelligence.ts(1,84): error TS2305: Module '"@/hooks/useFinancialAstrology"' has no exported member 'MarketPrediction'.
+lib/futureSeerQualityAssurance.ts(530,7): error TS2322: Type 'AccessibilityScore' is not assignable to type 'number'.
+lib/futureSeerQualityAssurance.ts(650,43): error TS2339: Property 'score' does not exist on type 'number'.
+lib/futureSeerVedAstroIntegration.ts(537,3): error TS2484: Export declaration conflicts with exported declaration of 'FutureSeerUserProfile'.
+lib/futureSeerVedAstroIntegration.ts(538,3): error TS2484: Export declaration conflicts with exported declaration of 'IntegratedAnalysis'.
+lib/hellenisticAstrologyIntelligence.ts(872,51): error TS7006: Parameter 'p' implicitly has an 'any' type.
+lib/hellenisticAstrologyIntelligence.ts(1140,68): error TS2339: Property 'toDate' does not exist on type 'Date'.
+lib/hellenisticAstrologyIntelligence.ts(1306,5): error TS2322: Type '{ planet1: any; planet2: any; type: any; orb: any; influence: string; }[]' is not assignable to type '{ planet1: string; planet2: string; type: string; orb: number; influence: "neutral" | "challenging" | "harmonious"; }[]'.
+  Type '{ planet1: any; planet2: any; type: any; orb: any; influence: string; }' is not assignable to type '{ planet1: string; planet2: string; type: string; orb: number; influence: "neutral" | "challenging" | "harmonious"; }'.
+    Types of property 'influence' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "challenging" | "harmonious"'.
+lib/horaryEngine.ts(209,11): error TS2393: Duplicate function implementation.
+lib/horaryEngine.ts(576,11): error TS2393: Duplicate function implementation.
+lib/horaryEngine.ts(1146,13): error TS2353: Object literal may only specify known properties, and 'strength' does not exist in type 'AspectData'.
+lib/horaryEngine.ts(1155,13): error TS2353: Object literal may only specify known properties, and 'strength' does not exist in type 'AspectData'.
+lib/horaryEngine.ts(1164,13): error TS2353: Object literal may only specify known properties, and 'strength' does not exist in type 'AspectData'.
+lib/horaryEngine.ts(1173,13): error TS2353: Object literal may only specify known properties, and 'strength' does not exist in type 'AspectData'.
+lib/horaryEngine.ts(1182,13): error TS2353: Object literal may only specify known properties, and 'strength' does not exist in type 'AspectData'.
+lib/horaryEngine.ts(1423,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+lib/horaryEngine.ts(1437,26): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+lib/horaryEngine.ts(1459,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+lib/horaryEngine.ts(1481,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: number; Moon: number; Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+lib/horaryEngine.ts(1512,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Conjunction: number; Sextile: number; Square: number; Trine: number; Opposition: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Conjunction: number; Sextile: number; Square: number; Trine: number; Opposition: number; }'.
+lib/humanDesign/humanDesignCalculator.ts(122,5): error TS2322: Type '{ readonly name: "Investigator/Martyr"; readonly description: "The Investigator/Martyr seeks truth through trial and error, learning through experience."; readonly line1: "Investigator"; readonly line2: "Martyr"; readonly role: "To investigate and discover through personal experience"; } | ... 10 more ... | { ...; }' is not assignable to type '{ id: string; name: string; description: string; role: string; }'.
+  Property 'id' is missing in type '{ readonly name: "Investigator/Martyr"; readonly description: "The Investigator/Martyr seeks truth through trial and error, learning through experience."; readonly line1: "Investigator"; readonly line2: "Martyr"; readonly role: "To investigate and discover through personal experience"; }' but required in type '{ id: string; name: string; description: string; role: string; }'.
+lib/hybridHoraryEngine.ts(325,38): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/hybridHoraryEngine.ts(336,49): error TS2339: Property 'degree' does not exist on type '{ house: number; cusp: number; sign: string; }'.
+lib/hybridHoraryEngine.ts(436,65): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/hybridHoraryEngine.ts(739,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: { Leo: string; Aries: string; Aquarius: string; Libra: string; }; Moon: { Cancer: string; Taurus: string; Capricorn: string; Scorpio: string; }; Mercury: { Gemini: string; Virgo: string; Sagittarius: string; Pisces: string; }; Venus: { ...; }; Mars: { ...; }; Jupiter: { ...; }; Saturn: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: { Leo: string; Aries: string; Aquarius: string; Libra: string; }; Moon: { Cancer: string; Taurus: string; Capricorn: string; Scorpio: string; }; Mercury: { Gemini: string; Virgo: string; Sagittarius: string; Pisces: string; }; Venus: { ...; }; Mars: { ...; }; Jupiter: { ...; }; Saturn: { ...; }; }'.
+lib/hybridHoraryEngine.ts(755,63): error TS2339: Property 'lord' does not exist on type '{ house: number; cusp: number; sign: string; }'.
+lib/hybridHoraryEngine.ts(763,24): error TS2339: Property 'degree' does not exist on type '{ house: number; cusp: number; sign: string; }'.
+lib/hybridHoraryEngine.ts(763,40): error TS2339: Property 'minute' does not exist on type '{ house: number; cusp: number; sign: string; }'.
+lib/hybridHoraryEngine.ts(764,22): error TS2339: Property 'lord' does not exist on type '{ house: number; cusp: number; sign: string; }'.
+lib/hybridHoraryEngine.ts(765,72): error TS2339: Property 'minute' does not exist on type '{ planet: string; longitude: number; latitude: number; house: number; sign: string; degree: number; speed: number; }'.
+lib/hybridHoraryEngine.ts(769,38): error TS2339: Property 'minute' does not exist on type '{ planet: string; longitude: number; latitude: number; house: number; sign: string; degree: number; speed: number; }'.
+lib/hybridHoraryEngine.ts(771,25): error TS2339: Property 'retrograde' does not exist on type '{ planet: string; longitude: number; latitude: number; house: number; sign: string; degree: number; speed: number; }'.
+lib/hybridHoraryEngine.ts(800,12): error TS7053: Element implicitly has an 'any' type because expression of type 'number' can't be used to index type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+  No index signature with a parameter of type 'number' was found on type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+lib/hybridHoraryEngine.ts(819,20): error TS7053: Element implicitly has an 'any' type because expression of type 'number' can't be used to index type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+  No index signature with a parameter of type 'number' was found on type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+lib/hybridHoraryEngine.ts(904,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Domicile: number; Exaltation: number; Neutral: number; Detriment: number; Fall: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Domicile: number; Exaltation: number; Neutral: number; Detriment: number; Fall: number; }'.
+lib/hybridHoraryEngine.ts(920,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Uranus: string; Neptune: string; Pluto: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Uranus: string; Neptune: string; Pluto: string; }'.
+lib/ichingIntelligence.ts(605,18): error TS2345: Argument of type '{ position: number; value: number; isChanging: boolean; yinYang: string; }' is not assignable to parameter of type '{ value: number; isChanging: boolean; yinYang: "yin" | "yang"; position: number; }'.
+  Types of property 'yinYang' are incompatible.
+    Type 'string' is not assignable to type '"yin" | "yang"'.
+lib/kabbalisticNumerologyIntelligence.ts(847,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Kether: { currentLevel: string; nextLevel: string; challenges: string[]; opportunities: string[]; guidance: string[]; }; Chokmah: { currentLevel: string; nextLevel: string; challenges: string[]; opportunities: string[]; guidance: string[]; }; Binah: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Kether: { currentLevel: string; nextLevel: string; challenges: string[]; opportunities: string[]; guidance: string[]; }; Chokmah: { currentLevel: string; nextLevel: string; challenges: string[]; opportunities: string[]; guidance: string[]; }; Binah: { ...; }; }'.
+lib/kpAstrologyIntelligence.ts(139,7): error TS2353: Object literal may only specify known properties, and 'system' does not exist in type '{ houseSystem?: "whole-sign" | "equal" | "placidus" | undefined; ayanamsha?: string | number | undefined; nodeType?: "mean" | "true" | undefined; }'.
+lib/medical/ancientWisdom.ts(74,5): error TS2322: Type '"Modern"' is not assignable to type '"Traditional" | "Greek" | "Arabic" | "European" | "Alchemical"'.
+lib/medical/ancientWisdom.ts(81,5): error TS2322: Type '"Modern"' is not assignable to type '"Traditional" | "Greek" | "Arabic" | "European" | "Alchemical"'.
+lib/medical/ancientWisdom.ts(88,5): error TS2322: Type '"Modern"' is not assignable to type '"Traditional" | "Greek" | "Arabic" | "European" | "Alchemical"'.
+lib/medical/astrologicalFormulas.ts(245,36): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/medical/astrologicalFormulas.ts(246,44): error TS18048: 'criteria.planet' is possibly 'undefined'.
+lib/medical/astrologicalFormulas.ts(252,34): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/medical/astrologicalFormulas.ts(253,44): error TS18048: 'criteria.sign' is possibly 'undefined'.
+lib/medical/astrologicalFormulas.ts(259,35): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+lib/medical/astrologicalFormulas.ts(260,30): error TS18048: 'criteria.house' is possibly 'undefined'.
+lib/medical/fertilityCalculator.ts(4,10): error TS2305: Module '"../astroCalculations"' has no exported member 'calculateJulianDay'.
+lib/medicalAstrologyIntelligence.ts(1,10): error TS2305: Module '"@/hooks/useMedicalAstrology"' has no exported member 'UserData'.
+lib/medicalAstrologyIntelligence.ts(1,20): error TS2305: Module '"@/hooks/useMedicalAstrology"' has no exported member 'HealthData'.
+lib/medicalAstrologyIntelligence.ts(166,9): error TS2322: Type '"sensitive"' is not assignable to type '"strong" | "balanced" | "weak"'.
+lib/medicalAstrologyIntelligence.ts(186,9): error TS2322: Type '"sensitive"' is not assignable to type '"strong" | "balanced" | "weak"'.
+lib/medicalAstrologyIntelligence.ts(246,9): error TS2322: Type '"sensitive"' is not assignable to type '"strong" | "balanced" | "weak"'.
+lib/mundaneAstrologyIntelligence.ts(1,27): error TS2305: Module '"@/hooks/useMundaneAstrology"' has no exported member 'AnalysisData'.
+lib/nakshatraCalculator.ts(77,5): error TS2322: Type '({ planet: any; longitude: any; nakshatra: NakshatraData; pada: number; padaSign: string; nakshatraLord: string; isRetrograde: boolean; degreeInNakshatra: number; minuteInNakshatra: number; } | null)[]' is not assignable to type 'PlanetaryNakshatra[]'.
+  Type '{ planet: any; longitude: any; nakshatra: NakshatraData; pada: number; padaSign: string; nakshatraLord: string; isRetrograde: boolean; degreeInNakshatra: number; minuteInNakshatra: number; } | null' is not assignable to type 'PlanetaryNakshatra'.
+    Type 'null' is not assignable to type 'PlanetaryNakshatra'.
+lib/nameAnalysisIntelligence.ts(149,74): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ fire: number; earth: number; air: number; water: number; ether: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ fire: number; earth: number; air: number; water: number; ether: number; }'.
+lib/nameAnalysisIntelligence.ts(149,96): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ fire: number; earth: number; air: number; water: number; ether: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ fire: number; earth: number; air: number; water: number; ether: number; }'.
+lib/nameAnalysisIntelligence.ts(398,45): error TS2339: Property 'toDate' does not exist on type 'Date'.
+lib/nameAnalysisIntelligence.ts(399,39): error TS2339: Property 'toDate' does not exist on type 'Date'.
+lib/nameMeanings.ts(234,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(319,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(349,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(399,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(439,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(469,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(474,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(479,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(484,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(489,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(494,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(499,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(581,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(671,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(841,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(861,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(871,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(891,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(981,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1016,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1031,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1475,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1485,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1617,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1657,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1742,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1772,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1874,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1959,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(1974,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2014,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2049,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2104,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2139,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2144,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2149,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2169,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2176,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2181,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2186,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2191,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2200,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2209,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2223,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2232,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2236,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2241,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2246,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2251,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2266,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2291,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2341,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2428,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2433,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2438,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2670,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2718,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2808,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2880,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2922,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(2934,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3097,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3105,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3201,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3243,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3312,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3422,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3428,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3434,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3440,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3452,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3458,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3464,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3470,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3476,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3482,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3500,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3506,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3513,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3519,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3525,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3531,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(3537,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/nameMeanings.ts(4054,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/numerology/numerologyRemedyAnalyzer.ts(219,28): error TS2339: Property 'daysOfWeek' does not exist on type '{ title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; gemstones: string[]; colors: string[]; } | { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; gemstones: string[]; colors: string[]; } | ... 6 more ... | { ...; }'.
+  Property 'daysOfWeek' does not exist on type '{ title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[]; gemstones: string[]; colors: string[]; }'.
+lib/oghamIntelligence.ts(79,69): error TS2345: Argument of type 'UserProfile | null' is not assignable to parameter of type 'UserProfile'.
+  Type 'null' is not assignable to type 'UserProfile'.
+lib/oghamIntelligence.ts(272,106): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.
+lib/oghamIntelligence.ts(278,99): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.
+lib/oghamIntelligence.ts(284,96): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.
+lib/oghamIntelligence.ts(302,80): error TS1501: This regular expression flag is only available when targeting 'es2018' or later.
+lib/palmistry/palmistryImageAnalyzer.ts(184,9): error TS2322: Type '"island" | "straight" | "broken" | "wavy" | "forked" | "chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+  Type '"chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+lib/palmistry/palmistryImageAnalyzer.ts(195,9): error TS2322: Type '"island" | "straight" | "broken" | "wavy" | "forked" | "chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+  Type '"chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+lib/palmistry/palmistryImageAnalyzer.ts(206,9): error TS2322: Type '"island" | "straight" | "broken" | "wavy" | "forked" | "chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+  Type '"chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+lib/palmistry/palmistryImageAnalyzer.ts(217,9): error TS2322: Type '"island" | "straight" | "broken" | "wavy" | "forked" | "chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+  Type '"chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+lib/palmistry/palmistryImageAnalyzer.ts(232,9): error TS2322: Type '"island" | "straight" | "broken" | "wavy" | "forked" | "chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+  Type '"chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+lib/palmistry/palmistryImageAnalyzer.ts(246,9): error TS2322: Type '"island" | "straight" | "broken" | "wavy" | "forked" | "chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+  Type '"chained"' is not assignable to type '"island" | "straight" | "broken" | "wavy" | "forked"'.
+lib/palmistry/palmistryRemedyAnalyzer.ts(131,9): error TS2367: This comparison appears to be unintentional because the types '"island" | "straight" | "broken" | "wavy" | "forked"' and '"chained"' have no overlap.
+lib/panchanga.ts(144,5): error TS2322: Type '{ number: number; name: string; paksha: string; progress: number; endTime: Date; }' is not assignable to type '{ number: number; name: string; paksha: "Shukla" | "Krishna"; progress: number; endTime: Date; }'.
+  Types of property 'paksha' are incompatible.
+    Type 'string' is not assignable to type '"Shukla" | "Krishna"'.
+lib/pendulumIntelligence.ts(179,25): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ crystal: string; metal: string; wood: string; stone: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ crystal: string; metal: string; wood: string; stone: string; }'.
+lib/pendulumIntelligence.ts(233,25): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+lib/pendulumIntelligence.ts(234,24): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+lib/pendulumIntelligence.ts(259,34): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+lib/pendulumIntelligence.ts(260,11): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ crystal: { name: string; properties: string[]; bestFor: string[]; care: string; }; metal: { name: string; properties: string[]; bestFor: string[]; care: string; }; wood: { name: string; properties: string[]; bestFor: string[]; care: string; }; stone: { ...; }; }'.
+lib/prediction-engine.ts(10,10): error TS2724: '"./tarotIntelligence"' has no exported member named 'getTarotReading'. Did you mean 'TarotReading'?
+lib/prediction-engine.ts(12,10): error TS2305: Module '"./kpAstrologyIntelligence"' has no exported member 'getKPReading'.
+lib/prediction-engine.ts(14,10): error TS2305: Module '"./ichingIntelligence"' has no exported member 'getIChingReading'.
+lib/prediction-engine.ts(15,10): error TS2724: '"./runesIntelligence"' has no exported member named 'getRunesReading'. Did you mean 'RuneReading'?
+lib/prediction-engine.ts(16,10): error TS2305: Module '"./palmistryIntelligence"' has no exported member 'getPalmistryReading'.
+lib/prediction-engine.ts(17,10): error TS2305: Module '"./faceReadingIntelligence"' has no exported member 'getFaceReading'.
+lib/prediction-engine.ts(18,10): error TS2724: '"./numerologyIntelligence"' has no exported member named 'getNumerologyReading'. Did you mean 'getNumerologyCoaching'?
+lib/prediction-engine.ts(19,10): error TS2724: '"./westernAstrologyIntelligence"' has no exported member named 'getWesternAstrologyReading'. Did you mean 'WesternAstrologyReading'?
+lib/prediction-engine.ts(20,10): error TS2305: Module '"./dreamSymbolsIntelligence"' has no exported member 'getDreamSymbolsReading'.
+lib/prediction-engine.ts(21,10): error TS2724: '"./angelNumbersIntelligence"' has no exported member named 'getAngelNumbersReading'. Did you mean 'getAngelNumbersCoaching'?
+lib/prediction-engine.ts(22,10): error TS2724: '"./baziIntelligence"' has no exported member named 'getBaziReading'. Did you mean 'BaziReading'?
+lib/prediction-engine.ts(23,10): error TS2305: Module '"./kabbalisticNumerologyIntelligence"' has no exported member 'getKabbalisticReading'.
+lib/prediction-engine.ts(24,10): error TS2305: Module '"./geomancyIntelligence"' has no exported member 'getGeomancyReading'.
+lib/prediction-engine.ts(25,10): error TS2724: '"./lenormandIntelligence"' has no exported member named 'getLenormandReading'. Did you mean 'LenormandReading'?
+lib/prediction-engine.ts(26,10): error TS2305: Module '"./pendulumIntelligence"' has no exported member 'getPendulumReading'.
+lib/prediction-engine.ts(27,10): error TS2724: '"./vastuIntelligence"' has no exported member named 'getVastuReading'. Did you mean 'VastuReading'?
+lib/prediction-engine.ts(28,10): error TS2305: Module '"./synastryIntelligence"' has no exported member 'getSynastryReading'.
+lib/prediction-engine.ts(29,10): error TS2305: Module '"./nameAnalysisIntelligence"' has no exported member 'getNameAnalysisReading'.
+lib/prediction-engine.ts(30,10): error TS2305: Module '"./medicalAstrologyIntelligence"' has no exported member 'getMedicalAstrologyReading'.
+lib/prediction-engine.ts(31,10): error TS2305: Module '"./mundaneAstrologyIntelligence"' has no exported member 'getMundaneAstrologyReading'.
+lib/prediction-engine.ts(32,10): error TS2305: Module '"./financialAstrologyIntelligence"' has no exported member 'getFinancialAstrologyReading'.
+lib/prediction-engine.ts(33,10): error TS2305: Module '"./horaryAstrologyIntelligence"' has no exported member 'getHoraryAstrologyReading'.
+lib/prediction-engine.ts(34,10): error TS2305: Module '"./thirteenSignsZodiacIntelligence"' has no exported member 'getThirteenSignsReading'.
+lib/prediction-engine.ts(37,10): error TS2614: Module '"./comprehensiveRemedyGenerator"' has no exported member 'generateComprehensiveRemedies'. Did you mean to use 'import generateComprehensiveRemedies from "./comprehensiveRemedyGenerator"' instead?
+lib/prediction-engine.ts(175,57): error TS18046: 'error' is of type 'unknown'.
+lib/pricingConfig.ts(518,17): error TS7053: Element implicitly has an 'any' type because expression of type '"quarterly" | "limited" | "allFeatures" | "annual"' can't be used to index type '{ limited: number; allFeatures: number; annual: number; }'.
+  Property 'quarterly' does not exist on type '{ limited: number; allFeatures: number; annual: number; }'.
+lib/professionalAstroEngine.ts(398,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: { a: number; e: number; i: number; L: number; w: number; Omega: number; }; Moon: { a: number; e: number; i: number; L: number; w: number; Omega: number; }; Mercury: { a: number; e: number; i: number; L: number; w: number; Omega: number; }; ... 6 more ...; Pluto: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: { a: number; e: number; i: number; L: number; w: number; Omega: number; }; Moon: { a: number; e: number; i: number; L: number; w: number; Omega: number; }; Mercury: { a: number; e: number; i: number; L: number; w: number; Omega: number; }; ... 6 more ...; Pluto: { ...; }; }'.
+lib/professionalAstroEngine.ts(585,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: { Leo: string; Aries: string; Aquarius: string; Libra: string; }; Moon: { Cancer: string; Taurus: string; Capricorn: string; Scorpio: string; }; Mercury: { Gemini: string; Virgo: string; Sagittarius: string; Pisces: string; }; Venus: { ...; }; Mars: { ...; }; Jupiter: { ...; }; Saturn: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: { Leo: string; Aries: string; Aquarius: string; Libra: string; }; Moon: { Cancer: string; Taurus: string; Capricorn: string; Scorpio: string; }; Mercury: { Gemini: string; Virgo: string; Sagittarius: string; Pisces: string; }; Venus: { ...; }; Mars: { ...; }; Jupiter: { ...; }; Saturn: { ...; }; }'.
+lib/professionalAstroEngine.ts(602,10): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+lib/professionalAstroEngine.ts(604,20): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Mercury: number; Venus: number; Mars: number; Jupiter: number; Saturn: number; Uranus: number; Neptune: number; Pluto: number; }'.
+lib/professionalChartGenerator.ts(137,25): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Uranus: string; Neptune: string; Pluto: string; NorthNode: string; SouthNode: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Uranus: string; Neptune: string; Pluto: string; NorthNode: string; SouthNode: string; }'.
+lib/razorpay.ts(187,78): error TS2345: Argument of type '{ cancel_at_cycle_end: number; }' is not assignable to parameter of type 'number | boolean | undefined'.
+lib/runesIntelligence.ts(427,5): error TS2322: Type '{ isReversed: boolean; symbol: string; name: string; description: string; element: "fire" | "earth" | "air" | "water"; meaning: string; upright: string; reversed: string; deity: string; }[]' is not assignable to type '(Rune & { isReversed: boolean; })[]'.
+  Type '{ isReversed: boolean; symbol: string; name: string; description: string; element: "fire" | "earth" | "air" | "water"; meaning: string; upright: string; reversed: string; deity: string; }' is not assignable to type 'Rune & { isReversed: boolean; }'.
+    Type '{ isReversed: boolean; symbol: string; name: string; description: string; element: "fire" | "earth" | "air" | "water"; meaning: string; upright: string; reversed: string; deity: string; }' is missing the following properties from type 'Rune': energy, timing, keywords
+lib/seerChatbot/evidenceAggregator.ts(155,41): error TS2339: Property 'strength' does not exist on type 'never'.
+lib/seerChatbot/evidenceAggregator.ts(156,43): error TS2339: Property 'confidence' does not exist on type 'never'.
+lib/seerChatbot/evidenceAggregator.ts(159,5): error TS2698: Spread types may only be created from object types.
+lib/transitCalculator.ts(51,7): error TS2322: Type 'null' is not assignable to type 'string | number | Date | undefined'.
+lib/transitCalculator.ts(409,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(427,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(445,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(463,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(481,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(499,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(517,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(535,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculator.ts(553,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(49,7): error TS2322: Type 'null' is not assignable to type 'string | number | Date | undefined'.
+lib/transitCalculatorServer.ts(434,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(452,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(470,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(488,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(506,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(524,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(542,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(560,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/transitCalculatorServer.ts(578,3): error TS2322: Type '{ type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | { type: string; description: string; intensity: string; } | ... 7 more ... | { ...; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+  Type '{ type: string; description: string; intensity: string; }' is not assignable to type '{ type: "neutral" | "favorable" | "challenging"; description: string; intensity: "high" | "low" | "moderate"; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"neutral" | "favorable" | "challenging"'.
+lib/trichakraSeerState.ts(100,41): error TS2339: Property 'slice' does not exist on type 'never'.
+lib/universalDataAggregator.ts(18950,11): error TS2740: Type '{ generatedAt: string; dataVersion: string; systemsUsed: string[]; confidenceScore: number; profile: UserProfile; }' is missing the following properties from type 'UniversalDivinationData': vedicAstrology, westernAstrology, kpAstrology, medicalAstrology, and 18 more.
+lib/universalDataAggregator.ts(20134,7): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+lib/universalDataAggregator.ts(20518,11): error TS2554: Expected 2 arguments, but got 3.
+lib/universalDataAggregator.ts(20742,7): error TS2554: Expected 2 arguments, but got 4.
+lib/universalInterpretationEngine.ts(550,81): error TS7006: Parameter 'char' implicitly has an 'any' type.
+lib/universalInterpretationEngine.ts(552,14): error TS7006: Parameter 'num' implicitly has an 'any' type.
+lib/universalInterpretationEngine.ts(770,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(810,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(811,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(812,9): error TS2322: Type 'string[]' is not assignable to type 'string'.
+lib/universalInterpretationEngine.ts(827,9): error TS2322: Type 'string[]' is not assignable to type 'string'.
+lib/universalInterpretationEngine.ts(843,9): error TS2322: Type 'string[]' is not assignable to type 'string'.
+lib/universalInterpretationEngine.ts(860,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(864,9): error TS2322: Type 'string[]' is not assignable to type 'string'.
+lib/universalInterpretationEngine.ts(870,9): error TS2322: Type 'string[]' is not assignable to type 'string'.
+lib/universalInterpretationEngine.ts(905,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(922,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(923,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(938,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(943,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(944,9): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/universalInterpretationEngine.ts(1035,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1039,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1051,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1067,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1071,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1075,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1087,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1099,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1111,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1401,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1612,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1631,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1641,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1644,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1657,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1668,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1671,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1674,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1678,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1681,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1700,11): error TS2393: Duplicate function implementation.
+lib/universalInterpretationEngine.ts(1717,11): error TS2393: Duplicate function implementation.
+lib/utils/devotionistFormatter.ts(279,7): error TS2322: Type '"milestone"' is not assignable to type '"positive" | "neutral" | "challenge"'.
+lib/vastuIntelligence.ts(609,9): error TS2322: Type '({ name: string; idealDirection: string; element: string; currentDirection: string | null; status: string; recommendations: string[]; remedies: string[]; energyScore: number; description: string; furniturePlacement: string[]; colors: string[]; appliances: string[]; } | null)[]' is not assignable to type 'VastuRoom[]'.
+  Type '{ name: string; idealDirection: string; element: string; currentDirection: string | null; status: string; recommendations: string[]; remedies: string[]; energyScore: number; description: string; furniturePlacement: string[]; colors: string[]; appliances: string[]; } | null' is not assignable to type 'VastuRoom'.
+    Type 'null' is not assignable to type 'VastuRoom'.
+lib/vastuIntelligence.ts(649,29): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'VastuRoom' is not assignable to type '{ name: string; idealDirection: string; element: string; currentDirection: string | null; status: string; recommendations: string[]; remedies: string[]; energyScore: number; description: string; furniturePlacement: string[]; colors: string[]; appliances: string[]; }'.
+    Types of property 'currentDirection' are incompatible.
+      Type 'string | null | undefined' is not assignable to type 'string | null'.
+        Type 'undefined' is not assignable to type 'string | null'.
+lib/vastuIntelligence.ts(724,54): error TS2345: Argument of type 'UserProfile | null | undefined' is not assignable to parameter of type 'UserProfile | null'.
+  Type 'undefined' is not assignable to type 'UserProfile | null'.
+lib/vastuIntelligence.ts(728,54): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+lib/vastuIntelligence.ts(748,61): error TS2345: Argument of type 'UserProfile | null | undefined' is not assignable to parameter of type 'UserProfile | null'.
+  Type 'undefined' is not assignable to type 'UserProfile | null'.
+lib/vastuIntelligence.ts(1301,68): error TS2339: Property 'toDate' does not exist on type 'Date'.
+lib/vastuIntelligence.ts(1397,70): error TS2339: Property 'toDate' does not exist on type 'Date'.
+lib/vedAstroApiService.ts(228,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(239,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(250,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(266,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(300,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(482,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(494,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(510,9): error TS2393: Duplicate function implementation.
+lib/vedAstroApiService.ts(816,3): error TS2484: Export declaration conflicts with exported declaration of 'VedAstroApiConfig'.
+lib/vedAstroApiService.ts(817,3): error TS2484: Export declaration conflicts with exported declaration of 'BirthData'.
+lib/vedAstroApiService.ts(818,3): error TS2484: Export declaration conflicts with exported declaration of 'VedAstroResponse'.
+lib/vedAstroDasaService.ts(195,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+lib/vedAstroDasaService.ts(213,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string[]; Moon: string[]; Mars: string[]; Rahu: string[]; Jupiter: string[]; Saturn: string[]; Mercury: string[]; Ketu: string[]; Venus: string[]; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string[]; Moon: string[]; Mars: string[]; Rahu: string[]; Jupiter: string[]; Saturn: string[]; Mercury: string[]; Ketu: string[]; Venus: string[]; }'.
+lib/vedAstroDasaService.ts(231,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string[]; Moon: string[]; Mars: string[]; Rahu: string[]; Jupiter: string[]; Saturn: string[]; Mercury: string[]; Ketu: string[]; Venus: string[]; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string[]; Moon: string[]; Mars: string[]; Rahu: string[]; Jupiter: string[]; Saturn: string[]; Mercury: string[]; Ketu: string[]; Venus: string[]; }'.
+lib/vedAstroDasaService.ts(249,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+lib/vedAstroDasaService.ts(267,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+lib/vedAstroDasaService.ts(285,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+lib/vedAstroDasaService.ts(303,12): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mars: string; Rahu: string; Jupiter: string; Saturn: string; Mercury: string; Ketu: string; Venus: string; }'.
+lib/vedic/siderealCalculator.ts(16,17): error TS18046: 'julian' is of type 'unknown'.
+lib/vedicAstrology.ts(4,10): error TS2305: Module '"astronomia"' has no exported member 'julian'.
+lib/vedicAstrology.ts(4,18): error TS2305: Module '"astronomia"' has no exported member 'planetposition'.
+lib/vedicAstrology.ts(4,34): error TS2305: Module '"astronomia"' has no exported member 'sidereal'.
+lib/vedicAstrology.ts(4,44): error TS2305: Module '"astronomia"' has no exported member 'sexagesimal'.
+lib/vedicAstrology.ts(8,3): error TS2698: Spread types may only be created from object types.
+lib/vedicAstrology.ts(9,8): error TS18046: 'astronomiaData' is of type 'unknown'.
+lib/vedicAstrology.ts(10,9): error TS18046: 'astronomiaData' is of type 'unknown'.
+lib/vedicAstrology.ts(257,32): error TS2304: Cannot find name 'birthData'.
+lib/vedicAstrology.ts(258,28): error TS2304: Cannot find name 'birthData'.
+lib/vedicIntelligence.ts(167,9): error TS2322: Type '{ personality: { overview: any; strengths: any[]; challenges: any[]; traits: any; }; lifePurpose: { overview: any; dharma: any; karmicLessons: any[]; spiritualPath: any; }; relationships: { overview: any; marriageTiming: any; compatibility: any; familyLife: any; }; ... 4 more ...; remedies: any; }' is not assignable to type '{ personality: { overview: any; strengths: any; challenges: any; traits: any; }; lifePurpose: { overview: any; dharma: any; karmicLessons: any; spiritualPath: any; }; relationships: { overview: any; marriageTiming: any; compatibility: any; familyLife: any; }; ... 4 more ...; remedies: { ...; }[]; }'.
+  Types of property 'spirituality' are incompatible.
+    Type '{ overview: any; practices: any[]; evolution: any; connection: any; }' is missing the following properties from type '{ overview: any; spiritualPath: any; meditationAdvice: any; karmicLessons: any; practices: any; evolution: any; connection: any; }': spiritualPath, meditationAdvice, karmicLessons
+lib/vedicIntelligence.ts(186,7): error TS2322: Type '{ personality: { overview: any; strengths: any; challenges: any; traits: any; }; lifePurpose: { overview: any; dharma: any; karmicLessons: any; spiritualPath: any; }; relationships: { overview: any; marriageTiming: any; compatibility: any; familyLife: any; }; ... 4 more ...; remedies: { ...; }[]; }' is not assignable to type '{ personality: { overview: string; strengths: string[]; challenges: string[]; lifePurpose: string; }; relationships: { compatibility: string; marriageTiming: string; relationshipAdvice: string; }; career: { ...; }; health: { ...; }; spirituality: { ...; }; }'.
+  Types of property 'personality' are incompatible.
+    Property 'lifePurpose' is missing in type '{ overview: any; strengths: any; challenges: any; traits: any; }' but required in type '{ overview: string; strengths: string[]; challenges: string[]; lifePurpose: string; }'.
+lib/vedicInterpretationEnhancer.ts(76,14): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Rahu: string; Ketu: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Rahu: string; Ketu: string; }'.
+lib/vedicInterpretationEnhancer.ts(96,14): error TS7053: Element implicitly has an 'any' type because expression of type 'number' can't be used to index type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+  No index signature with a parameter of type 'number' was found on type '{ 1: string; 2: string; 3: string; 4: string; 5: string; 6: string; 7: string; 8: string; 9: string; 10: string; 11: string; 12: string; }'.
+lib/vedicInterpretationEnhancer.ts(176,14): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mars: string; Mercury: string; Venus: string; Jupiter: string; Saturn: string; Rahu: string; Ketu: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mars: string; Mercury: string; Venus: string; Jupiter: string; Saturn: string; Rahu: string; Ketu: string; }'.
+lib/vedicResponseEngine.ts(5,10): error TS2459: Module '"./predictiveAlgorithms"' declares 'LifePathMarkovChain' locally, but it is not exported.
+lib/vedicResponseEngine.ts(5,31): error TS2724: '"./predictiveAlgorithms"' has no exported member named 'BayesianBeliefNetwork'. Did you mean 'bayesianNetwork'?
+lib/vedicResponseEngine.ts(7,10): error TS2724: '"./swissEphemerisService"' has no exported member named 'SwissEphemerisService'. Did you mean 'swissEphemerisService'?
+lib/vedicResponseEngine.ts(11,10): error TS2724: '"./astroCoach"' has no exported member named 'AstroCoach'. Did you mean 'astroCoach'?
+lib/vedicResponseEngine.ts(181,56): error TS2339: Property 'lifePurpose' does not exist on type '{ personality: { overview: string; strengths: string[]; challenges: string[]; lifePurpose: string; }; relationships: { compatibility: string; marriageTiming: string; relationshipAdvice: string; }; career: { ...; }; health: { ...; }; spirituality: { ...; }; }'.
+lib/vedicResponseEngine.ts(215,39): error TS7006: Parameter 'step' implicitly has an 'any' type.
+lib/vedicResponseEngine.ts(215,45): error TS7006: Parameter 'i' implicitly has an 'any' type.
+lib/vedicResponseEngine.ts(221,31): error TS7006: Parameter 'insight' implicitly has an 'any' type.
+lib/vedicResponseEngine.ts(482,39): error TS7006: Parameter 'factor' implicitly has an 'any' type.
+lib/vedicResponseEngine.ts(482,47): error TS7006: Parameter 'i' implicitly has an 'any' type.
+lib/vedicResponseEngine.ts(650,49): error TS7006: Parameter 'p' implicitly has an 'any' type.
+lib/vedicResponseEngine.ts(673,47): error TS2339: Property 'dasha' does not exist on type 'VedicReading'.
+lib/vedicResponseEngine.ts(674,48): error TS2339: Property 'dasha' does not exist on type 'VedicReading'.
+lib/vedicResponseEngine.ts(679,62): error TS7006: Parameter 't' implicitly has an 'any' type.
+lib/vedicSeerPrompts.ts(272,85): error TS2339: Property 'planet' does not exist on type '{ mahadasha: string; antardasha: string; startDate: string; endDate: string; progress: number; }'.
+lib/vedicSeerPrompts.ts(273,88): error TS2551: Property 'antardashas' does not exist on type '{ mahadasha: string; antardasha: string; startDate: string; endDate: string; progress: number; }'. Did you mean 'antardasha'?
+lib/vedicSeerPrompts.ts(569,85): error TS2339: Property 'planet' does not exist on type '{ mahadasha: string; antardasha: string; startDate: string; endDate: string; progress: number; }'.
+lib/vedicSeerPrompts.ts(570,88): error TS2551: Property 'antardashas' does not exist on type '{ mahadasha: string; antardasha: string; startDate: string; endDate: string; progress: number; }'. Did you mean 'antardasha'?
+lib/vedicSeerPrompts.ts(592,85): error TS2339: Property 'planet' does not exist on type '{ mahadasha: string; antardasha: string; startDate: string; endDate: string; progress: number; }'.
+lib/vedicSeerPrompts.ts(593,88): error TS2551: Property 'antardashas' does not exist on type '{ mahadasha: string; antardasha: string; startDate: string; endDate: string; progress: number; }'. Did you mean 'antardasha'?
+lib/western/transitCalculator.ts(172,11): error TS2322: Type 'string' is not assignable to type '"conjunction" | "sextile" | "square" | "trine" | "opposition" | "quincunx"'.
+lib/western/transitCalculator.ts(390,10): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Uranus: string; Neptune: string; Pluto: string; }'.
+  No index signature with a parameter of type 'string' was found on type '{ Sun: string; Moon: string; Mercury: string; Venus: string; Mars: string; Jupiter: string; Saturn: string; Uranus: string; Neptune: string; Pluto: string; }'.
+lib/western/tropicalCalculator.ts(65,16): error TS18046: 'planetposition' is of type 'unknown'.
+lib/western/tropicalCalculator.ts(88,23): error TS18046: 'planetposition' is of type 'unknown'.
+lib/western/tropicalCalculator.ts(112,17): error TS18046: 'moonposition' is of type 'unknown'.
+lib/western/tropicalCalculator.ts(134,24): error TS18046: 'planetposition' is of type 'unknown'.
+lib/western/tropicalCalculator.ts(269,21): error TS18046: 'moonposition' is of type 'unknown'.
+lib/western/westernTerminology.ts(25,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/western/westernTerminology.ts(26,3): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/westernAstrologyIntelligence.ts(467,68): error TS2339: Property 'toDate' does not exist on type 'Date'.
+lib/westernToVedicImageConverter.ts(255,11): error TS7034: Variable 'houseAngles' implicitly has type 'any[]' in some locations where its type cannot be determined.
+lib/westernToVedicImageConverter.ts(262,25): error TS7005: Variable 'houseAngles' implicitly has an 'any[]' type.
+services/timezone.ts(34,39): error TS2339: Property 'timestamp' does not exist on type 'TimezoneInfo'.
+services/timezone.ts(40,51): error TS2353: Object literal may only specify known properties, and 'timestamp' does not exist in type 'TimezoneInfo'.
+utils/isAppleDevice.ts(3,76): error TS2339: Property 'MSStream' does not exist on type 'Window & typeof globalThis'.

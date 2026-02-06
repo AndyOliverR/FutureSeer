@@ -151,12 +151,13 @@ export async function fetchModuleEvidence(
     return null;
   }
   
+  const data = intentData as EvidenceSource;
   // Add some randomization to make it more realistic
-  const randomizedStrength = intentData.strength + (Math.random() - 0.5) * 0.1;
-  const randomizedConfidence = intentData.confidence + (Math.random() - 0.5) * 0.05;
+  const randomizedStrength = data.strength + (Math.random() - 0.5) * 0.1;
+  const randomizedConfidence = data.confidence + (Math.random() - 0.5) * 0.05;
   
   return {
-    ...intentData,
+    ...data,
     strength: Math.max(0.1, Math.min(1.0, randomizedStrength)),
     confidence: Math.max(0.1, Math.min(1.0, randomizedConfidence))
   };

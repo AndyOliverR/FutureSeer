@@ -54,6 +54,9 @@ export interface HealthAnalysis {
   }
 }
 
+export type UserData = BirthData
+export type HealthData = HealthAnalysis
+
 export function useMedicalAstrology() {
   const [birthData, setBirthData] = useState<BirthData>({
     name: '',

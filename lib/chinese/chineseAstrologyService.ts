@@ -48,6 +48,7 @@ export interface Star {
   nature: 'auspicious' | 'inauspicious' | 'neutral'
   interpretation: string
   keywords: string[]
+  palace?: string
 }
 
 export interface FourPillars {
@@ -99,6 +100,8 @@ export interface FortuneCycle {
 
 export interface ChineseZodiac {
   animal: string
+  /** Chinese name when available */
+  nameChinese?: string
   element: string
   year: number
   personality: string[]
@@ -536,12 +539,15 @@ export class ChineseAstrologyService {
       const dayPillar = this.calculatePillar(parseInt(day), 'day')
       const hourPillar = this.calculatePillar(parseInt(hourStr), 'hour')
 
-      return {
+      const fourPillarsObj: Omit<FourPillars, 'elementBalance'> = {
         year: yearPillar,
         month: monthPillar,
         day: dayPillar,
-        hour: hourPillar,
-        elementBalance: this.calculateElementBalance([yearPillar, monthPillar, dayPillar, hourPillar])
+        hour: hourPillar
+      }
+      return {
+        ...fourPillarsObj,
+        elementBalance: this.calculateElementBalance(fourPillarsObj as FourPillars)
       }
     } catch (error) {
       console.error('Error analyzing Four Pillars:', error)

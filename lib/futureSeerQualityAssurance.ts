@@ -55,7 +55,7 @@ export interface UserExperienceScore {
   loadingTimes: number
   errorHandling: number
   mobileExperience: number
-  accessibilityScore: number
+  accessibilityScore: AccessibilityScore
   totalScore: number
 }
 
@@ -816,7 +816,7 @@ interface ResponsiveScore {
   violations: string[]
 }
 
-interface AccessibilityScore {
+export interface AccessibilityScore {
   score: number
   violations: string[]
 }

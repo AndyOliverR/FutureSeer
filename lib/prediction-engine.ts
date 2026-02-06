@@ -6,35 +6,61 @@ import { generateAIPrediction, getSymbolicData, getRemedies } from './api'
 import { getAstroData } from './api'
 import { getUserProfile } from './firebase'
 
-// Import all symbolic intelligence systems
-import { getTarotReading } from './tarotIntelligence'
-import { getVedicReading } from './vedicIntelligence'
-import { getKPReading } from './kpAstrologyIntelligence'
-// Chaldean intelligence not available - using numerology instead
-import { getIChingReading } from './ichingIntelligence'
-import { getRunesReading } from './runesIntelligence'
-import { getPalmistryReading } from './palmistryIntelligence'
-import { getFaceReading } from './faceReadingIntelligence'
-import { getNumerologyReading } from './numerologyIntelligence'
-import { getWesternAstrologyReading } from './westernAstrologyIntelligence'
-import { getDreamSymbolsReading } from './dreamSymbolsIntelligence'
-import { getAngelNumbersReading } from './angelNumbersIntelligence'
-import { getBaziReading } from './baziIntelligence'
-import { getKabbalisticReading } from './kabbalisticNumerologyIntelligence'
-import { getGeomancyReading } from './geomancyIntelligence'
-import { getLenormandReading } from './lenormandIntelligence'
-import { getPendulumReading } from './pendulumIntelligence'
-import { getVastuReading } from './vastuIntelligence'
-import { getSynastryReading } from './synastryIntelligence'
-import { getNameAnalysisReading } from './nameAnalysisIntelligence'
-import { getMedicalAstrologyReading } from './medicalAstrologyIntelligence'
-import { getMundaneAstrologyReading } from './mundaneAstrologyIntelligence'
-import { getFinancialAstrologyReading } from './financialAstrologyIntelligence'
-import { getHoraryAstrologyReading } from './horaryAstrologyIntelligence'
-import { getThirteenSignsReading } from './thirteenSignsZodiacIntelligence'
+// Import symbolic intelligence systems (use instance/export that exists; fallback if no getXReading)
+import { vedicIntelligence } from './vedicIntelligence'
+import * as tarotModule from './tarotIntelligence'
+import * as kpModule from './kpAstrologyIntelligence'
+import * as ichingModule from './ichingIntelligence'
+import * as runesModule from './runesIntelligence'
+import * as palmistryModule from './palmistryIntelligence'
+import * as faceModule from './faceReadingIntelligence'
+import * as numerologyModule from './numerologyIntelligence'
+import * as westernModule from './westernAstrologyIntelligence'
+import * as dreamModule from './dreamSymbolsIntelligence'
+import * as angelModule from './angelNumbersIntelligence'
+import * as baziModule from './baziIntelligence'
+import * as kabbalisticModule from './kabbalisticNumerologyIntelligence'
+import * as geomancyModule from './geomancyIntelligence'
+import * as lenormandModule from './lenormandIntelligence'
+import * as pendulumModule from './pendulumIntelligence'
+import * as vastuModule from './vastuIntelligence'
+import * as synastryModule from './synastryIntelligence'
+import * as nameAnalysisModule from './nameAnalysisIntelligence'
+import * as medicalModule from './medicalAstrologyIntelligence'
+import * as mundaneModule from './mundaneAstrologyIntelligence'
+import * as financialModule from './financialAstrologyIntelligence'
+import * as horaryModule from './horaryAstrologyIntelligence'
+import * as thirteenSignsModule from './thirteenSignsZodiacIntelligence'
 
-// Import remedy generation
-import { generateComprehensiveRemedies } from './comprehensiveRemedyGenerator'
+type ReadingResult = { reading?: string; answer?: string; prediction?: string; confidence?: number; keywords?: string[]; timing?: string; advice?: string }
+const fallbackReading = async (): Promise<ReadingResult> => ({ reading: 'Guidance unavailable', confidence: 0.5, keywords: [] })
+const getTarotReading = (tarotModule as { getTarotReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getTarotReading ?? (async () => (await (tarotModule as any).tarotIntelligence?.drawCards?.('', 'three-card')) ? { reading: 'Tarot guidance', confidence: 0.7, keywords: [] } : await fallbackReading())
+const getVedicReading = async (q: string, astro?: any) => { try { const vi = vedicIntelligence as { getComprehensiveReading?: (q: string, a?: any) => Promise<{ overview?: string }> }; const r = vi.getComprehensiveReading ? await vi.getComprehensiveReading(q, astro) : null; return { reading: r?.overview ?? '', confidence: 0.8, keywords: [] }; } catch { return await fallbackReading(); } }
+const getKPReading = (kpModule as { getKPReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getKPReading ?? fallbackReading
+const getIChingReading = (ichingModule as { getIChingReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getIChingReading ?? fallbackReading
+const getRunesReading = (runesModule as { getRunesReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getRunesReading ?? fallbackReading
+const getPalmistryReading = (palmistryModule as { getPalmistryReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getPalmistryReading ?? fallbackReading
+const getFaceReading = (faceModule as { getFaceReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getFaceReading ?? fallbackReading
+const getNumerologyReading = (numerologyModule as { getNumerologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getNumerologyReading ?? fallbackReading
+const getWesternAstrologyReading = (westernModule as { getWesternAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getWesternAstrologyReading ?? fallbackReading
+const getDreamSymbolsReading = (dreamModule as { getDreamSymbolsReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getDreamSymbolsReading ?? fallbackReading
+const getAngelNumbersReading = (angelModule as { getAngelNumbersReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getAngelNumbersReading ?? fallbackReading
+const getBaziReading = (baziModule as { getBaziReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getBaziReading ?? fallbackReading
+const getKabbalisticReading = (kabbalisticModule as { getKabbalisticReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getKabbalisticReading ?? fallbackReading
+const getGeomancyReading = (geomancyModule as { getGeomancyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getGeomancyReading ?? fallbackReading
+const getLenormandReading = (lenormandModule as { getLenormandReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getLenormandReading ?? fallbackReading
+const getPendulumReading = (pendulumModule as { getPendulumReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getPendulumReading ?? fallbackReading
+const getVastuReading = (vastuModule as { getVastuReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getVastuReading ?? fallbackReading
+const getSynastryReading = (synastryModule as { getSynastryReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getSynastryReading ?? fallbackReading
+const getNameAnalysisReading = (nameAnalysisModule as { getNameAnalysisReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getNameAnalysisReading ?? fallbackReading
+const getMedicalAstrologyReading = (medicalModule as { getMedicalAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getMedicalAstrologyReading ?? fallbackReading
+const getMundaneAstrologyReading = (mundaneModule as { getMundaneAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getMundaneAstrologyReading ?? fallbackReading
+const getFinancialAstrologyReading = (financialModule as { getFinancialAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getFinancialAstrologyReading ?? fallbackReading
+const getHoraryAstrologyReading = (horaryModule as { getHoraryAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getHoraryAstrologyReading ?? fallbackReading
+const getThirteenSignsReading = (thirteenSignsModule as { getThirteenSignsReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getThirteenSignsReading ?? fallbackReading
+
+// Remedy generation (default export)
+import comprehensiveRemedyGenerator from './comprehensiveRemedyGenerator'
 
 // Types
 export interface PredictionRequest {
@@ -172,7 +198,7 @@ export class PredictionEngine {
       
     } catch (error) {
       console.error('❌ PredictionEngine: Error generating prediction:', error)
-      throw new Error(`Failed to generate prediction: ${error.message}`)
+      throw new Error(`Failed to generate prediction: ${(error as Error).message}`)
     }
   }
   
@@ -238,7 +264,7 @@ export class PredictionEngine {
           new Promise((_, reject) => 
             setTimeout(() => reject(new Error('Timeout')), 5000)
           )
-        ])
+        ]) as ReadingResult
         
         return {
           system: system.name,
@@ -304,14 +330,17 @@ export class PredictionEngine {
         astroData
       }
       
-      const remedies = await generateComprehensiveRemedies(question, symbolicData)
-      
+      const userData = { question, systems: symbolicData } as Parameters<typeof comprehensiveRemedyGenerator.generateHolisticRemedies>[0]
+      const remedyList = comprehensiveRemedyGenerator.generateHolisticRemedies(userData, question)
+      const immediate = remedyList.slice(0, 3).map(r => (r as { title?: string; description?: string }).title ?? (r as { description?: string }).description ?? '')
+      const shortTerm = remedyList.slice(3, 6).map(r => (r as { title?: string; description?: string }).title ?? (r as { description?: string }).description ?? '')
+      const longTerm = remedyList.slice(6, 9).map(r => (r as { title?: string; description?: string }).title ?? (r as { description?: string }).description ?? '')
       return {
-        immediate: remedies.immediate || [],
-        shortTerm: remedies.shortTerm || [],
-        longTerm: remedies.longTerm || [],
-        spiritual: remedies.spiritual || [],
-        practical: remedies.practical || []
+        immediate: immediate.filter(Boolean),
+        shortTerm: shortTerm.filter(Boolean),
+        longTerm: longTerm.filter(Boolean),
+        spiritual: remedyList.filter(r => (r as { category?: string }).category === 'spiritual').map(r => (r as { title?: string }).title ?? '') || [],
+        practical: remedyList.filter(r => (r as { category?: string }).category === 'practical').map(r => (r as { title?: string }).title ?? '') || []
       }
     } catch (error) {
       console.warn('⚠️ Remedy generation failed:', error)

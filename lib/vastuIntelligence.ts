@@ -606,7 +606,7 @@ function calculateVastuAnalysis(
   });
 
   // Analyze rooms
-  const roomAnalysis: VastuRoom[] = Object.entries(rooms)
+  const roomAnalysis = Object.entries(rooms)
     .filter(([_, hasRoom]) => hasRoom)
     .map(([roomKey, _]) => {
       const roomData = ROOM_DATA[roomKey as keyof typeof ROOM_DATA];
@@ -646,7 +646,7 @@ function calculateVastuAnalysis(
         appliances: roomData.appliances || []
       };
     })
-    .filter((room): room is VastuRoom => room !== null);
+    .filter(room => room !== null) as VastuRoom[];
 
   // Analyze doshas
   const doshas: VastuDosha[] = [];
@@ -721,11 +721,11 @@ function calculateVastuAnalysis(
   // Add personalized direction recommendations
   if (personalized && userLuckyDirections.length > 0) {
     userLuckyDirections.forEach(dir => {
-      const elementMatch = matchAstrologicalElements(userProfile, DIRECTION_DATA[dir as keyof typeof DIRECTION_DATA]?.element || '');
+      const elementMatch = matchAstrologicalElements(userProfile ?? null, DIRECTION_DATA[dir as keyof typeof DIRECTION_DATA]?.element || '');
       
         // Use varied recommendation text
         personalizedRecommendations.push(
-          generateVariedDirectionRecommendation(dir, birthDate)
+          generateVariedDirectionRecommendation(dir, birthDate ?? undefined)
         );
 
         if (elementMatch.compatible && elementMatch.matchScore >= 80) {
@@ -745,7 +745,7 @@ function calculateVastuAnalysis(
         );
       } else {
         // Fallback to original method if personalized data is incomplete
-        const roomRecs = getPersonalizedRoomRecommendations(userProfile, room.name);
+        const roomRecs = getPersonalizedRoomRecommendations(userProfile ?? null, room.name);
         if (roomRecs.length > 0) {
           personalizedRecommendations.push(
             `${room.name}: ${roomRecs.join('. ')}`
@@ -1298,7 +1298,8 @@ export async function getIntelligentVastuData(
     if (docSnap.exists()) {
       const cachedData = docSnap.data() as VastuReading;
       const lastUpdated = cachedData.metadata.lastUpdated;
-      const hoursSinceUpdate = (new Date().getTime() - lastUpdated.toDate().getTime()) / (1000 * 60 * 60);
+      const lastUpdatedMs = lastUpdated instanceof Date ? lastUpdated.getTime() : (lastUpdated as { toDate(): Date }).toDate().getTime();
+      const hoursSinceUpdate = (new Date().getTime() - lastUpdatedMs) / (1000 * 60 * 60);
       
       // Return cached data if less than 24 hours old
       if (hoursSinceUpdate < 24) {
@@ -1394,7 +1395,8 @@ export async function getPersonalizedVastuReport(
         console.log(`Cache version mismatch (cached: ${cachedVersion}, current: ${CACHE_VERSION}), forcing refresh for user:`, userId);
       } else {
         const lastUpdated = cachedData.metadata.lastUpdated;
-        const hoursSinceUpdate = (new Date().getTime() - lastUpdated.toDate().getTime()) / (1000 * 60 * 60);
+        const lastUpdatedMs = lastUpdated instanceof Date ? lastUpdated.getTime() : (lastUpdated as { toDate(): Date }).toDate().getTime();
+        const hoursSinceUpdate = (new Date().getTime() - lastUpdatedMs) / (1000 * 60 * 60);
         
         if (hoursSinceUpdate < 24) {
           console.log('Returning cached personalized Vastu report for user:', userId);

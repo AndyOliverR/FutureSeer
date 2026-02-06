@@ -102,7 +102,7 @@ export class FutureSeerVedAstroIntegration {
         vedAstroApiService.getDasaAnalysis(birthData),
         vedAstroApiService.getHoroscopePredictions(birthData),
         vedAstroApiService.getGocharaAnalysis(birthData),
-        vedAstroApiService.getPanchanga(new Date().toISOString().split('T')[0]),
+        vedAstroApiService.getPanchangaByDate(new Date().toISOString().split('T')[0]),
         vedAstroApiService.getTarabala(birthData),
         vedAstroApiService.getAllPlanetData(birthData),
         vedAstroApiService.getAllHouseData(birthData),
@@ -530,12 +530,6 @@ export class FutureSeerVedAstroIntegration {
     }
   }
 
-}
-
-// Export types
-export type {
-  FutureSeerUserProfile,
-  IntegratedAnalysis
 }
 
 // Export the singleton instance

@@ -9,6 +9,8 @@ export interface EventData {
   analysisFocus: string
 }
 
+export type AnalysisData = EventData
+
 export interface WorldEvent {
   title: string
   description: string

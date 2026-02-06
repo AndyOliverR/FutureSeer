@@ -342,7 +342,7 @@ export class ChartImageService {
       }
     }
 
-    return adviceMap[planet]?.[impact] || 'Use this time wisely for personal growth and development'
+    return (adviceMap as Record<string, Record<string, string>>)[planet]?.[impact] || 'Use this time wisely for personal growth and development'
   }
 }
 

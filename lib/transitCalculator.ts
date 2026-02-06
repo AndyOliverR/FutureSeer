@@ -48,7 +48,7 @@ export function calculateTransitData(
       longitude: birthData.longitude,
       name: 'Current Chart',
       place: birthData.birthPlace,
-      birthDate: null  // Transit charts should NOT calculate Dasha
+      birthDate: undefined  // Transit charts should NOT calculate Dasha
     })
 
     console.log('📊 Current chart generated:', !!currentChart);
@@ -405,7 +405,7 @@ function getJupiterTransitInterpretation(house: number): { type: 'favorable' | '
     10: { type: 'favorable', description: 'Jupiter in 10th house - Career success and recognition', intensity: 'high' },
     11: { type: 'favorable', description: 'Jupiter in 11th house - Gains, achievements, and fulfilled desires', intensity: 'high' },
     12: { type: 'neutral', description: 'Jupiter in 12th house - Spiritual pursuits and foreign connections', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -423,7 +423,7 @@ function getVenusTransitInterpretation(house: number): { type: 'favorable' | 'ch
     10: { type: 'favorable', description: 'Venus in 10th house - Career success in arts, beauty, or luxury fields', intensity: 'high' },
     11: { type: 'favorable', description: 'Venus in 11th house - Social gains, fulfilled desires, and friendships', intensity: 'high' },
     12: { type: 'neutral', description: 'Venus in 12th house - Spiritual relationships and hidden pleasures', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -441,7 +441,7 @@ function getMercuryTransitInterpretation(house: number): { type: 'favorable' | '
     10: { type: 'favorable', description: 'Mercury in 10th house - Career success in communication and technology', intensity: 'high' },
     11: { type: 'favorable', description: 'Mercury in 11th house - Social networking and intellectual friendships', intensity: 'moderate' },
     12: { type: 'neutral', description: 'Mercury in 12th house - Spiritual studies and hidden communications', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -459,7 +459,7 @@ function getSunTransitInterpretation(house: number): { type: 'favorable' | 'chal
     10: { type: 'favorable', description: 'Sun in 10th house - Career advancement and public recognition', intensity: 'high' },
     11: { type: 'favorable', description: 'Sun in 11th house - Social success and fulfilled ambitions', intensity: 'moderate' },
     12: { type: 'neutral', description: 'Sun in 12th house - Spiritual pursuits and foreign connections', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -477,7 +477,7 @@ function getMoonTransitInterpretation(house: number): { type: 'favorable' | 'cha
     10: { type: 'favorable', description: 'Moon in 10th house - Public recognition and emotional leadership', intensity: 'moderate' },
     11: { type: 'favorable', description: 'Moon in 11th house - Emotional fulfillment of desires', intensity: 'moderate' },
     12: { type: 'neutral', description: 'Moon in 12th house - Spiritual emotions and hidden feelings', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -495,7 +495,7 @@ function getSaturnTransitInterpretation(house: number): { type: 'favorable' | 'c
     10: { type: 'challenging', description: 'Saturn in 10th house - Career challenges and delayed recognition', intensity: 'high' },
     11: { type: 'challenging', description: 'Saturn in 11th house - Delayed gains and friendship difficulties', intensity: 'moderate' },
     12: { type: 'neutral', description: 'Saturn in 12th house - Spiritual discipline and foreign connections', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -513,7 +513,7 @@ function getMarsTransitInterpretation(house: number): { type: 'favorable' | 'cha
     10: { type: 'favorable', description: 'Mars in 10th house - Career advancement and leadership opportunities', intensity: 'moderate' },
     11: { type: 'favorable', description: 'Mars in 11th house - Achievement of goals and social success', intensity: 'moderate' },
     12: { type: 'challenging', description: 'Mars in 12th house - Hidden enemies and spiritual conflicts', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -531,7 +531,7 @@ function getRahuTransitInterpretation(house: number): { type: 'favorable' | 'cha
     10: { type: 'challenging', description: 'Rahu in 10th house - Career instability and reputation issues', intensity: 'moderate' },
     11: { type: 'challenging', description: 'Rahu in 11th house - Unfulfilled desires and friendship problems', intensity: 'moderate' },
     12: { type: 'neutral', description: 'Rahu in 12th house - Spiritual illusions and foreign connections', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }
 
@@ -549,6 +549,6 @@ function getKetuTransitInterpretation(house: number): { type: 'favorable' | 'cha
     10: { type: 'challenging', description: 'Ketu in 10th house - Career detachment and reputation issues', intensity: 'moderate' },
     11: { type: 'challenging', description: 'Ketu in 11th house - Social detachment and unfulfilled desires', intensity: 'moderate' },
     12: { type: 'neutral', description: 'Ketu in 12th house - Spiritual detachment and foreign connections', intensity: 'moderate' }
-  }
+  } as const
   return interpretations[house as keyof typeof interpretations] || interpretations[1]
 }

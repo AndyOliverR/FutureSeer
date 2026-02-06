@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { AdvancedUserProfile } from '@/lib/advancedPersonalization';
 
 /** Form state shape used by this component (nested objects for wizard steps). Submitted profile is cast to AdvancedUserProfile for API. */
-export interface AdvancedProfileFormState extends Partial<AdvancedUserProfile> {
+export interface AdvancedProfileFormState extends Omit<Partial<AdvancedUserProfile>, 'spiritualBeliefs'> {
   lifestyle?: { sleepSchedule: string; diet: string; exercise: string; stressLevel: string; workLifeBalance: string };
   spiritualBeliefs?: { religion: string; spiritualPractices: string[]; meditationFrequency: string; beliefInDestiny: string; opennessToMystical: string };
   lifeGoals?: { shortTerm: string[]; longTerm: string[]; career: string; relationships: string; personalGrowth: string };
@@ -117,12 +117,14 @@ export default function AdvancedProfileSetup({
     setProgress((currentStep / totalSteps) * 100);
   }, [currentStep]);
 
-  const updateProfile = (section: keyof AdvancedProfileFormState, data: Record<string, unknown>) => {
+  const updateProfile = (section: keyof AdvancedProfileFormState, data: Record<string, unknown> | string) => {
     setProfile(prev => {
       const current = prev[section];
-      const next = typeof current === 'object' && current !== null && !Array.isArray(current)
-        ? { ...current, ...data }
-        : data;
+      const next = typeof data === 'string'
+        ? data
+        : (typeof current === 'object' && current !== null && !Array.isArray(current)
+          ? { ...current, ...data }
+          : data);
       return { ...prev, [section]: next };
     });
   };
@@ -154,7 +156,7 @@ export default function AdvancedProfileSetup({
       });
 
       if (response.ok) {
-        onComplete?.(profile as AdvancedUserProfile);
+        onComplete?.(profile as unknown as AdvancedUserProfile);
       } else {
         throw new Error('Failed to save profile');
       }
@@ -214,7 +216,7 @@ export default function AdvancedProfileSetup({
               <div>
                 <Label>Big Five Personality Traits</Label>
                 <div className="space-y-2 mt-2">
-                  {Object.entries(profile.bigFiveTraits).map(([trait, value]) => (
+                  {Object.entries(profile.bigFiveTraits ?? {}).map(([trait, value]) => (
                     <div key={trait} className="flex items-center justify-between">
                       <span className="capitalize">{trait}</span>
                       <div className="flex items-center space-x-2">
@@ -252,7 +254,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="sleep">Sleep Schedule</Label>
                   <Select 
-                    value={profile.lifestyle.sleepSchedule} 
+                    value={profile.lifestyle?.sleepSchedule} 
                     onValueChange={(value) => updateProfile('lifestyle', { sleepSchedule: value })}
                   >
                     <SelectTrigger>
@@ -270,7 +272,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="diet">Diet Preference</Label>
                   <Select 
-                    value={profile.lifestyle.diet} 
+                    value={profile.lifestyle?.diet} 
                     onValueChange={(value) => updateProfile('lifestyle', { diet: value })}
                   >
                     <SelectTrigger>
@@ -290,7 +292,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="exercise">Exercise Frequency</Label>
                   <Select 
-                    value={profile.lifestyle.exercise} 
+                    value={profile.lifestyle?.exercise} 
                     onValueChange={(value) => updateProfile('lifestyle', { exercise: value })}
                   >
                     <SelectTrigger>
@@ -309,7 +311,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="stress">Stress Level</Label>
                   <Select 
-                    value={profile.lifestyle.stressLevel} 
+                    value={profile.lifestyle?.stressLevel} 
                     onValueChange={(value) => updateProfile('lifestyle', { stressLevel: value })}
                   >
                     <SelectTrigger>
@@ -329,7 +331,7 @@ export default function AdvancedProfileSetup({
                 <Label htmlFor="work-life">Work-Life Balance</Label>
                 <Textarea
                   placeholder="Describe your work-life balance..."
-                  value={profile.lifestyle.workLifeBalance}
+                  value={profile.lifestyle?.workLifeBalance}
                   onChange={(e) => updateProfile('lifestyle', { workLifeBalance: e.target.value })}
                 />
               </div>
@@ -348,7 +350,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="religion">Religion/Spirituality</Label>
                   <Select 
-                    value={profile.spiritualBeliefs.religion} 
+                    value={profile.spiritualBeliefs?.religion} 
                     onValueChange={(value) => updateProfile('spiritualBeliefs', { religion: value })}
                   >
                     <SelectTrigger>
@@ -372,7 +374,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="meditation">Meditation Frequency</Label>
                   <Select 
-                    value={profile.spiritualBeliefs.meditationFrequency} 
+                    value={profile.spiritualBeliefs?.meditationFrequency} 
                     onValueChange={(value) => updateProfile('spiritualBeliefs', { meditationFrequency: value })}
                   >
                     <SelectTrigger>
@@ -397,11 +399,11 @@ export default function AdvancedProfileSetup({
                     <div key={practice} className="flex items-center space-x-2">
                       <Checkbox
                         id={practice}
-                        checked={profile.spiritualBeliefs.spiritualPractices.includes(practice)}
+                        checked={profile.spiritualBeliefs?.spiritualPractices.includes(practice)}
                         onCheckedChange={(checked) => {
                           const practices = checked 
-                            ? [...profile.spiritualBeliefs.spiritualPractices, practice]
-                            : profile.spiritualBeliefs.spiritualPractices.filter(p => p !== practice);
+                            ? [...(profile.spiritualBeliefs?.spiritualPractices ?? []), practice]
+                            : profile.spiritualBeliefs?.spiritualPractices.filter(p => p !== practice);
                           updateProfile('spiritualBeliefs', { spiritualPractices: practices });
                         }}
                       />
@@ -415,7 +417,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="destiny">Belief in Destiny</Label>
                   <Select 
-                    value={profile.spiritualBeliefs.beliefInDestiny} 
+                    value={profile.spiritualBeliefs?.beliefInDestiny} 
                     onValueChange={(value) => updateProfile('spiritualBeliefs', { beliefInDestiny: value })}
                   >
                     <SelectTrigger>
@@ -433,7 +435,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="mystical">Openness to Mystical</Label>
                   <Select 
-                    value={profile.spiritualBeliefs.opennessToMystical} 
+                    value={profile.spiritualBeliefs?.opennessToMystical} 
                     onValueChange={(value) => updateProfile('spiritualBeliefs', { opennessToMystical: value })}
                   >
                     <SelectTrigger>
@@ -467,9 +469,9 @@ export default function AdvancedProfileSetup({
                     <Input
                       key={index}
                       placeholder={`Goal ${index + 1}`}
-                      value={profile.lifeGoals.shortTerm[index] || ''}
+                      value={profile.lifeGoals?.shortTerm[index] || ''}
                       onChange={(e) => {
-                        const goals = [...profile.lifeGoals.shortTerm];
+                        const goals = [...(profile.lifeGoals?.shortTerm ?? [])];
                         goals[index] = e.target.value;
                         updateProfile('lifeGoals', { shortTerm: goals });
                       }}
@@ -485,9 +487,9 @@ export default function AdvancedProfileSetup({
                     <Input
                       key={index}
                       placeholder={`Goal ${index + 1}`}
-                      value={profile.lifeGoals.longTerm[index] || ''}
+                      value={profile.lifeGoals?.longTerm[index] || ''}
                       onChange={(e) => {
-                        const goals = [...profile.lifeGoals.longTerm];
+                        const goals = [...(profile.lifeGoals?.longTerm ?? [])];
                         goals[index] = e.target.value;
                         updateProfile('lifeGoals', { longTerm: goals });
                       }}
@@ -501,7 +503,7 @@ export default function AdvancedProfileSetup({
                   <Label htmlFor="career">Career Aspirations</Label>
                   <Textarea
                     placeholder="Describe your career goals..."
-                    value={profile.lifeGoals.career}
+                    value={profile.lifeGoals?.career}
                     onChange={(e) => updateProfile('lifeGoals', { career: e.target.value })}
                   />
                 </div>
@@ -510,7 +512,7 @@ export default function AdvancedProfileSetup({
                   <Label htmlFor="relationships">Relationship Goals</Label>
                   <Textarea
                     placeholder="Describe your relationship aspirations..."
-                    value={profile.lifeGoals.relationships}
+                    value={profile.lifeGoals?.relationships}
                     onChange={(e) => updateProfile('lifeGoals', { relationships: e.target.value })}
                   />
                 </div>
@@ -520,7 +522,7 @@ export default function AdvancedProfileSetup({
                 <Label htmlFor="personal-growth">Personal Growth</Label>
                 <Textarea
                   placeholder="What areas of personal growth are important to you?"
-                  value={profile.lifeGoals.personalGrowth}
+                  value={profile.lifeGoals?.personalGrowth}
                   onChange={(e) => updateProfile('lifeGoals', { personalGrowth: e.target.value })}
                 />
               </div>
@@ -538,7 +540,7 @@ export default function AdvancedProfileSetup({
               <div>
                 <Label htmlFor="life-phase">Current Life Phase</Label>
                 <Select 
-                  value={profile.currentContext.lifePhase} 
+                  value={profile.currentContext?.lifePhase} 
                   onValueChange={(value) => updateProfile('currentContext', { lifePhase: value })}
                 >
                   <SelectTrigger>
@@ -562,9 +564,9 @@ export default function AdvancedProfileSetup({
                     <Input
                       key={index}
                       placeholder={`Change ${index + 1}`}
-                      value={profile.currentContext.majorChanges[index] || ''}
+                      value={profile.currentContext?.majorChanges[index] || ''}
                       onChange={(e) => {
-                        const changes = [...profile.currentContext.majorChanges];
+                        const changes = [...(profile.currentContext?.majorChanges ?? [])];
                         changes[index] = e.target.value;
                         updateProfile('currentContext', { majorChanges: changes });
                       }}
@@ -580,9 +582,9 @@ export default function AdvancedProfileSetup({
                     <Input
                       key={index}
                       placeholder={`Challenge ${index + 1}`}
-                      value={profile.currentContext.challenges[index] || ''}
+                      value={profile.currentContext?.challenges[index] || ''}
                       onChange={(e) => {
-                        const challenges = [...profile.currentContext.challenges];
+                        const challenges = [...(profile.currentContext?.challenges ?? [])];
                         challenges[index] = e.target.value;
                         updateProfile('currentContext', { challenges: challenges });
                       }}
@@ -595,9 +597,9 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="romantic">Romantic Relationship</Label>
                   <Select 
-                    value={profile.currentContext.relationships.romantic} 
+                    value={profile.currentContext?.relationships.romantic} 
                     onValueChange={(value) => updateProfile('currentContext', { 
-                      relationships: { ...profile.currentContext.relationships, romantic: value }
+                      relationships: { ...profile.currentContext?.relationships, romantic: value }
                     })}
                   >
                     <SelectTrigger>
@@ -616,9 +618,9 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="family">Family Situation</Label>
                   <Select 
-                    value={profile.currentContext.relationships.family} 
+                    value={profile.currentContext?.relationships.family} 
                     onValueChange={(value) => updateProfile('currentContext', { 
-                      relationships: { ...profile.currentContext.relationships, family: value }
+                      relationships: { ...profile.currentContext?.relationships, family: value }
                     })}
                   >
                     <SelectTrigger>
@@ -652,11 +654,11 @@ export default function AdvancedProfileSetup({
                     <div key={color} className="flex items-center space-x-2">
                       <Checkbox
                         id={color}
-                        checked={profile.preferences.colors.includes(color)}
+                        checked={profile.preferences?.colors.includes(color)}
                         onCheckedChange={(checked) => {
                           const colors = checked 
-                            ? [...profile.preferences.colors, color]
-                            : profile.preferences.colors.filter(c => c !== color);
+                            ? [...(profile.preferences?.colors ?? []), color]
+                            : profile.preferences?.colors.filter(c => c !== color);
                           updateProfile('preferences', { colors });
                         }}
                       />
@@ -673,11 +675,11 @@ export default function AdvancedProfileSetup({
                     <div key={number} className="flex items-center space-x-2">
                       <Checkbox
                         id={`num-${number}`}
-                        checked={profile.preferences.numbers.includes(number)}
+                        checked={profile.preferences?.numbers?.includes(String(number))}
                         onCheckedChange={(checked) => {
                           const numbers = checked 
-                            ? [...profile.preferences.numbers, number]
-                            : profile.preferences.numbers.filter(n => n !== number);
+                            ? [...(profile.preferences?.numbers ?? []), String(number)]
+                            : (profile.preferences?.numbers ?? []).filter(n => n !== String(number));
                           updateProfile('preferences', { numbers });
                         }}
                       />
@@ -694,11 +696,11 @@ export default function AdvancedProfileSetup({
                     <div key={element} className="flex items-center space-x-2">
                       <Checkbox
                         id={element}
-                        checked={profile.preferences.elements.includes(element)}
+                        checked={profile.preferences?.elements.includes(element)}
                         onCheckedChange={(checked) => {
                           const elements = checked 
-                            ? [...profile.preferences.elements, element]
-                            : profile.preferences.elements.filter(e => e !== element);
+                            ? [...(profile.preferences?.elements ?? []), element]
+                            : profile.preferences?.elements.filter(e => e !== element);
                           updateProfile('preferences', { elements });
                         }}
                       />
@@ -716,11 +718,11 @@ export default function AdvancedProfileSetup({
                     <div key={activity} className="flex items-center space-x-2">
                       <Checkbox
                         id={activity}
-                        checked={profile.preferences.activities.includes(activity)}
+                        checked={profile.preferences?.activities.includes(activity)}
                         onCheckedChange={(checked) => {
                           const activities = checked 
-                            ? [...profile.preferences.activities, activity]
-                            : profile.preferences.activities.filter(a => a !== activity);
+                            ? [...(profile.preferences?.activities ?? []), activity]
+                            : profile.preferences?.activities.filter(a => a !== activity);
                           updateProfile('preferences', { activities });
                         }}
                       />
@@ -744,7 +746,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="physical-health">Physical Health</Label>
                   <Select 
-                    value={profile.healthProfile.physicalHealth} 
+                    value={profile.healthProfile?.physicalHealth} 
                     onValueChange={(value) => updateProfile('healthProfile', { physicalHealth: value })}
                   >
                     <SelectTrigger>
@@ -762,7 +764,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="mental-health">Mental Health</Label>
                   <Select 
-                    value={profile.healthProfile.mentalHealth} 
+                    value={profile.healthProfile?.mentalHealth} 
                     onValueChange={(value) => updateProfile('healthProfile', { mentalHealth: value })}
                   >
                     <SelectTrigger>
@@ -780,7 +782,7 @@ export default function AdvancedProfileSetup({
                 <div>
                   <Label htmlFor="energy">Energy Levels</Label>
                   <Select 
-                    value={profile.healthProfile.energyLevels} 
+                    value={profile.healthProfile?.energyLevels} 
                     onValueChange={(value) => updateProfile('healthProfile', { energyLevels: value })}
                   >
                     <SelectTrigger>
@@ -803,9 +805,9 @@ export default function AdvancedProfileSetup({
                     <Input
                       key={index}
                       placeholder={`Stress trigger ${index + 1}`}
-                      value={profile.healthProfile.stressTriggers[index] || ''}
+                      value={profile.healthProfile?.stressTriggers[index] || ''}
                       onChange={(e) => {
-                        const triggers = [...profile.healthProfile.stressTriggers];
+                        const triggers = [...(profile.healthProfile?.stressTriggers ?? [])];
                         triggers[index] = e.target.value;
                         updateProfile('healthProfile', { stressTriggers: triggers });
                       }}
@@ -821,9 +823,9 @@ export default function AdvancedProfileSetup({
                     <Input
                       key={index}
                       placeholder={`Coping mechanism ${index + 1}`}
-                      value={profile.healthProfile.copingMechanisms[index] || ''}
+                      value={profile.healthProfile?.copingMechanisms[index] || ''}
                       onChange={(e) => {
-                        const mechanisms = [...profile.healthProfile.copingMechanisms];
+                        const mechanisms = [...(profile.healthProfile?.copingMechanisms ?? [])];
                         mechanisms[index] = e.target.value;
                         updateProfile('healthProfile', { copingMechanisms: mechanisms });
                       }}
@@ -849,14 +851,14 @@ export default function AdvancedProfileSetup({
                     <div>
                       <p><strong>MBTI:</strong> {profile.mbtiType || 'Not specified'}</p>
                       <p><strong>Enneagram:</strong> {profile.enneagramType || 'Not specified'}</p>
-                      <p><strong>Religion:</strong> {profile.spiritualBeliefs.religion || 'Not specified'}</p>
-                      <p><strong>Life Phase:</strong> {profile.currentContext.lifePhase || 'Not specified'}</p>
+                      <p><strong>Religion:</strong> {profile.spiritualBeliefs?.religion || 'Not specified'}</p>
+                      <p><strong>Life Phase:</strong> {profile.currentContext?.lifePhase || 'Not specified'}</p>
                     </div>
                     <div>
-                      <p><strong>Sleep:</strong> {profile.lifestyle.sleepSchedule || 'Not specified'}</p>
-                      <p><strong>Exercise:</strong> {profile.lifestyle.exercise || 'Not specified'}</p>
-                      <p><strong>Stress Level:</strong> {profile.lifestyle.stressLevel || 'Not specified'}</p>
-                      <p><strong>Physical Health:</strong> {profile.healthProfile.physicalHealth || 'Not specified'}</p>
+                      <p><strong>Sleep:</strong> {profile.lifestyle?.sleepSchedule || 'Not specified'}</p>
+                      <p><strong>Exercise:</strong> {profile.lifestyle?.exercise || 'Not specified'}</p>
+                      <p><strong>Stress Level:</strong> {profile.lifestyle?.stressLevel || 'Not specified'}</p>
+                      <p><strong>Physical Health:</strong> {profile.healthProfile?.physicalHealth || 'Not specified'}</p>
                     </div>
                   </div>
                 </div>
@@ -864,26 +866,26 @@ export default function AdvancedProfileSetup({
                 <div>
                   <h3 className="font-semibold mb-2">Selected Preferences</h3>
                   <div className="space-y-2">
-                    {profile.preferences.colors.length > 0 && (
+                    {(profile.preferences?.colors?.length ?? 0) > 0 && (
                       <div>
                         <span className="text-sm font-medium">Colors: </span>
-                        {profile.preferences.colors.map(color => (
+                        {profile.preferences?.colors.map(color => (
                           <Badge key={color} variant="secondary" className="mr-1">{color}</Badge>
                         ))}
                       </div>
                     )}
-                    {profile.preferences.numbers.length > 0 && (
+                    {(profile.preferences?.numbers?.length ?? 0) > 0 && (
                       <div>
                         <span className="text-sm font-medium">Numbers: </span>
-                        {profile.preferences.numbers.map(number => (
+                        {profile.preferences?.numbers.map(number => (
                           <Badge key={number} variant="secondary" className="mr-1">{number}</Badge>
                         ))}
                       </div>
                     )}
-                    {profile.preferences.elements.length > 0 && (
+                    {(profile.preferences?.elements?.length ?? 0) > 0 && (
                       <div>
                         <span className="text-sm font-medium">Elements: </span>
-                        {profile.preferences.elements.map(element => (
+                        {profile.preferences?.elements.map(element => (
                           <Badge key={element} variant="secondary" className="mr-1">{element}</Badge>
                         ))}
                       </div>

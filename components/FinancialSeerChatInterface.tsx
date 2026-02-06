@@ -227,7 +227,7 @@ export default function FinancialSeerChatInterface({
             className="bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500"
           />
           <Button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={isLoading || !question.trim()}
             className="bg-amber-500 hover:bg-amber-600 text-white"
           >

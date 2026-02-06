@@ -146,7 +146,7 @@ export function TarotCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Your Strengths</span>
                     </div>
                     <div className="space-y-2">
-                      {tarotData.coaching.strengths.map((strength, index) => (
+                      {tarotData.coaching.strengths.map((strength: string, index: number) => (
                         <div key={index} className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
                           <span className="text-sm text-slate-300">{strength}</span>
@@ -163,7 +163,7 @@ export function TarotCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Growth Challenges</span>
                     </div>
                     <div className="space-y-2">
-                      {tarotData.coaching.challenges.map((challenge, index) => (
+                      {tarotData.coaching.challenges.map((challenge: string, index: number) => (
                         <div key={index} className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
                           <span className="text-sm text-slate-300">{challenge}</span>
@@ -180,7 +180,7 @@ export function TarotCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Growth Areas</span>
                     </div>
                     <div className="space-y-2">
-                      {tarotData.coaching.growthAreas.map((area, index) => (
+                      {tarotData.coaching.growthAreas.map((area: string, index: number) => (
                         <div key={index} className="flex items-start gap-2">
                           <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
                           <span className="text-sm text-slate-300">{area}</span>
@@ -197,7 +197,7 @@ export function TarotCoachInterface() {
                       <span className="text-sm font-medium text-slate-300">Daily Affirmations</span>
                     </div>
                     <div className="space-y-3">
-                      {tarotData.coaching.affirmations.map((affirmation, index) => (
+                      {tarotData.coaching.affirmations.map((affirmation: string, index: number) => (
                         <div key={index} className="bg-slate-600/50 rounded-lg p-3">
                           <p className="text-sm text-slate-300 italic">"{affirmation}"</p>
                         </div>
@@ -237,7 +237,7 @@ export function TarotCoachInterface() {
           </TabsContent>
           <TabsContent value="history" className="space-y-4">
             <ScrollArea className="h-96">
-              {coaching.length === 0 ? (
+              {(Array.isArray(coaching) ? coaching : []).length === 0 ? (
                 <div className="text-center py-8">
                   <MessageSquare className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-400">No coaching history yet</p>
@@ -245,7 +245,7 @@ export function TarotCoachInterface() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {coaching.map((session) => (
+                  {(Array.isArray(coaching) ? coaching : []).map((session: { id: string; question: string; response: string; timestamp: Date; insights: string[] }) => (
                     <Card key={session.id} className="bg-slate-700/50 border-slate-600">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">
@@ -269,7 +269,7 @@ export function TarotCoachInterface() {
                             <div>
                               <h4 className="text-sm font-medium text-slate-300 mb-1">Insights:</h4>
                               <div className="space-y-1">
-                                {session.insights.map((insight, index) => (
+                                {session.insights.map((insight: string, index: number) => (
                                   <div key={index} className="flex items-start gap-2">
                                     <div className="w-1 h-1 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
                                     <span className="text-xs text-slate-400">{insight}</span>

@@ -219,14 +219,16 @@ export function calculateCurrentPanchanga(birthPlace: string, latitude: number, 
     longitude,
     name: 'Current Chart',
     place: birthPlace,
-    birthDate: null  // No birth date for current Panchanga
+    birthDate: undefined  // No birth date for current Panchanga
   });
   
-  return calculateAccuratePanchanga(currentChart, {
+  const result = calculateAccuratePanchanga(currentChart, {
     birthDate: today.toISOString().split('T')[0],
     birthTime: '12:00',
     birthPlace
   });
+  if (!result) throw new Error('Failed to calculate current Panchanga');
+  return result;
 }
 
 // Calculate Tithi from accurate Sun/Moon longitudes

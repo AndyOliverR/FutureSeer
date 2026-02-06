@@ -20,13 +20,13 @@ import {
   transformHousesToAstroChart,
   transformAspectsToAstroChart,
   getCurrentTransits,
-  calculateTransitAspects,
   type Planet,
   type House,
   type Aspect
 } from '@/lib/western/astroChartAdapter';
 import { 
   calculateCurrentTransits,
+  calculateTransitAspects,
   generateTransitInterpretations,
   type TransitAspect,
   type TransitInterpretation

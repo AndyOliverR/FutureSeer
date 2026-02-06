@@ -185,7 +185,8 @@ export function ChartDisplay({ chartType, name, description, significance, image
                           console.error('Failed to load chart image:', chartData.imageUrl)
                           e.currentTarget.style.display = 'none'
                           // Fallback to placeholder
-                          e.currentTarget.parentElement.innerHTML = `
+                          const parent = e.currentTarget.parentElement
+                          if (parent) parent.innerHTML = `
                             <div class="w-full h-64 flex items-center justify-center bg-slate-800/30 rounded-lg border border-slate-600/50">
                               <div class="text-center">
                                 <div class="w-16 h-16 mx-auto mb-2 bg-amber-500/20 rounded-full flex items-center justify-center">
@@ -286,7 +287,8 @@ export function ChartDisplay({ chartType, name, description, significance, image
                                 console.error('Failed to load full chart image:', chartData.imageUrl)
                                 e.currentTarget.style.display = 'none'
                                 // Fallback to placeholder
-                                e.currentTarget.parentElement.innerHTML = `
+                                const parent = e.currentTarget.parentElement
+                                if (parent) parent.innerHTML = `
                                   <div class="w-full h-48 flex items-center justify-center bg-slate-800/30 rounded-lg border border-slate-600/50">
                                     <div class="text-center">
                                       <div class="w-16 h-16 mx-auto mb-2 bg-amber-500/20 rounded-full flex items-center justify-center">

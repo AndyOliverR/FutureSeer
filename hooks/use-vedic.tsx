@@ -38,6 +38,7 @@ export function useVedic() {
     birthPlace,
     setBirthPlace,
     analysis,
+    vedicData: analysis,
     isLoading,
     error,
     performVedicAnalysis,

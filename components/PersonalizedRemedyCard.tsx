@@ -250,7 +250,7 @@ export default function PersonalizedRemedyCard({
                 <h5 className="font-medium text-sm mb-2">Precautions:</h5>
                 <div className="space-y-1">
                   {Array.isArray(remedy.precautions) ? (
-                    remedy.precautions.map((precaution, index) => (
+                    remedy.precautions!.map((precaution: string, index: number) => (
                       <div key={index} className="flex gap-2 text-sm">
                         <span className="text-orange-500">⚠</span>
                         <span>{precaution}</span>
@@ -268,7 +268,7 @@ export default function PersonalizedRemedyCard({
               <div>
                 <h5 className="font-medium text-sm mb-2">Related Systems:</h5>
                 <div className="flex flex-wrap gap-1">
-                  {remedy.relatedSystems.map((system) => (
+                  {remedy.relatedSystems!.map((system: string) => (
                     <Badge key={system} variant="outline" className="text-xs">
                       {system}
                     </Badge>

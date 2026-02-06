@@ -192,7 +192,7 @@ export class VedAstroDasaService {
       'Ketu': 'Spirituality, detachment, and liberation',
       'Venus': 'Love, beauty, and material comforts'
     }
-    return significances[planet] || 'General life experiences'
+    return significances[planet as keyof typeof significances] || 'General life experiences'
   }
 
   /**
@@ -210,7 +210,7 @@ export class VedAstroDasaService {
       'Ketu': ['Spiritual awakening', 'Detachment from material', 'Mystical experiences'],
       'Venus': ['Love and relationships', 'Artistic abilities', 'Material comforts']
     }
-    return effects[planet] || ['General life experiences']
+    return effects[planet as keyof typeof effects] || ['General life experiences']
   }
 
   /**
@@ -228,7 +228,7 @@ export class VedAstroDasaService {
       'Ketu': ['Worship Lord Ganesha', 'Wear Cat\'s Eye', 'Spiritual practices'],
       'Venus': ['Worship Goddess Lakshmi', 'Wear Diamond', 'Artistic pursuits']
     }
-    return remedies[planet] || ['General spiritual practices']
+    return remedies[planet as keyof typeof remedies] || ['General spiritual practices']
   }
 
   /**
@@ -246,7 +246,7 @@ export class VedAstroDasaService {
       'Ketu': 'spiritual or unconventional career paths',
       'Venus': 'prosperity in creative or luxury fields'
     }
-    return predictions[planet] || 'general career growth'
+    return predictions[planet as keyof typeof predictions] || 'general career growth'
   }
 
   /**
@@ -264,7 +264,7 @@ export class VedAstroDasaService {
       'Ketu': 'spiritual practices benefit health',
       'Venus': 'good health with focus on reproductive system'
     }
-    return predictions[planet] || 'generally stable'
+    return predictions[planet as keyof typeof predictions] || 'generally stable'
   }
 
   /**
@@ -282,7 +282,7 @@ export class VedAstroDasaService {
       'Ketu': 'be more spiritual and detached',
       'Venus': 'be more loving and harmonious'
     }
-    return predictions[planet] || 'be generally positive'
+    return predictions[planet as keyof typeof predictions] || 'be generally positive'
   }
 
   /**
@@ -300,7 +300,7 @@ export class VedAstroDasaService {
       'Ketu': 'be less materialistic but stable',
       'Venus': 'prosper through creative and luxury fields'
     }
-    return predictions[planet] || 'be generally stable'
+    return predictions[planet as keyof typeof predictions] || 'be generally stable'
   }
 
   /**

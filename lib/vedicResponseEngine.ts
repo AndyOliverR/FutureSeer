@@ -178,7 +178,7 @@ export class VedicResponseEngine {
   // PURPOSE & DHARMA QUESTION
   private async answerPurposeQuestion(question: string, keywords: string[]): Promise<VedicResponse> {
     const personality = this.vedicData.interpretations.personality;
-    const lifePurpose = this.vedicData.interpretations.lifePurpose;
+    const lifePurposeOverview = (this.vedicData.interpretations as { lifePurpose?: { overview?: string } }).lifePurpose?.overview ?? personality.lifePurpose ?? '';
     const sun = this.chartData.planets.sun;
     const moon = this.chartData.planets.moon;
     const ascendant = this.chartData.ascendant;
@@ -196,7 +196,7 @@ export class VedicResponseEngine {
     let answer = `## Your Life Purpose & Dharma Path\n\n`;
     
     answer += `**Core Purpose Analysis:**\n`;
-    answer += `${lifePurpose.overview}\n\n`;
+    answer += `${lifePurposeOverview}\n\n`;
     
     answer += `**Soul Mission (Based on your chart):**\n`;
     answer += `- **Sun in ${sun.sign}**: ${this.interpretSunPurpose(sun)}\n`;
@@ -212,13 +212,13 @@ export class VedicResponseEngine {
     answer += `${coaching.guidance}\n\n`;
     
     answer += `**Action Steps for Your Purpose:**\n`;
-    coaching.actionableSteps.forEach((step, i) => {
+    coaching.actionableSteps.forEach((step: string, i: number) => {
       answer += `${i + 1}. ${step}\n`;
     });
     answer += `\n`;
     
     answer += `**Your Unique Gifts:**\n`;
-    coaching.insights.forEach(insight => {
+    coaching.insights.forEach((insight: string) => {
       answer += `• ${insight}\n`;
     });
     
@@ -453,12 +453,11 @@ export class VedicResponseEngine {
     const jupiter = this.chartData.planets.jupiter;
     
     // Use Bayesian Network for decision analysis
-    const decisionAnalysis = this.bayesianNetwork.calculatePrediction({
-      question: question,
-      astroData: this.chartData,
-      targetEvent: 'decision_outcome',
-      timeframe: 'immediate'
-    });
+    const decisionAnalysis = this.bayesianNetwork.calculatePrediction(
+      { question, targetEvent: 'decision_outcome', timeframe: 'immediate' },
+      this.chartData,
+      {}
+    );
     
     let answer = `## Decision Making Guidance\n\n`;
     
@@ -479,7 +478,7 @@ export class VedicResponseEngine {
     answer += `- **Avoid**: ${this.getAvoidDecisionTiming()}\n\n`;
     
     answer += `**Factors to Consider:**\n`;
-    decisionAnalysis.factors.forEach((factor, i) => {
+    decisionAnalysis.factors.forEach((factor: string, i: number) => {
       answer += `${i + 1}. ${factor}\n`;
     });
     answer += `\n`;
@@ -628,12 +627,12 @@ export class VedicResponseEngine {
     );
     
     // Use Bayesian Network for probability
-    const bayesianProb = this.bayesianNetwork.calculatePrediction({
-      question: question,
-      astroData: this.chartData,
-      targetEvent: 'marriage',
-      timeframe: 'next_2_years'
-    });
+    const marriageTimeframe = 'next_2_years';
+    const bayesianProb = this.bayesianNetwork.calculatePrediction(
+      { question, targetEvent: 'marriage', timeframe: marriageTimeframe },
+      this.chartData,
+      {}
+    );
     
     let answer = `## Marriage Timing & Analysis\n\n`;
     answer += `Based on comprehensive analysis using 300+ Vedic rules:\n\n`;
@@ -641,13 +640,13 @@ export class VedicResponseEngine {
     // Timing prediction
     answer += `**Marriage Timing Prediction:**\n`;
     answer += `${marriage.marriageTiming}\n\n`;
-    answer += `**Probability Analysis:** ${(bayesianProb.probability * 100).toFixed(0)}% likelihood within ${bayesianProb.timeframe}\n\n`;
+    answer += `**Probability Analysis:** ${(bayesianProb.confidence * 100).toFixed(0)}% confidence within ${marriageTimeframe}\n\n`;
     
     // 7th House analysis
     answer += `**7th House (House of Marriage):**\n`;
     answer += `- Sign: ${house7.sign}\n`;
     answer += `- Lord: ${this.get7thLord()}\n`;
-    answer += `- Planets: ${house7.planets?.map(p => p.name).join(', ') || 'None'}\n`;
+    answer += `- Planets: ${house7.planets?.map((p: { name: string }) => p.name).join(', ') || 'None'}\n`;
     answer += `- Interpretation: ${this.interpret7thHouse(house7)}\n\n`;
     
     // Venus analysis
@@ -669,14 +668,17 @@ export class VedicResponseEngine {
     answer += `${this.analyzeNavamsaForMarriage()}\n\n`;
     
     // Current Dasha
+    const currentDasha = this.vedicData.chartData.currentDasha;
+    const currentMahaDasha = currentDasha?.planet ?? 'N/A';
+    const currentAntarDasha = (currentDasha as { antardasha?: string } | undefined)?.antardasha ?? this.vedicData.chartData.dasha?.[0]?.planet ?? 'N/A';
     answer += `**Current Planetary Period (Dasha):**\n`;
-    answer += `- Maha Dasha: ${this.vedicData.dasha.currentMahaDasha}\n`;
-    answer += `- Antar Dasha: ${this.vedicData.dasha.currentAntarDasha}\n`;
+    answer += `- Maha Dasha: ${currentMahaDasha}\n`;
+    answer += `- Antar Dasha: ${currentAntarDasha}\n`;
     answer += `- Marriage Potential: ${this.interpretDashaForMarriage()}\n\n`;
     
     // Markov Chain predictions
     answer += `**Life Transition Analysis (Markov Chain):**\n`;
-    markovPrediction.possibleTransitions.slice(0, 3).forEach(t => {
+    markovPrediction.possibleTransitions.slice(0, 3).forEach((t: { nextState: string; probability: number }) => {
       answer += `- ${t.nextState}: ${(t.probability * 100).toFixed(0)}% probability\n`;
     });
     answer += `\n`;

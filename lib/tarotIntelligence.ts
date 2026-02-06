@@ -561,7 +561,8 @@ class TarotIntelligence {
       name: s.name,
       key: s.key,
       description: s.description,
-      cardCount: s.positions.length
+      cardCount: s.positions.length,
+      positions: s.positions
     }))
   }
 

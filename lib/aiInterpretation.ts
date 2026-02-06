@@ -34,8 +34,8 @@ export class VedicAIInterpreter {
     const { planetary_positions, house_analysis, personality_analysis, current_influences, dasha_forecast, nakshatra_analysis, yogas_doshas, strength_analysis } = vedicData
 
     // Analyze dominant planets and houses using real data
-    const dominantPlanets = this.getDominantPlanets(planetary_positions)
-    const strongHouses = this.getStrongHouses(house_analysis)
+    const dominantPlanets = this.getDominantPlanets(planetary_positions ?? [])
+    const strongHouses = this.getStrongHouses(house_analysis ?? [])
     const currentDasha = current_influences?.current_dasha
     const nakshatras = nakshatra_analysis || []
     const yogas = yogas_doshas?.yogas || []
@@ -44,11 +44,11 @@ export class VedicAIInterpreter {
     return {
       summary: this.generateSummary(dominantPlanets, strongHouses, nakshatras, yogas),
       personality: this.generatePersonalityInterpretation(personality_analysis, dominantPlanets, nakshatras),
-      career: this.generateCareerInterpretation(house_analysis, planetary_positions, yogas),
-      relationships: this.generateRelationshipInterpretation(house_analysis, planetary_positions, nakshatras),
-      health: this.generateHealthInterpretation(house_analysis, planetary_positions, doshas),
-      spiritual: this.generateSpiritualInterpretation(house_analysis, planetary_positions, nakshatras),
-      currentPeriod: this.generateCurrentPeriodInterpretation(currentDasha, dasha_forecast),
+      career: this.generateCareerInterpretation(house_analysis ?? [], planetary_positions ?? [], yogas),
+      relationships: this.generateRelationshipInterpretation(house_analysis ?? [], planetary_positions ?? [], nakshatras),
+      health: this.generateHealthInterpretation(house_analysis ?? [], planetary_positions ?? [], doshas as any[]),
+      spiritual: this.generateSpiritualInterpretation(house_analysis ?? [], planetary_positions ?? [], nakshatras),
+      currentPeriod: this.generateCurrentPeriodInterpretation(currentDasha, (dasha_forecast ?? []) as any[]),
       recommendations: this.generateRecommendations(vedicData, yogas, doshas),
       termExplanations: this.generateTermExplanations(vedicData)
     }
@@ -264,31 +264,38 @@ export class VedicAIInterpreter {
       recommendations.push(`Focus on inner reflection during ${retrogradePlanets.join(' and ')} retrograde periods`)
     }
     
-    // Based on remedies
-    if (vedicData.remedies && vedicData.remedies.length > 0) {
-      recommendations.push(`Practice ${vedicData.remedies[0].remedy} for ${vedicData.remedies[0].issue}`)
+    // Based on remedies (vedicData.remedies may be array or undefined)
+    const remedies = (vedicData as { remedies?: Array<{ remedy?: string; issue?: string }> }).remedies
+    if (remedies && Array.isArray(remedies) && remedies.length > 0) {
+      const r = remedies[0]
+      recommendations.push(`Practice ${r.remedy ?? 'recommended remedy'} for ${r.issue ?? 'balance'}`)
     }
     
     // Based on yogas
     if (yogas.length > 0) {
-      const positiveYogas = yogas.filter(y => y.type === 'positive')
+      const positiveYogas = yogas.filter((y: { type?: string; name?: string }) => y.type === 'positive')
       if (positiveYogas.length > 0) {
-        recommendations.push(`Leverage your ${positiveYogas[0].name} for enhanced success and spiritual growth`)
+        const y0 = positiveYogas[0] as { name?: string }
+        recommendations.push(`Leverage your ${y0.name ?? 'yoga'} for enhanced success and spiritual growth`)
       }
     }
     
     // Based on doshas
     if (doshas.length > 0) {
-      const negativeDoshas = doshas.filter(d => d.type === 'negative')
+      const negativeDoshas = doshas.filter((d: { type?: string; name?: string }) => d.type === 'negative')
       if (negativeDoshas.length > 0) {
-        recommendations.push(`Be mindful of ${negativeDoshas[0].name} and work on balancing its influence`)
+        const d0 = negativeDoshas[0] as { name?: string }
+        recommendations.push(`Be mindful of ${d0.name ?? 'dosha'} and work on balancing its influence`)
       }
     }
     
-    // Based on current dasha
+    // Based on current dasha (currentDasha may be string or object)
     const currentDasha = vedicData.current_influences?.current_dasha
     if (currentDasha) {
-      recommendations.push(`Focus on ${this.getDashaDescription(currentDasha.planet)} during your current ${currentDasha.planet} dasha`)
+      const dashaPlanet = typeof currentDasha === 'string' ? currentDasha : (currentDasha as { planet?: string }).planet ?? ''
+      if (dashaPlanet) {
+        recommendations.push(`Focus on ${this.getDashaDescription(dashaPlanet)} during your current ${dashaPlanet} dasha`)
+      }
     }
     
     // General recommendations

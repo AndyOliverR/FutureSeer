@@ -11,6 +11,7 @@ interface AngelNumbersLookupResultsProps {
 }
 
 export function AngelNumbersLookupResults({ result }: AngelNumbersLookupResultsProps) {
+  if (!result) return null
   // Stagger animation variants
   const containerVariants = {
     hidden: { opacity: 0 },

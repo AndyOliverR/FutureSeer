@@ -130,7 +130,7 @@ export function generateHolisticRemedies(
   remedies.push(...generateQuestionBasedRemedies(question, userData))
   
   // 7. LIFE AREA REMEDIES
-  remedies.push(...generateLifeAreaRemedies(userData.currentLifeArea, userData))
+  remedies.push(...generateLifeAreaRemedies(userData.currentLifeArea ?? '', userData))
   
   // 8. HOLISTIC WELLNESS REMEDIES
   remedies.push(...generateHolisticWellnessRemedies(userData))
@@ -185,7 +185,8 @@ function generateVedicRemedies(vedicData: any, question: string): ComprehensiveR
   
   // Nakshatra-based remedies
   if (vedicData.nakshatra) {
-    const nakshatraRemedy = ASTROLOGICAL_REMEDIES.vedic.nakshatraRemedies[vedicData.nakshatra.toLowerCase()]
+    const nakshatraRemediesMap = ASTROLOGICAL_REMEDIES.vedic.nakshatraRemedies as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; planetaryRulers: string[]; chakraAssociations: string[] }>
+    const nakshatraRemedy = nakshatraRemediesMap[(vedicData.nakshatra as string).toLowerCase()]
     if (nakshatraRemedy) {
       remedies.push({
         id: `vedic_nakshatra_${vedicData.nakshatra}`,
@@ -208,7 +209,7 @@ function generateVedicRemedies(vedicData: any, question: string): ComprehensiveR
   
   // Dosha-based remedies
   if (vedicData.dosha) {
-    const doshaRemedy = ASTROLOGICAL_REMEDIES.vedic.doshaRemedies[vedicData.dosha.toLowerCase()]
+    const doshaRemedy = (ASTROLOGICAL_REMEDIES.vedic.doshaRemedies as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; elementalAssociations?: string[]; modernUses?: string[] }>)[(vedicData.dosha as string).toLowerCase()]
     if (doshaRemedy) {
       remedies.push({
         id: `vedic_dosha_${vedicData.dosha}`,
@@ -239,7 +240,7 @@ function generateWesternRemedies(westernData: any, question: string): Comprehens
   
   // Sun sign psychological practices
   if (westernData.sunSign) {
-    const sunSignRemedy = ASTROLOGICAL_REMEDIES.western.sunSignRemedies[westernData.sunSign.toLowerCase()]
+    const sunSignRemedy = (ASTROLOGICAL_REMEDIES.western.sunSignRemedies as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; planetaryRulers?: string[]; elementalAssociations?: string[]; modernUses?: string[] }>)[(westernData.sunSign as string).toLowerCase()]
     if (sunSignRemedy) {
       remedies.push({
         id: `western_sun_${westernData.sunSign}`,
@@ -270,7 +271,7 @@ function generateMedicalAstrologyRemedies(medicalData: any, question: string): C
   // Planetary health remedies
   if (medicalData.weakPlanets) {
     medicalData.weakPlanets.forEach((planet: string) => {
-      const planetRemedy = ASTROLOGICAL_REMEDIES.medical.planetaryHealth[planet.toLowerCase()]
+      const planetRemedy = (ASTROLOGICAL_REMEDIES.medical.planetaryHealth as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; modernUses?: string[] }>)[planet.toLowerCase()]
       if (planetRemedy) {
         remedies.push({
           id: `medical_planet_${planet}`,
@@ -304,7 +305,7 @@ function generateChaldeanRemedies(numerologyData: any, question: string): Compre
   // Missing numbers remedies
   if (numerologyData.missingNumbers) {
     numerologyData.missingNumbers.forEach((number: number) => {
-      const missingNumberRemedy = NUMEROLOGY_REMEDIES.chaldean.missingNumbers[number]
+      const missingNumberRemedy = (NUMEROLOGY_REMEDIES.chaldean.missingNumbers as Record<number, { title: string; description: string; instructions: string[]; benefits: string[]; modernUses?: string[] }>)[number]
       if (missingNumberRemedy) {
         remedies.push({
           id: `chaldean_missing_${number}`,
@@ -327,7 +328,7 @@ function generateChaldeanRemedies(numerologyData: any, question: string): Compre
   
   // Life path remedies
   if (numerologyData.lifePathNumber) {
-    const lifePathRemedy = NUMEROLOGY_REMEDIES.chaldean.lifePathRemedies[numerologyData.lifePathNumber]
+    const lifePathRemedy = (NUMEROLOGY_REMEDIES.chaldean.lifePathRemedies as Record<number, { title: string; description: string; instructions: string[]; benefits: string[]; modernUses?: string[]; gemstones?: string[]; colors?: string[]; daysOfWeek?: string[]; mantras?: string[] }>)[numerologyData.lifePathNumber]
     if (lifePathRemedy) {
       remedies.push({
         id: `chaldean_lifepath_${numerologyData.lifePathNumber}`,
@@ -355,7 +356,7 @@ function generateAngelNumberRemedies(angelData: any, question: string): Comprehe
   
   // Angel number sequence remedies
   if (angelData.currentSequence) {
-    const sequenceRemedy = NUMEROLOGY_REMEDIES.angelNumbers.sequences[angelData.currentSequence]
+    const sequenceRemedy = (NUMEROLOGY_REMEDIES.angelNumbers.sequences as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; modernUses?: string[] }>)[angelData.currentSequence as string]
     if (sequenceRemedy) {
       remedies.push({
         id: `angel_sequence_${angelData.currentSequence}`,
@@ -388,7 +389,7 @@ function generateTarotRemedies(tarotData: any, question: string): ComprehensiveR
   // Major Arcana remedies
   if (tarotData.majorArcana) {
     tarotData.majorArcana.forEach((card: string) => {
-      const cardRemedy = DIVINATION_REMEDIES.tarot.majorArcana[card.toLowerCase()]
+      const cardRemedy = (DIVINATION_REMEDIES.tarot.majorArcana as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; modernUses?: string[] }>)[card.toLowerCase()]
       if (cardRemedy) {
         remedies.push({
           id: `tarot_major_${card}`,
@@ -422,7 +423,7 @@ function generatePalmistryRemedies(palmData: any, question: string): Comprehensi
   // Line enhancement remedies
   if (palmData.weakLines) {
     palmData.weakLines.forEach((line: string) => {
-      const lineRemedy = READING_REMEDIES.palmistry.lineEnhancement[line.toLowerCase()]
+      const lineRemedy = (READING_REMEDIES.palmistry.lineRemedies as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; gemstones?: string[]; colors?: string[]; mantras?: string[]; practices?: string[]; timing?: string; frequency?: string; priority?: string; palmistryTriggers?: string[] }>)[line.toLowerCase()]
       if (lineRemedy) {
         remedies.push({
           id: `palmistry_line_${line}`,
@@ -435,7 +436,7 @@ function generatePalmistryRemedies(palmData: any, question: string): Comprehensi
           instructions: lineRemedy.instructions,
           benefits: lineRemedy.benefits,
           palmistryTriggers: [line],
-          modernUses: lineRemedy.modernUses,
+          modernUses: (lineRemedy as { modernUses?: string[] }).modernUses ?? [],
           cost: 'low',
           difficulty: 'intermediate'
         })
@@ -455,8 +456,9 @@ function generateVastuRemedies(vastuData: any, question: string): ComprehensiveR
   
   // Directional remedies
   if (vastuData.weakDirections) {
+    const directionalRemediesMap = SPECIALIZED_REMEDIES.vastu.directionalRemedies as Record<string, { title: string; description: string; instructions: string[]; benefits: string[]; modernUses: string[] }>
     vastuData.weakDirections.forEach((direction: string) => {
-      const directionRemedy = SPECIALIZED_REMEDIES.vastu.directionalRemedies[direction.toLowerCase()]
+      const directionRemedy = directionalRemediesMap[direction.toLowerCase()]
       if (directionRemedy) {
         remedies.push({
           id: `vastu_direction_${direction}`,
@@ -758,7 +760,7 @@ function generatePersonalizedCombinationRemedies(userData: UserSystemData, quest
     difficulty: 'expert'
   }
   
-  remedies.push(combinationRemedy)
+  remedies.push(combinationRemedy as ComprehensiveRemedy)
   
   return remedies
 }
@@ -804,6 +806,5 @@ function generateDreamRemedies(dreamData: any, question: string): ComprehensiveR
 
 export default {
   generateHolisticRemedies,
-  generateAdvancedPersonalizedRemedies,
-  UserSystemData
+  generateAdvancedPersonalizedRemedies
 } 

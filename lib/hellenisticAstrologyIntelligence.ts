@@ -869,7 +869,7 @@ function generateRelationshipAnalysis(house7: any, venus: any, dignities: { [key
   }
   
   if (house7Planets.length > 0) {
-    const planetsInSeventh = house7Planets.filter(p => !p.includes('Part of'));
+    const planetsInSeventh = house7Planets.filter((p: string) => !p.includes('Part of'));
     if (planetsInSeventh.length > 0) {
       advice += `With ${planetsInSeventh.join(' and ')} in your 7th house, partnerships are actively shaped by these energies.`;
     }
@@ -1137,7 +1137,10 @@ export async function getIntelligentHellenisticAstrologyData(
     if (docSnap.exists()) {
       const cachedData = docSnap.data() as HellenisticAstrologyReading;
       const lastUpdated = cachedData.metadata.lastUpdated;
-      const hoursSinceUpdate = (new Date().getTime() - lastUpdated.toDate().getTime()) / (1000 * 60 * 60);
+      const lastUpdatedDate = lastUpdated && typeof (lastUpdated as { toDate?: () => Date }).toDate === 'function'
+        ? (lastUpdated as unknown as { toDate: () => Date }).toDate()
+        : lastUpdated instanceof Date ? lastUpdated : new Date(0);
+      const hoursSinceUpdate = (new Date().getTime() - lastUpdatedDate.getTime()) / (1000 * 60 * 60);
       
       // Return cached data if less than 24 hours old, birth data unchanged, and version matches
       if (hoursSinceUpdate < 24 && 
@@ -1226,8 +1229,8 @@ export async function getIntelligentHellenisticAstrologyData(
     planet2: a.planet2,
     type: a.type,
     orb: a.orb,
-    influence: a.type === 'trine' || a.type === 'sextile' ? 'harmonious' : 
-               a.type === 'square' || a.type === 'opposition' ? 'challenging' : 'neutral'
+    influence: (a.type === 'trine' || a.type === 'sextile' ? 'harmonious' : 
+               a.type === 'square' || a.type === 'opposition' ? 'challenging' : 'neutral') as 'harmonious' | 'challenging' | 'neutral'
   }));
   
   // Calculate dignities

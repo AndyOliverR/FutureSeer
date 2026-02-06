@@ -8,7 +8,7 @@ export interface PalmLine {
   description: string
   length: 'short' | 'medium' | 'long'
   depth: 'faint' | 'clear' | 'deep'
-  quality: 'broken' | 'straight' | 'wavy' | 'forked' | 'island'
+  quality: 'broken' | 'straight' | 'wavy' | 'forked' | 'island' | 'chained'
   interpretation: string
   element: 'fire' | 'earth' | 'air' | 'water'
   energy: number // 1-10 scale

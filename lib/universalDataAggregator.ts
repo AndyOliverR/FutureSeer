@@ -2601,6 +2601,16 @@ export interface UniversalDivinationData {
   profile: UserProfile;
   /** Optional numerology data (from comprehensive profile) */
   numerology?: Record<string, unknown>;
+  /** Optional Vastu Shastra data */
+  vastuShastra?: Record<string, unknown>;
+  /** Optional BaZi Four Pillars data */
+  baziFourPillars?: Record<string, unknown>;
+  /** Optional Human Design data */
+  humanDesign?: Record<string, unknown>;
+  /** Optional Vastu data (distinct from vastuShastra) */
+  vastu?: Record<string, unknown>;
+  /** Optional BaZi data (distinct from baziFourPillars) */
+  bazi?: Record<string, unknown>;
 
 
 
@@ -18943,7 +18953,7 @@ export async function getAllDivinationData(
 
 
 
-    const universalData: UniversalDivinationData = {
+    const universalData = {
 
 
 
@@ -19199,39 +19209,7 @@ export async function getAllDivinationData(
 
 
 
-      confidenceScore: finalConfidence
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    };
+      confidenceScore: finalConfidence } as UniversalDivinationData;
 
 
 
@@ -20127,7 +20105,7 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
 
-      userProfile.birthDate,
+      userProfile.birthDate ?? '',
 
 
 
@@ -20191,7 +20169,7 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
 
-      userProfile.birthPlace,
+      userProfile.birthPlace ?? '',
 
 
 
@@ -20415,135 +20393,13 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
 
-      ? calculateTransitData(
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          userProfile.birthDate,
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          userProfile.birthTime || '12:00',
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          userProfile.birthPlace
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        )
+      ? calculateTransitData(chartData, {
+          birthDate: userProfile.birthDate ?? '',
+          birthTime: userProfile.birthTime || '12:00',
+          birthPlace: userProfile.birthPlace ?? '',
+          latitude: (userProfile as any).latitude ?? 0,
+          longitude: (userProfile as any).longitude ?? 0
+        })
 
 
 
@@ -20639,167 +20495,11 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
 
-    const panchanga = await calculateAccuratePanchanga(
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      userProfile.birthDate,
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      userProfile.birthTime || '12:00',
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      (userProfile as any).latitude || 0,
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      (userProfile as any).longitude || 0
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    );
+    const panchanga = await calculateAccuratePanchanga(chartData, {
+      birthDate: userProfile.birthDate ?? '',
+      birthTime: userProfile.birthTime || '12:00',
+      birthPlace: userProfile.birthPlace ?? ''
+    })
 
 
 

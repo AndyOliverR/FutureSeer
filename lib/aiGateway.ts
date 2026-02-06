@@ -81,8 +81,8 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
     try {
       const gatewayModel = mapModelToGateway(options.model);
       const result = await streamText({
-        model: gatewayModel,
-        messages: options.messages,
+        model: gatewayModel as unknown as Parameters<typeof streamText>[0]['model'],
+        messages: options.messages as Parameters<typeof streamText>[0]['messages'],
         maxTokens: options.maxTokens,
         temperature: options.temperature,
         topP: options.topP,
@@ -93,7 +93,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
       // Convert AI SDK stream to Groq-compatible format
       return {
         async *[Symbol.asyncIterator]() {
-          for await (const chunk of result.textStream) {
+          for await (const chunk of result.textStream as AsyncIterable<string>) {
             yield {
               choices: [{
                 delta: { content: chunk }
@@ -127,7 +127,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
 
     const stream = await groq.chat.completions.create({
       model: modelName,
-      messages: options.messages,
+      messages: options.messages as Parameters<typeof groq.chat.completions.create>[0]['messages'],
       stream: true,
       max_tokens: options.maxTokens,
       temperature: options.temperature,
@@ -137,7 +137,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
       response_format: options.responseFormat || options.response_format,
     });
 
-    return stream;
+    return stream as AsyncIterable<{ choices: Array<{ delta: { content?: string } }> }>;
   } else {
     // OpenAI
     const openai = new OpenAI({
@@ -146,7 +146,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
 
     const stream = await openai.chat.completions.create({
       model: modelName,
-      messages: options.messages,
+      messages: options.messages as Parameters<typeof openai.chat.completions.create>[0]['messages'],
       stream: true,
       max_tokens: options.maxTokens,
       temperature: options.temperature,
@@ -159,7 +159,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
     // Convert OpenAI stream to Groq-compatible format
     return {
       async *[Symbol.asyncIterator]() {
-        for await (const chunk of stream) {
+        for await (const chunk of stream as AsyncIterable<{ choices: Array<{ delta?: { content?: string } }> }>) {
           yield {
             choices: [{
               delta: { content: chunk.choices[0]?.delta?.content || '' }
@@ -183,16 +183,13 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
     try {
       const gatewayModel = mapModelToGateway(options.model);
       const result = await generateText({
-        model: gatewayModel,
-        messages: options.messages,
+        model: gatewayModel as unknown as Parameters<typeof generateText>[0]['model'],
+        messages: options.messages as Parameters<typeof generateText>[0]['messages'],
         maxTokens: options.maxTokens,
         temperature: options.temperature,
         topP: options.topP,
         frequencyPenalty: options.frequencyPenalty,
         presencePenalty: options.presencePenalty,
-        experimental_transform: options.responseFormat?.type === 'json_object'
-          ? async (chunk) => chunk
-          : undefined,
       });
 
       return {
@@ -229,7 +226,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
 
     const completion = await groq.chat.completions.create({
       model: modelName,
-      messages: options.messages,
+      messages: options.messages as Parameters<typeof groq.chat.completions.create>[0]['messages'],
       max_tokens: options.maxTokens,
       temperature: options.temperature,
       top_p: options.topP,
@@ -256,7 +253,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
 
     const completion = await openai.chat.completions.create({
       model: modelName,
-      messages: options.messages,
+      messages: options.messages as Parameters<typeof openai.chat.completions.create>[0]['messages'],
       max_tokens: options.maxTokens,
       temperature: options.temperature,
       top_p: options.topP,

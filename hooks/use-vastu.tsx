@@ -98,6 +98,7 @@ export function useVastu() {
     setPropertyData,
     analysis,
     isLoading,
+    loading: isLoading,
     error,
     performVastuAnalysis,
     loadPersonalizedVastuReport,

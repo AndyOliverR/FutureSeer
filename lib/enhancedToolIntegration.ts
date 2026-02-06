@@ -438,7 +438,7 @@ export class SortilegeIntegration {
         symbols: reading.castResult.interpretation.symbols.map(s => ({
           name: s.name,
           meaning: s.meaning,
-          position: s.position
+          ...('position' in s && typeof (s as { position?: number }).position === 'number' ? { position: (s as unknown as { position: number }).position } : {})
         }))
       };
       

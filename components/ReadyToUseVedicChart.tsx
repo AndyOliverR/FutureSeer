@@ -120,8 +120,8 @@ const NorthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
                 textAnchor="middle"
                 fill="#ffffff"
                 fontSize="10"
-                title={`${planet} in House ${placement.house}`}
               >
+                <title>{`${planet} in House ${placement.house}`}</title>
                 {PLANET_SYMBOLS[planet] || planet}
               </text>
             ))}
@@ -230,8 +230,8 @@ const SouthIndianChart: React.FC<{ placements: PlanetPlacement[], chartType: str
                 textAnchor="middle"
                 fill="#ffffff"
                 fontSize="10"
-                title={`${planet} in House ${placement.house}`}
               >
+                <title>{`${planet} in House ${placement.house}`}</title>
                 {PLANET_SYMBOLS[planet] || planet}
               </text>
             ))}
@@ -406,7 +406,7 @@ const ReadyToUseVedicChart: React.FC<ChartProps> = ({
   return (
     <div className="space-y-4">
       {/* Chart display */}
-      {chartStyle === 'both' || (chartStyle === 'both' && showBothStyles) ? (
+      {(chartStyle as 'north' | 'south' | 'both') === 'both' || ((chartStyle as string) === 'both' && showBothStyles) ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="text-center">
             <NorthIndianChart placements={placements} chartType={chartType} />

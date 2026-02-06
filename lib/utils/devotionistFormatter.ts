@@ -269,7 +269,7 @@ export function createTimelineFromTransits(transits: any[], natalPlanets?: any[]
       : `${planetName} is currently transiting through ${sign}${degree ? ` at ${degree}°` : ''}. This transit influences your chart based on its position relative to your natal planets and houses, activating themes related to this planetary energy.`
     
     // Determine type based on planet
-    let type: 'positive' | 'neutral' | 'challenge' = 'neutral'
+    let type: 'positive' | 'neutral' | 'challenge' | 'milestone' = 'neutral'
     const planetLower = planetName.toLowerCase()
     if (planetLower.includes('jupiter') || planetLower.includes('venus') || planetLower.includes('sun')) {
       type = 'positive'

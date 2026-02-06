@@ -115,7 +115,7 @@ export function TarotTool() {
           <Button
             variant="outline"
             size="sm"
-            onClick={refresh}
+            onClick={() => refresh()}
             className="border-yellow-500 text-yellow-400 hover:bg-yellow-500/20"
           >
             <RefreshCw className="w-4 h-4" />
@@ -215,7 +215,7 @@ export function TarotTool() {
               <CardContent className="p-4">
                 <h4 className="font-semibold text-white mb-4">Tarot Recommendations</h4>
                 <div className="space-y-2">
-                  {tarotData.recommendations.map((recommendation, index) => (
+                  {tarotData.recommendations.map((recommendation: string, index: number) => (
                     <div key={index} className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full mt-2 flex-shrink-0"></div>
                       <span className="text-sm text-slate-300">{recommendation}</span>
@@ -228,7 +228,7 @@ export function TarotTool() {
           <TabsContent value="cards" className="space-y-4">
             <ScrollArea className="h-96">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {tarotData.cards.map((card, index) => (
+                {tarotData.cards.map((card: { name: string; image: string; element?: string; isUpright: boolean; position?: string; upright?: string; reversed?: string; suit?: string; numerology?: string | number }, index: number) => (
                   <Card key={index} className="bg-slate-700/50 border-slate-600">
                     <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
                       <div className="w-24 h-36 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-yellow-200/80 to-yellow-500/80 flex items-center justify-center">
@@ -335,7 +335,7 @@ export function TarotTool() {
                   <div>
                     <span className="text-sm text-slate-300">Favorable Periods:</span>
                     <div className="mt-1 space-y-1">
-                      {tarotData.timing.favorablePeriods.map((period, index) => (
+                      {tarotData.timing.favorablePeriods.map((period: string, index: number) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-1 h-1 bg-green-400 rounded-full"></div>
                           <span className="text-sm text-slate-300">{period}</span>
@@ -346,7 +346,7 @@ export function TarotTool() {
                   <div>
                     <span className="text-sm text-slate-300">Challenges:</span>
                     <div className="mt-1 space-y-1">
-                      {tarotData.timing.challenges.map((challenge, index) => (
+                      {tarotData.timing.challenges.map((challenge: string, index: number) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-1 h-1 bg-yellow-400 rounded-full"></div>
                           <span className="text-sm text-slate-300">{challenge}</span>
@@ -357,7 +357,7 @@ export function TarotTool() {
                   <div>
                     <span className="text-sm text-slate-300">Opportunities:</span>
                     <div className="mt-1 space-y-1">
-                      {tarotData.timing.opportunities.map((opportunity, index) => (
+                      {tarotData.timing.opportunities.map((opportunity: string, index: number) => (
                         <div key={index} className="flex items-center gap-2">
                           <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
                           <span className="text-sm text-slate-300">{opportunity}</span>

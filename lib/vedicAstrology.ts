@@ -1,13 +1,23 @@
 // Vedic Astrology Calculations using Astronomia
 // Based on ChatGPT's recommendation for proper ephemeris calculations
 
-import { julian, planetposition, sidereal, sexagesimal } from "astronomia"
-import astronomiaData from "astronomia/data"
-// astronomia main package no longer exports data; sun = earth (geocentric sun from heliocentric earth), moon = earth (fallback; consider moonposition module for correct moon)
+import * as julian from "astronomia/julian"
+import * as planetposition from "astronomia/planetposition"
+import earthData from "astronomia/data/vsop87Bearth"
+import mercuryData from "astronomia/data/vsop87Bmercury"
+import venusData from "astronomia/data/vsop87Bvenus"
+import marsData from "astronomia/data/vsop87Bmars"
+import jupiterData from "astronomia/data/vsop87Bjupiter"
+import saturnData from "astronomia/data/vsop87Bsaturn"
+// sun = earth (geocentric sun); moon = earth (fallback)
 const data = {
-  ...astronomiaData,
-  sun: astronomiaData.earth,
-  moon: astronomiaData.earth,
+  sun: earthData,
+  moon: earthData,
+  mars: marsData,
+  mercury: mercuryData,
+  jupiter: jupiterData,
+  venus: venusData,
+  saturn: saturnData
 }
 // import swe from "swisseph" // Disabled for browser compatibility
 
@@ -199,7 +209,7 @@ function calculateHouseCusps(ascendant: number, latitude: number, longitude: num
 }
 
 // Calculate planetary positions using proper sidereal zodiac
-function calculatePlanetaryPositions(jd: number, houses: HouseCusp[]): PlanetPosition[] {
+function calculatePlanetaryPositions(jd: number, houses: HouseCusp[], birthData: BirthData): PlanetPosition[] {
   const planets: PlanetPosition[] = []
   
   // Planet data from astronomia
@@ -410,7 +420,7 @@ export function generateVedicChart(birthData: BirthData, chartType: string = 'D1
     const houses = calculateHouseCusps(siderealAscendant, birthData.latitude, birthData.longitude, jd)
     
     // Calculate planetary positions using sidereal zodiac
-    const planets = calculatePlanetaryPositions(jd, houses)
+    const planets = calculatePlanetaryPositions(jd, houses, birthData)
     
     return {
       ascendant: siderealAscendant,

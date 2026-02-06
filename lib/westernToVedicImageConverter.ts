@@ -252,7 +252,7 @@ export class WesternToVedicImageConverter {
     `;
 
     // Draw diamond-shaped houses
-    const houseAngles = [];
+    const houseAngles: number[] = [];
     for (let i = 0; i < 12; i++) {
       houseAngles.push(i * 30);
     }

@@ -39,6 +39,12 @@ export type HousePlacements = {
 
 export type Placements = HousePlacements[];
 
+export type ChartData = VedicChart & {
+  placements?: Placements;
+  dasha?: unknown[];
+  currentDasha?: unknown;
+};
+
 export type NavamsaPlacements = {
   navamsa: number; // 1..12
   planets: PlanetLabel[];

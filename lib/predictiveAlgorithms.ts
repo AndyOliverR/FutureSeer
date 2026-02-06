@@ -30,7 +30,7 @@ interface LifeTransition {
   success: boolean
 }
 
-class LifePathMarkovChain {
+export class LifePathMarkovChain {
   private transitionMatrix: Map<string, Map<string, number>>
   private cosmicFactors: Map<string, number>
   private userHistory: Map<string, LifeTransition[]>
@@ -566,7 +566,7 @@ interface BayesianPrediction {
   reasoning: string[]
 }
 
-class MysticalBayesianNetwork {
+export class MysticalBayesianNetwork {
   private nodes: Map<string, BayesianNode>
   private evidence: Map<string, any>
   private cosmicFactors: Map<string, number>
@@ -1032,4 +1032,5 @@ export class PredictiveSystem {
 // Export instances for use in the application
 export const predictiveSystem = new PredictiveSystem()
 export const markovChain = new LifePathMarkovChain()
-export const bayesianNetwork = new MysticalBayesianNetwork() 
+export const bayesianNetwork = new MysticalBayesianNetwork()
+export { MysticalBayesianNetwork as BayesianBeliefNetwork } 

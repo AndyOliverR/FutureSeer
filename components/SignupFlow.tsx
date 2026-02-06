@@ -24,6 +24,7 @@ interface SignupFlowProps {
     selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
     paymentMethodId: string;
     autoMandateAccepted: boolean;
+    subscriptionId?: string;
   }) => void;
   onError?: (error: string) => void;
 }

@@ -4,9 +4,16 @@
 
 import { 
   Gem, Watch, Circle, Diamond, Palette, Clock, Heart, Shield, Zap, Star, Moon, Sun,
-  Leaf, Droplets, Flame, Wind, Eye, Brain, Hand, Foot, Crown, Sparkles, BookOpen,
-  Music, Camera, Home, Car, Plane, Tree, Flower, Mountain, Ocean, Fire, Lightning
+  Leaf, Droplets, Flame, Wind, Eye, Brain, Hand, Crown, Sparkles, BookOpen,
+  Music, Camera, Home, Car, Plane, Trees, Flower, Mountain, Waves,
+  Footprints, Flame as FireIcon, Zap as LightningIcon
 } from 'lucide-react'
+
+const Foot = Footprints
+const Tree = Trees
+const Ocean = Waves
+const Fire = FireIcon
+const Lightning = LightningIcon
 
 export interface ComprehensiveRemedy {
   id: string
@@ -72,6 +79,8 @@ export interface ComprehensiveRemedy {
   culturalOrigin?: string[]
   traditionalSource?: string[]
   modernAdaptation?: string
+  precautions?: string[]
+  relatedSystems?: string[]
 }
 
 // ============================================================================
@@ -3671,6 +3680,8 @@ export function generateComprehensiveRemedies(
   
   return remedies
 }
+
+export { MODERN_HOLISTIC_REMEDIES, LIFESTYLE_REMEDIES }
 
 export default {
   ASTROLOGICAL_REMEDIES,

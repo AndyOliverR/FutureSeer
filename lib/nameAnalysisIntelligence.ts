@@ -146,8 +146,9 @@ function analyzeElements(name: string): {
     }
   }
   
-  const dominantElement = Object.entries(elementCounts).reduce((a, b) => elementCounts[a[0]] > elementCounts[b[0]] ? a : b)[0];
-  const missingElements = Object.entries(elementCounts).filter(([_, count]) => count === 0).map(([element, _]) => element);
+  type ElementKey = keyof typeof elementCounts;
+  const dominantElement = Object.entries(elementCounts).reduce((a, b) => (elementCounts[a[0] as ElementKey] > elementCounts[b[0] as ElementKey] ? a : b))[0] as ElementKey;
+  const missingElements = Object.entries(elementCounts).filter(([, count]) => count === 0).map(([element]) => element as ElementKey);
   
   return { elements: elementCounts, dominantElement, missingElements };
 }
@@ -395,10 +396,10 @@ export async function getIntelligentNameAnalysisData(
       const cachedData = docSnap.data() as NameAnalysis;
       const lastUpdated = cachedData.metadata.lastUpdated;
       let lastUpdatedDate: Date;
-      if (lastUpdated && typeof lastUpdated.toDate === 'function') {
-        lastUpdatedDate = lastUpdated.toDate();
+      if (lastUpdated && typeof (lastUpdated as { toDate?: () => Date }).toDate === 'function') {
+        lastUpdatedDate = (lastUpdated as unknown as { toDate: () => Date }).toDate();
       } else {
-        lastUpdatedDate = new Date(lastUpdated);
+        lastUpdatedDate = lastUpdated instanceof Date ? lastUpdated : new Date(String(lastUpdated));
       }
       const hoursSinceUpdate = (new Date().getTime() - lastUpdatedDate.getTime()) / (1000 * 60 * 60);
       

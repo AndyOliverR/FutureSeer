@@ -29,7 +29,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
   const exportToPNG = async () => {
     if (!svgRef.current) return;
     try {
-      const dataUrl = await toPng(svgRef.current, {
+      const dataUrl = await toPng(svgRef.current as unknown as HTMLElement, {
         backgroundColor: "#0b0f1a",
         pixelRatio: 3,
       });

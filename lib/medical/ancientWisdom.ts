@@ -6,7 +6,7 @@ export interface WisdomQuote {
   source: string;
   quote: string;
   remedy: string;
-  tradition: 'Greek' | 'Arabic' | 'European' | 'Traditional' | 'Alchemical';
+  tradition: 'Greek' | 'Arabic' | 'European' | 'Traditional' | 'Alchemical' | 'Modern';
 }
 
 export const ancientWisdom: WisdomQuote[] = [

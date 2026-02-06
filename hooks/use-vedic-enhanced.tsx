@@ -154,7 +154,6 @@ export function useVedic() {
     setAnalysis,
     isLoading,
     setIsLoading,
-    error: errorMessage,
     setError
   };
 }

@@ -39,14 +39,14 @@ export async function POST(request: NextRequest) {
         house: planet.house,
         speed: planet.speed,
         retrograde: planet.retrograde,
-        meaning: planet.meaning
+        meaning: (planet as { meaning?: string }).meaning ?? ''
       })) || [],
       currentAspects: currentTransits.aspects?.map(aspect => ({
         planets: `${aspect.planet1} - ${aspect.planet2}`,
         aspect: aspect.aspect,
         orb: aspect.orb,
         applying: aspect.applying,
-        description: aspect.description
+        description: (aspect as { description?: string }).description ?? ''
       })) || [],
       moonPhase: currentTransits.timing?.moonPhase || 'Unknown',
       moonSign: currentTransits.timing?.moonSign || 'Unknown',

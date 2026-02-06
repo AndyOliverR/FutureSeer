@@ -418,9 +418,9 @@ export default function KPAstrologyPage() {
             'kp-astrology', 
             result.data, 
             {
-              birthDate: userProfile.birthDate,
-              birthTime: userProfile.birthTime,
-              birthPlace: userProfile.birthPlace,
+              birthDate: userProfile.birthDate ?? '',
+              birthTime: userProfile.birthTime ?? '',
+              birthPlace: userProfile.birthPlace ?? '',
               displayName: userProfile.displayName || 'User'
             },
             { maxAge: 2 * 60 * 60 * 1000 } // 2 hours

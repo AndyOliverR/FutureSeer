@@ -2,7 +2,15 @@
 // WASM for Vercel/Firebase, Node fallback for local development
 // Provides precise astronomical calculations for all occult systems
 
-import { julian, planetposition, data } from "astronomia"
+import * as julian from "astronomia/julian"
+import * as planetposition from "astronomia/planetposition"
+import earthData from "astronomia/data/vsop87Bearth"
+import mercuryData from "astronomia/data/vsop87Bmercury"
+import venusData from "astronomia/data/vsop87Bvenus"
+import marsData from "astronomia/data/vsop87Bmars"
+import jupiterData from "astronomia/data/vsop87Bjupiter"
+import saturnData from "astronomia/data/vsop87Bsaturn"
+const data = { sun: earthData, moon: earthData, earth: earthData, mercury: mercuryData, venus: venusData, mars: marsData, jupiter: jupiterData, saturn: saturnData }
 
 export interface BirthData {
   birthDate: string
@@ -107,17 +115,17 @@ async function initializeWasmSwissEphemeris() {
   if (wasmInitialized) return wasmSwe
 
   try {
-    // Dynamic import for WASM
-    const { default: initSwisseph, swe } = await import('swisseph-wasm')
-    
-    await initSwisseph({
-      locateFile: (file: string) => `/ephe/${file}`, // served from /public/ephe
+    // Dynamic import for WASM (API may vary; use type-safe fallback)
+    const swissephMod = await import('swisseph-wasm')
+    const initFn = swissephMod.default as unknown as (opts: { locateFile?: (f: string) => string }) => Promise<{ swe_set_ephe_path?: (p: string) => void; swe_set_sid_mode?: (mode: number, a: number, b: number) => void } | void>
+    const sweApi = await initFn({
+      locateFile: (file: string) => `/ephe/${file}`,
     })
-    
-    swe.swe_set_ephe_path('/ephe')
-    // Set Lahiri sidereal mode
-    swe.swe_set_sid_mode(swe.SIDM_LAHIRI, 0, 0)
-    
+    const swe = (sweApi ?? (swissephMod as { swe?: unknown }).swe) as typeof wasmSwe
+    if (swe && typeof swe.swe_set_ephe_path === 'function') {
+      swe.swe_set_ephe_path('/ephe')
+      if (typeof swe.swe_set_sid_mode === 'function') swe.swe_set_sid_mode((swe as { SIDM_LAHIRI?: number }).SIDM_LAHIRI ?? 1, 0, 0)
+    }
     wasmInitialized = true
     wasmSwe = swe
     console.log('✅ Swiss Ephemeris WASM initialized')
@@ -277,7 +285,7 @@ function calculatePlanetaryPositions(birthData: BirthData, jd: number, houses: H
         name,
         longitude: siderealLongitude,
         latitude: pos.lat * (180 / Math.PI),
-        distance: pos.range,
+        distance: (pos as { lon: number; lat: number; range?: number }).range ?? 0,
         speed: 0, // Would need additional calculation
         sign,
         degree: Math.floor(degree),

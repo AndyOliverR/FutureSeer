@@ -75,8 +75,8 @@ class OghamIntelligence {
       return this.generateBasicReading(userId, userProfile)
     }
 
-    // Generate comprehensive reading using AI
-    const reading = await this.generateComprehensiveReading(userId, userProfile)
+    // Generate comprehensive reading using AI (userProfile non-null after hasCompleteProfile check)
+    const reading = await this.generateComprehensiveReading(userId, userProfile!)
 
     // Cache the reading
     this.cache.set(cacheKey, reading)
@@ -269,19 +269,19 @@ Practices:
     const insights: any = {}
 
     // Extract overview
-    const overviewMatch = aiResponse.match(/=== OVERVIEW ===\s*Summary:\s*(.+?)(?=Personal Message:|===)/s)
+    const overviewMatch = aiResponse.match(/=== OVERVIEW ===\s*Summary:\s*([\s\S]+?)(?=Personal Message:|===)/)
     if (overviewMatch) {
       insights.overview = overviewMatch[1].trim()
     }
 
     // Extract personal message
-    const personalMessageMatch = aiResponse.match(/Personal Message:\s*(.+?)(?=== GUIDANCE ===|$)/s)
+    const personalMessageMatch = aiResponse.match(/Personal Message:\s*([\s\S]+?)(?=== GUIDANCE ===|$)/)
     if (personalMessageMatch) {
       insights.personalMessage = personalMessageMatch[1].trim()
     }
 
     // Extract guidance
-    const guidanceMatch = aiResponse.match(/=== GUIDANCE ===\s*(.+?)(?=== CELTIC WISDOM ===|$)/s)
+    const guidanceMatch = aiResponse.match(/=== GUIDANCE ===\s*([\s\S]+?)(?=== CELTIC WISDOM ===|$)/)
     if (guidanceMatch) {
       const guidanceText = guidanceMatch[1]
       insights.guidance = {
@@ -299,7 +299,7 @@ Practices:
     }
 
     // Extract Celtic wisdom
-    const celticWisdomMatch = aiResponse.match(/=== CELTIC WISDOM ===\s*(.+?)$/s)
+    const celticWisdomMatch = aiResponse.match(/=== CELTIC WISDOM ===\s*([\s\S]+)$/)
     if (celticWisdomMatch) {
       const wisdomText = celticWisdomMatch[1]
       insights.celticWisdom = {
@@ -317,7 +317,7 @@ Practices:
    * Extract a section from text
    */
   private extractSection(text: string, label: string): string {
-    const regex = new RegExp(`${label}\\s*(.+?)(?=\\n[A-Z]|$)`, 's')
+    const regex = new RegExp(`${label}\\s*([\\s\\S]+?)(?=\\n[A-Z]|$)`)
     const match = text.match(regex)
     return match ? match[1].trim() : ''
   }
@@ -326,7 +326,7 @@ Practices:
    * Extract a list from text
    */
   private extractList(text: string, label: string): string[] {
-    const regex = new RegExp(`${label}\\s*\\n((?:-\\s*.+\\n?)+)`, 's')
+    const regex = new RegExp(`${label}\\s*\\n((?:-\\s*[\\s\\S]+\\n?)+)`)
     const match = text.match(regex)
     if (match) {
       return match[1]

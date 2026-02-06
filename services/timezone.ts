@@ -8,6 +8,7 @@ export interface TimezoneInfo {
   isDST: boolean;
   abbreviation: string;
   utcOffset: string; // e.g., "+05:30"
+  timestamp?: number; // cache expiry; set by TimezoneService, not part of API response
 }
 
 export interface DateTimeInfo {
@@ -31,7 +32,7 @@ export class TimezoneService {
   async getTimezoneInfo(timezone: string): Promise<TimezoneInfo> {
     // Check cache first
     const cached = this.timezoneCache.get(timezone);
-    if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+    if (cached && cached.timestamp != null && Date.now() - cached.timestamp < this.cacheExpiry) {
       return cached;
     }
 

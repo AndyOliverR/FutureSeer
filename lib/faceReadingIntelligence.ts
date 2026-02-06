@@ -429,7 +429,7 @@ class FaceReadingIntelligence {
         const randomFeature = typeFeatures[Math.floor(Math.random() * typeFeatures.length)]
         selectedFeatures.push({
           ...randomFeature,
-          characteristics: ['prominent', 'balanced', 'distinctive'][Math.floor(Math.random() * 3)]
+          characteristics: [['prominent', 'balanced', 'distinctive'][Math.floor(Math.random() * 3)]]
         })
       }
     })

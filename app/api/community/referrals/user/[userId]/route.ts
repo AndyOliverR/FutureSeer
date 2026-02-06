@@ -111,11 +111,14 @@ export async function GET(
             successfulSignups = referredUsersSnapshot.size;
             
             if (referredUsersSnapshot.size > 0) {
+              type TimestampLike = { toDate?: () => Date } | Date | string | number;
               referredUsersSnapshot.docs.forEach((doc: { data: () => Record<string, unknown> }) => {
                 const data = doc.data();
-                const createdAt = data.createdAt || data.creationTime;
-                if (createdAt) {
-                  const inviteDate = createdAt.toDate?.()?.toISOString() || new Date(createdAt).toISOString();
+                const createdAt = (data.createdAt ?? data.creationTime) as TimestampLike | undefined;
+                if (createdAt != null) {
+                  const inviteDate = (typeof createdAt === 'object' && createdAt !== null && typeof (createdAt as { toDate?: () => Date }).toDate === 'function')
+                    ? (createdAt as { toDate: () => Date }).toDate().toISOString()
+                    : new Date(createdAt as string | number).toISOString();
                   if (!lastInviteDate || inviteDate > lastInviteDate) {
                     lastInviteDate = inviteDate;
                   }
