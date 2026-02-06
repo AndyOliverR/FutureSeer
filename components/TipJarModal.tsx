@@ -178,7 +178,7 @@ export function TipJarModal({ isOpen, onClose, countryCode = 'IN' }: TipJarModal
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-          className="fixed bg-[var(--m3-surface-container-high)]/95 backdrop-blur-xl border border-[var(--m3-outline-variant)] rounded-2xl m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated w-[calc(100vw-32px)] sm:w-[400px] md:w-[500px] h-auto max-h-[calc(100vh-120px)] sm:max-h-[500px] md:max-h-[600px] bottom-16 left-4 z-[9999]"
+          className="fixed bg-[var(--m3-surface-container-high)]/95 backdrop-blur-xl border border-[var(--m3-outline-variant)] rounded-2xl m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated w-[calc(100vw-32px)] sm:w-[400px] md:w-[500px] h-auto max-h-[90vh] sm:max-h-[500px] md:max-h-[600px] overflow-y-auto left-1/2 -translate-x-1/2 bottom-4 sm:bottom-16 sm:left-4 sm:translate-x-0 z-[9999]"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Animated mystical glow effect */}
@@ -211,6 +211,7 @@ export function TipJarModal({ isOpen, onClose, countryCode = 'IN' }: TipJarModal
                   size="sm"
                   onClick={onClose}
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-secondary)] hover:bg-[var(--m3-secondary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
+                  aria-label="Minimize"
                 >
                   <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
@@ -219,6 +220,7 @@ export function TipJarModal({ isOpen, onClose, countryCode = 'IN' }: TipJarModal
                   size="sm"
                   onClick={onClose}
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-secondary)] hover:bg-[var(--m3-secondary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
+                  aria-label="Close"
                 >
                   <X className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>

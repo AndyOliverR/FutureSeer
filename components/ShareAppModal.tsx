@@ -42,7 +42,7 @@ export function ShareAppModal({ isOpen, onClose, buttonRef }: ShareAppModalProps
         const isMobile = window.innerWidth < 768;
         
         if (isMobile) {
-          // Mobile: center at bottom of screen
+          // Mobile: center in viewport, constrain height so full modal visible in landscape
           popup.style.position = 'fixed';
           popup.style.bottom = '20px';
           popup.style.left = '50%';
@@ -50,6 +50,8 @@ export function ShareAppModal({ isOpen, onClose, buttonRef }: ShareAppModalProps
           popup.style.right = 'auto';
           popup.style.top = 'auto';
           popup.style.maxWidth = 'calc(100vw - 32px)';
+          popup.style.maxHeight = '90vh';
+          popup.style.overflowY = 'auto';
         } else {
           // Desktop: position to right and below button, or adjust if would go off-screen
           const spaceRight = window.innerWidth - buttonRect.right;
@@ -424,6 +426,7 @@ export function ShareAppModal({ isOpen, onClose, buttonRef }: ShareAppModalProps
             <Button
               variant={copied ? "filled" : "filled"}
               onClick={handleCopyLink}
+              aria-label={copied ? "Link copied" : "Copy share link"}
               className={`px-3 rounded-lg m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition m3-transition-emphasized m3-gpu-accelerated m3-ripple m3-button-bounce h-9 ${
                 copied 
                   ? 'bg-gradient-to-r from-green-500 via-emerald-500 to-green-600 text-white' 

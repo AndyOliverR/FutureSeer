@@ -320,6 +320,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
                   size="sm"
                   onClick={() => setIsExpanded(false)}
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
+                  aria-label="Collapse feedback panel"
                 >
                   <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
@@ -328,6 +329,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
                   size="sm"
                   onClick={handleClose}
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
+                  aria-label="Close"
                 >
                   <X className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
@@ -564,7 +566,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
               : "w-12 h-12 sm:w-14 sm:h-14 relative flex items-center justify-center bg-transparent border-none hover:scale-110 m3-ripple m3-button-bounce m3-transition-standard will-change-transform cursor-pointer"
             }
             title="Share Feedback"
-            aria-label="Open Feedback Panel"
+            aria-label="Share Feedback"
             style={variant === 'header' ? { width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' } : { width: '48px', height: '48px', minWidth: '48px', minHeight: '48px' }}
           >
             {/* Icon - outline only, no background or shadow */}
