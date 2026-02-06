@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { initializeRazorpayOrderCheckout } from '@/lib/razorpayClient';
 
 interface TipJarModalProps {
@@ -39,6 +40,7 @@ export function TipJarModal({ isOpen, onClose, countryCode = 'IN' }: TipJarModal
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   const quickAmounts = QUICK_AMOUNTS[countryCode as keyof typeof QUICK_AMOUNTS] || QUICK_AMOUNTS.DEFAULT;
   const currencySymbol = CURRENCY_SYMBOLS[countryCode] || CURRENCY_SYMBOLS.DEFAULT;
@@ -178,7 +180,10 @@ export function TipJarModal({ isOpen, onClose, countryCode = 'IN' }: TipJarModal
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-          className="fixed bg-[var(--m3-surface-container-high)]/95 backdrop-blur-xl border border-[var(--m3-outline-variant)] rounded-2xl m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated w-[calc(100vw-32px)] sm:w-[400px] md:w-[500px] h-auto max-h-[90vh] sm:max-h-[500px] md:max-h-[600px] overflow-y-auto left-1/2 -translate-x-1/2 bottom-4 sm:bottom-16 sm:left-4 sm:translate-x-0 z-[9999]"
+          className={isMobile
+            ? "fixed bottom-0 left-0 right-0 w-full max-h-[90vh] overflow-y-auto bg-[var(--m3-surface-container-high)]/95 backdrop-blur-xl border border-[var(--m3-outline-variant)] border-b-0 rounded-t-2xl m3-elevation-3 m3-elevation-transition m3-gpu-accelerated z-[9999]"
+            : "fixed bg-[var(--m3-surface-container-high)]/95 backdrop-blur-xl border border-[var(--m3-outline-variant)] rounded-2xl m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated w-[calc(100vw-32px)] sm:w-[400px] md:w-[500px] h-auto max-h-[90vh] sm:max-h-[500px] md:max-h-[600px] overflow-y-auto left-1/2 -translate-x-1/2 bottom-4 sm:bottom-16 sm:left-4 sm:translate-x-0 z-[9999]"
+          }
           onClick={(e) => e.stopPropagation()}
         >
           {/* Animated mystical glow effect */}
