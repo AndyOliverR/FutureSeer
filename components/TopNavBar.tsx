@@ -3,8 +3,9 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShareAppModal } from "./ShareAppModal";
-import { Share2, Info } from "lucide-react";
+import { Share2, Info, Heart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTipJar } from "@/components/TipJarContext";
 import {
   Tooltip,
   TooltipContent,
@@ -32,6 +33,7 @@ const navLinks = [
 
 export function TopNavBar() {
   const { isAdmin, isSuperadmin } = useAuth();
+  const { open: openTipJar } = useTipJar();
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -96,6 +98,23 @@ export function TopNavBar() {
             </TooltipTrigger>
             <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
               <p>About FutureSeer</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Tip Jar - visible on mobile only (md:hidden); desktop uses FloatingTipJar */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={openTipJar}
+                className="flex items-center justify-center w-10 h-10 min-w-[44px] min-h-[44px] hover:scale-110 transition-all duration-200 text-[#FF1744] hover:opacity-90 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded md:hidden"
+                aria-label="Open Tip Jar"
+              >
+                <Heart className="w-5 h-5 text-current stroke-1 fill-none" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
+              <p>Tip Jar</p>
             </TooltipContent>
           </Tooltip>
           

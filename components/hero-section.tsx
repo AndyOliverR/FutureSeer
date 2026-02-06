@@ -35,7 +35,7 @@ export function HeroSection() {
           <Button
             size="lg"
             variant="filled"
-            aria-label="Join the FutureSeer Innovation Experiment - Become a Power User"
+            aria-label="Join the Innovation Experiment"
             className="group relative px-6 sm:px-8 py-3 sm:py-4 min-h-[44px] w-full sm:w-auto bg-gradient-to-r from-[var(--m3-primary)] to-[var(--m3-tertiary)] text-[var(--m3-on-primary)] font-normal m3-label-large border-0 rounded-2xl touch-manipulation overflow-hidden transition-all duration-500 m3-transition-emphasized hover:scale-[1.02] active:scale-[0.98] hover:shadow-[0_0_30px_rgba(245,158,11,0.6),0_0_60px_rgba(245,158,11,0.4)] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 m3-gpu-accelerated"
             onClick={() => {
               trackEvent(ANALYTICS_EVENTS.HERO_CTA_CLICKED, {
@@ -80,7 +80,7 @@ export function HeroSection() {
         {/* Descriptive text - replaces old quote position */}
         <div className="max-w-xl mx-auto pt-6 sm:pt-8 pb-12 sm:pb-16">
           <p className="m3-body-large md:m3-headline-small text-center leading-relaxed relative z-10 text-[var(--m3-on-surface)] font-light">
-            See your future. Join the experiment. <span className="text-[var(--m3-primary)]">Start your journey.</span>
+            See your future. Join the experiment. <span className="text-[var(--m3-primary)]">Join the Innovation Experiment.</span>
           </p>
         </div>
       </div>

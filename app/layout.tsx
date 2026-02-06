@@ -280,7 +280,9 @@ export default function RootLayout({
           <ClientProviders>
             <I18nProvider>
               <AnalyticsInitializer />
-              {children}
+              <main role="main" id="main-content">
+                {children}
+              </main>
               <Toaster />
             </I18nProvider>
           </ClientProviders>

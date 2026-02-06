@@ -94,13 +94,13 @@ export function HowItWorks() {
         {!userProfile && (
           <div className="mt-8">
             <p className="text-white/80 font-light mb-4">
-              Ready to join the innovation experiment? Start your journey and become a power user.
+              Ready to join the innovation experiment? Sign up and become a power user.
             </p>
             <Button
               onClick={() => router.push('/signup')}
               className="bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 hover:from-amber-400 hover:to-yellow-300 font-semibold px-8 py-3 rounded-xl inline-flex items-center gap-2"
             >
-              Join the Experiment
+              Join the Innovation Experiment
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
