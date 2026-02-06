@@ -162,7 +162,7 @@ export function PaymentMethodCapture({
         modal: {
           ondismiss: () => {
             if (onError) {
-              onError(new Error('Payment cancelled by user'));
+              onError('Payment cancelled by user');
             }
             setIsLoading(false);
           },
@@ -174,9 +174,9 @@ export function PaymentMethodCapture({
 
       const razorpay = new window.Razorpay(options);
       razorpay.open();
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (onError) {
-        onError(error.message || 'Failed to secure your spot');
+        onError(error instanceof Error ? error.message : 'Failed to secure your spot');
       }
       setIsLoading(false);
     }

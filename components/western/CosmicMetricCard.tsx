@@ -10,6 +10,8 @@ export interface CosmicMetricCardProps {
   label: string
   value: string
   subtitle?: string
+  subValue?: string
+  tooltip?: string
   badge?: string
   colorScheme?: 'amber' | 'blue' | 'purple' | 'pink' | 'green' | 'orange' | 'cyan' | 'gradient'
   size?: 'small' | 'medium' | 'large'
@@ -113,6 +115,8 @@ export function CosmicMetricCard({
   label,
   value,
   subtitle,
+  subValue,
+  tooltip,
   badge,
   colorScheme = 'amber',
   size = 'medium',
@@ -133,6 +137,7 @@ export function CosmicMetricCard({
       <Card 
         className={`bg-gradient-to-br ${colors.gradient} border-2 ${colors.border} shadow-lg rounded-3xl ${onClick ? 'cursor-pointer hover:shadow-xl transition-all duration-300' : ''} h-full`}
         onClick={onClick}
+        title={tooltip}
       >
         <CardContent className="p-6 text-center flex flex-col items-center justify-center h-full">
           {/* Icon */}
@@ -159,10 +164,10 @@ export function CosmicMetricCard({
             )}
           </div>
 
-          {/* Subtitle */}
-          {subtitle && (
-            <div className={`text-slate-600 ${sizes.subtitleSize}`}>
-              {subtitle}
+          {/* Subtitle / subValue */}
+          {(subValue ?? subtitle) && (
+            <div className={`text-slate-600 ${sizes.subtitleSize}`} title={tooltip}>
+              {subValue ?? subtitle}
             </div>
           )}
         </CardContent>

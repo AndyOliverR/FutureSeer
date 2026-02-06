@@ -943,41 +943,6 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
     ],
     whyItMatters: 'Navaratna gemstones are powerful remedial measures (Upay) in Vedic astrology, used for thousands of years to balance planetary energies and enhance favorable influences. Unlike generic gemstone recommendations, this tool provides personalized analysis based on your unique birth chart, ensuring you wear gemstones that are truly beneficial for you. The system carefully avoids harmful combinations, especially Maraka planets and malefic influences that could cause negative effects. By following the detailed instructions for wearing, purification, and mantra chanting, you can safely harness the cosmic energy of gemstones to support your life journey. The tool emphasizes safety and proper consultation, recognizing that gemstone therapy is a serious practice that requires careful consideration.'
   },
-  'bazi': {
-    slug: 'bazi',
-    name: 'BaZi',
-    icon: '🏮',
-    description: 'Four Pillars of Destiny - Ancient Chinese system of life path analysis',
-    overview: 'BaZi (八字), also known as Four Pillars of Destiny, is an ancient Chinese astrological system that analyzes your birth date and time to reveal your destiny, personality, and life path. The system uses four pillars (Year, Month, Day, Hour), each containing a Heavenly Stem and Earthly Branch, to create a comprehensive chart of your elemental composition and life cycles. BaZi provides insights into personality traits, career paths, relationships, health, wealth patterns, and optimal timing for major life decisions.',
-    howItWorks: 'BaZi calculates your Four Pillars from your exact birth date and time. Each pillar consists of a Heavenly Stem (one of ten) and an Earthly Branch (one of twelve), representing different elements (Wood, Fire, Earth, Metal, Water) and animals. The Day Pillar\'s Heavenly Stem is your Day Master, representing your core self. The system analyzes element balance, production and destruction cycles, hidden stems within branches, and calculates 10-year Luck Cycles (Da Yun) that show favorable and challenging periods throughout your life. The interaction between all elements determines your personality, career suitability, relationship compatibility, health constitution, and optimal timing for various activities.',
-    keyConcepts: [
-      'Four Pillars: Year, Month, Day, Hour pillars from birth moment',
-      'Heavenly Stems (天干): Ten stems representing elements and yin/yang',
-      'Earthly Branches (地支): Twelve branches representing elements, animals, and hidden stems',
-      'Day Master (日主): The Heavenly Stem of your Day Pillar, representing your core self',
-      'Five Elements: Wood, Fire, Earth, Metal, Water and their interactions',
-      'Production Cycle: Elements that support and strengthen each other',
-      'Destruction Cycle: Elements that weaken or challenge each other',
-      'Hidden Stems (藏干): Additional stems hidden within Earthly Branches',
-      'Luck Cycles (Da Yun): 10-year periods showing favorable and challenging times',
-      'Element Balance: Distribution of elements across all pillars',
-      'Solar Terms: Month pillar determined by solar calendar, not lunar',
-      'Yin and Yang: Each stem and branch has yin or yang nature'
-    ],
-    useCases: [
-      'Understanding your core personality and traits',
-      'Identifying suitable career paths and industries',
-      'Discovering relationship compatibility',
-      'Optimizing timing for major decisions',
-      'Understanding health constitution and wellness',
-      'Planning wealth-building strategies',
-      'Navigating life transitions and challenges',
-      'Finding favorable colors, directions, and numbers',
-      'Understanding your life cycles and timing',
-      'Personal growth and self-awareness'
-    ],
-    whyItMatters: 'BaZi provides a comprehensive map of your destiny based on the precise moment of your birth. Unlike Western astrology which focuses on planetary positions, BaZi emphasizes elemental balance and timing. It reveals not just who you are, but when favorable opportunities arise and how to work with your natural strengths. The system offers practical guidance for career choices, relationship harmony, health optimization, and optimal timing for important decisions. By understanding your Four Pillars, you can align your actions with natural cycles and maximize your potential.'
-  },
   'daily-decisions': {
     slug: 'daily-decisions',
     name: 'Daily Decisions',

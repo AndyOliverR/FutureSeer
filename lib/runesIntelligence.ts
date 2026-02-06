@@ -422,7 +422,7 @@ class RunesIntelligence {
     return reading
   }
 
-  private getRandomRunes(count: number): (Rune & { isReversed: boolean })[] {
+  private getRandomRunes(count: number): (Omit<Rune, 'energy' | 'timing' | 'keywords'> & { isReversed: boolean })[] {
     const shuffled = [...this.elderFutharkRunes].sort(() => 0.5 - Math.random())
     return shuffled.slice(0, count).map(rune => ({
       ...rune,

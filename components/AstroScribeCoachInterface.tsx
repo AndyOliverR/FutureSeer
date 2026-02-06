@@ -2,8 +2,15 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import type { AstroScribeInterpretation, ScribeData } from "@/hooks/useAstroScribe"
 
-export function AstroScribeCoachInterface() {
+interface AstroScribeCoachInterfaceProps {
+  interpretation?: AstroScribeInterpretation | null
+  activeTab?: string
+  scribeData?: ScribeData
+}
+
+export function AstroScribeCoachInterface({ interpretation, activeTab, scribeData }: AstroScribeCoachInterfaceProps = {}) {
   const [isLoading, setIsLoading] = useState(false)
   const [input, setInput] = useState("")
   const [result, setResult] = useState("")

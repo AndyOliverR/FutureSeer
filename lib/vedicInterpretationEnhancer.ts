@@ -73,7 +73,7 @@ export class VedicInterpretationEnhancer {
       return interpretation;
     } catch (error) {
       console.error(`Failed to generate ${planet} interpretation:`, error);
-      return VERIFIED_VEDIC_FALLBACKS.planets[planet] || `${planet} influences your life path and karmic lessons. Consult with a Vedic astrologer for personalized insights.`;
+      return VERIFIED_VEDIC_FALLBACKS.planets[planet as keyof typeof VERIFIED_VEDIC_FALLBACKS.planets] || `${planet} influences your life path and karmic lessons. Consult with a Vedic astrologer for personalized insights.`;
     }
   }
   
@@ -93,7 +93,7 @@ export class VedicInterpretationEnhancer {
       return interpretation;
     } catch (error) {
       console.error(`Failed to generate house ${houseNumber} interpretation:`, error);
-      return VERIFIED_VEDIC_FALLBACKS.houses[houseNumber] || `The ${houseNumber}${houseNumber === 1 ? 'st' : houseNumber === 2 ? 'nd' : houseNumber === 3 ? 'rd' : 'th'} house governs important life areas. Consult with a Vedic astrologer for personalized insights.`;
+      return VERIFIED_VEDIC_FALLBACKS.houses[houseNumber as keyof typeof VERIFIED_VEDIC_FALLBACKS.houses] || `The ${houseNumber}${houseNumber === 1 ? 'st' : houseNumber === 2 ? 'nd' : houseNumber === 3 ? 'rd' : 'th'} house governs important life areas. Consult with a Vedic astrologer for personalized insights.`;
     }
   }
   
@@ -173,7 +173,7 @@ export class VedicInterpretationEnhancer {
       return interpretation;
     } catch (error) {
       console.error(`Failed to generate remedy interpretation for ${planet}:`, error);
-      return VERIFIED_VEDIC_FALLBACKS.remedies[planet] || 'Remedies help strengthen planetary influences. Consult with a Vedic astrologer for personalized guidance.';
+      return VERIFIED_VEDIC_FALLBACKS.remedies[planet as keyof typeof VERIFIED_VEDIC_FALLBACKS.remedies] || 'Remedies help strengthen planetary influences. Consult with a Vedic astrologer for personalized guidance.';
     }
   }
   

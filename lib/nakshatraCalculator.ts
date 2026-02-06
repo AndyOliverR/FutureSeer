@@ -119,7 +119,7 @@ export class NakshatraCalculator {
           minuteInNakshatra
         };
       })
-      .filter(Boolean); // Remove any null results
+      .filter((x): x is PlanetaryNakshatra => x != null);
   }
 
   /**

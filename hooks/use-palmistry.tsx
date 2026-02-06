@@ -44,13 +44,16 @@ export function usePalmistry() {
     if (handType === "dominant") {
       hand = dominantHand;
     } else if (handType === "non-dominant") {
-      hand = dominantHand === "left" ? "right" : "left";
+      hand = (dominantHand as "left" | "right") === "left" ? "right" : "left";
     } else if (userProfile.gender === "male") {
       dominantHand = "right";
       hand = "right";
     } else if (userProfile.gender === "female") {
       dominantHand = "right";
       hand = "left";
+    } else {
+      dominantHand = "right";
+      hand = "both";
     }
 
     // Calculate age from birth date
@@ -74,7 +77,7 @@ export function usePalmistry() {
         hand,
         dominantHand,
         age,
-        userProfile.gender || "other",
+        (userProfile.gender === "non-binary" ? "other" : userProfile.gender) || "other",
         userProfile.palmPhotoUrl
       );
 

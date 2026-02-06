@@ -94,7 +94,7 @@ export interface ComprehensiveAstroData {
   metadata: {
     reportId: string
     version: string
-    source: 'internal_calculations' | 'fallback' | 'emergency_fallback' | 'intelligent_system' | 'external_with_learning'
+    source: 'internal_calculations' | 'fallback' | 'emergency_fallback' | 'intelligent_system' | 'external_with_learning' | 'astroapp'
     isComprehensive: true
     isFallback?: boolean
     systemConfidence?: number

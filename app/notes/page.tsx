@@ -215,7 +215,7 @@ export default function NotesPage() {
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => handleDeleteNote(note.id)}
+                        onClick={() => note.id && handleDeleteNote(note.id)}
                         className="text-slate-400 hover:text-red-400 text-lg transition-colors duration-200"
                       >
                         🗑️

@@ -1,5 +1,10 @@
-import { MundaneAnalysis, AnalysisData, WorldEvent, GlobalTrend, MundanePrediction, AstrologicalCycle } from '@/hooks/useMundaneAstrology'
+import { MundaneAnalysis, WorldEvent, GlobalTrend, MundanePrediction, AstrologicalCycle } from '@/hooks/useMundaneAstrology'
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+
+export type AnalysisData = MundaneAnalysis & {
+  analysisType?: 'global' | 'economic' | 'political' | 'social' | 'environmental' | 'technological' | 'health'
+  timePeriod?: string
+}
 import { getFirebaseDB } from './firebase';
 
 class MundaneAstrologyIntelligence {

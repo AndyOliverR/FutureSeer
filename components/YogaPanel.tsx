@@ -20,7 +20,8 @@ import {
   Target,
   Sparkles
 } from 'lucide-react';
-import { Yoga, getYogaSignificance, getYogaEffects } from '@/lib/enhancedYogaDetection';
+import { Yoga } from '@/lib/enhancedYogaDetection';
+import { getYogaSignificance, getYogaEffects } from '@/lib/yogaDetection';
 import { 
   calculateYogaTiming, 
   formatActivationDate, 
@@ -39,6 +40,10 @@ interface YogaPanelProps {
   transitData?: TransitData;
   birthData?: BirthData;
   className?: string;
+}
+
+function isInGoldenPeriod(_date: Date): boolean {
+  return false;
 }
 
 export function YogaPanel({ yogas, dashaData, transitData, birthData, className = "" }: YogaPanelProps) {

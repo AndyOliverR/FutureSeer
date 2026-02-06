@@ -602,7 +602,7 @@ class IChingIntelligence {
           result = { value: 9, isChanging: true, yinYang: 'yang' }
         }
       }
-      lines.push({ ...result, position })
+      lines.push({ ...result, position, yinYang: result.yinYang as 'yin' | 'yang' })
     }
     
     return lines

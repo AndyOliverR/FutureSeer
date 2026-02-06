@@ -16,7 +16,6 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
       autocapture: true,
       disable_session_recording: false,
       enable_recording_console_log: false,
-      enable_recording_network_payloads: false,
     })
     isPostHogEnabled = true
   } catch (error) {
@@ -88,6 +87,7 @@ export const ANALYTICS_PROPERTIES = {
   BROWSER: 'browser',
   SCREEN_SIZE: 'screen_size',
   CONNECTION_SPEED: 'connection_speed',
+  PAGE_NAME: 'page_name',
 } as const
 
 // Analytics Service

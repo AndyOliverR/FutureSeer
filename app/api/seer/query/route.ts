@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { seerChatbot, SeerQueryRequest } from '@/lib/seerChatbot/seerChatbot';
 import { getUserProfile, isProfileComplete } from '@/lib/firebase';
 import { getDocument } from '@/lib/firebase-admin';
-import { getAllDivinationData, getCachedDivinationData, setCachedDivinationData } from '@/lib/universalDataAggregator';
+import { getAllDivinationData, getCachedDivinationData, setCachedDivinationData, type UniversalDivinationData } from '@/lib/universalDataAggregator';
 import { ComprehensiveSeerEngine } from '@/lib/comprehensiveSeerEngine';
 import { decomposeQuery } from '@/lib/universalSeerDecomposition';
 import { devLog } from '@/lib/devLogger';
@@ -216,11 +216,11 @@ export async function POST(request: NextRequest) {
           confidenceScore: 0.95,
           generatedAt: new Date().toISOString(),
           dataVersion: '1.0.0'
-        };
+        } as UniversalDivinationData;
         
-        devLog.debug('✅ [SEER-API] UniversalData created with systems:', universalData.systemsUsed, 'seer');
-        devLog.debug('🔍 [SEER-API] UniversalData vedicAstrology has reading?', !!universalData.vedicAstrology?.reading, 'seer');
-        devLog.debug('🔍 [SEER-API] UniversalData vedicAstrology has karma?', !!universalData.vedicAstrology?.reading?.karma, 'seer');
+        devLog.debug('✅ [SEER-API] UniversalData created with systems:', universalData?.systemsUsed, 'seer');
+        devLog.debug('🔍 [SEER-API] UniversalData vedicAstrology has reading?', !!universalData?.vedicAstrology?.reading, 'seer');
+        devLog.debug('🔍 [SEER-API] UniversalData vedicAstrology has karma?', !!universalData?.vedicAstrology?.reading?.karma, 'seer');
       } else {
         devLog.warn('⚠️ [SEER-API] No comprehensive profile provided or found, falling back to getAllDivinationData', undefined, 'seer');
         devLog.debug('🔍 [SEER-API] Has chartData?', !!context?.chartData, 'seer');
@@ -236,11 +236,11 @@ export async function POST(request: NextRequest) {
         devLog.debug('🔍 [SEER-API] Generated systems:', universalData.systemsUsed, 'seer');
       }
       
-      setCachedDivinationData(user_id, universalData);
+      if (universalData) setCachedDivinationData(user_id, universalData);
       devLog.info('💾 [SEER-API] Cached divination data for user:', user_id, 'seer');
     } else {
       devLog.info('📦 [SEER-API] Using cached comprehensive data', undefined, 'seer');
-      devLog.debug('🔍 [SEER-API] Cached systems:', universalData.systemsUsed, 'seer');
+      devLog.debug('🔍 [SEER-API] Cached systems:', universalData?.systemsUsed, 'seer');
     }
 
     // Initialize conversational memory with cross-session context loading (non-fatal on server)

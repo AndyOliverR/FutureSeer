@@ -63,6 +63,7 @@ export interface GemstoneRecommendation {
   }
   benefits: string[]
   warnings: string[]
+  color?: string
 }
 
 export interface NavaratnaAnalysis {

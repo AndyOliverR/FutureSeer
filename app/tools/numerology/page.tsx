@@ -53,7 +53,7 @@ import { getKuaResult } from '@/lib/numerology/kua'
 import { calcChallengeCycles } from '@/lib/numerology/cycles'
 import { generateMonthForecast } from '@/lib/numerology/forecast'
 import { getSummaryNumbers } from '@/lib/numerology/summary'
-import ComprehensiveNumerologyReport from '@/components/numerology/ComprehensiveNumerologyReport'
+import ComprehensiveNumerologyReport, { type ComprehensiveAnalysis } from '@/components/numerology/ComprehensiveNumerologyReport'
 import NumerologySeerChatInterface from '@/components/numerology/NumerologySeerChatInterface'
 import { DevotionistStyleCard } from '@/components/western/DevotionistStyleCard'
 import { ChaldeanInterpretations } from '@/lib/numerology/chaldean'
@@ -66,7 +66,7 @@ export default function NumerologyPage() {
   const [isLoadingComprehensiveReport, setIsLoadingComprehensiveReport] = useState(false)
 
   // Check if user has complete birth details
-  const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
+  const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
 
   // Use the new localStorage-based hook
   const { toolData: numerologyData, isLoading, error, refetch } = useToolData(
@@ -406,7 +406,7 @@ export default function NumerologyPage() {
                 userId={user?.uid}
                 numerologyData={numerologyData}
                 userProfile={userProfile}
-                cachedReport={comprehensiveReport}
+                cachedReport={comprehensiveReport as ComprehensiveAnalysis | null | undefined}
                 isLoadingReport={isLoadingComprehensiveReport}
               />
             </motion.div>
@@ -737,7 +737,7 @@ export default function NumerologyPage() {
 
                 {/* Name Planes */}
                 <NamePlanes
-                  firstName={userProfile?.fullName || userProfile?.displayName || user?.displayName}
+                  firstName={userProfile?.fullName ?? userProfile?.displayName ?? user?.displayName ?? undefined}
                   nameNumber={numerologyData?.expression_number || numerologyData?.destiny_number}
                 />
               </div>

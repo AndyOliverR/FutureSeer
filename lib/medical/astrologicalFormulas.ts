@@ -241,23 +241,26 @@ export function searchFormulas(criteria: {
   }
 
   if (criteria.planet) {
+    const planet = criteria.planet;
     results = results.filter(f => 
-      f.criteria.planets?.includes(criteria.planet) ||
-      f.description.toLowerCase().includes(criteria.planet.toLowerCase())
+      f.criteria.planets?.includes(planet) ||
+      f.description.toLowerCase().includes(planet.toLowerCase())
     );
   }
 
   if (criteria.sign) {
+    const sign = criteria.sign;
     results = results.filter(f => 
-      f.criteria.signs?.includes(criteria.sign) ||
-      f.description.toLowerCase().includes(criteria.sign.toLowerCase())
+      f.criteria.signs?.includes(sign) ||
+      f.description.toLowerCase().includes(sign.toLowerCase())
     );
   }
 
-  if (criteria.house) {
+  if (criteria.house != null) {
+    const house = criteria.house;
     results = results.filter(f => 
-      f.criteria.houses?.includes(criteria.house) ||
-      f.description.includes(criteria.house.toString())
+      f.criteria.houses?.includes(house) ||
+      f.description.includes(house.toString())
     );
   }
 

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { isProfileComplete, getProfileCompletionStatus } from "@/lib/firebase";
+import { isProfileComplete, getProfileCompletionStatus, type UserProfile } from "@/lib/firebase";
 import Link from "next/link";
 import { 
   MessageCircle, 
@@ -90,11 +90,21 @@ interface SpiritualGuidance {
   karmicLessons: string[];
 }
 
+interface AskTheSeerContextData {
+  faceReadingAnalysis?: unknown;
+  dreamSymbolsAnalysis?: unknown;
+  humanDesignChart?: unknown;
+  oghamReport?: unknown;
+  bibliomancyReading?: unknown;
+  fengShuiAnalysis?: unknown;
+  [key: string]: unknown;
+}
+
 interface AskTheSeerChatInterfaceProps {
   userId: string;
-  userProfile?: any;
+  userProfile?: UserProfile | null;
   contextType?: string;
-  contextData?: object;
+  contextData?: AskTheSeerContextData;
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -222,8 +232,8 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
   const isBibliomancy = contextType === 'bibliomancy';
   
   // Profile validation
-  const profileStatus = getProfileCompletionStatus(userProfile);
-  const isProfileReady = isProfileComplete(userProfile);
+  const profileStatus = getProfileCompletionStatus(userProfile ?? null);
+  const isProfileReady = isProfileComplete(userProfile ?? null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

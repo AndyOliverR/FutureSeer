@@ -107,8 +107,7 @@ export function AngelNumbersCoachInterface({
           userId: user?.uid ?? '',
           question: messageToSend,
           userProfile: {
-            name: user?.displayName,
-            birthDate: user?.birthDate,
+            name: user?.displayName ?? '',
           },
           angelNumbersContext: {
             observed_number: observedNumber,

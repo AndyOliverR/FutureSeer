@@ -190,7 +190,7 @@ function getOrdinalSuffix(num: number): string {
   return 'th';
 }
 
-function getDualTabName(westernName: string): JSX.Element {
+function getDualTabName(westernName: string): React.ReactElement {
   const vedic = VEDIC_NAMES.tabs[westernName as keyof typeof VEDIC_NAMES.tabs];
   
   // If no Vedic term or same as Western, just return Western
@@ -306,7 +306,7 @@ function VedicAstrologyPageContent() {
     if (user?.uid && searchParams.get('clearCache') === 'true' && !cacheCleared) {
       setIsClearingCache(true);
       const enhancer = new VedicInterpretationEnhancer();
-      enhancer.deleteAllVedicInterpretationsForUser(user.uid).then(() => {
+      enhancer.deleteAllVedicInterpretationsForUser(user?.uid ?? '').then(() => {
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Full cache cleared!');
         }
@@ -358,7 +358,7 @@ function VedicAstrologyPageContent() {
       const res = await fetch('/api/vedic-interpretations/planets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planet, chartData: newChartData, userId: user.uid })
+        body: JSON.stringify({ planet, chartData: newChartData, userId: user?.uid ?? '' })
       });
       if (res.ok) {
         const { interpretation } = await res.json();
@@ -367,7 +367,7 @@ function VedicAstrologyPageContent() {
         }
       }
       // Fallback if API fails
-      return { planet, interpretation: VERIFIED_VEDIC_FALLBACKS.planets[planet] };
+      return { planet, interpretation: VERIFIED_VEDIC_FALLBACKS.planets[planet as keyof typeof VERIFIED_VEDIC_FALLBACKS.planets] };
     });
     
     const results = await Promise.all(planetPromises);
@@ -401,7 +401,7 @@ function VedicAstrologyPageContent() {
         body: JSON.stringify({ 
           dashaData: newChartData.currentDasha, 
           chartData: newChartData, 
-          userId: user.uid 
+          userId: user?.uid ?? '' 
         })
       });
       
@@ -436,7 +436,7 @@ function VedicAstrologyPageContent() {
       const db = getFirebaseDB();
       const { doc, setDoc } = await import('firebase/firestore');
       const birthDataKey = `${userProfile?.birthDate}_${userProfile?.birthTime}_${userProfile?.birthPlace}`;
-      const cacheDocRef = doc(db, 'users', user.uid, 'vedicInterpretations', 'static');
+      const cacheDocRef = doc(db, 'users', user?.uid ?? '', 'vedicInterpretations', 'static');
       
       const updateData: any = {
         ...existingCache,
@@ -530,7 +530,7 @@ function VedicAstrologyPageContent() {
       const db = getFirebaseDB();
       const { doc, getDoc, setDoc } = await import('firebase/firestore');
       const birthDataKey = `${userProfile?.birthDate}_${userProfile?.birthTime}_${userProfile?.birthPlace}`;
-      const cacheDocRef = doc(db, `users/${user.uid}/vedicInterpretations/static`);
+      const cacheDocRef = doc(db, `users/${user?.uid ?? ''}/vedicInterpretations/static`);
       const cacheDoc = await getDoc(cacheDocRef);
       
       if (cacheDoc.exists() && cacheDoc.data().birthDataKey === birthDataKey) {
@@ -661,7 +661,7 @@ function VedicAstrologyPageContent() {
       const overviewRes = await fetch('/api/vedic-interpretations/overview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chartData: newChartData, userId: user.uid })
+        body: JSON.stringify({ chartData: newChartData, userId: user?.uid ?? '' })
       });
       let enhancedOverview = '';
       if (overviewRes.ok) {
@@ -676,7 +676,7 @@ function VedicAstrologyPageContent() {
         const res = await fetch('/api/vedic-interpretations/planets', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ planet, chartData: newChartData, userId: user.uid })
+          body: JSON.stringify({ planet, chartData: newChartData, userId: user?.uid ?? '' })
         });
         if (res.ok) {
           const { interpretation } = await res.json();
@@ -698,7 +698,7 @@ function VedicAstrologyPageContent() {
         const res = await fetch('/api/vedic-interpretations/houses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ houseNumber, chartData: newChartData, userId: user.uid })
+          body: JSON.stringify({ houseNumber, chartData: newChartData, userId: user?.uid ?? '' })
         });
         if (res.ok) {
           const { interpretation } = await res.json();
@@ -723,7 +723,7 @@ function VedicAstrologyPageContent() {
           body: JSON.stringify({ 
             dashaData: newChartData.currentDasha, 
             chartData: newChartData, 
-            userId: user.uid 
+            userId: user?.uid ?? '' 
           })
         });
         if (dashaRes.ok) {
@@ -742,7 +742,7 @@ function VedicAstrologyPageContent() {
           body: JSON.stringify({ 
             transitData: transitsData, 
             chartData: newChartData, 
-            userId: user.uid 
+            userId: user?.uid ?? '' 
           })
         });
         if (transitRes.ok) {
@@ -761,7 +761,7 @@ function VedicAstrologyPageContent() {
           body: JSON.stringify({ 
             panchangaData: currentPanchangaData, 
             chartData: newChartData, 
-            userId: user.uid 
+            userId: user?.uid ?? '' 
           })
         });
         if (panchangaRes.ok) {
@@ -780,7 +780,7 @@ function VedicAstrologyPageContent() {
             planet, 
             remedy: { name: 'Gemstone' }, // Basic remedy info
             chartData: newChartData, 
-            userId: user.uid 
+            userId: user?.uid ?? '' 
           })
         });
         if (res.ok) {
@@ -846,7 +846,7 @@ function VedicAstrologyPageContent() {
       const db = getFirebaseDB();
       const { doc, getDoc, setDoc } = await import('firebase/firestore');
       const birthDataKey = `${userProfile?.birthDate}_${userProfile?.birthTime}_${userProfile?.birthPlace}`;
-      const cacheDocRef = doc(db, `users/${user.uid}/divisionalInterpretations/${chartType}`);
+      const cacheDocRef = doc(db, `users/${user?.uid ?? ''}/divisionalInterpretations/${chartType}`);
       const cacheDoc = await getDoc(cacheDocRef);
       
       if (cacheDoc.exists() && cacheDoc.data().birthDataKey === birthDataKey) {
@@ -892,7 +892,7 @@ function VedicAstrologyPageContent() {
         body: JSON.stringify({ 
           chartType, 
           chartData: newChartData, 
-          userId: user.uid,
+          userId: user?.uid ?? '',
           userName: userProfile?.displayName || userProfile?.fullName
         })
       });
@@ -1041,12 +1041,12 @@ function VedicAstrologyPageContent() {
       if (birthDate === '1983-02-24') {
         console.log('🕉️ VEDIC UI VALIDATION for Feb 24, 1983:');
         console.log('  Ascendant:', chart.ascendant);
-        console.log('  Sun:', chart.planets.sun);
+        console.log('  Sun:', (chart.planets as Record<string, unknown>)?.sun);
         console.log('  Expected: Ascendant Gemini ~13°, Sun Aquarius ~11°');
         
         // Detailed validation
-        const sunLon = chart.planets.sun?.lonSidereal;
-        const ascLon = chart.ascendant?.lonSidereal;
+        const sunLon = (chart.planets as Record<string, { lonSidereal?: number }>)?.sun?.lonSidereal;
+        const ascLon = (chart as { ascendant?: { lonSidereal?: number } }).ascendant?.lonSidereal;
         
         if (sunLon !== undefined) {
           const sunSign = Math.floor(sunLon / 30);
@@ -1066,8 +1066,9 @@ function VedicAstrologyPageContent() {
       // If we have previous node positions, show comparison
       const previousPos = capturedPreviousPositions || previousNodePositions;
       if (previousPos) {
-        const newRahu = chart.planets?.['Rahu'] || chart.planets?.['rahu'];
-        const newKetu = chart.planets?.['Ketu'] || chart.planets?.['ketu'];
+        const planets = chart.planets as Record<string, { degree?: number; degreeInSign?: number }> | undefined;
+        const newRahu = planets?.['Rahu'] || planets?.['rahu'];
+        const newKetu = planets?.['Ketu'] || planets?.['ketu'];
         
         if (newRahu || newKetu) {
           // Highlight nodes in table
@@ -1135,23 +1136,26 @@ function VedicAstrologyPageContent() {
       lord: newChartData.ascendant?.lord || 'Unknown'
     },
     ayanamsha: newChartData.metadata?.ayanamshaValue || 0,
-    placements: newChartData.houses?.map((house, index) => ({
+    placements: newChartData.houses?.map((house: { signName?: string; lord?: string; sign?: number }, index: number) => ({
       house: index + 1,
       signName: house.signName,
       lord: house.lord,
-      planets: Object.entries(newChartData.planets || {}).filter(([_, planet]: any) => planet.sign === house.sign).map(([name, planet]: any) => ({
-        name,
-        longitude: planet.lonSidereal,
-        latitude: planet.lat,
-        distance: planet.dist,
-        sign: planet.sign,
-        signName: planet.signName,
-        degreeInSign: planet.degreeInSign,
-        house: index + 1,
-        nakshatra: planet.nakshatra,
-        nakshatraPada: planet.nakshatraPada,
-        dignity: planet.dignity
-      }))
+      planets: Object.entries(newChartData.planets || {}).filter(([_, planet]: [string, unknown]) => (planet as { sign?: number }).sign === house.sign).map(([name, planet]: [string, unknown]) => {
+        const p = planet as { lonSidereal?: number; lat?: number; dist?: number; sign?: number; signName?: string; degreeInSign?: number; nakshatra?: string; nakshatraPada?: string; dignity?: unknown };
+        return {
+          name,
+          longitude: p.lonSidereal,
+          latitude: p.lat,
+          distance: p.dist,
+          sign: p.sign,
+          signName: p.signName,
+          degreeInSign: p.degreeInSign,
+          house: index + 1,
+          nakshatra: p.nakshatra,
+          nakshatraPada: p.nakshatraPada,
+          dignity: p.dignity
+        };
+      })
     })) || [],
     currentDasha: null, // Will be calculated separately if needed
     dasha: [], // Will be calculated separately if needed
@@ -1382,7 +1386,7 @@ function VedicAstrologyPageContent() {
           const db = getFirebaseDB();
           if (db) {
             const { doc, getDoc } = await import('firebase/firestore');
-            const docRef = doc(db, 'users', user.uid, 'mysticalProfile', 'comprehensive');
+            const docRef = doc(db, 'users', user?.uid ?? '', 'mysticalProfile', 'comprehensive');
             const docSnap = await getDoc(docRef);
             
             if (docSnap.exists()) {
@@ -1427,7 +1431,7 @@ function VedicAstrologyPageContent() {
           });
           
           getVedicReading(
-            user.uid,
+            user?.uid ?? '',
             userProfile.birthDate!,
             userProfile.birthTime!,
             userProfile.birthPlace!,
@@ -1584,7 +1588,7 @@ function VedicAstrologyPageContent() {
       
       // Calculate current Panchanga for today
       const currentPanchanga = calculateCurrentPanchanga(
-        userProfile.birthPlace,
+        userProfile.birthPlace ?? '',
         coordinates.latitude,
         coordinates.longitude
       );
@@ -2077,7 +2081,7 @@ function VedicAstrologyPageContent() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <DevotionistStyleCard
                     icon={<Star className="w-5 h-5" />}
-                    title={`${chartData ? chartData.placements.reduce((sum, house) => sum + house.planets.length, 0) : '9'}`}
+                    title={`${chartData ? chartData.placements.reduce((sum: number, house: { planets: unknown[] }) => sum + house.planets.length, 0) : '9'}`}
                     summary="Planets"
                     colorScheme="amber"
                     variant="callout"
@@ -2218,10 +2222,10 @@ function VedicAstrologyPageContent() {
                                     return (
                                       <div className="w-full flex justify-center">
                                         <ReadyToUseVedicChart
-                                          name={userProfile.displayName || "Vedic Chart"}
-                                          birthDate={userProfile.birthDate}
-                                          birthTime={userProfile.birthTime}
-                                          birthPlace={userProfile.birthPlace}
+                                          name={userProfile.displayName ?? "Vedic Chart"}
+                                          birthDate={userProfile.birthDate ?? ''}
+                                          birthTime={userProfile.birthTime ?? ''}
+                                          birthPlace={userProfile.birthPlace ?? ''}
                                           latitude={coordinates.latitude}
                                           longitude={coordinates.longitude}
                                           chartType="D1"
@@ -2522,7 +2526,7 @@ function VedicAstrologyPageContent() {
                     
                     {/* Shadbala Analysis */}
                     {shadbalaData && (
-                      <ShadbalaAnalysis data={shadbalaData} />
+                      <ShadbalaAnalysis shadbalaAnalysis={shadbalaData} />
                     )}
                     
                     {/* Enhanced Planetary Interpretations */}
@@ -3270,7 +3274,7 @@ function VedicAstrologyPageContent() {
               {/* Nakshatras Tab */}
               <TabsContent value="nakshatras" className="space-y-6">
                 {unifiedChartData && unifiedChartData.planets ? (
-                  <NakshatraAnalysis nakshatraAnalysis={nakshatraAnalysis} />
+                  <NakshatraAnalysis nakshatraAnalysis={nakshatraAnalysis ?? undefined} />
                 ) : (
                   <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm rounded-xl">
                     <CardContent className="p-8 text-center">
@@ -3418,12 +3422,12 @@ function VedicAstrologyPageContent() {
                                   // Add other ascendants as needed
                                 };
                                 
-                                const lordship = houseLordship[ascendantSign];
+                                const lordship = houseLordship[ascendantSign as keyof typeof houseLordship];
                                 if (!lordship) return []; // Fallback to current logic
                                 
                                 // Score each planet
-                                const scoredPlanets = Object.entries(chartData.planets || {}).map(([planetName, planetData]: any) => {
-                                  const planet = planetName.toLowerCase();
+                                const scoredPlanets = Object.entries(chartData.planets || {}).map(([planetName, planetData]: [string, unknown]) => {
+                                  const planet = planetName.toLowerCase() as keyof typeof lordship;
                                   const lord = lordship[planet];
                                   
                                   let score = 0;
@@ -3436,7 +3440,7 @@ function VedicAstrologyPageContent() {
                                   }
                                   
                                   // Adjust for dignity
-                                  const strength = planetData.dignity?.strength;
+                                  const strength = (planetData as { dignity?: { strength?: string } }).dignity?.strength;
                                   if (strength === 'Weak' || strength === 'Debilitated') {
                                     score += 5; // Weak planets need remedies
                                     reason += ' (Weak - needs strengthening)';
@@ -3828,10 +3832,10 @@ function VedicAstrologyPageContent() {
                                               <p>• {gemInfo.simplicity}</p>
                                             </div>
                                             
-                                            {gemInfo.special && (
+                                            {(gemInfo as { special?: string }).special && (
                                               <div className="pt-2 border-t border-amber-500/50">
                                                 <p className="font-medium text-amber-300 mb-1">Special Instructions:</p>
-                                                <p className="text-slate-300">{gemInfo.special}</p>
+                                                <p className="text-slate-300">{(gemInfo as { special?: string }).special}</p>
                                               </div>
                                             )}
                                           </div>

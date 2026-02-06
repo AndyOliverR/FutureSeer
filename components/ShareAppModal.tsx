@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 interface ShareAppModalProps {
   isOpen: boolean;
   onClose: () => void;
-  buttonRef?: React.RefObject<HTMLButtonElement>;
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 export function ShareAppModal({ isOpen, onClose, buttonRef }: ShareAppModalProps) {

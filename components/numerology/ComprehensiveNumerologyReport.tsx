@@ -36,7 +36,7 @@ interface ComprehensiveNumerologyReportProps {
   isLoadingReport?: boolean
 }
 
-interface ComprehensiveAnalysis {
+export interface ComprehensiveAnalysis {
   profileOverview: string
   coreNumbersAnalysis: Array<{ number: string; value: number; analysis: string }>
   lifePathAnalysis: string

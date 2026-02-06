@@ -216,7 +216,7 @@ function getExpressionNumberRemedies(expressionNumber?: number): NumerologyRemed
     benefits: remedyData.benefits || [],
     gemstones: remedyData.gemstones,
     colors: remedyData.colors,
-    daysOfWeek: remedyData.daysOfWeek
+    daysOfWeek: (remedyData as { daysOfWeek?: string[] }).daysOfWeek
   }]
 }
 

@@ -24,6 +24,8 @@ export interface VedicPlanetaryPosition {
   planet: string
   sign: string
   degree: number
+  degreeInSign?: number
+  dignity?: string
   house: number
   nakshatra: string
   nakshatraLord: string
@@ -67,6 +69,7 @@ export interface VedicChart {
   chartType: string // 'rasi' | 'navamsa' | 'dasamsa' | 'dwadasamsa' | 'trimsamsa'
   imageUrl?: string
   imageData?: string // Base64 encoded chart image
+  ascendant?: { sign: number }
   planets: VedicPlanetaryPosition[]
   houses: VedicHouse[]
   metadata: {

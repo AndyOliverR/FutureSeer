@@ -137,19 +137,30 @@ export function DivisionalChartsViewer({
     console.warn('⚠️ No chart info found for chartType:', currentChart?.chartType)
   }
 
+  // Sign name to index (0-11) for South Indian chart
+  const SIGN_INDEX: Record<string, number> = {
+    Aries: 0, Taurus: 1, Gemini: 2, Cancer: 3, Leo: 4, Virgo: 5,
+    Libra: 6, Scorpio: 7, Sagittarius: 8, Capricorn: 9, Aquarius: 10, Pisces: 11
+  };
+
   // Convert chart data for South Indian chart visualization
   const getChartForVisualization = (chart: VedicChart) => {
-    // Transform planets to match SouthIndianVedicChart props format
-    const planets = chart.planets?.map((planet: VedicPlanetaryPosition) => ({
-      name: planet.planet.toLowerCase(),
-      sign: planet.sign,
-      degreeInSign: planet.degreeInSign || 0,
-      isRetrograde: planet.dignity?.includes('R') || false
-    })) || [];
+    // Transform planets to match SouthIndianVedicChart props format (sign must be number 0-11)
+    const planets = chart.planets?.map((planet: VedicPlanetaryPosition) => {
+      const signNum = typeof planet.sign === 'number'
+        ? planet.sign
+        : SIGN_INDEX[String(planet.sign).trim()] ?? 0;
+      return {
+        name: planet.planet.toLowerCase(),
+        sign: signNum,
+        degreeInSign: planet.degreeInSign || 0,
+        isRetrograde: planet.dignity?.includes('R') || false
+      };
+    }) || [];
 
   return {
     planets,
-    ascendantSign: chart.ascendant?.sign || 0,
+    ascendantSign: chart.ascendant?.sign ?? 0,
     chartType: chart.chartType?.toUpperCase() || 'D1'  // Add safety check with fallback
   };
   };

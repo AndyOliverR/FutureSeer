@@ -1,8 +1,6 @@
 // Dr. Eugen Jonas Fertility Calendar Calculator
 // Based on lunar phase methods and astrological timing for conception
 
-import { calculateJulianDay } from '../astroCalculations'
-
 /**
  * Calculate lunar phase based on date
  * Returns: 'new', 'waxing', 'full', or 'waning'

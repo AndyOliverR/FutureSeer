@@ -28,6 +28,19 @@ export function useWesternAstrology() {
     setError(null);
   }
 
+  const analyze = (params: {
+    birthDate: string;
+    birthTime: string;
+    birthPlace: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    setBirthDate(params.birthDate);
+    setBirthTime(params.birthTime);
+    setBirthPlace(params.birthPlace);
+    performWesternAstrologyAnalysis();
+  };
+
   return {
     name,
     setName,
@@ -38,8 +51,11 @@ export function useWesternAstrology() {
     birthPlace,
     setBirthPlace,
     analysis,
+    data: analysis,
     isLoading,
+    loading: isLoading,
     error,
+    analyze,
     performWesternAstrologyAnalysis,
     resetData,
   };

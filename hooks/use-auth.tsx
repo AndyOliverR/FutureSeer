@@ -68,13 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const refreshProfile = useCallback(async () => {
+  const refreshProfile = useCallback(async (): Promise<void> => {
     if (user) {
       try {
         // Fetch first, then update - don't clear existing profile to prevent UI flash
         const profile = await getUserProfile(user.uid);
         setUserProfile(profile);
-        return profile;
       } catch (error) {
         console.error('Error refreshing profile:', error);
         throw error;

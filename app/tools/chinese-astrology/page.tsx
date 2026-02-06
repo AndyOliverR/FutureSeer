@@ -396,7 +396,7 @@ export default function ChineseAstrologyPage() {
                     <div>
                       <p className="text-slate-600 text-sm mb-2 font-medium">Chinese Zodiac</p>
                       <p className="text-purple-900 font-semibold text-lg">
-                        {chartData.zodiacAnimal.animal} ({chartData.zodiacAnimal.nameChinese})
+                        {chartData.zodiacAnimal.animal} ({chartData.zodiacAnimal.nameChinese ?? chartData.zodiacAnimal.animal})
                       </p>
                     </div>
                   </div>

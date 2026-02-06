@@ -610,8 +610,8 @@ export class ComprehensiveSeerEngine {
   private async answerPurposeQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('🎯 Analyzing life purpose using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     let totalConfidence = 0;
     let systemCount = 0;
     
@@ -705,8 +705,8 @@ export class ComprehensiveSeerEngine {
   private async answerMarriageQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('💕 Analyzing marriage using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     let totalConfidence = 0;
     let systemCount = 0;
 
@@ -772,8 +772,8 @@ export class ComprehensiveSeerEngine {
   private async answerCareerQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('💼 Analyzing career using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     let totalConfidence = 0;
     let systemCount = 0;
 
@@ -833,8 +833,8 @@ export class ComprehensiveSeerEngine {
   private async answerHealthQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('🏥 Analyzing health using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     let totalConfidence = 0;
     let systemCount = 0;
     
@@ -1024,7 +1024,9 @@ Your current dasha period brings growth and expansion. The timing suggests favor
       const dashaTiming = this.universalData.vedicAstrology.dashas as Record<string, unknown>;
       if (dashaTiming && typeof dashaTiming === 'object') {
         let dashaSummary: string;
-        const current = (dashaTiming.currentDasha as { planet?: string; mahadasha?: string; antardasha?: string; startDate?: string; endDate?: string; antardashas?: Array<{ planet?: string; progress?: number }> }) | undefined;
+        type DashaAntardasha = { planet?: string; progress?: number };
+        type CurrentDasha = { planet?: string; mahadasha?: string; antardasha?: string; startDate?: string; endDate?: string; antardashas?: DashaAntardasha[] };
+        const current: CurrentDasha | undefined = dashaTiming.currentDasha as CurrentDasha | undefined;
         if (this.safeStr(current?.planet, '') !== '' || this.safeStr(current?.mahadasha, '') !== '') {
           const mahadasha = this.safeStr(current?.mahadasha ?? current?.planet, 'current');
           const antardashaRaw = current?.antardasha ?? (Array.isArray(current?.antardashas) ? current.antardashas.find((a: { progress?: number }) => a.progress != null && a.progress > 0) as { planet?: string } | undefined : undefined)?.planet ?? null;
@@ -1350,8 +1352,8 @@ Your current dasha period brings growth and expansion. The timing suggests favor
   private async answerSpiritualQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('🧘 Analyzing spirituality using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     const confidenceEntries: { source: string; confidence: number }[] = [];
     
     // Vedic Astrology Analysis
@@ -1418,8 +1420,8 @@ Your current dasha period brings growth and expansion. The timing suggests favor
   private async answerProtectionQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('🛡️ Analyzing protection using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     const confidenceEntries: { source: string; confidence: number }[] = [];
     
     // Vedic Astrology Analysis
@@ -1476,8 +1478,8 @@ Your current dasha period brings growth and expansion. The timing suggests favor
   private async answerPastLifeQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('🔄 Analyzing past life using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     let totalConfidence = 0;
     let systemCount = 0;
     
@@ -1548,8 +1550,8 @@ Your current dasha period brings growth and expansion. The timing suggests favor
   private async answerGeneralQuestion(question: string, keywords: string[]): Promise<ComprehensiveSeerResponse> {
     console.log('🔮 Analyzing general question using ALL systems...');
     
-    const responses = [];
-    const sources = [];
+    const responses: string[] = [];
+    const sources: string[] = [];
     let totalConfidence = 0;
     let systemCount = 0;
     
@@ -1894,8 +1896,8 @@ Your current dasha period brings growth and expansion. The timing suggests favor
       }
     }
     
-    // Extract from chart data
-    if (this.universalData.vedicAstrology?.planets) {
+    // Extract from chart data (vedicAstrology shape may include chart/reading/dashas; planets optional)
+    if ((this.universalData.vedicAstrology as { planets?: unknown })?.planets) {
       dataPoints.push(`**Planetary Positions:** Available for detailed analysis`);
     }
     

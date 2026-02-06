@@ -431,6 +431,8 @@ export interface UserProfile {
   longitude?: number;
 
   currentLocation?: string; // Current location for transit charts
+  /** IANA timezone (e.g. 'America/New_York') for charts and tools */
+  timezone?: string;
   country?: string; // Country code (e.g., 'IN', 'US', 'GB') for pricing
   gender?: 'male' | 'female' | 'non-binary'; // Gender for palm reading
   facePhotoUrl?: string; // Face photo for face reading analysis

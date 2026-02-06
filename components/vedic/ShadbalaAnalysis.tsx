@@ -17,6 +17,8 @@ import {
   Sparkles,
   TrendingUp,
   TrendingDown,
+  ChevronUp,
+  ChevronDown,
   BarChart3,
   Activity,
   Compass,

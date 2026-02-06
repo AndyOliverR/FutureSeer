@@ -225,7 +225,7 @@ function extractVedicSnippet(profile: ExtendedMysticalProfile | ComprehensiveMys
 }
 
 function extractWesternSnippet(profile: ExtendedMysticalProfile | ComprehensiveMysticalProfile): ToolSnippet | null {
-  const western = profile.western || (profile as any).westernAstrology
+  const western = (profile as Record<string, unknown>).western || (profile as any).westernAstrology
   if (!western) return null
 
   // Cached Western comprehensive API shape: { comprehensiveAnalysis: { chartOverview, planetaryAnalysis } }
@@ -298,7 +298,7 @@ function extractWesternSnippet(profile: ExtendedMysticalProfile | ComprehensiveM
 
 function extractNumerologySnippet(profile: ExtendedMysticalProfile | ComprehensiveMysticalProfile): ToolSnippet | null {
   // Try multiple ways to get Numerology data (including Astro-Numerology cache)
-  const numerology = profile.numerology || (profile as any).Numerology || (profile as any).numerologyData
+  const numerology = (profile as Record<string, unknown>).numerology || (profile as any).Numerology || (profile as any).numerologyData
   if (!numerology) return null
 
   const lifePath = numerology.lifePathNumber || numerology.lifePath || numerology.coreNumber
@@ -344,7 +344,7 @@ function extractNumerologySnippet(profile: ExtendedMysticalProfile | Comprehensi
 
 function extractTarotSnippet(profile: ExtendedMysticalProfile | ComprehensiveMysticalProfile): ToolSnippet | null {
   // Check multiple possible locations for tarot data (including combined-system cache)
-  const tarot = profile.tarot || (profile as any).Tarot
+  const tarot = (profile as Record<string, unknown>).tarot || (profile as any).Tarot
   if (!tarot) return null
 
   const birthCard = tarot.birthCard || tarot.profile?.birthCard || tarot.card?.birthCard
@@ -381,7 +381,7 @@ function extractTarotSnippet(profile: ExtendedMysticalProfile | ComprehensiveMys
 }
 
 function extractIChingSnippet(profile: ExtendedMysticalProfile | ComprehensiveMysticalProfile): ToolSnippet | null {
-  const iching = profile.iching || (profile as any)['I Ching']
+  const iching = (profile as Record<string, unknown>).iching || (profile as any)['I Ching']
   if (!iching) return null
 
   const hexagram = iching.hexagram || iching.currentHexagram || iching.hexagramData
@@ -420,7 +420,7 @@ function extractIChingSnippet(profile: ExtendedMysticalProfile | ComprehensiveMy
 }
 
 function extractGeomancySnippet(profile: ExtendedMysticalProfile | ComprehensiveMysticalProfile): ToolSnippet | null {
-  const geomancy = profile.geomancy || (profile as any).Geomancy
+  const geomancy = (profile as Record<string, unknown>).geomancy || (profile as any).Geomancy
   if (!geomancy) return null
 
   const figures = geomancy.figures || geomancy.currentFigures || geomancy.reading?.figures
@@ -456,7 +456,7 @@ function extractGeomancySnippet(profile: ExtendedMysticalProfile | Comprehensive
 }
 
 function extractAngelNumbersSnippet(profile: ExtendedMysticalProfile | ComprehensiveMysticalProfile): ToolSnippet | null {
-  const angelNumbers = profile.angelNumbers || (profile as any)['Angel Numbers']
+  const angelNumbers = (profile as Record<string, unknown>).angelNumbers || (profile as any)['Angel Numbers']
   if (!angelNumbers) return null
 
   const primaryNumber = angelNumbers.primaryNumber || 
@@ -492,7 +492,7 @@ function extractAngelNumbersSnippet(profile: ExtendedMysticalProfile | Comprehen
 }
 
 function extractNameAnalysisSnippet(profile: ExtendedMysticalProfile | ComprehensiveMysticalProfile): ToolSnippet | null {
-  const nameAnalysis = profile.nameAnalysis || (profile as any)['Name Analysis']
+  const nameAnalysis = (profile as Record<string, unknown>).nameAnalysis || (profile as any)['Name Analysis']
   if (!nameAnalysis) return null
 
   const expressionNumber = nameAnalysis.expressionNumber || 

@@ -180,7 +180,7 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
               className="flex-1 rounded-xl bg-amber-50/90 border-2 border-amber-300 text-slate-800 placeholder:text-slate-500 focus:border-amber-400"
             />
             <Button
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={!input.trim() || isLoading}
               className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white"
             >

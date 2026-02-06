@@ -1,5 +1,43 @@
-import { UserData, HealthData, HealthAnalysis, HealthTiming, BodySystem, NaturalRemedy } from '@/hooks/useMedicalAstrology'
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+
+// Local types aligned with useMedicalAstrology (avoid type-only import from .tsx in lib)
+export interface UserData {
+  name: string
+  birthDate: string
+  birthTime: string
+  birthPlace: string
+  healthFocus?: string
+}
+export interface HealthData {
+  [key: string]: unknown
+}
+export interface HealthTiming {
+  [key: string]: unknown
+}
+export interface BodySystem {
+  system: string
+  status: 'strong' | 'balanced' | 'weak' | 'sensitive'
+  description: string
+  recommendations: string[]
+}
+export interface NaturalRemedy {
+  [key: string]: unknown
+}
+export interface HealthAnalysis {
+  overview?: {
+    summary?: string
+    overallHealth?: number
+    keyStrengths?: string[]
+    areasOfConcern?: string[]
+    recommendations?: string[]
+  }
+  timing?: HealthTiming
+  bodySystems?: BodySystem[]
+  remedies?: NaturalRemedy[]
+  transits?: unknown
+  advice?: unknown
+  [key: string]: unknown
+}
 import { getFirebaseDB } from './firebase';
 
 class MedicalAstrologyIntelligence {
@@ -163,7 +201,7 @@ class MedicalAstrologyIntelligence {
     if (['Cancer', 'Scorpio', 'Pisces'].includes(sunSign)) {
       bodySystems.push({
         system: 'Digestive System',
-        status: 'sensitive',
+        status: 'sensitive' as const,
         description: 'Sensitive digestive system requiring care',
         recommendations: ['Gentle foods', 'Digestive enzymes', 'Stress management']
       })
@@ -183,7 +221,7 @@ class MedicalAstrologyIntelligence {
     if (['Virgo', 'Taurus', 'Capricorn'].includes(sunSign)) {
       bodySystems.push({
         system: 'Nervous System',
-        status: 'sensitive',
+        status: 'sensitive' as const,
         description: 'Sensitive nervous system requiring care',
         recommendations: ['Nervous system support', 'Calming practices', 'Regular routine']
       })
@@ -243,7 +281,7 @@ class MedicalAstrologyIntelligence {
     if (['Pisces', 'Cancer', 'Scorpio'].includes(sunSign)) {
       bodySystems.push({
         system: 'Lymphatic System',
-        status: 'sensitive',
+        status: 'sensitive' as const,
         description: 'Sensitive lymphatic system requiring detox support',
         recommendations: ['Detoxification', 'Lymphatic drainage', 'Spiritual practices']
       })
@@ -350,8 +388,9 @@ class MedicalAstrologyIntelligence {
   }
 
   private generateOverview(timing: HealthTiming, bodySystems: BodySystem[], healthData: HealthData) {
-    const overallHealth = Math.round((timing.confidence + bodySystems.reduce((acc, system) => 
-      acc + (system.status === 'strong' ? 100 : system.status === 'balanced' ? 75 : 50), 0) / bodySystems.length) / 2)
+    const timingConf = (timing as { confidence?: number }).confidence ?? 0
+    const systemsAvg = bodySystems.length ? bodySystems.reduce((acc, system) => acc + (system.status === 'strong' ? 100 : system.status === 'balanced' ? 75 : 50), 0) / bodySystems.length : 0
+    const overallHealth = Math.round((timingConf + systemsAvg) / 2)
     
     let summary = ''
     if (overallHealth >= 80) {

@@ -93,11 +93,12 @@ export function buildTrichakraState(analysis: TrichakraAnalysis): TrichakraState
   const short_term_count = analysis.actionPlan?.shortTerm?.length ?? 0
   const long_term_count = analysis.actionPlan?.longTerm?.length ?? 0
 
+  const generatedAt = analysis.metadata?.generatedAt as Date | string | undefined
   const timestamp =
-    analysis.metadata?.generatedAt instanceof Date
-      ? analysis.metadata.generatedAt.toISOString().slice(0, 10)
-      : typeof analysis.metadata?.generatedAt === 'string'
-        ? analysis.metadata.generatedAt.slice(0, 10)
+    generatedAt instanceof Date
+      ? generatedAt.toISOString().slice(0, 10)
+      : typeof generatedAt === 'string'
+        ? generatedAt.slice(0, 10)
         : new Date().toISOString().slice(0, 10)
 
   return {

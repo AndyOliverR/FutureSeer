@@ -199,7 +199,7 @@ function getDisclaimerForMethod(method: string): string {
     'default': '⚠️ Chart generated using default noon time. For more accurate predictions, please provide your birth time or at least the time period when you were born.'
   };
   
-  return disclaimers[method] || disclaimers['default'];
+  return disclaimers[method as keyof typeof disclaimers] || disclaimers['default'];
 }
 
 // Helper function to get time period info by ID

@@ -29,7 +29,8 @@ interface NumerologyMessage {
 }
 
 export function NumerologyCoachInterface() {
-  const { numerologyData, loading: loadingData, error } = useNumerologyData()
+  const { numerologyData: rawData, loading: loadingData, error } = useNumerologyData()
+  const numerologyData = rawData
   const [messages, setMessages] = useState<NumerologyMessage[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)

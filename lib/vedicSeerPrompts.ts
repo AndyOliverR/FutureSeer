@@ -22,6 +22,8 @@ export interface VedicQuestionContext {
       startDate: string;
       endDate: string;
       progress: number;
+      planet?: string;
+      antardashas?: Array<{ planet?: string; progress?: number }>;
     };
     yogas: Array<{
       name: string;

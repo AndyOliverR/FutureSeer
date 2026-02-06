@@ -47,7 +47,8 @@ export function calculatePlanetaryPositions(birthDate: string, birthTime: string
   const date = new Date(`${birthDate}T${birthTime}`)
   const julianDay = getJulianDay(date)
   
-  const planets = []
+  type PlanetPos = { name: string; sign: string; degree: number; house: number; longitude: number; latitude: number; speed: number; isRetrograde: boolean }
+  const planets: PlanetPos[] = []
   
   // Calculate positions for each planet
   const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
@@ -217,7 +218,7 @@ export function generatePersonalityInsights(planets: any[], elements: any, modal
 }
 
 // Helper functions
-function getJulianDay(date: Date): number {
+export function getJulianDay(date: Date): number {
   const year = date.getFullYear()
   const month = date.getMonth() + 1
   const day = date.getDate()

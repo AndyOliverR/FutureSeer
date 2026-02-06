@@ -59,7 +59,7 @@ export interface FixedStar {
   setting: boolean;
 }
 
-class SwissEphemerisService {
+export class SwissEphemerisService {
   private baseUrl: string;
 
   constructor() {

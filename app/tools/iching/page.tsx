@@ -345,7 +345,7 @@ export default function IChingPage() {
                   </h3>
                   <select
                     value={method || ""}
-                    onChange={(e) => setMethod(e.target.value)}
+                    onChange={(e) => setMethod((e.target.value || '') as '' | 'coins' | 'yarrow' | 'random')}
                     className="w-full bg-white border-2 border-amber-200 rounded-xl p-3 text-slate-900 focus:outline-none focus:border-amber-400 transition-all duration-300"
                     aria-label="I Ching consultation method"
                   >

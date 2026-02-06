@@ -346,7 +346,7 @@ export function NumerologyTool() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    {numerologyData.masterNumbers.map((number, index) => (
+                    {numerologyData.masterNumbers.map((number: number, index: number) => (
                       <Badge key={index} className="bg-yellow-900/30 text-yellow-400 border-yellow-500/30">
                         {number}
                       </Badge>
@@ -370,7 +370,7 @@ export function NumerologyTool() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2">
-                    {numerologyData.karmicDebts.map((number, index) => (
+                    {numerologyData.karmicDebts.map((number: number, index: number) => (
                       <Badge key={index} className="bg-red-900/30 text-red-400 border-red-500/30">
                         {number}
                       </Badge>
@@ -398,7 +398,7 @@ export function NumerologyTool() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {numerologyData.insights.strengths.map((strength, index) => (
+                  {numerologyData.insights.strengths.map((strength: string, index: number) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
                       <span className="text-sm text-slate-300">{strength}</span>
@@ -418,7 +418,7 @@ export function NumerologyTool() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {numerologyData.insights.challenges.map((challenge, index) => (
+                  {numerologyData.insights.challenges.map((challenge: string, index: number) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className="w-2 h-2 bg-orange-400 rounded-full mt-2 flex-shrink-0"></div>
                       <span className="text-sm text-slate-300">{challenge}</span>
@@ -438,7 +438,7 @@ export function NumerologyTool() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {numerologyData.insights.careerPaths.map((career, index) => (
+                  {numerologyData.insights.careerPaths.map((career: string, index: number) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
                       <span className="text-sm text-slate-300">{career}</span>
@@ -458,7 +458,7 @@ export function NumerologyTool() {
               </CardHeader>
               <CardContent>
                 <ul className="space-y-2">
-                  {numerologyData.insights.compatibility.map((compat, index) => (
+                  {numerologyData.insights.compatibility.map((compat: string, index: number) => (
                     <li key={index} className="flex items-start gap-2">
                       <div className="w-2 h-2 bg-pink-400 rounded-full mt-2 flex-shrink-0"></div>
                       <span className="text-sm text-slate-300">{compat}</span>
@@ -483,7 +483,7 @@ export function NumerologyTool() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {numerologyData.pinnacles.map((pinnacle, index) => (
+                  {numerologyData.pinnacles.map((pinnacle: number, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">Pinnacle {index + 1}</span>
                       <Badge className={`${getNumberColor(pinnacle)} bg-slate-700/50`}>
@@ -505,7 +505,7 @@ export function NumerologyTool() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {numerologyData.challenges.map((challenge, index) => (
+                  {numerologyData.challenges.map((challenge: number, index: number) => (
                     <div key={index} className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">Challenge {index + 1}</span>
                       <Badge className={`${getNumberColor(challenge)} bg-slate-700/50`}>
@@ -532,7 +532,7 @@ export function NumerologyTool() {
                   {Object.entries(numerologyData.letterAnalysis).map(([letter, value]) => (
                     <div key={letter} className="text-center p-2 bg-slate-700/30 rounded">
                       <div className="text-lg font-bold text-purple-400">{letter}</div>
-                      <div className="text-xs text-slate-400">{value}</div>
+                      <div className="text-xs text-slate-400">{String(value ?? '')}</div>
                     </div>
                   ))}
                 </div>

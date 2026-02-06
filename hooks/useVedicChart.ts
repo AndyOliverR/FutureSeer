@@ -41,16 +41,22 @@ export function useVedicChart({
       setCoordinates(coords);
 
       // Resolve birth time
-      const resolvedTime = resolveBirthTime(birthTime);
+      const resolved = await resolveBirthTime(
+        { birthTime, birthDate, birthPlace, birthTimeKnown: !!birthTime },
+        coords
+      );
+      const dateTime = new Date(`${birthDate}T${resolved.time}`);
 
-      // Generate chart
-      const chart = await getChart({
-        date: birthDate,
-        time: resolvedTime,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        nodeMode,
-      });
+      // Generate chart (getChart expects birthData + optional opts)
+      const chart = getChart(
+        {
+          date: dateTime,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          birthDate: dateTime,
+        },
+        { nodeType: nodeMode }
+      );
 
       setChartData(chart);
     } catch (err) {

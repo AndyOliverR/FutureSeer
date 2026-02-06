@@ -175,7 +175,7 @@ function calculateTithi(sunPos: number, moonPos: number) {
   const tithiNumber = Math.floor(normalizedDiff / 12) + 1;
   const progress = ((normalizedDiff % 12) / 12) * 100;
   
-  const paksha = tithiNumber <= 15 ? 'Shukla' : 'Krishna';
+  const paksha: 'Shukla' | 'Krishna' = tithiNumber <= 15 ? 'Shukla' : 'Krishna';
   const tithiIndex = tithiNumber <= 15 ? tithiNumber - 1 : tithiNumber - 16;
   
   return {

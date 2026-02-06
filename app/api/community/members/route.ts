@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { getLevelFromKarma, getReputation, calculateBadges } from '@/lib/firestore/communityHelpers';
 
+/** Firestore document shape for communityMembers (data() return type) */
+interface CommunityMemberDoc {
+  userId?: string;
+  email?: string;
+  name?: string;
+  joinDate?: { toDate?: () => Date } | Date | string | number;
+  lastActive?: { toDate?: () => Date } | Date | string | number;
+  karma?: number;
+  contributions?: number;
+  streak?: number;
+  badges?: string[];
+  interests?: unknown[];
+  flair?: string;
+}
+
+function toDateSafe(value: CommunityMemberDoc['joinDate']): Date {
+  if (value == null) return new Date();
+  if (typeof value === 'object' && value !== null && typeof (value as { toDate?: () => Date }).toDate === 'function') {
+    return (value as { toDate: () => Date }).toDate();
+  }
+  return new Date(value as string | number);
+}
+
 // GET - Fetch member list with stats
 export async function GET(request: NextRequest) {
   try {
@@ -42,13 +65,13 @@ export async function GET(request: NextRequest) {
       const founderUid = process.env.FOUNDER_UID?.trim();
       const founderEmail = process.env.FOUNDER_EMAIL?.trim()?.toLowerCase();
       const members = snapshot.docs.map((doc: { id: string; data: () => Record<string, unknown> }) => {
-        const data = doc.data();
-        const userId = data.userId || doc.id;
-        const memberEmail = (data.email || '').trim().toLowerCase();
-        const karma = data.karma || 0;
-        const contributions = data.contributions || 0;
-        const streak = data.streak || 0;
-        const joinDate = data.joinDate?.toDate?.() || new Date(data.joinDate || Date.now());
+        const data = doc.data() as CommunityMemberDoc;
+        const userId = (data.userId as string) || doc.id;
+        const memberEmail = String(data.email ?? '').trim().toLowerCase();
+        const karma = Number(data.karma) || 0;
+        const contributions = Number(data.contributions) || 0;
+        const streak = Number(data.streak) || 0;
+        const joinDate = toDateSafe(data.joinDate);
         const isFounderByUid = founderUid && (userId === founderUid || doc.id === founderUid);
         const isFounderByEmail = founderEmail && memberEmail && memberEmail === founderEmail;
         const isFounder = isFounderByUid || isFounderByEmail;
@@ -65,7 +88,9 @@ export async function GET(request: NextRequest) {
             contributions,
             streak: 365,
             joinDate: joinDate.toISOString(),
-            lastActive: data.lastActive?.toDate?.()?.toISOString() || data.lastActive || new Date().toISOString(),
+            lastActive: (data.lastActive != null && typeof (data.lastActive as { toDate?: () => Date }).toDate === 'function'
+              ? (data.lastActive as { toDate: () => Date }).toDate().toISOString()
+              : data.lastActive != null ? new Date(data.lastActive as string | number).toISOString() : new Date().toISOString()),
             interests: data.interests || [],
             badges,
             reputation: 'Mystical' as const,
@@ -77,17 +102,19 @@ export async function GET(request: NextRequest) {
         return {
           id: doc.id,
           userId,
-          name: data.name || 'Anonymous',
+          name: (data.name as string) || 'Anonymous',
           karma,
           level: getLevelFromKarma(karma),
           contributions,
           streak,
           joinDate: joinDate.toISOString(),
-          lastActive: data.lastActive?.toDate?.()?.toISOString() || data.lastActive || new Date().toISOString(),
-          interests: data.interests || [],
-          badges: data.badges || [],
+          lastActive: (data.lastActive != null && typeof (data.lastActive as { toDate?: () => Date }).toDate === 'function'
+            ? (data.lastActive as { toDate: () => Date }).toDate().toISOString()
+            : data.lastActive != null ? new Date(data.lastActive as string | number).toISOString() : new Date().toISOString()),
+          interests: (data.interests as unknown[]) || [],
+          badges: (data.badges as string[]) || [],
           reputation: getReputation(karma, contributions, streak),
-          flair: data.flair || '',
+          flair: (data.flair as string) || '',
           isOnline: false, // TODO: Implement real-time online status
         };
       });
@@ -98,21 +125,23 @@ export async function GET(request: NextRequest) {
         if (!founderInList) {
           const founderDoc = await db.collection('communityMembers').doc(founderUid).get();
           if (founderDoc.exists) {
-            const data = founderDoc.data()!;
-            const joinDate = data.joinDate?.toDate?.() || new Date(data.joinDate || Date.now());
+            const data = founderDoc.data() as CommunityMemberDoc;
+            const joinDate = toDateSafe(data.joinDate);
             const existingBadges = Array.isArray(data.badges) ? data.badges : [];
             const badges = existingBadges.includes('Creator') ? existingBadges : [...existingBadges, 'Creator'];
             const founderMember = {
               id: founderDoc.id,
-              userId: data.userId || founderDoc.id,
-              name: data.name || 'Anonymous',
+              userId: (data.userId as string) || founderDoc.id,
+              name: (data.name as string) || 'Anonymous',
               karma: 10000,
               level: 'Grandmaster' as const,
-              contributions: data.contributions || 0,
+              contributions: Number(data.contributions) || 0,
               streak: 365,
               joinDate: joinDate.toISOString(),
-              lastActive: data.lastActive?.toDate?.()?.toISOString() || data.lastActive || new Date().toISOString(),
-              interests: data.interests || [],
+              lastActive: (data.lastActive != null && typeof (data.lastActive as { toDate?: () => Date }).toDate === 'function'
+                ? (data.lastActive as { toDate: () => Date }).toDate().toISOString()
+                : data.lastActive != null ? new Date(data.lastActive as string | number).toISOString() : new Date().toISOString()),
+              interests: (data.interests as unknown[]) || [],
               badges,
               reputation: 'Mystical' as const,
               flair: 'Founder',

@@ -23,7 +23,8 @@ import {
   Sparkles,
   Gem
 } from 'lucide-react';
-import { Yoga, getYogaSignificance, getYogaEffects } from '@/lib/enhancedYogaDetection';
+import { Yoga } from '@/lib/enhancedYogaDetection';
+import { getYogaSignificance, getYogaEffects } from '@/lib/yogaDetection';
 import { 
   calculateYogaTiming, 
   formatActivationDate, 

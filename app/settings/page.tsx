@@ -50,7 +50,7 @@ export default function SettingsPage() {
   )
 
   const formattedBirthPlace = useMemo(
-    () => formatBirthPlace(userProfile?.birthPlace),
+    () => formatBirthPlace(userProfile?.birthPlace ?? ''),
     [userProfile?.birthPlace]
   )
 

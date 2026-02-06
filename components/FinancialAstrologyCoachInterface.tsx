@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { FinancialAnalysis, UserData, MarketData } from "@/hooks/useFinancialAstrology"
+import { type FinancialAnalysis, type UserData, type MarketData } from "@/hooks/useFinancialAstrology"
 
 interface FinancialAstrologyCoachInterfaceProps {
   analysis: FinancialAnalysis
@@ -17,6 +17,7 @@ export function FinancialAstrologyCoachInterface({
   marketData 
 }: FinancialAstrologyCoachInterfaceProps) {
   
+  const overview = analysis.overview
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Overall Score */}
@@ -38,7 +39,7 @@ export function FinancialAstrologyCoachInterface({
               stroke="url(#gradient)"
               strokeWidth="8"
               fill="none"
-              strokeDasharray={`${analysis.overview.overallScore * 3.52} 352`}
+              strokeDasharray={`${(overview?.overallScore ?? 0) * 3.52} 352`}
               strokeLinecap="round"
             />
             <defs>
@@ -50,7 +51,7 @@ export function FinancialAstrologyCoachInterface({
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-3xl font-bold gold-glow">{analysis.overview.overallScore}%</div>
+              <div className="text-3xl font-bold gold-glow">{overview?.overallScore ?? 0}%</div>
               <div className="text-sm text-soft">Financial Potential</div>
             </div>
           </div>
@@ -60,7 +61,7 @@ export function FinancialAstrologyCoachInterface({
       {/* Summary */}
       <div className="glass-card rounded-2xl p-6 border border-white/10">
         <h3 className="text-xl gold-glow mb-4">💰 Financial Summary</h3>
-        <p className="text-soft leading-relaxed">{analysis.overview.summary}</p>
+        <p className="text-soft leading-relaxed">{overview?.summary ?? ""}</p>
       </div>
 
       {/* Strengths & Risks */}
@@ -71,7 +72,7 @@ export function FinancialAstrologyCoachInterface({
             Key Strengths
           </h3>
           <ul className="space-y-2">
-            {analysis.overview.keyStrengths.map((strength: string, index: number) => (
+            {(overview?.keyStrengths ?? []).map((strength: string, index: number) => (
               <li key={index} className="text-soft flex items-start">
                 <span className="text-green-400 mr-2">•</span>
                 {strength}
@@ -86,7 +87,7 @@ export function FinancialAstrologyCoachInterface({
             Potential Risks
           </h3>
           <ul className="space-y-2">
-            {analysis.overview.potentialRisks.map((risk: string, index: number) => (
+            {(overview?.potentialRisks ?? []).map((risk: string, index: number) => (
               <li key={index} className="text-soft flex items-start">
                 <span className="text-red-400 mr-2">•</span>
                 {risk}
@@ -103,7 +104,7 @@ export function FinancialAstrologyCoachInterface({
           Recommendations
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {analysis.overview.recommendations.map((rec: string, index: number) => (
+          {(overview?.recommendations ?? []).map((rec: string, index: number) => (
             <div key={index} className="flex items-start">
               <span className="text-blue-400 mr-2 mt-1">💎</span>
               <p className="text-soft text-sm">{rec}</p>
@@ -126,7 +127,7 @@ export function FinancialAstrologyCoachInterface({
           <div className="text-center p-4 rounded-xl bg-green-500/10 border border-green-500/20">
             <div className="text-3xl mb-2">📈</div>
             <div className="text-soft font-semibold">Optimal Entry</div>
-            <div className="text-green-400 font-bold">{analysis.timing.confidence}% Confidence</div>
+            <div className="text-green-400 font-bold">{analysis.timing?.confidence ?? 0}% Confidence</div>
           </div>
           <div className="text-center p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
             <div className="text-3xl mb-2">📉</div>
@@ -147,7 +148,7 @@ export function FinancialAstrologyCoachInterface({
               Best Entry Opportunities
             </h4>
             <div className="space-y-2">
-              {analysis.timing.optimalEntry.map((entry, index) => (
+              {(analysis.timing?.optimalEntry ?? []).map((entry: string, index: number) => (
                 <div key={index} className="p-3 rounded-xl bg-green-500/5 border border-green-500/20">
                   <p className="text-soft text-sm">{entry}</p>
                 </div>
@@ -161,7 +162,7 @@ export function FinancialAstrologyCoachInterface({
               Periods to Avoid
             </h4>
             <div className="space-y-2">
-              {analysis.timing.avoidPeriods.map((period, index) => (
+              {(analysis.timing?.avoidPeriods ?? []).map((period: string, index: number) => (
                 <div key={index} className="p-3 rounded-xl bg-red-500/5 border border-red-500/20">
                   <p className="text-soft text-sm">{period}</p>
                 </div>
@@ -182,7 +183,7 @@ export function FinancialAstrologyCoachInterface({
         </p>
         
         <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-          <p className="text-soft leading-relaxed">{analysis.sectors.reasoning}</p>
+          <p className="text-soft leading-relaxed">{analysis.sectors?.reasoning ?? ""}</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -192,7 +193,7 @@ export function FinancialAstrologyCoachInterface({
               Favorable Sectors
             </h4>
             <div className="space-y-2">
-              {analysis.sectors.favorable.map((sector, index) => (
+              {(analysis.sectors?.favorable ?? []).map((sector: string, index: number) => (
                 <div key={index} className="p-3 rounded-xl bg-green-500/5 border border-green-500/20">
                   <p className="text-soft text-sm">{sector}</p>
                 </div>
@@ -206,7 +207,7 @@ export function FinancialAstrologyCoachInterface({
               Challenging Sectors
             </h4>
             <div className="space-y-2">
-              {analysis.sectors.challenging.map((sector, index) => (
+              {(analysis.sectors?.challenging ?? []).map((sector: string, index: number) => (
                 <div key={index} className="p-3 rounded-xl bg-orange-500/5 border border-orange-500/20">
                   <p className="text-soft text-sm">{sector}</p>
                 </div>
@@ -220,7 +221,7 @@ export function FinancialAstrologyCoachInterface({
               Neutral Sectors
             </h4>
             <div className="space-y-2">
-              {analysis.sectors.neutral.map((sector, index) => (
+              {(analysis.sectors?.neutral ?? []).map((sector: string, index: number) => (
                 <div key={index} className="p-3 rounded-xl bg-gray-500/5 border border-gray-500/20">
                   <p className="text-soft text-sm">{sector}</p>
                 </div>
@@ -247,7 +248,7 @@ export function FinancialAstrologyCoachInterface({
               Current Transits
             </h4>
             <ul className="space-y-3">
-              {analysis.transits.current.map((transit, index) => (
+              {(analysis.transits?.current ?? []).map((transit: string, index: number) => (
                 <li key={index} className="flex items-start">
                   <span className="text-yellow-400 mr-2 mt-1">⭐</span>
                   <p className="text-soft/80 text-sm">{transit}</p>
@@ -262,7 +263,7 @@ export function FinancialAstrologyCoachInterface({
               Upcoming Transits
             </h4>
             <ul className="space-y-3">
-              {analysis.transits.upcoming.map((transit, index) => (
+              {(analysis.transits?.upcoming ?? []).map((transit: string, index: number) => (
                 <li key={index} className="flex items-start">
                   <span className="text-purple-400 mr-2 mt-1">✨</span>
                   <p className="text-soft/80 text-sm">{transit}</p>
@@ -277,7 +278,7 @@ export function FinancialAstrologyCoachInterface({
             <span className="mr-2">💡</span>
             Market Impact
           </h4>
-          <p className="text-soft/80">{analysis.transits.impact}</p>
+          <p className="text-soft/80">{analysis.transits?.impact ?? ""}</p>
         </div>
       </div>
     </div>
@@ -292,16 +293,16 @@ export function FinancialAstrologyCoachInterface({
         </p>
         
         <div className="space-y-6">
-          {analysis.predictions.map((prediction, index) => (
+          {(analysis.predictions ?? []).map((prediction: { timeframe?: string; prediction?: string; reasoning?: string; keyEvents?: string[]; trend?: string; confidence?: number }, index: number) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               className={`p-6 rounded-xl border ${
-                prediction.trend === 'bullish' 
+                (prediction.trend ?? "") === 'bullish' 
                   ? 'border-green-500/30 bg-green-500/5' 
-                  : prediction.trend === 'bearish'
+                  : (prediction.trend ?? "") === 'bearish'
                   ? 'border-red-500/30 bg-red-500/5'
                   : 'border-blue-500/30 bg-blue-500/5'
               }`}
@@ -309,33 +310,33 @@ export function FinancialAstrologyCoachInterface({
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
                   <span className="text-2xl mr-3">
-                    {prediction.trend === 'bullish' ? '📈' : prediction.trend === 'bearish' ? '📉' : '➡️'}
+                    {(prediction.trend ?? "") === 'bullish' ? '📈' : (prediction.trend ?? "") === 'bearish' ? '📉' : '➡️'}
                   </span>
                   <div>
-                    <h4 className="text-lg font-semibold text-soft">{prediction.timeframe}</h4>
+                    <h4 className="text-lg font-semibold text-soft">{prediction.timeframe ?? ""}</h4>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      prediction.trend === 'bullish' 
+                      (prediction.trend ?? "") === 'bullish' 
                         ? 'bg-green-500/20 text-green-300' 
-                        : prediction.trend === 'bearish'
+                        : (prediction.trend ?? "") === 'bearish'
                         ? 'bg-red-500/20 text-red-300'
                         : 'bg-blue-500/20 text-blue-300'
                     }`}>
-                      {prediction.trend.toUpperCase()}
+                      {(prediction.trend ?? "").toUpperCase()}
                     </span>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold gold-glow">{prediction.confidence}%</div>
+                  <div className="text-2xl font-bold gold-glow">{prediction.confidence ?? 0}%</div>
                   <div className="text-sm text-soft">Confidence</div>
                 </div>
               </div>
               
-              <p className="text-soft/80 mb-4">{prediction.reasoning}</p>
+              <p className="text-soft/80 mb-4">{prediction.reasoning ?? ""}</p>
               
               <div>
                 <h5 className="text-soft font-semibold mb-2">Key Events:</h5>
                 <ul className="space-y-1">
-                  {prediction.keyEvents.map((event, eventIndex) => (
+                  {prediction.keyEvents?.map((event: string, eventIndex: number) => (
                     <li key={eventIndex} className="text-soft/70 text-sm flex items-start">
                       <span className="text-yellow-400 mr-2 mt-1">•</span>
                       {event}
@@ -365,7 +366,7 @@ export function FinancialAstrologyCoachInterface({
               Immediate Actions
             </h4>
             <ul className="space-y-2">
-              {analysis.advice.immediate.map((advice, index) => (
+              {(analysis.advice?.immediate ?? []).map((advice: string, index: number) => (
                 <li key={index} className="text-soft flex items-start">
                   <span className="text-blue-400 mr-2">•</span>
                   <p className="text-sm">{advice}</p>
@@ -380,7 +381,7 @@ export function FinancialAstrologyCoachInterface({
               Short Term (1-3 months)
             </h4>
             <ul className="space-y-2">
-              {analysis.advice.shortTerm.map((advice, index) => (
+              {(analysis.advice?.shortTerm ?? []).map((advice: string, index: number) => (
                 <li key={index} className="text-soft flex items-start">
                   <span className="text-green-400 mr-2">•</span>
                   <p className="text-sm">{advice}</p>
@@ -395,7 +396,7 @@ export function FinancialAstrologyCoachInterface({
               Long Term (1-5 years)
             </h4>
             <ul className="space-y-2">
-              {analysis.advice.longTerm.map((advice, index) => (
+              {(analysis.advice?.longTerm ?? []).map((advice: string, index: number) => (
                 <li key={index} className="text-soft flex items-start">
                   <span className="text-purple-400 mr-2">•</span>
                   <p className="text-sm">{advice}</p>
@@ -410,7 +411,7 @@ export function FinancialAstrologyCoachInterface({
               Risk Management
             </h4>
             <ul className="space-y-2">
-              {analysis.advice.riskManagement.map((advice, index) => (
+              {(analysis.advice?.riskManagement ?? []).map((advice: string, index: number) => (
                 <li key={index} className="text-soft flex items-start">
                   <span className="text-red-400 mr-2">•</span>
                   <p className="text-sm">{advice}</p>

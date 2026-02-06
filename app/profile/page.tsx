@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { TIME_PERIODS, type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
-import { getUserProfile, updateUserProfile, markProfileAsGenerated, resetProfileGenerationStatus, hasProfileDataChanged, calculateProfileDataHash, getFirebaseDB, cleanupCorruptedBirthTime } from "@/lib/firebase"
+import { getUserProfile, updateUserProfile, markProfileAsGenerated, resetProfileGenerationStatus, hasProfileDataChanged, calculateProfileDataHash, getFirebaseDB, cleanupCorruptedBirthTime, type UserProfile } from "@/lib/firebase"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { geocodePlace } from "@/services/geocoding"
 import { SubscriptionStatus } from "@/components/SubscriptionStatus"
@@ -271,7 +271,7 @@ export default function ProfilePage() {
   // Check if profile data has changed when form data updates
   useEffect(() => {
     if (userProfile && formData) {
-      const hasChanged = hasProfileDataChanged(userProfile, formData)
+      const hasChanged = hasProfileDataChanged(userProfile, formData as Partial<UserProfile>)
       setProfileDataChanged(hasChanged)
     }
   }, [formData, userProfile])
@@ -411,7 +411,7 @@ export default function ProfilePage() {
           birthDate: formData.birthDate,
           birthTime: birthTime24Hour,
           birthTimeKnown: formData.birthTimeKnown,
-          birthTimePeriod: formData.birthTimePeriod,
+          birthTimePeriod: formData.birthTimePeriod as UserProfile['birthTimePeriod'],
           birthTimeNote: formData.birthTimeNote,
           birthPlace: formData.birthPlace,
           birthLatitude,
