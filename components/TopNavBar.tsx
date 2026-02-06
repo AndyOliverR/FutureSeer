@@ -6,6 +6,8 @@ import { ShareAppModal } from "./ShareAppModal";
 import { Share2, Info, Heart } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTipJar } from "@/components/TipJarContext";
+import { useFeedback } from "@/components/FeedbackContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Tooltip,
   TooltipContent,
@@ -34,6 +36,8 @@ const navLinks = [
 export function TopNavBar() {
   const { isAdmin, isSuperadmin } = useAuth();
   const { open: openTipJar } = useTipJar();
+  const { open: openFeedback } = useFeedback();
+  const isMobile = useIsMobile();
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -101,22 +105,24 @@ export function TopNavBar() {
             </TooltipContent>
           </Tooltip>
 
-          {/* Tip Jar - visible on mobile only (md:hidden); desktop uses FloatingTipJar */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={openTipJar}
-                className="flex items-center justify-center w-10 h-10 min-w-[44px] min-h-[44px] hover:scale-110 transition-all duration-200 text-[#FF1744] hover:opacity-90 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded md:hidden"
-                aria-label="Open Tip Jar"
-              >
-                <Heart className="w-5 h-5 text-current stroke-1 fill-none" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
-              <p>Tip Jar</p>
-            </TooltipContent>
-          </Tooltip>
+          {/* Tip Jar - visible on mobile only (JS-based); desktop uses FloatingTipJar */}
+          {isMobile && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={openTipJar}
+                  className="flex items-center justify-center w-10 h-10 min-w-[44px] min-h-[44px] hover:scale-110 transition-all duration-200 text-[#FF1744] hover:opacity-90 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
+                  aria-label="Open Tip Jar"
+                >
+                  <Heart className="w-5 h-5 text-current stroke-1 fill-none" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
+                <p>Tip Jar</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           
           {/* Share Button with Tooltip */}
           <Tooltip>
@@ -211,6 +217,26 @@ export function TopNavBar() {
                 paddingRight: '0'
               }}
             >
+              {/* Share Feedback - opens feedback panel and closes menu */}
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0, ease: [0, 0, 0.2, 1], duration: 0.3 }}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  openFeedback();
+                  closeMenu();
+                }}
+                className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
+                aria-label="Share Feedback"
+              >
+                <span aria-hidden="true" className="text-xl">💬</span>
+                <span className="m3-label-large">Share Feedback</span>
+              </button>
+            </motion.div>
               {visibleNavLinks.map((link, idx) => (
                 <motion.div
                   key={link.href}
@@ -218,7 +244,7 @@ export function TopNavBar() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -20, scale: 0.8 }}
                   transition={{ 
-                    delay: idx * 0.05,
+                    delay: (idx + 1) * 0.05,
                     ease: [0, 0, 0.2, 1],
                     duration: 0.3
                   }}
