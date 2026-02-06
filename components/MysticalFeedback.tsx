@@ -267,7 +267,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
       } : {
         position: 'fixed',
         bottom: '80px',
-        left: '16px',
+        left: '4px',
         top: 'auto',
         right: 'auto',
         zIndex: 2147483647,

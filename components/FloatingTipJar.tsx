@@ -4,12 +4,10 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Heart } from 'lucide-react';
 import { useTipJar } from '@/components/TipJarContext';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 export function FloatingTipJar() {
   const { open } = useTipJar();
   const [mounted, setMounted] = useState(false);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     setMounted(true);
@@ -19,18 +17,14 @@ export function FloatingTipJar() {
     return null;
   }
 
-  if (isMobile) {
-    return null;
-  }
-
   const buttonContent = (
     <div 
-      className="fixed bottom-36 left-4 z-[2147483646]"
+      className="fixed bottom-36 left-1 z-[2147483646]"
       data-tip-jar-widget="true"
       style={{
         position: 'fixed',
         bottom: '144px',
-        left: '16px',
+        left: '4px',
         top: 'auto',
         right: 'auto',
         zIndex: 2147483646,
