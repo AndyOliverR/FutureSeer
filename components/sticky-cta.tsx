@@ -73,7 +73,7 @@ export function StickyCTA() {
         onClick={() => router.push("/signup")}
       >
         <span className="flex items-center gap-2">
-          Begin Your Journey
+          Join the Innovation Experiment
           <ArrowRight className="w-4 h-4" />
         </span>
       </Button>

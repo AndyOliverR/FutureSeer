@@ -58,12 +58,26 @@ export default function SignInPage() {
         return;
       }
       
-      // Use enhanced error handling
-      const errorMessage = error.code ? 
-        (error.code === 'auth/popup-closed-by-user' ? 'Sign-in was cancelled. Please try again.' :
-         error.code === 'auth/popup-blocked' ? 'Pop-up was blocked. Please allow pop-ups for this site or try again.' :
-         error.message) : error.message;
-      
+      // Map Firebase error codes to user-friendly messages
+      const code = error?.code;
+      const fallbackGeneric = 'Something went wrong. Please try again or use email sign-in.';
+      let errorMessage: string;
+      if (code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign-in was cancelled. Please try again.';
+      } else if (code === 'auth/popup-blocked') {
+        errorMessage = 'Pop-up was blocked. Allow pop-ups and try again.';
+      } else if (code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Check connection and try again.';
+      } else if (code === 'auth/cancelled-popup-request') {
+        errorMessage = 'Sign-in was cancelled. Please try again.';
+      } else if (code === 'auth/account-exists-with-different-credential') {
+        errorMessage = 'An account already exists with the same email. Try signing in with email.';
+      } else if (code && code.startsWith('auth/')) {
+        errorMessage = fallbackGeneric;
+      } else {
+        const msg = error?.message || '';
+        errorMessage = msg && (msg.includes('auth/') || msg.length > 80) ? fallbackGeneric : msg || fallbackGeneric;
+      }
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -87,7 +101,8 @@ export default function SignInPage() {
       await signInWithEmail(email, password)
       router.push("/dashboard")
     } catch (error: any) {
-      setError(error.message)
+      const msg = error?.message;
+      setError(typeof msg === 'string' && msg.length > 0 ? msg : 'Sign-in failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -186,14 +201,25 @@ export default function SignInPage() {
                   <span className="text-sm text-amber-400 font-serif mb-2">Continue with</span>
                   <div className="flex justify-center">
                     <Button
-                      size="icon"
                       variant="outline"
                       aria-label="Sign in with Google"
                       onClick={handleGoogleSignIn}
                       disabled={isLoading || activeProvider === 'google'}
-                      className="rounded-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-100"
+                      className="rounded-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-100 inline-flex items-center gap-2 px-4 py-2 min-h-[44px]"
                     >
-                      {activeProvider === 'google' ? <Loader2 className="h-5 w-5 animate-spin" /> : <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><g><path d="M21.805 10.023h-9.765v3.954h5.617c-.242 1.242-1.484 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.125s2.75-6.125 6.125-6.125c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.711-1.57-3.922-2.539-6.656-2.539-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.563-4.031 9.563-9.719 0-.656-.07-1.156-.156-1.484z" fill="#4285F4"/><path d="M3.545 7.545l3.25 2.383c.883-1.07 2.125-1.953 3.68-1.953 1.016 0 1.953.352 2.68.938l2.703-2.633c-1.711-1.57-3.922-2.539-6.656-2.539-2.672 0-5.07 1.07-6.844 2.797z" fill="#34A853"/><path d="M12.475 22.25c2.672 0 4.922-.883 6.563-2.406l-3.031-2.484c-.82.57-1.883.914-3.031.914-2.344 0-4.336-1.57-5.047-3.68l-3.242 2.5c1.75 3.477 5.406 5.156 8.788 5.156z" fill="#FBBC05"/><path d="M21.805 10.023h-9.765v3.954h5.617c-.242 1.242-1.484 3.648-5.617 3.648-3.375 0-6.125-2.789-6.125-6.125s2.75-6.125 6.125-6.125c1.922 0 3.211.82 3.953 1.523l2.703-2.633c-1.711-1.57-3.922-2.539-6.656-2.539-5.523 0-10 4.477-10 10s4.477 10 10 10c5.75 0 9.563-4.031 9.563-9.719 0-.656-.07-1.156-.156-1.484z" fill="#EA4335"/></g></svg>}
+                      {activeProvider === 'google' ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0" aria-hidden="true">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                          </svg>
+                          <span>Google</span>
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>

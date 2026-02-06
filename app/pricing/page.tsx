@@ -87,7 +87,7 @@ export default function PricingPage() {
         {/* Additional Info */}
         <div className="text-center text-white/80 space-y-4">
           <p className="text-sm">
-            🔒 Secure contributions • Start your journey • Cancel anytime
+            🔒 Secure contributions • Join the experiment • Cancel anytime
           </p>
           <div className="flex justify-center items-center gap-6 text-sm">
             <div className="flex items-center gap-2">

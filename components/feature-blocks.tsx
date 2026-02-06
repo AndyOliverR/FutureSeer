@@ -18,7 +18,7 @@ const features = [
   {
     icon: Zap,
     title: "Innovation Experiment",
-    description: "Join as a power user. Your usage improves accuracy and precision for everyone. Start your journey today.",
+    description: "Join as a power user. Your usage improves accuracy and precision for everyone. Join the experiment today.",
   },
 ]
 
@@ -45,7 +45,8 @@ export function FeatureBlocks() {
   }, [])
 
   return (
-    <section className="py-8 sm:py-12 md:py-16 bg-transparent">
+    <section className="py-8 sm:py-12 md:py-16 bg-transparent" aria-labelledby="features-heading">
+      <h2 id="features-heading" className="sr-only">Features</h2>
       <div className="max-w-6xl mx-auto bg-transparent">
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8"

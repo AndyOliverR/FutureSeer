@@ -141,7 +141,7 @@ export default function ToolPage() {
             {!tool.isComingSoon && (
               <MysticalCard tool={slug}>
                 <div className="text-center">
-                  <h3 className="text-xl font-semibold text-white mb-4">Ready to Begin Your Journey?</h3>
+                  <h3 className="text-xl font-semibold text-white mb-4">Ready to join the experiment?</h3>
                   <p className="text-soft mb-6">Experience the mystical power of {tool.name}</p>
                   <Link href={`/tools/${slug}/analyze`}>
                     <Button size="lg" className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600">
