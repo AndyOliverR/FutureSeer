@@ -11,6 +11,7 @@ import ErrorBoundary from "@/components/ErrorBoundary"
 import { FirestoreErrorSuppressor } from "@/components/FirestoreErrorSuppressor"
 import { MysticalFeedback } from "@/components/MysticalFeedback"
 import { FloatingTipJar } from "@/components/FloatingTipJar"
+import { FeedbackProvider } from "@/components/FeedbackContext"
 import { SchemaMarkup } from "@/components/schema-markup"
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration"
 
@@ -272,21 +273,23 @@ export default function RootLayout({
           }}
         />
         <FirestoreErrorSuppressor />
-        <ClientProviders>
-          <MysticalFeedback />
-          <FloatingTipJar />
-        </ClientProviders>
-        <ErrorBoundary>
+        <FeedbackProvider>
           <ClientProviders>
-            <I18nProvider>
-              <AnalyticsInitializer />
-              <main role="main" id="main-content">
-                {children}
-              </main>
-              <Toaster />
-            </I18nProvider>
+            <MysticalFeedback />
+            <FloatingTipJar />
           </ClientProviders>
-        </ErrorBoundary>
+          <ErrorBoundary>
+            <ClientProviders>
+              <I18nProvider>
+                <AnalyticsInitializer />
+                <main role="main" id="main-content">
+                  {children}
+                </main>
+                <Toaster />
+              </I18nProvider>
+            </ClientProviders>
+          </ErrorBoundary>
+        </FeedbackProvider>
       </body>
     </html>
   )

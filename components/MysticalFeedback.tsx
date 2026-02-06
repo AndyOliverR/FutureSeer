@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { X, Star, Send, Sparkles, MessageCircle, ChevronDown, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { useFeedback } from '@/components/FeedbackContext';
 import html2canvas from 'html2canvas';
 
 const ratingOptions = [
@@ -33,6 +34,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
   const [containerReady, setContainerReady] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isOpen: contextOpen, close: contextClose } = useFeedback();
   const modalRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +42,14 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Sync from context: when hamburger "Share Feedback" opens, expand panel
+  useEffect(() => {
+    if (contextOpen) {
+      setIsExpanded(true);
+      contextClose(); // reset so next open() from menu triggers again
+    }
+  }, [contextOpen, contextClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -224,9 +234,11 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
         setFeedback('');
         setScreenshots([]);
         setIsExpanded(false);
+        contextClose();
       }
     } else {
       setIsExpanded(false);
+      contextClose();
     }
   };
 
@@ -318,7 +330,10 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsExpanded(false)}
+                  onClick={() => {
+                    setIsExpanded(false);
+                    contextClose();
+                  }}
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                   aria-label="Collapse feedback panel"
                 >
