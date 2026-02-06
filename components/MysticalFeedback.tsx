@@ -9,6 +9,7 @@ import { X, Star, Send, Sparkles, MessageCircle, ChevronDown, Image as ImageIcon
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useFeedback } from '@/components/FeedbackContext';
+import { useModalOpen } from '@/components/ModalOpenContext';
 import html2canvas from 'html2canvas';
 
 const ratingOptions = [
@@ -35,6 +36,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
   const { toast } = useToast();
   const { user } = useAuth();
   const { isOpen: contextOpen, close: contextClose } = useFeedback();
+  const { isAnyModalOpen } = useModalOpen();
   const modalRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
 
@@ -247,12 +249,15 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
     return null;
   }
 
+  const hideFromA11y = isAnyModalOpen && !isExpanded;
+
   const feedbackContent = (
     <div 
       ref={widgetRef}
       data-feedback-widget="true"
       data-onboarding="feedback"
       id="feedback-button"
+      aria-hidden={hideFromA11y}
       className={variant === 'header' ? "pointer-events-auto" : "fixed pointer-events-auto"}
       data-variant={variant}
       style={variant === 'header' ? {
@@ -337,7 +342,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                   aria-label="Collapse feedback panel"
                 >
-                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden />
                 </Button>
                 <Button
                   variant="ghost"
@@ -346,7 +351,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                   aria-label="Close"
                 >
-                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <X className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden />
                 </Button>
               </div>
             </div>
@@ -572,6 +577,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
         ) : (
           <motion.button
             onClick={() => setIsExpanded(true)}
+            tabIndex={hideFromA11y ? -1 : 0}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
@@ -585,7 +591,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
             style={variant === 'header' ? { width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' } : { width: '48px', height: '48px', minWidth: '48px', minHeight: '48px' }}
           >
             {/* Icon - outline only, no background or shadow */}
-            <MessageCircle className={variant === 'header' ? "w-5 h-5 text-[var(--m3-primary)] stroke-1 fill-none" : "w-7 h-7 sm:w-9 sm:h-9 text-[var(--m3-primary)] stroke-1 fill-none"} />
+            <MessageCircle className={variant === 'header' ? "w-5 h-5 text-[var(--m3-primary)] stroke-1 fill-none" : "w-7 h-7 sm:w-9 sm:h-9 text-[var(--m3-primary)] stroke-1 fill-none"} aria-hidden />
           </motion.button>
         )}
       </AnimatePresence>

@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Heart } from 'lucide-react';
 import { useTipJar } from '@/components/TipJarContext';
+import { useModalOpen } from '@/components/ModalOpenContext';
 
 export function FloatingTipJar() {
   const { open } = useTipJar();
+  const { isAnyModalOpen } = useModalOpen();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -21,6 +23,7 @@ export function FloatingTipJar() {
     <div 
       className="fixed bottom-36 left-1 z-[2147483646]"
       data-tip-jar-widget="true"
+      aria-hidden={isAnyModalOpen}
       style={{
         position: 'fixed',
         bottom: '144px',
@@ -40,11 +43,12 @@ export function FloatingTipJar() {
     >
       <button
         onClick={open}
+        tabIndex={isAnyModalOpen ? -1 : 0}
         className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center bg-transparent border-none hover:scale-110 transition-all duration-200 cursor-pointer m3-ripple m3-button-bounce m3-transition-emphasized m3-gpu-accelerated will-change-transform min-w-[44px] min-h-[44px]"
         title="Tip Jar - Show appreciation anytime"
         aria-label="Open Tip Jar"
       >
-        <Heart className="w-7 h-7 sm:w-9 sm:h-9 text-[#FF1744] stroke-1 fill-none" />
+        <Heart className="w-7 h-7 sm:w-9 sm:h-9 text-[#FF1744] stroke-1 fill-none" aria-hidden />
       </button>
     </div>
   );
