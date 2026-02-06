@@ -10,6 +10,7 @@ import { initializeRazorpayOrderCheckout } from '@/lib/razorpayClient';
 
 export interface TipJarFormProps {
   countryCode: string;
+  onSuccess?: () => void;
 }
 
 const QUICK_AMOUNTS: Record<string, number[]> = {
@@ -30,7 +31,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   DEFAULT: '₹',
 };
 
-export function TipJarForm({ countryCode }: TipJarFormProps) {
+export function TipJarForm({ countryCode, onSuccess }: TipJarFormProps) {
   const [customAmount, setCustomAmount] = useState('');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -131,6 +132,7 @@ export function TipJarForm({ countryCode }: TipJarFormProps) {
             });
             setCustomAmount('');
             setSelectedAmount(null);
+            onSuccess?.();
           } catch (err: unknown) {
             console.error('Tip verify error:', err);
             toast({
