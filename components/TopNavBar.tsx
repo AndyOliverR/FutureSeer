@@ -24,6 +24,7 @@ const navLinks = [
   { name: "Tools", href: "/tools", icon: "🧰" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
   { name: "About", href: "/about", icon: "ℹ️" },
+  { name: "Tip Jar", href: "/tip-jar", icon: "💝" },
   { name: "Remedies", href: "/remedies", icon: "💎" },
   { name: "Ask the Seer", href: "/ask-the-seer", icon: "🔮" },
   { name: "Community", href: "/community", icon: "🏆" },

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { TipJarModal } from "./TipJarModal";
-import { useAuth } from "@/hooks/use-auth";
+import React, { createContext, useContext, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 type TipJarContextValue = {
   isOpen: boolean;
@@ -13,21 +12,17 @@ type TipJarContextValue = {
 const TipJarContext = createContext<TipJarContextValue | null>(null);
 
 export function TipJarProvider({ children }: { children: React.ReactNode }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const { userProfile } = useAuth();
-  const countryCode = userProfile?.country || "IN";
+  const router = useRouter();
 
-  const open = useCallback(() => setIsOpen(true), []);
-  const close = useCallback(() => setIsOpen(false), []);
+  const open = useCallback(() => {
+    router.push("/tip-jar");
+  }, [router]);
+
+  const close = useCallback(() => {}, []);
 
   return (
-    <TipJarContext.Provider value={{ isOpen, open, close }}>
+    <TipJarContext.Provider value={{ isOpen: false, open, close }}>
       {children}
-      <TipJarModal
-        isOpen={isOpen}
-        onClose={close}
-        countryCode={countryCode}
-      />
     </TipJarContext.Provider>
   );
 }
