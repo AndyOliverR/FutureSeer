@@ -1,12 +1,11 @@
 "use client";
 
 import React from 'react';
+import Link from 'next/link';
 import { getAttractivePrice, getReferralPrice, getCountryPricingConfig } from '@/lib/pricingConfig';
 import { Button } from '@/components/ui/button';
 import { Share2, Gift } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { ShareAppModal } from './ShareAppModal';
-import { useState, useRef } from 'react';
 
 interface ReferralBenefitsSectionProps {
   countryCode: string;
@@ -14,9 +13,7 @@ interface ReferralBenefitsSectionProps {
 
 export function ReferralBenefitsSection({ countryCode }: ReferralBenefitsSectionProps) {
   const { user } = useAuth();
-  const [showShareModal, setShowShareModal] = useState(false);
-  const shareButtonRef = useRef<HTMLButtonElement>(null);
-  
+
   const config = getCountryPricingConfig(countryCode);
   const limitedPricing = getAttractivePrice('limited', countryCode);
   const allFeaturesPricing = getAttractivePrice('allFeatures', countryCode);
@@ -88,23 +85,16 @@ export function ReferralBenefitsSection({ countryCode }: ReferralBenefitsSection
       </div>
       
       <div className="flex justify-center">
-        <Button 
-          ref={shareButtonRef}
-          onClick={() => setShowShareModal(true)}
+        <Button
+          asChild
           className="bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 hover:from-amber-400 hover:to-yellow-300 font-semibold px-6 py-3 rounded-xl flex items-center gap-2"
         >
-          <Share2 className="w-5 h-5" />
-          Get Your Referral Code & Share
+          <Link href="/share" className="flex items-center gap-2">
+            <Share2 className="w-5 h-5" />
+            Get Your Referral Code & Share
+          </Link>
         </Button>
       </div>
-      
-      {showShareModal && (
-        <ShareAppModal 
-          isOpen={showShareModal} 
-          onClose={() => setShowShareModal(false)}
-          buttonRef={shareButtonRef}
-        />
-      )}
     </section>
   );
 }
