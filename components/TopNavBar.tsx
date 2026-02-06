@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ShareAppModal } from "@/components/ShareAppModal";
 
 const navLinks = [
   { name: "Home", href: "/", icon: "🏠" },
@@ -23,7 +24,7 @@ const navLinks = [
   { name: "Tools", href: "/tools", icon: "🧰" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
   { name: "About", href: "/about", icon: "ℹ️" },
-  { name: "Tip Jar", href: "/tip-jar", icon: "💝" },
+  { name: "Tip Jar", href: "/tip-jar", icon: "💝", isModal: true },
   { name: "Remedies", href: "/remedies", icon: "💎" },
   { name: "Ask the Seer", href: "/ask-the-seer", icon: "🔮" },
   { name: "Community", href: "/community", icon: "🏆" },
@@ -39,6 +40,7 @@ export function TopNavBar() {
   const { open: openFeedback } = useFeedback();
   const isMobile = useIsMobile();
   const [showMenu, setShowMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const visibleNavLinks = navLinks.filter(
@@ -126,13 +128,14 @@ export function TopNavBar() {
           {/* Share Button with Tooltip */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link
-                href="/share"
+              <button
+                type="button"
+                onClick={() => setShowShareModal(true)}
                 className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-amber-400 text-[var(--m3-primary)] hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
                 aria-label="Share FutureSeer with others"
               >
                 <Share2 className="w-5 h-5 text-current" />
-              </Link>
+              </button>
             </TooltipTrigger>
             <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
               <p>Share FutureSeer</p>
@@ -236,17 +239,34 @@ export function TopNavBar() {
                     duration: 0.3
                   }}
                 >
-                  <Link
-                    href={link.href}
-                    role="menuitem"
-                    className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
-                    onClick={closeMenu}
-                    tabIndex={0}
-                    aria-label={`Navigate to ${link.name}`}
-                  >
-                    <span aria-hidden="true" className="text-xl">{link.icon}</span>
-                    <span className="m3-label-large">{link.name}</span>
-                  </Link>
+                  {(link as { isModal?: boolean }).isModal && link.name === "Tip Jar" ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        openTipJar();
+                        closeMenu();
+                      }}
+                      className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
+                      tabIndex={0}
+                      aria-label="Open Tip Jar"
+                    >
+                      <span aria-hidden="true" className="text-xl">{link.icon}</span>
+                      <span className="m3-label-large">{link.name}</span>
+                    </button>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      role="menuitem"
+                      className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
+                      onClick={closeMenu}
+                      tabIndex={0}
+                      aria-label={`Navigate to ${link.name}`}
+                    >
+                      <span aria-hidden="true" className="text-xl">{link.icon}</span>
+                      <span className="m3-label-large">{link.name}</span>
+                    </Link>
+                  )}
                 </motion.div>
               ))}
             </motion.div>
@@ -328,6 +348,7 @@ export function TopNavBar() {
       `}</style>
       </nav>
     </TooltipProvider>
+    <ShareAppModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
     </>
   );
 }
