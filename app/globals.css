@@ -1671,29 +1671,6 @@ html > body > [data-feedback-widget="true"],
   contain: none !important;
 }
 
-/* Mobile: position feedback button above browser/system UI so it stays visible */
-@media (max-width: 768px) {
-  [data-feedback-widget="true"]:not([data-variant="header"]) {
-    bottom: 120px !important;
-    left: max(16px, env(safe-area-inset-left)) !important;
-  }
-  [data-feedback-widget="true"]:not([data-variant="header"]) button {
-    min-width: 48px !important;
-    min-height: 48px !important;
-    width: 48px !important;
-    height: 48px !important;
-  }
-}
-
-/* Safe area: keep feedback button above notches/home indicator */
-@supports (padding: max(0px)) or (padding: env(safe-area-inset-bottom)) {
-  @media (max-width: 768px) {
-    [data-feedback-widget="true"]:not([data-variant="header"]) {
-      bottom: max(120px, calc(120px + env(safe-area-inset-bottom))) !important;
-    }
-  }
-}
-
 /* Maximum isolation - ensure button is never affected by footer */
 /* CRITICAL: Ensure fixed positioning is relative to viewport, not any parent */
 html [data-feedback-widget="true"],
