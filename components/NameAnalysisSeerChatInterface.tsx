@@ -312,7 +312,7 @@ export function NameAnalysisSeerChatInterface({
               disabled={isLoading || !user}
             />
             <Button
-              onClick={handleSendMessage}
+              onClick={() => handleSendMessage()}
               disabled={!inputValue.trim() || isLoading || !user}
               className={sendBtnClass}
             >

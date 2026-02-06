@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./use-auth";
 import { useToolData } from "./useToolData";
-import { dreamSymbolsIntelligence, DreamData, DreamAnalysis } from "@/lib/dreamSymbolsIntelligence";
+import { dreamSymbolsIntelligence, DreamData, DreamAnalysis, DreamSymbol } from "@/lib/dreamSymbolsIntelligence";
 
 export interface DreamSymbolsHookResult {
   // Profile data (from comprehensive profile)

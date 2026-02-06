@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
+import type { ThirteenSignsAnalysis as LibAnalysis } from "@/hooks/useThirteenSignsZodiac"
 
 interface BirthData {
   name: string
@@ -15,29 +16,16 @@ interface ThirteenSignsAnalysis {
   primarySign: string
   moonSign: string
   ophiuchusInfluence: string
-  allSigns: Array<{
-    name: string
-    icon: string
-    dates: string
-    description: string
-  }>
+  allSigns: Array<{ name: string; icon: string; dates: string; description: string }>
   ophiuchusDetails: string
   ophiuchusTraits: string[]
   ophiuchusStrengths: string[]
-  compatibility: Array<{
-    sign: string
-    score: number
-    description: string
-  }>
+  compatibility: Array<{ sign: string; score: number; description: string }>
   personality: string
   strengths: string[]
   growthAreas: string[]
   career: string
-  careerPaths: Array<{
-    title: string
-    description: string
-    skills: string
-  }>
+  careerPaths: Array<{ title: string; description: string; skills: string }>
   guidance: string
   recommendations: string[]
 }
@@ -65,19 +53,74 @@ export function useThirteenSignsZodiac() {
 
     try {
       // Import the Thirteen Signs intelligence module
-      const { getThirteenSignsAnalysis } = await import("@/lib/thirteenSignsZodiacIntelligence")
+      const { thirteenSignsZodiacIntelligence } = await import("@/lib/thirteenSignsZodiacIntelligence")
       
-      const result = await getThirteenSignsAnalysis(
-        user.uid,
-        {
-          name: birthData.name,
-          birthDateTime: birthData.birthDateTime,
-          birthPlace: birthData.birthPlace,
-          analysisFocus: birthData.analysisFocus,
-        }
-      )
+      const [birthDate = "", birthTime = ""] = birthData.birthDateTime.includes("T")
+        ? birthData.birthDateTime.split("T")
+        : [birthData.birthDateTime, ""]
+      const result: LibAnalysis = await thirteenSignsZodiacIntelligence.performThirteenSignsAnalysis({
+        name: birthData.name,
+        birthDate,
+        birthTime,
+        birthLocation: birthData.birthPlace,
+        focus: birthData.analysisFocus,
+      })
 
-      setAnalysis(result)
+      const mapped: ThirteenSignsAnalysis = {
+        overview: result.overview?.summary ?? "",
+        primarySign: result.overview?.primarySign?.name ?? "",
+        moonSign: result.signs?.moon?.name ?? "",
+        ophiuchusInfluence: result.overview?.secondarySign?.description ?? "",
+        allSigns: result.signs
+          ? [
+              result.signs.sun,
+              result.signs.moon,
+              result.signs.rising,
+              result.signs.mercury,
+              result.signs.venus,
+              result.signs.mars,
+            ]
+            .filter(Boolean)
+            .map((s) => ({
+              name: s.name,
+              icon: s.symbol ?? "",
+              dates: s.dates ?? "",
+              description: s.description ?? "",
+            }))
+          : [],
+        ophiuchusDetails: result.overview?.secondarySign?.description ?? "",
+        ophiuchusTraits: result.overview?.uniqueCharacteristics ?? [],
+        ophiuchusStrengths: result.overview?.keyTraits ?? [],
+        compatibility: [
+          ...(result.compatibility?.bestMatches ?? []).map((m) => ({
+            sign: m.sign,
+            score: m.percentage,
+            description: m.description ?? "",
+          })),
+          ...(result.compatibility?.goodMatches ?? []).map((m) => ({
+            sign: m.sign,
+            score: m.percentage,
+            description: m.description ?? "",
+          })),
+          ...(result.compatibility?.challengingMatches ?? []).map((m) => ({
+            sign: m.sign,
+            score: m.percentage,
+            description: m.description ?? "",
+          })),
+        ],
+        personality: result.personality?.lifePath ?? "",
+        strengths: result.personality?.strengths ?? [],
+        growthAreas: result.personality?.growthAreas ?? [],
+        career: result.career?.workStyle ?? "",
+        careerPaths: (result.career?.idealProfessions ?? []).map((title) => ({
+          title: String(title),
+          description: "",
+          skills: "",
+        })),
+        guidance: (result.advice?.personal ?? []).join(" "),
+        recommendations: result.advice?.personal ?? [],
+      }
+      setAnalysis(mapped)
     } catch (err: any) {
       console.error("Error performing Thirteen Signs analysis:", err)
       setError(err.message || "Failed to perform Thirteen Signs analysis")

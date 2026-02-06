@@ -67,12 +67,12 @@ export default function HellenisticAstrologyPage() {
       setError(null)
       
       console.log('FutureSeer: Loading Hellenistic Astrology analysis...')
-      
+      if (!userProfile) return
       const hellenisticData = await getIntelligentHellenisticAstrologyData(
         user.uid,
-        userProfile.birthDate!,
-        userProfile.birthTime!,
-        userProfile.birthPlace!,
+        userProfile.birthDate ?? '',
+        userProfile.birthTime ?? '',
+        userProfile.birthPlace ?? '',
         userProfile.birthLatitude || 0,
         userProfile.birthLongitude || 0
       )

@@ -547,9 +547,9 @@ export class UniversalInterpretationEngine {
     
     // Calculate basic numerology
     const birthNumbers = birthDate.replace(/\D/g, '').split('').map(Number);
-    const nameNumbers = fullName.replace(/\s/g, '').toLowerCase().split('').map(char => 
+    const nameNumbers = fullName.replace(/\s/g, '').toLowerCase().split('').map((char: string) => 
       char.charCodeAt(0) - 96
-    ).filter(num => num > 0 && num <= 26);
+    ).filter((num: number) => num > 0 && num <= 26);
     
     return {
       birthNumbers,
@@ -598,64 +598,64 @@ export class UniversalInterpretationEngine {
         strengths: this.generateStrengths(system, systemData),
         challenges: this.generateChallenges(system, systemData),
         traits: this.generateTraits(system, systemData),
-        elementalNature: this.getElementalNature(system, systemData),
-        cosmicAlignment: this.getCosmicAlignment(system, systemData)
+        elementalNature: this.getElementalNatureForSystem(system, systemData),
+        cosmicAlignment: this.getCosmicAlignmentForSystem(system, systemData)
       },
       
       lifePurpose: {
         overview: this.fillTemplate(templates.lifePurpose[0], systemData, astroData),
-        dharma: this.getDharma(system, systemData),
-        karmicLessons: this.getKarmicLessons(system, systemData),
-        spiritualPath: this.getSpiritualPath(system, systemData),
-        soulEvolution: this.getSoulEvolution(system, systemData)
+        dharma: this.getDharmaForSystem(system, systemData),
+        karmicLessons: this.getKarmicLessonsForSystem(system, systemData),
+        spiritualPath: this.getSpiritualPathForSystem(system, systemData),
+        soulEvolution: this.getSoulEvolutionForSystem(system, systemData)
       },
       
       relationships: {
         overview: this.fillTemplate(templates.relationships[0], systemData, astroData),
-        compatibility: this.getCompatibility(system, systemData),
-        marriageTiming: this.getMarriageTiming(system, systemData),
-        relationshipAdvice: this.getRelationshipAdvice(system, systemData),
-        familyLife: this.getFamilyLife(system, systemData)
+        compatibility: this.getCompatibilityForSystem(system, systemData),
+        marriageTiming: this.getMarriageTimingForSystem(system, systemData),
+        relationshipAdvice: this.getRelationshipAdviceForSystem(system, systemData),
+        familyLife: this.getFamilyLifeForSystem(system, systemData)
       },
       
       career: {
         overview: this.fillTemplate(templates.career[0], systemData, astroData),
-        suitableProfessions: this.getSuitableProfessions(system, systemData),
-        careerTiming: this.getCareerTiming(system, systemData),
-        successFactors: this.getSuccessFactors(system, systemData),
-        leadershipStyle: this.getLeadershipStyle(system, systemData)
+        suitableProfessions: this.getSuitableProfessionsForSystem(system, systemData),
+        careerTiming: this.getCareerTimingForSystem(system, systemData),
+        successFactors: this.getSuccessFactorsForSystem(system, systemData),
+        leadershipStyle: this.getLeadershipStyleForSystem(system, systemData)
       },
       
       health: {
         overview: this.fillTemplate(templates.health[0], systemData, astroData),
-        constitution: this.getConstitution(system, systemData),
-        healthTips: this.getHealthTips(system, systemData),
-        vulnerableAreas: this.getVulnerableAreas(system, systemData),
-        wellnessAdvice: this.getWellnessAdvice(system, systemData)
+        constitution: this.getConstitutionForSystem(system, systemData),
+        healthTips: this.getHealthTipsForSystem(system, systemData),
+        vulnerableAreas: this.getVulnerableAreasForSystem(system, systemData),
+        wellnessAdvice: this.getWellnessAdviceForSystem(system, systemData)
       },
       
       spirituality: {
         overview: this.fillTemplate(templates.spirituality[0], systemData, astroData),
-        spiritualPath: this.getSpiritualPath(system, systemData),
-        meditationAdvice: this.getMeditationAdvice(system, systemData),
-        karmicLessons: this.getKarmicLessons(system, systemData),
-        divineConnection: this.getDivineConnection(system, systemData)
+        spiritualPath: this.getSpiritualPathForSystem(system, systemData),
+        meditationAdvice: this.getMeditationAdviceForSystem(system, systemData),
+        karmicLessons: this.getKarmicLessonsForSystem(system, systemData),
+        divineConnection: this.getDivineConnectionForSystem(system, systemData)
       },
       
       timing: {
         overview: this.fillTemplate(templates.timing[0], systemData, astroData),
-        currentPeriod: this.getCurrentPeriod(system, systemData),
-        upcomingPeriods: this.getUpcomingPeriods(system, systemData),
-        favorableTiming: this.getFavorableTiming(system, systemData),
-        challengingTiming: this.getChallengingTiming(system, systemData)
+        currentPeriod: this.getCurrentPeriodForSystem(system, systemData),
+        upcomingPeriods: this.getUpcomingPeriodsForSystem(system, systemData),
+        favorableTiming: this.getFavorableTimingForSystem(system, systemData),
+        challengingTiming: this.getChallengingTimingForSystem(system, systemData)
       },
       
       remedies: {
         overview: this.fillTemplate(templates.remedies[0], systemData, astroData),
-        mantras: this.getMantras(system, systemData),
-        gemstones: this.getGemstones(system, systemData),
-        rituals: this.getRituals(system, systemData),
-        lifestyle: this.getLifestyleAdvice(system, systemData)
+        mantras: this.getMantrasForSystem(system, systemData),
+        gemstones: this.getGemstonesForSystem(system, systemData),
+        rituals: this.getRitualsForSystem(system, systemData),
+        lifestyle: this.getLifestyleAdviceForSystem(system, systemData)
       },
       
       predictions: {
@@ -663,8 +663,8 @@ export class UniversalInterpretationEngine {
         mediumTerm: prediction.bayesianPrediction?.prediction || 'Significant life changes',
         longTerm: prediction.combinedPrediction || 'Long-term fulfillment and growth',
         majorTransitions: prediction.recommendations || ['Career advancement', 'Relationship growth'],
-        opportunities: this.getOpportunities(system, systemData),
-        challenges: this.getChallenges(system, systemData)
+        opportunities: this.getOpportunitiesForSystem(system, systemData),
+        challenges: this.getChallengesForSystem(system, systemData)
       },
       
       confidence: prediction.confidence || 0.8,
@@ -727,7 +727,6 @@ export class UniversalInterpretationEngine {
         nature: this.getAscendantNature(ascendant),
         emotional_trait: this.getMoonTrait(moon.signName),
         intuitive_quality: this.getIntuitiveQuality(moon.signName),
-        planet: jupiter.signName,
         house_meaning: this.getHouseMeaning(moon.house),
         personality_focus: this.getPersonalityFocus(moon.signName, moon.house),
         natural_ability: this.getNaturalAbility(moon.signName, moon.house),
@@ -738,7 +737,6 @@ export class UniversalInterpretationEngine {
         sun_sign: sun.signName,
         sun_house: sun.house || '7th',
         core_identity: this.getCoreIdentity(sun.signName),
-        learning_method: this.getLearningMethod(sun.signName, sun.house),
         understanding_area: this.getUnderstandingArea(sun.signName),
         specific_talent: this.getSpecificTalent(sun.signName, sun.house),
         manifestation_area: this.getManifestationArea(sun.signName, sun.house),
@@ -807,9 +805,7 @@ export class UniversalInterpretationEngine {
         relationship_gift: this.getRelationshipGift(venus.signName, venus.house),
         
         // Career template values
-        tenth_house_ruler: this.getTenthHouseRuler(ascendant),
-        tenth_house_sign: jupiter.signName,
-        natural_professions: this.getNaturalProfessions(jupiter.signName, jupiter.house),
+        natural_professions: this.getNaturalProfessions(jupiter.signName, jupiter.house).join(', '),
         professional_strengths: this.getProfessionalStrengths(jupiter.signName, jupiter.house),
         career_gift: this.getCareerGift(jupiter.signName, jupiter.house),
         excel_areas: this.getExcelAreas(jupiter.signName, jupiter.house),
@@ -824,7 +820,7 @@ export class UniversalInterpretationEngine {
         career_manifestation: this.getCareerManifestation(jupiter.signName, jupiter.house),
         career_gift2: this.getCareerGift2(jupiter.signName, jupiter.house),
         career_capability: this.getCareerCapability(jupiter.signName, jupiter.house),
-        success_factors: this.getSuccessFactors(jupiter.signName, jupiter.house),
+        success_factors: this.getSuccessFactors(jupiter.signName, jupiter.house).join(', '),
         success_requirement: this.getSuccessRequirement(jupiter.signName, jupiter.house),
         success_quality: this.getSuccessQuality(jupiter.signName, jupiter.house),
         leadership_style: this.getLeadershipStyle(mars.signName, mars.house),
@@ -840,7 +836,7 @@ export class UniversalInterpretationEngine {
         constitution_care: this.getConstitutionCare(ascendant, moon.signName),
         health_area: this.getHealthArea(mercury.signName, mercury.house),
         health_need: this.getHealthNeed(mercury.signName, mercury.house),
-        vulnerable_areas: this.getVulnerableAreas(mercury.signName, mercury.house),
+        vulnerable_areas: this.getVulnerableAreas(mercury.signName, mercury.house).join(', '),
         attention_area: this.getAttentionArea(mercury.signName, mercury.house),
         health_indication: this.getHealthIndication(mercury.signName, mercury.house),
         health_remedies: this.getHealthRemedies(mercury.signName, mercury.house),
@@ -857,17 +853,17 @@ export class UniversalInterpretationEngine {
         spiritual_path: this.getSpiritualPath(saturn.signName, saturn.house),
         spiritual_ability: this.getSpiritualAbility(saturn.signName, saturn.house),
         spiritual_draw: this.getSpiritualDraw(saturn.signName, saturn.house),
-        learning_method: this.getLearningMethod(saturn.signName, saturn.house),
+        learning_method: this.getLearningMethodSaturn(saturn.signName, saturn.house),
         meditation_practices: this.getMeditationPractices(saturn.signName, saturn.house),
         meditation_indication: this.getMeditationIndication(saturn.signName, saturn.house),
         meditation_quality: this.getMeditationQuality(saturn.signName, saturn.house),
-        karmic_lessons: this.getKarmicLessons(saturn.signName, saturn.house),
+        karmic_lessons: this.getKarmicLessons(saturn.signName, saturn.house).join(', '),
         karmic_learning: this.getKarmicLearning(saturn.signName, saturn.house),
         karmic_indication: this.getKarmicIndication(saturn.signName, saturn.house),
         divine_connection: this.getDivineConnection(saturn.signName, saturn.house),
         connection_method: this.getConnectionMethod(saturn.signName, saturn.house),
         connection_quality: this.getConnectionQuality(saturn.signName, saturn.house),
-        spiritual_gifts: this.getSpiritualGifts(saturn.signName, saturn.house),
+        spiritual_gifts: this.getSpiritualGifts(saturn.signName, saturn.house).join(', '),
         spiritual_ability2: this.getSpiritualAbility2(saturn.signName, saturn.house),
         spiritual_use: this.getSpiritualUse(saturn.signName, saturn.house),
         spiritual_quality: this.getSpiritualQuality(saturn.signName, saturn.house),
@@ -902,7 +898,6 @@ export class UniversalInterpretationEngine {
         mantra_timing: this.getMantraTiming(currentDasha.planet),
         mantra_condition: this.getMantraCondition(currentDasha.planet),
         lifestyle_remedy: this.getLifestyleRemedy(ascendant, moon.signName),
-        lifestyle_indication: this.getLifestyleIndication(ascendant, moon.signName),
         lifestyle_quality: this.getLifestyleQuality(ascendant, moon.signName),
         gemstone: this.getGemstone(currentDasha.planet),
         gemstone_ruler: this.getGemstoneRuler(currentDasha.planet),
@@ -919,8 +914,6 @@ export class UniversalInterpretationEngine {
         
         // Fallback values for missing data
         element: 'balanced',
-        quality: 'harmonious',
-        trait: 'intuitive',
         purpose: 'spiritual service',
         method: 'compassionate action',
         focus: 'personal growth',
@@ -934,14 +927,10 @@ export class UniversalInterpretationEngine {
         care: 'regular meditation',
         body_part: 'overall wellness',
         area: 'emotional balance',
-        path: 'devotional',
-        spiritual_quality: 'wisdom',
         practices: 'meditation and prayer',
         influence: 'positive growth',
         activities: 'spiritual practices',
         benefit: 'inner peace',
-        planet: 'Jupiter',
-        gemstone: 'Pearl',
         ritual: 'daily meditation'
       };
       
@@ -1020,123 +1009,123 @@ export class UniversalInterpretationEngine {
     return ['Intuitive', 'Spiritual', 'Compassionate', 'Wise', 'Determined'];
   }
   
-  private getElementalNature(system: string, systemData: any): string {
+  private getElementalNatureForSystem(system: string, systemData: any): string {
     return 'Balanced';
   }
   
-  private getCosmicAlignment(system: string, systemData: any): string {
+  private getCosmicAlignmentForSystem(system: string, systemData: any): string {
     return 'Harmonious';
   }
   
-  private getDharma(system: string, systemData: any): string {
+  private getDharmaForSystem(system: string, systemData: any): string {
     return 'To serve humanity through wisdom and compassion';
   }
   
-  private getKarmicLessons(system: string, systemData: any): string[] {
+  private getKarmicLessonsForSystem(system: string, systemData: any): string[] {
     return ['Learning patience', 'Developing compassion', 'Balancing giving and receiving'];
   }
   
-  private getSpiritualPath(system: string, systemData: any): string {
+  private getSpiritualPathForSystem(system: string, systemData: any): string {
     return 'Devotional path with emphasis on service and wisdom';
   }
   
-  private getSoulEvolution(system: string, systemData: any): string {
+  private getSoulEvolutionForSystem(system: string, systemData: any): string {
     return 'Progressive spiritual development through service and wisdom';
   }
   
-  private getCompatibility(system: string, systemData: any): string {
+  private getCompatibilityForSystem(system: string, systemData: any): string {
     return 'Strong compatibility with earth and water signs';
   }
   
-  private getMarriageTiming(system: string, systemData: any): string {
+  private getMarriageTimingForSystem(system: string, systemData: any): string {
     return 'Favorable periods in your late 20s and early 30s';
   }
   
-  private getRelationshipAdvice(system: string, systemData: any): string {
+  private getRelationshipAdviceForSystem(system: string, systemData: any): string {
     return 'Focus on emotional communication and mutual respect';
   }
   
-  private getFamilyLife(system: string, systemData: any): string {
+  private getFamilyLifeForSystem(system: string, systemData: any): string {
     return 'Blessed with harmonious family relationships';
   }
   
-  private getSuitableProfessions(system: string, systemData: any): string[] {
+  private getSuitableProfessionsForSystem(system: string, systemData: any): string[] {
     return ['Teaching', 'Healing', 'Counseling', 'Spiritual guidance', 'Writing'];
   }
   
-  private getCareerTiming(system: string, systemData: any): string {
+  private getCareerTimingForSystem(system: string, systemData: any): string {
     return 'Major career shifts around ages 28, 35, and 42';
   }
   
-  private getSuccessFactors(system: string, systemData: any): string[] {
+  private getSuccessFactorsForSystem(system: string, systemData: any): string[] {
     return ['Authenticity', 'Service to others', 'Spiritual practice'];
   }
   
-  private getLeadershipStyle(system: string, systemData: any): string {
+  private getLeadershipStyleForSystem(system: string, systemData: any): string {
     return 'Compassionate and wisdom-based leadership';
   }
   
-  private getConstitution(system: string, systemData: any): string {
+  private getConstitutionForSystem(system: string, systemData: any): string {
     return 'Pitta-Kapha constitution with strong digestive fire';
   }
   
-  private getHealthTips(system: string, systemData: any): string[] {
+  private getHealthTipsForSystem(system: string, systemData: any): string[] {
     return ['Regular meditation', 'Balanced diet', 'Adequate rest', 'Stress management'];
   }
   
-  private getVulnerableAreas(system: string, systemData: any): string[] {
+  private getVulnerableAreasForSystem(system: string, systemData: any): string[] {
     return ['Digestive system', 'Emotional balance', 'Stress-related conditions'];
   }
   
-  private getWellnessAdvice(system: string, systemData: any): string {
+  private getWellnessAdviceForSystem(system: string, systemData: any): string {
     return 'Maintain balance through regular spiritual practice and healthy lifestyle';
   }
   
-  private getMeditationAdvice(system: string, systemData: any): string {
+  private getMeditationAdviceForSystem(system: string, systemData: any): string {
     return 'Practice daily meditation and mantra chanting';
   }
   
-  private getDivineConnection(system: string, systemData: any): string {
+  private getDivineConnectionForSystem(system: string, systemData: any): string {
     return 'Strong connection to higher consciousness and divine guidance';
   }
   
-  private getCurrentPeriod(system: string, systemData: any): string {
+  private getCurrentPeriodForSystem(system: string, systemData: any): string {
     return 'A period of growth and spiritual development';
   }
   
-  private getUpcomingPeriods(system: string, systemData: any): string[] {
+  private getUpcomingPeriodsForSystem(system: string, systemData: any): string[] {
     return ['Career advancement', 'Relationship growth', 'Spiritual deepening'];
   }
   
-  private getFavorableTiming(system: string, systemData: any): string[] {
+  private getFavorableTimingForSystem(system: string, systemData: any): string[] {
     return ['Spiritual practices', 'Career decisions', 'Relationship commitments'];
   }
   
-  private getChallengingTiming(system: string, systemData: any): string[] {
+  private getChallengingTimingForSystem(system: string, systemData: any): string[] {
     return ['Major life changes', 'Financial decisions', 'Health concerns'];
   }
   
-  private getMantras(system: string, systemData: any): string[] {
+  private getMantrasForSystem(system: string, systemData: any): string[] {
     return ['Gayatri Mantra', 'Om Namah Shivaya', 'Om Namo Bhagavate Vasudevaya'];
   }
   
-  private getGemstones(system: string, systemData: any): string[] {
+  private getGemstonesForSystem(system: string, systemData: any): string[] {
     return ['Pearl for Moon', 'Ruby for Sun', 'Emerald for Mercury'];
   }
   
-  private getRituals(system: string, systemData: any): string[] {
+  private getRitualsForSystem(system: string, systemData: any): string[] {
     return ['Daily meditation', 'Charity and service', 'Spiritual study'];
   }
   
-  private getLifestyleAdvice(system: string, systemData: any): string[] {
+  private getLifestyleAdviceForSystem(system: string, systemData: any): string[] {
     return ['Regular spiritual practice', 'Healthy diet', 'Adequate rest', 'Stress management'];
   }
   
-  private getOpportunities(system: string, systemData: any): string[] {
+  private getOpportunitiesForSystem(system: string, systemData: any): string[] {
     return ['Career advancement', 'Spiritual growth', 'Relationship development'];
   }
   
-  private getChallenges(system: string, systemData: any): string[] {
+  private getChallengesForSystem(system: string, systemData: any): string[] {
     return ['Balancing responsibilities', 'Managing stress', 'Maintaining focus'];
   }
   
@@ -1398,7 +1387,7 @@ export class UniversalInterpretationEngine {
     return 'spiritual service';
   }
   
-  private getLearningMethod(sunSign: string, house: number): string {
+  private getLearningMethodSun(sunSign: string, house: number): string {
     return 'through relationships and partnerships';
   }
   
@@ -1671,7 +1660,7 @@ export class UniversalInterpretationEngine {
   private getSpiritualPath(saturnSign: string, house: number): string { return 'devotional service and meditation'; }
   private getSpiritualAbility(saturnSign: string, house: number): string { return 'deep contemplation and wisdom'; }
   private getSpiritualDraw(saturnSign: string, house: number): string { return 'mystical experiences and higher consciousness'; }
-  private getLearningMethod(saturnSign: string, house: number): string { return 'through disciplined practice'; }
+  private getLearningMethodSaturn(saturnSign: string, house: number): string { return 'through disciplined practice'; }
   private getMeditationPractices(saturnSign: string, house: number): string { return 'mindfulness and loving-kindness meditation'; }
   private getMeditationIndication(saturnSign: string, house: number): string { return 'develop inner peace and wisdom'; }
   private getMeditationQuality(saturnSign: string, house: number): string { return 'deep concentration and insight'; }
@@ -1714,7 +1703,6 @@ export class UniversalInterpretationEngine {
   private getMantraTiming(planet: string): string { return 'sunrise and sunset'; }
   private getMantraCondition(planet: string): string { return 'when you are in a peaceful state'; }
   private getLifestyleRemedy(ascendant: string, moonSign: string): string { return 'daily meditation and spiritual study'; }
-  private getLifestyleIndication(ascendant: string, moonSign: string): string { return 'maintain regular spiritual practice'; }
   private getLifestyleQuality(ascendant: string, moonSign: string): string { return 'discipline and devotion'; }
   private getGemstone(planet: string): string { return 'Pearl'; }
   private getGemstoneRuler(planet: string): string { return 'Moon'; }

@@ -52,8 +52,7 @@ export function buildDreamState(
   const dream_symbols =
     analysis.symbols?.map((s) => s.symbol).filter(Boolean) ?? [];
   const emotional_tone = (analysis.emotionalTone ?? 'neutral').trim() || 'neutral';
-  const recurrence =
-    dreamData?.dreamType === 'recurring' ?? false;
+  const recurrence = dreamData?.dreamType === 'recurring' || false;
   const recent_context = (dreamData?.context ?? '').trim();
   const sleep_state = 'normal';
 

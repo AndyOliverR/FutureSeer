@@ -31,6 +31,9 @@ export interface DashaPeriod {
   planet: string
   startDate: string
   endDate: string
+  duration?: number
+  progress?: number
+  isCurrent?: boolean
   effects?: string
   antardasha?: string
 }

@@ -645,7 +645,7 @@ function TarotPage() {
                     transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                   >
                     <Button
-                      onClick={performTarotReading}
+                      onClick={() => performTarotReading()}
                       disabled={!question.trim() || !spreadType || isReadingLoading}
                       className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shadow-lg relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
                       aria-label="Perform tarot reading"

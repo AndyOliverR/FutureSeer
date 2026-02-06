@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { TarotCard, TarotReading } from '@/lib/tarotIntelligence'
@@ -31,7 +31,7 @@ function calculateElementalBalance(profileCards: ProfileCardsData | null, recent
     profileCards.lifePathCard,
     profileCards.soulCard,
     profileCards.personalityCard
-  ].filter(Boolean)
+  ].filter((c): c is TarotCard => c != null)
   
   cards.forEach((card: TarotCard) => {
     if (card.element) {
@@ -43,7 +43,7 @@ function calculateElementalBalance(profileCards: ProfileCardsData | null, recent
 }
 
 // Get element color
-function getElementColor(element: string): { bg: string; text: string; border: string; icon: JSX.Element } {
+function getElementColor(element: string): { bg: string; text: string; border: string; icon: React.ReactElement } {
   const colors: Record<string, any> = {
     fire: { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300', icon: <Flame className="w-6 h-6" /> },
     water: { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300', icon: <Droplets className="w-6 h-6" /> },

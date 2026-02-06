@@ -10,6 +10,7 @@ export interface FABProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
   extended?: boolean
   variant?: "primary" | "secondary" | "tertiary"
   position?: "bottom-right" | "bottom-left" | "top-right" | "top-left" | "center"
+  transition?: unknown
 }
 
 const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
@@ -20,6 +21,11 @@ const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
     extended = false, 
     variant = "primary",
     position = "bottom-right",
+    transition: _transition,
+    onDrag,
+    onDragStart,
+    onDragEnd,
+    onDragOver,
     ...props 
   }, ref) => {
     const positionClasses = {
@@ -59,7 +65,7 @@ const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
           stiffness: 300,
           damping: 20,
         }}
-        {...props}
+        {...(props as React.ComponentPropsWithoutRef<typeof motion.button>)}
       >
         <AnimatePresence mode="wait">
           {icon && (

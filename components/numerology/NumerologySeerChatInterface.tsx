@@ -120,15 +120,15 @@ export default function NumerologySeerChatInterface({
           question: messageToSend,
           userProfile,
           numerologyData: {
-            lifePathNumber: numerologyData.lifePathNumber || numerologyData.life_path_number || numerologyData.life_path,
-            expressionNumber: numerologyData.expressionNumber || numerologyData.expression_number || numerologyData.destiny_number,
-            soulUrgeNumber: numerologyData.soulUrgeNumber || numerologyData.soul_number || numerologyData.soul_urge,
-            personalityNumber: numerologyData.personalityNumber || numerologyData.personality_number,
-            destinyNumber: numerologyData.destinyNumber || numerologyData.destiny_number,
-            birthdayNumber: numerologyData.birthdayNumber || numerologyData.birthday_number,
-            maturityNumber: numerologyData.maturityNumber || numerologyData.maturity_number,
-            personalYearNumber: numerologyData.personalYearNumber || numerologyData.personal_year_number,
-            breakdown: numerologyData.breakdown
+            lifePathNumber: numerologyData.lifePathNumber,
+            expressionNumber: numerologyData.expressionNumber,
+            soulUrgeNumber: numerologyData.soulUrgeNumber,
+            personalityNumber: numerologyData.personalityNumber,
+            destinyNumber: numerologyData.destinyNumber,
+            birthdayNumber: numerologyData.birthdayNumber,
+            maturityNumber: numerologyData.maturityNumber,
+            personalYearNumber: numerologyData.personalYearNumber,
+            breakdown: (numerologyData as { breakdown?: unknown }).breakdown
           },
           comprehensiveReport: comprehensiveReport || undefined,
           sessionId: currentSessionId

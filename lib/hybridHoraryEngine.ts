@@ -322,7 +322,7 @@ export class HybridHoraryEngine {
     const moon = planets.find(p => p.planet === 'Moon')
     const sun = planets.find(p => p.planet === 'Sun')
     const ascendant = houses.find(h => h.house === 1)
-    const ruler = this.findSignRuler(ascendant?.sign)
+    const ruler = this.findSignRuler(ascendant?.sign ?? '')
     const rulerPlanet = planets.find(p => p.planet === ruler)
     
     // Professional horary analysis with detailed reasoning
@@ -333,7 +333,8 @@ export class HybridHoraryEngine {
     
     // 2. Ascendant and Ruler Analysis
     if (ascendant && rulerPlanet) {
-      analysis += `The Ascendant at ${ascendant.degree}° ${ascendant.sign} is ruled by ${ruler}, which is currently positioned at ${rulerPlanet.degree}° ${rulerPlanet.sign} in house ${rulerPlanet.house}. `
+      const ascDegree = (ascendant as { degree?: number }).degree ?? ascendant.cusp ?? 0
+      analysis += `The Ascendant at ${ascDegree}° ${ascendant.sign} is ruled by ${ruler}, which is currently positioned at ${rulerPlanet.degree}° ${rulerPlanet.sign} in house ${rulerPlanet.house}. `
       
       // Ruler's dignity
       const dignity = this.calculatePlanetaryDignity(rulerPlanet.planet, rulerPlanet.longitude)
@@ -433,7 +434,7 @@ export class HybridHoraryEngine {
     }
     
     // Question-specific advice
-    const specificAdvice = this.getSpecificAdvice(questionType, moon?.sign)
+    const specificAdvice = this.getSpecificAdvice(questionType, moon?.sign ?? '')
     guidance += specificAdvice
     
     return guidance
@@ -736,7 +737,7 @@ export class HybridHoraryEngine {
       'Saturn': { 'Capricorn': 'Domicile', 'Aquarius': 'Domicile', 'Libra': 'Exaltation', 'Cancer': 'Detriment', 'Leo': 'Detriment', 'Aries': 'Fall' }
     }
     
-    return dignities[planet]?.[sign] || 'Neutral'
+    return (dignities as Record<string, Record<string, string>>)[planet]?.[sign] || 'Neutral'
   }
 
   private getSignFromLongitude(longitude: number): string {
@@ -750,9 +751,12 @@ export class HybridHoraryEngine {
     const moon = planets.find(p => p.planet === 'Moon')
     const sun = planets.find(p => p.planet === 'Sun')
     
+    type HouseWithExtras = { house: number; cusp: number; sign: string; lord?: string; degree?: number; minute?: number }
+    type PlanetWithExtras = { planet: string; longitude: number; latitude: number; house: number; sign: string; degree: number; speed: number; minute?: number; retrograde?: boolean }
     return houses.map(house => {
+      const h = house as HouseWithExtras
       const planetsInHouse = planets.filter(p => p.house === house.house)
-      const houseRuler = planets.find(p => p.planet === house.lord)
+      const houseRuler = planets.find(p => p.planet === h.lord)
       const houseAspects = aspects.filter(a => 
         planetsInHouse.some(p => p.planet === a.planet1 || p.planet === a.planet2)
       )
@@ -760,16 +764,19 @@ export class HybridHoraryEngine {
       return {
         house: house.house,
         name: this.getHouseName(house.house),
-        cusp: `${house.degree}°${house.minute}' ${house.sign}`,
-        ruler: house.lord,
-        rulerPosition: houseRuler ? `${houseRuler.degree}°${houseRuler.minute}' ${houseRuler.sign} in House ${houseRuler.house}` : 'Not found in chart',
+        cusp: `${h.degree ?? h.cusp ?? 0}°${h.minute ?? 0}' ${house.sign}`,
+        ruler: h.lord ?? '',
+        rulerPosition: houseRuler ? `${(houseRuler as PlanetWithExtras).degree}°${(houseRuler as PlanetWithExtras).minute ?? 0}' ${houseRuler.sign} in House ${houseRuler.house}` : 'Not found in chart',
         rulerDignity: houseRuler ? this.calculatePlanetaryDignity(houseRuler.planet, houseRuler.longitude) : 'Unknown',
-        planets: planetsInHouse.map(p => ({
-          name: p.planet,
-          position: `${p.degree}°${p.minute}' ${p.sign}`,
-          dignity: this.calculatePlanetaryDignity(p.planet, p.longitude),
-          retrograde: p.retrograde || false
-        })),
+        planets: planetsInHouse.map(p => {
+          const px = p as PlanetWithExtras
+          return {
+            name: p.planet,
+            position: `${px.degree}°${px.minute ?? 0}' ${p.sign}`,
+            dignity: this.calculatePlanetaryDignity(p.planet, p.longitude),
+            retrograde: px.retrograde ?? false
+          }
+        }),
         aspects: houseAspects.map(a => ({
           aspect: a.aspect,
           planets: `${a.planet1} ${a.aspect} ${a.planet2}`,
@@ -777,13 +784,13 @@ export class HybridHoraryEngine {
           applying: a.applying
         })),
         horarySignificance: this.getHoraryHouseSignificance(house.house, questionType, moon, planetsInHouse),
-        professionalAnalysis: this.getProfessionalHouseAnalysis(house.house, houseRuler, planetsInHouse, houseAspects, questionType)
+        professionalAnalysis: this.getProfessionalHouseAnalysis(house.house, houseRuler ?? null, planetsInHouse, houseAspects, questionType)
       }
     })
   }
 
   private getHouseName(houseNumber: number): string {
-    const names = {
+    const names: Record<number, string> = {
       1: '1st House - Self & Identity',
       2: '2nd House - Resources & Values', 
       3: '3rd House - Communication & Siblings',
@@ -797,11 +804,11 @@ export class HybridHoraryEngine {
       11: '11th House - Friends & Hopes',
       12: '12th House - Subconscious & Hidden Matters'
     }
-    return names[houseNumber] || `House ${houseNumber}`
+    return (names as Record<number, string>)[houseNumber] || `House ${houseNumber}`
   }
 
   private getHoraryHouseSignificance(houseNumber: number, questionType: string, moon: any, planetsInHouse: any[]): string {
-    const significance = {
+    const significance: Record<number, string> = {
       1: 'In horary astrology, the 1st house represents the querent (questioner) and their current state of mind. The condition of this house shows how the questioner is approaching the matter.',
       2: 'The 2nd house governs money, possessions, and values. In horary, it shows the querent\'s resources and what they value most in relation to the question.',
       3: 'The 3rd house rules communication, siblings, and short journeys. In horary, it indicates how information flows and local matters.',
@@ -816,7 +823,7 @@ export class HybridHoraryEngine {
       12: 'The 12th house rules subconscious, secrets, and hidden enemies. In horary, it indicates hidden obstacles and spiritual matters.'
     }
     
-    let analysis = significance[houseNumber] || 'This house has specific significance in horary astrology.'
+    let analysis = (significance as Record<number, string>)[houseNumber] || 'This house has specific significance in horary astrology.'
     
     // Add Moon significance if Moon is in this house
     if (moon && moon.house === houseNumber) {
@@ -843,10 +850,11 @@ export class HybridHoraryEngine {
     // Ruler analysis
     if (ruler) {
       const dignity = this.calculatePlanetaryDignity(ruler.planet, ruler.longitude)
-      analysis += `**Ruler Analysis:** The ruler of this house, ${ruler.planet}, is positioned at ${ruler.degree}°${ruler.minute}' ${ruler.sign} in house ${ruler.house}. `
+      const rulerMin = (ruler as { minute?: number }).minute ?? 0
+      analysis += `**Ruler Analysis:** The ruler of this house, ${ruler.planet}, is positioned at ${ruler.degree}°${rulerMin}' ${ruler.sign} in house ${ruler.house}. `
       analysis += `${ruler.planet} is in ${dignity.toLowerCase()}, which ${this.getDignityMeaning(dignity)}. `
       
-      if (ruler.retrograde) {
+      if ((ruler as { retrograde?: boolean }).retrograde) {
         analysis += `The retrograde motion of ${ruler.planet} suggests delays or internal processing in matters related to this house. `
       }
     } else {
@@ -858,8 +866,9 @@ export class HybridHoraryEngine {
       analysis += `**Planets in House:** This house contains ${planetsInHouse.length} planet${planetsInHouse.length > 1 ? 's' : ''}: `
       planetsInHouse.forEach((planet, index) => {
         const dignity = this.calculatePlanetaryDignity(planet.planet, planet.longitude)
-        analysis += `${planet.planet} at ${planet.degree}°${planet.minute}' ${planet.sign} (${dignity.toLowerCase()})`
-        if (planet.retrograde) analysis += ' (retrograde)'
+        const pMin = (planet as { minute?: number }).minute ?? 0
+        analysis += `${planet.planet} at ${planet.degree}°${pMin}' ${planet.sign} (${dignity.toLowerCase()})`
+        if ((planet as { retrograde?: boolean }).retrograde) analysis += ' (retrograde)'
         if (index < planetsInHouse.length - 1) analysis += ', '
       })
       analysis += '. '
@@ -901,7 +910,7 @@ export class HybridHoraryEngine {
       'Detriment': 2,
       'Fall': 1
     }
-    return strengths[dignity] || 3
+    return (strengths as Record<string, number>)[dignity] || 3
   }
 
   private getPlanetInHouseMeaning(planet: string, house: number): string {
@@ -917,7 +926,7 @@ export class HybridHoraryEngine {
       'Neptune': 'suggests intuition, confusion, and spiritual matters in this area',
       'Pluto': 'indicates transformation, power, and deep psychological processes'
     }
-    return meanings[planet] || 'influences this area of life in its unique way'
+    return (meanings as Record<string, string>)[planet] || 'influences this area of life in its unique way'
   }
 
   private getQuestionSpecificHouseAnalysis(houseNumber: number, questionType: string, ruler: any, planetsInHouse: any[]): string {

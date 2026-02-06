@@ -244,7 +244,7 @@ export const WesternAstrologyTool = () => {
               Planetary Positions
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.planetaryPositions.map((planet, index) => (
+              {data.planetaryPositions.map((planet: { name: string; sign: string; degree: number; house: number }, index: number) => (
                 <div key={index} className="p-4 bg-slate-700/30 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-white">{planet.name}</span>
@@ -290,7 +290,7 @@ export const WesternAstrologyTool = () => {
               Current Transits
             </h3>
             <div className="space-y-3">
-              {data.currentTransits.map((transit, index) => (
+              {data.currentTransits.map((transit: { planet: string; aspect: string; orb: number; interpretation: string }, index: number) => (
                 <div key={index} className="p-4 bg-slate-700/30 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-semibold text-white">{transit.planet} → {transit.aspect}</span>

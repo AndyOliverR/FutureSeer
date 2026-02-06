@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -41,7 +41,7 @@ function calculateArcanaDistribution(profileCards: ProfileCardsData | null): Arc
     profileCards.lifePathCard,
     profileCards.soulCard,
     profileCards.personalityCard
-  ].filter(Boolean)
+  ].filter((c): c is TarotCard => c != null)
   
   cards.forEach((card: TarotCard) => {
     if (card.arcana === 'major') {
@@ -60,7 +60,7 @@ function calculateArcanaDistribution(profileCards: ProfileCardsData | null): Arc
 }
 
 // Get suit icon and color
-function getSuitConfig(suit: string): { icon: JSX.Element; color: string; bg: string; border: string } {
+function getSuitConfig(suit: string): { icon: React.ReactElement; color: string; bg: string; border: string } {
   const configs: Record<string, any> = {
     wands: { icon: <Wand2 className="w-5 h-5" />, color: 'text-red-700', bg: 'bg-red-100', border: 'border-red-300' },
     cups: { icon: <Wine className="w-5 h-5" />, color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-300' },

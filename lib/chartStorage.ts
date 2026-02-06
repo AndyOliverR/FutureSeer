@@ -241,7 +241,7 @@ export const hasCurrentChart = (userId: string, chartType: string) => {
 };
 
 export const storeChart = (userId: string, chartType: string, data: any, source?: string, metadata?: any) => {
-  return chartStorageManager.storeChart(userId, chartType as any, data, source || 'futureseer-generator', metadata);
+  return chartStorageManager.storeChart(userId, chartType as any, data, (source || 'futureseer-generator') as 'astroapp-api' | 'professional-generator' | 'futureseer-generator', metadata);
 };
 
 export const getStoredChart = (userId: string, chartType: string) => {

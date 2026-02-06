@@ -122,18 +122,18 @@ class DailyDecisionsIntelligence {
     const moonPlanet = Array.isArray(planets)
       ? planets.find((p: any) => p.name === 'Moon' || p.name === 'moon')
       : null;
-    const moonSign = moonPlanet?.sign || moonPlanet?.signName || 'Unknown';
+    const moonSign = (moonPlanet as { sign?: string; signName?: string })?.sign ?? (moonPlanet as { signName?: string })?.signName ?? 'Unknown';
     const moonNakshatra = moonPlanet?.nakshatra || 'Unknown';
 
     const sunPlanet = Array.isArray(planets)
       ? planets.find((p: any) => p.name === 'Sun' || p.name === 'sun')
       : null;
-    const sunSign = sunPlanet?.sign || sunPlanet?.signName || 'Unknown';
+    const sunSign = (sunPlanet as { sign?: string; signName?: string })?.sign ?? (sunPlanet as { signName?: string })?.signName ?? 'Unknown';
 
     const venusPlanet = Array.isArray(planets)
       ? planets.find((p: any) => p.name === 'Venus' || p.name === 'venus')
       : null;
-    const venusSign = venusPlanet?.sign || venusPlanet?.signName || 'Unknown';
+    const venusSign = (venusPlanet as { sign?: string; signName?: string })?.sign ?? (venusPlanet as { signName?: string })?.signName ?? 'Unknown';
 
     // 2. Calculate birth Panchanga (for Janma Nakshatra, Janma Tithi)
     const birthChart = getChart({
@@ -158,7 +158,7 @@ class DailyDecisionsIntelligence {
       date: date,
       latitude,
       longitude,
-      birthDate: null,
+      birthDate: undefined,
     });
 
     let targetPanchanga = calculateAccuratePanchanga(targetChart, {
@@ -260,7 +260,7 @@ class DailyDecisionsIntelligence {
               progress: currentDasha.progress || 0,
             }
           : null,
-        ascendant: ascendant.sign || ascendant.signName || 'Unknown',
+        ascendant: (ascendant as { sign?: string; signName?: string }).sign ?? (ascendant as { signName?: string }).signName ?? 'Unknown',
         moonSign,
         moonNakshatra,
         sunSign,
@@ -498,12 +498,12 @@ class DailyDecisionsIntelligence {
     let score = 70;
     let personalizedNote = '';
 
-    if (bestDays.includes(currentDay)) {
+    if ((bestDays as readonly string[]).includes(currentDay)) {
       score += 20;
       personalizedNote += `Today is ${currentDay} — favorable for cutting nails. `;
     }
 
-    if (avoidDays.includes(currentDay)) {
+    if ((avoidDays as readonly string[]).includes(currentDay)) {
       score -= 30;
       personalizedNote += `Today is ${currentDay} — avoid cutting nails. `;
     }

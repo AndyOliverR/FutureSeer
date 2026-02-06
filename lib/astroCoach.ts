@@ -35,7 +35,7 @@ interface PersonalityProfile {
   copingStrategies: string[]
 }
 
-class AstroCoach {
+export class AstroCoach {
   private coachingTemplates = {
     encouragement: [
       "Your {element} energy gives you incredible {strength}. Trust this power within you.",
@@ -273,8 +273,8 @@ class AstroCoach {
     return {
       activeTransits: transits,
       majorInfluences: transits.filter(t => t.orb < 3),
-      opportunities: transits.filter(t => t.type === 'Trine' || t.type === 'Sextile'),
-      challenges: transits.filter(t => t.type === 'Square' || t.type === 'Opposition')
+      opportunities: transits.filter(t => (t as { type?: string }).type === 'Trine' || (t as { type?: string }).type === 'Sextile'),
+      challenges: transits.filter(t => (t as { type?: string }).type === 'Square' || (t as { type?: string }).type === 'Opposition')
     }
   }
 

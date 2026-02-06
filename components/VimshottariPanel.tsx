@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { DashaPeriod } from "@/lib/astrology";
-import { formatDashaPeriod } from "@/lib/vedic-core";
+import { DashaPeriod } from "@/types/mystical";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 interface VimshottariPanelProps {
@@ -82,7 +81,7 @@ export default function VimshottariPanel({ dasha, currentDasha, className = "" }
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-blue-900">
-                  {currentDasha.progress.toFixed(1)}%
+                  {(currentDasha.progress ?? 0).toFixed(1)}%
                 </div>
                 <div className="text-sm text-blue-600">Complete</div>
               </div>
@@ -156,7 +155,7 @@ export default function VimshottariPanel({ dasha, currentDasha, className = "" }
                       </div>
                       {isCurrent && (
                         <div className="text-sm text-blue-600">
-                          {period.progress.toFixed(1)}% complete
+                          {(period.progress ?? 0).toFixed(1)}% complete
                         </div>
                       )}
                     </div>
@@ -195,7 +194,7 @@ export default function VimshottariPanel({ dasha, currentDasha, className = "" }
                         {isCurrent && (
                           <div>
                             <span className="font-medium text-gray-700">Progress:</span>
-                            <span className="ml-2 text-gray-600">{period.progress.toFixed(1)}%</span>
+                            <span className="ml-2 text-gray-600">{(period.progress ?? 0).toFixed(1)}%</span>
                           </div>
                         )}
                       </div>

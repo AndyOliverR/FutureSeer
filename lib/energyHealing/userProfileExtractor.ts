@@ -69,17 +69,17 @@ export function extractUserContext(userProfile: UserProfile, astroData?: any): U
     context.astrological = {
       sunSign: astroData.vedic?.chart?.sun?.sign || 
                astroData.western?.chart?.sun?.sign ||
-               calculateSunSign(userProfile.birthDate),
+               calculateSunSign(userProfile.birthDate ?? ''),
       moonSign: astroData.vedic?.chart?.moon?.sign || 
                 astroData.western?.chart?.moon?.sign,
-      risingSign: astroData.vedic?.chart?.ascendant?.sign || 
-                  astroData.western?.chart?.ascendant?.sign,
+      risingSign: (astroData.vedic?.chart?.ascendant?.sign ?? '') || 
+                  (astroData.western?.chart?.ascendant?.sign ?? ''),
       planetaryPositions: astroData.vedic?.chart || astroData.western?.chart,
     };
   } else {
     // Fallback: calculate basic sun sign
     context.astrological = {
-      sunSign: calculateSunSign(userProfile.birthDate),
+      sunSign: calculateSunSign(userProfile.birthDate ?? ''),
     };
   }
 

@@ -98,7 +98,7 @@ const PLANETS = {
 };
 
 // Coordinate conversions
-const heliocentricRect = (planetObj: any, jd: number) => planetObj ? solarxyz.position(planetObj, jd) : null;
+const heliocentricRect = (planetObj: any, jd: number) => planetObj ? (solarxyz as { position: (p: any, jd: number) => [number, number, number] }).position(planetObj, jd) : null;
 
 const rectToEcl = (x: number, y: number, z: number) => {
   const r = Math.sqrt(x * x + y * y + z * z);
@@ -176,7 +176,7 @@ const ayanamshaValue = (jd: number, type: string | number) => {
   const T = (jd - 2451545.0) / 36525;
   const drift = (50.29 / 3600) * T * 100; // ~50.29"/yr
   if (typeof type === "number") return type;
-  const base = AYANAMSHA_BASE[type.toLowerCase()] ?? 0;
+  const base = AYANAMSHA_BASE[type.toLowerCase() as keyof typeof AYANAMSHA_BASE] ?? 0;
   return base + drift;
 };
 
@@ -304,7 +304,7 @@ const getPlanetaryDignity = (planet: PlanetKey, sign: number, degreeInSign: numb
 
   const isExalted = sign === dignity.exaltation && degreeInSign <= dignity.exaltationDegree;
   const isDebilitated = sign === dignity.debilitation && degreeInSign <= dignity.debilitationDegree;
-  const isOwnSign = dignity.ownSigns.includes(sign);
+  const isOwnSign = (dignity.ownSigns as number[]).includes(sign);
   
   let isMoolatrikona = false;
   if (dignity.moolatrikona) {
@@ -425,40 +425,41 @@ export const getPlanetCoords = (
     }
 
     // Planets & Sun - Use working tropical calculator
-    const tropicalPlanets = calculateTropicalPlanets(date);
+    const dateObj = date instanceof Date ? date : new Date(date);
+    const tropicalPlanets = calculateTropicalPlanets(dateObj);
     let lon: number, lat: number, dist: number;
     
     // Map planet names to tropical calculator results
     switch (name) {
       case "sun":
-        lon = tropicalPlanets.sun.longitude;
-        lat = tropicalPlanets.sun.latitude;
-        dist = tropicalPlanets.sun.distance;
+        lon = tropicalPlanets.sun.longitude ?? 0;
+        lat = tropicalPlanets.sun.latitude ?? 0;
+        dist = tropicalPlanets.sun.distance ?? 0;
         break;
       case "mercury":
-        lon = tropicalPlanets.mercury.longitude;
-        lat = tropicalPlanets.mercury.latitude;
-        dist = tropicalPlanets.mercury.distance;
+        lon = tropicalPlanets.mercury.longitude ?? 0;
+        lat = tropicalPlanets.mercury.latitude ?? 0;
+        dist = tropicalPlanets.mercury.distance ?? 0;
         break;
       case "venus":
-        lon = tropicalPlanets.venus.longitude;
-        lat = tropicalPlanets.venus.latitude;
-        dist = tropicalPlanets.venus.distance;
+        lon = tropicalPlanets.venus.longitude ?? 0;
+        lat = tropicalPlanets.venus.latitude ?? 0;
+        dist = tropicalPlanets.venus.distance ?? 0;
         break;
       case "mars":
-        lon = tropicalPlanets.mars.longitude;
-        lat = tropicalPlanets.mars.latitude;
-        dist = tropicalPlanets.mars.distance;
+        lon = tropicalPlanets.mars.longitude ?? 0;
+        lat = tropicalPlanets.mars.latitude ?? 0;
+        dist = tropicalPlanets.mars.distance ?? 0;
         break;
       case "jupiter":
-        lon = tropicalPlanets.jupiter.longitude;
-        lat = tropicalPlanets.jupiter.latitude;
-        dist = tropicalPlanets.jupiter.distance;
+        lon = tropicalPlanets.jupiter.longitude ?? 0;
+        lat = tropicalPlanets.jupiter.latitude ?? 0;
+        dist = tropicalPlanets.jupiter.distance ?? 0;
         break;
       case "saturn":
-        lon = tropicalPlanets.saturn.longitude;
-        lat = tropicalPlanets.saturn.latitude;
-        dist = tropicalPlanets.saturn.distance;
+        lon = tropicalPlanets.saturn.longitude ?? 0;
+        lat = tropicalPlanets.saturn.latitude ?? 0;
+        dist = tropicalPlanets.saturn.distance ?? 0;
         break;
       default:
         throw new Error(`Unsupported planet: ${name}`);
@@ -686,11 +687,13 @@ export const getChart = (
   } = {}
 ) => {
   try {
-    const houses = getHouseCusps(birthData.date, birthData.latitude, birthData.longitude, opts);
-    const planets = getAllPlanetCoords(birthData.date, { ...opts, houses: houses.houses });
+    const dateForCalc = birthData.date instanceof Date ? birthData.date : new Date(birthData.date);
+    const houses = getHouseCusps(dateForCalc, birthData.latitude, birthData.longitude, opts);
+    const planets = getAllPlanetCoords(dateForCalc, { ...opts, houses: houses.houses });
     
     // Calculate divisional charts
-    const divisionalCharts = getDivisionalCharts(planets, houses.ascendant.lonSidereal);
+    const ascLon = houses.ascendant?.lonSidereal ?? 0;
+    const divisionalCharts = getDivisionalCharts(planets, ascLon);
     
     // Calculate Vimshottari Dasha (requires Moon position)
     const moonData = planets.moon;
@@ -704,10 +707,11 @@ export const getChart = (
     
     // Use birthDate if provided, otherwise fall back to date (for backward compatibility)
     // Handle explicit null birthDate to skip Dasha calculation
-    const actualBirthDate = birthData.birthDate === null ? null : (birthData.birthDate || birthData.date);
+    const actualBirthDate = birthData.birthDate === null ? null : (birthData.birthDate ?? birthData.date);
+    const actualBirthDateObj = actualBirthDate == null ? undefined : (actualBirthDate instanceof Date ? actualBirthDate : new Date(actualBirthDate));
     console.log('🔮 DASHA BIRTH DATE:', actualBirthDate);
-    const dashaList = moonData && actualBirthDate 
-      ? calculateVimshottariDasha(moonData.lonSidereal, new Date(actualBirthDate)) 
+    const dashaList = moonData && actualBirthDateObj 
+      ? calculateVimshottariDasha(moonData.lonSidereal, actualBirthDateObj) 
       : [];
     
     return {
@@ -925,7 +929,7 @@ export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
       dasha.progress = (elapsed / totalDuration) * 100;
       
       // Calculate antardashas for current mahadasha
-      dasha.antardashas = calculateAntardashas(dasha, start, end);
+      (dasha as { antardashas?: Array<{ planet: string; startDate: string; endDate: string; duration: number; progress: number; dashaType: string }> }).antardashas = calculateAntardashas(dasha, start, end);
       break;
     }
   }
@@ -941,8 +945,8 @@ export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
  * @param endDate - End date of the mahadasha
  * @returns Array of antardasha periods
  */
-function calculateAntardashas(mahadasha: any, startDate: Date, endDate: Date) {
-  const antardashas = [];
+function calculateAntardashas(mahadasha: any, startDate: Date, endDate: Date): Array<{ planet: string; startDate: string; endDate: string; duration: number; progress: number; dashaType: string }> {
+  const antardashas: Array<{ planet: string; startDate: string; endDate: string; duration: number; progress: number; dashaType: string }> = [];
   const mahadashaYears = mahadasha.duration;
   const totalDuration = endDate.getTime() - startDate.getTime();
   

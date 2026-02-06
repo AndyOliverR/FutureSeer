@@ -190,7 +190,7 @@ function getHouseMeaning(houseNumber: number): string {
     11: 'friends, groups, and hopes',
     12: 'subconscious, secrets, and hidden enemies'
   }
-  return meanings[houseNumber] || 'unknown matters'
+  return meanings[houseNumber as keyof typeof meanings] ?? 'unknown matters'
 }
 
 // Helper function to get sign rulers

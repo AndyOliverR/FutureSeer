@@ -122,8 +122,8 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
         allowTaint: false,
         backgroundColor: '#0a0f1f',
         ignoreElements: (element) => {
-          const isModal = element === modalElement || element.closest('[data-feedback-widget]');
-          return isModal;
+          const isModal = element === modalElement || element.closest('[data-feedback-widget]') != null;
+          return !!isModal;
         },
         onclone: (clonedDoc) => {
           // Fix: Remove filters and simplify gradients to prevent html2canvas gradient rendering issues
@@ -432,7 +432,6 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
                         size="sm"
                         onClick={handleAddScreenshot}
                         disabled={isCapturingScreenshot}
-                        variant="outlined"
                         className="m3-label-small border-[var(--m3-outline-variant)] text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] hover:border-[var(--m3-primary)]/50 py-1 px-2 h-auto m3-transition-standard"
                       >
                         {isCapturingScreenshot ? (

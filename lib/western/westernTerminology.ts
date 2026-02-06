@@ -21,9 +21,7 @@ export const VEDIC_TO_WESTERN_MAP = {
   'Budh': 'Mercury',
   'Guru': 'Jupiter',
   'Shukra': 'Venus',
-  'Shani': 'Saturn',
-  'Rahu': 'North Node',
-  'Ketu': 'South Node'
+  'Shani': 'Saturn'
 };
 
 // Western planet names (standardized)

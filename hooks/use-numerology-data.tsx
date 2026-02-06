@@ -30,9 +30,13 @@ export function useNumerologyData() {
     birthDate,
     setBirthDate,
     analysis,
+    numerologyData: analysis,
     isLoading,
+    loading: isLoading,
     error,
     performNumerologyAnalysis,
+    refresh: performNumerologyAnalysis,
+    isStale: false,
     resetData,
   };
 } 

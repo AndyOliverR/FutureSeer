@@ -156,7 +156,7 @@ class VedicIntelligence {
     );
     
     // Convert universal interpretation to Vedic format
-    let interpretations = this.convertUniversalToVedic(universalInterpretation);
+    let interpretations = this.convertUniversalToVedic(universalInterpretation) as unknown as VedicReading['interpretations'];
     
     // If AI enhancement requested, enhance with OpenAI
     let interpretationSource: 'openai' | 'internal' = 'internal';
@@ -164,7 +164,7 @@ class VedicIntelligence {
       try {
         console.log('✨ Enhancing interpretations with OpenAI...');
         const aiEnhancement = await this.generateAIInterpretations(chartData, userId);
-        interpretations = this.mergeInterpretations(interpretations, aiEnhancement);
+        interpretations = this.mergeInterpretations(interpretations, aiEnhancement) as unknown as VedicReading['interpretations'];
         interpretationSource = 'openai';
       } catch (error) {
         console.warn('AI enhancement failed, using fallback interpretations:', error);
@@ -175,7 +175,7 @@ class VedicIntelligence {
     const remedies = this.generateVedicRemedies(chartData);
     
     // Create comprehensive reading
-    const reading: VedicReading = {
+    const reading = {
       id: 'current',
       userId,
       birthDate,
@@ -192,7 +192,7 @@ class VedicIntelligence {
         calculationTime: Date.now(),
         interpretationSource: interpretationSource
       }
-    };
+    } as unknown as VedicReading;
     
     // CACHING DISABLED - No storage for fresh data generation
     console.log('✅ Fresh Vedic data generated - Caching disabled');

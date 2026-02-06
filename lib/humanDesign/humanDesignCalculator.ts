@@ -119,7 +119,12 @@ export async function calculateHumanDesignChart(birthData: BirthData): Promise<H
     type,
     strategy,
     authority,
-    profile,
+    profile: {
+      id: profile.name ?? 'profile',
+      name: profile.name,
+      description: profile.description,
+      role: profile.role
+    },
     centers,
     gates: planetGates,
     channels,

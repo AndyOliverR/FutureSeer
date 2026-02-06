@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './use-auth';
 import { userDataStorage, UserVedicData } from '@/lib/userDataStorage';
+import { VedicReportSchema } from '@/types/vedicReport';
 import { log } from '@/lib/consoleLogger';
 
 // Helper function to create birth data hash
@@ -70,12 +71,12 @@ export function useVedicStorage() {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const vedicData = await userDataStorage.getVedicData(user.uid);
+      const raw = await userDataStorage.getVedicData(user.uid);
       log.success(`Loaded existing Vedic data for user ${user.uid}`);
       
       setState(prev => ({ 
         ...prev, 
-        vedicData,
+        vedicData: raw as UserVedicData | null,
         isLoading: false 
       }));
     } catch (error) {
@@ -103,9 +104,9 @@ export function useVedicStorage() {
       );
 
       const storedHash = createBirthDataHash(
-        storedVedicData.birthDate,
-        storedVedicData.birthTime,
-        storedVedicData.birthPlace
+        String(storedVedicData?.birthDate ?? ''),
+        String(storedVedicData?.birthTime ?? ''),
+        storedVedicData?.birthPlace
       );
 
       const hasChanged = currentHash !== storedHash;
@@ -120,7 +121,7 @@ export function useVedicStorage() {
         log.warn(`Birth data changed for user ${user.uid}`, {
           oldHash: storedHash,
           newHash: currentHash
-        }, 'vedic-storage');
+        } as Record<string, string>, 'vedic-storage');
       }
     } catch (error) {
       log.error('Error checking birth data change', error, 'vedic-storage');
@@ -137,7 +138,7 @@ export function useVedicStorage() {
     setState(prev => ({ ...prev, isStoring: true, error: null }));
 
     try {
-      await userDataStorage.storeVedicData(user.uid, vedicData);
+      await userDataStorage.storeVedicData(user.uid, vedicData as unknown as VedicReportSchema);
       log.success(`Vedic data stored permanently for user ${user.uid}`);
       
       setState(prev => ({ 
@@ -167,7 +168,7 @@ export function useVedicStorage() {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      await userDataStorage.clearUserData(user.uid, 'vedic');
+      await userDataStorage.storeVedicData(user.uid, null);
       log.success(`Vedic data cleared for user ${user.uid}`);
       
       setState(prev => ({ 

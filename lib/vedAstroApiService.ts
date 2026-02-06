@@ -295,9 +295,9 @@ export class VedAstroApiService {
   }
 
   /**
-   * Get Nakshatra Analysis
+   * Get Nakshatra Chart (Horoscope/NakshatraChart endpoint)
    */
-  async getNakshatraAnalysis(birthData: BirthData): Promise<VedAstroResponse> {
+  async getNakshatraChart(birthData: BirthData): Promise<VedAstroResponse> {
     const endpoint = `/api/Horoscope/NakshatraChart`
     return this.makeApiCall(endpoint, birthData)
   }
@@ -477,41 +477,14 @@ export class VedAstroApiService {
   }
 
   /**
-   * Get Panchanga (Daily Astrological Calendar)
+   * Get Panchanga by date and location (no birth data)
    */
-  async getPanchanga(date: string, latitude?: number, longitude?: number): Promise<VedAstroResponse> {
+  async getPanchangaByDate(date: string, latitude?: number, longitude?: number): Promise<VedAstroResponse> {
     const endpoint = `/api/Panchanga`
     return this.makeApiCall(endpoint, {
       date,
       latitude: latitude || 40.7128,
       longitude: longitude || -74.0060
-    })
-  }
-
-  /**
-   * Get Muhurta (Auspicious Timing)
-   */
-  async getMuhurta(
-    eventType: string, 
-    birthData: BirthData, 
-    preferredDate?: string
-  ): Promise<VedAstroResponse> {
-    const endpoint = `/api/Muhurta`
-    return this.makeApiCall(endpoint, {
-      ...birthData,
-      eventType,
-      preferredDate: preferredDate || new Date().toISOString().split('T')[0]
-    })
-  }
-
-  /**
-   * Get Tarabala (Daily Auspiciousness)
-   */
-  async getTarabala(birthData: BirthData, date?: string): Promise<VedAstroResponse> {
-    const endpoint = `/api/Tarabala`
-    return this.makeApiCall(endpoint, {
-      ...birthData,
-      date: date || new Date().toISOString().split('T')[0]
     })
   }
 
@@ -620,7 +593,7 @@ export class VedAstroApiService {
             results.dasa = await this.getDasaAnalysis(birthData)
             break
           case 'panchanga':
-            results.panchanga = await this.getPanchanga(new Date().toISOString().split('T')[0])
+            results.panchanga = await this.getPanchangaByDate(new Date().toISOString().split('T')[0])
             break
           case 'nakshatra':
             results.nakshatra = await this.getNakshatraAnalysis(birthData)
@@ -810,10 +783,3 @@ export class VedAstroApiService {
 
 // Export singleton instance
 export const vedAstroApiService = VedAstroApiService.getInstance()
-
-// Export types for use in other files
-export type {
-  VedAstroApiConfig,
-  BirthData,
-  VedAstroResponse
-}

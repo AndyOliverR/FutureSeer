@@ -60,6 +60,8 @@ export interface CrystalRecommendation {
   primaryCrystal: string;
   crystalGrid: string[];
   interpretation: string;
+  /** Optional list of recommendation strings (used by intelligence layer) */
+  recommendations?: string[];
 }
 
 export interface EnergyBalanceAnalysis {

@@ -746,7 +746,7 @@ export function FaceReadingCoachInterface({
                             <div>
                               <h4 className="text-sm font-medium text-amber-900 mb-1">Insights:</h4>
                               <div className="space-y-1">
-                                {session.insights.map((insight, index) => (
+                                {session.insights.map((insight: string, index: number) => (
                                   <div key={index} className="flex items-start gap-2">
                                     <div className="w-1 h-1 bg-amber-600 rounded-full mt-2 flex-shrink-0"></div>
                                     <span className="text-xs text-slate-600">{insight}</span>

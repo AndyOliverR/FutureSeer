@@ -1,5 +1,51 @@
-import { UserData, MarketData, FinancialAnalysis, FinancialTiming, SectorAnalysis, MarketPrediction } from '@/hooks/useFinancialAstrology'
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+
+// Local types aligned with useFinancialAstrology (avoid type-only import from .tsx in lib)
+export interface UserData {
+  name: string
+  birthDate: string
+  birthTime: string
+  birthLocation: string
+  financialFocus?: string
+}
+export interface MarketData {
+  [key: string]: unknown
+}
+export interface FinancialTiming {
+  confidence?: number
+  optimalEntry?: string[]
+  avoidPeriods?: string[]
+  [key: string]: unknown
+}
+export interface SectorAnalysis {
+  reasoning?: string
+  favorable?: string[]
+  challenging?: string[]
+  neutral?: string[]
+  [key: string]: unknown
+}
+export interface MarketPrediction {
+  timeframe?: string
+  prediction?: string
+  reasoning?: string
+  keyEvents?: string[]
+  [key: string]: unknown
+}
+export interface FinancialAnalysis {
+  overview?: {
+    summary?: string
+    overallScore?: number
+    keyStrengths?: string[]
+    potentialRisks?: string[]
+    recommendations?: string[]
+  }
+  timing?: FinancialTiming
+  sectors?: SectorAnalysis
+  transits?: unknown
+  predictions?: MarketPrediction[]
+  advice?: unknown
+  [key: string]: unknown
+}
 import { getFirebaseDB } from './firebase';
 
 class FinancialAstrologyIntelligence {
@@ -11,7 +57,7 @@ class FinancialAstrologyIntelligence {
         body: JSON.stringify({
           type: 'natal',
           birthTime: birthData.birthTime,
-          birthPlace: birthData.birthPlace
+          birthPlace: birthData.birthLocation
         })
       })
       
@@ -221,7 +267,8 @@ class FinancialAstrologyIntelligence {
   }
 
   private generateOverview(timing: FinancialTiming, sectors: SectorAnalysis, predictions: MarketPrediction[], marketData: MarketData) {
-    const overallScore = Math.round((timing.confidence + predictions.reduce((acc, p) => acc + p.confidence, 0) / predictions.length) / 2)
+    const predConfSum = predictions.length ? predictions.reduce((acc, p) => acc + ((p as { confidence?: number }).confidence ?? 0), 0) / predictions.length : 0
+    const overallScore = Math.round(((timing.confidence ?? 0) + predConfSum) / 2)
     
     let summary = ''
     if (overallScore >= 80) {
@@ -236,7 +283,7 @@ class FinancialAstrologyIntelligence {
     
     const keyStrengths = [
       `Strong ${marketData.investmentType} alignment`,
-      `Favorable timing with ${timing.confidence}% confidence`,
+      `Favorable timing with ${timing.confidence ?? 0}% confidence`,
       `Multiple sector opportunities available`
     ]
     

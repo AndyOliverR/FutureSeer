@@ -617,7 +617,7 @@ export function NameAnalysisCoachInterface({
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {numerologySynthesis.harmonies.map((harmony, idx) => (
+                    {numerologySynthesis.harmonies.map((harmony: string, idx: number) => (
                       <li key={idx} className="text-slate-700 text-sm flex items-start">
                         <CheckCircle className="w-4 h-4 text-green-600 mr-2 mt-0.5 flex-shrink-0" />
                         {harmony}
@@ -659,7 +659,7 @@ export function NameAnalysisCoachInterface({
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {vedicSynthesis.insights.map((insight, idx) => (
+                    {vedicSynthesis.insights.map((insight: string, idx: number) => (
                       <li key={idx} className="text-slate-700 text-sm flex items-start">
                         <Star className="w-4 h-4 text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
                         {insight}
@@ -695,7 +695,7 @@ export function NameAnalysisCoachInterface({
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {westernSynthesis.insights.map((insight, idx) => (
+                    {westernSynthesis.insights.map((insight: string, idx: number) => (
                       <li key={idx} className="text-slate-700 text-sm flex items-start">
                         <Sparkles className="w-4 h-4 text-amber-700 mr-2 mt-0.5 flex-shrink-0" />
                         {insight}

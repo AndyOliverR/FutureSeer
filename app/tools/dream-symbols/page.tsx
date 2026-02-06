@@ -202,7 +202,7 @@ export default function DreamSymbolsPage() {
                 </div>
 
                 {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-6">
                   <TabsList className="grid w-full grid-cols-7 bg-transparent p-0 gap-2">
                     <TabsTrigger 
                       value="introduction" 

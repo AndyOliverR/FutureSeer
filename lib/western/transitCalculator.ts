@@ -169,7 +169,7 @@ export function calculateTransitAspects(
         aspects.push({
           transitPlanet: transit.name,
           natalPlanet: natal.name,
-          aspectType: aspect.type,
+          aspectType: aspect.type as TransitAspect['aspectType'],
           orb: aspect.orb,
           exactness: 1 - (aspect.orb / aspect.maxOrb),
           strength: getAspectStrength(aspect.orb),
@@ -387,7 +387,7 @@ function getTransitDuration(planet: string): string {
     Pluto: '20-30 years'
   };
   
-  return durations[planet] || 'Variable duration';
+  return durations[planet as keyof typeof durations] || 'Variable duration';
 }
 
 function generateTransitAdvice(aspect: TransitAspect): string {

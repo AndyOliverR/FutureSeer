@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -26,8 +27,8 @@ export interface TarotDashboardHeroProps {
 }
 
 // Helper to get element icon
-function getElementIcon(element?: string): JSX.Element {
-  const icons: Record<string, JSX.Element> = {
+function getElementIcon(element?: string): React.ReactElement {
+  const icons: Record<string, React.ReactElement> = {
     fire: <Flame className="w-8 h-8" />,
     earth: <Mountain className="w-8 h-8" />,
     air: <Wind className="w-8 h-8" />,
@@ -47,7 +48,7 @@ function calculateDominantElement(profileCards: ProfileCardsData | null) {
     profileCards.lifePathCard,
     profileCards.soulCard,
     profileCards.personalityCard
-  ].filter(Boolean)
+  ].filter((c): c is TarotCard => c != null)
   
   cards.forEach((card: TarotCard) => {
     if (card.element) {
@@ -74,7 +75,7 @@ function calculateArcanaBalance(profileCards: ProfileCardsData | null) {
     profileCards.lifePathCard,
     profileCards.soulCard,
     profileCards.personalityCard
-  ].filter(Boolean)
+  ].filter((c): c is TarotCard => c != null)
   
   const major = cards.filter((c: TarotCard) => c.arcana === 'major').length
   const minor = cards.filter((c: TarotCard) => c.arcana === 'minor').length

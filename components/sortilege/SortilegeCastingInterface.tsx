@@ -284,8 +284,8 @@ export function SortilegeCastingInterface({
         {/* Dice - Displayed in a row */}
         <div className="flex items-center justify-center gap-6 relative z-10">
           {cast.objects.map((obj, index) => {
-            const diceValue = obj.value || 1
-            const clampedValue = Math.max(1, Math.min(6, Math.floor(diceValue)))
+            const diceValue = obj.value ?? 1
+            const clampedValue = Math.max(1, Math.min(6, Math.floor(Number(diceValue))))
             
             return (
               <motion.div

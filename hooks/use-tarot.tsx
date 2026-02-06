@@ -20,13 +20,15 @@ export function useTarot() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function performTarotReading() {
-    if (!question.trim()) {
+  async function performTarotReading(questionArg?: string, spreadTypeArg?: string) {
+    const q = (questionArg !== undefined ? questionArg : question).trim()
+    const s = (spreadTypeArg !== undefined ? spreadTypeArg : spreadType).trim()
+    if (!q) {
       setError("Please enter a question")
       return
     }
 
-    if (!spreadType.trim()) {
+    if (!s) {
       setError("Please select a spread")
       return
     }
@@ -41,8 +43,8 @@ export function useTarot() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          question: question.trim(),
-          spreadType: spreadType.trim(),
+          question: q,
+          spreadType: s,
           userId: user?.uid,
         }),
       })
@@ -55,10 +57,17 @@ export function useTarot() {
       const result = await response.json()
       
       if (result.success && result.data) {
-        // Convert timestamp back to Date
+        const data = result.data as Record<string, unknown>
+        const defaultCoaching = {
+          strengths: [] as string[],
+          challenges: [] as string[],
+          growthAreas: [] as string[],
+          affirmations: [] as string[]
+        }
         const readingData = {
-          ...result.data,
-          timestamp: new Date(result.data.timestamp)
+          ...data,
+          timestamp: new Date((data.timestamp as string) ?? Date.now()),
+          coaching: (data.coaching as TarotReading['coaching']) ?? defaultCoaching
         }
         setReading(readingData as TarotReading)
       } else {
@@ -80,15 +89,27 @@ export function useTarot() {
     setError(null)
   }
 
+  async function getCoaching(_question: string) {
+    return { response: '' as string }
+  }
+
   return {
     question,
     setQuestion,
     spreadType,
     setSpreadType,
     reading,
+    tarotData: reading,
     isLoading,
+    loading: isLoading,
     error,
+    coaching: null as { response: string } | null,
+    getCoaching,
     performTarotReading,
+    refresh: performTarotReading,
+    drawTarot: performTarotReading,
     resetData,
   }
 }
+
+export const useTarotData = useTarot

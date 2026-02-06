@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { generateChartData, NodeMode, ChartData } from "@/lib/astrology";
+import { generateChartData, NodeMode, ChartData, PlanetLabel, HousePlacements } from "@/lib/astrology";
 import { nakshatraFromLongitude, d9AscHouseNumber, calculateCurrentDasha } from "@/lib/vedic-core";
 
 export interface BirthProfile {
@@ -96,13 +96,13 @@ export function usePlacements(profile: BirthProfile | null): UsePlacementsResult
     }
 
     // Get D9 ascendant for house mapping (old structure)
-    const ascendantPlanet = data.placements[0].planets.find(p => p.name === "Asc");
+    const ascendantPlanet = data.placements[0].planets.find((p: PlanetLabel) => p.name === "Asc");
     const d9AscSign = ascendantPlanet?.d9SignIndex || 0;
 
     // Enrich each planet with additional Vedic data
-    const enrichedPlacements = data.placements.map(house => ({
+    const enrichedPlacements = data.placements.map((house: HousePlacements) => ({
       ...house,
-      planets: house.planets.map(planet => {
+      planets: house.planets.map((planet: PlanetLabel) => {
         // Add nakshatra data if not already present
         if (!planet.nakshatraName) {
           const nakshatraData = nakshatraFromLongitude(planet.longitude);
@@ -122,7 +122,7 @@ export function usePlacements(profile: BirthProfile | null): UsePlacementsResult
     }));
 
     // Calculate enhanced dasha information
-    const moonPlanet = enrichedPlacements.flatMap(h => h.planets).find(p => p.name === "Moon");
+    const moonPlanet = enrichedPlacements.flatMap((h: HousePlacements) => h.planets).find((p: PlanetLabel) => p.name === "Moon");
     const moonLongitude = moonPlanet?.longitude || 0;
     
     // Use the existing dasha calculation or enhance it

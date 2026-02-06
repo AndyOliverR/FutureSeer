@@ -176,7 +176,7 @@ class PendulumIntelligence {
         'wood': ' Your wooden pendulum resonates with natural cycles and organic growth patterns.',
         'stone': ' Your stone pendulum draws from earth energy, emphasizing stability and foundation.'
       }
-      interpretation += typeSpecific[pendulumType] || ''
+      interpretation += (typeSpecific as Record<string, string>)[pendulumType] || ''
     }
 
     return interpretation
@@ -230,8 +230,8 @@ class PendulumIntelligence {
 
     const advice = [...baseAdvice, ...directionAdvice[answer]]
 
-    if (pendulumType && PENDULUM_TYPES[pendulumType]) {
-      const typeInfo = PENDULUM_TYPES[pendulumType]
+    if (pendulumType && (PENDULUM_TYPES as Record<string, { name: string; bestFor: string[] }>)[pendulumType]) {
+      const typeInfo = (PENDULUM_TYPES as Record<string, { name: string; bestFor: string[] }>)[pendulumType]
       advice.push(`Your ${typeInfo.name} is best for: ${typeInfo.bestFor.join(', ')}.`)
     }
 
@@ -256,8 +256,8 @@ class PendulumIntelligence {
         'Be patient and wait for the pendulum to move.',
         'Clear the pendulum between questions by touching it to your palm.'
       ],
-      cleansing: pendulumType && PENDULUM_TYPES[pendulumType] 
-        ? PENDULUM_TYPES[pendulumType].care 
+      cleansing: pendulumType && (PENDULUM_TYPES as Record<string, { care: string }>)[pendulumType] 
+        ? (PENDULUM_TYPES as Record<string, { care: string }>)[pendulumType].care 
         : 'Cleanse your pendulum regularly with salt water, moonlight, or smudging to clear any lingering energy.'
     }
 

@@ -13,8 +13,8 @@ interface UseIntersectionObserverOptions {
  */
 export function useIntersectionObserver<T extends HTMLElement = HTMLDivElement>(
   options: UseIntersectionObserverOptions = {}
-): [RefObject<T>, boolean] {
-  const elementRef = useRef<T>(null);
+): [RefObject<T | null>, boolean] {
+  const elementRef = useRef<T | null>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -60,7 +60,7 @@ export function useIntersectionObserverMultiple<T extends HTMLElement = HTMLDivE
   selector: string,
   options: UseIntersectionObserverOptions = {},
   onIntersect?: (index: number) => void
-): [boolean[], () => void] {
+): [number[], () => void] {
   const [visibleIndices, setVisibleIndices] = useState<number[]>([]);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
@@ -104,5 +104,5 @@ export function useIntersectionObserverMultiple<T extends HTMLElement = HTMLDivE
     };
   }, [selector, options.threshold, options.root, options.rootMargin]);
 
-  return [visibleIndices];
+  return [visibleIndices, observeElements];
 }

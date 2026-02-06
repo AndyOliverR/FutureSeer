@@ -52,6 +52,7 @@ export interface AspectData {
   orb: number
   applying: boolean
   separating: boolean
+  strength?: number
 }
 
 export interface HoraryAnswer {
@@ -543,7 +544,7 @@ export class HoraryEngine {
     const longitude = question.longitude
     
     // Calculate ASC (Ascendant) - simplified
-    const ascendant = this.calculateAscendant(julianDay, latitude, longitude)
+    const ascendant = this.calculateAscendantFromJulianDay(julianDay, latitude, longitude)
     
     // Calculate house cusps using Regiomontanus method
     for (let i = 0; i < 12; i++) {
@@ -572,13 +573,11 @@ export class HoraryEngine {
     return houses
   }
 
-  // Calculate Ascendant (simplified)
-  private calculateAscendant(julianDay: number, latitude: number, longitude: number): number {
-    // Simplified ascendant calculation
-    const timeOfDay = (julianDay % 1) * 24 // Hours from midnight
-    const baseAscendant = (timeOfDay * 15) % 360 // 15 degrees per hour
-    const latitudeAdjustment = latitude * 0.5 // Simplified adjustment
-    
+  // Calculate Ascendant from Julian day (simplified; distinct from sidereal-time version)
+  private calculateAscendantFromJulianDay(julianDay: number, latitude: number, longitude: number): number {
+    const timeOfDay = (julianDay % 1) * 24
+    const baseAscendant = (timeOfDay * 15) % 360
+    const latitudeAdjustment = latitude * 0.5
     return (baseAscendant + latitudeAdjustment) % 360
   }
 
@@ -1137,6 +1136,7 @@ export class HoraryEngine {
         const normalizedAngle = angle > 180 ? 360 - angle : angle
         
         // Check for major aspects
+        const applying = planet1.speed > planet2.speed
         if (normalizedAngle <= 8) {
           aspects.push({
             planet1: planet1.planet,
@@ -1144,7 +1144,8 @@ export class HoraryEngine {
             aspect: 'Conjunction',
             orb: normalizedAngle,
             strength: 1 - (normalizedAngle / 8),
-            applying: planet1.speed > planet2.speed
+            applying,
+            separating: !applying
           })
         } else if (Math.abs(normalizedAngle - 60) <= 6) {
           aspects.push({
@@ -1153,7 +1154,8 @@ export class HoraryEngine {
             aspect: 'Sextile',
             orb: Math.abs(normalizedAngle - 60),
             strength: 1 - (Math.abs(normalizedAngle - 60) / 6),
-            applying: planet1.speed > planet2.speed
+            applying,
+            separating: !applying
           })
         } else if (Math.abs(normalizedAngle - 90) <= 8) {
           aspects.push({
@@ -1162,7 +1164,8 @@ export class HoraryEngine {
             aspect: 'Square',
             orb: Math.abs(normalizedAngle - 90),
             strength: 1 - (Math.abs(normalizedAngle - 90) / 8),
-            applying: planet1.speed > planet2.speed
+            applying,
+            separating: !applying
           })
         } else if (Math.abs(normalizedAngle - 120) <= 6) {
           aspects.push({
@@ -1171,7 +1174,8 @@ export class HoraryEngine {
             aspect: 'Trine',
             orb: Math.abs(normalizedAngle - 120),
             strength: 1 - (Math.abs(normalizedAngle - 120) / 6),
-            applying: planet1.speed > planet2.speed
+            applying,
+            separating: !applying
           })
         } else if (Math.abs(normalizedAngle - 180) <= 8) {
           aspects.push({
@@ -1180,7 +1184,8 @@ export class HoraryEngine {
             aspect: 'Opposition',
             orb: Math.abs(normalizedAngle - 180),
             strength: 1 - (Math.abs(normalizedAngle - 180) / 8),
-            applying: planet1.speed > planet2.speed
+            applying,
+            separating: !applying
           })
         }
       }
@@ -1420,7 +1425,7 @@ export class HoraryEngine {
       'Pluto': 90560
     }
 
-    const period = orbitalPeriods[planet] || 365.25
+    const period = (orbitalPeriods as Record<string, number>)[planet] || 365.25
     const basePositions = {
       'Sun': 0,
       'Moon': 30,
@@ -1434,7 +1439,7 @@ export class HoraryEngine {
       'Pluto': 270
     }
 
-    const basePosition = basePositions[planet] || 0
+    const basePosition = (basePositions as Record<string, number>)[planet] || 0
     const timeFactor = (julianDay % period) / period * 360
     
     return (basePosition + timeFactor) % 360
@@ -1456,7 +1461,7 @@ export class HoraryEngine {
       'Pluto': 17.1
     }
 
-    const maxLat = maxLatitudes[planet] || 0
+    const maxLat = (maxLatitudes as Record<string, number>)[planet] || 0
     const timeFactor = Math.sin((julianDay % 365.25) / 365.25 * 2 * Math.PI)
     
     return maxLat * timeFactor
@@ -1478,7 +1483,7 @@ export class HoraryEngine {
       'Pluto': 0.01
     }
 
-    return speeds[planet] || 1
+    return (speeds as Record<string, number>)[planet] || 1
   }
 
   // Helper methods
@@ -1509,7 +1514,7 @@ export class HoraryEngine {
       'Trine': 120,
       'Opposition': 180
     }
-    return angles[aspect] || 0
+    return (angles as Record<string, number>)[aspect] || 0
   }
 
   private isApplying(speed1: number, speed2: number): boolean {

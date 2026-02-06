@@ -844,7 +844,7 @@ class KabbalisticNumerologyIntelligence {
       }
     }
 
-    return spiritualLevels[dominantSephirot?.sephira] || spiritualLevels['Binah']
+    return (spiritualLevels as Record<string, typeof spiritualLevels.Binah>)[dominantSephirot?.sephira ?? ''] || spiritualLevels['Binah']
   }
 
   private analyzePersonality(chart: KabbalisticChart): any {

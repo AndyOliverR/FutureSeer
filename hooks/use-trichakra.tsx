@@ -29,7 +29,7 @@ export function useTrichakra() {
 
     try {
       // Check if user profile has required data
-      if (!userProfile.birthDate || !userProfile.birthTime || !userProfile.birthPlace) {
+      if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
         setError("Complete profile (birth date, time, and place) is required for Trichakra analysis");
         setIsLoading(false);
         return;
@@ -37,12 +37,12 @@ export function useTrichakra() {
 
       // Prepare user profile for analysis
       const profile: UserProfile = {
-        fullName: userProfile.fullName,
-        birthDate: userProfile.birthDate,
-        birthTime: userProfile.birthTime,
-        birthPlace: userProfile.birthPlace,
-        latitude: userProfile.latitude,
-        longitude: userProfile.longitude
+        fullName: userProfile?.fullName,
+        birthDate: userProfile?.birthDate,
+        birthTime: userProfile?.birthTime,
+        birthPlace: userProfile?.birthPlace,
+        latitude: userProfile?.latitude,
+        longitude: userProfile?.longitude
       };
 
       // Generate Trichakra analysis

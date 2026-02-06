@@ -34,15 +34,7 @@ import {
   Calendar,
   TrendingUp,
   Eye,
-  Activity,
-  Mercury,
-  Venus,
-  Mars,
-  Jupiter,
-  Saturn,
-  Uranus,
-  Neptune,
-  Circle
+  Activity
 } from 'lucide-react'
 
 interface ComprehensiveWesternReportProps {

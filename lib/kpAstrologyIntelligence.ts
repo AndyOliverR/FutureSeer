@@ -136,7 +136,7 @@ class KPAstrologyIntelligence {
       birthDate: birthDateTime // For dasha calculation
     }, {
       ayanamsha: 'kp', // KP ayanamsha
-      system: 'placidus' // KP uses Placidus house system
+      houseSystem: 'placidus' as const // KP uses Placidus house system
     })
     
     console.log('✅ Vedic chart calculated:', {

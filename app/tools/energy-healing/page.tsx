@@ -461,11 +461,15 @@ export default function EnergyHealingPage() {
               <TabsContent value="ask-the-seer" className="space-y-6">
                 <EnergyHealingCoach 
                   analysis={{
+                    method: 'chakra',
+                    timestamp: new Date(),
                     chakraAnalysis: allAnalyses.chakra || undefined,
                     auraReading: allAnalyses.aura || undefined,
                     reikiAnalysis: allAnalyses.reiki || undefined,
                     crystalRecommendation: allAnalyses.crystal || undefined,
-                    energyBalance: allAnalyses.energy || undefined
+                    energyBalance: allAnalyses.energy || undefined,
+                    overallInsights: [],
+                    recommendations: []
                   }} 
                 />
               </TabsContent>

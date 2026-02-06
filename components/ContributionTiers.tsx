@@ -17,7 +17,7 @@ interface ContributionTier {
   borderColor: string;
   features: string[];
   contributionType: 'trial' | 'monthly' | 'quarterly' | 'annual';
-  pricingTier?: 'limited' | 'allFeatures' | 'annual';
+  pricingTier?: 'limited' | 'allFeatures' | 'annual' | 'quarterly';
   popular?: boolean;
   badge?: string;
   badgeColor?: string;

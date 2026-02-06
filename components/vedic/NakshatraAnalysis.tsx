@@ -169,7 +169,7 @@ export function NakshatraAnalysis({ nakshatraAnalysis, chartData, className = ""
       <DevotionistStyleCard
         icon={<Star className="w-6 h-6" />}
         title={`Birth Star: ${analysis.moonNakshatra?.nakshatra?.englishName || 'Unknown'}`}
-        subtitle={moonNakshatraData?.sanskritName || 'Janma Nakshatra'}
+        subtitle={moonNakshatraData?.name || 'Janma Nakshatra'}
         items={[
           { text: `Lord: ${moonNakshatraData?.lord || 'N/A'}`, highlight: true },
           { text: `Symbol: ${moonNakshatraData?.symbol || 'N/A'}` },

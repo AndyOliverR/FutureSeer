@@ -511,7 +511,7 @@ export function getAttractivePrice(
  * Get referral pricing for friends
  */
 export function getReferralPrice(
-  tier: 'limited' | 'allFeatures' | 'quarterly' | 'annual',
+  tier: 'limited' | 'allFeatures' | 'annual',
   countryCode: string = 'IN'
 ): { price: number; currency: string; currencySymbol: string; formatted: string } {
   const config = COUNTRY_PRICING_CONFIG[countryCode] || COUNTRY_PRICING_CONFIG['IN'];

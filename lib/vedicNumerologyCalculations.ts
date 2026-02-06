@@ -7,6 +7,8 @@ export interface VedicNumerologyProfile {
   soulNumber: number;
   nameNumber: number;
   birthDayNumber: number;
+  /** Optional; used in Vedic Astro-Numerology prompts when available */
+  personalityNumber?: number;
   rulingPlanet: string;
   planetaryInfluences: {
     [key: string]: {

@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       birthDate: birthDateTime
     }, {
       ayanamsha: 'kp',
-      system: 'placidus'
+      houseSystem: 'placidus'
     })
 
     if (!natalChart) {

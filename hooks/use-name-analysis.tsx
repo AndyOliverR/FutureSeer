@@ -93,7 +93,7 @@ export function useNameAnalysis() {
   }, [user?.uid, name, analysis, isLoading, isAutoGenerating, performNameAnalysis]);
 
   // Fetch additional data for synthesis (numerology, vedic, western)
-  const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace;
+  const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace);
   
   const { toolData: numerologyData } = useToolData(
     user?.uid,

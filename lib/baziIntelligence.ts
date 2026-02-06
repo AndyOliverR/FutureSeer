@@ -1218,7 +1218,7 @@ class BaziIntelligence {
     }
 
     // Get coordinates
-    const coords = await getCoordinatesWithFallback(userProfile.birthPlace, userProfile.birthLatitude, userProfile.birthLongitude)
+    const coords = await getCoordinatesWithFallback(userProfile.birthPlace)
     
     const baziData: BaziData = {
       birthDate: userProfile.birthDate,
@@ -1286,7 +1286,7 @@ class BaziIntelligence {
         answer: `Based on ${dayElement} day master, career opportunities in ${reading.career.favorableIndustries.join(', ')} are favorable. Your chart shows strength in ${reading.career.suitablePaths.join(' and ')} paths.`,
         timing: 'Within 6-12 months, especially during favorable element periods',
         elements: reading.dayMaster.favorableElements,
-        advice: reading.career.recommendations || ['Focus on your strengths', 'Network with compatible elements', 'Develop relevant skills']
+        advice: (reading.career as { recommendations?: string[] }).recommendations || ['Focus on your strengths', 'Network with compatible elements', 'Develop relevant skills']
       },
       'relationships': {
         answer: `Your ${dayElement} nature is most compatible with ${reading.relationships.compatibility.bestElements.join(' and ')} elements. ${reading.relationships.interpersonalDynamics}`,

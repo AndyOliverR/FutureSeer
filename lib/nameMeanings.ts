@@ -231,11 +231,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Germanic",
     variations: ["Ray", "Ramon", "Raimundo"]
   },
-  "ALEXANDER": {
-    meaning: "Defender of mankind",
-    origin: "Greek",
-    variations: ["Alex", "Alec", "Xander", "Sandro"]
-  },
   "PATRICK": {
     meaning: "Noble, patrician",
     origin: "Latin",
@@ -316,11 +311,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Latin",
     variations: ["Justus", "Giustino"]
   },
-  "BRANDON": {
-    meaning: "Broom hill",
-    origin: "English",
-    variations: ["Brendan"]
-  },
   "GABRIEL": {
     meaning: "God is my strength",
     origin: "Hebrew",
@@ -345,11 +335,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Noble, bright",
     origin: "Germanic",
     variations: ["Al", "Bert", "Alberto", "Albrecht"]
-  },
-  "KYLE": {
-    meaning: "Narrow channel",
-    origin: "Scottish",
-    variations: ["Kile"]
   },
   "BRADLEY": {
     meaning: "Broad clearing",
@@ -396,11 +381,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "English",
     variations: ["Wain"]
   },
-  "LOUIS": {
-    meaning: "Famous warrior",
-    origin: "Germanic",
-    variations: ["Lou", "Lewis", "Luis"]
-  },
   "ALAN": {
     meaning: "Handsome, cheerful",
     origin: "Celtic",
@@ -436,11 +416,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Germanic",
     variations: ["Rodge", "Rodger", "Rüdiger"]
   },
-  "JUAN": {
-    meaning: "God is gracious",
-    origin: "Hebrew/Spanish",
-    variations: ["John", "Giovanni", "Jean"]
-  },
   "CHRISTIAN": {
     meaning: "Follower of Christ",
     origin: "Latin",
@@ -465,41 +440,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Army ruler",
     origin: "Norse",
     variations: ["Hal", "Harry", "Harald"]
-  },
-  "SEAN": {
-    meaning: "God is gracious",
-    origin: "Hebrew/Irish",
-    variations: ["John", "Shaun", "Shane"]
-  },
-  "FRANK": {
-    meaning: "Free man",
-    origin: "Germanic",
-    variations: ["Francis", "Franklin"]
-  },
-  "RAYMOND": {
-    meaning: "Wise protector",
-    origin: "Germanic",
-    variations: ["Ray", "Ramon", "Raimundo"]
-  },
-  "ALEX": {
-    meaning: "Defender of mankind",
-    origin: "Greek",
-    variations: ["Alexander", "Alexandra"]
-  },
-  "JACK": {
-    meaning: "God is gracious",
-    origin: "Hebrew",
-    variations: ["John", "Johnny", "Jacques"]
-  },
-  "DENNIS": {
-    meaning: "Follower of Dionysus",
-    origin: "Greek",
-    variations: ["Denny", "Denis"]
-  },
-  "JERRY": {
-    meaning: "Spear ruler",
-    origin: "Germanic",
-    variations: ["Jeremiah", "Jeremy", "Gerald"]
   },
 
   // Common Surnames - Western
@@ -577,11 +517,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Son of Andrew",
     origin: "English/Scottish",
     variations: ["Andersson"]
-  },
-  "THOMAS": {
-    meaning: "Twin",
-    origin: "Aramaic",
-    variations: ["Tomás", "Thomasson"]
   },
   "TAYLOR": {
     meaning: "Tailor, clothing maker",
@@ -667,11 +602,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Craftsman, maker",
     origin: "English",
     variations: ["Rite"]
-  },
-  "SCOTT": {
-    meaning: "From Scotland",
-    origin: "English",
-    variations: ["Scot"]
   },
   "TORRES": {
     meaning: "Towers",
@@ -838,11 +768,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "English",
     variations: ["Bailey", "Bayley"]
   },
-  "RIVERA": {
-    meaning: "River, stream",
-    origin: "Spanish",
-    variations: []
-  },
   "COOPER": {
     meaning: "Barrel maker",
     origin: "English",
@@ -858,20 +783,10 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "English",
     variations: ["Cocks"]
   },
-  "HOWARD": {
-    meaning: "High guardian, heart brave",
-    origin: "English",
-    variations: ["Howarth"]
-  },
   "WARD": {
     meaning: "Guardian, watchman",
     origin: "English",
     variations: ["Warde"]
-  },
-  "TORRES": {
-    meaning: "Towers",
-    origin: "Spanish",
-    variations: ["Torrez"]
   },
   "PETERSON": {
     meaning: "Son of Peter (rock)",
@@ -887,11 +802,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Son of Ramiro (wise counselor)",
     origin: "Spanish",
     variations: ["Ramírez"]
-  },
-  "JAMES": {
-    meaning: "Supplanter",
-    origin: "Hebrew",
-    variations: ["Jameson"]
   },
   "WATSON": {
     meaning: "Son of Walter (ruler of the army)",
@@ -978,11 +888,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Germanic/English",
     variations: ["Hughes"]
   },
-  "FLORES": {
-    meaning: "Flowers",
-    origin: "Spanish",
-    variations: ["Florez"]
-  },
   "WASHINGTON": {
     meaning: "Town of the wise",
     origin: "English",
@@ -1013,11 +918,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Irish",
     variations: ["Briant", "Brian"]
   },
-  "ALEXANDER": {
-    meaning: "Defender of mankind",
-    origin: "Greek",
-    variations: ["Alexanders"]
-  },
   "RUSSELL": {
     meaning: "Red-haired, fox-colored",
     origin: "French/English",
@@ -1027,11 +927,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Strong lord",
     origin: "Welsh",
     variations: ["Griffith", "Gryphon"]
-  },
-  "DIAZ": {
-    meaning: "Son of Diego",
-    origin: "Spanish",
-    variations: ["Díaz"]
   },
   "HAYES": {
     meaning: "Hedge, enclosure",
@@ -1472,20 +1367,10 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Kashmiri",
     variations: ["Bhatt"]
   },
-  "RAHMAN": {
-    meaning: "Merciful",
-    origin: "Arabic",
-    variations: ["Rahman"]
-  },
   "RAZA": {
     meaning: "Contentment, approval",
     origin: "Arabic",
     variations: ["Raza"]
-  },
-  "AHMED": {
-    meaning: "Most commendable",
-    origin: "Arabic",
-    variations: ["Ahmad"]
   },
 
   // Additional Common Names
@@ -1614,11 +1499,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Hebrew",
     variations: ["Ana", "Hannah", "Ann"]
   },
-  "ALEXIS": {
-    meaning: "Defender",
-    origin: "Greek",
-    variations: ["Alexa", "Alex"]
-  },
   "SAMANTHA": {
     meaning: "Listener",
     origin: "Aramaic",
@@ -1653,11 +1533,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Young servant, page",
     origin: "English",
     variations: ["Page"]
-  },
-  "RYAN": {
-    meaning: "Little king",
-    origin: "Irish",
-    variations: ["Rian", "Ryen"]
   },
   "LEAH": {
     meaning: "Weary, wild cow",
@@ -1739,11 +1614,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Greek",
     variations: ["Helen", "Elena", "Ellen"]
   },
-  "ISABELLA": {
-    meaning: "God is my oath",
-    origin: "Hebrew",
-    variations: ["Isabel", "Bella", "Belle"]
-  },
   "JASMINE": {
     meaning: "Jasmine flower",
     origin: "Persian",
@@ -1768,11 +1638,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Dreamer, little girl",
     origin: "Russian/Spanish",
     variations: ["Nena"]
-  },
-  "OLIVIA": {
-    meaning: "Olive tree",
-    origin: "Latin",
-    variations: ["Olive", "Liv"]
   },
   "PAULINA": {
     meaning: "Small, humble",
@@ -1871,11 +1736,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Indian/Sanskrit",
     variations: ["Rajeshwar"]
   },
-  "AMIT": {
-    meaning: "Infinite, boundless",
-    origin: "Indian/Sanskrit",
-    variations: ["Amith", "Amita"]
-  },
   "KUSHAL": {
     meaning: "Skillful, clever",
     origin: "Indian/Sanskrit",
@@ -1956,11 +1816,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Indian/Sanskrit",
     variations: ["Hemanta"]
   },
-  "SHIVAM": {
-    meaning: "Auspicious, belonging to Shiva",
-    origin: "Indian/Sanskrit",
-    variations: ["Shiva"]
-  },
   "AAKASH": {
     meaning: "Sky, space",
     origin: "Indian/Sanskrit",
@@ -1970,11 +1825,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Lord of moon, Shiva",
     origin: "Indian/Sanskrit",
     variations: ["Chandeshwar"]
-  },
-  "SUMIT": {
-    meaning: "Well measured, wise",
-    origin: "Indian/Sanskrit",
-    variations: ["Sumita"]
   },
   "IRFAN": {
     meaning: "Knowledge, awareness",
@@ -2011,11 +1861,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Indian/Sanskrit",
     variations: ["Neeraja"]
   },
-  "RAHUL": {
-    meaning: "Able, efficient",
-    origin: "Indian/Sanskrit",
-    variations: ["Rahula"]
-  },
   "RAJENDER": {
     meaning: "King of gods",
     origin: "Indian/Sanskrit",
@@ -2045,11 +1890,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Marked, anointed",
     origin: "Indian/Sanskrit",
     variations: ["Ankita"]
-  },
-  "ARJUN": {
-    meaning: "White, clear, bright",
-    origin: "Indian/Sanskrit",
-    culturalContext: "Hero of Mahabharata"
   },
   "KULDEEP": {
     meaning: "Lamp of family",
@@ -2101,11 +1941,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Indian/Sanskrit",
     variations: ["Dharmapala"]
   },
-  "SUNIL": {
-    meaning: "Very blue",
-    origin: "Indian/Sanskrit",
-    variations: ["Sunila"]
-  },
   "ASHISH": {
     meaning: "Blessing, benediction",
     origin: "Indian/Sanskrit",
@@ -2136,21 +1971,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Indian/Sanskrit",
     variations: ["Monika"]
   },
-  "RAVI": {
-    meaning: "Sun",
-    origin: "Indian/Sanskrit",
-    variations: ["Ravindra"]
-  },
-  "AYUSH": {
-    meaning: "Long life, age",
-    origin: "Indian/Sanskrit",
-    variations: ["Ayusha"]
-  },
-  "PRADEEP": {
-    meaning: "Light, lamp",
-    origin: "Indian/Sanskrit",
-    variations: ["Pradeepa"]
-  },
   "KAPIL": {
     meaning: "Sage, reddish brown",
     origin: "Indian/Sanskrit",
@@ -2166,48 +1986,15 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Indian/Sanskrit",
     culturalContext: "Ancient name for India"
   },
-  "PRANAV": {
-    meaning: "Sacred syllable Om",
-    origin: "Indian/Sanskrit",
-    variations: ["Pranava"]
-  },
 
   // Indian Names - Surnames
-  "VERMA": {
-    meaning: "Protection, shield",
-    origin: "Indian",
-    variations: ["Varma"]
-  },
-  "SINGH": {
-    meaning: "Lion",
-    origin: "Indian/Sanskrit",
-    culturalContext: "Surname used by Sikhs and Rajputs"
-  },
-  "GUPTA": {
-    meaning: "Protected, secret",
-    origin: "Indian/Sanskrit",
-    culturalContext: "Ancient dynasty name"
-  },
-  "SHARMA": {
-    meaning: "Joy, comfort, protection",
-    origin: "Indian/Sanskrit"
-  },
   "YADAV": {
     meaning: "Descendant of Yadu",
     origin: "Indian/Sanskrit",
     culturalContext: "Clan name tracing to Yadu dynasty"
   },
-  "KUMAR": {
-    meaning: "Prince, son",
-    origin: "Indian/Sanskrit",
-    variations: ["Kumara"]
-  },
   "MANDAL": {
     meaning: "Circle, region",
-    origin: "Indian/Sanskrit"
-  },
-  "SINGH": {
-    meaning: "Lion",
     origin: "Indian/Sanskrit"
   },
   "PAL": {
@@ -2220,38 +2007,9 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Indian",
     culturalContext: "Rajput clan name"
   },
-  "JAIN": {
-    meaning: "Follower of Jainism",
-    origin: "Indian",
-    culturalContext: "Religious community"
-  },
   "TIWARI": {
     meaning: "Priest, scholar",
     origin: "Indian/Sanskrit"
-  },
-  "SINGH": {
-    meaning: "Lion",
-    origin: "Indian/Sanskrit"
-  },
-  "KHAN": {
-    meaning: "Prince, ruler",
-    origin: "Indian/Persian/Arabic",
-    culturalContext: "Title used in various cultures"
-  },
-  "ALI": {
-    meaning: "Exalted, noble",
-    origin: "Arabic",
-    culturalContext: "Important name in Islamic tradition"
-  },
-  "AHMED": {
-    meaning: "Most praised, commendable",
-    origin: "Arabic",
-    variations: ["Ahmad", "Ahmed"]
-  },
-  "IBRAHIM": {
-    meaning: "Father of many",
-    origin: "Arabic/Hebrew",
-    variations: ["Abraham", "Ebrahim"]
   },
   "KHALID": {
     meaning: "Eternal, immortal",
@@ -2262,11 +2020,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Flourishing, long-lived",
     origin: "Arabic",
     variations: ["Umar", "Omar"]
-  },
-  "MOHAMMED": {
-    meaning: "Praised, praiseworthy",
-    origin: "Arabic",
-    variations: ["Muhammad", "Mohammad", "Mohd"]
   },
   "MUSTAFA": {
     meaning: "Chosen one",
@@ -2287,11 +2040,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Unique, incomparable",
     origin: "Arabic",
     variations: ["Fareed"]
-  },
-  "ZAIN": {
-    meaning: "Beauty, grace",
-    origin: "Arabic",
-    variations: ["Zayn", "Zayd"]
   },
   "HAMZA": {
     meaning: "Lion",
@@ -2337,11 +2085,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Beautiful",
     origin: "Arabic",
     variations: ["Jameel", "Jamil"]
-  },
-  "MALIK": {
-    meaning: "King, owner",
-    origin: "Arabic",
-    variations: ["Malik", "Melek"]
   },
   "HAKIM": {
     meaning: "Wise, judge",
@@ -2425,21 +2168,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
   },
 
   // 99 Names of Allah (Asma ul Husna) - Most Common
-  "RAHMAN": {
-    meaning: "The Most Merciful",
-    origin: "Arabic",
-    culturalContext: "One of the 99 Names of Allah"
-  },
-  "RAHIM": {
-    meaning: "The Most Compassionate",
-    origin: "Arabic",
-    culturalContext: "One of the 99 Names of Allah"
-  },
-  "MALIK": {
-    meaning: "The King, The Sovereign",
-    origin: "Arabic",
-    culturalContext: "One of the 99 Names of Allah"
-  },
   "KUDDUS": {
     meaning: "The Holy One",
     origin: "Arabic",
@@ -2667,12 +2395,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     variations: ["Jalil"],
     culturalContext: "One of the 99 Names of Allah"
   },
-  "KAREEM": {
-    meaning: "The Generous One",
-    origin: "Arabic",
-    variations: ["Karim"],
-    culturalContext: "One of the 99 Names of Allah"
-  },
   "RAQEEB": {
     meaning: "The Watchful",
     origin: "Arabic",
@@ -2713,12 +2435,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "The Resurrector",
     origin: "Arabic",
     variations: ["Ba'ith"],
-    culturalContext: "One of the 99 Names of Allah"
-  },
-  "SHAHID": {
-    meaning: "The Witness",
-    origin: "Arabic",
-    variations: ["Shahid"],
     culturalContext: "One of the 99 Names of Allah"
   },
   "HAQ": {
@@ -2805,12 +2521,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     variations: ["Wajid"],
     culturalContext: "One of the 99 Names of Allah"
   },
-  "MAJID": {
-    meaning: "The Noble",
-    origin: "Arabic",
-    variations: ["Majid"],
-    culturalContext: "One of the 99 Names of Allah"
-  },
   "WAHID": {
     meaning: "The One",
     origin: "Arabic",
@@ -2877,12 +2587,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     variations: ["Batin"],
     culturalContext: "One of the 99 Names of Allah"
   },
-  "WALI": {
-    meaning: "The Governor",
-    origin: "Arabic",
-    variations: ["Wali"],
-    culturalContext: "One of the 99 Names of Allah"
-  },
   "MUTA'ALI": {
     meaning: "The Most Exalted",
     origin: "Arabic",
@@ -2919,23 +2623,11 @@ const NAME_MEANINGS: Record<string, NameData> = {
     variations: ["Ra'uf"],
     culturalContext: "One of the 99 Names of Allah"
   },
-  "MALIK": {
-    meaning: "The Owner of All",
-    origin: "Arabic",
-    variations: ["Malik"],
-    culturalContext: "One of the 99 Names of Allah"
-  },
   "DHUL": {
     meaning: "The Lord of",
     origin: "Arabic",
     variations: ["Dhul"],
     culturalContext: "Prefix for many of the 99 Names of Allah"
-  },
-  "JALAL": {
-    meaning: "The Majesty",
-    origin: "Arabic",
-    variations: ["Jalal"],
-    culturalContext: "One of the 99 Names of Allah"
   },
   "IKRAM": {
     meaning: "The Giver of Honor",
@@ -3094,22 +2786,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     popularity: "very_common",
     variations: ["Joseph", "Jose", "José"]
   },
-  "MARIA": {
-    meaning: "Bitter, sea of sorrow",
-    origin: "Hebrew/Latin",
-    gender: "female",
-    countries: ["Spain", "Italy", "Portugal", "Greece", "Poland", "Russia"],
-    popularity: "very_common",
-    variations: ["Mary", "Marie", "Mariya"]
-  },
-  "JOSE": {
-    meaning: "God will increase",
-    origin: "Spanish/Portuguese",
-    gender: "male",
-    countries: ["Spain", "Portugal", "Mexico", "Brazil", "Philippines"],
-    popularity: "very_common",
-    variations: ["Joseph", "Giuseppe", "José"]
-  },
   "CARLOS": {
     meaning: "Free man",
     origin: "Spanish/Portuguese",
@@ -3198,14 +2874,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     popularity: "very_common",
     variations: ["Eric", "Eirik"]
   },
-  "ANNA": {
-    meaning: "Grace, favor",
-    origin: "Hebrew",
-    gender: "female",
-    countries: ["Germany", "Poland", "Russia", "Italy", "Finland"],
-    popularity: "very_common",
-    variations: ["Ana", "Anne", "Hannah", "Ann"]
-  },
   "KRISTINA": {
     meaning: "Follower of Christ",
     origin: "Greek/Latin",
@@ -3239,14 +2907,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     countries: ["Spain", "Mexico", "Argentina", "Colombia"],
     popularity: "very_common",
     variations: ["James", "Santiago"]
-  },
-  "ISABELLA": {
-    meaning: "God is my oath",
-    origin: "Italian/Spanish",
-    gender: "female",
-    countries: ["Italy", "Spain", "Brazil", "Mexico"],
-    popularity: "very_common",
-    variations: ["Isabel", "Isabelle", "Bella"]
   },
   "MATIAS": {
     meaning: "Gift of God",
@@ -3308,13 +2968,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     gender: "male",
     countries: ["Vietnam"],
     popularity: "common"
-  },
-  "NGUYEN": {
-    meaning: "Musical instrument",
-    origin: "Vietnamese",
-    gender: "unisex",
-    countries: ["Vietnam"],
-    popularity: "very_common"
   },
   "TRAN": {
     meaning: "To continue, to transmit",
@@ -3419,70 +3072,10 @@ const NAME_MEANINGS: Record<string, NameData> = {
   },
   
   // Additional Popular Surnames from Various Countries
-  "GARCIA": {
-    meaning: "Young, bear",
-    origin: "Spanish/Basque",
-    countries: ["Spain", "Mexico", "United States"],
-    popularity: "very_common"
-  },
-  "RODRIGUEZ": {
-    meaning: "Son of Rodrigo",
-    origin: "Spanish",
-    countries: ["Spain", "Mexico", "Argentina", "United States"],
-    popularity: "very_common"
-  },
-  "MARTINEZ": {
-    meaning: "Son of Martin",
-    origin: "Spanish",
-    countries: ["Spain", "Mexico", "United States"],
-    popularity: "very_common"
-  },
-  "LOPEZ": {
-    meaning: "Son of Lope",
-    origin: "Spanish",
-    countries: ["Spain", "Mexico", "United States"],
-    popularity: "very_common"
-  },
   "GONZALEZ": {
     meaning: "Son of Gonzalo",
     origin: "Spanish",
     countries: ["Spain", "Mexico", "Argentina", "United States"],
-    popularity: "very_common"
-  },
-  "HERNANDEZ": {
-    meaning: "Son of Hernando",
-    origin: "Spanish",
-    countries: ["Spain", "Mexico", "United States"],
-    popularity: "very_common"
-  },
-  "WILSON": {
-    meaning: "Son of Will",
-    origin: "English",
-    countries: ["United States", "United Kingdom", "Australia", "Canada"],
-    popularity: "very_common"
-  },
-  "BROWN": {
-    meaning: "Brown-haired, brown-skinned",
-    origin: "English",
-    countries: ["United States", "United Kingdom", "Australia", "Canada"],
-    popularity: "very_common"
-  },
-  "JONES": {
-    meaning: "Son of John",
-    origin: "English/Welsh",
-    countries: ["United States", "United Kingdom", "Australia", "Wales"],
-    popularity: "very_common"
-  },
-  "SMITH": {
-    meaning: "Metalworker, blacksmith",
-    origin: "English",
-    countries: ["United States", "United Kingdom", "Australia", "Canada"],
-    popularity: "very_common"
-  },
-  "JOHNSON": {
-    meaning: "Son of John",
-    origin: "English",
-    countries: ["United States", "United Kingdom", "Australia", "Canada"],
     popularity: "very_common"
   },
   "MUELLER": {
@@ -3495,49 +3088,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Smith, metalworker",
     origin: "German",
     countries: ["Germany", "Austria", "United States"],
-    popularity: "very_common"
-  },
-  "ANDERSON": {
-    meaning: "Son of Anders/Andrew",
-    origin: "Scandinavian/English",
-    countries: ["United States", "Sweden", "Norway", "United Kingdom"],
-    popularity: "very_common"
-  },
-  "PATEL": {
-    meaning: "Village headman",
-    origin: "Indian/Gujarati",
-    countries: ["India", "United Kingdom", "United States"],
-    popularity: "very_common",
-    culturalContext: "Common surname among Gujaratis"
-  },
-  "RAO": {
-    meaning: "King, ruler",
-    origin: "Indian/Telugu",
-    countries: ["India"],
-    popularity: "very_common"
-  },
-  "REDDY": {
-    meaning: "Headman, leader",
-    origin: "Indian/Telugu",
-    countries: ["India"],
-    popularity: "very_common"
-  },
-  "MEHTA": {
-    meaning: "Accountant, clerk",
-    origin: "Indian/Gujarati",
-    countries: ["India"],
-    popularity: "very_common"
-  },
-  "SHAH": {
-    meaning: "King, emperor",
-    origin: "Persian/Indian",
-    countries: ["India", "Iran", "Pakistan"],
-    popularity: "very_common"
-  },
-  "JAIN": {
-    meaning: "Follower of Jainism",
-    origin: "Indian",
-    countries: ["India"],
     popularity: "very_common"
   },
   "VARGHESE": {
@@ -4050,13 +3600,6 @@ const NAME_MEANINGS: Record<string, NameData> = {
     gender: "female",
     countries: ["India"],
     popularity: "common"
-  },
-  "POOJA": {
-    meaning: "Prayer, worship",
-    origin: "Indian/Sanskrit",
-    gender: "female",
-    countries: ["India"],
-    popularity: "very_common"
   },
   "SARITA": {
     meaning: "River, flowing",

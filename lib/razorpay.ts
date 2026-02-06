@@ -184,9 +184,7 @@ export async function cancelSubscription(subscriptionId: string, cancelAtCycleEn
   const razorpay = getRazorpayClient();
 
   try {
-    const subscription = await razorpay.subscriptions.cancel(subscriptionId, {
-      cancel_at_cycle_end: cancelAtCycleEnd ? 1 : 0,
-    });
+    const subscription = await razorpay.subscriptions.cancel(subscriptionId, cancelAtCycleEnd ? 1 : 0);
     return subscription;
   } catch (error: any) {
     console.error('Error cancelling Razorpay subscription:', error);

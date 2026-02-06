@@ -293,7 +293,8 @@ Make each section comprehensive yet concise. Focus on practical guidance, self-a
 }
 
 // Parse Groq response and extract structured data
-function parseGroqResponse(response: string, planets: any[], houses: any[], aspects: any[], transits: any[] = []): ComprehensiveWesternResponse['data']['comprehensiveAnalysis'] {
+type WesternComprehensiveAnalysis = NonNullable<ComprehensiveWesternResponse['data']>['comprehensiveAnalysis'];
+function parseGroqResponse(response: string, planets: any[], houses: any[], aspects: any[], transits: any[] = []): WesternComprehensiveAnalysis {
   devLog.debug('🔍 ========== STARTING PARSE GROQ RESPONSE ==========', undefined, 'western');
   devLog.debug('🔍 Response length:', response.length, 'western');
   devLog.debug('🔍 Planets available:', planets.length, 'western');
@@ -320,9 +321,9 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
     devLog.debug('🔍 Strategy 0: Trying direct JSON match...', undefined, 'western');
     let jsonMatch = response.match(/\{[\s\S]*\}/);
     if (jsonMatch && jsonMatch[0].length > 100) {
-      devLog.debug('✅ Strategy 0: Found JSON match, length:', jsonMatch[0].length, 'western');
+      devLog.debug(`✅ Strategy 0: Found JSON match, length: ${jsonMatch[0].length}`, undefined, 'western');
     } else {
-      devLog.warn('⚠️ Strategy 0: JSON match too short or not found, length:', jsonMatch?.[0]?.length || 0, 'western');
+      devLog.warn(`⚠️ Strategy 0: JSON match too short or not found, length: ${jsonMatch?.[0]?.length ?? 0}`, undefined, 'western');
     }
     
     // Strategy 1: Try extracting from markdown code blocks (most common)
@@ -331,7 +332,7 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
       const codeBlockMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
       if (codeBlockMatch && codeBlockMatch[1]) {
         jsonMatch = [codeBlockMatch[1]]; // Use the captured group
-        devLog.debug('✅ Strategy 1: Extracted JSON from markdown code block, length:', jsonMatch[0].length, 'western');
+        devLog.debug(`✅ Strategy 1: Extracted JSON from markdown code block, length: ${jsonMatch[0].length}`, undefined, 'western');
       } else {
         devLog.warn('⚠️ Strategy 1: No markdown code block found', undefined, 'western');
       }
@@ -343,7 +344,7 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
       const prefixMatch = response.match(/(?:Here'?s?|Here is|Here's|The analysis|The chart analysis|Analysis):\s*(\{[\s\S]*\})/i);
       if (prefixMatch && prefixMatch[1]) {
         jsonMatch = [prefixMatch[1]];
-        devLog.debug('✅ Strategy 2: Extracted JSON after prefix, length:', jsonMatch[0].length, 'western');
+        devLog.debug(`✅ Strategy 2: Extracted JSON after prefix, length: ${jsonMatch[0].length}`, undefined, 'western');
       } else {
         devLog.warn('⚠️ Strategy 2: No prefix match found', undefined, 'western');
       }
@@ -356,14 +357,14 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
       if (allMatches && allMatches.length > 0) {
         // Find the largest JSON object (likely the main response)
         jsonMatch = [allMatches.sort((a, b) => b.length - a.length)[0]];
-        devLog.debug('✅ Strategy 3: Extracted largest JSON object from', allMatches.length, 'matches, length:', jsonMatch[0].length, 'western');
+        devLog.debug(`✅ Strategy 3: Extracted largest JSON object from ${allMatches.length} matches, length: ${jsonMatch[0].length}`, undefined, 'western');
       } else {
         devLog.warn('⚠️ Strategy 3: No JSON objects found', undefined, 'western');
       }
     }
     
     if (jsonMatch && jsonMatch[0]) {
-      devLog.debug('✅ Found JSON candidate, length:', jsonMatch[0].length, 'western');
+      devLog.debug(`✅ Found JSON candidate, length: ${jsonMatch[0].length}`, undefined, 'western');
       devLog.debug('🔍 JSON preview (first 1000 chars):', jsonMatch[0].substring(0, 1000), 'western');
       devLog.debug('🔍 JSON preview (last 500 chars):', jsonMatch[0].substring(Math.max(0, jsonMatch[0].length - 500)), 'western');
       
@@ -378,14 +379,14 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
       // Remove control characters
       jsonString = jsonString.replace(/[\x00-\x1F\x7F]/g, '');
       if (originalLength !== jsonString.length) {
-        devLog.debug('🔍 Cleaned JSON string, removed', originalLength - jsonString.length, 'western');
+        devLog.debug(`🔍 Cleaned JSON string, removed ${originalLength - jsonString.length}`, undefined, 'western');
       }
       
       devLog.debug('🔍 Attempting JSON.parse...', undefined, 'western');
       try {
         parsed = JSON.parse(jsonString);
         devLog.debug('✅ JSON.parse successful!', undefined, 'western');
-        devLog.debug('🔍 Parsed object keys:', Object.keys(parsed || {}), 'western');
+        devLog.debug(`🔍 Parsed object keys: ${Object.keys(parsed || {}).join(', ')}`, undefined, 'western');
       } catch (parseError: any) {
         console.error('❌ JSON.parse failed:', parseError.message);
         console.error('❌ Error at position:', parseError.message.match(/position (\d+)/)?.[1] || 'unknown');
@@ -422,12 +423,12 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
       
       devLog.debug('✅ Successfully parsed JSON', undefined, 'western');
       devLog.debug('🔍 Parsed object structure:', undefined, 'western');
-      devLog.debug('🔍   - Has chartOverview:', !!parsed.chartOverview, 'western');
-      devLog.debug('🔍   - Has planetaryAnalysis:', !!parsed.planetaryAnalysis, 'western');
-      devLog.debug('🔍   - Has houseAnalysis:', !!parsed.houseAnalysis, 'western');
-      devLog.debug('🔍   - Has aspectAnalysis:', !!parsed.aspectAnalysis, 'western');
-      devLog.debug('🔍   - Has transitAnalysis:', !!parsed.transitAnalysis, 'western');
-      devLog.debug('🔍   - Has predictiveInsights:', !!parsed.predictiveInsights, 'western');
+      devLog.debug(`🔍   - Has chartOverview: ${!!parsed.chartOverview}`, undefined, 'western');
+      devLog.debug(`🔍   - Has planetaryAnalysis: ${!!parsed.planetaryAnalysis}`, undefined, 'western');
+      devLog.debug(`🔍   - Has houseAnalysis: ${!!parsed.houseAnalysis}`, undefined, 'western');
+      devLog.debug(`🔍   - Has aspectAnalysis: ${!!parsed.aspectAnalysis}`, undefined, 'western');
+      devLog.debug(`🔍   - Has transitAnalysis: ${!!parsed.transitAnalysis}`, undefined, 'western');
+      devLog.debug(`🔍   - Has predictiveInsights: ${!!parsed.predictiveInsights}`, undefined, 'western');
       
       // Ensure planetaryAnalysis matches actual planets
       const planetaryAnalysis = (parsed.planetaryAnalysis || []).map((item: any) => ({

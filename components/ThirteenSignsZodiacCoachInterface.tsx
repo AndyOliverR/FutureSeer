@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { 
   Send, 
-  Snake, 
+  CircleDot, 
   Lightbulb, 
   Target, 
   Heart, 
@@ -116,7 +116,7 @@ export function ThirteenSignsZodiacCoachInterface() {
       <Card className="bg-slate-800/50 border-slate-600">
         <CardHeader>
           <CardTitle className="text-purple-400 flex items-center gap-2">
-            <Snake className="w-5 h-5" />
+            <CircleDot className="w-5 h-5" />
             Your 13 Signs Guide
           </CardTitle>
           <p className="text-sm text-slate-400">

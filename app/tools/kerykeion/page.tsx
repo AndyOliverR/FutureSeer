@@ -54,7 +54,7 @@ export default function KerykeionPage() {
 
   // Load Kerykeion Analysis
   const loadKerykeionAnalysis = async () => {
-    if (!hasCompleteDetails) return
+    if (!hasCompleteDetails || !user || !userProfile) return
 
     try {
       setIsLoading(true)
@@ -174,7 +174,7 @@ export default function KerykeionPage() {
           </div>
 
           {/* Main Content */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 border border-blue-500/30 rounded-xl">
               <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white rounded-lg">
                 Overview

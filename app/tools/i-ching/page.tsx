@@ -357,7 +357,7 @@ export default function IChingPage() {
                 </h3>
                 <select
                   value={method || ""}
-                  onChange={(e) => setMethod(e.target.value)}
+                  onChange={(e) => setMethod((e.target.value || '') as '' | 'coins' | 'yarrow' | 'random')}
                   className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-white focus:outline-none focus:border-yellow-400 transition-all duration-300"
                 >
                   <option value="" className="bg-slate-900">Select Method</option>

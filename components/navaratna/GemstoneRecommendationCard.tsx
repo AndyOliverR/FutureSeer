@@ -279,7 +279,7 @@ export function GemstoneRecommendationCard({
                   />
                 </div>
                 <p className="text-slate-600 text-xs mt-2 text-center">
-                  Color: {recommendation.color}
+                  Color: {recommendation.color ?? '—'}
                 </p>
               </div>
             )}
