@@ -6,6 +6,7 @@ import { Share2, Info } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTipJar } from "@/components/TipJarContext";
 import { useFeedback } from "@/components/FeedbackContext";
+import { useModalOpen } from "@/components/ModalOpenContext";
 import {
   Tooltip,
   TooltipContent,
@@ -40,6 +41,13 @@ export function TopNavBar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { registerModal } = useModalOpen();
+
+  useEffect(() => {
+    if (showShareModal) {
+      return registerModal();
+    }
+  }, [showShareModal, registerModal]);
 
   const visibleNavLinks = navLinks.filter(
     (link) =>
