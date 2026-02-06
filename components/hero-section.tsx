@@ -10,7 +10,7 @@ export function HeroSection() {
   const { trackEvent } = useAnalytics()
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-[70vh] md:min-h-[80vh] px-4 sm:px-6 text-center pt-24 md:pt-32 lg:pt-40 pb-12 relative bg-transparent">
+    <section className="flex flex-col items-center justify-center min-h-[70vh] md:min-h-[80vh] px-3 sm:px-4 md:px-6 text-center pt-24 md:pt-32 lg:pt-40 pb-12 relative bg-transparent">
       <div className="max-w-4xl mx-auto space-y-6 sm:space-y-8 md:space-y-10 lg:space-y-12 opacity-100 translate-y-0">
         {/* Main Headline - Larger font size */}
         <h1 className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-serif text-[var(--m3-primary)] leading-tight tracking-wide font-light">

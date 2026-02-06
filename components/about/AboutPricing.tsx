@@ -55,7 +55,7 @@ export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
       subtitle="First month free for everyone. Choose your plan."
     >
       {/* Signup Flow Explanation */}
-      <div className="mb-12 p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl text-center max-w-4xl mx-auto transition-all duration-300 hover:scale-105">
+      <div className="mb-12 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl text-center max-w-4xl mx-auto transition-all duration-300 hover:scale-105">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/30 mb-4">
           <Sparkles className="w-8 h-8 text-amber-400" />
         </div>

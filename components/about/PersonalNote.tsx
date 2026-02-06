@@ -11,13 +11,13 @@ export function PersonalNote() {
   const [imageError, setImageError] = useState(false);
   return (
     <motion.section 
-      className="px-4 sm:px-6 pt-20 pb-20 m3-gpu-accelerated max-w-4xl mx-auto"
+      className="px-3 sm:px-4 md:px-6 pt-20 pb-20 m3-gpu-accelerated max-w-4xl mx-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ ease: [0, 0, 0.2, 1], duration: 0.5 }}
     >
       <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
-        <CardContent className="p-8 md:p-12">
+        <CardContent className="p-4 sm:p-6 md:p-8 lg:p-12">
           {/* Profile Picture and Header */}
           <motion.div 
             className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8"

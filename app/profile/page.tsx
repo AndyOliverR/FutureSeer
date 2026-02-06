@@ -900,7 +900,7 @@ export default function ProfilePage() {
   return (
     <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp">
       <Header />
-      <div className="relative z-10 p-4 max-w-6xl mx-auto">
+      <div className="relative z-10 px-3 sm:px-4 md:px-6 py-4 max-w-6xl mx-auto">
         {/* Enhanced Header */}
         <motion.div
           initial={{ opacity: 0, y: -30 }}
