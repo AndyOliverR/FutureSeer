@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getAttractivePrice, getReferralPrice, getCountryPricingConfig } from '@/lib/pricingConfig';
 import { Button } from '@/components/ui/button';
 import { Share2, Gift } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { ShareAppModal } from '@/components/ShareAppModal';
+import { useModalOpen } from '@/components/ModalOpenContext';
 
 interface ReferralBenefitsSectionProps {
   countryCode: string;
@@ -14,6 +15,13 @@ interface ReferralBenefitsSectionProps {
 export function ReferralBenefitsSection({ countryCode }: ReferralBenefitsSectionProps) {
   const { user } = useAuth();
   const [showShareModal, setShowShareModal] = useState(false);
+  const { registerModal } = useModalOpen();
+
+  useEffect(() => {
+    if (showShareModal) {
+      return registerModal();
+    }
+  }, [showShareModal, registerModal]);
 
   const config = getCountryPricingConfig(countryCode);
   const limitedPricing = getAttractivePrice('limited', countryCode);

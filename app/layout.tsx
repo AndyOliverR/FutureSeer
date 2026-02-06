@@ -273,23 +273,23 @@ export default function RootLayout({
           }}
         />
         <FirestoreErrorSuppressor />
-        <FeedbackProvider>
-          <ClientProviders>
-            <MysticalFeedback />
-            <FloatingTipJar />
-          </ClientProviders>
-          <ErrorBoundary>
+        <main role="main" id="main-content">
+          <FeedbackProvider>
             <ClientProviders>
-              <I18nProvider>
-                <AnalyticsInitializer />
-                <main role="main" id="main-content">
-                  {children}
-                </main>
-                <Toaster />
-              </I18nProvider>
+              <MysticalFeedback />
+              <FloatingTipJar />
             </ClientProviders>
-          </ErrorBoundary>
-        </FeedbackProvider>
+            <ErrorBoundary>
+              <ClientProviders>
+                <I18nProvider>
+                  <AnalyticsInitializer />
+                  {children}
+                  <Toaster />
+                </I18nProvider>
+              </ClientProviders>
+            </ErrorBoundary>
+          </FeedbackProvider>
+        </main>
       </body>
     </html>
   )

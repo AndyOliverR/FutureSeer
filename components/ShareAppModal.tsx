@@ -141,7 +141,7 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
                 className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-secondary)] hover:bg-[var(--m3-secondary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                 aria-label="Close"
               >
-                <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                <X className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden />
               </Button>
             </div>
 
@@ -163,54 +163,54 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
                     variant="outline"
                     onClick={() => handleSocialShare("whatsapp")}
                     className="flex flex-col items-center gap-1 p-3 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-primary-container)] hover:text-[var(--m3-primary)] rounded-xl h-auto"
-                    title="Share on WhatsApp"
+                    aria-label="Share on WhatsApp"
                   >
-                    <MessageSquare className="w-5 h-5" />
+                    <MessageSquare className="w-5 h-5" aria-hidden />
                     <span className="text-xs">WhatsApp</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleSocialShare("twitter")}
                     className="flex flex-col items-center gap-1 p-3 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-primary-container)] hover:text-[var(--m3-primary)] rounded-xl h-auto"
-                    title="Share on Twitter/X"
+                    aria-label="Share on Twitter/X"
                   >
-                    <Twitter className="w-5 h-5" />
+                    <Twitter className="w-5 h-5" aria-hidden />
                     <span className="text-xs">Twitter</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleSocialShare("facebook")}
                     className="flex flex-col items-center gap-1 p-3 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-primary-container)] hover:text-[var(--m3-primary)] rounded-xl h-auto"
-                    title="Share on Facebook"
+                    aria-label="Share on Facebook"
                   >
-                    <Facebook className="w-5 h-5" />
+                    <Facebook className="w-5 h-5" aria-hidden />
                     <span className="text-xs">Facebook</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleSocialShare("linkedin")}
                     className="flex flex-col items-center gap-1 p-3 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-primary-container)] hover:text-[var(--m3-primary)] rounded-xl h-auto"
-                    title="Share on LinkedIn"
+                    aria-label="Share on LinkedIn"
                   >
-                    <Linkedin className="w-5 h-5" />
+                    <Linkedin className="w-5 h-5" aria-hidden />
                     <span className="text-xs">LinkedIn</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleSocialShare("email")}
                     className="flex flex-col items-center gap-1 p-3 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-primary-container)] hover:text-[var(--m3-primary)] rounded-xl h-auto"
-                    title="Share via Email"
+                    aria-label="Share via Email"
                   >
-                    <Mail className="w-5 h-5" />
+                    <Mail className="w-5 h-5" aria-hidden />
                     <span className="text-xs">Email</span>
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => handleSocialShare("sms")}
                     className="flex flex-col items-center gap-1 p-3 bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-primary-container)] hover:text-[var(--m3-primary)] rounded-xl h-auto"
-                    title="Share via SMS"
+                    aria-label="Share via SMS"
                   >
-                    <MessageCircle className="w-5 h-5" />
+                    <MessageCircle className="w-5 h-5" aria-hidden />
                     <span className="text-xs">SMS</span>
                   </Button>
                 </div>
@@ -233,7 +233,7 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
                     aria-label={copied ? "Link copied" : "Copy share link"}
                     className={`px-3 rounded-lg h-9 ${copied ? "bg-green-600 text-white" : "bg-[var(--m3-primary)] hover:bg-[var(--m3-primary)]/90 text-[var(--m3-on-primary)]"}`}
                   >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? <Check className="w-4 h-4" aria-hidden /> : <Copy className="w-4 h-4" aria-hidden />}
                   </Button>
                 </div>
               </div>

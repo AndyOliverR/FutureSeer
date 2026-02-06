@@ -89,8 +89,9 @@ export function DiscussionForm({ onSubmit, onCancel, initialData }: DiscussionFo
           size="sm"
           onClick={onCancel}
           className="text-gray-400 hover:text-white"
+          aria-label="Cancel"
         >
-          <X className="w-4 h-4" />
+          <X className="w-4 h-4" aria-hidden />
         </Button>
       </CardHeader>
       <CardContent>

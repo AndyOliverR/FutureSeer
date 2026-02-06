@@ -107,23 +107,26 @@ export default function PersonalizedRemedyCard({
               size="sm"
               onClick={handleLike}
               className={isLiked ? 'text-red-500' : ''}
+              aria-label={isLiked ? 'Unlike remedy' : 'Like remedy'}
             >
-              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+              <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} aria-hidden />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSave}
               className={isSaved ? 'text-blue-500' : ''}
+              aria-label={isSaved ? 'Unsave remedy' : 'Save remedy'}
             >
-              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+              <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} aria-hidden />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleShare}
+              aria-label="Share remedy"
             >
-              <Share2 className="w-4 h-4" />
+              <Share2 className="w-4 h-4" aria-hidden />
             </Button>
           </div>
         </div>

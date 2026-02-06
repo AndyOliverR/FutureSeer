@@ -63,7 +63,7 @@ export function TipJarModal({ isOpen, onClose, countryCode = "IN" }: TipJarModal
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-secondary)] hover:bg-[var(--m3-secondary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                   aria-label="Minimize"
                 >
-                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden />
                 </Button>
                 <Button
                   variant="ghost"
@@ -72,7 +72,7 @@ export function TipJarModal({ isOpen, onClose, countryCode = "IN" }: TipJarModal
                   className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-secondary)] hover:bg-[var(--m3-secondary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                   aria-label="Close"
                 >
-                  <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <X className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden />
                 </Button>
               </div>
             </div>
