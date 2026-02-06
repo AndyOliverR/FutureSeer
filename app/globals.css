@@ -1569,7 +1569,7 @@ footer {
   /* Using fixed positioning relative to initial containing block (viewport) */
   position: fixed !important;
   bottom: 80px !important;
-  left: 16px !important;
+  left: 4px !important;
   top: auto !important;
   right: auto !important;
   
@@ -1640,7 +1640,7 @@ html > body > [data-feedback-widget="true"],
 :root > body > [data-feedback-widget="true"] {
   position: fixed !important;
   bottom: 80px !important;
-  left: 16px !important;
+  left: 4px !important;
   top: auto !important;
   right: auto !important;
   z-index: 2147483647 !important;
@@ -1656,7 +1656,7 @@ html > body > [data-feedback-widget="true"],
 [data-feedback-widget="true"]:not([data-variant="header"]) {
   position: fixed !important;
   bottom: 80px !important;
-  left: 16px !important;
+  left: 4px !important;
   top: auto !important;
   right: auto !important;
   z-index: 2147483647 !important;
@@ -1686,7 +1686,7 @@ body [data-feedback-widget="true"],
   top: auto !important;
   right: auto !important;
   bottom: 80px !important;
-  left: 16px !important;
+  left: 4px !important;
 }
 
 /* Ensure footer cannot create any context that affects the button */
@@ -1708,7 +1708,7 @@ footer * {
   /* Positioned above feedback icon on the left side */
   position: fixed !important;
   bottom: 144px !important;
-  left: 16px !important;
+  left: 4px !important;
   top: auto !important;
   right: auto !important;
   
@@ -1757,7 +1757,7 @@ html > body > [data-tip-jar-widget="true"],
 :root > body > [data-tip-jar-widget="true"] {
   position: fixed !important;
   bottom: 144px !important;
-  left: 16px !important;
+  left: 4px !important;
   top: auto !important;
   right: auto !important;
   z-index: 2147483646 !important;
@@ -1773,7 +1773,7 @@ html > body > [data-tip-jar-widget="true"],
 [data-tip-jar-widget="true"] {
   position: fixed !important;
   bottom: 144px !important;
-  left: 16px !important;
+  left: 4px !important;
   top: auto !important;
   right: auto !important;
   z-index: 2147483646 !important;
@@ -1803,14 +1803,14 @@ body [data-tip-jar-widget="true"],
   top: auto !important;
   right: auto !important;
   bottom: 144px !important;
-  left: 16px !important;
+  left: 4px !important;
 }
 
 /* Mobile optimization for Tip Jar button */
 @media (max-width: 768px) {
   [data-tip-jar-widget="true"] {
     bottom: 144px !important;
-    left: 12px !important;
+    left: 4px !important;
     /* Positioned above feedback icon on mobile */
   }
   
@@ -1824,7 +1824,11 @@ body [data-tip-jar-widget="true"],
 @supports (padding: max(0px)) or (padding: env(safe-area-inset-bottom)) {
   [data-tip-jar-widget="true"] {
     bottom: max(144px, calc(144px + env(safe-area-inset-bottom))) !important;
-    left: max(16px, calc(16px + env(safe-area-inset-left))) !important;
+    left: max(4px, env(safe-area-inset-left)) !important;
+  }
+  [data-feedback-widget="true"]:not([data-variant="header"]) {
+    bottom: max(80px, calc(80px + env(safe-area-inset-bottom))) !important;
+    left: max(4px, env(safe-area-inset-left)) !important;
   }
 }
 
