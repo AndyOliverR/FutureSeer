@@ -24,6 +24,8 @@ async function verifyAuth(request: NextRequest): Promise<{ uid: string; email?: 
   }
 }
 
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
   try {
     const auth = await verifyAuth(request);

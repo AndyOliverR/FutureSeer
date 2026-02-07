@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger'
 
+export const dynamic = 'force-static'
+
 // Planetary Positions and Analysis API
 // Ported from VedicAstro Python library to TypeScript
 

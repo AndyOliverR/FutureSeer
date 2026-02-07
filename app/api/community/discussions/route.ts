@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { getAuth } from 'firebase-admin/auth';
+
+export const dynamic = 'force-static'
 import { 
   calculateKarmaForAction, 
   calculateMemberStatsUpdate,
@@ -32,6 +34,9 @@ function timestampToISO(
 
 // GET - Fetch discussions with filters
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
@@ -150,6 +155,9 @@ export async function GET(request: NextRequest) {
 
 // POST - Create new discussion
 export async function POST(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const body = await request.json();
     const { title, content, category, priority = 'medium', userId, authorName } = body;

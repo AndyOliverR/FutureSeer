@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { timezoneService } from '@/services/timezone';
 
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
   try {
     const { timezone, dateTime, fromTimezone, toTimezone } = await request.json();

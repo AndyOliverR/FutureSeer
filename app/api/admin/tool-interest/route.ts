@@ -7,7 +7,12 @@ import { adminDb } from '@/lib/firebase-admin';
  * Returns tool interest submissions for admin review. Requires admin or superadmin.
  * Header: Authorization: Bearer <Firebase ID token>
  */
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const authHeader = request.headers.get('Authorization');
     const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;

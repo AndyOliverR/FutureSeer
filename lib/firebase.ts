@@ -552,9 +552,18 @@ export interface AskHistory {
   timestamp: number;
 }
 
-// Enhanced error handling
+// Throws an error with a user-friendly message while preserving the original auth error code
+function throwAuthError(error: AuthError): never {
+  const msg = getAuthErrorMessage(error);
+  const err = new Error(msg) as Error & { code?: string };
+  err.code = error?.code;
+  throw err;
+}
+
+// Enhanced error handling – covers common Firebase Auth error codes
 export const getAuthErrorMessage = (error: AuthError): string => {
-  switch (error.code) {
+  const code = error?.code || '';
+  switch (code) {
     case 'auth/user-not-found':
       return 'No account found with this email address.';
     case 'auth/wrong-password':
@@ -578,7 +587,30 @@ export const getAuthErrorMessage = (error: AuthError): string => {
       return 'Pop-up was blocked. Please allow pop-ups for this site.';
     case 'auth/cancelled-popup-request':
       return 'Sign-in was cancelled.';
+    case 'auth/unauthorized-domain':
+      return 'This domain is not authorized. Please try again from futureseer.app or contact support.';
+    case 'auth/operation-not-allowed':
+      return 'This sign-in method is not enabled. Please use email sign-up or contact support.';
+    case 'auth/app-not-authorized':
+      return 'App verification failed. If using the mobile app, ensure it is up to date. Otherwise try in a browser.';
+    case 'auth/invalid-api-key':
+      return 'App configuration error. Please try again later or contact support.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account exists with this email using a different sign-in method. Try "Continue with Google" or use your email password.';
+    case 'auth/credential-already-in-use':
+      return 'This account is already linked. Please sign in with your existing method.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Please contact support.';
+    case 'auth/requires-recent-login':
+      return 'Please sign out and sign in again to continue.';
+    case 'auth/web-storage-unsupported':
+      return 'Sign-in requires browser storage. Enable cookies and try again, or use a different browser.';
+    case 'auth/argument-error':
+      return 'Invalid sign-in request. Please refresh and try again.';
     default:
+      if (code || error?.message) {
+        console.warn('[Auth] Unhandled error:', code || 'no-code', error?.message);
+      }
       return 'An error occurred during authentication. Please try again.';
   }
 };
@@ -830,7 +862,7 @@ export const signInWithGoogle = async (): Promise<User> => {
     return user;
     } catch (error: any) {
       console.error('Error signing in with Google:', error);
-      throw new Error(getAuthErrorMessage(error));
+      throwAuthError(error);
     } finally {
       isSigningIn = false;
       signInPromise = null;
@@ -865,7 +897,7 @@ export const signInWithEmail = async (email: string, password: string): Promise<
     return user;
   } catch (error: any) {
     console.error('Error signing in with email:', error);
-    throw new Error(getAuthErrorMessage(error));
+    throwAuthError(error);
   }
 };
 
@@ -952,7 +984,7 @@ export const signUpWithEmail = async (
     return user;
   } catch (error: any) {
     console.error('Error signing up with email:', error);
-    throw new Error(getAuthErrorMessage(error));
+    throwAuthError(error);
   }
 };
 
@@ -965,7 +997,7 @@ export const resetPassword = async (email: string): Promise<void> => {
     await sendPasswordResetEmail(auth, email);
   } catch (error: any) {
     console.error('Error sending password reset email:', error);
-    throw new Error(getAuthErrorMessage(error));
+    throwAuthError(error);
   }
 };
 

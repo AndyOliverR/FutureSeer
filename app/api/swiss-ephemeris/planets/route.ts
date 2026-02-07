@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-static'
+
 // Swiss Ephemeris Planets API
 // Provides precise planetary positions using Swiss Ephemeris calculations
 

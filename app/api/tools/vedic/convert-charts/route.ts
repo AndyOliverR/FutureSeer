@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { convertWesternChartImageToVedic, WesternChartImageData } from '@/lib/westernToVedicImageConverter';
 import { devLog } from '@/lib/devLogger';
 
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
   try {
     const { westernChartImageData, chartTypes = ['northIndian', 'southIndian', 'nakshatraWheel'] } = await request.json();

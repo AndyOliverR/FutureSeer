@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateVedicChart, generateDivisionalChart, BirthData, VedicChart } from '@/lib/vedicAstrology'
 import { devLog } from '@/lib/devLogger'
 
+export const dynamic = 'force-static'
+
 // Vedic Chart Image Generation API
 // Generates chart images for divisional charts using proper Vedic astrology calculations
 
