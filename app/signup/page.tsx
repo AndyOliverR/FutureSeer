@@ -101,7 +101,7 @@ function SignUpPageContent() {
         errorMessage = 'Sign-up was cancelled. Please try again.';
       } else if (code && code.startsWith('auth/')) {
         // Use getAuthErrorMessage for consistent, actionable messages (handles both wrapped and raw Firebase errors)
-        errorMessage = getAuthErrorMessage(error as { code?: string; message?: string }) || fallbackGeneric;
+        errorMessage = getAuthErrorMessage(error) || fallbackGeneric;
       } else {
         const msg = error?.message || '';
         errorMessage = msg && !msg.includes('auth/') && msg.length <= 120 ? msg : fallbackGeneric;
