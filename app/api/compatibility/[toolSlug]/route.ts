@@ -4,10 +4,19 @@ import { getLocalUserProfile } from '@/lib/localStorage'
 import { AdditionalProfile } from '@/lib/types/profileTypes'
 import { profileManager } from '@/lib/services/profileManager'
 
+export const dynamic = 'force-static'
+
+export async function generateStaticParams() {
+  return [{ toolSlug: '_' }]
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ toolSlug: string }> }
 ) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { toolSlug } = await params
     const body = await request.json()

@@ -13,7 +13,12 @@ async function verifyAdmin(request: NextRequest): Promise<boolean> {
   }
 }
 
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     if (!(await verifyAdmin(request))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

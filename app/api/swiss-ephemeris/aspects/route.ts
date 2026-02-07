@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-static'
+
 // Swiss Ephemeris Aspects API
 // Provides precise planetary aspects using Swiss Ephemeris calculations
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-static'
+
 // Swiss Ephemeris Houses API
 // Provides precise house cusps using Swiss Ephemeris calculations
 

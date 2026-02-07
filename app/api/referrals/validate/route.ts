@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { validateReferralCode } from '@/lib/referralUtils';
 
+export const dynamic = 'force-static'
+
 /**
  * GET /api/referrals/validate?code=FUTURE_ABC123
  * Validate if a referral code exists and is valid
  */
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   try {
     const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');

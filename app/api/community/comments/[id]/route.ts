@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 
+export const dynamic = 'force-static'
+
+export async function generateStaticParams() {
+  return [{ id: '_' }]
+}
+
 // PATCH - Update comment (author only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { id: commentId } = await params;
     const body = await request.json();
@@ -67,6 +76,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { id: commentId } = await params;
     const { searchParams } = new URL(request.url);

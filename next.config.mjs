@@ -1,10 +1,6 @@
 /** @type {import('next').NextConfig} */
-const isCapacitorBuild = process.env.CAPACITOR_BUILD === '1';
-
 const nextConfig = {
   serverExternalPackages: ['firebase-admin'],
-  // Static export for Capacitor (mobile) only; default build keeps API routes and SSR
-  ...(isCapacitorBuild ? { output: 'export' } : {}),
   // Use webpack instead of Turbopack (project has custom webpack config)
   turbopack: {},
   webpack: (config, { dev, isServer }) => {

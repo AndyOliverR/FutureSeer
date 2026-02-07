@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { profileManager } from '@/lib/services/profileManager'
 
+export const dynamic = 'force-static'
+
+export async function generateStaticParams() {
+  return [{ profileId: '_' }]
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ profileId: string }> }
 ) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { profileId } = await params
     const searchParams = request.nextUrl.searchParams

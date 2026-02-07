@@ -9,7 +9,15 @@ function verifyCronSecret(request: NextRequest): boolean {
   return !!secret && !!token && token === secret;
 }
 
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return new NextResponse(JSON.stringify({ error: 'Not available in static export' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
   if (!verifyCronSecret(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

@@ -8,6 +8,8 @@ import {
 } from '@/lib/western/tropicalCalculator';
 import { devLog } from '@/lib/devLogger';
 
+export const dynamic = 'force-static'
+
 // Universal Occult API - The "Google of Occult"
 // Powered by Swiss Ephemeris for precise calculations
 
@@ -1900,6 +1902,9 @@ function calculateParans(birthData: BirthData): any[] { return []; }
 function calculateStarInfluences(birthData: BirthData): any[] { return []; }
 
 export async function POST(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { system, birthData, options = {} }: OccultRequest = await request.json();
     

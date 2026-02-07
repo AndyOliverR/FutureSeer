@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 
+export const dynamic = 'force-static'
+
+export async function generateStaticParams() {
+  return [{ userId: '_' }]
+}
+
 // GET - Fetch detailed member stats
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { userId } = await params;
 

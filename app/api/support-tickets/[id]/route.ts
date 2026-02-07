@@ -22,10 +22,19 @@ async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?:
   }
 }
 
+export const dynamic = 'force-static'
+
+export async function generateStaticParams() {
+  return [{ id: '_' }]
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const auth = await verifyAdmin(request);
     if (!auth) {
