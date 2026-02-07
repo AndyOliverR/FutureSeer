@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, User } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
-import { signInWithGoogle, signUpWithEmail } from "@/lib/firebase"
+import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 
 // Lazy load SignupFlow component - only loaded when user submits basic info
@@ -100,11 +100,14 @@ function SignUpPageContent() {
       } else if (code === 'auth/cancelled-popup-request') {
         errorMessage = 'Sign-up was cancelled. Please try again.';
       } else if (code && code.startsWith('auth/')) {
-        errorMessage = fallbackGeneric;
+        // Use getAuthErrorMessage for consistent, actionable messages (handles both wrapped and raw Firebase errors)
+        errorMessage = getAuthErrorMessage(error as { code?: string; message?: string }) || fallbackGeneric;
       } else {
         const msg = error?.message || '';
-        errorMessage = msg && (msg.includes('auth/') || msg.length > 80) ? fallbackGeneric : msg || fallbackGeneric;
+        errorMessage = msg && !msg.includes('auth/') && msg.length <= 120 ? msg : fallbackGeneric;
       }
+      // Log to help debug (visible in DevTools when user opens console)
+      console.warn('[Signup] Google sign-in failed:', code || 'no-code', error?.message?.slice(0, 80));
       setError(errorMessage)
     } finally {
       setIsLoading(false)

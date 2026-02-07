@@ -607,6 +607,8 @@ export const getAuthErrorMessage = (error: AuthError): string => {
       return 'Sign-in requires browser storage. Enable cookies and try again, or use a different browser.';
     case 'auth/argument-error':
       return 'Invalid sign-in request. Please refresh and try again.';
+    case 'auth/internal-error':
+      return 'A temporary error occurred. Please try again in a moment.';
     default:
       if (code || error?.message) {
         console.warn('[Auth] Unhandled error:', code || 'no-code', error?.message);

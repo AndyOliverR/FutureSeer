@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
-import { signInWithGoogle, signInWithEmail, resetPassword } from "@/lib/firebase"
+import { signInWithGoogle, signInWithEmail, resetPassword, getAuthErrorMessage } from "@/lib/firebase"
 import { isAppleDevice } from "@/utils/isAppleDevice"
 import { useRef } from "react"
 
@@ -73,10 +73,11 @@ export default function SignInPage() {
       } else if (code === 'auth/account-exists-with-different-credential') {
         errorMessage = 'An account already exists with the same email. Try signing in with email.';
       } else if (code && code.startsWith('auth/')) {
-        errorMessage = fallbackGeneric;
+        // Use getAuthErrorMessage for consistent, actionable messages
+        errorMessage = getAuthErrorMessage(error as { code?: string; message?: string }) || fallbackGeneric;
       } else {
         const msg = error?.message || '';
-        errorMessage = msg && (msg.includes('auth/') || msg.length > 80) ? fallbackGeneric : msg || fallbackGeneric;
+        errorMessage = msg && !msg.includes('auth/') && msg.length <= 120 ? msg : fallbackGeneric;
       }
       setError(errorMessage)
     } finally {
