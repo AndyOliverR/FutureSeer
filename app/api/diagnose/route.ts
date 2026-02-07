@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getAstroAppToken } from '@/lib/astroapp'
 
+export const dynamic = 'force-static'
+
 export async function GET() {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   const diagnostics: any = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,

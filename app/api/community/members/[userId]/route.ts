@@ -2,11 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { getLevelFromKarma, getReputation, calculateBadges } from '@/lib/firestore/communityHelpers';
 
+export const dynamic = 'force-static'
+
+export async function generateStaticParams() {
+  return [{ userId: '_' }]
+}
+
 // GET - Fetch single member profile
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ userId: string }> }
 ) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { userId } = await params;
 

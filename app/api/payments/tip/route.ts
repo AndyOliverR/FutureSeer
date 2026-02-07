@@ -3,6 +3,8 @@ import { getFirebaseDB } from '@/lib/firebase';
 import { createOrder } from '@/lib/razorpay';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 
+export const dynamic = 'force-static'
+
 /**
  * POST /api/payments/tip
  * action: 'create-order' — Create Razorpay order for Tip Jar; client opens checkout then calls /api/payments/tip/verify.

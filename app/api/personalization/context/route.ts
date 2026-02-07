@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   try {
     const body = await request.json();
     const { userId, context } = body;

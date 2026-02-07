@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { calculateKarmaForAction } from '@/lib/firestore/communityHelpers';
 
+export const dynamic = 'force-static'
+
 interface VoteData {
   userId: string;
   discussionId?: string;
@@ -11,6 +13,9 @@ interface VoteData {
 
 // POST - Vote on discussion or comment
 export async function POST(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const body: VoteData = await request.json();
     const { userId, discussionId, commentId, voteType } = body;

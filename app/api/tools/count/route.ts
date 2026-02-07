@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { toolManager } from '@/lib/services/toolManager';
 
+export const dynamic = 'force-static'
+
 export async function GET() {
   try {
     const totalTools = toolManager.getToolsCount();

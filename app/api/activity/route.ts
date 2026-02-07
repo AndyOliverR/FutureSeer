@@ -16,6 +16,8 @@ async function parseAuth(request: NextRequest): Promise<{ uid: string } | { erro
   }
 }
 
+export const dynamic = 'force-static'
+
 /**
  * GET /api/activity
  * Server-side read of userActivity via Admin (bypasses client Firestore rules).
@@ -25,6 +27,9 @@ async function parseAuth(request: NextRequest): Promise<{ uid: string } | { erro
  * and X-Activity-Index-Pending: true so the client can use its fallback (e.g. getUserActivity).
  */
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const auth = await parseAuth(request)
     if ('error' in auth) return auth.error

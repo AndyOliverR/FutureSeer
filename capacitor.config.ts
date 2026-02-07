@@ -3,8 +3,9 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.futureseer.app',
   appName: 'FutureSeer',
-  webDir: 'out',
+  webDir: 'public',
   server: {
+    url: 'https://futureseer.app',
     androidScheme: 'https'
   },
   plugins: {

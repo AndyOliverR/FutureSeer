@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { placeLookupService } from '@/services/place';
 
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { placeName, options } = await request.json();
 

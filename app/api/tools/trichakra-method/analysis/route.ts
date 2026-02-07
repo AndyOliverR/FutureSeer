@@ -3,6 +3,8 @@ import { trichakraIntelligence, UserProfile } from '@/lib/trichakraIntelligence'
 import { getUserProfile } from '@/lib/firebase';
 import { devLog } from '@/lib/devLogger';
 
+export const dynamic = 'force-static'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

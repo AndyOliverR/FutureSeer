@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 
+export const dynamic = 'force-static'
+
 interface ConnectionRequestData {
   fromUserId: string;
   fromUserName: string;
@@ -12,6 +14,9 @@ interface ConnectionRequestData {
 
 // POST - Send connection request
 export async function POST(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const body: ConnectionRequestData = await request.json();
     const { fromUserId, fromUserName, toUserId, toUserName, topic, message } = body;
@@ -102,6 +107,9 @@ export async function POST(request: NextRequest) {
 
 // GET - Fetch user's connection requests
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');

@@ -9,6 +9,8 @@ interface Coordinates {
   displayName?: string
 }
 
+export const dynamic = 'force-static'
+
 /**
  * Server-side geocoding with fallback to common Indian cities
  * Uses services/geocoding.ts which is server-compatible

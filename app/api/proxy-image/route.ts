@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger'
 import { logger } from '@/lib/logger'
 
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { searchParams } = new URL(request.url)
     const imageUrl = searchParams.get('url')

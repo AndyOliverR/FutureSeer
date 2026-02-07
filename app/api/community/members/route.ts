@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { getLevelFromKarma, getReputation, calculateBadges } from '@/lib/firestore/communityHelpers';
 
+export const dynamic = 'force-static'
+
 /** Firestore document shape for communityMembers (data() return type) */
 interface CommunityMemberDoc {
   userId?: string;
@@ -27,6 +29,9 @@ function toDateSafe(value: CommunityMemberDoc['joinDate']): Date {
 
 // GET - Fetch member list with stats
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { searchParams } = new URL(request.url);
     const sortBy = searchParams.get('sortBy') || 'karma'; // karma, lastActive, contributions

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger'
 
+export const dynamic = 'force-static'
+
 // Vimshottari Dasa Calculation API
 // Ported from VedicAstro Python library to TypeScript
 

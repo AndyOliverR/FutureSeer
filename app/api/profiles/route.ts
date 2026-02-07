@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { profileManager } from '@/lib/services/profileManager'
 
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams

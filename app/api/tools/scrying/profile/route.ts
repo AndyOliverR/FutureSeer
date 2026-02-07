@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { scryingIntelligence } from '@/lib/scryingIntelligence'
 import { devLog } from '@/lib/devLogger'
 
+export const dynamic = 'force-static'
+
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   try {
     const searchParams = request.nextUrl.searchParams
     const userId = searchParams.get('userId')

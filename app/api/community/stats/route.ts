@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { calculateCommunityStats } from '@/lib/firestore/communityHelpers';
 
+export const dynamic = 'force-static'
+
 // GET - Fetch aggregate community statistics
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const db = getFirebaseDB();
     if (!db) {

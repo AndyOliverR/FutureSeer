@@ -4,10 +4,15 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+
+export const dynamic = 'force-static'
 import { vedAstroApiService } from '@/lib/vedAstroApiService'
 import { devLog } from '@/lib/devLogger'
 
 export async function GET(request: NextRequest) {
+  if (process.env.CAPACITOR_BUILD === '1') {
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+  }
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')

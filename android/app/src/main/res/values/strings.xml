@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FutureSeer</string>
+    <string name="title_activity_main">FutureSeer</string>
+    <string name="package_name">com.futureseer.app</string>
+    <string name="custom_url_scheme">com.futureseer.app</string>
+</resources>
