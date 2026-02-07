@@ -561,7 +561,7 @@ function throwAuthError(error: AuthError): never {
 }
 
 // Enhanced error handling – covers common Firebase Auth error codes
-export const getAuthErrorMessage = (error: AuthError): string => {
+export const getAuthErrorMessage = (error: AuthError | { code?: string; message?: string }): string => {
   const code = error?.code || '';
   switch (code) {
     case 'auth/user-not-found':

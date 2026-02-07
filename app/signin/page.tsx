@@ -74,7 +74,7 @@ export default function SignInPage() {
         errorMessage = 'An account already exists with the same email. Try signing in with email.';
       } else if (code && code.startsWith('auth/')) {
         // Use getAuthErrorMessage for consistent, actionable messages
-        errorMessage = getAuthErrorMessage(error as { code?: string; message?: string }) || fallbackGeneric;
+        errorMessage = getAuthErrorMessage(error) || fallbackGeneric;
       } else {
         const msg = error?.message || '';
         errorMessage = msg && !msg.includes('auth/') && msg.length <= 120 ? msg : fallbackGeneric;
