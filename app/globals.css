@@ -616,7 +616,7 @@ html {
 body {
   scrollbar-gutter: stable;
   margin: 0;
-  padding: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   width: 100%;
   overflow-x: hidden;
 }
@@ -1273,7 +1273,7 @@ button[class*="focus-visible:outline"]:focus-visible {
 /* Fixed starfield background - 8K UHD */
 .starfield-fixed {
   position: relative;
-  min-height: 100vh;
+  min-height: 100svh;
   width: 100%;
   /* Consistent starfield background color - medium-dark navy blue */
   background-color: #141932;
@@ -1381,7 +1381,7 @@ body:has([data-page="landing"]).starfield-ultra-sharp::before {
   right: 0 !important;
   bottom: 0 !important;
   width: 100vw !important;
-  height: 100vh !important;
+  height: 100svh !important;
   pointer-events: none !important;
   z-index: 0 !important;
   /* Apply filter to enhance colors - creates rich glossy dark blue with enhanced stars */
@@ -1409,7 +1409,7 @@ body:has([data-page="landing"]).starfield-ultra-sharp::before {
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100svh;
   background-image: var(--starfield-image);
   background-size: cover;
   background-position: center top;
@@ -1892,7 +1892,7 @@ body.starfield-ultra-sharp::before {
   right: 0 !important;
   bottom: 0 !important;
   width: 100vw !important;
-  height: 100vh !important;
+  height: 100svh !important;
   pointer-events: none !important;
   /* z-index: 0 ensures it's above body background but below content (content has z-index > 0) */
   z-index: 0 !important;
@@ -2026,7 +2026,7 @@ body:has([data-page="landing"]) [data-page="landing"] {
   z-index: 10 !important;
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
-  min-height: 100vh !important;
+  min-height: 100svh !important;
 }
 
 /* Remove any bottom spacing from body/html on landing page */
@@ -2055,7 +2055,7 @@ body:has([data-page="landing"]) div[class*="fixed"][class*="inset-0"][class*="bg
   right: 0 !important;
   bottom: 0 !important;
   width: 100vw !important;
-  height: 100vh !important;
+  height: 100svh !important;
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
@@ -2576,4 +2576,55 @@ html, body {
 
 .devotionist-tab-trigger:hover {
   box-shadow: var(--m3-elevation-1);
+}
+
+/* ===== ASK THE SEER – LUXURY MICRO-ANIMATIONS ===== */
+@keyframes seer-fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes seer-pulseGlow {
+  0% {
+    box-shadow: 0 0 0 rgba(155, 120, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(155, 120, 255, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(155, 120, 255, 0.2);
+  }
+}
+
+@keyframes seer-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.seer-message-reveal {
+  animation: seer-fadeUp 320ms ease-out;
+}
+
+.seer-typing-glow {
+  animation: seer-pulseGlow 1.5s ease-in-out infinite;
+}
+
+.seer-cursor-blink {
+  animation: seer-blink 1s step-end infinite;
+}
+
+.seer-message p + p {
+  margin-top: 0.8rem;
 }
