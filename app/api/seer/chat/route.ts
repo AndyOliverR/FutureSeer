@@ -142,7 +142,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.3-70b-versatile",
         messages,
         temperature: 0.7,
         top_p: 0.9,
