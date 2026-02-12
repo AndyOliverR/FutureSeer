@@ -123,45 +123,38 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     messages.push({ role: "user", content: message.trim() });
 
-    const grok = process.env.GROK_API_KEY?.trim();
-    const xai = process.env.XAI_API_KEY?.trim();
-    const apiKey = (grok && grok.length > 0 ? grok : null) ?? (xai && xai.length > 0 ? xai : null);
+    const apiKey = process.env.GROQ_API_KEY?.trim();
     if (!apiKey) {
-      const hasGrok = Boolean(process.env.GROK_API_KEY);
-      const hasXai = Boolean(process.env.XAI_API_KEY);
-      console.warn(
-        "[Seer] Missing API key. GROK_API_KEY defined:",
-        hasGrok,
-        "XAI_API_KEY defined:",
-        hasXai,
-        "VERCEL:",
-        Boolean(process.env.VERCEL)
-      );
+      console.warn("[Seer] Missing API key. GROQ_API_KEY not set.");
       return NextResponse.json(
         {
           error:
-            "Seer connection failed. Set GROK_API_KEY or XAI_API_KEY (exact names, no spaces). Local: .env.local then restart dev server. Vercel: Project Settings → Environment Variables for Production/Preview, then redeploy.",
+            "Seer connection failed. Set GROQ_API_KEY in .env.local (then restart dev server) or in Vercel Environment Variables, then redeploy.",
         },
         { status: 500 }
       );
     }
 
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "grok-2-latest",
+        model: "llama-3.1-70b-versatile",
         messages,
         temperature: 0.7,
+        top_p: 0.9,
+        max_tokens: 500,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.1,
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.warn("Grok API error:", response.status, err);
+      console.warn("Groq API error:", response.status, err);
       return NextResponse.json(
         { error: "The Seer could not respond. Try again." },
         { status: 502 }
