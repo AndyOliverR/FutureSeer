@@ -15,6 +15,7 @@ export async function GET() {
 
   // Test environment variables
   const envVars = {
+    GROQ_API_KEY: process.env.GROQ_API_KEY ? '✅ Set (Ask the Seer + other tools)' : '❌ Missing',
     OPENAI_API_KEY: process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing',
     ASTROAPP_EMAIL: process.env.ASTROAPP_EMAIL ? '✅ Set' : '❌ Missing',
     ASTROAPP_PASSWORD: process.env.ASTROAPP_PASSWORD ? '✅ Set' : '❌ Missing',

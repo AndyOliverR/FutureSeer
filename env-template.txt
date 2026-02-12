@@ -32,8 +32,11 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 # OpenAI API (if you have it)
 OPENAI_API_KEY=your-openai-api-key
 
-# Groq API (for fast AI responses)
+# Groq API (Ask the Seer + other fast AI; get key at https://console.groq.com)
 GROQ_API_KEY=your-groq-api-key
+
+# Seer tone dial (optional): subtle | elevated | oracle. Default: elevated
+# SEER_TONE_MODE=elevated
 
 # Vercel AI Gateway (optional - enables centralized monitoring and budget controls)
 # Get your API key from: https://vercel.com/ai-gateway
@@ -55,6 +58,14 @@ RAZORPAY_WEBHOOK_SECRET=your-razorpay-webhook-secret
 # App Configuration
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_APP_NAME=FutureSeer
+
+# Ask the Seer rollout: all (default) | gated
+# all = no gate, full rollout for all signed-in users
+# gated = require askSeerBeta custom claim (set ASK_SEER_ROLLOUT=gated to re-enable gate if needed)
+# ASK_SEER_ROLLOUT=all
+
+# Optional when gated: comma-separated UIDs allowed without askSeerBeta claim (dev/local fallback)
+# ASK_SEER_BETA_UIDS=uid1,uid2,uid3
 
 # Founder (Server-side only) - Firebase Auth UID of FutureSeer founder; used for elevated community stats
 FOUNDER_UID=your-firebase-auth-uid
