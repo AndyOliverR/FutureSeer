@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { devLog } from '@/lib/devLogger';
 import { getBirthChart } from '@/lib/astroapp'
 
 export async function POST(request: NextRequest) {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
     const chartData = await getBirthChart(birthDate, birthPlace)
     return NextResponse.json(chartData)
   } catch (error: any) {
-    console.error('AstroApp API error:', error)
+    devLog.error('AstroApp API error:', error, 'route')
     return NextResponse.json(
       { error: error.message || 'Failed to get birth chart' },
       { status: 500 }

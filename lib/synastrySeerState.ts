@@ -212,6 +212,23 @@ person_b (Person 2 natal):
   const disciplineNote =
     'Individual chart supremacy: synastry never overrides individual charts. Aspect order: Moon–Moon, Moon–Sun, Sun–Sun, Venus–Mars, Mercury–Mercury; outer planets context only. House overlays matter more than sign harmony. Malefics (Saturn, Mars, Pluto) are binding/friction/power—do not sugarcoat. Composite describes the relationship entity; use only secondarily. Frame as dynamics, not outcomes.';
 
+  const synastryPartialCaveat =
+    state.aspects_priority.length === 0 ||
+    state.house_overlays.length === 0 ||
+    !analysis.overview?.strengths?.length
+      ? '\n\nPartial synastry data. Soften conclusions; do not escalate certainty.'
+      : '';
+
+  const overview = analysis.overview;
+  const overviewBlock =
+    overview?.strengths?.length || overview?.challenges?.length || overview?.summary
+      ? `
+overall_dynamic: ${overview?.summary ?? '—'}
+strengths: ${overview?.strengths?.join(', ') ?? '—'}
+challenges: ${overview?.challenges?.join(', ') ?? '—'}
+`.trim()
+      : '';
+
   return `${personABlock}
 
 ${personBBlock}
@@ -221,6 +238,7 @@ ${aspectsBlock}
 ${overlaysBlock}
 
 ${state.composite_summary}
+${overviewBlock ? `\n${overviewBlock}` : ''}
 
-${disciplineNote}`;
+${disciplineNote}${synastryPartialCaveat}`;
 }

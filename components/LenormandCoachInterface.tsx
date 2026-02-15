@@ -13,6 +13,7 @@ import {
   BookOpen,
 } from 'lucide-react'
 import type { LenormandReading } from '@/lib/lenormandIntelligence'
+import { devLog } from '@/lib/devLogger'
 
 interface LenormandMessage {
   id: string
@@ -142,7 +143,7 @@ export function LenormandCoachInterface({
         }
       }
     } catch (error) {
-      console.error('Error getting Lenormand Seer response:', error)
+      devLog.error('Error getting Lenormand Seer response', error, 'LenormandCoachInterface')
       setMessages((prev) =>
         prev.map((m) =>
           m.id === seerMessageId
@@ -219,6 +220,16 @@ export function LenormandCoachInterface({
             <p className="text-amber-900 font-medium mb-2">
               Welcome to Ask the Seer — Lenormand.
             </p>
+            {reading && (
+              <p className="text-sm text-amber-800 mb-2">
+                Your question: {reading.question}
+              </p>
+            )}
+            {reading && reading.cards?.length > 0 && (
+              <p className="text-xs text-slate-600 mb-2">
+                Using your {reading.cards.length}-card spread.
+              </p>
+            )}
             <p className="text-sm text-slate-700 mb-4">
               Ask about outcome, what&apos;s happening, or how cards combine—or pick a question below.
             </p>

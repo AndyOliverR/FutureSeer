@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth } from '@/lib/firebase-admin';
 
 async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?: string } | null> {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
-    console.error('Admin impersonate error:', err);
+    devLog.error('Admin impersonate error:', err, 'route');
     return NextResponse.json({ error: 'Failed to create impersonation token' }, { status: 500 });
   }
 }

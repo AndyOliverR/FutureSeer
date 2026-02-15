@@ -9,6 +9,7 @@ import {
   getIChingSliceForQuestionType,
   type IChingQuestionType,
 } from '@/lib/ichingSeerState';
+import { buildIChingSeerSystemPrompt } from '@/lib/ichingSeerPrompts';
 
 interface IChingSeerRequest {
   userId: string;
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
       .slice(-10);
 
     const chartSlice = getIChingSliceForQuestionType(questionType, state, ichingAnalysis);
-    const systemPrompt = buildIChingSystemPrompt(chartSlice, questionType);
+    const systemPrompt = buildIChingSeerSystemPrompt(chartSlice, questionType);
 
     return new Response(
       new ReadableStream({
@@ -222,7 +223,7 @@ export async function POST(request: NextRequest) {
             await storeConversation(userId, sessionId, question, responseData);
             await cacheQuestionAnswer(userId, question, fullResponse);
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
           } finally {
             controller.close();
@@ -239,29 +240,12 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error in I Ching Seer API:', error);
+    devLog.error('Error in I Ching Seer API:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
-}
-
-function buildIChingSystemPrompt(chartSlice: string, questionType: IChingQuestionType): string {
-  return `You are an expert I Ching interpreter. I Ching is a state-transition system: it describes movement between states, not final outcomes. Your answers must reflect this.
-
-CORE RULES (non-negotiable):
-1. I Ching answers describe movement between states, not final outcomes. Never predict what will happen or when.
-2. Interpret in strict order: primary hexagram (current state) → changing lines only (bottom to top, pressure points) → resulting hexagram (emerging state). Do not interpret non-changing lines.
-3. Trigram logic: upper = external conditions, lower = internal condition. Synthesize "inner readiness vs outer reality."
-4. Every answer must conclude with exactly one of: Advance (act deliberately), Hold (maintain position), or Withdraw (pause or disengage). No ambiguity, no emotional hedging.
-5. Do not give timing, dates, or outcome guarantees. Do not answer medical or legal questions with I Ching.
-6. Permanent rule: "I Ching advises how to move, not what will happen."
-
-HEXAGRAM DATA (use only this):
-${chartSlice}
-
-Be conversational and direct. Use "you" and "your." Reference the hexagram number and name. Explain only the changing lines when present. End with a clear Advance, Hold, or Withdraw. No markdown headers.`;
 }
 
 function generateFollowUpQuestions(questionType: IChingQuestionType, context: any): string[] {
@@ -312,7 +296,7 @@ async function getConversationHistory(userId: string, sessionId?: string): Promi
     
     return snapshot.docs.map(doc => doc.data()).reverse(); // Reverse to get chronological order
   } catch (error) {
-    console.error('Error getting conversation history:', error);
+    devLog.error('Error getting conversation history:', error);
     return []; // Return empty array on error
   }
 }
@@ -339,7 +323,7 @@ async function storeConversation(userId: string, sessionId: string | undefined, 
     
     devLog.info('✅ I Ching conversation stored successfully', undefined, 'ask-iching-seer');
   } catch (error) {
-    console.error('Error storing conversation:', error);
+    devLog.error('Error storing conversation:', error);
     // Don't throw - conversation storage failure shouldn't break the response
   }
 }
@@ -382,7 +366,7 @@ async function checkCachedQuestions(userId: string, question: string): Promise<a
     
     return null;
   } catch (error) {
-    console.error('Error checking cached questions:', error);
+    devLog.error('Error checking cached questions:', error);
     return null;
   }
 }
@@ -405,7 +389,7 @@ async function cacheQuestionAnswer(userId: string, question: string, answer: str
     
     devLog.info('✅ I Ching question cached for future similar questions', undefined, 'ask-iching-seer');
   } catch (error) {
-    console.error('Error caching question:', error);
+    devLog.error('Error caching question:', error);
   }
 }
 

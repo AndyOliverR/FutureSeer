@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
 import { Badge } from "@/components/ui/badge"
@@ -122,7 +123,7 @@ export default function HoraryAstrologyPage() {
     const cachedTransits = getCurrentChart(user.uid, 'horary-astrology')
     if (cachedTransits) {
       setCurrentTransits(cachedTransits)
-      console.log('📊 Loaded current transits from cache')
+      devLog.debug('📊 Loaded current transits from cache')
       return
     }
 
@@ -156,11 +157,11 @@ export default function HoraryAstrologyPage() {
           setCurrentTransits(result.data)
           // Store current transits with shorter cache time
           storeCurrentChart(user.uid, 'horary-astrology', result.data, undefined, { maxAge: 2 * 60 * 60 * 1000 }) // 2 hours
-          console.log('📊 Fresh current transits loaded and cached')
+          devLog.debug('📊 Fresh current transits loaded and cached')
         }
       }
     } catch (err) {
-      console.error('Error loading current transits:', err)
+      devLog.error('Error loading current transits:', err, 'page')
     } finally {
       setIsLoadingTransits(false)
     }
@@ -235,12 +236,12 @@ export default function HoraryAstrologyPage() {
         // Also load current transits
         await loadCurrentTransits()
         
-        console.log('Horary astrology analysis generated for question:', question)
+        devLog.debug('Horary astrology analysis generated for question:', question)
       } else {
         throw new Error(result.error || 'Failed to generate Horary astrology report')
       }
     } catch (err: any) {
-      console.error("Error performing Horary analysis:", err)
+      devLog.error("Error performing Horary analysis:", err, 'page')
       setError(err.message || "Failed to perform Horary analysis")
     } finally {
       setIsGenerating(false)

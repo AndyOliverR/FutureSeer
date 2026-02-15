@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Feather, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { devLog } from '@/lib/devLogger';
 
 interface AngelNumbersMessage {
   id: string;
@@ -44,8 +45,9 @@ export function AngelNumbersCoachInterface({
   const PREVIEW_LENGTH = 320;
 
   const ANGEL_NUMBERS_STARTER_QUESTIONS = [
-    'What does my life path or destiny angel number mean for me right now?',
-    'I keep seeing a number—what might it be telling me?',
+    'Why do I keep seeing 111 or 444?',
+    'What does this number mean for me right now?',
+    'Is this number a sign to continue or pause?',
   ];
 
   const toggleExpanded = (id: string) => {
@@ -161,7 +163,7 @@ export function AngelNumbersCoachInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Angel Numbers Seer error:', err);
+      devLog.error('Angel Numbers Seer error', err, 'AngelNumbersCoachInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -269,7 +271,7 @@ export function AngelNumbersCoachInterface({
           Ask the Angel Numbers Seer
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Themes and attention, not predictions. What to focus on right now.
+          Reassurance and guidance, not prediction.
         </p>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
@@ -277,12 +279,18 @@ export function AngelNumbersCoachInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <Feather className="w-12 h-12 mx-auto mb-4 text-amber-600" />
-              <p className="text-amber-900 font-medium">
-                Welcome to Angel Numbers Seer. Ask about a number you&apos;re seeing or what to focus on right now.
+              <p className="text-amber-900 font-medium mb-2">
+                Ask me anything about the numbers you keep seeing…
               </p>
-              <p className="text-sm mt-2 text-slate-700">
-                I have your angel number themes; ask about life path, destiny, or recurring numbers.
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I'll interpret recurring number patterns as guidance, reassurance, and directional messages.
               </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Meaning & interpretation (why a number keeps appearing, what a sequence signifies, how to interpret numbers in daily life)</li>
+                <li>Direction & reassurance (whether to proceed, pause, or reflect; emotional validation; confirmation during confusion)</li>
+                <li>Personal context (what a number means for you right now; how to respond internally or behaviorally)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {ANGEL_NUMBERS_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -298,6 +306,7 @@ export function AngelNumbersCoachInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: reassurance and guidance, not prediction or dates.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -332,7 +341,7 @@ export function AngelNumbersCoachInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask about a number you are seeing, or what to focus on..."
+              placeholder="Ask about a number you're seeing, or what it means for you…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

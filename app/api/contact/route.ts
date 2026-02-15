@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
 interface ContactSubmission {
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error submitting contact form:', error);
+    devLog.error('Error submitting contact form:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to submit contact form. Please try again later.' },
       { status: 500 }

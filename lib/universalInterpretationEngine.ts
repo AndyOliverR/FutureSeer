@@ -2,6 +2,7 @@
 // Handles interpretations for all 32 divination tools using Markov + Bayesian algorithms
 
 import { PredictiveSystem } from './predictiveAlgorithms';
+import { devLog } from '@/lib/devLogger';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getFirebaseDB } from './firebase';
 
@@ -369,18 +370,18 @@ export class UniversalInterpretationEngine {
     systemData: any,
     userProfile?: any
   ): Promise<UniversalInterpretation> {
-    console.log(`🔮 UniversalInterpretationEngine: Generating ${system} interpretation...`);
+    devLog.debug(`🔮 UniversalInterpretationEngine: Generating ${system} interpretation...`);
     
     // TEMPORARILY DISABLED: Check cache first
     // const cacheKey = `${system}_${userId}_${JSON.stringify(systemData).slice(0, 100)}`;
     // if (this.interpretationCache.has(cacheKey)) {
     //   const cached = this.interpretationCache.get(cacheKey)!;
     //   if (Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) {
-    //     console.log(`Using cached ${system} interpretation for user:`, userId);
+    //     devLog.debug(`Using cached ${system} interpretation for user:`, userId);
     //     return cached;
     //   }
     // }
-    console.log(`🚫 CACHING DISABLED: Skipping in-memory cache for ${system} interpretation for user:`, userId);
+    devLog.debug(`🚫 CACHING DISABLED: Skipping in-memory cache for ${system} interpretation for user:`, userId);
     
     // Check Firebase storage
     try {
@@ -393,15 +394,15 @@ export class UniversalInterpretationEngine {
           const storedData = docSnap.data() as UniversalInterpretation;
           // TEMPORARILY DISABLED: Check if interpretation is still valid
           // if (Date.now() - storedData.timestamp < 24 * 60 * 60 * 1000) {
-          //   console.log(`Using stored ${system} interpretation for user:`, userId);
+          //   devLog.debug(`Using stored ${system} interpretation for user:`, userId);
           //   this.interpretationCache.set(cacheKey, storedData);
           //   return storedData;
           // }
-          console.log(`🚫 CACHING DISABLED: Skipping stored ${system} interpretation for user:`, userId);
+          devLog.debug(`🚫 CACHING DISABLED: Skipping stored ${system} interpretation for user:`, userId);
         }
       }
     } catch (error) {
-      console.warn(`Error checking stored ${system} interpretation:`, error);
+      devLog.warn(`Error checking stored ${system} interpretation:`, error, 'universalInterpretationEngine');
     }
     
     // Generate new interpretation
@@ -416,7 +417,7 @@ export class UniversalInterpretationEngine {
         await setDoc(doc(db, 'users', userId, 'interpretations', system), interpretation);
       }
     } catch (error) {
-      console.warn(`Error storing ${system} interpretation:`, error);
+      devLog.warn(`Error storing ${system} interpretation:`, error, 'universalInterpretationEngine');
     }
     
     return interpretation;
@@ -465,7 +466,7 @@ export class UniversalInterpretationEngine {
       return interpretation;
       
     } catch (error) {
-      console.error(`❌ Error generating ${system} interpretation:`, error);
+      devLog.error(`❌ Error generating ${system} interpretation:`, error, 'universalInterpretationEngine');
       throw new Error(`Failed to generate ${system} interpretation: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -691,7 +692,7 @@ export class UniversalInterpretationEngine {
                         'Unknown';
       
       // Add defensive logging to verify ascendant data structure
-      console.log('🔍 Ascendant data structure:', {
+      devLog.debug('🔍 Ascendant data structure:', {
         fullAscendant: systemData.ascendant,
         signName: systemData.ascendant?.signName,
         sign: systemData.ascendant?.sign,

@@ -5,6 +5,7 @@
  */
 
 import * as julian from "astronomia/julian";
+import { devLog } from '@/lib/devLogger';
 import * as solarxyz from "astronomia/solarxyz";
 import * as planetposition from "astronomia/planetposition";
 import * as moonposition from "astronomia/moonposition";
@@ -64,7 +65,7 @@ const initPlanet = (data: any, name: string) => {
     if (!data) throw new Error(`${name} VSOP data missing`);
     return new planetposition.Planet(data);
   } catch (error) {
-    console.error(`Failed to initialize ${name}:`, error);
+    devLog.error(`Failed to initialize ${name}:`, error, 'tropicalCalculator');
     return null;
   }
 };
@@ -99,7 +100,7 @@ function calculateSunTropical(jd: number) {
       speed: 0.9856 // degrees per day
     };
   } catch (error) {
-    console.error('Sun calculation error:', error);
+    devLog.error('Sun calculation error:', error, 'tropicalCalculator');
     return { longitude: 0, latitude: 0, distance: 1, speed: 0.9856 };
   }
 }
@@ -117,7 +118,7 @@ function calculateMoonTropical(jd: number) {
       speed: 13.2
     };
   } catch (error) {
-    console.error('Moon calculation error:', error);
+    devLog.error('Moon calculation error:', error, 'tropicalCalculator');
     return { longitude: 0, latitude: 0, distance: 384400, speed: 13.2 };
   }
 }
@@ -151,7 +152,7 @@ function calculatePlanetTropical(planetName: string, planetData: any, jd: number
       speed: speed
     };
   } catch (error) {
-    console.error(`${planetName} calculation error:`, error);
+    devLog.error(`${planetName} calculation error:`, error, 'tropicalCalculator');
     return { longitude: 0, latitude: 0, distance: 1, speed: 0.1 };
   }
 }
@@ -237,7 +238,7 @@ function calculateOuterPlanetTropical(planetName: string, jd: number) {
       speed: speed
     };
   } catch (error) {
-    console.error(`${planetName} calculation error:`, error);
+    devLog.error(`${planetName} calculation error:`, error, 'tropicalCalculator');
     return { longitude: 0, latitude: 0, distance: 20, speed: 0.01 };
   }
 }
@@ -291,7 +292,7 @@ function calculateLunarNodeTropical(jd: number) {
       speed: nodeDriftPerDay * 365.25 // degrees per year (retrograde)
     };
   } catch (error) {
-    console.error('Lunar node calculation error:', error);
+    devLog.error('Lunar node calculation error:', error, 'tropicalCalculator');
     return { longitude: 0, latitude: 0, distance: 0, speed: -19.35 };
   }
 }
@@ -303,8 +304,8 @@ function calculateLunarNodeTropical(jd: number) {
 export function calculateTropicalPlanets(date: Date) {
   const jd = toJD_TT(date);
   
-  console.log('🔮 Calculating TROPICAL positions for JD:', jd);
-  console.log('🔮 Date:', date.toISOString());
+  devLog.debug('🔮 Calculating TROPICAL positions for JD:', jd);
+  devLog.debug('🔮 Date:', date.toISOString());
   
   // Calculate each planet's tropical position
   const sun = calculateSunTropical(jd);
@@ -329,8 +330,8 @@ export function calculateTropicalPlanets(date: Date) {
     speed: northNode.speed
   };
   
-  console.log('✅ Sun longitude:', sun.longitude);
-  console.log('✅ Sun sign:', getTropicalSign(sun.longitude));
+  devLog.debug('✅ Sun longitude:', sun.longitude);
+  devLog.debug('✅ Sun sign:', getTropicalSign(sun.longitude));
   
   // Validation for Feb 24, 1983
   if (date.getUTCFullYear() === 1983 && 
@@ -338,9 +339,9 @@ export function calculateTropicalPlanets(date: Date) {
       date.getUTCDate() === 24) {
     const expectedLon = 334; // ~4° Pisces
     if (Math.abs(sun.longitude - expectedLon) < 2) {
-      console.log('✅ Feb 24, 1983 Sun position CORRECT');
+      devLog.debug('Feb 24, 1983 Sun position CORRECT', undefined, 'tropicalCalculator');
     } else {
-      console.error('❌ Feb 24, 1983 Sun position WRONG:', sun.longitude, 'expected:', expectedLon);
+      devLog.error('Feb 24, 1983 Sun position WRONG', { sunLongitude: sun.longitude, expectedLon }, 'tropicalCalculator');
     }
   }
   
@@ -384,7 +385,7 @@ export function getDegreeInSign(longitude: number): number {
  */
 export function calculateTropicalHouses(date: Date, latitude: number, longitude: number) {
   try {
-    console.log('🔮 DEBUG - calculateTropicalHouses coordinates:', { latitude, longitude });
+    devLog.debug('🔮 DEBUG - calculateTropicalHouses coordinates:', { latitude, longitude });
     
     const jd = toJD_TT(date);
     const lst = calculateLST(jd, longitude);
@@ -397,11 +398,11 @@ export function calculateTropicalHouses(date: Date, latitude: number, longitude:
     // Calculate house cusps using Placidus system
     const houses = calculatePlacidusHouses(ascendant, mc, latitude);
     
-    console.log('✅ Calculated Placidus houses');
+    devLog.debug('✅ Calculated Placidus houses');
     
     return houses;
   } catch (error) {
-    console.error('House calculation error:', error);
+    devLog.error('House calculation error:', error, 'tropicalCalculator');
     // Return fallback equal houses
     const jd = toJD_TT(date);
     const lst = calculateLST(jd, longitude);

@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { isProfileComplete, getProfileCompletionStatus, type UserProfile } from "@/lib/firebase";
 import Link from "next/link";
+import { devLog } from "@/lib/devLogger";
 import { 
   MessageCircle, 
   Send, 
@@ -222,6 +223,8 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [lastSessionState, setLastSessionState] = useState<Record<string, unknown> | null>(null);
+  const conversationHistoryRef = useRef<{ type: string; content: string }[]>([]);
 
   const isDevotionist = true;
   const isFaceReading = contextType === 'face-reading';
@@ -395,7 +398,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
           window.clearTimeout(thinkingTimeoutId);
         }
       } else {
-        // Handle JSON response for general ask-the-seer
+        // Handle JSON response for general ask-the-seer (send session state + history for domain lock)
         const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: {
@@ -404,7 +407,9 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
           body: JSON.stringify({
             userId: userId,
             question: question,
-            userProfile: userProfile
+            userProfile: userProfile,
+            sessionState: lastSessionState ?? undefined,
+            conversationHistory: conversationHistoryRef.current,
           }),
         });
 
@@ -430,12 +435,18 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
           };
 
           setMessages(prev => [...prev, seerMessage]);
+          setLastSessionState(result.sessionState ?? null);
+          conversationHistoryRef.current = [
+            ...conversationHistoryRef.current,
+            { type: 'user', content: question },
+            { type: 'seer', content: result.data.answer || 'Response received' },
+          ];
         } else {
           throw new Error(result.error || 'Failed to get response');
         }
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      devLog.error('Error sending message', error, 'AskTheSeerChatInterface');
       
       let errorMessage = 'I apologize, but I encountered an error. Please try again.';
       

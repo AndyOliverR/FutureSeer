@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -135,7 +136,7 @@ export function AdditionalProfileForm({
       
       onClose()
     } catch (error: any) {
-      console.error('Error saving profile:', error)
+      devLog.error('Error saving profile:', error, 'AdditionalProfileForm')
       toast({
         title: 'Error',
         description: error.message || 'Failed to save profile. Please try again.',

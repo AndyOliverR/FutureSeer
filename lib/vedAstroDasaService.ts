@@ -2,6 +2,7 @@
  * VedAstro Dasa Analysis Integration
  * Example implementation for Dasa & Bhukti Analysis feature
  */
+import { devLog } from '@/lib/devLogger';
 
 export interface DasaPeriod {
   planet: string
@@ -42,7 +43,7 @@ export class VedAstroDasaService {
    */
   async getDasaAnalysis(userProfile: any): Promise<DasaAnalysis> {
     try {
-      console.log('🔮 VedAstro: Fetching Dasa analysis...')
+      devLog.debug('🔮 VedAstro: Fetching Dasa analysis...')
       
       // Make API call to VedAstro for Dasa data
       const response = await fetch(`${this.baseUrl}/api/Horoscope/DasaChart`, {
@@ -71,7 +72,7 @@ export class VedAstroDasaService {
       return this.processDasaData(vedAstroData, userProfile)
       
     } catch (error) {
-      console.error('❌ VedAstro Dasa Analysis Error:', error)
+      devLog.error('❌ VedAstro Dasa Analysis Error:', error, 'vedAstroDasaService')
       return this.getFallbackDasaAnalysis(userProfile)
     }
   }

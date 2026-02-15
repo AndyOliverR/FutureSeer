@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -170,7 +171,7 @@ export default function AdvancedPersonalizationPage() {
         setProfile(data.advancedProfile || profile)
       }
     } catch (error) {
-      console.error('Error loading profile:', error)
+      devLog.error('Error loading profile:', error, 'page')
     } finally {
       setIsLoading(false)
     }

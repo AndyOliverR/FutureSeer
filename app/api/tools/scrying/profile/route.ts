@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Error fetching scrying profile:', error)
+    devLog.error('Error fetching scrying profile:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

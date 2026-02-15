@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -115,7 +116,7 @@ export function KPAstrologyCoachInterface({ analysis }: KPAstrologyCoachInterfac
 
       setMessages(prev => [...prev, coachMessage])
     } catch (error) {
-      console.error('Error getting KP coaching:', error)
+      devLog.error('Error getting KP coaching:', error, 'KPAstrologyCoachInterface')
       const errorMessage: KPMessage = {
         id: (Date.now() + 1).toString(),
         type: 'coach',

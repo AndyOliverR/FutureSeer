@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -162,7 +163,7 @@ export function VastuCoachInterface({
         }
       }
     } catch (error) {
-      console.error('Error getting Vastu Seer response:', error);
+      devLog.error('Error getting Vastu Seer response:', error, 'VastuCoachInterface');
       setMessages((prev) =>
         prev.map((m) =>
           m.id === seerMessageId

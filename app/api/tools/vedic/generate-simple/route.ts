@@ -376,7 +376,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Simple Vedic analysis error:', error)
+    devLog.error('Simple Vedic analysis error:', error, 'route')
     
     return NextResponse.json(
       { error: `Vedic analysis error: ${error instanceof Error ? error.message : 'Unknown error'}` },

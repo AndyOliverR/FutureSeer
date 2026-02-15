@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useFeedback } from '@/components/FeedbackContext';
 import { useModalOpen } from '@/components/ModalOpenContext';
 import html2canvas from 'html2canvas';
+import { devLog } from '@/lib/devLogger';
 
 const ratingOptions = [
   { value: 1, label: 'Poor', color: 'from-red-400 to-red-600', bgColor: 'bg-gradient-to-r from-red-400/20 to-red-600/20', borderColor: 'border-red-400/40', glowColor: 'shadow-red-400/60' },
@@ -35,23 +36,39 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
   const [containerReady, setContainerReady] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { isOpen: contextOpen, close: contextClose } = useFeedback();
+  const { isOpen: contextOpen, open: openFeedback, close: contextClose } = useFeedback();
   const { isAnyModalOpen } = useModalOpen();
   const modalRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   // Ensure component only renders on client side
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Sync from context: when hamburger "Share Feedback" opens, expand panel
+  // Sync from context: when hamburger "Share Feedback" opens, expand panel (no anchor = centered/right layout)
   useEffect(() => {
     if (contextOpen) {
+      setAnchorRect(null);
       setIsExpanded(true);
-      contextClose(); // reset so next open() from menu triggers again
+      // Delay reset so React commits the expanded state before clearing context
+      const t = setTimeout(() => contextClose(), 0);
+      return () => clearTimeout(t);
     }
   }, [contextOpen, contextClose]);
+
+  // When panel expands, focus first focusable inside it so the page doesn't scroll away
+  useEffect(() => {
+    if (!isExpanded) return;
+    const id = setTimeout(() => {
+      const first = modalRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      first?.focus({ preventScroll: true });
+    }, 50);
+    return () => clearTimeout(id);
+  }, [isExpanded]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +116,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
       setFeedback('');
       setScreenshots([]);
       setIsExpanded(false);
+      setAnchorRect(null);
     } catch (error) {
       toast({
         title: "Submission Failed",
@@ -176,7 +194,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
             clonedDoc.head.appendChild(style);
           } catch (err) {
             // If style injection fails, continue anyway - html2canvas may still work
-            console.warn('Failed to simplify backgrounds for screenshot:', err);
+            devLog.warn('Failed to simplify backgrounds for screenshot', err, 'MysticalFeedback');
           }
         },
       });
@@ -190,7 +208,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
       const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
       setScreenshots(prev => [dataUrl, ...prev]);
     } catch (error) {
-      console.error('Failed to capture screenshot:', error);
+      devLog.error('Failed to capture screenshot', error, 'MysticalFeedback');
       toast({
         title: "Screenshot Capture Failed",
         description: "Could not capture screenshot. You can still submit feedback.",
@@ -236,10 +254,12 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
         setFeedback('');
         setScreenshots([]);
         setIsExpanded(false);
+        setAnchorRect(null);
         contextClose();
       }
     } else {
       setIsExpanded(false);
+      setAnchorRect(null);
       contextClose();
     }
   };
@@ -272,39 +292,81 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
       } : {
         position: 'fixed',
         bottom: '80px',
-        left: '4px',
+        left: 4,
         top: 'auto',
         right: 'auto',
         zIndex: 2147483647,
         pointerEvents: 'auto',
         visibility: 'visible',
         opacity: 1,
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         margin: 0,
         padding: 0,
-        width: 'auto',
-        height: 'auto',
-        minWidth: '48px',
-        minHeight: '48px',
-        transform: 'translateZ(0)',
+        width: 48,
+        height: 48,
+        minWidth: 48,
+        minHeight: 48,
+        boxSizing: 'border-box',
+        // Omit transform when expanded so fixed overlay/panel are viewport-relative (full-screen blur)
+        ...(isExpanded ? {} : { transform: 'translateZ(0)' }),
       }}
     >
       {/* Main Feedback Panel */}
       <AnimatePresence mode="wait">
         {isExpanded ? (
-          <motion.div 
-            ref={modalRef}
-            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 300, 
-              damping: 25, 
-              ease: [0.2, 0, 0, 1] 
-            }}
-            className="bg-[var(--m3-surface-container-high)]/95 backdrop-blur-xl border border-[var(--m3-outline-variant)] rounded-2xl m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated w-[calc(100vw-32px)] sm:w-[400px] md:w-[500px] h-[calc(100vh-120px)] sm:h-[500px] md:h-[600px] absolute bottom-16 left-0 z-[9999] m3-transition-emphasized"
-          >
+          <>
+            {/* Overlay: when floating, portal to body so fixed is viewport-relative (full-screen blur); otherwise inline */}
+            {variant === 'floating' && typeof document !== 'undefined' && document.body
+              ? createPortal(
+                  <div
+                    className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm"
+                    style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}
+                    onClick={handleClose}
+                    aria-hidden
+                    role="presentation"
+                  />,
+                  document.body
+                )
+              : variant === 'header' ? (
+            <div
+              className="fixed inset-0 z-[10000] bg-black/60 backdrop-blur-sm"
+              onClick={handleClose}
+              aria-hidden
+              role="presentation"
+            />
+            ) : null}
+            <div
+              className={anchorRect
+                ? "fixed inset-0 z-[10001] pointer-events-none"
+                : "fixed inset-0 z-[10001] flex items-center justify-end p-4 pr-4 pointer-events-none"}
+            >
+              <motion.div
+                ref={modalRef}
+                initial={{ scale: 0.95, opacity: 0, x: 20 }}
+                animate={{ scale: 1, opacity: 1, x: 0 }}
+                exit={{ scale: 0.95, opacity: 0, x: 20 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 25,
+                  ease: [0.2, 0, 0, 1]
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-[var(--m3-surface-container-high)]/95 backdrop-blur-xl border border-[var(--m3-outline-variant)] rounded-2xl m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated w-[calc(100vw-32px)] sm:w-[400px] md:w-[500px] max-w-[90vw] overflow-y-auto pointer-events-auto m3-transition-emphasized"
+                style={anchorRect
+                  ? {
+                      position: "fixed",
+                      zIndex: 10001,
+                      left: anchorRect.right + 8,
+                      bottom: 16,
+                      top: "auto",
+                      right: "auto",
+                      maxHeight: typeof window !== "undefined" ? Math.min(window.innerHeight * 0.9, window.innerHeight - 32) : undefined,
+                    }
+                  : { marginRight: 0, maxHeight: "min(90dvh, 90vh)", position: "relative", zIndex: 10002 }}
+              >
         
             {/* Animated mystical glow effect - Only show when expanded */}
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--m3-primary)]/8 via-transparent to-[var(--m3-primary)]/8 rounded-2xl animate-pulse pointer-events-none"></div>
@@ -323,7 +385,7 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
             {/* Header */}
             <div className="flex items-center justify-between p-3 sm:p-4 border-b border-[var(--m3-outline-variant)]">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-1.5 sm:p-2 bg-[var(--m3-primary-container)] rounded-lg">
+                <div className="shrink-0 p-1.5 sm:p-2 bg-[var(--m3-primary-container)] rounded-lg">
                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--m3-on-primary-container)]" />
                 </div>
                 <div>
@@ -331,33 +393,34 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
                   <p className="m3-label-medium text-[var(--m3-on-surface-variant)]">Share your experience</p>
                 </div>
               </div>
-              <div className="flex gap-1 sm:gap-2">
+              <div className="flex gap-1 sm:gap-2 shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
                     setIsExpanded(false);
+                    setAnchorRect(null);
                     contextClose();
                   }}
-                  className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
+                  className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                   aria-label="Collapse feedback panel"
                 >
-                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden />
+                  <span className="shrink-0"><ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden /></span>
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleClose}
-                  className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
+                  className="min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] rounded-lg m3-transition-standard p-1.5 sm:p-2"
                   aria-label="Close"
                 >
-                  <X className="w-3 h-3 sm:w-4 sm:h-4" aria-hidden />
+                  <span className="shrink-0"><X className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden /></span>
                 </Button>
               </div>
             </div>
 
             {/* Scrollable Content */}
-            <div className="h-[calc(100%-70px)] sm:h-[calc(100%-80px)] overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 scrollbar-thin scrollbar-thumb-[var(--m3-primary)]/30 scrollbar-track-transparent">
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
               <motion.form 
                 onSubmit={handleSubmit} 
                 className="space-y-3 sm:space-y-4"
@@ -573,10 +636,23 @@ export function MysticalFeedback({ variant = 'floating' }: MysticalFeedbackProps
               </motion.form>
             </div>
           </div>
-          </motion.div>
+              </motion.div>
+            </div>
+          </>
         ) : (
           <motion.button
-            onClick={() => setIsExpanded(true)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (variant === 'floating' && widgetRef.current) {
+                setAnchorRect(widgetRef.current.getBoundingClientRect());
+                setIsExpanded(true);
+                // Don't call openFeedback() from floating button – keeps anchorRect (sync effect would clear it)
+              } else {
+                openFeedback();
+                setIsExpanded(true);
+              }
+            }}
             tabIndex={hideFromA11y ? -1 : 0}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

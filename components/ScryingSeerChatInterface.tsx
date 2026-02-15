@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +136,7 @@ export default function ScryingSeerChatInterface({
       }
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      devLog.error('Error sending message:', error, 'ScryingSeerChatInterface');
       
       let errorMessage = 'I apologize, but I encountered an error. Please try again.';
       

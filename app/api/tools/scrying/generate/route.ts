@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     try {
       userProfile = await getUserProfile(userId)
     } catch (profileError) {
-      console.error('⚠️ Failed to fetch user profile:', profileError)
+      devLog.error('⚠️ Failed to fetch user profile:', profileError, 'route')
       return NextResponse.json(
         { success: false, error: 'Failed to fetch user profile' },
         { status: 400 }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       await scryingIntelligence.saveUserScryingProfile(userId, vision)
       devLog.info('✅ Saved Scrying profile to database for user:', userId, 'scrying')
     } catch (saveError) {
-      console.error('⚠️ Failed to save profile to database (non-critical):', saveError)
+      devLog.error('Failed to save profile to database (non-critical)', saveError, 'scrying-generate')
       // Continue even if save fails
     }
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Error auto-generating scrying profile:', error)
+    devLog.error('Error auto-generating scrying profile:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

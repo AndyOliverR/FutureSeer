@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { calculateCommunityStats } from '@/lib/firestore/communityHelpers';
 
@@ -115,7 +116,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error fetching community stats:', error);
+    devLog.error('Error fetching community stats:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch community stats' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
+import { devLog } from '@/lib/devLogger';
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
@@ -72,7 +73,7 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
       // Note: signOut will reload the page automatically, no need for router.push
       await signOut()
     } catch (error) {
-      console.error("Error signing out:", error)
+      devLog.error("Error signing out:", error, 'UserMenuDropdown')
     }
   }
 
@@ -133,12 +134,12 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
                 // Image loaded successfully - no need to log
               }}
               onError={(e) => {
-                console.error('❌ Avatar image failed to load:', {
+                devLog.error('Avatar image failed to load', {
                   url: finalPhotoURL,
                   error: e.type,
                   timestamp: new Date().toISOString(),
                   userAgent: navigator.userAgent
-                })
+                }, 'UserMenuDropdown')
                 e.currentTarget.style.display = 'none'
                 e.currentTarget.nextElementSibling?.setAttribute('style', 'display: flex')
               }}
@@ -171,7 +172,7 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
               damping: 25,
               ease: [0.2, 0, 0, 1]
             }}
-            className="absolute right-0 top-full mt-2 w-80 bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] rounded-2xl overflow-hidden z-[9999] m3-elevation-3 m3-elevation-transition m3-gpu-accelerated"
+            className="absolute left-0 top-full mt-2 w-80 bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] rounded-2xl overflow-hidden z-[9999] m3-elevation-3 m3-elevation-transition m3-gpu-accelerated"
           >
           {/* User Info Header */}
           <div className="p-4 pb-3 border-b border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)]">
@@ -185,14 +186,14 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
                     crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
                     onLoad={() => {
-                      console.log('✅ Header avatar image loaded successfully:', finalPhotoURL)
+                      devLog.debug('✅ Header avatar image loaded successfully:', finalPhotoURL)
                     }}
                     onError={(e) => {
-                      console.error('❌ Header avatar image failed to load:', {
+                      devLog.error('Header avatar image failed to load', {
                         url: finalPhotoURL,
                         error: e.type,
                         timestamp: new Date().toISOString()
-                      })
+                      }, 'UserMenuDropdown')
                       e.currentTarget.style.display = 'none'
                       e.currentTarget.nextElementSibling?.setAttribute('style', 'display: flex')
                     }}

@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { db } from '@/lib/firebase'
 
 export interface ScryingSymbol {
@@ -487,7 +488,7 @@ class ScryingIntelligence {
   // Save reading to Firestore
   async saveReading(userId: string, vision: ScryingVision): Promise<void> {
     if (!db) {
-      console.warn('Firebase not initialized, cannot save scrying reading')
+      devLog.warn('Firebase not initialized, cannot save scrying reading', 'scryingIntelligence')
       return
     }
     
@@ -499,9 +500,9 @@ class ScryingIntelligence {
       }
       
       await setDoc(doc(db, 'scryingReadings', `${userId}_${vision.id}`), visionData)
-      console.log('✅ Scrying reading saved successfully')
+      devLog.debug('✅ Scrying reading saved successfully')
     } catch (error) {
-      console.error('Error saving scrying reading:', error)
+      devLog.error('Error saving scrying reading:', error, 'scryingIntelligence')
       throw error
     }
   }
@@ -527,7 +528,7 @@ class ScryingIntelligence {
       
       return null
     } catch (error) {
-      console.error('Error fetching scrying profile:', error)
+      devLog.error('Error fetching scrying profile:', error, 'scryingIntelligence')
       return null
     }
   }
@@ -535,7 +536,7 @@ class ScryingIntelligence {
   // Save user's scrying profile (auto-generated)
   async saveUserScryingProfile(userId: string, vision: ScryingVision): Promise<void> {
     if (!db) {
-      console.warn('Firebase not initialized, cannot save scrying profile')
+      devLog.warn('Firebase not initialized, cannot save scrying profile', 'scryingIntelligence')
       return
     }
     
@@ -547,9 +548,9 @@ class ScryingIntelligence {
       }
       
       await setDoc(doc(db, 'scryingProfiles', userId), profileData)
-      console.log('✅ Scrying profile saved successfully')
+      devLog.debug('✅ Scrying profile saved successfully')
     } catch (error) {
-      console.error('Error saving scrying profile:', error)
+      devLog.error('Error saving scrying profile:', error, 'scryingIntelligence')
       throw error
     }
   }

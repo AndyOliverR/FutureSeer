@@ -88,14 +88,19 @@ export function buildTarotState(
 }
 
 /**
- * Classify Tarot question type. Returns 'refusal' for long-term fate, exact timing, or when
- * the user asks for a specific spread interpretation but no reading is in context.
+ * Classify Tarot question type. Returns 'refusal' only for Tier 3: medical diagnosis,
+ * legal verdict, or exact numeric outcome. Timing questions (e.g. when to launch) get
+ * profile_only or interpretive types and are answered with Tier 2 (conditions/phases).
  */
 export function classifyTarotQuestion(question: string): TarotQuestionType {
   const lower = question.toLowerCase().trim()
 
-  // Refusals: long-term fate, exact timing
-  if (/life\s+(in|like|be)\s+\d+\s+years|in\s+\d+\s+years|10\s+years|20\s+years|long\s+term\s+fate|when\s+will\s+i\s+die|exact\s+date|when\s+exactly|precise\s+timing/.test(lower)) {
+  // Tier 3 refusals only: medical diagnosis, legal verdict, exact numeric outcome
+  if (
+    /\b(diagnos|doctor\s+say|have\s+cancer|medical\s+result|test\s+result|disease|sick|illness)\b/.test(lower) ||
+    /\b(win\s+the\s+lawsuit|legal\s+verdict|judge\s+rule|court\s+decision|will\s+i\s+win\s+the\s+case)\b/.test(lower) ||
+    /\b(exact\s+salary|exact\s+number|how\s+much\s+exactly|precise\s+amount|exact\s+figure|will\s+i\s+make\s+\$|dollar\s+amount)\b/.test(lower)
+  ) {
     return 'refusal'
   }
 

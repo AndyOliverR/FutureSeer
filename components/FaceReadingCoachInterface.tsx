@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { faceReadingIntelligence, FaceReadingAnalysis } from "@/lib/faceReadingIntelligence"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -57,7 +58,7 @@ export function FaceReadingCoachInterface({
         setCoaching(prev => [response, ...prev])
       }
     } catch (error) {
-      console.error('Error getting coaching:', error)
+      devLog.error('Error getting coaching:', error, 'FaceReadingCoachInterface')
     } finally {
       setIsAsking(false)
     }

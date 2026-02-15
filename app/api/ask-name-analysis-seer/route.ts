@@ -11,6 +11,7 @@ import {
   NAME_REFUSAL_PHRASE,
   type NameAnalysisPayload,
 } from '@/lib/nameAnalysisSeerState';
+import { buildNameAnalysisSeerSystemPrompt } from '@/lib/nameAnalysisSeerPrompts';
 
 /** Normalize name analysis from request or comprehensiveProfile to NameAnalysisPayload. */
 function normalizeToNamePayload(
@@ -100,7 +101,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getNameSliceForQuestionType(questionType, state);
+    const slice = getNameSliceForQuestionType(questionType, state);
+    const displayName = (userProfile?.displayName ?? '').trim();
+    const systemPrompt = buildNameAnalysisSeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
@@ -195,7 +200,7 @@ export async function POST(request: NextRequest) {
               /* non-fatal */
             }
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -215,7 +220,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error in Name Analysis Seer API:', error);
+    devLog.error('Error in Name Analysis Seer API:', error);
     return NextResponse.json(
       {
         success: false,

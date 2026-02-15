@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import crypto from 'crypto';
 import { getSubscription, refundPayment } from '@/lib/razorpay';
 
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
         await refundPayment(razorpay_payment_id);
       }
     } catch (refundError: unknown) {
-      console.error('Trial mandate refund failed (user still gets access):', refundError);
+      devLog.error('Trial mandate refund failed (user still gets access)', refundError, 'verify-payment');
       // Still return success so user is marked as having a payment method; refund can be retried via webhook/ops
     }
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
       subscriptionId: razorpay_subscription_id,
     });
   } catch (error: any) {
-    console.error('Error verifying payment:', error);
+    devLog.error('Error verifying payment:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to verify payment' },
       { status: 500 }

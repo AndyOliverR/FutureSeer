@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(response)
 
   } catch (error) {
-    console.error('❌ Chart Images API Error:', error)
+    devLog.error('❌ Chart Images API Error:', error, 'route')
     
     return NextResponse.json(
       { 

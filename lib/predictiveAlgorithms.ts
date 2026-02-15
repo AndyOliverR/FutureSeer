@@ -2,6 +2,7 @@
 // Combining ancient wisdom with modern mathematics
 
 import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 
 // ============================================================================
@@ -61,7 +62,7 @@ export class LifePathMarkovChain {
     numerologyData: any,
     userBehavior: string[]
   ): MarkovState {
-    console.log('🔮 MarkovChain: Predicting next life state...')
+    devLog.debug('🔮 MarkovChain: Predicting next life state...')
 
     // Get user's transition history
     const userTransitions = this.userHistory.get(userId) || []
@@ -451,7 +452,7 @@ export class LifePathMarkovChain {
       const docRef = doc(db, 'users', userId, 'markovTransitions', transition.timestamp.toString())
       await setDoc(docRef, transition)
     } catch (error) {
-      console.warn('Failed to store transition in Firebase:', error)
+      devLog.warn('Failed to store transition in Firebase:', error, 'predictiveAlgorithms')
     }
   }
 
@@ -628,7 +629,7 @@ export class MysticalBayesianNetwork {
     astroData: any,
     numerologyData: any
   ): BayesianPrediction {
-    console.log('🔮 BayesianNetwork: Calculating prediction...')
+    devLog.debug('🔮 BayesianNetwork: Calculating prediction...')
     
     // Set evidence
     this.setEvidence(evidence)
@@ -898,7 +899,7 @@ export class PredictiveSystem {
     recommendations: string[]
     timing: string
   }> {
-    console.log('🔮 PredictiveSystem: Generating comprehensive prediction...')
+    devLog.debug('🔮 PredictiveSystem: Generating comprehensive prediction...')
     
     // Generate Markov Chain prediction
     const markovPrediction = this.markovChain.predictNextState(
@@ -1024,7 +1025,7 @@ export class PredictiveSystem {
         userId
       })
     } catch (error) {
-      console.warn('Failed to store prediction outcome:', error)
+      devLog.warn('Failed to store prediction outcome:', error, 'predictiveAlgorithms')
     }
   }
 }

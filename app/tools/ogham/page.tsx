@@ -6,7 +6,8 @@
  * Enhanced with comprehensive reports, profile integration, and visual displays
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +24,8 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
-import { isProfileComplete, getProfileCompletionStatus } from '@/lib/firebase'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { OghamReport } from '@/lib/ogham/oghamReportGenerator'
 import OghamReportDisplay from '@/components/ogham/OghamReportDisplay'
 import { OghamSeerChatInterface } from '@/components/ogham/OghamSeerChatInterface'
@@ -32,74 +34,18 @@ import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 export default function OghamPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
-  const [report, setReport] = useState<OghamReport | null>(null)
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'report' | 'ask-seer'>('overview')
-  
-  // Check profile completion
-  const profileStatus = userProfile ? getProfileCompletionStatus(userProfile) : {
-    isComplete: false,
-    missingFields: ['fullName', 'birthDate', 'birthTime', 'birthPlace'],
-    completionPercentage: 0
-  }
-
-  // Auto-generate report when profile is complete
-  useEffect(() => {
-    if (profileStatus.isComplete && !report && !isGeneratingReport && user?.uid) {
-      generateReport()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileStatus.isComplete, user?.uid])
-
-  // Generate comprehensive Ogham report
-  const generateReport = async () => {
-    if (!user?.uid) {
-      setError('Please sign in to generate your Ogham reading')
-      return
-    }
-
-    if (!profileStatus.isComplete) {
-      setError('Please complete your profile to generate a comprehensive Ogham reading')
-      router.push('/profile-setup')
-      return
-    }
-
-    setIsGeneratingReport(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/tools/ogham/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.uid,
-          userProfile,
-        }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate report')
-      }
-
-      const data = await response.json()
-      if (data.success && data.data.report) {
-        setReport(data.data.report)
-        setActiveTab('report')
-      } else {
-        throw new Error('Invalid response from server')
-      }
-    } catch (err) {
-      console.error('Error generating Ogham report:', err)
-      setError(err instanceof Error ? err.message : 'Failed to generate Ogham reading')
-    } finally {
-      setIsGeneratingReport(false)
-    }
-  }
+  const { report: pipelineReport, loading: isGeneratingReport, error, hasReport } = useToolReport('ogham')
+  const report = useMemo(() => {
+    const raw = pipelineReport as Record<string, unknown> | undefined
+    if (raw?.report) return raw.report as OghamReport
+    if (pipelineReport && typeof pipelineReport === 'object' && !('placeholder' in (pipelineReport as object))) return pipelineReport as unknown as OghamReport
+    return null
+  }, [pipelineReport])
 
 
   return (
+    <ToolReportGuard loading={isGeneratingReport} error={error ?? null} toolLabel="Ogham">
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
       <div className="container mx-auto px-4 py-8 pt-4">
         <div className="max-w-7xl mx-auto">
@@ -112,7 +58,7 @@ export default function OghamPage() {
           >
             <div className="flex items-center justify-center gap-3 mb-4">
               <span className="text-5xl">🌿</span>
-              <h1 className="text-4xl md:text-5xl font-bold gold-glow">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold gold-glow">
                 Ogham Divination
               </h1>
             </div>
@@ -121,63 +67,19 @@ export default function OghamPage() {
             </p>
           </motion.div>
 
-          {/* Profile Status Alert */}
-          {!profileStatus.isComplete && (
+          {/* CTA when no report */}
+          {!hasReport && !isGeneratingReport && !error && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
               <Card className="bg-amber-500/10 border-amber-500/30">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <h3 className="text-amber-400 font-semibold mb-2">Complete Your Profile</h3>
-                      <p className="text-slate-300 text-sm mb-3">
-                        To generate your comprehensive Ogham reading, please complete your birth information.
-                      </p>
-                      {profileStatus.missingFields.length > 0 && (
-                        <div className="mb-3">
-                          <p className="text-slate-400 text-xs mb-1">Missing fields:</p>
-                          <div className="flex flex-wrap gap-2">
-                            {profileStatus.missingFields.map((field) => (
-                              <Badge key={field} className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-                                {field}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <Button
-                        onClick={() => router.push('/profile-setup')}
-                        className="bg-amber-500 hover:bg-amber-600 text-white"
-                      >
-                        Complete Profile
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Success Message */}
-          {profileStatus.isComplete && !report && !isGeneratingReport && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6"
-            >
-              <Card className="bg-green-500/10 border-green-500/30">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                    <div>
-                      <p className="text-green-400 font-semibold">Profile Complete</p>
-                      <p className="text-slate-300 text-sm">Your Ogham reading is being generated...</p>
-                    </div>
-                  </div>
+                <CardContent className="p-4 text-center">
+                  <p className="text-slate-300 mb-3">Generate your mystical profile to unlock your Ogham reading.</p>
+                  <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                    <Link href="/profile">Generate your mystical profile</Link>
+                  </Button>
                 </CardContent>
               </Card>
             </motion.div>
@@ -205,25 +107,26 @@ export default function OghamPage() {
           )}
 
           {/* Main Content Tabs */}
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-            <TabsList className="flex w-full bg-transparent p-0 gap-2">
+          <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+            <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
               <TabsTrigger 
                 value="overview" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center"
+                className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
               >
                 <Info className="w-4 h-4 mr-2" />
                 Overview
               </TabsTrigger>
               <TabsTrigger 
                 value="report" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center"
+                className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Your Reading
               </TabsTrigger>
               <TabsTrigger 
                 value="ask-seer" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center"
+                className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Ask The Seer
@@ -231,30 +134,15 @@ export default function OghamPage() {
             </TabsList>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="mt-6">
+            <TabsContent value="overview" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
               <ToolIntroductionTab toolSlug="ogham" />
               
-              {profileStatus.isComplete && !report && (
+              {!hasReport && (
                 <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl mt-6">
                   <CardContent className="p-12 text-center">
-                    <Sparkles className="w-12 h-12 text-amber-700 mx-auto mb-4 animate-pulse" />
-                    <p className="text-slate-700 mb-4">Ready to discover your Ogham reading?</p>
-                    <Button
-                      onClick={generateReport}
-                      disabled={isGeneratingReport}
-                      className="bg-amber-500 hover:bg-amber-600 text-white"
-                    >
-                      {isGeneratingReport ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <span className="mr-2">🌿</span>
-                          Generate Your Ogham Reading
-                        </>
-                      )}
+                    <p className="text-slate-700 mb-4">Generate your mystical profile to unlock your Ogham reading.</p>
+                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                      <Link href="/profile">Generate your mystical profile</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -262,53 +150,23 @@ export default function OghamPage() {
             </TabsContent>
 
             {/* Report Tab */}
-            <TabsContent value="report" className="mt-6">
+            <TabsContent value="report" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
               {report ? (
                 <OghamReportDisplay report={report} isLoading={isGeneratingReport} />
               ) : (
                 <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl">
                   <CardContent className="p-12 text-center">
-                    {profileStatus.isComplete ? (
-                      <>
-                        <span className="text-5xl mb-4 block">🌿</span>
-                        <p className="text-slate-700 mb-4">Generate your comprehensive Ogham reading</p>
-                        <Button
-                          onClick={generateReport}
-                          disabled={isGeneratingReport}
-                          className="bg-amber-500 hover:bg-amber-600 text-white"
-                        >
-                          {isGeneratingReport ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Generating Report...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="w-4 h-4 mr-2" />
-                              Generate Comprehensive Report
-                            </>
-                          )}
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle className="w-12 h-12 text-amber-700 mx-auto mb-4" />
-                        <p className="text-slate-700 mb-4">Please complete your profile to generate your Ogham reading</p>
-                        <Button
-                          onClick={() => router.push('/profile-setup')}
-                          className="bg-amber-500 hover:bg-amber-600 text-white"
-                        >
-                          Complete Profile
-                        </Button>
-                      </>
-                    )}
+                    <p className="text-slate-700 mb-4">Generate your mystical profile to unlock your Ogham reading.</p>
+                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                      <Link href="/profile">Generate your mystical profile</Link>
+                    </Button>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
 
             {/* Ask The Seer Tab */}
-            <TabsContent value="ask-seer" className="mt-6">
+            <TabsContent value="ask-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
               {user?.uid && userProfile ? (
                 report ? (
                   <OghamSeerChatInterface
@@ -320,20 +178,9 @@ export default function OghamPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl">
                     <CardContent className="p-12 text-center">
                       <MessageCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-slate-700 mb-4">Generate your Ogham report first.</p>
-                      <Button
-                        onClick={generateReport}
-                        disabled={isGeneratingReport}
-                        className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl"
-                      >
-                        {isGeneratingReport ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          'Generate Your Ogham Reading'
-                        )}
+                      <p className="text-slate-700 mb-4">Generate your mystical profile to unlock your Ogham reading.</p>
+                      <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+                        <Link href="/profile">Generate your mystical profile</Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -347,9 +194,11 @@ export default function OghamPage() {
               )}
             </TabsContent>
           </Tabs>
+          </div>
         </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }
 

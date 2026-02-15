@@ -1,4 +1,5 @@
 import { generateAstrologicalChart, validateBirthData } from './astroCalculations'
+import { devLog } from '@/lib/devLogger';
 
 // Fallback astrological data service
 // This provides complete astrological calculations when external APIs are unavailable
@@ -213,7 +214,7 @@ export function getCoordinatesFromPlace(birthPlace: string): Promise<{ latitude:
     }
 
     // Default to New York if no match found
-    console.warn(`No coordinates found for "${birthPlace}", using default`)
+    devLog.warn(`No coordinates found for "${birthPlace}", using default`, 'astroFallback')
     resolve({ latitude: 40.7128, longitude: -74.0060 })
   })
 }
@@ -225,7 +226,7 @@ export async function generateFallbackAstroData(
   birthTime: string = "12:00"
 ): Promise<FallbackAstroData> {
   try {
-    console.log('Generating fallback astrological data using internal calculations')
+    devLog.debug('Generating fallback astrological data using internal calculations')
     
     // Validate input data
     const validation = validateBirthData(birthDate, birthTime, 0, 0)
@@ -268,11 +269,11 @@ export async function generateFallbackAstroData(
       }
     }
 
-    console.log('Successfully generated fallback astrological data')
+    devLog.debug('Successfully generated fallback astrological data')
     return fallbackData
 
   } catch (error) {
-    console.error('Error generating fallback astrological data:', error)
+    devLog.error('Error generating fallback astrological data:', error, 'astroFallback')
     throw new Error(`Failed to generate fallback data: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

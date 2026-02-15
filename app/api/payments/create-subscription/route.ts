@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getRazorpayClient, createPlan, createSubscription } from '@/lib/razorpay';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { getFirebaseDB } from '@/lib/firebase';
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
                 updatedAt: Date.now()
               });
               
-              console.log(`✅ Free month applied for user ${userId}. ${freeMonthsRemaining - 1} free months remaining.`);
+              devLog.debug(`✅ Free month applied for user ${userId}. ${freeMonthsRemaining - 1} free months remaining.`);
               
               return NextResponse.json({
                 success: true,
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } catch (error) {
-          console.error('Error checking free months:', error);
+          devLog.error('Error checking free months:', error, 'route');
           // Continue with normal billing if check fails
         }
       }
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
       });
       razorpayPlanId = createdPlan.id;
     } catch (error: any) {
-      console.error('Error creating plan:', error);
+      devLog.error('Error creating plan:', error, 'route');
       throw new Error(error.message || 'Failed to create subscription plan');
     }
 
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
     });
   } catch (error: any) {
-    console.error('Error creating subscription:', error);
+    devLog.error('Error creating subscription:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to create subscription' },
       { status: 500 }

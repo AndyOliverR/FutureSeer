@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Error calculating Vimshottari Dasa:', error)
+    devLog.error('Error calculating Vimshottari Dasa:', error, 'route')
     return NextResponse.json(
       { 
         error: 'Failed to calculate Dasa',

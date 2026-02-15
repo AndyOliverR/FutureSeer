@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Copy, Check, Share2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -62,7 +63,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
         });
       }
     } catch (err) {
-      console.error('Error generating referral code:', err);
+      devLog.error('Error generating referral code:', err, 'ReferralCodeCard');
       setError('Failed to generate referral code. Please try again.');
     } finally {
       setIsGenerating(false);
@@ -89,7 +90,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
             }
           }
         } catch (error) {
-          console.error('Error fetching referral stats:', error);
+          devLog.error('Error fetching referral stats:', error, 'ReferralCodeCard');
           if (isMounted) {
             setError('Failed to load referral information');
           }

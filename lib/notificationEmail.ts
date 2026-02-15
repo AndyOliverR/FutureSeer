@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { devLog } from '@/lib/devLogger';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.NOTIFICATION_FROM_EMAIL || 'onboarding@resend.dev';
@@ -12,7 +13,7 @@ export async function sendDailyInsightEmail(
   displayName?: string
 ): Promise<boolean> {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY not set, skipping email');
+    devLog.warn('RESEND_API_KEY not set, skipping email', 'notificationEmail');
     return false;
   }
   const name = displayName || 'there';
@@ -31,12 +32,12 @@ export async function sendDailyInsightEmail(
       html,
     });
     if (error) {
-      console.error('Resend error sending daily insight:', error);
+      devLog.error('Resend error sending daily insight:', error, 'notificationEmail');
       return false;
     }
     return !!data?.id;
   } catch (err) {
-    console.error('Failed to send daily insight email:', err);
+    devLog.error('Failed to send daily insight email:', err, 'notificationEmail');
     return false;
   }
 }

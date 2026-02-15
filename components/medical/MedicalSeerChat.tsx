@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Send, User, Loader2, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { SlowRevealText } from '@/components/chat/SlowRevealText'
+import { devLog } from '@/lib/devLogger'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -19,8 +21,10 @@ interface MedicalSeerChatProps {
 }
 
 const MEDICAL_STARTER_QUESTIONS = [
-  'What does my chart suggest for wellness timing?',
-  'Which areas of health should I focus on according to my chart?',
+  'What health tendencies does my chart show?',
+  'Which areas of my body need extra care?',
+  'Are there periods when I should be more cautious?',
+  'How does stress tend to affect me physically?',
 ]
 
 export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps) {
@@ -65,7 +69,7 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
       }
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      console.error('Error calling Medical Seer API:', error)
+      devLog.error('Error calling Medical Seer API', error, 'MedicalSeerChat')
       const errorMessage: Message = {
         role: 'assistant',
         content: 'I apologize, I encountered an error processing your request. Please try again.',
@@ -78,12 +82,12 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
   }
 
   return (
-    <div className="w-full space-y-6">
-      <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-lg m3-elevation-1 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-amber-200">
+    <div className="w-full">
+      <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg min-h-[50vh] max-h-[85vh] overflow-hidden">
+        <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-2xl" aria-hidden>⚕️</span>
-            <h3 className="font-semibold text-lg text-amber-900">Medical Seer</h3>
+            <CardTitle className="font-semibold text-lg text-amber-900 m-0">Ask the Seer — Medical Astrology</CardTitle>
           </div>
           {messages.length > 0 && (
             <Button
@@ -97,19 +101,24 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
               Clear chat
             </Button>
           )}
-        </div>
-        <div className="p-6 space-y-4">
-          {/* Messages */}
-          <div className="h-[400px] overflow-y-auto space-y-4 pr-2">
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 && !isLoading ? (
-              <div className="text-center py-8">
+              <div className="text-center py-8 max-w-lg mx-auto">
                 <span className="text-4xl" aria-hidden>⚕️</span>
                 <p className="text-amber-900 font-medium mt-4 mb-2">
-                  Welcome to Ask the Seer — Medical Astrology.
+                  Ask me about health tendencies shown in your chart…
                 </p>
-                <p className="text-sm text-amber-800 mb-4">
-                  Ask about wellness timing, body systems, or cosmic health insights—or pick a question below.
+                <p className="text-slate-700 text-sm mb-4">
+                  I&apos;ll interpret planetary influences to highlight constitutional strengths, sensitivities, and periods requiring care.
                 </p>
+                <p className="text-slate-600 text-sm font-medium mb-2 text-left">You can ask about:</p>
+                <ul className="text-slate-700 text-sm mb-4 text-left list-disc pl-5 space-y-1">
+                  <li>Health tendencies (areas of strength or vulnerability, stress-related sensitivities, energy and recovery patterns)</li>
+                  <li>Preventative awareness (when to prioritize rest or routine, which habits support balance, how stress may manifest physically)</li>
+                  <li>Period-based caution (phases requiring extra care, times to avoid overexertion)</li>
+                </ul>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {MEDICAL_STARTER_QUESTIONS.map((q, i) => (
                     <Button
@@ -118,77 +127,83 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
                       size="sm"
                       onClick={() => handleSend(q)}
                       disabled={isLoading}
-                      className="text-amber-800 border-amber-200 hover:bg-amber-100"
+                      className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
                     >
                       {q}
                     </Button>
                   ))}
                 </div>
+                <p className="text-slate-600 text-xs mt-4">
+                  Best for: tendencies and preventative awareness; not diagnosis or treatment.
+                </p>
+                <p className="text-slate-600 text-xs mt-1">
+                  Astrology doesn&apos;t diagnose. For medical concerns, consult a healthcare professional.
+                </p>
               </div>
             ) : (
               <>
-            {messages.map((message, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
-              >
-                <div className={`p-3 rounded-xl max-w-[85%] ${
-                  message.role === 'user'
-                    ? 'bg-amber-100/80 border border-amber-300 ml-12'
-                    : 'bg-amber-50/80 border border-amber-200 mr-12'
-                }`}>
-                  <div className="flex items-start gap-2 mb-1">
-                    {message.role === 'user' ? (
-                      <User className="w-4 h-4 text-amber-700 flex-shrink-0" />
-                    ) : (
-                      <span className="text-base flex-shrink-0" aria-hidden>⚕️</span>
-                    )}
-                    <span className={`text-xs font-semibold ${message.role === 'user' ? 'text-amber-900' : 'text-slate-700'}`}>
-                      {message.role === 'user' ? 'You' : 'Medical Seer'}
-                    </span>
-                    <span className="text-xs text-slate-600 ml-auto">
-                      {message.timestamp.toLocaleTimeString()}
-                    </span>
+                {messages.map((message, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                  >
+                    <div className={`p-3 rounded-xl max-w-[85%] ${
+                      message.role === 'user'
+                        ? 'bg-blue-50 border-2 border-blue-200 ml-12'
+                        : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 mr-12'
+                    }`}>
+                      <div className="flex items-start gap-2 mb-1">
+                        {message.role === 'user' ? (
+                          <User className="w-4 h-4 text-amber-700 flex-shrink-0" />
+                        ) : (
+                          <span className="text-base flex-shrink-0" aria-hidden>⚕️</span>
+                        )}
+                        <span className={`text-xs font-semibold ${message.role === 'user' ? 'text-amber-900' : 'text-slate-700'}`}>
+                          {message.role === 'user' ? 'You' : 'Medical Seer'}
+                        </span>
+                        <span className="text-xs text-slate-600 ml-auto">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <p className={`text-sm whitespace-pre-line ${message.role === 'user' ? 'text-slate-800' : 'text-slate-700'}`}>
+                        {message.role === 'user' ? message.content : (
+                          <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+                        )}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+                {isLoading && (
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+                    <span className="text-sm">Medical Seer is thinking...</span>
                   </div>
-                  <p className={`text-sm whitespace-pre-line ${message.role === 'user' ? 'text-slate-800' : 'text-slate-700'}`}>
-                    {message.role === 'user' ? message.content : (
-                      <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
-                    )}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-            {isLoading && (
-              <div className="flex items-center gap-2 text-slate-700">
-                <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
-                <span className="text-sm">Medical Seer is thinking...</span>
-              </div>
-            )}
+                )}
               </>
             )}
           </div>
 
-          {/* Input */}
-          <div className="flex gap-2">
+          <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4 flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Ask about your health astrology..."
-              className="flex-1 rounded-xl bg-amber-50/90 border-2 border-amber-300 text-slate-800 placeholder:text-slate-500 focus:border-amber-400"
+              placeholder="e.g. What health tendencies does my chart show?"
+              disabled={isLoading}
+              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />
             <Button
               onClick={() => handleSend()}
               disabled={!input.trim() || isLoading}
-              className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white"
+              className="bg-amber-600 hover:bg-amber-700 text-white"
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

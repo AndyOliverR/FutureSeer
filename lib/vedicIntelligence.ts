@@ -2,8 +2,10 @@
 // Bridges Universal API with UI and adds AI interpretations
 
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { devLog } from '@/lib/devLogger';
 import { normalizeTimeString, normalizeDateString } from './timeUtils';
 import { getFirebaseDB } from './firebase';
+import { getServerBaseUrl } from './serverBaseUrl';
 import { universalInterpretationEngine } from './universalInterpretationEngine';
 
 export interface VedicReading {
@@ -111,12 +113,12 @@ class VedicIntelligence {
     if (userId) {
       this.vedicCache.delete(userId);
       if (process.env.NODE_ENV === 'development') {
-        console.log(`🧹 Cleared Vedic cache for user: ${userId}`);
+        devLog.debug(`🧹 Cleared Vedic cache for user: ${userId}`);
       }
     } else {
       this.vedicCache.clear();
       if (process.env.NODE_ENV === 'development') {
-        console.log('🧹 Cleared all Vedic cache data');
+        devLog.debug('🧹 Cleared all Vedic cache data');
       }
     }
   }
@@ -133,9 +135,9 @@ class VedicIntelligence {
     useAIEnhancement: boolean = false  // NEW PARAMETER for optional AI enhancement
   ): Promise<VedicReading> {
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔮 VedicIntelligence: Starting intelligent calculation...');
-      console.log('🔄 CACHING DISABLED - Generating fresh Vedic data for user:', userId);
-      console.log('Calculating new Vedic analysis for user:', userId);
+      devLog.debug('🔮 VedicIntelligence: Starting intelligent calculation...');
+      devLog.debug('🔄 CACHING DISABLED - Generating fresh Vedic data for user:', userId);
+      devLog.debug('Calculating new Vedic analysis for user:', userId);
     }
     
     // Get chart data from Universal API
@@ -162,12 +164,12 @@ class VedicIntelligence {
     let interpretationSource: 'openai' | 'internal' = 'internal';
     if (useAIEnhancement) {
       try {
-        console.log('✨ Enhancing interpretations with OpenAI...');
+        devLog.debug('✨ Enhancing interpretations with OpenAI...');
         const aiEnhancement = await this.generateAIInterpretations(chartData, userId);
         interpretations = this.mergeInterpretations(interpretations, aiEnhancement) as unknown as VedicReading['interpretations'];
         interpretationSource = 'openai';
       } catch (error) {
-        console.warn('AI enhancement failed, using fallback interpretations:', error);
+        devLog.warn('AI enhancement failed, using fallback interpretations:', error, 'vedicIntelligence');
       }
     }
     
@@ -195,7 +197,7 @@ class VedicIntelligence {
     } as unknown as VedicReading;
     
     // CACHING DISABLED - No storage for fresh data generation
-    console.log('✅ Fresh Vedic data generated - Caching disabled');
+    devLog.debug('✅ Fresh Vedic data generated - Caching disabled');
     
     return reading;
   }
@@ -209,9 +211,7 @@ class VedicIntelligence {
     longitude: number;
   }) {
     try {
-      const baseUrl = typeof window !== 'undefined' 
-        ? '' 
-        : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+      const baseUrl = typeof window !== 'undefined' ? '' : getServerBaseUrl();
       const response = await fetch(`${baseUrl}/api/occult/universal`, {
         method: 'POST',
         headers: {
@@ -235,7 +235,7 @@ class VedicIntelligence {
       const result = await response.json();
       return result.data;
     } catch (error) {
-      console.error('Error fetching Vedic chart data:', error);
+      devLog.error('Error fetching Vedic chart data:', error, 'vedicIntelligence');
       // Return fallback data
       return this.getFallbackVedicData();
     }
@@ -275,7 +275,7 @@ class VedicIntelligence {
       const result = await response.json();
       return this.parseAIInterpretation(result.prediction);
     } catch (error) {
-      console.error('Error generating AI interpretations:', error);
+      devLog.error('Error generating AI interpretations:', error, 'vedicIntelligence');
       return this.getFallbackInterpretations();
     }
   }

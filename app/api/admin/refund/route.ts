@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth } from '@/lib/firebase-admin';
 import { refundPayment } from '@/lib/razorpay';
 import { writeAuditLog } from '@/lib/adminAudit';
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Admin refund error:', err);
+    devLog.error('Admin refund error:', err, 'route');
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to process refund' },
       { status: 500 }

@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Error calculating Panchanga:', error)
+    devLog.error('Error calculating Panchanga:', error, 'route')
     return NextResponse.json(
       { 
         error: 'Failed to calculate Panchanga',
@@ -245,7 +245,7 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Error calculating Panchanga:', error)
+    devLog.error('Error calculating Panchanga:', error, 'route')
     return NextResponse.json(
       { 
         error: 'Failed to calculate Panchanga',

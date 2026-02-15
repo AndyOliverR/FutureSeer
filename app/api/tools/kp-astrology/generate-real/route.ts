@@ -32,7 +32,7 @@ async function getCoordinatesWithFallback(place: string): Promise<Coordinates> {
       }
     }
   } catch (error) {
-    console.error('❌ Geocoding error:', error)
+    devLog.error('❌ Geocoding error:', error, 'route')
   }
   
   // Fallback to common Indian cities
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       try {
         userProfile = await getUserProfile(userId)
       } catch (profileError) {
-        console.error('⚠️ Failed to fetch user profile:', profileError)
+        devLog.error('⚠️ Failed to fetch user profile:', profileError, 'route')
         return NextResponse.json(
           { success: false, error: 'Failed to fetch user profile' },
           { status: 400 }
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       data: analysis
     })
   } catch (error: any) {
-    console.error('❌ Error generating KP astrology report:', error)
+    devLog.error('❌ Error generating KP astrology report:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
       data: analysis
     })
   } catch (error: any) {
-    console.error('❌ Error fetching KP astrology report:', error)
+    devLog.error('❌ Error fetching KP astrology report:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

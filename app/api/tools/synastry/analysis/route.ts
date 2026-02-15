@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           person1Lon = 72.8777;
         }
       } catch (error) {
-        console.error('❌ Geocoding error for Person 1:', error);
+        devLog.error('❌ Geocoding error for Person 1:', error, 'route');
         // Use default fallback (Mumbai, India)
         person1Lat = 19.0760;
         person1Lon = 72.8777;
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           person2Lon = 72.8777;
         }
       } catch (error) {
-        console.error('❌ Geocoding error for Person 2:', error);
+        devLog.error('❌ Geocoding error for Person 2:', error, 'route');
         // Use default fallback (Mumbai, India)
         person2Lat = 19.0760;
         person2Lon = 72.8777;
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('❌ Error generating synastry analysis:', error);
+    devLog.error('❌ Error generating synastry analysis:', error, 'route');
     return NextResponse.json(
       { 
         success: false, 

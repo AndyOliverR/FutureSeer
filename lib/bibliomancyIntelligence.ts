@@ -5,6 +5,7 @@
  */
 
 import { doc, setDoc, getDoc, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
@@ -119,7 +120,7 @@ class BibliomancyIntelligence {
     try {
       this.db = getFirebaseDB()
     } catch (error) {
-      console.warn('Firebase not available for Bibliomancy Intelligence')
+      devLog.warn('Firebase not available for Bibliomancy Intelligence', undefined, 'bibliomancyIntelligence')
     }
   }
 
@@ -359,7 +360,7 @@ Guidelines:
           }
         }
       } catch (error) {
-        console.warn('Could not load from Firestore, generating new reading:', error)
+        devLog.warn('Could not load from Firestore, generating new reading:', error, 'bibliomancyIntelligence')
       }
     }
 
@@ -368,7 +369,7 @@ Guidelines:
                                userProfile?.birthTime && 
                                userProfile?.birthPlace
 
-    console.log('📋 Profile completeness check:', {
+    devLog.debug('📋 Profile completeness check:', {
       hasBirthDate: !!userProfile?.birthDate,
       hasBirthTime: !!userProfile?.birthTime,
       hasBirthPlace: !!userProfile?.birthPlace,
@@ -378,17 +379,17 @@ Guidelines:
       textTypeReceived: textType
     })
     
-    console.log('🔍 Text type validation:', {
+    devLog.debug('🔍 Text type validation:', {
       textType,
       isValid: ['bible', 'quran', 'bhagavad-gita', 'torah', 'hafez'].includes(textType)
     })
 
     if (!hasCompleteProfile) {
-      console.log('ℹ️ Profile incomplete - generating basic reading')
+      devLog.debug('ℹ️ Profile incomplete - generating basic reading')
       return this.generateBasicReading(userId, userProfile, question, textType)
     }
 
-    console.log('✅ Profile complete - generating comprehensive AI reading')
+    devLog.debug('✅ Profile complete - generating comprehensive AI reading')
     // Generate comprehensive reading using AI
     const reading = await this.generateComprehensiveReading(userId, userProfile, question, textType)
 
@@ -544,7 +545,7 @@ Guidelines:
     const birthPlace = userProfile.birthPlace || ''
 
     // Select passages for different life areas using text-specific functions
-    console.log(`📚 Loading passages for text type: ${textType}`)
+    devLog.debug(`📚 Loading passages for text type: ${textType}`)
     const lovePassages = this.getTextPassagesByLifeArea(textType, 'love')
     const careerPassages = this.getTextPassagesByLifeArea(textType, 'career')
     const healthPassages = this.getTextPassagesByLifeArea(textType, 'health')
@@ -553,7 +554,7 @@ Guidelines:
     const financesPassages = this.getTextPassagesByLifeArea(textType, 'finances')
     const relationshipsPassages = this.getTextPassagesByLifeArea(textType, 'relationships')
     
-    console.log(`📊 Passage counts for ${textType}:`, {
+    devLog.debug(`📊 Passage counts for ${textType}:`, {
       love: lovePassages.length,
       career: careerPassages.length,
       health: healthPassages.length,
@@ -577,12 +578,12 @@ Guidelines:
     try {
       // Check if Groq API key is available
       if (!process.env.GROQ_API_KEY) {
-        console.error('❌ GROQ_API_KEY is not set in environment variables')
+        devLog.error('❌ GROQ_API_KEY is not set in environment variables', undefined, 'bibliomancyIntelligence')
         throw new Error('Groq API key is not configured')
       }
 
-      console.log('📖 Starting Groq API call for bibliomancy reading')
-      console.log('👤 User:', displayName, '| Birth:', birthDate, birthTime, birthPlace, '| Text:', textType)
+      devLog.debug('📖 Starting Groq API call for bibliomancy reading')
+      devLog.debug('User/Birth/Text', { displayName, birthDate, birthTime, birthPlace, textType }, 'bibliomancyIntelligence')
       
       // Generate comprehensive interpretation using Groq AI
       const systemPrompt = this.getTextSystemPrompt(textType)
@@ -761,7 +762,7 @@ ${question ? `\n=== QUESTION READING ===\n\nQuestion: ${question}\n\nPassage Int
 
 Remember: Use plain text only. No markdown formatting. Be specific and personal. Address ${displayName} directly using "you" and "your".`
 
-      console.log('🔄 Calling AI Gateway/Groq API with model: llama-3.3-70b-versatile')
+      devLog.debug('🔄 Calling AI Gateway/Groq API with model: llama-3.3-70b-versatile')
       const result = await createAICompletion({
         model: 'llama-3.3-70b-versatile',
         messages: [
@@ -775,15 +776,15 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         presencePenalty: 0.3
       })
 
-      console.log('✅ AI Gateway/Groq API call successful')
+      devLog.debug('✅ AI Gateway/Groq API call successful')
       const aiResponse = result.content || ''
       
       if (!aiResponse || aiResponse.length < 100) {
-        console.warn('⚠️ Groq API returned empty or very short response:', aiResponse.length, 'characters')
+        devLog.warn('Groq API returned empty or very short response', { length: aiResponse.length }, 'bibliomancyIntelligence')
         throw new Error('Groq API returned insufficient response')
       }
 
-      console.log('📝 Parsing AI response, length:', aiResponse.length)
+      devLog.debug('📝 Parsing AI response, length:', aiResponse.length)
       
       // Parse AI response into structured format
       const parsed = this.parseAIResponse(
@@ -803,28 +804,28 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         question
       )
 
-      console.log('✅ Successfully parsed bibliomancy reading')
+      devLog.debug('✅ Successfully parsed bibliomancy reading')
       return parsed
     } catch (error: any) {
-      console.error('❌ Error generating bibliomancy reading:', error)
-      console.error('Error details:', {
+      devLog.error('❌ Error generating bibliomancy reading:', error, 'bibliomancyIntelligence')
+      devLog.error('Error details:', {
         message: error?.message,
         code: error?.code,
         status: error?.status,
         response: error?.response?.data || error?.response
-      })
+      }, 'bibliomancyIntelligence')
       
       // Log if it's a Groq API error specifically
       if (error?.message?.includes('Groq') || error?.message?.includes('API')) {
-        console.error('🚨 Groq API Error:', error.message)
+        devLog.error('🚨 Groq API Error:', error.message, 'bibliomancyIntelligence')
       }
       
       // Log if it's a parsing error
       if (error?.message?.includes('parse') || error?.message?.includes('Parse')) {
-        console.error('🚨 Parsing Error:', error.message)
+        devLog.error('🚨 Parsing Error:', error.message, 'bibliomancyIntelligence')
       }
       
-      console.log('⚠️ Falling back to generic reading due to error')
+      devLog.debug('⚠️ Falling back to generic reading due to error')
       return this.generateFallbackReading(userId, userProfile, question, textType)
     }
   }
@@ -1168,7 +1169,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
    */
   async saveReading(userId: string, reading: BibliomancyReading): Promise<void> {
     if (!this.db) {
-      console.warn('Firestore not available, skipping save')
+      devLog.warn('Firestore not available, skipping save', 'bibliomancyIntelligence')
       return
     }
 
@@ -1178,9 +1179,9 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         ...reading,
         timestamp: Timestamp.fromDate(reading.timestamp)
       })
-      console.log('✅ Saved bibliomancy reading to Firestore')
+      devLog.debug('✅ Saved bibliomancy reading to Firestore')
     } catch (error) {
-      console.error('Error saving bibliomancy reading:', error)
+      devLog.error('Error saving bibliomancy reading:', error, 'bibliomancyIntelligence')
     }
   }
 
@@ -1206,7 +1207,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         } as BibliomancyReading
       })
     } catch (error) {
-      console.error('Error loading user bibliomancy readings:', error)
+      devLog.error('Error loading user bibliomancy readings:', error, 'bibliomancyIntelligence')
       return []
     }
   }

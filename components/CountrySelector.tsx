@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Globe } from 'lucide-react';
 import { getAvailableCountries } from '@/lib/pricingConfig';
@@ -83,7 +84,7 @@ async function detectUserCountry(): Promise<string> {
     
     return countryCode;
   } catch (error) {
-    console.warn('Failed to detect country:', error);
+    devLog.warn('Failed to detect country:', error, 'CountrySelector');
     return 'IN'; // Default to India
   }
 }

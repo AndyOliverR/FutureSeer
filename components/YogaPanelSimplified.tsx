@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -170,7 +171,7 @@ export function YogaPanelSimplified({ yogas, dashaData, transitData, birthData, 
       try {
         timings.set(yoga.name, calculateYogaTiming(yoga, dashaData, transitData || {}, birthData));
       } catch (error) {
-        console.error('❌ Error calculating yoga timing for', yoga.name, ':', error);
+        devLog.error('Error calculating yoga timing', { yoga: yoga.name, error }, 'YogaPanelSimplified');
         timings.set(yoga.name, null);
       }
     });
@@ -189,7 +190,7 @@ export function YogaPanelSimplified({ yogas, dashaData, transitData, birthData, 
       try {
         remediesMap.set(yoga.name, generateYogaRemedies(yoga));
       } catch (error) {
-        console.error('❌ Error generating remedies for', yoga.name, ':', error);
+        devLog.error('Error generating remedies', { yoga: yoga.name, error }, 'YogaPanelSimplified');
       }
     });
     return remediesMap;
@@ -231,7 +232,7 @@ export function YogaPanelSimplified({ yogas, dashaData, transitData, birthData, 
         </div>
       );
     } catch (error) {
-      console.error('Error rendering yoga remedies:', error);
+      devLog.error('Error rendering yoga remedies:', error, 'YogaPanelSimplified');
       return null;
     }
   };

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -83,7 +84,7 @@ export default function SynastryInputModal({
           longitude: coords.longitude
         }));
       } catch (error) {
-        console.error('Failed to get coordinates:', error);
+        devLog.error('Failed to get coordinates:', error, 'SynastryInputModal');
       } finally {
         setIsLoadingCoordinates(false);
       }

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
 import IChingSeerChatInterface from "@/components/IChingSeerChatInterface"
@@ -25,7 +26,7 @@ export default function IChingPage() {
 
   // Monitor analysis state changes for debugging
   useEffect(() => {
-    console.log('🔮 IChingPage: analysis state changed:', {
+    devLog.debug('🔮 IChingPage: analysis state changed:', {
       hasAnalysis: !!analysis,
       analysisId: analysis?.id,
       hexagramNumber: analysis?.hexagram?.number,
@@ -37,7 +38,7 @@ export default function IChingPage() {
   // Hexagram visualization component with safety checks
   const HexagramDisplay = ({ hexagram, title }: { hexagram: any, title: string }) => {
     if (!hexagram || !hexagram.lines || !Array.isArray(hexagram.lines)) {
-      console.warn('⚠️ IChingPage: HexagramDisplay received invalid hexagram:', hexagram);
+      devLog.warn('⚠️ IChingPage: HexagramDisplay received invalid hexagram:', hexagram, 'page');
       return (
         <div className="text-center text-red-400 p-4">
           <p>Invalid hexagram data</p>
@@ -81,12 +82,12 @@ export default function IChingPage() {
   // Render tab content based on activeTab
   const renderTabContent = () => {
     if (!analysis) {
-      console.warn('⚠️ IChingPage: renderTabContent called but analysis is null');
+      devLog.warn('⚠️ IChingPage: renderTabContent called but analysis is null', undefined, 'page');
       return null;
     }
 
     if (!analysis.hexagram) {
-      console.error('❌ IChingPage: analysis exists but hexagram is missing:', analysis);
+      devLog.error('❌ IChingPage: analysis exists but hexagram is missing:', analysis, 'page');
       return (
         <div className="text-center py-16">
           <p className="text-red-400">Error: Hexagram data is missing</p>
@@ -94,11 +95,7 @@ export default function IChingPage() {
       );
     }
 
-    console.log('🔮 IChingPage: Rendering tab content for:', activeTab, {
-      hasHexagram: !!analysis.hexagram,
-      hasInterpretation: !!analysis.interpretation,
-      hasRecommendations: !!analysis.recommendations
-    });
+    devLog.debug('IChingPage: Rendering tab content', { activeTab, hasHexagram: !!analysis.hexagram, hasInterpretation: !!analysis.interpretation, hasRecommendations: !!analysis.recommendations }, 'i-ching');
 
     switch (activeTab) {
       case 'overview':

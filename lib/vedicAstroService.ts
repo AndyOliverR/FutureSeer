@@ -2,6 +2,7 @@
  * VedicAstro Service - TypeScript implementation for Vercel compatibility
  * Ported from Python VedicAstro library to work with Next.js/Vercel
  */
+import { devLog } from '@/lib/devLogger';
 
 export interface BirthData {
   birthDate: string
@@ -129,7 +130,7 @@ class VedicAstroService {
 
       return result.data
     } catch (error) {
-      console.error('Error generating chart:', error)
+      devLog.error('Error generating chart:', error, 'vedicAstroService')
       throw error
     }
   }
@@ -159,7 +160,7 @@ class VedicAstroService {
 
       return result.data
     } catch (error) {
-      console.error('Error calculating Dasa:', error)
+      devLog.error('Error calculating Dasa:', error, 'vedicAstroService')
       throw error
     }
   }
@@ -189,7 +190,7 @@ class VedicAstroService {
 
       return result.data
     } catch (error) {
-      console.error('Error calculating planetary positions:', error)
+      devLog.error('Error calculating planetary positions:', error, 'vedicAstroService')
       throw error
     }
   }
@@ -223,7 +224,7 @@ class VedicAstroService {
 
       return result.data
     } catch (error) {
-      console.error('Error calculating Panchanga:', error)
+      devLog.error('Error calculating Panchanga:', error, 'vedicAstroService')
       throw error
     }
   }
@@ -238,7 +239,7 @@ class VedicAstroService {
     panchanga: PanchangaData
   }> {
     try {
-      console.log('🔄 FutureSeer: Starting comprehensive Vedic analysis...')
+      devLog.debug('🔄 FutureSeer: Starting comprehensive Vedic analysis...')
       
       // Make all API calls in parallel
       const [chartResult, dasaResult, planetsResult, panchangaResult] = await Promise.allSettled([
@@ -269,11 +270,11 @@ class VedicAstroService {
         panchanga: panchangaResult.value
       }
 
-      console.log('✅ FutureSeer: Comprehensive Vedic analysis completed')
+      devLog.debug('✅ FutureSeer: Comprehensive Vedic analysis completed')
       return result
 
     } catch (error) {
-      console.error('❌ FutureSeer: Comprehensive Vedic analysis failed:', error)
+      devLog.error('❌ FutureSeer: Comprehensive Vedic analysis failed:', error, 'vedicAstroService')
       throw error
     }
   }

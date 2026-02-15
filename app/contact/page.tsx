@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, Suspense } from 'react'
+import { devLog } from '@/lib/devLogger';
 import Link from "next/link"
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
@@ -66,7 +67,7 @@ function ContactContent() {
         })
       }
     } catch (error) {
-      console.error('Error submitting:', error)
+      devLog.error('Error submitting:', error, 'page')
       setSubmitStatus({
         type: 'error',
         message: 'An unexpected error occurred. Please try again later.',

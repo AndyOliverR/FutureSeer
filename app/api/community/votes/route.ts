@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { calculateKarmaForAction } from '@/lib/firestore/communityHelpers';
 
@@ -224,7 +225,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error recording vote:', error);
+    devLog.error('Error recording vote:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to record vote' }, { status: 500 });
   }
 }
@@ -266,7 +267,7 @@ async function updateVoteCounts(
       }
     }
   } catch (error) {
-    console.error('Error updating vote counts:', error);
+    devLog.error('Error updating vote counts:', error, 'route');
   }
 }
 
@@ -285,7 +286,7 @@ async function updateAuthorKarma(db: any, authorId: string, karmaDelta: number, 
       });
     }
   } catch (error) {
-    console.error('Error updating author karma:', error);
+    devLog.error('Error updating author karma:', error, 'route');
   }
 }
 
@@ -342,7 +343,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error checking vote:', error);
+    devLog.error('Error checking vote:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to check vote' }, { status: 500 });
   }
 }

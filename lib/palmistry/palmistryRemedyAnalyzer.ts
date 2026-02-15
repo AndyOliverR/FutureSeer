@@ -2,6 +2,7 @@
 // Analyzes palmistry profiles and generates personalized remedy recommendations
 
 import { READING_REMEDIES } from '@/lib/comprehensiveRemedyDatabase'
+import { devLog } from '@/lib/devLogger';
 import { PalmistryAnalysis } from '@/lib/palmistryIntelligence'
 
 export interface PalmistryRemedy {
@@ -40,7 +41,7 @@ function getLineRemedies(lines: PalmistryAnalysis['lines']): PalmistryRemedy[] {
   
   // Safely access lineRemedies
   if (!READING_REMEDIES.palmistry?.lineRemedies) {
-    console.warn('lineRemedies not found in READING_REMEDIES.palmistry')
+    devLog.warn('lineRemedies not found in READING_REMEDIES.palmistry', undefined, 'palmistryRemedyAnalyzer')
     return remedies
   }
   
@@ -235,7 +236,7 @@ function getMountRemedies(mounts: PalmistryAnalysis['mounts']): PalmistryRemedy[
   
   // Safely access mountRemedies
   if (!READING_REMEDIES.palmistry?.mountRemedies) {
-    console.warn('mountRemedies not found in READING_REMEDIES.palmistry')
+    devLog.warn('mountRemedies not found in READING_REMEDIES.palmistry', undefined, 'palmistryRemedyAnalyzer')
     return remedies
   }
   
@@ -324,7 +325,7 @@ function getHandShapeRemedies(handShape: string): PalmistryRemedy[] {
   
   // Safely access handShapeRemedies
   if (!READING_REMEDIES.palmistry?.handShapeRemedies) {
-    console.warn('handShapeRemedies not found in READING_REMEDIES.palmistry')
+    devLog.warn('handShapeRemedies not found in READING_REMEDIES.palmistry', undefined, 'palmistryRemedyAnalyzer')
     return remedies
   }
   
@@ -370,7 +371,7 @@ function getFingerRemedies(fingers: PalmistryAnalysis['fingers']): PalmistryReme
   
   // Safely access fingerRemedies
   if (!READING_REMEDIES.palmistry?.fingerRemedies) {
-    console.warn('fingerRemedies not found in READING_REMEDIES.palmistry')
+    devLog.warn('fingerRemedies not found in READING_REMEDIES.palmistry', undefined, 'palmistryRemedyAnalyzer')
     return remedies
   }
   
@@ -523,7 +524,7 @@ function getMarkingRemedies(lines: PalmistryAnalysis['lines']): PalmistryRemedy[
   
   // Safely access markingRemedies
   if (!READING_REMEDIES.palmistry?.markingRemedies) {
-    console.warn('markingRemedies not found in READING_REMEDIES.palmistry')
+    devLog.warn('markingRemedies not found in READING_REMEDIES.palmistry', undefined, 'palmistryRemedyAnalyzer')
     return remedies
   }
   

@@ -21,8 +21,10 @@ import {
   Maximize2,
   Minimize2
 } from 'lucide-react'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 import { VedicChart, VedicPlanetaryPosition, VedicHouse } from '@/lib/firestoreSchemas'
 import { getPlanetEmoji, getSignEmoji, formatDegree } from '@/lib/vedicDataNormalizer'
+import { devLog } from '@/lib/devLogger'
 
 interface RasiChartViewerProps {
   chart: VedicChart
@@ -46,9 +48,22 @@ export function RasiChartViewer({
   const [selectedPlanet, setSelectedPlanet] = useState<VedicPlanetaryPosition | null>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const chartRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(600)
 
-  // Chart dimensions
-  const baseSize = 600
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 600
+      setContainerWidth(w)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Chart dimensions: responsive to container, cap at 600, floor at 320 for narrow viewports
+  const baseSize = Math.min(600, Math.max(320, containerWidth))
   const chartSize = baseSize * zoomLevel
 
   // Handle zoom
@@ -200,7 +215,7 @@ export function RasiChartViewer({
           url: window.location.href
         })
       } catch (error) {
-        console.log('Error sharing:', error)
+        devLog.error('Error sharing', error, 'RasiChartViewer')
       }
     } else {
       // Fallback: copy to clipboard
@@ -336,10 +351,10 @@ export function RasiChartViewer({
           </div>
 
           {/* Chart Display */}
-          <div className="flex justify-center">
+          <div ref={containerRef} className="w-full max-w-[600px] mx-auto flex justify-center min-w-0">
             <div
               ref={chartRef}
-              className="relative overflow-hidden rounded-lg border border-white/20"
+              className="relative overflow-hidden rounded-lg border border-white/20 shrink-0"
               style={{ width: chartSize, height: chartSize }}
             >
               <div
@@ -380,35 +395,37 @@ export function RasiChartViewer({
       </Card>
 
       {/* Planet Details Modal */}
-      <AnimatePresence>
-        {selectedPlanet && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedPlanet(null)}
-          >
+      <ModalPortal open={!!selectedPlanet}>
+        <AnimatePresence>
+          {selectedPlanet && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-slate-800 border border-white/20 rounded-lg p-6 max-w-md w-full"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4"
+              onClick={() => setSelectedPlanet(null)}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                  {getPlanetEmoji(selectedPlanet.planet)} {selectedPlanet.planet}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedPlanet(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ×
-                </Button>
-              </div>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-slate-800 border border-white/20 rounded-lg p-6 max-w-md w-full max-w-[90vw] max-h-[min(90dvh,90vh)] overflow-y-auto z-[10001]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-white flex items-center gap-2 min-w-0">
+                    {getPlanetEmoji(selectedPlanet.planet)} {selectedPlanet.planet}
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedPlanet(null)}
+                    className="min-w-[44px] min-h-[44px] text-gray-400 hover:text-white shrink-0"
+                    aria-label="Close"
+                  >
+                    ×
+                  </Button>
+                </div>
               
               <div className="space-y-3">
                 <div className="flex justify-between">
@@ -444,10 +461,11 @@ export function RasiChartViewer({
                   <span className="text-white">{selectedPlanet.isDebilitated ? 'Yes' : 'No'}</span>
                 </div>
               </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </ModalPortal>
     </div>
   )
 }

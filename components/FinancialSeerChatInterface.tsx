@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { MessageCircle, Send, TrendingUp, DollarSign, AlertTriangle, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Send, TrendingUp, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface FinancialSeerChatInterfaceProps {
   userId: string;
@@ -24,8 +25,10 @@ interface Message {
 }
 
 const FINANCIAL_STARTER_QUESTIONS = [
-  'What does my chart suggest for stable vs expansion periods?',
-  'When should I be more cautious with money according to my chart?',
+  'What does my chart say about my financial potential?',
+  'Is this a favorable period for improving income?',
+  'Do I benefit more from business or stable work?',
+  'When should I be cautious financially?',
 ];
 
 export default function FinancialSeerChatInterface({ 
@@ -108,7 +111,7 @@ export default function FinancialSeerChatInterface({
         }
       }
     } catch (error) {
-      console.error('Error:', error);
+      devLog.error('Financial Seer error', error, 'FinancialSeerChatInterface');
       const errorMessage: Message = {
         id: Date.now().toString(),
         type: 'seer',
@@ -122,124 +125,143 @@ export default function FinancialSeerChatInterface({
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-amber-900/20 to-slate-900/50">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex space-x-2">
-              <TrendingUp className="w-6 h-6 text-amber-400" />
-              <h3 className="text-xl font-bold text-white">Financial Astrology Seer</h3>
-            </div>
-            <p className="text-sm text-slate-400 mt-1">Personal timing and risk posture, not market advice</p>
-          </div>
-          {messages.length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-slate-400 hover:text-amber-400 hover:bg-slate-700/50 shrink-0"
-              onClick={() => setMessages([])}
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Clear chat
-            </Button>
-          )}
+    <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
+      <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
+        <div>
+          <CardTitle className="text-amber-900 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-amber-700" />
+            Ask the Seer — Financial Astrology
+          </CardTitle>
+          <p className="text-slate-700 text-sm mt-1">I&apos;ll analyze your chart to reveal earning patterns, financial strengths, risk tendencies, and supportive periods.</p>
         </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && !isLoading ? (
-          <div className="text-center py-8">
-            <TrendingUp className="w-12 h-12 mx-auto mb-4 text-amber-400" />
-            <p className="text-white font-medium mb-2">
-              Welcome to Ask the Seer — Financial Astrology.
-            </p>
-            <p className="text-sm text-slate-400 mb-4">
-              Ask about stable periods, saving vs expansion, or cosmic timing—or pick a question below.
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {FINANCIAL_STARTER_QUESTIONS.map((q, i) => (
-                <Button
-                  key={i}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSend(q)}
-                  disabled={isLoading}
-                  className="text-slate-200 border-slate-600 hover:bg-amber-500/20 hover:border-amber-500/50"
-                >
-                  {q}
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-        {messages.map((message) => (
-          <motion.div
-            key={message.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+        {messages.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-slate-600 hover:text-amber-900 hover:bg-amber-100 shrink-0"
+            onClick={() => setMessages([])}
           >
-            <div
-              className={`max-w-[80%] rounded-2xl p-4 ${
-                message.type === 'user'
-                  ? 'bg-amber-500/20 border border-amber-500/30 text-white'
-                  : 'bg-slate-800/50 border border-slate-700/50 text-slate-200'
-              }`}
-            >
-              <p className="whitespace-pre-wrap">
-                {message.type === 'user' ? message.content : (
-                  <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-200" />
-                )}
+            <Trash2 className="w-4 h-4 mr-1" />
+            Clear chat
+          </Button>
+        )}
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
+          {messages.length === 0 && !isLoading ? (
+            <div className="text-center py-8 max-w-lg mx-auto">
+              <TrendingUp className="w-12 h-12 mx-auto mb-4 text-amber-700" />
+              <p className="text-amber-900 font-medium mb-2">
+                Ask me anything about wealth, income, and financial timing…
+              </p>
+              <p className="text-slate-700 text-sm mb-4">
+                I&apos;ll analyze your chart to reveal earning patterns, financial strengths, risk tendencies, and supportive periods.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mb-2 text-left">You can ask about:</p>
+              <ul className="text-slate-700 text-sm mb-4 text-left list-disc pl-5 space-y-1">
+                <li>Wealth and income patterns (how you earn best, stable vs fluctuating income, business vs employment strengths)</li>
+                <li>Timing and cycles (favorable periods for growth, periods requiring caution, consolidation vs expansion)</li>
+                <li>Risk and decision awareness (tendency toward risk or safety, speculation vs long-term accumulation, financial stress triggers)</li>
+              </ul>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {FINANCIAL_STARTER_QUESTIONS.map((q, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSend(q)}
+                    disabled={isLoading}
+                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
+                  >
+                    {q}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-slate-600 text-xs mt-4">
+                Best for: patterns and timing awareness; not investment advice or guarantees.
+              </p>
+              <p className="text-slate-600 text-xs mt-1">
+                Astrology doesn&apos;t replace financial advice. For investments, consult a qualified financial professional.
               </p>
             </div>
-          </motion.div>
-        ))}
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-xl p-4 ${
+                      message.type === 'user'
+                        ? 'bg-blue-50 border-2 border-blue-200 text-slate-800'
+                        : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700'
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">
+                      {message.type === 'user' ? message.content : (
+                        <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+                      )}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
 
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-              </div>
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+                      Consulting the chart…
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
             </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Input */}
-      <div className="p-4 border-t border-slate-700/50">
-        <div className="flex space-x-2">
-          <Input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about stable periods, saving vs expansion, speculation, or caution..."
-            className="bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500"
-          />
-          <Button
-            onClick={() => handleSend()}
-            disabled={isLoading || !question.trim()}
-            className="bg-amber-500 hover:bg-amber-600 text-white"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+          )}
         </div>
-        <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
-          <AlertTriangle className="w-3 h-3" />
-          Astrological insights only - not financial advice
-        </p>
-      </div>
-    </div>
+
+        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="flex gap-2"
+          >
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="e.g. What does my chart say about my financial potential?"
+              disabled={isLoading}
+              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !question.trim()}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </form>
+          <p className="text-slate-600 text-xs mt-2 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            Astrological insights only - not financial advice
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

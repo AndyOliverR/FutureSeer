@@ -16,6 +16,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { TrichakraAnalysis } from '@/lib/trichakraIntelligence';
+import { devLog } from '@/lib/devLogger';
 
 interface Message {
   id: string;
@@ -34,8 +35,9 @@ const SEE_MORE_THRESHOLD = 320;
 const PREVIEW_LENGTH = 320;
 
 const TRICHAKRA_STARTER_QUESTIONS = [
-  'What remedies does my Trichakra analysis recommend for body, mind, and soul?',
-  'Which area—body, mind, or soul—should I focus on first?'
+  'What remedies does my Trichakra analysis recommend?',
+  'Which area—body, mind, or soul—should I focus on first?',
+  'What actions will help me regain balance?',
 ];
 
 export function TrichakraMethodCoachInterface({
@@ -159,7 +161,7 @@ export function TrichakraMethodCoachInterface({
       setStreamingMessageId(null);
       setStreamingDisplayLength(0);
     } catch (error) {
-      console.error('Error:', error);
+      devLog.error('Trichakra Seer error', error, 'TrichakraMethodCoachInterface');
       setStreamingMessageId(null);
       setMessages(prev =>
         prev.map(msg =>
@@ -273,12 +275,15 @@ export function TrichakraMethodCoachInterface({
   ) : (
     <div className="text-center py-8">
       <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
-      <p className="text-amber-900 font-medium">
-        Welcome to Trichakra Consultation. Ask me anything about your remedies for body, mind, and soul.
-      </p>
-      <p className="text-sm mt-2 text-slate-700">
-        I have your Trichakra analysis; ask about your action plan or specific areas.
-      </p>
+      <p className="text-amber-900 font-medium mb-2">Welcome to Trichakra Consultation.</p>
+      <p className="text-slate-700 text-sm mt-1 mb-2">I'll guide you using remedies for body, mind, and soul based on your analysis.</p>
+      <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+      <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+        <li>Practical remedies and corrective actions</li>
+        <li>Emotional, mental, or energetic imbalance</li>
+        <li>What to strengthen or avoid</li>
+        <li>How to realign yourself</li>
+      </ul>
       <div className="flex flex-wrap gap-2 justify-center mt-4">
         {TRICHAKRA_STARTER_QUESTIONS.map((q, i) => (
           <Button
@@ -294,6 +299,7 @@ export function TrichakraMethodCoachInterface({
           </Button>
         ))}
       </div>
+      <p className="text-slate-600 text-xs mt-4">Best for: knowing what to do, not predicting outcomes.</p>
     </div>
   );
 
@@ -376,7 +382,7 @@ export function TrichakraMethodCoachInterface({
                   ? 'Sign in to ask questions…'
                   : !analysis
                     ? 'Generate analysis first…'
-                    : 'Ask about your Trichakra remedies…'
+                    : 'Ask about remedies, body/mind/soul, or action plan…'
               }
               disabled={!user?.uid || !analysis || isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"

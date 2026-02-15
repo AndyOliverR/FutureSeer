@@ -5,6 +5,7 @@ import { AskHistory } from "@/lib/firebase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock } from "lucide-react"
+import { ModalPortal } from "@/components/ui/ModalPortal"
 
 interface ReadingDetailsModalProps {
   reading: AskHistory | null
@@ -22,26 +23,27 @@ export function ReadingDetailsModal({
   if (!reading) return null
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 m3-transition-standard"
-          onClick={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-title"
-        >
+    <ModalPortal open={isOpen}>
+      <AnimatePresence>
+        {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[10000] m3-transition-standard"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
           >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-4xl max-w-[90vw] max-h-[min(90dvh,90vh)] overflow-y-auto z-[10001]"
+              onClick={(e) => e.stopPropagation()}
+            >
             <Card elevation={3} className="backdrop-blur-sm bg-[var(--m3-surface-container-high)]/95 border border-[var(--m3-outline-variant)] m3-elevation-transition rounded-2xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -131,8 +133,8 @@ export function ReadingDetailsModal({
 
                 {/* Metadata */}
                 <div className="flex items-center justify-between pt-4 border-t border-[var(--m3-outline-variant)]">
-                  <div className="m3-body-small text-[var(--m3-on-surface-variant)]">
-                    <Clock className="inline w-4 h-4 mr-1" />
+                  <div className="m3-body-small text-[var(--m3-on-surface-variant)] flex items-center gap-1">
+                    <span className="shrink-0"><Clock className="w-4 h-4" /></span>
                     {formatDate(reading.timestamp)}
                   </div>
                   <div className="flex items-center gap-2">
@@ -149,9 +151,10 @@ export function ReadingDetailsModal({
                 </div>
               </CardContent>
             </Card>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </ModalPortal>
   )
 }

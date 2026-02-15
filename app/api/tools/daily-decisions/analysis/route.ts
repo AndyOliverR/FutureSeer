@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!userId) {
-      console.error('❌ [DAILY DECISIONS API] Missing userId')
+      devLog.error('❌ [DAILY DECISIONS API] Missing userId', undefined, 'route')
       return NextResponse.json(
         { success: false, error: 'User ID is required' },
         { status: 400 }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.error('❌ [DAILY DECISIONS API] Geocoding error:', error)
+      devLog.error('❌ [DAILY DECISIONS API] Geocoding error:', error, 'route')
       // Fallback to Mumbai
       latitude = 19.0760
       longitude = 72.8777
@@ -144,8 +144,8 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('❌ [DAILY DECISIONS API] Error generating analysis:', error)
-    console.error('❌ [DAILY DECISIONS API] Error stack:', error.stack)
+    devLog.error('❌ [DAILY DECISIONS API] Error generating analysis:', error, 'route')
+    devLog.error('❌ [DAILY DECISIONS API] Error stack:', error.stack, 'route')
     return NextResponse.json(
       { 
         success: false, 

@@ -3,6 +3,7 @@
 // Organizes remedies into Body, Mind, and Soul levels (Trichakra approach)
 
 import { generateAstrologicalChart } from './astroCalculations'
+import { devLog } from '@/lib/devLogger';
 import { calculateLifePathNumber, calculateDestinyNumber, calculateSoulNumber } from './numerologyCalculations'
 import { getLalKitabRemediesForPlanets } from './lalKitabRemedies'
 import {
@@ -185,7 +186,7 @@ class TrichakraIntelligence {
         maleficHouses.push(6, 8, 12)
       }
     } catch (error) {
-      console.error('Error analyzing astrological remedies:', error)
+      devLog.error('Error analyzing astrological remedies:', error, 'trichakraIntelligence')
     }
 
     return {
@@ -242,7 +243,7 @@ class TrichakraIntelligence {
       }
       luckyDays.push(...(dayMapping[lifePathNumber] || ['Monday', 'Friday']))
     } catch (error) {
-      console.error('Error analyzing numerology remedies:', error)
+      devLog.error('Error analyzing numerology remedies:', error, 'trichakraIntelligence')
     }
 
     return {
@@ -297,7 +298,7 @@ class TrichakraIntelligence {
         })
       }
     } catch (error) {
-      console.error('Error analyzing Vastu remedies:', error)
+      devLog.error('Error analyzing Vastu remedies:', error, 'trichakraIntelligence')
     }
 
     return {

@@ -1,4 +1,5 @@
 // Professional Visual Design System for FutureSeer
+import { devLog } from '@/lib/devLogger';
 // Inspired by Align27, Jothishi, CoStar Astrology, and Melooha
 // High-definition, crisp, professional visual elements
 
@@ -485,7 +486,7 @@ export class ProfessionalVisualSystem {
   
   constructor(config: VisualConfig = PROFESSIONAL_VISUAL_CONFIG) {
     this.config = config
-    console.log('🎨 Initializing Professional Visual System')
+    devLog.debug('🎨 Initializing Professional Visual System')
   }
   
   // Generate professional SVG with enhanced styling

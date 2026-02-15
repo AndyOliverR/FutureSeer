@@ -1,4 +1,5 @@
 import { useAstroData } from '@/hooks/useAstroData'
+import { devLog } from '@/lib/devLogger';
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle, CheckCircle, Database, Zap, Shield, Brain, TrendingUp } from 'lucide-react'
@@ -26,7 +27,7 @@ export function DataSourceStatus() {
         const status = await getIntelligenceStatus()
         setSystemStatus(status)
       } catch (error) {
-        console.warn('Failed to fetch system status:', error)
+        devLog.warn('Failed to fetch system status:', error, 'DataSourceStatus')
       }
     }
 

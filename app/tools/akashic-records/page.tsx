@@ -1,9 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import {
   Sparkles,
   BookOpen,
@@ -47,74 +50,22 @@ export default function AkashicRecordsPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'overview' | 'access' | 'soul-journey' | 'past-lives' | 'karmic' | 'purpose' | 'ask-seer'>('overview')
-  const [reading, setReading] = useState<AkashicReading | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [profileComplete, setProfileComplete] = useState(false)
+  const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('akashicRecords')
+  const reading = useMemo((): AkashicReading | null => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    const data = (r.data ?? r) as AkashicReading | Record<string, unknown> | undefined
+    if (!data || typeof data !== 'object') return null
+    const d = data as Record<string, unknown>
+    if (d.soulJourney ?? d.pastLives ?? d.karmicPatterns ?? d.lifePurpose) return data as AkashicReading
+    return null
+  }, [pipelineReport])
 
-  // Check profile completeness
   useEffect(() => {
-    if (userProfile) {
-      const complete = !!(userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace)
-      setProfileComplete(complete)
-    }
+    if (userProfile) setProfileComplete(!!(userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace))
   }, [userProfile])
-
-  const accessRecords = useCallback(async () => {
-    if (!user?.uid) {
-      setError('Please log in to access the Akashic Records')
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/tools/akashic-records/reading', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: user.uid
-        })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to access Akashic Records')
-      }
-
-      if (data.success && data.data) {
-        setReading(data.data)
-        setProfileComplete(data.profileComplete || false)
-        // Navigate to soul journey after reading with a smooth transition
-        setTimeout(() => {
-          setActiveTab('soul-journey')
-        }, 300)
-      } else {
-        throw new Error('Invalid response from server')
-      }
-    } catch (err: any) {
-      console.error('Error accessing Akashic Records:', err)
-      setError(err.message || 'Failed to access the Akashic Records. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user?.uid])
-
-  // Auto-generate reading when profile is complete
-  useEffect(() => {
-    if (profileComplete && !reading && !isLoading && user?.uid) {
-      console.log('✨ Auto-generating Akashic Records reading for complete profile')
-      // Small delay to ensure UI is ready
-      const timer = setTimeout(() => {
-        accessRecords()
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [profileComplete, reading, isLoading, user?.uid, accessRecords])
 
   const missingFields = useMemo(() => {
     if (!userProfile) return ['birthDate', 'birthTime', 'birthPlace']
@@ -126,6 +77,7 @@ export default function AkashicRecordsPage() {
   }, [userProfile])
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Akashic Records">
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
       <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
         {/* Header - centred */}
@@ -142,7 +94,7 @@ export default function AkashicRecordsPage() {
           >
             📚
           </motion.div>
-          <h1 className="text-4xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
             Akashic Records
           </h1>
           <p className="text-slate-300 mb-6">
@@ -180,15 +132,16 @@ export default function AkashicRecordsPage() {
         )}
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 bg-transparent p-0 gap-2">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center gap-1.5"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center gap-1.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
                   {tab.label}
@@ -198,7 +151,7 @@ export default function AkashicRecordsPage() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <DevotionistStyleCard
               icon={<BookOpen className="w-6 h-6" />}
               title="What Are the Akashic Records?"
@@ -259,7 +212,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Access Records Tab */}
-          <TabsContent value="access" className="space-y-6">
+          <TabsContent value="access" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <DevotionistStyleCard
               icon={<Sparkles className="w-6 h-6" />}
               title="Access Your Akashic Records"
@@ -296,7 +249,7 @@ export default function AkashicRecordsPage() {
                         <span className="block mt-2 text-amber-600">Complete your birth information for the most detailed reading.</span>
                       )}
                       {profileComplete && (
-                        <span className="block mt-2 text-green-600">Your profile is complete! Your reading will be generated automatically.</span>
+                        <span className="block mt-2 text-green-600">Your profile is complete. Generate your mystical profile to get your Akashic reading.</span>
                       )}
                     </p>
                   </div>
@@ -322,23 +275,11 @@ export default function AkashicRecordsPage() {
                       </div>
                     </div>
                   )}
-                  <Button
-                    onClick={accessRecords}
-                    disabled={isLoading || !user}
-                    className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white text-lg py-6"
-                    size="lg"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Accessing the Records...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Access My Akashic Records
-                      </>
-                    )}
+                  <Button asChild className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white text-lg py-6" size="lg">
+                    <Link href="/profile">
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Generate your mystical profile
+                    </Link>
                   </Button>
                   {error && (
                     <Alert className="bg-red-50 border-2 border-red-300">
@@ -366,12 +307,11 @@ export default function AkashicRecordsPage() {
                   >
                     View Your Reading
                   </Button>
-                  <Button
-                    onClick={accessRecords}
-                    variant="outline"
-                    className="w-full border-2 border-amber-500 text-amber-800 hover:bg-amber-100"
-                  >
-                    Generate New Reading
+                  <Button asChild variant="outline" className="w-full border-2 border-amber-500 text-amber-800 hover:bg-amber-100">
+                    <Link href="/profile">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate your mystical profile
+                    </Link>
                   </Button>
                 </div>
               )}
@@ -379,7 +319,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Soul Journey Tab */}
-          <TabsContent value="soul-journey" className="space-y-6">
+          <TabsContent value="soul-journey" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<Heart className="w-6 h-6" />}
@@ -471,7 +411,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Past Lives Tab */}
-          <TabsContent value="past-lives" className="space-y-6">
+          <TabsContent value="past-lives" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<History className="w-6 h-6" />}
@@ -548,7 +488,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Karmic Patterns Tab */}
-          <TabsContent value="karmic" className="space-y-6">
+          <TabsContent value="karmic" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<Target className="w-6 h-6" />}
@@ -640,7 +580,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Life Purpose Tab */}
-          <TabsContent value="purpose" className="space-y-6">
+          <TabsContent value="purpose" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<Star className="w-6 h-6" />}
@@ -725,20 +665,24 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Ask The Seer Tab */}
-          <TabsContent value="ask-seer" className="space-y-6">
+          <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading ? (
               <AkashicSeerChatInterface reading={reading} userProfile={userProfile} />
             ) : (
               <div className="text-center py-12 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg">
                 <MessageCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                <p className="text-slate-700 mb-4">Access your Akashic Records first.</p>
-                <Button onClick={accessRecords} disabled={isLoading} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-                  Access Your Records
+                <p className="text-slate-700 mb-4">Generate your mystical profile to access your Akashic Records.</p>
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+                  <Link href="/profile">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate your mystical profile
+                  </Link>
                 </Button>
               </div>
             )}
           </TabsContent>
         </Tabs>
+        </div>
 
         {/* Personal Message Card - Always visible when reading exists */}
         {reading && (
@@ -754,6 +698,7 @@ export default function AkashicRecordsPage() {
         )}
       </div>
     </div>
+    </ToolReportGuard>
   )
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -78,7 +79,7 @@ export default function AstroChartWrapper({
         AstroChart = astroChartModule.default || astroChartModule;
         setAstroChartLoaded(true);
       } catch (error) {
-        console.error('Failed to load AstroChart library:', error);
+        devLog.error('Failed to load AstroChart library:', error, 'AstroChartWrapper');
       }
     };
 
@@ -111,7 +112,7 @@ export default function AstroChartWrapper({
       setTransits(transitAspects);
       setTransitInterpretations(interpretations);
     } catch (error) {
-      console.error('Failed to load transit data:', error);
+      devLog.error('Failed to load transit data:', error, 'AstroChartWrapper');
     } finally {
       setLoadingTransits(false);
     }
@@ -215,7 +216,7 @@ export default function AstroChartWrapper({
         </div>
       );
     } catch (error) {
-      console.error('Error rendering AstroChart:', error);
+      devLog.error('Error rendering AstroChart:', error, 'AstroChartWrapper');
       return (
         <div className="flex items-center justify-center h-96 bg-red-900/20 rounded-lg">
           <div className="text-center">

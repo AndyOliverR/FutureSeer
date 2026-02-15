@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { verifyWebhookSignature } from '@/lib/razorpay';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -115,12 +116,12 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        console.log('Unhandled webhook event:', event);
+        devLog.debug('Unhandled webhook event:', event);
     }
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error('Error processing webhook:', error);
+    devLog.error('Error processing webhook:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to process webhook' },
       { status: 500 }

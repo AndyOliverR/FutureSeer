@@ -2,9 +2,6 @@
 # Copy this to .env.local and fill in your actual API keys
 # ALL VARIABLES ARE PRIVATE - DO NOT EXPOSE TO CLIENT
 
-# Suppress baseline-browser-mapping "data over two months old" warning (optional)
-# BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true
-
 # Firebase Admin SDK Configuration (Server-side only)
 FIREBASE_ADMIN_PROJECT_ID="your-project-id"
 FIREBASE_ADMIN_CLIENT_EMAIL="your-service-account-email"
@@ -56,8 +53,13 @@ RAZORPAY_KEY_SECRET=your-razorpay-key-secret
 RAZORPAY_WEBHOOK_SECRET=your-razorpay-webhook-secret
 
 # App Configuration
+# NEXT_PUBLIC_APP_URL: canonical app URL for metadata, share links. Use https://futureseer.app in production.
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+# NEXT_PUBLIC_BASE_URL: base URL for server-side API calls to this app. Match deployed URL (e.g. https://futureseer.app in production, http://localhost:3000 locally). On Vercel, optional if VERCEL_URL is set (auto-used as fallback).
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
 NEXT_PUBLIC_APP_NAME=FutureSeer
+
+# Vercel production: set NEXT_PUBLIC_APP_URL and NEXT_PUBLIC_BASE_URL to your production domain (e.g. https://futureseer.app) in Project Settings > Environment Variables for Production (and Preview if desired).
 
 # Ask the Seer rollout: all (default) | gated
 # all = no gate, full rollout for all signed-in users

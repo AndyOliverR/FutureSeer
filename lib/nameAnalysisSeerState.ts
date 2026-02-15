@@ -22,6 +22,7 @@ export type NameQuestionType =
   | 'career_support'
   | 'personality_alignment'
   | 'adjustment'
+  | 'luck'
   | 'general'
   | 'refusal';
 
@@ -100,11 +101,16 @@ export function buildNameState(payload: NameAnalysisPayload): NameState {
 }
 
 /**
- * Classify Name Analysis question. Refusal: outcome guarantees, timing, forced name change. Valid: perception, career support, personality alignment, adjustment, general.
+ * Classify Name Analysis question. Refusal: outcome guarantees, timing, forced name change. Valid: perception, career support, personality alignment, adjustment, luck, general.
  */
 export function classifyNameQuestion(question: string): NameQuestionType {
   const lower = question.toLowerCase().trim();
 
+  if (
+    /\b(is my name lucky|is (this|my) name (lucky|fortunate)|(name|vibration).*(lucky|fortunate))\b/i.test(lower)
+  ) {
+    return 'luck';
+  }
   if (
     /\b(will this name make me (successful|rich|famous)|will changing my name change my fate|when will (results|success) come|is this a lucky name|will (i|my) (succeed|win|get))\b/.test(lower)
   ) {

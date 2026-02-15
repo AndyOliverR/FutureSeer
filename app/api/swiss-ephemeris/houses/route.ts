@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 
 export const dynamic = 'force-static'
 
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('Swiss Ephemeris Houses API Error:', error);
+    devLog.error('Swiss Ephemeris Houses API Error:', error, 'route');
     return NextResponse.json({ 
       error: 'Failed to calculate house cusps',
       details: error instanceof Error ? error.message : 'Unknown error'

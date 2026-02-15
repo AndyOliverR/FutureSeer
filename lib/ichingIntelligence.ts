@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 
 export interface IChingHexagram {
@@ -454,13 +455,13 @@ class IChingIntelligence {
   ])
 
   async consultIChing(question: string, method: 'coins' | 'yarrow' | 'random'): Promise<IChingAnalysis> {
-    console.log('🔮 ichingIntelligence: consultIChing called', { question, method });
+    devLog.debug('🔮 ichingIntelligence: consultIChing called', { question, method });
     
     try {
       // Generate hexagram with changing lines
-      console.log('🔮 ichingIntelligence: Generating hexagram with method:', method);
+      devLog.debug('🔮 ichingIntelligence: Generating hexagram with method:', method);
       const hexagram = await this.generateHexagram(method)
-      console.log('✅ ichingIntelligence: Hexagram generated:', {
+      devLog.debug('✅ ichingIntelligence: Hexagram generated:', {
         number: hexagram.number,
         name: hexagram.name,
         linesCount: hexagram.lines?.length || 0,
@@ -468,31 +469,31 @@ class IChingIntelligence {
       });
       
       // Analyze timing
-      console.log('🔮 ichingIntelligence: Analyzing timing...');
+      devLog.debug('🔮 ichingIntelligence: Analyzing timing...');
       const timing = this.analyzeTiming(hexagram)
       
       // Generate interpretation
-      console.log('🔮 ichingIntelligence: Generating interpretation...');
+      devLog.debug('🔮 ichingIntelligence: Generating interpretation...');
       const interpretation = this.generateInterpretation(question, hexagram)
       
       // Analyze elements
-      console.log('🔮 ichingIntelligence: Analyzing elements...');
+      devLog.debug('🔮 ichingIntelligence: Analyzing elements...');
       const elements = this.analyzeElements(hexagram)
       
       // Analyze trigrams
-      console.log('🔮 ichingIntelligence: Analyzing trigrams...');
+      devLog.debug('🔮 ichingIntelligence: Analyzing trigrams...');
       const trigramAnalysis = this.analyzeTrigrams(hexagram)
       
       // Analyze changing lines
-      console.log('🔮 ichingIntelligence: Analyzing changing lines...');
+      devLog.debug('🔮 ichingIntelligence: Analyzing changing lines...');
       const changingLines = this.analyzeChangingLines(hexagram)
       
       // Generate recommendations
-      console.log('🔮 ichingIntelligence: Generating recommendations...');
+      devLog.debug('🔮 ichingIntelligence: Generating recommendations...');
       const recommendations = this.generateRecommendations(hexagram, interpretation)
       
       // Generate coaching insights
-      console.log('🔮 ichingIntelligence: Generating coaching insights...');
+      devLog.debug('🔮 ichingIntelligence: Generating coaching insights...');
       const coaching = this.generateCoaching(hexagram, interpretation)
 
       const analysis: IChingAnalysis = {
@@ -511,7 +512,7 @@ class IChingIntelligence {
         coaching
       }
 
-      console.log('✅ ichingIntelligence: Analysis object created successfully:', {
+      devLog.debug('✅ ichingIntelligence: Analysis object created successfully:', {
         id: analysis.id,
         hexagramNumber: analysis.hexagram.number,
         hexagramName: analysis.hexagram.name,
@@ -521,12 +522,12 @@ class IChingIntelligence {
 
       return analysis
     } catch (error: any) {
-      console.error('❌ ichingIntelligence: Error in consultIChing:', error);
-      console.error('❌ ichingIntelligence: Error details:', {
+      devLog.error('❌ ichingIntelligence: Error in consultIChing:', error, 'ichingIntelligence');
+      devLog.error('❌ ichingIntelligence: Error details:', {
         message: error.message,
         stack: error.stack,
         name: error.name
-      });
+      }, 'ichingIntelligence');
       throw error;
     }
   }
@@ -701,7 +702,7 @@ class IChingIntelligence {
     }
     
     // Final fallback - should never happen if lookup table is complete
-    console.warn(`⚠️ ichingIntelligence: Hexagram ${number} not found in lookup table, using generic fallback`);
+    devLog.warn(`⚠️ ichingIntelligence: Hexagram ${number} not found in lookup table, using generic fallback`, 'ichingIntelligence');
     return {
       number,
       name: `Hexagram ${number}`,
@@ -731,24 +732,24 @@ class IChingIntelligence {
   }
 
   private async generateHexagram(method: 'coins' | 'yarrow' | 'random'): Promise<IChingHexagram> {
-    console.log('🔮 ichingIntelligence: generateHexagram started with method:', method);
+    devLog.debug('🔮 ichingIntelligence: generateHexagram started with method:', method);
     
     // Generate 6 lines using the specified method (from bottom to top)
-    console.log('🔮 ichingIntelligence: Generating 6 lines...');
+    devLog.debug('🔮 ichingIntelligence: Generating 6 lines...');
     const lineResults = this.generateLines(method)
-    console.log('✅ ichingIntelligence: Lines generated:', lineResults.map(l => `${l.position}:${l.yinYang}${l.isChanging ? ' (changing)' : ''}`));
+    devLog.debug('✅ ichingIntelligence: Lines generated:', lineResults.map(l => `${l.position}:${l.yinYang}${l.isChanging ? ' (changing)' : ''}`));
     
     // Create pattern string (bottom to top)
     const pattern = this.linesToPattern(lineResults)
-    console.log('🔮 ichingIntelligence: Pattern created:', pattern);
+    devLog.debug('🔮 ichingIntelligence: Pattern created:', pattern);
     
     // Look up hexagram number from pattern
     const hexagramNumber = this.patternToHexagramNumber(pattern)
-    console.log('🔮 ichingIntelligence: Hexagram number looked up:', hexagramNumber);
+    devLog.debug('🔮 ichingIntelligence: Hexagram number looked up:', hexagramNumber);
     
     // Get hexagram data
     const baseHexagram = this.getHexagramByNumber(hexagramNumber)
-    console.log('✅ ichingIntelligence: Base hexagram retrieved:', { number: baseHexagram.number, name: baseHexagram.name });
+    devLog.debug('✅ ichingIntelligence: Base hexagram retrieved:', { number: baseHexagram.number, name: baseHexagram.name });
     
     // Extract changing line positions
     const changingLines = lineResults
@@ -822,28 +823,28 @@ class IChingIntelligence {
     
     // Validate hexagram structure
     if (!hexagramResult.lines || !Array.isArray(hexagramResult.lines) || hexagramResult.lines.length !== 6) {
-      console.error('❌ ichingIntelligence: Invalid lines array:', hexagramResult.lines);
+      devLog.error('❌ ichingIntelligence: Invalid lines array:', hexagramResult.lines, 'ichingIntelligence');
       throw new Error(`Invalid hexagram lines: expected 6 lines, got ${hexagramResult.lines?.length || 0}`);
     }
     
     if (!hexagramResult.number || !hexagramResult.name || !hexagramResult.chinese) {
-      console.error('❌ ichingIntelligence: Missing required hexagram fields:', {
+      devLog.error('❌ ichingIntelligence: Missing required hexagram fields:', {
         hasNumber: !!hexagramResult.number,
         hasName: !!hexagramResult.name,
         hasChinese: !!hexagramResult.chinese
-      });
+      }, 'ichingIntelligence');
       throw new Error('Invalid hexagram: missing required fields');
     }
     
     // Validate each line has required properties
     hexagramResult.lines.forEach((line, idx) => {
       if (!line.hasOwnProperty('yinYang') || !line.hasOwnProperty('changing') || !line.hasOwnProperty('position')) {
-        console.error(`❌ ichingIntelligence: Invalid line at index ${idx}:`, line);
+        devLog.error(`❌ ichingIntelligence: Invalid line at index ${idx}:`, line, 'ichingIntelligence');
         throw new Error(`Invalid line structure at position ${idx}`);
       }
     });
     
-    console.log('✅ ichingIntelligence: Hexagram generation complete and validated:', {
+    devLog.debug('✅ ichingIntelligence: Hexagram generation complete and validated:', {
       number: hexagramResult.number,
       name: hexagramResult.name,
       chinese: hexagramResult.chinese,

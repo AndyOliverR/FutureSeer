@@ -1,6 +1,7 @@
 "use client"
 
 import React from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 import { SacredTextType } from '@/lib/bibliomancyIntelligence'
@@ -88,7 +89,7 @@ export default function SacredTextSelector({ selectedText, onSelect, disabled = 
               key={option.type}
               onClick={() => {
                 if (!disabled) {
-                  console.log('📚 Selected sacred text:', option.type, option.name)
+                  devLog.debug('📚 Selected sacred text:', option.type, option.name)
                   onSelect(option.type)
                 }
               }}

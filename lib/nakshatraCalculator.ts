@@ -2,6 +2,7 @@
 // Calculates nakshatra positions and analysis from planetary data
 
 import { NAKSHATRAS, NakshatraData, getNakshatraFromLongitude } from './nakshatraData';
+import { devLog } from '@/lib/devLogger';
 
 export interface PlanetaryNakshatra {
   planet: string;
@@ -78,7 +79,7 @@ export class NakshatraCalculator {
       .filter(planet => {
         // Filter out planets with invalid longitude
         if (planet.longitude === undefined || planet.longitude === null || isNaN(planet.longitude)) {
-          console.warn(`⚠️ Skipping ${planet.planet} - invalid longitude:`, planet.longitude);
+          devLog.warn(`⚠️ Skipping ${planet.planet} - invalid longitude:`, planet.longitude, 'nakshatraCalculator');
           return false;
         }
         return true;
@@ -94,7 +95,7 @@ export class NakshatraCalculator {
         const nakshatra = getNakshatraFromLongitude(adjustedLongitude);
         
         if (!nakshatra) {
-          console.error(`❌ Failed to get nakshatra for ${planet.planet} at longitude ${adjustedLongitude}`);
+          devLog.error(`❌ Failed to get nakshatra for ${planet.planet} at longitude ${adjustedLongitude}`, undefined, 'nakshatraCalculator');
           return null;
         }
         

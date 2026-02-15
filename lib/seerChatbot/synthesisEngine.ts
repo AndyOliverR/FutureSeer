@@ -1,4 +1,5 @@
 import { AggregatedEvidence } from './evidenceAggregator';
+import { devLog } from '@/lib/devLogger';
 import { IntentSlots } from './intentExtractor';
 
 export interface SeerResponse {
@@ -369,10 +370,10 @@ export function testSynthesisEngine() {
   };
   
   const response = generateSeerResponse(context);
-  console.log("Generated Response:");
-  console.log(JSON.stringify(response, null, 2));
+  devLog.debug("Generated Response:");
+  devLog.debug(JSON.stringify(response, null, 2));
   
   const systemPrompt = generateSystemPrompt(context);
-  console.log("\nSystem Prompt:");
-  console.log(systemPrompt);
+  devLog.debug("\nSystem Prompt:");
+  devLog.debug(systemPrompt);
 } 

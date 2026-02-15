@@ -4,6 +4,7 @@
  */
 
 import { doc, setDoc, getDoc, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
@@ -25,7 +26,7 @@ class OghamIntelligence {
     try {
       this.db = getFirebaseDB()
     } catch (error) {
-      console.warn('Firebase not available for Ogham Intelligence')
+      devLog.warn('Firebase not available for Ogham Intelligence', undefined, 'oghamIntelligence')
     }
   }
 
@@ -63,7 +64,7 @@ class OghamIntelligence {
           }
         }
       } catch (error) {
-        console.warn('Could not load from Firestore, generating new reading:', error)
+        devLog.warn('Could not load from Firestore, generating new reading:', error, 'oghamIntelligence')
       }
     }
 
@@ -246,7 +247,7 @@ Practices:
       return report
 
     } catch (error) {
-      console.error('Error generating AI-enhanced Ogham reading:', error)
+      devLog.error('Error generating AI-enhanced Ogham reading:', error, 'oghamIntelligence')
       // Return report without AI enhancements if AI fails
       return generateOghamReportStructure(
         userId,
@@ -359,7 +360,7 @@ Practices:
         } as OghamReport
       })
     } catch (error) {
-      console.error('Error fetching user readings:', error)
+      devLog.error('Error fetching user readings:', error, 'oghamIntelligence')
       return []
     }
   }
@@ -378,7 +379,7 @@ Practices:
         timestamp: Timestamp.fromDate(reading.timestamp)
       })
     } catch (error) {
-      console.error('Error saving reading:', error)
+      devLog.error('Error saving reading:', error, 'oghamIntelligence')
     }
   }
 }

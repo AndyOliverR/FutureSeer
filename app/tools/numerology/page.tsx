@@ -1,10 +1,12 @@
-// Streamlined Numerology page that directly uses comprehensive profile data
+// Streamlined Numerology page: reads only from pipeline cache (useToolReport).
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
-import { useToolData, saveToolData } from '@/lib/toolStorageUtils'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,7 +21,6 @@ import {
   Calendar,
   Clock,
   MapPin,
-  RefreshCw,
   CheckCircle,
   AlertTriangle,
   Info,
@@ -57,23 +58,45 @@ import ComprehensiveNumerologyReport, { type ComprehensiveAnalysis } from '@/com
 import NumerologySeerChatInterface from '@/components/numerology/NumerologySeerChatInterface'
 import { DevotionistStyleCard } from '@/components/western/DevotionistStyleCard'
 import { ChaldeanInterpretations } from '@/lib/numerology/chaldean'
+import { toIntegerOrNull, toIntegerOrUndefined } from '@/lib/utils/coerceNumber'
+
+/** Map pipeline report (numbers, breakdown, etc.) to page-style numerology data. */
+function numerologyDataFromReport(report: unknown): Record<string, unknown> | null {
+  if (!report || typeof report !== 'object') return null
+  const r = report as Record<string, unknown>
+  if (r.placeholder === true) return null
+  const data = (r.data ?? r) as Record<string, unknown>
+  const numbers = (data?.numbers ?? r.numbers) as Record<string, number> | undefined
+  const breakdown = (data?.breakdown ?? r.breakdown) as Record<string, unknown> | undefined
+  if (!numbers) return null
+  return {
+    life_path_number: numbers.lifePath,
+    life_path: numbers.lifePath,
+    expression_number: numbers.destiny,
+    soul_number: numbers.soulUrge,
+    soul_urge: numbers.soulUrge,
+    personality_number: numbers.personality,
+    destiny_number: numbers.destiny,
+    birthday_number: numbers.birthday,
+    maturity_number: numbers.maturity,
+    breakdown: breakdown ?? {},
+    interpretations: (data?.interpretations ?? r.interpretations) ?? {},
+  }
+}
 
 export default function NumerologyPage() {
   const { user, userProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<'introduction' | 'overview' | 'report' | 'numbers' | 'compatibility' | 'guidance' | 'remedies' | 'ask-the-seer'>('introduction')
-  const [isAutoGenerating, setIsAutoGenerating] = useState(false)
-  const [comprehensiveReport, setComprehensiveReport] = useState<Record<string, unknown> | null>(null)
-  const [isLoadingComprehensiveReport, setIsLoadingComprehensiveReport] = useState(false)
+  const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('numerology')
+  const numerologyData = useMemo(() => numerologyDataFromReport(pipelineReport), [pipelineReport])
+  const comprehensiveReport = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    const data = (r.data ?? r) as Record<string, unknown>
+    return (data?.comprehensiveAnalysis ?? r.comprehensiveAnalysis) as Record<string, unknown> | null ?? null
+  }, [pipelineReport])
 
-  // Check if user has complete birth details
   const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
-
-  // Use the new localStorage-based hook
-  const { toolData: numerologyData, isLoading, error, refetch } = useToolData(
-    user?.uid, 
-    'numerology', 
-    hasCompleteDetails
-  )
 
   // Memoized calculations for performance
   const driverConductor = useMemo(() => ({
@@ -113,14 +136,13 @@ export default function NumerologyPage() {
     [userProfile?.birthDate]
   )
 
-  const summaryNumbers = useMemo(() => 
-    getSummaryNumbers(
-      numerologyData?.life_path_number || numerologyData?.life_path || null,
-      numerologyData?.destiny_number || null,
-      numerologyData?.birthday_number || null
-    ),
-    [numerologyData?.life_path_number, numerologyData?.life_path, numerologyData?.destiny_number, numerologyData?.birthday_number]
-  )
+  const summaryNumbers = useMemo(() => {
+    return getSummaryNumbers(
+      toIntegerOrNull(numerologyData?.life_path_number ?? numerologyData?.life_path) ?? null,
+      toIntegerOrNull(numerologyData?.destiny_number) ?? null,
+      toIntegerOrNull(numerologyData?.birthday_number) ?? null
+    )
+  }, [numerologyData?.life_path_number, numerologyData?.life_path, numerologyData?.destiny_number, numerologyData?.birthday_number])
 
   // Memoize current month to avoid recalculation on every render
   const currentMonth = useMemo(() => new Date().getMonth() + 1, [])
@@ -132,186 +154,53 @@ export default function NumerologyPage() {
     return generateMonthForecast(py, birthYear, currentMonth)
   }, [personalYear, userProfile?.birthDate, currentMonth])
 
-  const karmicDebts = useMemo(() => 
-    detectKarmicDebtNumbers([
-      numerologyData?.life_path_number || numerologyData?.life_path,
-      numerologyData?.expression_number,
-      numerologyData?.destiny_number,
-      numerologyData?.birthday_number,
-      numerologyData?.maturity_number,
-    ]),
-    [numerologyData?.life_path_number, numerologyData?.life_path, numerologyData?.expression_number, numerologyData?.destiny_number, numerologyData?.birthday_number, numerologyData?.maturity_number]
-  )
+  const karmicDebts = useMemo(() => {
+    return detectKarmicDebtNumbers([
+      toIntegerOrNull(numerologyData?.life_path_number ?? numerologyData?.life_path),
+      toIntegerOrNull(numerologyData?.expression_number),
+      toIntegerOrNull(numerologyData?.destiny_number),
+      toIntegerOrNull(numerologyData?.birthday_number),
+      toIntegerOrNull(numerologyData?.maturity_number),
+    ])
+  }, [numerologyData?.life_path_number, numerologyData?.life_path, numerologyData?.expression_number, numerologyData?.destiny_number, numerologyData?.birthday_number, numerologyData?.maturity_number])
 
-  // Auto-generate numerology when profile is complete and no data exists
-  useEffect(() => {
-    const shouldAutogen = !!hasCompleteDetails && !isLoading && !numerologyData && !!user?.uid && !isAutoGenerating
-    if (!shouldAutogen) return
-    setIsAutoGenerating(true)
-    ;(async () => {
-      try {
-        const res = await fetch('/api/numerology/chaldean', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user?.uid,
-            birthDate: userProfile?.birthDate,
-            currentName: userProfile?.fullName || userProfile?.displayName || user?.displayName || ''
-          })
-        })
-        const json = await res.json()
-        if (json?.data?.result && user?.uid) {
-          const r = json.data.result
-          const payload = {
-            life_path_number: r.numbers.lifePath,
-            life_path: r.numbers.lifePath,
-            expression_number: r.numbers.destiny,
-            soul_number: r.numbers.soulUrge,
-            soul_urge: r.numbers.soulUrge,
-            personality_number: r.numbers.personality,
-            destiny_number: r.numbers.destiny,
-            birthday_number: r.numbers.birthday,
-            maturity_number: r.numbers.maturity,
-            breakdown: r.breakdown,
-            interpretations: json.data.interpretations
-          }
-          saveToolData(user.uid, 'numerology', payload)
-          refetch() // Trigger immediate data reload after saving
-        }
-      } catch (e) {
-        console.error('numerology autogen failed', e)
-      } finally {
-        setIsAutoGenerating(false)
-      }
-    })()
-  }, [hasCompleteDetails, isLoading, numerologyData, user?.uid, userProfile?.birthDate, userProfile?.displayName, userProfile?.fullName, isAutoGenerating])
-
-  // Fetch comprehensive report when numerology data is available
-  useEffect(() => {
-    const fetchComprehensiveReport = async () => {
-      if (!user?.uid || !numerologyData || comprehensiveReport) {
-        return
-      }
-
-      setIsLoadingComprehensiveReport(true)
-      try {
-        const response = await fetch('/api/numerology/comprehensive', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            numerologyData: {
-              lifePathNumber: numerologyData.life_path_number || numerologyData.life_path,
-              expressionNumber: numerologyData.expression_number,
-              soulUrgeNumber: numerologyData.soul_number || numerologyData.soul_urge,
-              personalityNumber: numerologyData.personality_number,
-              destinyNumber: numerologyData.destiny_number,
-              birthdayNumber: numerologyData.birthday_number,
-              maturityNumber: numerologyData.maturity_number,
-              breakdown: numerologyData.breakdown
-            },
-            userProfile: userProfile
-          }),
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          if (result.success && result.data?.comprehensiveAnalysis) {
-            setComprehensiveReport(result.data.comprehensiveAnalysis)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching comprehensive report:', error)
-      } finally {
-        setIsLoadingComprehensiveReport(false)
-      }
-    }
-
-    fetchComprehensiveReport()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, numerologyData])
-
-  if (isLoading) {
-    return (
-      <div className="relative min-h-screen starfield-ultra-sharp">
-        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
-              <p className="m3-body-medium text-slate-300">Loading your numerology data...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="relative min-h-screen starfield-ultra-sharp">
-        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h3 className="m3-title-large text-red-300 font-semibold mb-2">Error Loading Numerology Data</h3>
-            <p className="m3-body-medium text-red-400 mb-4">{error}</p>
-            <div className="flex items-center justify-center gap-3">
-              <Button 
-                onClick={refetch} 
-                className="m3-ripple m3-button-bounce m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition bg-[var(--m3-primary)] text-[var(--m3-on-primary)] hover:bg-[var(--m3-primary)]/90"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Try Again
+  return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="numerology data">
+      {!hasCompleteDetails ? (
+        <div className="relative min-h-screen starfield-ultra-sharp">
+          <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+            <div className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center">
+              <Info className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="m3-title-large text-slate-300 font-semibold mb-2">Complete Your Profile</h3>
+              <p className="m3-body-medium text-slate-400 mb-4">
+                Please complete your birth date, time, and place in your profile to generate numerology insights.
+              </p>
+              <Button asChild className="m3-ripple m3-button-bounce m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition bg-[var(--m3-primary)] text-[var(--m3-on-primary)] hover:bg-[var(--m3-primary)]/90">
+                <Link href="/profile">
+                  <User className="w-4 h-4 mr-2" />
+                  Complete Profile
+                </Link>
               </Button>
             </div>
           </div>
         </div>
-      </div>
-    )
-  }
-
-  if (!hasCompleteDetails) {
-    return (
-      <div className="relative min-h-screen starfield-ultra-sharp">
-        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center">
-            <Info className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="m3-title-large text-slate-300 font-semibold mb-2">Complete Your Profile</h3>
-            <p className="m3-body-medium text-slate-400 mb-4">
-              Please complete your birth date, time, and place in your profile to generate numerology insights.
-            </p>
-            <Button
-              onClick={() => window.location.href = '/profile'}
-              className="m3-ripple m3-button-bounce m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition bg-[var(--m3-primary)] text-[var(--m3-on-primary)] hover:bg-[var(--m3-primary)]/90"
-            >
-              <User className="w-4 h-4 mr-2" />
-              Complete Profile
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!numerologyData) {
-    return (
-      <div className="relative min-h-screen starfield-ultra-sharp">
-        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center">
-            <Info className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="m3-title-large text-slate-300 font-semibold mb-2">Preparing Your Numerology</h3>
-            <p className="m3-body-medium text-slate-400 mb-4">We're generating your Chaldean numerology report automatically.</p>
-            <div className="flex items-center justify-center gap-3">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-400" />
+      ) : !numerologyData ? (
+        <div className="relative min-h-screen starfield-ultra-sharp">
+          <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+            <div className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center">
+              <Info className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="m3-title-large text-slate-300 font-semibold mb-2">Numerology Report</h3>
+              <p className="m3-body-medium text-slate-400 mb-4">Generate your mystical profile to see your Chaldean numerology report.</p>
+              <Button asChild className="m3-ripple m3-button-bounce m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition bg-[var(--m3-primary)] text-[var(--m3-on-primary)] hover:bg-[var(--m3-primary)]/90">
+                <Link href="/profile">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate your mystical profile
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
-      </div>
-    )
-  }
-
-  return (
+      ) : (
     <div className="relative min-h-screen">
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
@@ -332,60 +221,61 @@ export default function NumerologyPage() {
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 bg-transparent p-0">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="introduction" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Introduction
             </TabsTrigger>
             <TabsTrigger 
               value="overview" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="report" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Report
             </TabsTrigger>
             <TabsTrigger 
               value="compatibility" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Compare
             </TabsTrigger>
             <TabsTrigger 
               value="numbers" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Numbers
             </TabsTrigger>
             <TabsTrigger 
               value="remedies" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Remedies
             </TabsTrigger>
             <TabsTrigger 
               value="guidance" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Guidance
             </TabsTrigger>
             <TabsTrigger 
               value="ask-the-seer" 
-              className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:m3-elevation-1 rounded-xl px-3 py-2 text-xs sm:text-sm m3-label-medium"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Ask the Seer
             </TabsTrigger>
           </TabsList>
 
           {/* Introduction Tab */}
-          <TabsContent value="introduction" className="space-y-6">
+          <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -396,7 +286,7 @@ export default function NumerologyPage() {
           </TabsContent>
 
           {/* Report Tab */}
-          <TabsContent value="report" className="space-y-6">
+          <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -407,13 +297,13 @@ export default function NumerologyPage() {
                 numerologyData={numerologyData}
                 userProfile={userProfile}
                 cachedReport={comprehensiveReport as ComprehensiveAnalysis | null | undefined}
-                isLoadingReport={isLoadingComprehensiveReport}
+                isLoadingReport={isLoading}
               />
             </motion.div>
           </TabsContent>
 
           {/* Compatibility Tab */}
-          <TabsContent value="compatibility" className="space-y-6">
+          <TabsContent value="compatibility" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -424,7 +314,7 @@ export default function NumerologyPage() {
           </TabsContent>
 
           {/* Remedies Tab */}
-          <TabsContent value="remedies" className="space-y-6">
+          <TabsContent value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -439,7 +329,7 @@ export default function NumerologyPage() {
           </TabsContent>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -539,7 +429,7 @@ export default function NumerologyPage() {
           </TabsContent>
 
           {/* Numbers Tab */}
-          <TabsContent value="numbers" className="space-y-6">
+          <TabsContent value="numbers" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -561,8 +451,8 @@ export default function NumerologyPage() {
                   icon={<Target className="w-5 h-5" />}
                   title={`Life Path Number ${numerologyData?.life_path_number || numerologyData?.life_path || 'N/A'}`}
                   summary={(() => {
-                    const lifePath = numerologyData?.life_path_number || numerologyData?.life_path
-                    return lifePath ? (ChaldeanInterpretations[lifePath] || "Your life's purpose and the lessons you're here to learn") : "Your life's purpose and the lessons you're here to learn"
+                    const n = toIntegerOrNull(numerologyData?.life_path_number ?? numerologyData?.life_path)
+                    return n != null ? (ChaldeanInterpretations[n] || "Your life's purpose and the lessons you're here to learn") : "Your life's purpose and the lessons you're here to learn"
                   })()}
                   colorScheme="amber"
                 />
@@ -572,8 +462,8 @@ export default function NumerologyPage() {
                   icon={<BookOpen className="w-5 h-5" />}
                   title={`Expression Number ${numerologyData?.expression_number || 'N/A'}`}
                   summary={(() => {
-                    const expr = numerologyData?.expression_number
-                    return expr ? (ChaldeanInterpretations[expr] || "Your natural talents and abilities revealed through your name") : "Your natural talents and abilities"
+                    const n = toIntegerOrNull(numerologyData?.expression_number)
+                    return n != null ? (ChaldeanInterpretations[n] || "Your natural talents and abilities revealed through your name") : "Your natural talents and abilities"
                   })()}
                   colorScheme="blue"
                 />
@@ -583,8 +473,8 @@ export default function NumerologyPage() {
                   icon={<Heart className="w-5 h-5" />}
                   title={`Soul Urge Number ${numerologyData?.soul_number || numerologyData?.soul_urge || 'N/A'}`}
                   summary={(() => {
-                    const soul = numerologyData?.soul_number || numerologyData?.soul_urge
-                    return soul ? (ChaldeanInterpretations[soul] || "Your inner desires and motivations that drive your choices") : "Your inner desires and motivations"
+                    const n = toIntegerOrNull(numerologyData?.soul_number ?? numerologyData?.soul_urge)
+                    return n != null ? (ChaldeanInterpretations[n] || "Your inner desires and motivations that drive your choices") : "Your inner desires and motivations"
                   })()}
                   colorScheme="pink"
                 />
@@ -605,8 +495,8 @@ export default function NumerologyPage() {
                   icon={<Eye className="w-5 h-5" />}
                   title={`Personality Number ${numerologyData?.personality_number || 'N/A'}`}
                   summary={(() => {
-                    const personality = numerologyData?.personality_number
-                    return personality ? (ChaldeanInterpretations[personality] || "How others perceive you based on your outer expression") : "How others perceive you"
+                    const n = toIntegerOrNull(numerologyData?.personality_number)
+                    return n != null ? (ChaldeanInterpretations[n] || "How others perceive you based on your outer expression") : "How others perceive you"
                   })()}
                   colorScheme="purple"
                 />
@@ -616,29 +506,29 @@ export default function NumerologyPage() {
                   icon={<Sparkles className="w-5 h-5" />}
                   title={`Destiny Number ${numerologyData?.destiny_number || 'N/A'}`}
                   summary={(() => {
-                    const destiny = numerologyData?.destiny_number
-                    return destiny ? (ChaldeanInterpretations[destiny] || "Your ultimate life purpose and the path you're meant to walk") : "Your ultimate life purpose"
+                    const n = toIntegerOrNull(numerologyData?.destiny_number)
+                    return n != null ? (ChaldeanInterpretations[n] || "Your ultimate life purpose and the path you're meant to walk") : "Your ultimate life purpose"
                   })()}
                   colorScheme="green"
                 />
 
                 {/* Birthday & Maturity Numbers */}
-                {numerologyData?.birthday_number && (
+                {numerologyData?.birthday_number != null ? (
                   <DevotionistStyleCard
                     icon={<Calendar className="w-5 h-5" />}
                     title={`Birthday Number ${numerologyData.birthday_number}`}
                     summary="Special gift or talent you bring to this life"
                     colorScheme="cyan"
                   />
-                )}
-                {numerologyData?.maturity_number && (
+                ) : null}
+                {numerologyData?.maturity_number != null ? (
                   <DevotionistStyleCard
                     icon={<Sparkles className="w-5 h-5" />}
                     title={`Maturity Number ${numerologyData.maturity_number}`}
                     summary="The ultimate goal you're working toward in the second half of life"
                     colorScheme="amber"
                   />
-                )}
+                ) : null}
               </div>
             </DashboardSection>
 
@@ -738,7 +628,7 @@ export default function NumerologyPage() {
                 {/* Name Planes */}
                 <NamePlanes
                   firstName={userProfile?.fullName ?? userProfile?.displayName ?? user?.displayName ?? undefined}
-                  nameNumber={numerologyData?.expression_number || numerologyData?.destiny_number}
+                  nameNumber={toIntegerOrUndefined(numerologyData?.expression_number) ?? toIntegerOrUndefined(numerologyData?.destiny_number)}
                 />
               </div>
             </DashboardSection>
@@ -747,7 +637,7 @@ export default function NumerologyPage() {
 
 
           {/* Guidance Tab */}
-          <TabsContent value="guidance" className="space-y-6">
+          <TabsContent value="guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -935,7 +825,7 @@ export default function NumerologyPage() {
           </TabsContent>
 
           {/* Ask the Seer Tab */}
-          <TabsContent value="ask-the-seer" className="space-y-6">
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -946,14 +836,14 @@ export default function NumerologyPage() {
                 userId={user.uid}
                 userProfile={userProfile}
                 numerologyData={{
-                  lifePathNumber: numerologyData.life_path_number || numerologyData.life_path,
-                  expressionNumber: numerologyData.expression_number,
-                  soulUrgeNumber: numerologyData.soul_number || numerologyData.soul_urge,
-                  personalityNumber: numerologyData.personality_number,
-                  destinyNumber: numerologyData.destiny_number,
-                  birthdayNumber: numerologyData.birthday_number,
-                  maturityNumber: numerologyData.maturity_number,
-                  personalYearNumber: numerologyData.personal_year_number
+                  lifePathNumber: toIntegerOrUndefined(numerologyData.life_path_number ?? numerologyData.life_path),
+                  expressionNumber: toIntegerOrUndefined(numerologyData.expression_number),
+                  soulUrgeNumber: toIntegerOrUndefined(numerologyData.soul_number ?? numerologyData.soul_urge),
+                  personalityNumber: toIntegerOrUndefined(numerologyData.personality_number),
+                  destinyNumber: toIntegerOrUndefined(numerologyData.destiny_number),
+                  birthdayNumber: toIntegerOrUndefined(numerologyData.birthday_number),
+                  maturityNumber: toIntegerOrUndefined(numerologyData.maturity_number),
+                  personalYearNumber: toIntegerOrUndefined((numerologyData as Record<string, unknown>).personal_year_number)
                 }}
                 comprehensiveReport={comprehensiveReport}
               />
@@ -981,7 +871,10 @@ export default function NumerologyPage() {
             </motion.div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
+      )}
+    </ToolReportGuard>
   )
 }

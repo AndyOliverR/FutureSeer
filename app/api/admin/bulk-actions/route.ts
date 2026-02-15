@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth } from '@/lib/firebase-admin';
 import { writeAuditLog } from '@/lib/adminAudit';
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Admin bulk-actions error:', err);
+    devLog.error('Admin bulk-actions error:', err, 'route');
     return NextResponse.json({ error: 'Failed to perform bulk action' }, { status: 500 });
   }
 }

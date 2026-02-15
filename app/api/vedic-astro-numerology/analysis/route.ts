@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
 
     // Check if Groq API key is available
     if (!process.env.GROQ_API_KEY) {
-      console.error('❌ GROQ_API_KEY is not configured');
+      devLog.error('❌ GROQ_API_KEY is not configured', undefined, 'route');
       // Return fallback response with basic analysis
       const fallbackAnalysis = {
         personalitySynthesis: `Your ${moonSign} Moon sign (most important in Vedic astrology) combines with Life Path ${numerologyProfile.lifePathNumber} (ruled by ${numerologyProfile.planetaryInfluences['Life Path']?.planet}) and Lagna ${lagnaSign} to create a unique Vedic personality profile.`,
@@ -370,7 +370,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Vedic Astro-Numerology API error:', error);
+    devLog.error('❌ Vedic Astro-Numerology API error:', error, 'route');
     return NextResponse.json({
       success: false,
       error: error.message || 'Failed to generate Vedic Astro-Numerology analysis'

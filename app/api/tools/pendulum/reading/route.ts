@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       data: analysis
     })
   } catch (error: any) {
-    console.error('Error generating pendulum reading:', error)
+    devLog.error('Error generating pendulum reading:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
 
 async function verifyAdmin(request: NextRequest): Promise<boolean> {
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, subscriptions: list });
   } catch (err) {
-    console.error('Admin billing GET error:', err);
+    devLog.error('Admin billing GET error:', err, 'route');
     return NextResponse.json({ error: 'Failed to fetch billing data' }, { status: 500 });
   }
 }

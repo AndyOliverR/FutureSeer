@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { devLog } from '@/lib/devLogger';
 import { profileManager } from '@/lib/services/profileManager'
 
 export const dynamic = 'force-static'
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
     const profiles = await profileManager.getAdditionalProfiles(userId)
     return NextResponse.json({ success: true, profiles })
   } catch (error: any) {
-    console.error('Error fetching profiles:', error)
+    devLog.error('Error fetching profiles:', error, 'route')
     return NextResponse.json(
       { error: error.message || 'Failed to fetch profiles' },
       { status: 500 }
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     const profile = await profileManager.createAdditionalProfile(userId, profileData)
     return NextResponse.json({ success: true, profile })
   } catch (error: any) {
-    console.error('Error creating profile:', error)
+    devLog.error('Error creating profile:', error, 'route')
     return NextResponse.json(
       { error: error.message || 'Failed to create profile' },
       { status: 500 }

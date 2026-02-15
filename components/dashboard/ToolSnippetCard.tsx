@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 export interface ToolSnippetCardProps {
   toolName: string
@@ -16,6 +17,7 @@ export interface ToolSnippetCardProps {
   href: string
   colorScheme?: 'amber' | 'purple' | 'blue' | 'green' | 'pink' | 'indigo' | 'rose' | 'cyan' | 'teal' | 'orange'
   priority?: number
+  iconClassName?: string
 }
 
 const colorSchemes = {
@@ -100,7 +102,8 @@ export function ToolSnippetCard({
   insight,
   href,
   colorScheme = 'amber',
-  priority = 0
+  priority = 0,
+  iconClassName
 }: ToolSnippetCardProps) {
   const colors = colorSchemes[colorScheme]
 
@@ -124,7 +127,11 @@ export function ToolSnippetCard({
           <div className="flex flex-col items-center text-center">
             {/* Icon: emoji only, no circle */}
             <div className="inline-flex items-center justify-center min-h-[3.5rem] mb-4 group-hover:scale-110 transition-transform duration-300">
-              {typeof icon === 'string' ? <span className="text-4xl leading-none">{icon}</span> : icon}
+              {typeof icon === 'string' ? (
+                <span className={cn('text-4xl leading-none', iconClassName)}>{icon}</span>
+              ) : (
+                iconClassName ? <span className={iconClassName}>{icon}</span> : icon
+              )}
             </div>
 
             {/* Tool Name */}

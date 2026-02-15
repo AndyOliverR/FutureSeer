@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb } from '@/lib/firebase-admin';
 const ADMIN_EMAILS = ['andyrozario@hotmail.com', 'andyoliverrozario2@gmail.com'];
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       message: 'Your query has been submitted. You can track it in My Tickets.',
     });
   } catch (err) {
-    console.error('Support tickets POST error:', err);
+    devLog.error('Support tickets POST error:', err, 'route');
     return NextResponse.json({ error: 'Failed to create ticket' }, { status: 500 });
   }
 }
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, tickets });
   } catch (err) {
-    console.error('Support tickets GET error:', err);
+    devLog.error('Support tickets GET error:', err, 'route');
     return NextResponse.json({ error: 'Failed to fetch tickets' }, { status: 500 });
   }
 }

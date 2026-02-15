@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -77,7 +78,7 @@ export default function KerykeionPage() {
 
       setAnalysis(result)
     } catch (err) {
-      console.error('Kerykeion analysis error:', err)
+      devLog.error('Kerykeion analysis error:', err, 'page')
       setError(err instanceof Error ? err.message : 'Failed to generate Kerykeion analysis')
     } finally {
       setIsLoading(false)

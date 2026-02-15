@@ -2,6 +2,7 @@
 // Based on ChatGPT's recommendation for proper ephemeris calculations
 
 import * as julian from "astronomia/julian"
+import { devLog } from '@/lib/devLogger';
 import * as planetposition from "astronomia/planetposition"
 import earthData from "astronomia/data/vsop87Bearth"
 import mercuryData from "astronomia/data/vsop87Bmercury"
@@ -158,7 +159,7 @@ function calculateAscendant(jd: number, latitude: number, longitude: number): nu
     
     return ((asc % 360) + 360) % 360
   } catch (error) {
-    console.error('Error calculating ascendant:', error)
+    devLog.error('Error calculating ascendant:', error, 'vedicAstrology')
     // Fallback to simplified calculation
     return 15.5
   }
@@ -257,7 +258,7 @@ function calculatePlanetaryPositions(jd: number, houses: HouseCusp[], birthData:
         isRetrograde: false // Simplified - would need proper calculation
       })
     } catch (error) {
-      console.error(`Error calculating ${planet.name}:`, error)
+      devLog.error(`Error calculating ${planet.name}:`, error, 'vedicAstrology')
     }
   })
   
@@ -330,7 +331,7 @@ function calculatePlanetaryPositions(jd: number, houses: HouseCusp[], birthData:
       }
     )
   } catch (error) {
-    console.error('Error calculating Rahu/Ketu with Swiss Ephemeris:', error)
+    devLog.error('Error calculating Rahu/Ketu with Swiss Ephemeris:', error, 'vedicAstrology')
     
     // Fallback to simplified calculation if Swiss Ephemeris fails
     try {
@@ -398,7 +399,7 @@ function calculatePlanetaryPositions(jd: number, houses: HouseCusp[], birthData:
         }
       )
     } catch (fallbackError) {
-      console.error('Fallback Rahu/Ketu calculation also failed:', fallbackError)
+      devLog.error('Fallback Rahu/Ketu calculation also failed:', fallbackError, 'vedicAstrology')
     }
   }
   
@@ -429,7 +430,7 @@ export function generateVedicChart(birthData: BirthData, chartType: string = 'D1
       chartType: chartType
     }
   } catch (error) {
-    console.error('Error generating Vedic chart:', error)
+    devLog.error('Error generating Vedic chart:', error, 'vedicAstrology')
     throw new Error('Failed to generate Vedic chart')
   }
 }

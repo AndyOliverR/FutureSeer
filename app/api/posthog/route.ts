@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       throw new Error(`PostHog API error: ${response.status}`)
     }
   } catch (error) {
-    console.error("[FutureSeer] PostHog server tracking failed:", error)
+    devLog.error("[FutureSeer] PostHog server tracking failed:", error, 'route')
     return NextResponse.json({ success: false, error: "Tracking failed" })
   }
 }

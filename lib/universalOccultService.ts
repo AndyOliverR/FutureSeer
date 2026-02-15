@@ -1,6 +1,9 @@
 // Universal Occult Service - The "Google of Occult"
 // Comprehensive service for all occult systems powered by Swiss Ephemeris
 
+import { getServerBaseUrl } from './serverBaseUrl';
+import { devLog } from '@/lib/devLogger';
+
 export interface BirthData {
   birthDate: string;
   birthTime: string;
@@ -47,7 +50,7 @@ class UniversalOccultService {
       this.baseUrl = '/api/occult/universal';
     } else {
       // Server-side: use absolute URL
-      this.baseUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/occult/universal`;
+      this.baseUrl = `${getServerBaseUrl()}/api/occult/universal`;
     }
   }
 
@@ -174,7 +177,7 @@ class UniversalOccultService {
       if (result.status === 'fulfilled') {
         analysis[system] = result.value;
       } else {
-        console.error(`Failed to analyze ${system}:`, result.reason);
+        devLog.error(`Failed to analyze ${system}:`, result.reason, 'universalOccultService');
         analysis[system] = {
           success: false,
           system,
@@ -199,7 +202,7 @@ class UniversalOccultService {
       const data = await response.json();
       return data.supportedSystems || [];
     } catch (error) {
-      console.error('Failed to get supported systems:', error);
+      devLog.error('Failed to get supported systems:', error, 'universalOccultService');
       return this.getDefaultSupportedSystems();
     }
   }
@@ -262,7 +265,7 @@ class UniversalOccultService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error(`Universal Occult Service Error (${system}):`, error);
+      devLog.error(`Universal Occult Service Error (${system}, undefined, 'universalOccultService'):`, error);
       throw error;
     }
   }

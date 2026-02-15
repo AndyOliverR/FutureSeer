@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useTarot } from "@/hooks/use-tarot"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -36,7 +37,7 @@ export function TarotCoachInterface() {
         setCurrentResponse(response.response)
       }
     } catch (error) {
-      console.error('Error getting coaching:', error)
+      devLog.error('Error getting coaching:', error, 'TarotCoachInterface')
     } finally {
       setIsAsking(false)
     }

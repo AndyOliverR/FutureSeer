@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 
 export interface FacialFeature {
@@ -410,11 +411,11 @@ class FaceReadingIntelligence {
     // If image URL is provided, log it for future AI integration (similar to palmistry pattern)
     if (imageUrl) {
       try {
-        console.log('👁️ Analyzing face image with AI...', { imageUrl });
+        devLog.debug('👁️ Analyzing face image with AI...', { imageUrl });
         // TODO: Add AI image analysis here in the future
         // For now, fall through to manual/random analysis
       } catch (error) {
-        console.error('⚠️ AI image analysis not yet implemented, falling back to manual analysis:', error);
+        devLog.error('⚠️ AI image analysis not yet implemented, falling back to manual analysis:', error, 'faceReadingIntelligence');
         // Fall through to manual analysis below
       }
     }

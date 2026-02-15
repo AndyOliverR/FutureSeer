@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildEnergyState,
@@ -8,17 +9,28 @@ import {
   ENERGY_REFUSAL_MEDICAL_PHRASE,
   type EnergyQuestionType,
 } from '@/lib/energyHealingSeerState';
+import { buildEnergyHealingSeerSystemPrompt } from '@/lib/energyHealingSeerPrompts';
 
 interface EnergyHealingSeerRequest {
   question: string;
   analysis?: any;
   conversationHistory?: Array<{ question: string; answer: string }>;
+  /** Aggregator contract */
+  userId?: string;
+  userProfile?: any;
+  comprehensiveProfile?: any;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, analysis, conversationHistory = [] }: EnergyHealingSeerRequest =
-      await request.json();
+    const body = await request.json();
+    const {
+      question,
+      analysis: bodyAnalysis,
+      conversationHistory = [],
+      comprehensiveProfile,
+    }: EnergyHealingSeerRequest = body;
+    const analysis = bodyAnalysis ?? comprehensiveProfile?.energyHealing ?? comprehensiveProfile?.['Energy & Healing'];
 
     if (!question?.trim()) {
       return NextResponse.json({ error: 'Question is required' }, { status: 400 });
@@ -64,7 +76,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getEnergySliceForQuestionType(questionType, state);
+    const slice = getEnergySliceForQuestionType(questionType, state);
+    const systemPrompt = buildEnergyHealingSeerSystemPrompt(slice, questionType);
 
     const messages = [
       { role: 'system' as const, content: systemPrompt },
@@ -93,7 +106,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Error during energy healing seer streaming:', error);
+            devLog.error('Error during energy healing seer streaming:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -113,7 +126,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: unknown) {
-    console.error('Error in energy healing seer:', error);
+    devLog.error('Error in energy healing seer:', error, 'route');
     return NextResponse.json(
       {
         error:

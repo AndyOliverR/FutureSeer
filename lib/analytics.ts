@@ -1,4 +1,5 @@
 import posthog from 'posthog-js'
+import { devLog } from '@/lib/devLogger';
 
 // Track if PostHog is actually enabled and initialized
 let isPostHogEnabled = false
@@ -19,7 +20,7 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     })
     isPostHogEnabled = true
   } catch (error) {
-    console.warn('Failed to initialize PostHog analytics:', error)
+    devLog.warn('Failed to initialize PostHog analytics:', error, 'analytics')
     isPostHogEnabled = false
   }
 }
@@ -130,7 +131,7 @@ export class AnalyticsService {
     } catch (error) {
       // Silently fail if PostHog is not available
       if (process.env.NODE_ENV === 'development') {
-        console.debug('Analytics tracking skipped:', error)
+        devLog.debug('Analytics tracking skipped:', error)
       }
     }
   }
@@ -153,7 +154,7 @@ export class AnalyticsService {
     } catch (error) {
       // Silently fail if PostHog is not available
       if (process.env.NODE_ENV === 'development') {
-        console.debug('User identification skipped:', error)
+        devLog.debug('User identification skipped:', error)
       }
     }
   }

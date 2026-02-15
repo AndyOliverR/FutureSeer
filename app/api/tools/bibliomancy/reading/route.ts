@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       profileComplete: hasCompleteProfile
     })
   } catch (error: any) {
-    console.error('❌ Error generating bibliomancy reading:', error)
+    devLog.error('❌ Error generating bibliomancy reading:', error, 'route')
     
     return NextResponse.json(
       {

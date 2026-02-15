@@ -1,4 +1,5 @@
 import { getSymbolById, getToolSymbol } from './symbolSystem'
+import { devLog } from '@/lib/devLogger';
 
 // Mystical Image Generator using Stability AI
 export interface MysticalImageRequest {
@@ -131,7 +132,7 @@ export async function generateMysticalImage(request: MysticalImageRequest): Prom
       }
     }
   } catch (error) {
-    console.error('Error generating mystical image:', error)
+    devLog.error('Error generating mystical image:', error, 'mysticalImageGenerator')
     return null
   }
 }
@@ -256,7 +257,7 @@ export async function generateToolShowcaseImages(): Promise<Record<string, strin
         images[tool] = imageUrl
       }
     } catch (error) {
-      console.error(`Failed to generate image for ${tool}:`, error)
+      devLog.error(`Failed to generate image for ${tool}:`, error, 'mysticalImageGenerator')
     }
   }
   

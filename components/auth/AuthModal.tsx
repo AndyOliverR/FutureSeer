@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from '@/lib/firebase';
+import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, isReturningUser } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { CountrySelector } from '@/components/CountrySelector';
+import { ModalPortal } from '@/components/ui/ModalPortal';
+import { devLog } from '@/lib/devLogger';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -46,26 +48,25 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     setError(null);
     
     try {
-      await signInWithGoogle();
+      const user = await signInWithGoogle();
+      const returning = isReturningUser(user);
       toast({
-        title: "Welcome to FutureSeer! 🌟",
-        description: "Your mystical journey begins now.",
+        title: returning ? "Welcome back! 🌟" : "Welcome to FutureSeer! 🌟",
+        description: returning ? "Your mystical journey continues." : "Your mystical journey begins now.",
       });
       onClose();
-      router.push('/profile-setup');
+      router.push(returning ? '/dashboard' : '/profile-setup');
     } catch (error: any) {
       // Handle "Target ID already exists" error gracefully
       if (error.message?.includes('Target ID already exists') || 
           error.message?.includes('already exists') ||
           error.message?.includes('Sign-in is already in progress')) {
-        // Don't show error, just wait - the existing sign-in will complete
-        console.log('ℹ️ Sign-in already in progress');
+        devLog.debug('Sign-in already in progress', undefined, 'AuthModal');
         return;
       }
       
-      // Handle redirect initiated
       if (error.message && error.message.includes('Redirect initiated')) {
-        console.log('🔄 Redirect authentication initiated');
+        devLog.debug('Redirect authentication initiated', undefined, 'AuthModal');
         return;
       }
       
@@ -97,7 +98,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: "Your mystical journey continues.",
       });
       onClose();
-      router.push('/profile-setup');
+      router.push('/dashboard');
     } catch (error: any) {
       setError(error.message);
       toast({
@@ -193,8 +194,9 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
-             <div className="w-full max-w-md bg-slate-950/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
+    <ModalPortal open={isOpen}>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300">
+        <div className="w-full max-w-md max-h-[min(90dvh,90vh)] overflow-y-auto bg-slate-950/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative animate-in zoom-in-95 duration-300">
          {/* Animated mystical glow effect */}
                    <div className="absolute inset-0 bg-gradient-to-br from-amber-500/8 via-transparent to-amber-500/8 rounded-2xl animate-pulse"></div>
                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 via-transparent to-amber-500/5 rounded-2xl"></div>
@@ -294,7 +296,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                                      <div className="space-y-3">
                                            <Label htmlFor="signin-email" className="text-amber-300 font-medium text-sm">Email</Label>
                       <div className="relative group">
-                        <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-400 group-focus-within:text-amber-300 transition-colors duration-200" />
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 shrink-0"><Mail className="h-5 w-5 text-amber-400 group-focus-within:text-amber-300 transition-colors duration-200" /></span>
                         <Input
                           id="signin-email"
                           type="email"
@@ -310,7 +312,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                                       <div className="space-y-3">
                       <Label htmlFor="signin-password" className="text-amber-300 font-medium text-sm">Password</Label>
                       <div className="relative group">
-                        <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-amber-400 group-focus-within:text-amber-300 transition-colors duration-200" />
+                        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 shrink-0"><Lock className="h-5 w-5 text-amber-400 group-focus-within:text-amber-300 transition-colors duration-200" /></span>
                         <Input
                           id="signin-password"
                           type={showPassword ? "text" : "password"}
@@ -324,14 +326,14 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 rounded-lg transition-all duration-200"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 rounded-lg transition-all duration-200"
                           onClick={() => setShowPassword(!showPassword)}
                         >
-                         {showPassword ? (
+                         <span className="shrink-0">{showPassword ? (
                            <EyeOff className="h-4 w-4" />
                          ) : (
                            <Eye className="h-4 w-4" />
-                         )}
+                         )}</span>
                        </Button>
                      </div>
                    </div>
@@ -381,7 +383,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                    <div className="space-y-2">
                      <Label htmlFor="signup-email" className="text-amber-300">Email</Label>
                      <div className="relative">
-                       <Mail className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
+                       <span className="pointer-events-none absolute left-3 top-3 shrink-0"><Mail className="h-4 w-4 text-amber-400" /></span>
                        <Input
                          id="signup-email"
                          type="email"
@@ -397,7 +399,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                    <div className="space-y-2">
                      <Label htmlFor="signup-password" className="text-amber-300">Password</Label>
                      <div className="relative">
-                       <Lock className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
+                       <span className="pointer-events-none absolute left-3 top-3 shrink-0"><Lock className="h-4 w-4 text-amber-400" /></span>
                        <Input
                          id="signup-password"
                          type={showPassword ? "text" : "password"}
@@ -426,7 +428,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                    <div className="space-y-2">
                      <Label htmlFor="signup-confirm-password" className="text-amber-300">Confirm Password</Label>
                      <div className="relative">
-                       <Lock className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
+                       <span className="pointer-events-none absolute left-3 top-3 shrink-0"><Lock className="h-4 w-4 text-amber-400" /></span>
                        <Input
                          id="signup-confirm-password"
                          type={showConfirmPassword ? "text" : "password"}
@@ -467,7 +469,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                    <div className="space-y-2">
                      <Label htmlFor="reset-email" className="text-amber-300">Email</Label>
                      <div className="relative">
-                       <Mail className="absolute left-3 top-3 h-4 w-4 text-amber-400" />
+                       <span className="pointer-events-none absolute left-3 top-3 shrink-0"><Mail className="h-4 w-4 text-amber-400" /></span>
                        <Input
                          id="reset-email"
                          type="email"
@@ -503,5 +505,6 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 } 

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface WesternSeerChatInterfaceProps {
   userId: string;
@@ -40,7 +41,8 @@ interface Message {
 
 const WESTERN_STARTER_QUESTIONS = [
   'What does my chart say about relationships?',
-  'When is a favorable period for career?',
+  'When is a favorable period for career growth?',
+  'Why do certain patterns repeat in my life?',
 ];
 
 export default function WesternSeerChatInterface({ 
@@ -158,7 +160,7 @@ export default function WesternSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (error) {
-      console.error('Error:', error);
+      devLog.error('Western Seer error', error, 'WesternSeerChatInterface');
       setStreamingMessageId(null);
       setMessages(prev => prev.map(msg => 
         msg.id === aiMessageId 
@@ -217,7 +219,7 @@ export default function WesternSeerChatInterface({
         <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
           <div className="whitespace-pre-wrap leading-relaxed">
             {isStreaming ? displayContent : (
-              <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+              <SlowRevealText content={showPreview ? displayContent : message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
             )}
           </div>
           {!isStreaming && isLong && (
@@ -272,8 +274,15 @@ export default function WesternSeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
-              <p className="text-amber-900 font-medium mb-2">Ask me anything about your future...</p>
-              <p className="text-slate-700 text-sm mt-1 mb-4">I'll consult the mystical forces for you.</p>
+              <p className="text-amber-900 font-medium mb-2">Ask me anything about your future…</p>
+              <p className="text-slate-700 text-sm mt-1 mb-2">I'll consult your natal chart to interpret life themes, tendencies, and favorable periods.</p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Relationships, marriage, compatibility</li>
+                <li>Career direction and growth phases</li>
+                <li>Strengths, challenges, personality traits</li>
+                <li>Favorable periods (themes, not exact dates)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {WESTERN_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -288,6 +297,7 @@ export default function WesternSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: understanding why things happen and how you're wired.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -325,7 +335,7 @@ export default function WesternSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask me about your future, relationships, career, or any life path..."
+              placeholder="Ask about relationships, career, favorable periods, or life themes..."
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
             />

@@ -3,6 +3,7 @@
 // Provides precise astronomical calculations for all occult systems
 
 import * as julian from "astronomia/julian"
+import { devLog } from '@/lib/devLogger';
 import * as planetposition from "astronomia/planetposition"
 import earthData from "astronomia/data/vsop87Bearth"
 import mercuryData from "astronomia/data/vsop87Bmercury"
@@ -128,10 +129,10 @@ async function initializeWasmSwissEphemeris() {
     }
     wasmInitialized = true
     wasmSwe = swe
-    console.log('✅ Swiss Ephemeris WASM initialized')
+    devLog.debug('✅ Swiss Ephemeris WASM initialized')
     return swe
   } catch (error) {
-    console.warn('⚠️ Swiss Ephemeris WASM failed to initialize:', error)
+    devLog.warn('⚠️ Swiss Ephemeris WASM failed to initialize:', error, 'astrologyUnified')
     return null
   }
 }
@@ -146,10 +147,10 @@ async function initializeNodeSwissEphemeris() {
     // Dynamic import for Node
     const swe = await import('swisseph')
     nodeSwe = swe.default || swe
-    console.log('✅ Swiss Ephemeris Node initialized')
+    devLog.debug('✅ Swiss Ephemeris Node initialized')
     return nodeSwe
   } catch (error) {
-    console.warn('⚠️ Swiss Ephemeris Node failed to initialize:', error)
+    devLog.warn('⚠️ Swiss Ephemeris Node failed to initialize:', error, 'astrologyUnified')
     return null
   }
 }
@@ -210,7 +211,7 @@ function calculateAscendant(jd: number, latitude: number, longitude: number): nu
     
     return ((asc % 360) + 360) % 360
   } catch (error) {
-    console.error('Error calculating ascendant:', error)
+    devLog.error('Error calculating ascendant:', error, 'astrologyUnified')
     return 15.5
   }
 }
@@ -297,7 +298,7 @@ function calculatePlanetaryPositions(birthData: BirthData, jd: number, houses: H
         isRetrograde: false // Would need additional calculation
       })
     } catch (error) {
-      console.error(`Error calculating ${name}:`, error)
+      devLog.error(`Error calculating ${name}:`, error, 'astrologyUnified')
     }
   })
   
@@ -383,7 +384,7 @@ async function calculateLunarNodes(birthData: BirthData, jd: number, houses: Hou
       }
     ]
   } catch (error) {
-    console.error('Error calculating Rahu/Ketu with Swiss Ephemeris:', error)
+    devLog.error('Error calculating Rahu/Ketu with Swiss Ephemeris:', error, 'astrologyUnified')
     
     // Fallback to simplified calculation
     try {
@@ -457,7 +458,7 @@ async function calculateLunarNodes(birthData: BirthData, jd: number, houses: Hou
         }
       ]
     } catch (fallbackError) {
-      console.error('Fallback Rahu/Ketu calculation also failed:', fallbackError)
+      devLog.error('Fallback Rahu/Ketu calculation also failed:', fallbackError, 'astrologyUnified')
       return []
     }
   }
@@ -506,7 +507,7 @@ export async function generateVedicChart(birthData: BirthData, chartType: string
       ayanamsha
     }
   } catch (error) {
-    console.error('Error generating Vedic chart:', error)
+    devLog.error('Error generating Vedic chart:', error, 'astrologyUnified')
     throw error
   }
 }

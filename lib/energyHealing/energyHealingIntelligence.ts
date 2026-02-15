@@ -2,6 +2,7 @@
 // Core logic for energy healing analysis using Groq API
 
 import { UserProfile } from '@/lib/firebase';
+import { devLog } from '@/lib/devLogger';
 import { energyHealingImageAnalyzer } from './energyHealingImageAnalyzer';
 import {
   ChakraAnalysis,
@@ -32,7 +33,7 @@ class EnergyHealingIntelligence {
     imageUrl?: string
   ): Promise<ChakraAnalysis> {
     try {
-      console.log('✨ Analyzing chakras with AI...');
+      devLog.debug('✨ Analyzing chakras with AI...');
       
       const response = await fetch('/api/tools/energy-healing/analysis', {
         method: 'POST',
@@ -59,7 +60,7 @@ class EnergyHealingIntelligence {
 
       return energyHealingImageAnalyzer.formatChakraAnalysis(result.data);
     } catch (error: any) {
-      console.error('⚠️ AI chakra analysis failed, using fallback:', error);
+      devLog.error('⚠️ AI chakra analysis failed, using fallback:', error, 'energyHealingIntelligence');
       return this.getFallbackChakraAnalysis();
     }
   }
@@ -72,7 +73,7 @@ class EnergyHealingIntelligence {
     imageUrl?: string
   ): Promise<AuraReading> {
     try {
-      console.log('✨ Analyzing aura with AI...');
+      devLog.debug('✨ Analyzing aura with AI...');
       
       const response = await fetch('/api/tools/energy-healing/analysis', {
         method: 'POST',
@@ -99,7 +100,7 @@ class EnergyHealingIntelligence {
 
       return energyHealingImageAnalyzer.formatAuraReading(result.data);
     } catch (error: any) {
-      console.error('⚠️ AI aura analysis failed, using fallback:', error);
+      devLog.error('⚠️ AI aura analysis failed, using fallback:', error, 'energyHealingIntelligence');
       return this.getFallbackAuraReading();
     }
   }
@@ -109,7 +110,7 @@ class EnergyHealingIntelligence {
    */
   async analyzeReiki(userProfile: UserProfile): Promise<ReikiAnalysis> {
     try {
-      console.log('✨ Analyzing Reiki energy with AI...');
+      devLog.debug('✨ Analyzing Reiki energy with AI...');
       
       const response = await fetch('/api/tools/energy-healing/analysis', {
         method: 'POST',
@@ -135,7 +136,7 @@ class EnergyHealingIntelligence {
 
       return energyHealingImageAnalyzer.formatReikiAnalysis(result.data);
     } catch (error: any) {
-      console.error('⚠️ AI Reiki analysis failed, using fallback:', error);
+      devLog.error('⚠️ AI Reiki analysis failed, using fallback:', error, 'energyHealingIntelligence');
       return this.getFallbackReikiAnalysis();
     }
   }
@@ -145,7 +146,7 @@ class EnergyHealingIntelligence {
    */
   async analyzeCrystals(userProfile: UserProfile): Promise<CrystalRecommendation> {
     try {
-      console.log('✨ Analyzing crystal recommendations with AI...');
+      devLog.debug('✨ Analyzing crystal recommendations with AI...');
       
       const response = await fetch('/api/tools/energy-healing/analysis', {
         method: 'POST',
@@ -171,7 +172,7 @@ class EnergyHealingIntelligence {
 
       return energyHealingImageAnalyzer.formatCrystalAnalysis(result.data);
     } catch (error: any) {
-      console.error('⚠️ AI crystal analysis failed, using fallback:', error);
+      devLog.error('⚠️ AI crystal analysis failed, using fallback:', error, 'energyHealingIntelligence');
       return this.getFallbackCrystalRecommendation();
     }
   }
@@ -181,7 +182,7 @@ class EnergyHealingIntelligence {
    */
   async analyzeEnergyBalance(userProfile: UserProfile): Promise<EnergyBalanceAnalysis> {
     try {
-      console.log('✨ Analyzing energy balance with AI...');
+      devLog.debug('✨ Analyzing energy balance with AI...');
       
       const response = await fetch('/api/tools/energy-healing/analysis', {
         method: 'POST',
@@ -207,7 +208,7 @@ class EnergyHealingIntelligence {
 
       return energyHealingImageAnalyzer.formatEnergyBalance(result.data);
     } catch (error: any) {
-      console.error('⚠️ AI energy balance analysis failed, using fallback:', error);
+      devLog.error('⚠️ AI energy balance analysis failed, using fallback:', error, 'energyHealingIntelligence');
       return this.getFallbackEnergyBalance();
     }
   }
@@ -274,7 +275,7 @@ class EnergyHealingIntelligence {
         recommendations
       };
     } catch (error: any) {
-      console.error('Error performing healing analysis:', error);
+      devLog.error('Error performing healing analysis:', error, 'energyHealingIntelligence');
       throw error;
     }
   }

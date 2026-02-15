@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useRunes } from '@/hooks/use-runes'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -83,7 +84,7 @@ export function RunesTool() {
     try {
       await performRuneReading()
     } catch (error) {
-      console.error('Error casting runes:', error)
+      devLog.error('Error casting runes:', error, 'RunesTool')
     } finally {
       setIsCasting(false)
     }

@@ -4,6 +4,7 @@
  */
 
 import { doc, setDoc, getDoc, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
@@ -70,7 +71,7 @@ class AkashicRecordsIntelligence {
     try {
       this.db = getFirebaseDB()
     } catch (error) {
-      console.warn('Firebase not available for Akashic Records Intelligence')
+      devLog.warn('Firebase not available for Akashic Records Intelligence', undefined, 'akashicRecordsIntelligence')
     }
   }
 
@@ -108,7 +109,7 @@ class AkashicRecordsIntelligence {
           }
         }
       } catch (error) {
-        console.warn('Could not load from Firestore, generating new reading:', error)
+        devLog.warn('Could not load from Firestore, generating new reading:', error, 'akashicRecordsIntelligence')
       }
     }
 
@@ -403,7 +404,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
 
       return parsed
     } catch (error) {
-      console.error('Error generating Akashic Records reading:', error)
+      devLog.error('Error generating Akashic Records reading:', error, 'akashicRecordsIntelligence')
       // Return fallback reading
       return this.generateFallbackReading(userId, userProfile)
     }
@@ -417,7 +418,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
     displayName: string,
     userId: string
   ): AkashicReading {
-    console.log('📚 Parsing AI response, length:', aiResponse.length)
+    devLog.debug('📚 Parsing AI response, length:', aiResponse.length)
     
     // Clean text function to remove markdown and formatting
     const cleanText = (text: string): string => {
@@ -994,7 +995,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
    */
   async saveReading(userId: string, reading: AkashicReading): Promise<void> {
     if (!this.db) {
-      console.warn('Firestore not available, skipping save')
+      devLog.warn('Firestore not available, skipping save', 'akashicRecordsIntelligence')
       return
     }
 
@@ -1004,9 +1005,9 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         ...reading,
         timestamp: Timestamp.fromDate(reading.timestamp)
       })
-      console.log('✅ Saved Akashic Records reading to Firestore')
+      devLog.debug('✅ Saved Akashic Records reading to Firestore')
     } catch (error) {
-      console.error('Error saving Akashic Records reading:', error)
+      devLog.error('Error saving Akashic Records reading:', error, 'akashicRecordsIntelligence')
     }
   }
 
@@ -1032,7 +1033,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
       
       return null
     } catch (error) {
-      console.error('Error loading Akashic Records reading:', error)
+      devLog.error('Error loading Akashic Records reading:', error, 'akashicRecordsIntelligence')
       return null
     }
   }
@@ -1060,7 +1061,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         } as AkashicReading
       })
     } catch (error) {
-      console.error('Error loading user Akashic Records readings:', error)
+      devLog.error('Error loading user Akashic Records readings:', error, 'akashicRecordsIntelligence')
       return []
     }
   }

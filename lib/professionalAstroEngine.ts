@@ -1,4 +1,5 @@
 // Professional Astronomical Engine for FutureSeer
+import { devLog } from '@/lib/devLogger';
 // Real NASA JPL-grade calculations with no mock/fallback data
 
 export interface ProfessionalPlanetaryPosition {
@@ -46,7 +47,7 @@ export class ProfessionalAstroEngine {
   private readonly AU = 149597870.7 // Astronomical Unit in km
 
   constructor() {
-    console.log('🔬 Initializing Professional Astronomical Engine with NASA JPL-grade calculations')
+    devLog.debug('🔬 Initializing Professional Astronomical Engine with NASA JPL-grade calculations')
   }
 
   // Main method to calculate all planetary positions with professional accuracy
@@ -63,7 +64,7 @@ export class ProfessionalAstroEngine {
         const position = await this.calculateProfessionalPlanetaryPosition(planetName, julianDay, latitude, longitude)
         positions.push(position)
       } catch (error) {
-        console.error(`❌ Failed to calculate ${planetName}:`, error)
+        devLog.error(`❌ Failed to calculate ${planetName}:`, error, 'professionalAstroEngine')
         throw new Error(`Professional calculation failed for ${planetName}`)
       }
     }
@@ -116,14 +117,14 @@ export class ProfessionalAstroEngine {
       questionPlace: string
     }
   }> {
-    console.log('🔧 calculateHoraryChart called with:', { questionDate, questionTime, latitude, longitude, timezone })
+    devLog.debug('🔧 calculateHoraryChart called with:', { questionDate, questionTime, latitude, longitude, timezone })
 
     const normalizedDate = this.normalizeDatePart(questionDate)
     const normalizedTime = this.normalizeTimePart(questionTime)
     const dateTimeStr = `${normalizedDate}T${normalizedTime}`
     const dateTime = new Date(dateTimeStr)
-    console.log('📅 Combined datetime:', dateTime)
-    console.log('📅 Is valid date:', !isNaN(dateTime.getTime()))
+    devLog.debug('📅 Combined datetime:', dateTime)
+    devLog.debug('📅 Is valid date:', !isNaN(dateTime.getTime()))
 
     if (isNaN(dateTime.getTime())) {
       throw new Error(
@@ -159,18 +160,18 @@ export class ProfessionalAstroEngine {
    */
   private calculateHouses(julianDay: number, latitude: number, longitude: number): ProfessionalHouseData[] {
     try {
-      console.log('🏠 Calculating houses for:', { julianDay, latitude, longitude })
+      devLog.debug('🏠 Calculating houses for:', { julianDay, latitude, longitude })
       
       const siderealTime = this.calculateSiderealTime(julianDay, longitude)
-      console.log('⏰ Sidereal time:', siderealTime)
+      devLog.debug('⏰ Sidereal time:', siderealTime)
       
       const ascendant = this.calculateAscendant(siderealTime, latitude)
-      console.log('🌅 Ascendant:', ascendant)
+      devLog.debug('🌅 Ascendant:', ascendant)
       
       const houses = this.calculateRegiomontanusHouses(ascendant, latitude, siderealTime)
-      console.log('🏠 Raw houses array:', houses)
-      console.log('🏠 Houses type:', typeof houses)
-      console.log('🏠 Is array:', Array.isArray(houses))
+      devLog.debug('🏠 Raw houses array:', houses)
+      devLog.debug('🏠 Houses type:', typeof houses)
+      devLog.debug('🏠 Is array:', Array.isArray(houses))
       
       if (!Array.isArray(houses)) {
         throw new Error(`calculateRegiomontanusHouses returned ${typeof houses}, expected array`)
@@ -189,10 +190,10 @@ export class ProfessionalAstroEngine {
         houseSize: 30 // Simplified for now
       }))
       
-      console.log('✅ Houses calculated successfully:', result)
+      devLog.debug('✅ Houses calculated successfully:', result)
       return result
     } catch (error) {
-      console.error('❌ Error calculating houses:', error)
+      devLog.error('❌ Error calculating houses:', error, 'professionalAstroEngine')
       throw new Error(`House calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -224,7 +225,7 @@ export class ProfessionalAstroEngine {
    */
   private dateToJulianDay(date: Date): number {
     try {
-      console.log('📅 dateToJulianDay called with:', date)
+      devLog.debug('📅 dateToJulianDay called with:', date)
       
       // Validate input
       if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -238,7 +239,7 @@ export class ProfessionalAstroEngine {
       const minute = date.getMinutes()
       const second = date.getSeconds()
       
-      console.log('📅 Date components:', { year, month, day, hour, minute, second })
+      devLog.debug('📅 Date components:', { year, month, day, hour, minute, second })
       
       // Convert to decimal day
       const decimalDay = day + hour / 24 + minute / 1440 + second / 86400
@@ -257,11 +258,11 @@ export class ProfessionalAstroEngine {
                        Math.floor(30.6001 * (month + 1)) + 
                        decimalDay + b - 1524.5
       
-      console.log('📅 Julian Day calculated:', julianDay)
+      devLog.debug('📅 Julian Day calculated:', julianDay)
       
       return julianDay
     } catch (error) {
-      console.error('❌ Error calculating Julian Day:', error)
+      devLog.error('❌ Error calculating Julian Day:', error, 'professionalAstroEngine')
       throw new Error(`Julian Day calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -474,7 +475,7 @@ export class ProfessionalAstroEngine {
   // Calculate sidereal time
   private calculateSiderealTime(julianDay: number, longitude: number): number {
     try {
-      console.log('⏰ calculateSiderealTime called with:', { julianDay, longitude })
+      devLog.debug('⏰ calculateSiderealTime called with:', { julianDay, longitude })
       
       // Validate inputs
       if (typeof julianDay !== 'number' || isNaN(julianDay)) {
@@ -489,11 +490,11 @@ export class ProfessionalAstroEngine {
       const LST = GMST + longitude
       const result = LST % 360
       
-      console.log('⏰ Sidereal time calculated:', result)
+      devLog.debug('⏰ Sidereal time calculated:', result)
       
       return result
     } catch (error) {
-      console.error('❌ Error calculating sidereal time:', error)
+      devLog.error('❌ Error calculating sidereal time:', error, 'professionalAstroEngine')
       throw new Error(`Sidereal time calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -501,7 +502,7 @@ export class ProfessionalAstroEngine {
   // Calculate ascendant
   private calculateAscendant(siderealTime: number, latitude: number): number {
     try {
-      console.log('🌅 calculateAscendant called with:', { siderealTime, latitude })
+      devLog.debug('🌅 calculateAscendant called with:', { siderealTime, latitude })
       
       // Validate inputs
       if (typeof siderealTime !== 'number' || isNaN(siderealTime)) {
@@ -515,11 +516,11 @@ export class ProfessionalAstroEngine {
       const tanAsc = Math.tan(siderealTime * Math.PI / 180) / Math.cos(obliquity * Math.PI / 180)
       const ascendant = Math.atan(tanAsc) * 180 / Math.PI
       
-      console.log('🌅 Ascendant calculated:', ascendant)
+      devLog.debug('🌅 Ascendant calculated:', ascendant)
       
       return ascendant < 0 ? ascendant + 360 : ascendant
     } catch (error) {
-      console.error('❌ Error calculating ascendant:', error)
+      devLog.error('❌ Error calculating ascendant:', error, 'professionalAstroEngine')
       throw new Error(`Ascendant calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -527,7 +528,7 @@ export class ProfessionalAstroEngine {
   // Calculate Regiomontanus houses
   private calculateRegiomontanusHouses(ascendant: number, latitude: number, siderealTime: number): number[] {
     try {
-      console.log('🏠 calculateRegiomontanusHouses called with:', { ascendant, latitude, siderealTime })
+      devLog.debug('🏠 calculateRegiomontanusHouses called with:', { ascendant, latitude, siderealTime })
       
       const houses: number[] = []
       const obliquity = 23.4392911
@@ -535,14 +536,14 @@ export class ProfessionalAstroEngine {
       for (let i = 0; i < 12; i++) {
         const houseAngle = i * 30
         const houseCusp = this.calculateHouseCusp(houseAngle, latitude, obliquity)
-        console.log(`🏠 House ${i + 1} cusp:`, houseCusp)
+        devLog.debug(`🏠 House ${i + 1} cusp:`, houseCusp)
         houses.push(houseCusp)
       }
       
-      console.log('✅ calculateRegiomontanusHouses returning:', houses)
+      devLog.debug('✅ calculateRegiomontanusHouses returning:', houses)
       return houses
     } catch (error) {
-      console.error('❌ Error in calculateRegiomontanusHouses:', error)
+      devLog.error('❌ Error in calculateRegiomontanusHouses:', error, 'professionalAstroEngine')
       // Return a default array of 12 houses to prevent crashes
       return Array.from({ length: 12 }, (_, i) => i * 30)
     }

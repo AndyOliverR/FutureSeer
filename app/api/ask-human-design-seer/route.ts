@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import { buildHumanDesignSeerSystemPrompt } from '@/lib/humanDesignSeerPrompts';
 import {
   buildHumanDesignState,
   classifyHumanDesignQuestion,
   getHumanDesignSliceForQuestionType,
   HUMAN_DESIGN_REFUSAL_DATA_PHRASE,
   HUMAN_DESIGN_REFUSAL_OUTCOME_PHRASE,
+  type HumanDesignQuestionType,
 } from '@/lib/humanDesignSeerState';
 
 interface HumanDesignSeerRequest {
@@ -21,8 +23,16 @@ interface HumanDesignSeerRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: HumanDesignSeerRequest = await request.json();
-    const { userId, question, userProfile } = body;
+    const { userId, question: rawQuestion, userProfile } = body;
     let humanDesignChart = body.humanDesignChart;
+    // Parse optional scope from question (injected by seer route after clarification)
+    let question = (rawQuestion || '').trim();
+    let scope: 'overview' | 'authority' | undefined;
+    const scopeMatch = question.match(/^Scope:\s*(overview|authority)\s*\.\s*/i);
+    if (scopeMatch) {
+      scope = scopeMatch[1].toLowerCase() as 'overview' | 'authority';
+      question = question.slice(scopeMatch[0].length).trim() || question;
+    }
     if (!humanDesignChart && body.comprehensiveProfile) {
       humanDesignChart =
         body.comprehensiveProfile.humanDesign ??
@@ -57,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Classify question — refuse outcome/timing questions
-    const questionType = classifyHumanDesignQuestion(question.trim());
+    const questionType: HumanDesignQuestionType = classifyHumanDesignQuestion(question.trim());
     if (questionType === 'refusal') {
       return new Response(
         new ReadableStream({
@@ -92,7 +102,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getHumanDesignSliceForQuestionType(questionType, state);
+    const slice = getHumanDesignSliceForQuestionType(questionType, state);
+    const displayName =
+      (userProfile?.displayName ?? userProfile?.display_name) ?? undefined;
+    const systemPrompt = buildHumanDesignSeerSystemPrompt(slice, questionType, {
+      displayName,
+      scope,
+    });
 
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
@@ -115,7 +131,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Human Design Seer stream error:', error);
+            devLog.error('Human Design Seer stream error:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I encountered an error. Please try again.'

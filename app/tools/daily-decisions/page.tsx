@@ -1,15 +1,17 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
-import { BackButton } from '@/components/navigation/BackButton'
 import { isProfileComplete, getProfileCompletionStatus } from '@/lib/firebase'
 import { DailyDecisionsAnalysis } from '@/lib/dailyDecisionsIntelligence'
 import {
@@ -49,11 +51,10 @@ import { DailyDecisionsSeerChatInterface } from '@/components/DailyDecisionsSeer
 export default function DailyDecisionsPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
-  const [analysis, setAnalysis] = useState<DailyDecisionsAnalysis | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'introduction' | 'recommendations' | 'ask-the-seer'>('introduction')
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('dailyDecisions')
+  const analysis = useMemo(() => (pipelineReport as DailyDecisionsAnalysis | undefined) ?? null, [pipelineReport])
 
   const hasCompleteProfile = userProfile ? isProfileComplete(userProfile) : false
   const profileStatus = userProfile ? getProfileCompletionStatus(userProfile) : { isComplete: false, missingFields: [], completionPercentage: 0 }
@@ -70,78 +71,6 @@ export default function DailyDecisionsPage() {
     return { duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }
   }, [prefersReducedMotion])
 
-  // Load Daily Decisions Analysis
-  const loadDailyDecisionsAnalysis = async () => {
-    if (!user?.uid) {
-      setError('Please sign in to use Daily Decisions')
-      return
-    }
-
-    if (!hasCompleteProfile) {
-      setError('Please complete your profile with birth date, time, and place')
-      return
-    }
-
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      console.log('📅 Starting Daily Decisions analysis...', {
-        userId: user.uid,
-        hasProfile: !!userProfile,
-        date: selectedDate
-      })
-
-      const response = await fetch('/api/tools/daily-decisions/analysis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          userProfile: userProfile,
-          date: selectedDate
-        })
-      })
-
-      console.log('📡 API Response status:', response.status)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        console.error('❌ API Error:', errorData)
-        throw new Error(errorData.error || `Failed to generate analysis (${response.status})`)
-      }
-
-      const result = await response.json()
-      console.log('✅ API Response:', { success: result.success, hasData: !!result.data })
-
-      if (result.success && result.data) {
-        console.log('📅 Setting analysis data:', {
-          date: result.data.date,
-          hasRecommendations: !!result.data.recommendations
-        })
-        setAnalysis(result.data)
-        setActiveTab('recommendations')
-      } else {
-        console.error('❌ Invalid response format:', result)
-        throw new Error(result.error || 'Invalid response from server')
-      }
-    } catch (err) {
-      console.error('❌ Daily Decisions analysis error:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate analysis'
-      setError(errorMessage)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Auto-load on mount if profile is complete
-  useEffect(() => {
-    if (hasCompleteProfile && user?.uid && !analysis && !isLoading) {
-      loadDailyDecisionsAnalysis()
-    }
-  }, [hasCompleteProfile, user?.uid])
-
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600'
     if (score >= 60) return 'text-yellow-600'
@@ -155,13 +84,11 @@ export default function DailyDecisionsPage() {
   }
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Daily Decisions">
     <div className="min-h-screen starfield-ultra-sharp">
       <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
       
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="mb-4">
-          <BackButton href="/tools" label="Back to Tools" />
-        </div>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
@@ -170,7 +97,7 @@ export default function DailyDecisionsPage() {
             transition={{ duration: 0.6 }}
             className="mb-8 text-center pt-4"
           >
-            <h1 className="text-5xl font-serif font-semibold mb-6">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
               <span className="text-yellow-400">📅</span>{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Daily Decisions</span>
             </h1>
@@ -241,26 +168,11 @@ export default function DailyDecisionsPage() {
                       value={selectedDate}
                       onChange={(e) => {
                         setSelectedDate(e.target.value)
-                        setAnalysis(null) // Clear analysis when date changes
                       }}
                       className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
-                    <Button
-                      onClick={loadDailyDecisionsAnalysis}
-                      disabled={isLoading}
-                      className="bg-amber-500 hover:bg-amber-600 text-white"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Get Recommendations
-                        </>
-                      )}
+                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                      <Link href="/profile">Generate your mystical profile</Link>
                     </Button>
                   </div>
                 </CardContent>
@@ -269,8 +181,9 @@ export default function DailyDecisionsPage() {
           )}
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'introduction' | 'recommendations' | 'ask-the-seer')} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 bg-transparent p-0 gap-2">
+          <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'introduction' | 'recommendations' | 'ask-the-seer')} className="w-full min-w-0">
+            <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
               {[
                 { value: 'introduction', label: 'Introduction', icon: BookOpen },
                 { value: 'recommendations', label: 'Recommendations', icon: Sparkles, disabled: !analysis },
@@ -281,12 +194,12 @@ export default function DailyDecisionsPage() {
                   whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                   transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                  className="relative"
+                  className="relative shrink-0"
                 >
                   <TabsTrigger 
                     value={tab.value}
                     disabled={tab.disabled}
-                    className={`data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden ${
+                    className={`shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden border border-transparent data-[state=inactive]:border-slate-600/50 ${
                       tab.disabled ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                   >
@@ -295,7 +208,7 @@ export default function DailyDecisionsPage() {
                     {activeTab === tab.value && (
                       <motion.div
                         layoutId="activeTab"
-                        className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
+                        className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-t-lg rounded-b-none -z-10"
                         transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
                       />
                     )}
@@ -315,7 +228,7 @@ export default function DailyDecisionsPage() {
                   exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                   transition={motionConfig}
                 >
-                  <TabsContent value="introduction" className="space-y-6 mt-6">
+                  <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <ToolIntroductionTab toolSlug="daily-decisions" />
                   </TabsContent>
                 </motion.div>
@@ -330,7 +243,7 @@ export default function DailyDecisionsPage() {
                   exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                   transition={motionConfig}
                 >
-                  <TabsContent value="recommendations" className="space-y-6 mt-6">
+                  <TabsContent value="recommendations" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {isLoading ? (
                       <Card className="bg-slate-800/50 border-2 border-slate-700 rounded-2xl">
                         <CardContent className="p-12 text-center">
@@ -989,25 +902,9 @@ export default function DailyDecisionsPage() {
                         <CardContent className="p-12 text-center">
                           <Calendar className="w-12 h-12 text-amber-400 mx-auto mb-4" />
                           <p className="text-slate-300 mb-4">Select a date and click "Get Recommendations" to see personalized guidance.</p>
-                          {hasCompleteProfile && (
-                            <Button
-                              onClick={loadDailyDecisionsAnalysis}
-                              disabled={isLoading}
-                              className="bg-amber-500 hover:bg-amber-600 text-white"
-                            >
-                              {isLoading ? (
-                                <>
-                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                  Loading...
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles className="w-4 h-4 mr-2" />
-                                  Get Recommendations
-                                </>
-                              )}
-                            </Button>
-                          )}
+                          <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                            <Link href="/profile">Generate your mystical profile</Link>
+                          </Button>
                         </CardContent>
                       </Card>
                     )}
@@ -1024,7 +921,7 @@ export default function DailyDecisionsPage() {
                   exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                   transition={motionConfig}
                 >
-                  <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+                  <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <DailyDecisionsSeerChatInterface
                       analysis={analysis}
                       selectedDate={selectedDate}
@@ -1036,8 +933,10 @@ export default function DailyDecisionsPage() {
               )}
             </AnimatePresence>
           </Tabs>
+          </div>
         </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }

@@ -4,6 +4,7 @@
  */
 
 import { calcKuaNumber, getKuaResult } from '@/lib/numerology/kua'
+import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase'
 
 export interface BaguaArea {
@@ -222,7 +223,7 @@ export function calculateKuaAnalysis(userProfile: UserProfile | null): KuaAnalys
       unfavorableDirections
     }
   } catch (error) {
-    console.error('Error calculating Kua analysis:', error)
+    devLog.error('Error calculating Kua analysis:', error, 'fengShuiService')
     return null
   }
 }

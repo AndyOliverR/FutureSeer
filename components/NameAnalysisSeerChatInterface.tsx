@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, User, Trash2, MessageCircle } from "lucide-react"
 import type { NameAnalysis } from "@/lib/nameAnalysisIntelligence"
 import { SlowRevealText } from "@/components/chat/SlowRevealText"
+import { devLog } from "@/lib/devLogger"
 
 interface NameAnalysisMessage {
   id: string
@@ -25,8 +26,10 @@ interface NameAnalysisSeerChatInterfaceProps {
 }
 
 const NAME_ANALYSIS_STARTER_QUESTIONS = [
-  "How is my name perceived?",
-  "What does my name suggest for career?",
+  "What does my name say about me?",
+  "Analyze my full name.",
+  "Is my name lucky?",
+  "Should I change my name?",
 ]
 
 export function NameAnalysisSeerChatInterface({
@@ -134,7 +137,7 @@ export function NameAnalysisSeerChatInterface({
         }
       }
     } catch (error) {
-      console.error("Error getting Name Analysis Seer response:", error)
+      devLog.error('Error getting Name Analysis Seer response', error, 'NameAnalysisSeerChatInterface')
       setMessages((prev) =>
         prev.map((m) =>
           m.id === seerMessageId
@@ -218,9 +221,9 @@ export function NameAnalysisSeerChatInterface({
           <div className="flex items-center gap-3">
             <User className={`w-6 h-6 ${headerIconClass}`} />
             <div>
-              <h3 className={headerTitleClass}>Name Analysis Seer</h3>
+              <h3 className={headerTitleClass}>Ask the Seer — Name Analysis</h3>
               <p className={headerBodyClass}>
-                Ask about expression, perception, career-facing name, or alignment. Name analysis reflects expression and reception, not destiny.
+                I'll interpret your name through identity and expression—vibration, perception, and career tone. No timing or remedies.
               </p>
             </div>
           </div>
@@ -245,10 +248,21 @@ export function NameAnalysisSeerChatInterface({
             <div className={emptyWrapperClass}>
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <MessageCircle className={`w-12 h-12 ${headerIconClass} mb-4`} />
-                <p className={`m3-body-medium mb-2 ${isLight ? "text-slate-600" : "text-slate-400"}`}>
-                  Welcome to Ask the Seer — Name Analysis. I have your name analysis; ask about expression, perception, or career fit.
+                <p className={isLight ? "text-slate-700 font-medium mb-2" : "text-slate-300 font-medium mb-2"}>
+                  Ask me anything about your name and expression…
                 </p>
-                <div className="flex flex-wrap gap-2 justify-center mt-4">
+                <p className={isLight ? "text-slate-600 text-sm mb-4" : "text-slate-400 text-sm mb-4"}>
+                  I'll interpret your name through identity and expression—vibration, perception, and career tone. No timing or remedies.
+                </p>
+                <p className={isLight ? "text-slate-700 text-sm font-medium mb-2" : "text-slate-300 text-sm font-medium mb-2"}>
+                  You can ask about:
+                </p>
+                <ul className={`text-left text-sm mb-4 list-disc list-inside ${isLight ? "text-slate-600" : "text-slate-400"}`}>
+                  <li>Identity (core name vibration, how you're perceived, expression)</li>
+                  <li>Expression and career tone (career-facing name, alignment with role)</li>
+                  <li>Name-based (what your name says about you, is my name lucky, should I change my name)</li>
+                </ul>
+                <div className="flex flex-wrap gap-2 justify-center">
                   {NAME_ANALYSIS_STARTER_QUESTIONS.map((q, i) => (
                     <Button
                       key={i}
@@ -307,7 +321,7 @@ export function NameAnalysisSeerChatInterface({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about your name..."
+              placeholder="e.g. What does my name say about me?"
               className={inputClass}
               disabled={isLoading || !user}
             />
@@ -330,7 +344,7 @@ export function NameAnalysisSeerChatInterface({
 
       <Card className={footerCardClass}>
         <div className="flex items-center justify-between">
-          <span className={footerLabelClass}>Expression and perception</span>
+          <span className={footerLabelClass}>Identity and expression</span>
           <Badge variant="outline" className={footerBadgeClass}>
             Name Analysis
           </Badge>

@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('❌ Error generating Human Design report:', error)
+    devLog.error('❌ Error generating Human Design report:', error, 'route')
     
     return NextResponse.json(
       {

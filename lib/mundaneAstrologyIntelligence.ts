@@ -1,4 +1,5 @@
 import { MundaneAnalysis, WorldEvent, GlobalTrend, MundanePrediction, AstrologicalCycle } from '@/hooks/useMundaneAstrology'
+import { devLog } from '@/lib/devLogger';
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 
 export type AnalysisData = MundaneAnalysis & {
@@ -80,7 +81,7 @@ class MundaneAstrologyIntelligence {
         advice
       }
     } catch (error) {
-      console.error('Mundane analysis error:', error)
+      devLog.error('Mundane analysis error:', error, 'mundaneAstrologyIntelligence')
       throw new Error('Failed to perform mundane analysis')
     }
   }

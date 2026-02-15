@@ -212,7 +212,7 @@ Write in a warm, practical voice addressing ${displayName} directly.`
         await lenormandIntelligence.saveReading(userId, reading)
         devLog.info('✅ Saved Lenormand reading to database for user:', userId, 'lenormand')
       } catch (saveError) {
-        console.error('⚠️ Failed to save reading to database (non-critical):', saveError)
+        devLog.error('Failed to save reading to database (non-critical)', saveError, 'lenormand-reading')
         // Continue even if save fails
       }
     }
@@ -225,7 +225,7 @@ Write in a warm, practical voice addressing ${displayName} directly.`
       }
     })
   } catch (error: any) {
-    console.error('Error generating Lenormand reading:', error)
+    devLog.error('Error generating Lenormand reading:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

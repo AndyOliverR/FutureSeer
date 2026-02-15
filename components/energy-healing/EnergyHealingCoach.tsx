@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -123,7 +124,7 @@ export function EnergyHealingCoach({ analysis }: EnergyHealingCoachProps) {
         }
       }
     } catch (error) {
-      console.error("Error asking energy healing seer:", error);
+      devLog.error("Error asking energy healing seer:", error, 'EnergyHealingCoach');
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === aiMessageId

@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error) {
-    console.error('❌ Chart conversion failed:', error);
+    devLog.error('❌ Chart conversion failed:', error, 'route');
     
     return NextResponse.json({
       success: false,

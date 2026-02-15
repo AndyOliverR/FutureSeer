@@ -3,23 +3,24 @@
  * Only logs in development mode to avoid console noise in production
  */
 
+import { devLog } from '@/lib/devLogger';
+
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 export const logger = {
   log: (...args: any[]) => {
     if (isDevelopment) {
-      console.log(...args);
+      devLog.debug(args[0], args[1], 'logger');
     }
   },
   error: (...args: any[]) => {
-    // Always log errors, but can be made conditional if needed
     if (isDevelopment) {
-      console.error(...args);
+      devLog.error(args[0], args[1], 'logger');
     }
   },
   warn: (...args: any[]) => {
     if (isDevelopment) {
-      console.warn(...args);
+      devLog.warn(args[0], args[1], 'logger');
     }
   },
   info: (...args: any[]) => {
@@ -29,7 +30,7 @@ export const logger = {
   },
   debug: (...args: any[]) => {
     if (isDevelopment) {
-      console.debug(...args);
+      devLog.debug(args[0], args[1], 'logger');
     }
   },
 };

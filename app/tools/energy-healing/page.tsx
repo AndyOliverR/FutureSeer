@@ -1,10 +1,14 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   AlertTriangle,
@@ -15,7 +19,6 @@ import {
   Activity,
   Loader2
 } from 'lucide-react'
-import { energyHealingIntelligence } from '@/lib/energyHealing/energyHealingIntelligence'
 import {
   ChakraAnalysis,
   AuraReading,
@@ -28,12 +31,6 @@ import { AuraVisualization } from '@/components/energy-healing/AuraVisualization
 import { CrystalRecommendations } from '@/components/energy-healing/CrystalRecommendations'
 import { EnergyHealingCoach } from '@/components/energy-healing/EnergyHealingCoach'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
-import {
-  storeEnergyHealingAnalysis,
-  getEnergyHealingAnalysis,
-  createProfileHash,
-  isAnalysisValid
-} from '@/lib/energyHealing/energyHealingStorage'
 
 interface AllAnalyses {
   chakra: ChakraAnalysis | null
@@ -45,92 +42,20 @@ interface AllAnalyses {
 
 export default function EnergyHealingPage() {
   const { user, userProfile } = useAuth()
-  const [error, setError] = useState<string | null>(null)
-  const [allAnalyses, setAllAnalyses] = useState<AllAnalyses>({
-    chakra: null,
-    aura: null,
-    reiki: null,
-    crystal: null,
-    energy: null
-  })
-  const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>({
-    chakra: false,
-    aura: false,
-    reiki: false,
-    crystal: false,
-    energy: false
-  })
   const [activeTab, setActiveTab] = useState<'introduction' | 'chakra' | 'aura' | 'reiki' | 'crystal' | 'energy' | 'ask-the-seer'>('introduction')
-
-  // Auto-generate all analyses on mount and profile change
-  useEffect(() => {
-    if (!user || !userProfile) {
-      return
+  const { report: pipelineReport, loading, error, hasReport } = useToolReport('energyHealing')
+  const allAnalyses = useMemo((): AllAnalyses => {
+    const raw = pipelineReport as Record<string, unknown> | undefined
+    if (!raw || typeof raw !== 'object') return { chakra: null, aura: null, reiki: null, crystal: null, energy: null }
+    return {
+      chakra: (raw.chakra as ChakraAnalysis) ?? null,
+      aura: (raw.aura as AuraReading) ?? null,
+      reiki: (raw.reiki as ReikiAnalysis) ?? null,
+      crystal: (raw.crystal as CrystalRecommendation) ?? null,
+      energy: (raw.energy as EnergyBalanceAnalysis) ?? null
     }
-
-    const generateAllAnalyses = async () => {
-      if (!user?.uid || !userProfile) return
-      const methods = ['chakra', 'aura', 'reiki', 'crystal', 'energy'] as const
-      const currentProfileHash = createProfileHash(userProfile)
-
-      // Check cache first
-      const cached = await Promise.all(
-        methods.map(m => getEnergyHealingAnalysis(user.uid, m))
-      )
-
-      // Generate missing or stale analyses
-      const promises = methods.map(async (method, index) => {
-        const cachedAnalysis = cached[index]
-        
-        if (cachedAnalysis && isAnalysisValid(cachedAnalysis, currentProfileHash)) {
-          // Use cached analysis
-          setAllAnalyses(prev => ({
-            ...prev,
-            [method]: cachedAnalysis.analysis
-          }))
-          return
-        }
-
-        // Generate new analysis
-        setLoadingStates(prev => ({ ...prev, [method]: true }))
-        try {
-          const result = await energyHealingIntelligence.performHealingAnalysis(
-            method,
-            userProfile,
-            userProfile?.facePhotoUrl
-          )
-
-          // Extract the specific analysis from the result
-          let analysis: any = null
-          if (method === 'chakra' && result.chakraAnalysis) {
-            analysis = result.chakraAnalysis
-          } else if (method === 'aura' && result.auraReading) {
-            analysis = result.auraReading
-          } else if (method === 'reiki' && result.reikiAnalysis) {
-            analysis = result.reikiAnalysis
-          } else if (method === 'crystal' && result.crystalRecommendation) {
-            analysis = result.crystalRecommendation
-          } else if (method === 'energy' && result.energyBalance) {
-            analysis = result.energyBalance
-          }
-
-          if (analysis) {
-            setAllAnalyses(prev => ({ ...prev, [method]: analysis }))
-            await storeEnergyHealingAnalysis(user.uid, method, analysis, currentProfileHash)
-          }
-        } catch (err) {
-          console.error(`Failed to generate ${method} analysis:`, err)
-          setError(`Failed to generate ${method} analysis. Please try again.`)
-        } finally {
-          setLoadingStates(prev => ({ ...prev, [method]: false }))
-        }
-      })
-
-      await Promise.all(promises)
-    }
-
-    generateAllAnalyses()
-  }, [user, userProfile])
+  }, [pipelineReport])
+  const loadingStates = { chakra: false, aura: false, reiki: false, crystal: false, energy: false }
 
   const healingMethods = [
     { 
@@ -166,6 +91,7 @@ export default function EnergyHealingPage() {
   ]
 
   return (
+    <ToolReportGuard loading={loading} error={error ?? null} toolLabel="Energy & Healing">
     <div className="relative min-h-screen starfield-ultra-sharp">
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
@@ -176,7 +102,7 @@ export default function EnergyHealingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <h1 className="text-5xl font-serif font-semibold mb-6">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
                 <span className="text-yellow-400">✨</span>{' '}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Energy & Healing</span>
               </h1>
@@ -198,12 +124,25 @@ export default function EnergyHealingPage() {
             </Card>
           )}
 
+          {/* CTA when no report */}
+          {!hasReport && !loading && (
+            <Card className="bg-amber-500/10 border-amber-500/30 rounded-2xl shadow-md mb-8">
+              <CardContent className="p-6 text-center">
+                <p className="text-slate-300 mb-4">Generate your mystical profile to unlock Energy & Healing analyses.</p>
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                  <Link href="/profile">Generate your mystical profile</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Results - Tabs always visible */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-7 bg-transparent p-0 gap-2">
+          <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full min-w-0">
+              <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                 <TabsTrigger 
                   value="introduction" 
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
                 >
                   Introduction
                 </TabsTrigger>
@@ -211,26 +150,26 @@ export default function EnergyHealingPage() {
                   <TabsTrigger 
                     key={method.value}
                     value={method.value} 
-                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                    className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
                   >
                     {method.label}
                   </TabsTrigger>
                 ))}
                 <TabsTrigger 
                   value="ask-the-seer" 
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
                 >
                   Ask the Seer
                 </TabsTrigger>
               </TabsList>
 
               {/* Introduction Tab */}
-              <TabsContent value="introduction" className="space-y-6">
+              <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <ToolIntroductionTab toolSlug="energy-healing" />
               </TabsContent>
 
               {/* Chakra Analysis Tab */}
-              <TabsContent value="chakra" className="space-y-6">
+              <TabsContent value="chakra" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {loadingStates.chakra ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
@@ -251,7 +190,7 @@ export default function EnergyHealingPage() {
               </TabsContent>
 
               {/* Aura Reading Tab */}
-              <TabsContent value="aura" className="space-y-6">
+              <TabsContent value="aura" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {loadingStates.aura ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
@@ -272,7 +211,7 @@ export default function EnergyHealingPage() {
               </TabsContent>
 
               {/* Reiki Tab */}
-              <TabsContent value="reiki" className="space-y-6">
+              <TabsContent value="reiki" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {loadingStates.reiki ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
@@ -349,7 +288,7 @@ export default function EnergyHealingPage() {
               </TabsContent>
 
               {/* Crystal Healing Tab */}
-              <TabsContent value="crystal" className="space-y-6">
+              <TabsContent value="crystal" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {loadingStates.crystal ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
@@ -370,7 +309,7 @@ export default function EnergyHealingPage() {
               </TabsContent>
 
               {/* Energy Balance Tab */}
-              <TabsContent value="energy" className="space-y-6">
+              <TabsContent value="energy" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {loadingStates.energy ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
@@ -458,7 +397,7 @@ export default function EnergyHealingPage() {
               </TabsContent>
 
               {/* Ask the Seer Tab */}
-              <TabsContent value="ask-the-seer" className="space-y-6">
+              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <EnergyHealingCoach 
                   analysis={{
                     method: 'chakra',
@@ -474,8 +413,10 @@ export default function EnergyHealingPage() {
                 />
               </TabsContent>
             </Tabs>
+            </div>
         </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }

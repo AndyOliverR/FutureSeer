@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Gem, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface NavaratnaMessage {
   id: string;
@@ -34,8 +35,10 @@ const REGENERATE_MESSAGE =
   'Generate Navaratna analysis first to use Ask the Seer.';
 
 const NAVARATNA_STARTER_QUESTIONS = [
-  'Which gemstone is recommended for me?',
-  'How do I use Navaratna for timing?',
+  'Which gemstone is suitable for me?',
+  'Is it safe for me to wear Blue Sapphire?',
+  'Which stone supports career or confidence?',
+  'Should I wear a Navaratna ring?',
 ];
 
 export default function NavaratnaSeerChatInterface({
@@ -173,7 +176,7 @@ export default function NavaratnaSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Navaratna Seer error:', err);
+      devLog.error('Navaratna Seer error', err, 'NavaratnaSeerChatInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -270,16 +273,13 @@ export default function NavaratnaSeerChatInterface({
             Ask the Seer — Navaratna
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Vedic remedial system—Lagnesh, functional benefics, Maraka rules.
+            Support, not prediction.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
           <Gem className="w-12 h-12 text-amber-600 mb-4" />
           <p className="text-amber-900 font-medium text-center">
             {EMPTY_STATE_MESSAGE}
-          </p>
-          <p className="text-sm text-amber-700 mt-2 text-center">
-            Generate analysis to get personalized gemstone guidance.
           </p>
         </CardContent>
       </Card>
@@ -294,7 +294,7 @@ export default function NavaratnaSeerChatInterface({
           Ask the Seer — Navaratna
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Vedic remedial system—Lagnesh, functional benefics, Maraka rules.
+          Support, not prediction.
         </p>
         {messages.length > 0 && (
           <Button
@@ -315,8 +315,19 @@ export default function NavaratnaSeerChatInterface({
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Welcome to Ask the Seer — Navaratna. I have your analysis; ask about gemstones, Lagnesh, or remedies.
+                Ask me anything about gemstones and planetary support…
               </p>
+              <p className="text-sm text-amber-800 mb-3">
+                I&apos;ll guide you on suitable gemstones based on your chart to strengthen beneficial influences and balance challenges.
+              </p>
+              <p className="text-xs text-amber-800 font-medium mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Gemstone suitability (which supports you, whether a stone is safe, primary vs secondary)</li>
+                <li>Purpose-based support (career, wealth, confidence; relationships, stability; health support non-medical)</li>
+                <li>Usage guidance (how to wear—metal, finger; who should avoid; combining stones)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {NAVARATNA_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -331,6 +342,9 @@ export default function NavaratnaSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-xs text-amber-700 mt-4">
+                Best for: Planetary support and suitability, not prediction or guarantees.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -365,7 +379,7 @@ export default function NavaratnaSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about Life Stone, which stone to wear, what to avoid, wearing instructions…"
+              placeholder="Ask about gemstones, suitability, or wearing guidance…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

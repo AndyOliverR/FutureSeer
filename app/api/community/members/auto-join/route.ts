@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { getLevelFromKarma, getReputation, calculateBadges } from '@/lib/firestore/communityHelpers';
 
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error auto-joining community member:', error);
+    devLog.error('Error auto-joining community member:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to auto-join community member' }, { status: 500 });
   }
 }
@@ -156,7 +157,7 @@ async function updateCommunityStats(db: any, updates: { members?: number }) {
       });
     }
   } catch (error) {
-    console.error('Error updating community stats:', error);
+    devLog.error('Error updating community stats:', error, 'route');
   }
 }
 

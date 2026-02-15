@@ -102,32 +102,33 @@ export default function RunesPage() {
         </motion.div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 gap-2">
-            <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 rounded-2xl px-3 py-2.5 transition-all">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+            <TabsTrigger value="overview" className="shrink-0 text-sm font-medium data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50">
               <Eye className="w-4 h-4 mr-1" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="reading" className="text-xs data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 rounded-2xl px-3 py-2.5 transition-all">
+            <TabsTrigger value="reading" className="shrink-0 text-sm font-medium data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50">
               <Sparkles className="w-4 h-4 mr-1" />
               Reading
             </TabsTrigger>
-            <TabsTrigger value="runes" className="text-xs data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 rounded-2xl px-3 py-2.5 transition-all">
+            <TabsTrigger value="runes" className="shrink-0 text-sm font-medium data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50">
               <BookOpen className="w-4 h-4 mr-1" />
               Runes
             </TabsTrigger>
-            <TabsTrigger value="guidance" className="text-xs data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 rounded-2xl px-3 py-2.5 transition-all">
+            <TabsTrigger value="guidance" className="shrink-0 text-sm font-medium data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50">
               <Target className="w-4 h-4 mr-1" />
               Guidance
             </TabsTrigger>
-            <TabsTrigger value="ask-the-seer" className="text-xs data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 rounded-2xl px-3 py-2.5 transition-all">
+            <TabsTrigger value="ask-the-seer" className="shrink-0 text-sm font-medium data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50">
               <MessageCircle className="w-4 h-4 mr-1" />
               Ask the Seer
             </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Runes Profile Summary */}
               <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl shadow-lg overflow-hidden">
@@ -214,7 +215,7 @@ export default function RunesPage() {
                 <CardContent className="text-slate-700">
                   {currentReading?.elementalBalance ? (
                     <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
                         <div className="flex justify-between">
                           <span className="text-red-700">Fire:</span>
                           <span className="text-amber-800 font-medium">{currentReading.elementalBalance.fire || 0}</span>
@@ -287,7 +288,7 @@ export default function RunesPage() {
           </TabsContent>
 
           {/* Reading Tab */}
-          <TabsContent value="reading" className="space-y-6">
+          <TabsContent value="reading" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-amber-300 rounded-2xl shadow-lg overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
                 <CardTitle className="text-amber-900 text-lg flex items-center">
@@ -439,7 +440,7 @@ export default function RunesPage() {
           </TabsContent>
 
           {/* Runes Tab */}
-          <TabsContent value="runes" className="space-y-6">
+          <TabsContent value="runes" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {/* Rune Reference Guide - Always show all 24 runes */}
             <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl shadow-lg overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -572,7 +573,7 @@ export default function RunesPage() {
           </TabsContent>
 
           {/* Guidance Tab */}
-          <TabsContent value="guidance" className="space-y-6">
+          <TabsContent value="guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {currentReading ? (
               <div className="space-y-6">
                 {/* Recommendations */}
@@ -697,7 +698,7 @@ export default function RunesPage() {
           </TabsContent>
 
           {/* Ask the Seer Tab — Rune Divination (forces/consequences, no timelines) */}
-          <TabsContent value="ask-the-seer" className="space-y-6">
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
               <RunesSeerChatInterface
                 reading={currentReading ?? undefined}
@@ -708,6 +709,7 @@ export default function RunesPage() {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   )

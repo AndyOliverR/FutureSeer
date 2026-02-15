@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { devLog } from '@/lib/devLogger';
 import { createAICompletion } from '@/lib/aiGateway';
 import { withRateLimit, rateLimiters } from '@/lib/rateLimit';
 import { securityEvents } from '@/lib/securityMonitor';
@@ -7,7 +8,7 @@ async function handleOpenAIRequest(request: NextRequest) {
   try {
     // Check if OpenAI is configured (either via Gateway or direct API)
     if (!process.env.OPENAI_API_KEY && !process.env.AI_GATEWAY_API_KEY) {
-      console.error("OpenAI not configured - missing API key");
+      devLog.error("OpenAI not configured - missing API key", undefined, 'route');
       return NextResponse.json(
         { error: "OpenAI API key is not configured. Please add OPENAI_API_KEY or AI_GATEWAY_API_KEY to your .env.local file." },
         { status: 503 },
@@ -16,7 +17,7 @@ async function handleOpenAIRequest(request: NextRequest) {
 
     // Additional check for API key validity
     if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.length < 10) {
-      console.error("OpenAI API key is invalid or too short");
+      devLog.error("OpenAI API key is invalid or too short", undefined, 'route');
       return NextResponse.json(
         { error: "OpenAI API key is invalid. Please check your .env.local file." },
         { status: 503 },
@@ -106,7 +107,7 @@ For comprehensive interpretations, provide detailed analysis covering all life a
 
     return NextResponse.json({ prediction })
   } catch (error: any) {
-    console.error("OpenAI API error:", error)
+    devLog.error("OpenAI API error:", error, 'route')
 
     // Log AI prediction failure
     if (error?.message) {
@@ -144,11 +145,11 @@ For comprehensive interpretations, provide detailed analysis covering all life a
       }
       
       // Log the actual error for debugging
-      console.error("Detailed OpenAI error:", {
+      devLog.error("Detailed OpenAI error:", {
         message: error.message,
         stack: error.stack,
         name: error.name
-      });
+      }, 'route');
     }
 
     return NextResponse.json(

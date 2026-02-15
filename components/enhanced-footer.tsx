@@ -61,8 +61,9 @@ export function EnhancedFooter() {
   };
 
   return (
-    <footer className="relative border-t border-[var(--m3-outline-variant)] bg-[var(--m3-surface-dim)] backdrop-blur-xl mt-auto mb-0 pb-0" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', boxSizing: 'border-box' }}>
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pt-8 sm:pt-10 pb-4 sm:pb-6">
+    <div className="w-screen relative left-1/2 -translate-x-1/2 max-w-[100vw] box-border overflow-x-hidden">
+      <footer className="relative border-t border-[var(--m3-outline-variant)] bg-[var(--m3-surface-dim)] backdrop-blur-xl mt-auto mb-0 pb-0 w-full">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 pt-8 sm:pt-10 pb-4 sm:pb-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Brand Column */}
           <div className="sm:col-span-2 lg:col-span-1">
@@ -164,6 +165,7 @@ export function EnhancedFooter() {
           </div>
         </div>
       </div>
-    </footer>
+      </footer>
+    </div>
   );
 }

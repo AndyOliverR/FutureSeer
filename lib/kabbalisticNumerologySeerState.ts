@@ -152,7 +152,7 @@ export function classifyKabbalisticQuestion(question: string): KabbalisticQuesti
 
 /** Mandatory refusal phrase. */
 export const KABBALISTIC_REFUSAL_PHRASE =
-  'This system addresses inner alignment, not external outcomes.';
+  'This question requires a predictive or timing-based system.';
 
 /**
  * Build slice for system prompt: state, soul supremacy, name harmony, repetition framing, allowed/forbidden, permanent rule.

@@ -8,6 +8,8 @@
  * Third-party attribution: See internal documentation for details.
  */
 
+import { devLog } from '@/lib/devLogger';
+
 export interface ChartImageData {
   type: 'nakshatra-wheel' | 'dasa-timeline' | 'divisional-chart' | 'gochara-chart' | 'event-chart'
   title: string
@@ -60,7 +62,7 @@ export class ChartImageService {
    */
   async generateNakshatraWheel(userProfile: any): Promise<ChartImageData> {
     try {
-      console.log('🎨 FutureSeer: Generating Nakshatra Wheel chart...')
+      devLog.debug('🎨 FutureSeer: Generating Nakshatra Wheel chart...')
       
       // For now, return mock data with placeholder image
       // In production, this would generate actual SVG charts
@@ -76,10 +78,10 @@ export class ChartImageService {
         }
       }
       
-      console.log('✅ FutureSeer: Nakshatra Wheel generated successfully')
+      devLog.debug('✅ FutureSeer: Nakshatra Wheel generated successfully')
       return chartData
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating Nakshatra Wheel:', error)
+      devLog.error('❌ FutureSeer: Error generating Nakshatra Wheel:', error, 'chartImageService')
       throw error
     }
   }
@@ -89,7 +91,7 @@ export class ChartImageService {
    */
   async generateDasaTimeline(userProfile: any): Promise<ChartImageData> {
     try {
-      console.log('🎨 FutureSeer: Generating Dasa Timeline chart...')
+      devLog.debug('🎨 FutureSeer: Generating Dasa Timeline chart...')
       
       const chartData: ChartImageData = {
         type: 'dasa-timeline',
@@ -103,10 +105,10 @@ export class ChartImageService {
         }
       }
       
-      console.log('✅ FutureSeer: Dasa Timeline generated successfully')
+      devLog.debug('✅ FutureSeer: Dasa Timeline generated successfully')
       return chartData
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating Dasa Timeline:', error)
+      devLog.error('❌ FutureSeer: Error generating Dasa Timeline:', error, 'chartImageService')
       throw error
     }
   }
@@ -116,7 +118,7 @@ export class ChartImageService {
    */
   async generateDivisionalCharts(userProfile: any): Promise<DivisionalChart[]> {
     try {
-      console.log('🎨 FutureSeer: Generating Divisional Charts using VedAstro API...')
+      devLog.debug('🎨 FutureSeer: Generating Divisional Charts using VedAstro API...')
       
       const charts: DivisionalChart[] = [
         {
@@ -163,10 +165,10 @@ export class ChartImageService {
         }
       ]
       
-      console.log('✅ FutureSeer: Divisional Charts generated successfully')
+      devLog.debug('✅ FutureSeer: Divisional Charts generated successfully')
       return charts
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating Divisional Charts:', error)
+      devLog.error('❌ FutureSeer: Error generating Divisional Charts:', error, 'chartImageService')
       throw error
     }
   }
@@ -176,7 +178,7 @@ export class ChartImageService {
    */
   async generateGocharaCharts(userProfile: any): Promise<ChartImageData> {
     try {
-      console.log('🎨 FutureSeer: Generating Gochara Charts...')
+      devLog.debug('🎨 FutureSeer: Generating Gochara Charts...')
       
       const chartData: ChartImageData = {
         type: 'gochara-chart',
@@ -190,10 +192,10 @@ export class ChartImageService {
         }
       }
       
-      console.log('✅ FutureSeer: Gochara Charts generated successfully')
+      devLog.debug('✅ FutureSeer: Gochara Charts generated successfully')
       return chartData
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating Gochara Charts:', error)
+      devLog.error('❌ FutureSeer: Error generating Gochara Charts:', error, 'chartImageService')
       throw error
     }
   }
@@ -203,7 +205,7 @@ export class ChartImageService {
    */
   async generateEventChart(userProfile: any): Promise<ChartImageData> {
     try {
-      console.log('🎨 FutureSeer: Generating Event Chart...')
+      devLog.debug('🎨 FutureSeer: Generating Event Chart...')
       
       const chartData: ChartImageData = {
         type: 'event-chart',
@@ -217,10 +219,10 @@ export class ChartImageService {
         }
       }
       
-      console.log('✅ FutureSeer: Event Chart generated successfully')
+      devLog.debug('✅ FutureSeer: Event Chart generated successfully')
       return chartData
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating Event Chart:', error)
+      devLog.error('❌ FutureSeer: Error generating Event Chart:', error, 'chartImageService')
       throw error
     }
   }
@@ -238,7 +240,7 @@ export class ChartImageService {
    */
   async getTarabalaData(userProfile: any): Promise<TarabalaData[]> {
     try {
-      console.log('🎨 FutureSeer: Generating Tarabala Data...')
+      devLog.debug('🎨 FutureSeer: Generating Tarabala Data...')
       
       const tarabalaData: TarabalaData[] = [
         {
@@ -292,10 +294,10 @@ export class ChartImageService {
         }
       ]
       
-      console.log('✅ FutureSeer: Tarabala Data generated successfully')
+      devLog.debug('✅ FutureSeer: Tarabala Data generated successfully')
       return tarabalaData
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating Tarabala Data:', error)
+      devLog.error('❌ FutureSeer: Error generating Tarabala Data:', error, 'chartImageService')
       throw error
     }
   }

@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       data: { ...analysis, question: question.trim() }
     })
   } catch (error: any) {
-    console.error('Error generating geomancy reading:', error)
+    devLog.error('Error generating geomancy reading:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

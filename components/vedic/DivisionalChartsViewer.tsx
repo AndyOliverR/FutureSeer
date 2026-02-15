@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -120,9 +121,9 @@ export function DivisionalChartsViewer({
   const currentChart = divisionalCharts[currentChartIndex]
 
   // Add logging to see actual chartType
-  console.log('📊 Current chart:', currentChart)
-  console.log('📊 Chart type:', currentChart?.chartType)
-  console.log('📊 Available keys:', Object.keys(DIVISIONAL_CHART_INFO))
+  devLog.debug('📊 Current chart:', currentChart)
+  devLog.debug('📊 Chart type:', currentChart?.chartType)
+  devLog.debug('📊 Available keys:', Object.keys(DIVISIONAL_CHART_INFO))
 
   const chartInfo = DIVISIONAL_CHART_INFO[currentChart?.chartType as keyof typeof DIVISIONAL_CHART_INFO] || {
     name: currentChart?.chartType || 'Divisional Chart',
@@ -134,7 +135,7 @@ export function DivisionalChartsViewer({
 
   // Add fallback for undefined chartInfo
   if (!DIVISIONAL_CHART_INFO[currentChart?.chartType as keyof typeof DIVISIONAL_CHART_INFO]) {
-    console.warn('⚠️ No chart info found for chartType:', currentChart?.chartType)
+    devLog.warn('⚠️ No chart info found for chartType:', currentChart?.chartType, 'DivisionalChartsViewer')
   }
 
   // Sign name to index (0-11) for South Indian chart
@@ -303,7 +304,7 @@ export function DivisionalChartsViewer({
           url: window.location.href
         })
       } catch (error) {
-        console.log('Error sharing:', error)
+        devLog.debug('Error sharing:', error)
       }
     } else {
       navigator.clipboard.writeText(window.location.href)

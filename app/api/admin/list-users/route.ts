@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
 
 async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?: string } | null> {
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
       nextPageToken: result.pageToken || undefined,
     });
   } catch (err) {
-    console.error('Admin list-users error:', err);
+    devLog.error('Admin list-users error:', err, 'route');
     return NextResponse.json({ error: 'Failed to list users' }, { status: 500 });
   }
 }

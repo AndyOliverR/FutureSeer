@@ -1,4 +1,5 @@
 import posthog from "posthog-js"
+import { devLog } from '@/lib/devLogger';
 
 // Initialize PostHog only if API key is provided
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
@@ -13,7 +14,7 @@ if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
 // Updated AstroApp API functions to use comprehensive data service with fallback
 export async function getAstroData(birthDate: string, birthPlace: string, userId?: string) {
   try {
-    console.log("Getting astrological data using comprehensive service...")
+    devLog.debug("Getting astrological data using comprehensive service...")
     
     // If we have a userId, try to get comprehensive data
     if (userId) {
@@ -52,12 +53,12 @@ export async function getAstroData(birthDate: string, birthPlace: string, userId
           }
         }
       } catch (comprehensiveError) {
-        console.warn('Comprehensive data service failed, falling back to direct API:', comprehensiveError)
+        devLog.warn('Comprehensive data service failed, falling back to direct API:', comprehensiveError, 'api')
       }
     }
     
     // Fallback to Universal API call
-    console.log("Using Universal API call...")
+    devLog.debug("Using Universal API call...")
     
     const response = await fetch('/api/occult/universal', {
       method: 'POST',
@@ -78,13 +79,13 @@ export async function getAstroData(birthDate: string, birthPlace: string, userId
 
     if (response.ok) {
       const data = await response.json()
-      console.log("Successfully got AstroApp data")
+      devLog.debug("Successfully got AstroApp data")
       return data
     } else {
       throw new Error("AstroApp API is not available. Please try again later.")
     }
   } catch (error) {
-    console.error("Error getting AstroApp data:", error)
+    devLog.error("Error getting AstroApp data:", error, 'api')
     throw new Error("AstroApp API is not available. Please try again later.")
   }
 }
@@ -109,7 +110,7 @@ export async function generateSymbolicImage(prompt: string) {
     const data = await response.json()
     return data.imageUrl
   } catch (error) {
-    console.error("Error generating image:", error)
+    devLog.error("Error generating image:", error, 'api')
     return null
   }
 }
@@ -137,7 +138,7 @@ export async function generateAIPrediction(question: string, astroData: any, sym
     const data = await response.json()
     return data.prediction
   } catch (error) {
-    console.error("Error generating prediction:", error)
+    devLog.error("Error generating prediction:", error, 'api')
 
     // Return fallback prediction when AI is unavailable
     return generateFallbackPrediction(question, astroData, symbolicData)

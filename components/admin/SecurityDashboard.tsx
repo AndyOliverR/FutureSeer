@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,7 +43,7 @@ export function SecurityDashboard() {
       setSecurityReport(report);
       setRecentEvents(events);
     } catch (error) {
-      console.error('Error refreshing security data:', error);
+      devLog.error('Error refreshing security data:', error, 'SecurityDashboard');
     } finally {
       setIsLoading(false);
     }

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface SynastryMessage {
   id: string;
@@ -32,8 +33,10 @@ const REGENERATE_MESSAGE =
   'Two complete charts are required. Run Synastry analysis first to use Ask the Seer.';
 
 const SYNASTRY_STARTER_QUESTIONS = [
-  'How compatible are we in communication?',
-  'What are our main strengths as a couple?',
+  'What does our synastry say about compatibility?',
+  'Why is this relationship intense or confusing?',
+  'What are our main strengths and challenges together?',
+  'Is this connection more karmic or supportive?',
 ];
 
 export function SynastrySeerChatInterface({
@@ -179,7 +182,7 @@ export function SynastrySeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Synastry Seer error:', err);
+      devLog.error('Synastry Seer error', err, 'SynastrySeerChatInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -279,16 +282,13 @@ export function SynastrySeerChatInterface({
             Ask the Seer — Synastry
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Attraction, emotional compatibility, communication, power dynamics, long-term friction—dynamics, not destiny.
+            Relationship dynamics, not guarantees.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
           <MessageCircle className="w-12 h-12 text-amber-600 mb-4" />
           <p className="text-amber-900 font-medium text-center">
             {EMPTY_STATE_MESSAGE}
-          </p>
-          <p className="text-sm text-amber-700 mt-2 text-center">
-            Run Synastry analysis for both people first to get personalized guidance.
           </p>
         </CardContent>
       </Card>
@@ -303,7 +303,7 @@ export function SynastrySeerChatInterface({
           Ask the Seer — Synastry
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Attraction, emotional compatibility, communication, power dynamics, long-term friction—dynamics, not destiny.
+          Relationship dynamics, not guarantees.
         </p>
         {messages.length > 0 && (
           <Button
@@ -323,12 +323,20 @@ export function SynastrySeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
-              <p className="text-amber-900 font-medium">
-                Welcome to Synastry Seer. Ask about attraction, emotional fit, communication, power dynamics, or long-term friction.
+              <p className="text-amber-900 font-medium mb-2">
+                Ask me anything about relationship compatibility…
               </p>
-              <p className="text-sm mt-2 text-slate-700">
-                I have your Synastry analysis; ask about compatibility, strengths, or relationship dynamics.
+              <p className="text-sm text-amber-800 mb-3">
+                I&apos;ll analyze how two charts interact to reveal attraction, harmony, tension, and growth areas.
               </p>
+              <p className="text-xs text-amber-800 font-medium mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Compatibility and dynamics (emotional, communication, chemistry, long-term potential vs challenge)</li>
+                <li>Relationship purpose (why intense or difficult, what each triggers, growth lessons)</li>
+                <li>Comparative (strengths vs weaknesses, where effort is required, where harmony comes naturally)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {SYNASTRY_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -343,6 +351,9 @@ export function SynastrySeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-xs text-amber-700 mt-4">
+                Best for: Relationship dynamics and compatibility, not guarantees or timelines.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -377,7 +388,7 @@ export function SynastrySeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about attraction, emotional fit, communication, power dynamics…"
+              placeholder="Ask about compatibility, strengths, challenges, or dynamics…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

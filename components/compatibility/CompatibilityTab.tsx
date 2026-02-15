@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth'
 import type { AdditionalProfile, CompatibilityReport } from '@/lib/types/profileTypes'
 import { ProfileList } from '@/components/profiles/ProfileList'
@@ -92,7 +93,7 @@ export function CompatibilityTab({ toolSlug }: CompatibilityTabProps) {
           : 'Compatibility analysis completed successfully.',
       })
     } catch (error: any) {
-      console.error('Error generating compatibility report:', error)
+      devLog.error('Error generating compatibility report:', error, 'CompatibilityTab')
       toast({
         title: 'Error',
         description: error.message || 'Failed to generate compatibility report. Please try again.',

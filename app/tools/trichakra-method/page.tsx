@@ -129,7 +129,7 @@ export default function TrichakraMethodPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8 pt-4"
         >
-          <h1 className="text-5xl font-serif font-semibold mb-6">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-yellow-400">✨</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Trichakra Method</span>
           </h1>
@@ -160,30 +160,17 @@ export default function TrichakraMethodPage() {
         </motion.div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-transparent p-0 gap-2 mb-6">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             {tabsConfig.map((tab) => (
-              <motion.div
+              <TabsTrigger
                 key={tab.value}
-                whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
-                whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-                transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                className="relative"
+                value={tab.value}
+                className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all flex items-center justify-center"
               >
-                <TabsTrigger 
-                  value={tab.value} 
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden w-full"
-                >
-                  {tab.label}
-                  {activeTab === tab.value && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
-                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                </TabsTrigger>
-              </motion.div>
+                {tab.label}
+              </TabsTrigger>
             ))}
           </TabsList>
           {/* Ask the Seer tab: fixed-height chat like Tarot */}
@@ -195,7 +182,7 @@ export default function TrichakraMethodPage() {
               transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 300, damping: 30 }}
               className="w-full"
             >
-              <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <div className="h-[800px] min-h-0">
                   <TrichakraMethodCoachInterface trichakraAnalysis={analysis} onRegenerate={performTrichakraAnalysis} />
                 </div>
@@ -204,7 +191,7 @@ export default function TrichakraMethodPage() {
           )}
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-6">
@@ -276,7 +263,7 @@ export default function TrichakraMethodPage() {
           </TabsContent>
 
           {/* Body Tab */}
-          <TabsContent value="body" className="space-y-4">
+          <TabsContent value="body" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {analysis.remedies.body.map((remedy) => (
                 <div key={remedy.id} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-6">
@@ -331,7 +318,7 @@ export default function TrichakraMethodPage() {
           </TabsContent>
 
           {/* Mind Tab */}
-          <TabsContent value="mind" className="space-y-4">
+          <TabsContent value="mind" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {analysis.remedies.mind.map((remedy) => (
                 <div key={remedy.id} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-6">
@@ -386,7 +373,7 @@ export default function TrichakraMethodPage() {
           </TabsContent>
 
           {/* Soul Tab */}
-          <TabsContent value="soul" className="space-y-4">
+          <TabsContent value="soul" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {analysis.remedies.soul.map((remedy) => (
                 <div key={remedy.id} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-6">
@@ -440,6 +427,7 @@ export default function TrichakraMethodPage() {
             </div>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   )

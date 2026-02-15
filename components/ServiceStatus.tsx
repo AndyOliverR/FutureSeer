@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ServiceStatus {
@@ -60,7 +61,7 @@ export function ServiceStatus() {
           }
         }
       } catch (error) {
-        console.error('Error checking services:', error);
+        devLog.error('Error checking services:', error, 'ServiceStatus');
         setServices([
           { name: 'OpenAI', status: 'error', message: 'Check failed' },
           { name: 'AstroApp', status: 'error', message: 'Check failed' },

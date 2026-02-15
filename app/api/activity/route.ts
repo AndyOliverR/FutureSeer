@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuth } from 'firebase-admin/auth'
 import { adminDb } from '@/lib/firebase-admin'
+import { devLog } from '@/lib/devLogger'
 
 async function parseAuth(request: NextRequest): Promise<{ uid: string } | { error: NextResponse }> {
   const authHeader = request.headers.get('Authorization')
@@ -16,7 +17,7 @@ async function parseAuth(request: NextRequest): Promise<{ uid: string } | { erro
   }
 }
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 /**
  * GET /api/activity
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       res.headers.set('X-Activity-Index-Pending', 'true')
       return res
     }
-    console.error('Activity GET error:', err)
+    devLog.error('Activity GET error', err, 'activity')
     return NextResponse.json({ error: 'Failed to fetch activity' }, { status: 500 })
   }
 }
@@ -97,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, id: docRef.id })
   } catch (err) {
-    console.error('Activity API error:', err)
+    devLog.error('Activity API error', err, 'activity')
     return NextResponse.json({ error: 'Failed to save activity' }, { status: 500 })
   }
 }

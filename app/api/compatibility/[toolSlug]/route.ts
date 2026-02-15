@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { devLog } from '@/lib/devLogger';
 import { calculateCompatibility } from '@/lib/services/compatibilityService'
 import { getLocalUserProfile } from '@/lib/localStorage'
 import { AdditionalProfile } from '@/lib/types/profileTypes'
@@ -63,7 +64,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, report })
   } catch (error: any) {
-    console.error('Error calculating compatibility:', error)
+    devLog.error('Error calculating compatibility:', error, 'route')
     return NextResponse.json(
       { error: error.message || 'Failed to calculate compatibility' },
       { status: 500 }

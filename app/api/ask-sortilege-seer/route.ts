@@ -13,6 +13,7 @@ import {
   SORTILEGE_REFUSAL_INVALID_CAST,
   type SortilegeQuestionType,
 } from '@/lib/sortilegeSeerState';
+import { buildSortilegeSeerSystemPrompt } from '@/lib/sortilegeSeerPrompts';
 
 interface SortilegeSeerRequest {
   userId: string;
@@ -134,7 +135,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getSortilegeSliceForQuestionType(questionType, state);
+    const slice = getSortilegeSliceForQuestionType(questionType, state);
+    const systemPrompt = buildSortilegeSeerSystemPrompt(slice, questionType);
 
     // Initialize conversational memory for storage after stream
     const memory = new ConversationalMemory(userId);
@@ -213,7 +215,7 @@ export async function POST(request: NextRequest) {
             await cacheQuestionAnswer(userId, question, fullResponse);
 
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
           } finally {
             controller.close();
@@ -230,7 +232,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error in Sortilege Seer API:', error);
+    devLog.error('Error in Sortilege Seer API:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -280,7 +282,7 @@ async function storeConversation(userId: string, sessionId: string | undefined, 
     
     devLog.info('✅ Sortilege conversation stored successfully', undefined, 'ask-sortilege-seer');
   } catch (error) {
-    console.error('Error storing conversation:', error);
+    devLog.error('Error storing conversation:', error);
   }
 }
 
@@ -319,7 +321,7 @@ async function checkCachedQuestions(userId: string, question: string): Promise<a
     
     return null;
   } catch (error) {
-    console.error('Error checking cached questions:', error);
+    devLog.error('Error checking cached questions:', error);
     return null;
   }
 }
@@ -341,6 +343,6 @@ async function cacheQuestionAnswer(userId: string, question: string, answer: str
     
     devLog.info('✅ Sortilege question cached for future similar questions', undefined, 'ask-sortilege-seer');
   } catch (error) {
-    console.error('Error caching question:', error);
+    devLog.error('Error caching question:', error);
   }
 }

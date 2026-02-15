@@ -3,6 +3,7 @@
 // For construction, moving, renovations, and other Vastu activities
 
 import { calculatePanchanga, type PanchangaData } from './panchanga';
+import { devLog } from '@/lib/devLogger';
 import { UserProfile } from './firebase';
 
 export interface VastuTiming {
@@ -317,7 +318,7 @@ export function getVastuTiming(
       recommendations
     };
   } catch (error) {
-    console.error('Error calculating Vastu timing:', error);
+    devLog.error('Error calculating Vastu timing:', error, 'vastuTimingService');
     return null;
   }
 }

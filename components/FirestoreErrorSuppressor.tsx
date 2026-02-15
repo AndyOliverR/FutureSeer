@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 
 /**
  * Suppresses Firestore internal assertion errors before Next.js error overlay catches them
@@ -58,17 +59,17 @@ export function FirestoreErrorSuppressor() {
     const triggerCorruptionRecovery = () => {
       if (corruptionRecoveryTriggered || typeof window === 'undefined') return;
       corruptionRecoveryTriggered = true;
-      console.warn('🔄 Critical Firestore corruption detected. Clearing cache and reloading...');
+      devLog.warn('🔄 Critical Firestore corruption detected. Clearing cache and reloading...', undefined, 'FirestoreErrorSuppressor');
       indexedDB.databases?.()
         .then((databases: { name?: string }[]) => {
           databases.forEach((db) => {
             if (db.name?.includes('firestore')) {
               indexedDB.deleteDatabase(db.name);
-              console.log('🗑️ Deleted corrupted Firestore DB:', db.name);
+              devLog.debug('🗑️ Deleted corrupted Firestore DB:', db.name);
             }
           });
         })
-        .catch(() => console.warn('Could not clear IndexedDB'));
+        .catch(() => devLog.warn('Could not clear IndexedDB', undefined, 'FirestoreErrorSuppressor'));
       setTimeout(() => {
         window.location.href = window.location.pathname;
       }, 500);
@@ -106,7 +107,7 @@ export function FirestoreErrorSuppressor() {
       }
       
       if (isFirestoreInternalError({ message: errorMessage })) {
-        console.warn('⚠️ FirestoreErrorSuppressor suppressed console.error:', errorMessage);
+        devLog.warn('⚠️ FirestoreErrorSuppressor suppressed console.error:', errorMessage, 'FirestoreErrorSuppressor');
         if (
           (errorMessage.includes('INTERNAL ASSERTION FAILED') && errorMessage.includes('Unexpected state')) ||
           errorString.includes('Unexpected state (ID:')

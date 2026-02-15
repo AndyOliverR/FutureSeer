@@ -6,8 +6,10 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile";
+import { ToolReportGuard } from "@/components/ToolReportGuard";
+import { useVedicProfile } from "@/hooks/useVedicProfile";
 import { BirthProfile } from "@/hooks/usePlacements";
-import { getVedicReading } from "@/lib/vedicIntelligence";
 import { calculateAccuratePanchanga, calculateCurrentPanchanga } from "@/lib/enhancedPanchangaCalculator";
 import { detectYogas } from "@/lib/enhancedYogaDetection";
 import { getCoordinatesWithFallback } from "@/lib/geocoding";
@@ -15,6 +17,7 @@ import { resolveBirthTime } from "@/lib/birthTimeResolver";
 import { VERIFIED_VEDIC_FALLBACKS } from '@/lib/verifiedFallbacks';
 import { getChart } from "@/lib/astronomia-vedic";
 import { getFirebaseDB } from '@/lib/firebase';
+import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -248,13 +251,16 @@ function getSignName(signIndexOrName: number | string): string {
 
 function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
+  const { profile: comprehensiveProfile, loading: profileLoading, error: profileError } = useComprehensiveMysticalProfile();
+  const hasVedicData = !!(comprehensiveProfile?.vedic && comprehensiveProfile?.interpretations);
+  const vedicDerived = useVedicProfile(comprehensiveProfile, hasVedicData);
+
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'introduction' | 'compatibility' | 'overview' | 'report' | 'charts' | 'divisional' | 'planets' | 'houses' | 'dasha' | 'panchanga' | 'yogas' | 'nakshatras' | 'remedies' | 'interpretations' | 'transits' | 'astro-numerology'>('introduction');
   const [comprehensiveReport, setComprehensiveReport] = useState<any>(null);
   const [isLoadingComprehensiveReport, setIsLoadingComprehensiveReport] = useState(false);
   const [cacheCleared, setCacheCleared] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
-  const [vedicReading, setVedicReading] = useState<any>(null);
   const [expandedGemstones, setExpandedGemstones] = useState<Set<string>>(new Set());
   const [panchangaData, setPanchangaData] = useState<any>(null);
 
@@ -273,50 +279,31 @@ function VedicAstrologyPageContent() {
   const [yogas, setYogas] = useState<any[]>([]);
   const [isLoadingInterpretations, setIsLoadingInterpretations] = useState(false);
   const [newChartData, setNewChartData] = useState<any>(null);
-  
-  // Vedic Astro-Numerology state
-  const [vedicAstroNumerologyReport, setVedicAstroNumerologyReport] = useState<any>(null);
-  const [isLoadingVedicAstroNumerology, setIsLoadingVedicAstroNumerology] = useState(false);
-  
-  // Enhanced interpretation state
-  const [enhancedOverview, setEnhancedOverview] = useState<string>('');
-  const [enhancedPlanets, setEnhancedPlanets] = useState<Record<string, string>>({});
-  const [enhancedHouses, setEnhancedHouses] = useState<Record<number, string>>({});
-  const [enhancedDasha, setEnhancedDasha] = useState<string>('');
-  const [enhancedTransits, setEnhancedTransits] = useState<string>('');
-  const [enhancedRemedies, setEnhancedRemedies] = useState<Record<string, string>>({});
-  const [enhancedPanchanga, setEnhancedPanchanga] = useState<string>('');
-  const [isGeneratingInterpretations, setIsGeneratingInterpretations] = useState(false);
-  const [hasLoadedInterpretations, setHasLoadedInterpretations] = useState(false);
-  const [interpretationSource, setInterpretationSource] = useState<'fallback' | 'cache' | 'api'>('fallback');
-  
+
   // State for divisional chart interpretations
   const [d9Interpretations, setD9Interpretations] = useState<any>(null);
   const [d10Interpretations, setD10Interpretations] = useState<any>(null);
   const [divisionalSource, setDivisionalSource] = useState<'fallback' | 'cache' | 'api'>('fallback');
   const [selectedPlanet, setSelectedPlanet] = useState<{ name: string; data: any } | null>(null);
-  const [dasaData, setDasaData] = useState<any>(null);
   const [shadbalaData, setShadbalaData] = useState<any>(null);
   const [transitsData, setTransitsData] = useState<any>(null);
   const [chartDisclaimer, setChartDisclaimer] = useState<string>('');
   const [coordinates, setCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
 
-  // Cache clear effect
+  // Cache clear effect (pipeline-only: clear local enhancer only; do not call interpretation APIs)
   useEffect(() => {
     if (user?.uid && searchParams.get('clearCache') === 'true' && !cacheCleared) {
       setIsClearingCache(true);
       const enhancer = new VedicInterpretationEnhancer();
       enhancer.deleteAllVedicInterpretationsForUser(user?.uid ?? '').then(() => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ Full cache cleared!');
-        }
+        devLog.debug('Full cache cleared', undefined, 'vedic');
         setCacheCleared(true);
         setIsClearingCache(false);
-        // Force immediate reload of fallback content
-        loadInterpretationsWithHybridFallback();
       });
     }
   }, [user, searchParams, cacheCleared]);
+
+  // Pipeline-only: Vedic Astro-Numerology comes from comprehensive profile (see derived state below), no Firestore read
 
   // Handle planet click - memoized for performance
   const handlePlanetClick = useCallback((planetName: string, planetData: any) => {
@@ -347,87 +334,13 @@ function VedicAstrologyPageContent() {
     return !invalidPhrases.some(phrase => text.toLowerCase().includes(phrase));
   };
 
-  // Regenerate invalid planets
-  const regenerateInvalidPlanets = async (invalidPlanets: string[], existingCache: any) => {
-    if (!user?.uid) return;
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 Regenerating ${invalidPlanets.length} invalid planets`);
-    }
-    
-    const planetPromises = invalidPlanets.map(async (planet) => {
-      const res = await fetch('/api/vedic-interpretations/planets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planet, chartData: newChartData, userId: user?.uid ?? '' })
-      });
-      if (res.ok) {
-        const { interpretation } = await res.json();
-        if (isValidInterpretation(interpretation)) {
-          return { planet, interpretation };
-        }
-      }
-      // Fallback if API fails
-      return { planet, interpretation: VERIFIED_VEDIC_FALLBACKS.planets[planet as keyof typeof VERIFIED_VEDIC_FALLBACKS.planets] };
-    });
-    
-    const results = await Promise.all(planetPromises);
-    const regeneratedPlanets: Record<string, string> = {};
-    results.forEach(({ planet, interpretation }) => {
-      regeneratedPlanets[planet] = interpretation;
-    });
-    
-    // Merge with existing valid cached content
-    setEnhancedPlanets(prev => ({ ...prev, ...regeneratedPlanets }));
-    
-    // Update cache with verified content
-    await updateCacheWithVerifiedContent(existingCache, { planets: regeneratedPlanets });
-    setHasLoadedInterpretations(true);
+  // Pipeline-only: no tool API regeneration; data comes from profile. Replace UI "Regenerate" with CTA to /profile.
+  const regenerateInvalidPlanets = async (_invalidPlanets: string[], _existingCache: any) => {
+    // No-op: interpretations come from comprehensive profile only.
   };
 
-  // Regenerate invalid Dasha
-  const regenerateInvalidDasha = async (existingCache: any) => {
-    if (!user?.uid) return;
-    console.log('🔄 Regenerating invalid Dasha content');
-    
-    try {
-      // STEP 1: Delete bad cache immediately
-      await updateCacheWithVerifiedContent(existingCache, { deleteDasha: true });
-      console.log('✅ Bad Dasha cache deleted from Firebase');
-      
-      // STEP 2: Regenerate with API
-      const dashaRes = await fetch('/api/vedic-interpretations/dasha', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          dashaData: newChartData.currentDasha, 
-          chartData: newChartData, 
-          userId: user?.uid ?? '' 
-        })
-      });
-      
-      if (dashaRes.ok) {
-        const { interpretation } = await dashaRes.json();
-        if (isValidInterpretation(interpretation)) {
-          setEnhancedDasha(interpretation);
-          
-          // STEP 3: Save verified content back to cache
-          await updateCacheWithVerifiedContent(existingCache, { dasha: interpretation });
-          console.log('✅ Verified Dasha saved to cache');
-          setHasLoadedInterpretations(true);
-          return;
-        }
-      }
-      
-      // Fallback if API fails
-      console.warn('Dasha API failed, using fallback');
-      setEnhancedDasha(VERIFIED_VEDIC_FALLBACKS.dasha.default);
-      setHasLoadedInterpretations(true);
-      
-    } catch (error) {
-      console.error('Error regenerating Dasha:', error);
-      setEnhancedDasha(VERIFIED_VEDIC_FALLBACKS.dasha.default);
-      setHasLoadedInterpretations(true);
-    }
+  const regenerateInvalidDasha = async (_existingCache: any) => {
+    // No-op: dasha comes from comprehensive profile only.
   };
 
   // Update cache with verified content
@@ -460,361 +373,24 @@ function VedicAstrologyPageContent() {
       // DELETE invalid Dasha from cache if explicitly requested
       if (newContent.deleteDasha === true) {
         delete updateData.dasha;
-        console.log('🗑️ Deleted invalid Dasha from cache');
+        devLog.debug('Deleted invalid Dasha from cache', undefined, 'vedic');
       }
       
       await setDoc(cacheDocRef, updateData);
       
-      console.log('✅ Cache updated with verified content');
+      devLog.debug('Cache updated with verified content', undefined, 'vedic');
     } catch (error) {
-      console.error('Failed to update cache:', error);
+      devLog.error('Failed to update cache', error, 'vedic');
     }
   };
 
-  // Generate new chart data using astronomia wrapper
-  // Hybrid 3-tier fallback system: Fallback → Cache → API
-  const loadInterpretationsWithHybridFallback = async () => {
-    if (hasLoadedInterpretations) return;
-    
-    // TIER 1: Load fallback IMMEDIATELY (0ms)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📦 TIER 1: Loading verified fallback content instantly');
-    }
-    // TEMPORARY: Overview removed from fallback - now using vedicReading.interpretations.personality.overview only
-    // setEnhancedOverview(VERIFIED_VEDIC_FALLBACKS.overview.default);
-    setEnhancedPlanets({
-      Sun: VERIFIED_VEDIC_FALLBACKS.planets.Sun,
-      Moon: VERIFIED_VEDIC_FALLBACKS.planets.Moon,
-      Mercury: VERIFIED_VEDIC_FALLBACKS.planets.Mercury,
-      Venus: VERIFIED_VEDIC_FALLBACKS.planets.Venus,
-      Mars: VERIFIED_VEDIC_FALLBACKS.planets.Mars,
-      Jupiter: VERIFIED_VEDIC_FALLBACKS.planets.Jupiter,
-      Saturn: VERIFIED_VEDIC_FALLBACKS.planets.Saturn,
-      Rahu: VERIFIED_VEDIC_FALLBACKS.planets.Rahu,
-      Ketu: VERIFIED_VEDIC_FALLBACKS.planets.Ketu
-    });
-    setEnhancedHouses({
-      1: VERIFIED_VEDIC_FALLBACKS.houses[1],
-      2: VERIFIED_VEDIC_FALLBACKS.houses[2],
-      3: VERIFIED_VEDIC_FALLBACKS.houses[3],
-      4: VERIFIED_VEDIC_FALLBACKS.houses[4],
-      5: VERIFIED_VEDIC_FALLBACKS.houses[5],
-      6: VERIFIED_VEDIC_FALLBACKS.houses[6],
-      7: VERIFIED_VEDIC_FALLBACKS.houses[7],
-      8: VERIFIED_VEDIC_FALLBACKS.houses[8],
-      9: VERIFIED_VEDIC_FALLBACKS.houses[9],
-      10: VERIFIED_VEDIC_FALLBACKS.houses[10],
-      11: VERIFIED_VEDIC_FALLBACKS.houses[11],
-      12: VERIFIED_VEDIC_FALLBACKS.houses[12]
-    });
-    setEnhancedDasha(VERIFIED_VEDIC_FALLBACKS.dasha.default);
-    setEnhancedTransits(VERIFIED_VEDIC_FALLBACKS.transits.default);
-    setEnhancedRemedies({
-      Sun: VERIFIED_VEDIC_FALLBACKS.remedies.Sun,
-      Moon: VERIFIED_VEDIC_FALLBACKS.remedies.Moon,
-      Mercury: VERIFIED_VEDIC_FALLBACKS.remedies.Mercury,
-      Venus: VERIFIED_VEDIC_FALLBACKS.remedies.Venus,
-      Mars: VERIFIED_VEDIC_FALLBACKS.remedies.Mars,
-      Jupiter: VERIFIED_VEDIC_FALLBACKS.remedies.Jupiter,
-      Saturn: VERIFIED_VEDIC_FALLBACKS.remedies.Saturn,
-      Rahu: VERIFIED_VEDIC_FALLBACKS.remedies.Rahu,
-      Ketu: VERIFIED_VEDIC_FALLBACKS.remedies.Ketu
-    });
-    setEnhancedPanchanga(VERIFIED_VEDIC_FALLBACKS.panchanga.default);
-    setInterpretationSource('fallback');
-    
-    // User sees content NOW - no waiting!
-    
-    // TIER 2: Check cache in background (async, non-blocking)
-    try {
-      const db = getFirebaseDB();
-      const { doc, getDoc, setDoc } = await import('firebase/firestore');
-      const birthDataKey = `${userProfile?.birthDate}_${userProfile?.birthTime}_${userProfile?.birthPlace}`;
-      const cacheDocRef = doc(db, `users/${user?.uid ?? ''}/vedicInterpretations/static`);
-      const cacheDoc = await getDoc(cacheDocRef);
-      
-      if (cacheDoc.exists() && cacheDoc.data().birthDataKey === birthDataKey) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('💾 TIER 2: Cache found - validating content');
-        }
-        const cached = cacheDoc.data();
-        
-        // Validate planets individually
-        const validatedPlanets: Record<string, string> = {};
-        const invalidPlanets: string[] = [];
-        
-        if (cached.planets) {
-          Object.entries(cached.planets).forEach(([planet, interpretation]) => {
-            if (isValidInterpretation(interpretation as string)) {
-              validatedPlanets[planet] = interpretation as string;
-            } else {
-              console.warn(`Invalid cached content for ${planet}, will regenerate`);
-              invalidPlanets.push(planet);
-            }
-          });
-        }
-        
-        // TEMPORARY: Overview removed from cache - now using vedicReading.interpretations.personality.overview only
-        // const validatedOverview = isValidInterpretation(cached.overview) 
-        //   ? cached.overview 
-        //   : VERIFIED_VEDIC_FALLBACKS.overview.default;
-        
-        // Validate houses
-        const validatedHouses: Record<number, string> = {};
-        if (cached.houses) {
-          Object.entries(cached.houses).forEach(([houseNum, interpretation]) => {
-            if (isValidInterpretation(interpretation as string)) {
-              validatedHouses[parseInt(houseNum)] = interpretation as string;
-            }
-          });
-        }
-        
-        // Load valid cached content OR restore fallbacks if all invalid
-        if (Object.keys(validatedPlanets).length > 0) {
-          setEnhancedPlanets(validatedPlanets);
-          setInterpretationSource('cache');
-        } else if (cached.planets && Object.keys(cached.planets).length > 0) {
-          // All cached planets were invalid, restore fallbacks
-          console.log('⚠️ All cached planets invalid, keeping fallbacks');
-          setEnhancedPlanets({
-            Sun: VERIFIED_VEDIC_FALLBACKS.planets.Sun,
-            Moon: VERIFIED_VEDIC_FALLBACKS.planets.Moon,
-            Mercury: VERIFIED_VEDIC_FALLBACKS.planets.Mercury,
-            Venus: VERIFIED_VEDIC_FALLBACKS.planets.Venus,
-            Mars: VERIFIED_VEDIC_FALLBACKS.planets.Mars,
-            Jupiter: VERIFIED_VEDIC_FALLBACKS.planets.Jupiter,
-            Saturn: VERIFIED_VEDIC_FALLBACKS.planets.Saturn,
-            Rahu: VERIFIED_VEDIC_FALLBACKS.planets.Rahu,
-            Ketu: VERIFIED_VEDIC_FALLBACKS.planets.Ketu
-          });
-        }
-        
-        // TEMPORARY: Overview removed - now using vedicReading.interpretations.personality.overview only
-        // setEnhancedOverview(validatedOverview);
-        
-        // Restore fallback houses if all cached houses are invalid
-        if (Object.keys(validatedHouses).length > 0) {
-          setEnhancedHouses(validatedHouses);
-        } else if (cached.houses && Object.keys(cached.houses).length > 0) {
-          console.log('⚠️ All cached houses invalid, keeping fallbacks');
-          setEnhancedHouses({
-            1: VERIFIED_VEDIC_FALLBACKS.houses[1],
-            2: VERIFIED_VEDIC_FALLBACKS.houses[2],
-            3: VERIFIED_VEDIC_FALLBACKS.houses[3],
-            4: VERIFIED_VEDIC_FALLBACKS.houses[4],
-            5: VERIFIED_VEDIC_FALLBACKS.houses[5],
-            6: VERIFIED_VEDIC_FALLBACKS.houses[6],
-            7: VERIFIED_VEDIC_FALLBACKS.houses[7],
-            8: VERIFIED_VEDIC_FALLBACKS.houses[8],
-            9: VERIFIED_VEDIC_FALLBACKS.houses[9],
-            10: VERIFIED_VEDIC_FALLBACKS.houses[10],
-            11: VERIFIED_VEDIC_FALLBACKS.houses[11],
-            12: VERIFIED_VEDIC_FALLBACKS.houses[12]
-          });
-        }
-        
-        // Validate Dasha content
-        const validatedDasha = isValidInterpretation(cached.dasha) 
-          ? cached.dasha 
-          : VERIFIED_VEDIC_FALLBACKS.dasha.default;
-        setEnhancedDasha(validatedDasha);
-        
-        // Validate other sections
-        const validatedTransits = isValidInterpretation(cached.transits) 
-          ? cached.transits 
-          : VERIFIED_VEDIC_FALLBACKS.transits.default;
-        setEnhancedTransits(validatedTransits);
-        
-        setEnhancedRemedies(cached.remedies || {});
-        
-        const validatedPanchanga = isValidInterpretation(cached.panchanga) 
-          ? cached.panchanga 
-          : VERIFIED_VEDIC_FALLBACKS.panchanga.default;
-        setEnhancedPanchanga(validatedPanchanga);
-        
-        // Check if Dasha needs regeneration
-        const needsDashaRegeneration = cached.dasha && !isValidInterpretation(cached.dasha);
-        
-        // If we have invalid planets or Dasha, regenerate them
-        if (invalidPlanets.length > 0 || needsDashaRegeneration) {
-          if (invalidPlanets.length > 0) {
-            await regenerateInvalidPlanets(invalidPlanets, cached);
-          }
-          
-          if (needsDashaRegeneration) {
-            console.log('🔄 Regenerating invalid Dasha content');
-            await regenerateInvalidDasha(cached);
-          }
-        } else {
-          setHasLoadedInterpretations(true);
-          return; // All cache valid
-        }
-      }
-      
-      // TIER 3: No cache - call API as last resort
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🌐 TIER 3: No cache found - calling Groq API (last resort)');
-      }
-      setIsGeneratingInterpretations(true);
-      
-      // Generate overview
-      const overviewRes = await fetch('/api/vedic-interpretations/overview', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chartData: newChartData, userId: user?.uid ?? '' })
-      });
-      let enhancedOverview = '';
-      if (overviewRes.ok) {
-        const { interpretation } = await overviewRes.json();
-        enhancedOverview = interpretation;
-        setEnhancedOverview(interpretation);
-      }
-      
-      // Generate planetary interpretations (in parallel)
-      const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Rahu', 'Ketu'];
-      const planetPromises = planets.map(async (planet) => {
-        const res = await fetch('/api/vedic-interpretations/planets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ planet, chartData: newChartData, userId: user?.uid ?? '' })
-        });
-        if (res.ok) {
-          const { interpretation } = await res.json();
-          return { planet, interpretation };
-        }
-        return { planet, interpretation: '' };
-      });
-      
-      const planetResults = await Promise.all(planetPromises);
-      const planetMap: Record<string, string> = {};
-      planetResults.forEach(({ planet, interpretation }) => {
-        planetMap[planet] = interpretation;
-      });
-      setEnhancedPlanets(planetMap);
-      
-      // Generate house interpretations (in parallel)
-      const housePromises = Array.from({ length: 12 }, async (_, i) => {
-        const houseNumber = i + 1;
-        const res = await fetch('/api/vedic-interpretations/houses', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ houseNumber, chartData: newChartData, userId: user?.uid ?? '' })
-        });
-        if (res.ok) {
-          const { interpretation } = await res.json();
-          return { houseNumber, interpretation };
-        }
-        return { houseNumber, interpretation: '' };
-      });
-      
-      const houseResults = await Promise.all(housePromises);
-      const houseMap: Record<number, string> = {};
-      houseResults.forEach(({ houseNumber, interpretation }) => {
-        houseMap[houseNumber] = interpretation;
-      });
-      setEnhancedHouses(houseMap);
-      
-      // Generate dasha interpretation
-      let enhancedDasha = '';
-      if (newChartData.currentDasha) {
-        const dashaRes = await fetch('/api/vedic-interpretations/dasha', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            dashaData: newChartData.currentDasha, 
-            chartData: newChartData, 
-            userId: user?.uid ?? '' 
-          })
-        });
-        if (dashaRes.ok) {
-          const { interpretation } = await dashaRes.json();
-          enhancedDasha = interpretation;
-          setEnhancedDasha(interpretation);
-        }
-      }
-      
-      // Generate transit interpretation
-      let enhancedTransits = '';
-      if (transitsData) {
-        const transitRes = await fetch('/api/vedic-interpretations/transits', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            transitData: transitsData, 
-            chartData: newChartData, 
-            userId: user?.uid ?? '' 
-          })
-        });
-        if (transitRes.ok) {
-          const { interpretation } = await transitRes.json();
-          enhancedTransits = interpretation;
-          setEnhancedTransits(interpretation);
-        }
-      }
-      
-      // Generate panchanga insight
-      let enhancedPanchanga = '';
-      if (currentPanchangaData) {
-        const panchangaRes = await fetch('/api/vedic-interpretations/panchanga', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            panchangaData: currentPanchangaData, 
-            chartData: newChartData, 
-            userId: user?.uid ?? '' 
-          })
-        });
-        if (panchangaRes.ok) {
-          const { interpretation } = await panchangaRes.json();
-          enhancedPanchanga = interpretation;
-          setEnhancedPanchanga(interpretation);
-        }
-      }
-      
-      // Generate remedy interpretations for each weak planet
-      const remedyPromises = planets.map(async (planet) => {
-        const res = await fetch('/api/vedic-interpretations/remedies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            planet, 
-            remedy: { name: 'Gemstone' }, // Basic remedy info
-            chartData: newChartData, 
-            userId: user?.uid ?? '' 
-          })
-        });
-        if (res.ok) {
-          const { interpretation } = await res.json();
-          return { planet, interpretation };
-        }
-        return { planet, interpretation: '' };
-      });
-
-      const remedyResults = await Promise.all(remedyPromises);
-      const remedyMap: Record<string, string> = {};
-      remedyResults.forEach(({ planet, interpretation }) => {
-        remedyMap[planet] = interpretation;
-      });
-      setEnhancedRemedies(remedyMap);
-      
-      setInterpretationSource('api');
-      setHasLoadedInterpretations(true);
-      
-    } catch (error) {
-      console.error('Error in hybrid fallback system:', error);
-      // Fallback content already loaded, so user still sees something
-      setHasLoadedInterpretations(true);
-    } finally {
-      setIsGeneratingInterpretations(false);
-    }
-  };
+  // Pipeline-only: interpretations come from profile via vedicDerived; no tool API calls
+  const loadInterpretationsWithHybridFallback = async () => {};
 
   // Hybrid loader for divisional charts
   const loadDivisionalInterpretations = useCallback(async (chartType: 'D9' | 'D10') => {
     // TIER 1: Load fallback IMMEDIATELY
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📦 TIER 1: Loading ${chartType} fallback content instantly`);
-    }
+    devLog.debug(`TIER 1: Loading ${chartType} fallback content instantly`, undefined, 'vedic');
     
     // Post-process fallback content: Replace "Dear seeker" with user's first name
     const firstName = userProfile?.displayName?.split(' ')[0] || userProfile?.fullName?.split(' ')[0];
@@ -850,9 +426,7 @@ function VedicAstrologyPageContent() {
       const cacheDoc = await getDoc(cacheDocRef);
       
       if (cacheDoc.exists() && cacheDoc.data().birthDataKey === birthDataKey) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`💾 TIER 2: ${chartType} cache found - upgrading content`);
-        }
+        devLog.debug(`TIER 2: ${chartType} cache found - upgrading content`, undefined, 'vedic');
         const cached = cacheDoc.data();
         
         // Post-process cached content: Replace "Dear seeker" with user's first name
@@ -883,9 +457,7 @@ function VedicAstrologyPageContent() {
       }
       
       // TIER 3: Call API
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`🌐 TIER 3: Generating ${chartType} interpretations via API`);
-      }
+      devLog.debug(`TIER 3: Generating ${chartType} interpretations via API`, undefined, 'vedic');
       const response = await fetch('/api/vedic-interpretations/divisional', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -936,7 +508,7 @@ function VedicAstrologyPageContent() {
         setDivisionalSource('api');
       }
     } catch (error) {
-      console.error(`Error loading ${chartType} interpretations:`, error);
+      devLog.error(`Error loading ${chartType} interpretations`, error, 'vedic');
       // Fallback already loaded
     }
   }, [user?.uid, userProfile, newChartData]);
@@ -946,13 +518,13 @@ function VedicAstrologyPageContent() {
     if (!birthProfile || !userProfile) return;
     
     try {
-      console.log('🔮 Generating new chart with astronomia wrapper...');
+      devLog.debug('Generating new chart with astronomia wrapper', undefined, 'vedic');
       
       // Parse birth date
       const birthDate = userProfile.birthDate; // Format: "YYYY-MM-DD"
       
       if (!birthDate) {
-        console.warn('⚠️ Birth date missing');
+        devLog.warn('Birth date missing', undefined, 'vedic');
         return;
       }
       
@@ -998,29 +570,13 @@ function VedicAstrologyPageContent() {
       birthDateTime.setUTCHours(birthDateTime.getUTCHours() - 1);
     }
     
-    console.log('🕐 TIMEZONE DEBUG:');
-    console.log('  Input time:', resolvedTime.time);
-    console.log('  IST Hours:', istHours, 'IST Minutes:', istMinutes);
-    console.log('  UTC Hours:', utcHours, 'UTC Minutes:', utcMinutes);
-    console.log('  Final UTC DateTime:', birthDateTime.toISOString());
+    devLog.debug('Chart time params', { time: resolvedTime.time, istHours, istMinutes, utcHours, utcMinutes, utcIso: birthDateTime.toISOString() }, 'vedic');
       
       const latitude = coordinates.latitude;
       const longitude = coordinates.longitude;
       
       const actualNodeMode = targetNodeMode || currentNodeMode;
-      console.log('📍 Chart parameters:', {
-        date: birthDateTime,
-        time: resolvedTime.time,
-        timeMethod: resolvedTime.method,
-        accuracy: resolvedTime.accuracy,
-        latitude,
-        longitude,
-        name: birthProfile.fullName,
-        place: birthProfile.placeName,
-        currentNodeMode,
-        targetNodeMode,
-        actualNodeMode
-      });
+      devLog.debug('Chart parameters', { date: birthDateTime, time: resolvedTime.time, latitude, longitude, actualNodeMode }, 'vedic');
       
       const chart = getChart({
         date: birthDateTime,
@@ -1035,31 +591,7 @@ function VedicAstrologyPageContent() {
         nodeType: actualNodeMode
       });
       
-      console.log('✅ Chart generated:', chart);
-
-      // Validation for Feb 24, 1983
-      if (birthDate === '1983-02-24') {
-        console.log('🕉️ VEDIC UI VALIDATION for Feb 24, 1983:');
-        console.log('  Ascendant:', chart.ascendant);
-        console.log('  Sun:', (chart.planets as Record<string, unknown>)?.sun);
-        console.log('  Expected: Ascendant Gemini ~13°, Sun Aquarius ~11°');
-        
-        // Detailed validation
-        const sunLon = (chart.planets as Record<string, { lonSidereal?: number }>)?.sun?.lonSidereal;
-        const ascLon = (chart as { ascendant?: { lonSidereal?: number } }).ascendant?.lonSidereal;
-        
-        if (sunLon !== undefined) {
-          const sunSign = Math.floor(sunLon / 30);
-          const sunDegree = sunLon % 30;
-          console.log(`  Sun: ${sunLon.toFixed(2)}° = Sign ${sunSign} (${['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][sunSign]}) ${sunDegree.toFixed(2)}°`);
-        }
-        
-        if (ascLon !== undefined) {
-          const ascSign = Math.floor(ascLon / 30);
-          const ascDegree = ascLon % 30;
-          console.log(`  Asc: ${ascLon.toFixed(2)}° = Sign ${ascSign} (${['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'][ascSign]}) ${ascDegree.toFixed(2)}°`);
-        }
-      }
+      devLog.debug('Chart generated', { ascendant: chart.ascendant?.signName }, 'vedic');
 
       setNewChartData(chart);
 
@@ -1089,8 +621,7 @@ function VedicAstrologyPageContent() {
             changes.push(`Ketu: ${prevKetuDegree.toFixed(2)}° → ${newKetuDegree.toFixed(2)}° (Δ ${degChange.toFixed(2)}°)`);
           }
           
-          // Show toast (will implement toast component)
-          console.log('📊 Node positions updated:', changes.join(' | '));
+          devLog.debug('Node positions updated', changes.join(' | '), 'vedic');
           
           // Clear highlight after 5 seconds
           setTimeout(() => {
@@ -1100,7 +631,7 @@ function VedicAstrologyPageContent() {
         }
       }
     } catch (error) {
-      console.error('❌ Error generating new chart:', error);
+      devLog.error('Error generating new chart', error, 'vedic');
     }
   };
 
@@ -1119,14 +650,14 @@ function VedicAstrologyPageContent() {
     }
   } : null;
 
-  // Generate chart only when user profile changes (not birthProfile object)
+  // Pipeline-only: generate chart only when we have Vedic data from comprehensive profile
   useEffect(() => {
-    if (userProfile && userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace) {
-      console.log('🔄 Generating chart data for complete profile...');
+    if (hasVedicData && userProfile && userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace) {
+      devLog.debug('Generating chart data for complete profile', undefined, 'vedic');
       generateNewChart();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace]);
+  }, [hasVedicData, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace]);
 
   // Convert new chart data to old format for compatibility
   const chartData = newChartData ? {
@@ -1178,7 +709,7 @@ function VedicAstrologyPageContent() {
   
   
   const setNodeMode = (mode: "mean" | "true") => {
-    console.log('🔄 Changing node mode to:', mode);
+    devLog.debug('Changing node mode', mode, 'vedic');
     
     // Capture current node positions before change
     let capturedPositions = null;
@@ -1217,7 +748,7 @@ function VedicAstrologyPageContent() {
   };
   
   const setChartStyle = (style: "north" | "south" | "both") => {
-    console.log('🔄 Changing chart style to:', style);
+    devLog.debug('Changing chart style', style, 'vedic');
     setCurrentChartStyle(style);
   };
   
@@ -1281,33 +812,27 @@ function VedicAstrologyPageContent() {
         : [],
       houses: newChartData.houses,
       // ALWAYS use fresh Dasha calculations from newChartData
-      // NEVER use vedicReading.chartData.dasha as it may be stale
+      // NEVER use vedicDerived.vedicReading.chartData.dasha as it may be stale
       dasha: newChartData.dasha || [],
       currentDasha: newChartData.currentDasha || null,
       divisionalCharts: newChartData.divisionalCharts || {},
       metadata: newChartData.metadata
     };
     
-    // Debug: Log which Dasha data we're using
-    if (newChartData.dasha && newChartData.dasha.length > 0) {
-      console.log('✅ Using FRESH Dasha data from newChartData:');
-      console.log('  First Dasha:', newChartData.dasha[0]?.planet, newChartData.dasha[0]?.startDate);
-      console.log('  Current Dasha:', newChartData.currentDasha?.planet);
-      console.log('  Total periods:', newChartData.dasha.length);
-    }
+    devLog.debug('Using Dasha from newChartData', newChartData.dasha?.length ? { first: newChartData.dasha[0]?.planet, current: newChartData.currentDasha?.planet } : undefined, 'vedic');
     
-    // Enhance with vedicReading interpretations if available
-    if (vedicReading) {
-      baseData.interpretations = vedicReading.interpretations;
-      baseData.remedies = vedicReading.remedies;
+    // Enhance with vedicDerived.vedicReading interpretations if available
+    if (vedicDerived.vedicReading) {
+      baseData.interpretations = vedicDerived.vedicReading.interpretations;
+      baseData.remedies = vedicDerived.vedicReading.remedies;
       
-      // REMOVED: Do not merge Dasha data from vedicReading as it may be stale
+      // REMOVED: Do not merge Dasha data from vedicDerived.vedicReading as it may be stale
       // Always use freshly calculated Dasha data from newChartData
       // The calculation is now correct and should not be overwritten
     }
     
     return baseData;
-  }, [newChartData, vedicReading]);
+  }, [newChartData, vedicDerived.vedicReading]);
 
   // Generate comprehensive nakshatra analysis
   const nakshatraAnalysis = useMemo(() => {
@@ -1353,7 +878,7 @@ function VedicAstrologyPageContent() {
       };
     });
     
-    console.log('🔍 Planetary Dignities for', newChartData.ascendant.signName, 'Ascendant:', dignities);
+    devLog.debug('Planetary Dignities', { ascendant: newChartData.ascendant.signName, dignities }, 'vedic');
     
     return dignities;
   }, [newChartData?.ascendant?.signName, newChartData?.planets]);
@@ -1364,7 +889,7 @@ function VedicAstrologyPageContent() {
     try {
       return calculateVedicNumerologyProfile(userProfile.displayName, userProfile.birthDate);
     } catch (error) {
-      console.error('Error calculating Vedic numerology:', error);
+      devLog.error('Error calculating Vedic numerology', error, 'vedic');
       return null;
     }
   }, [userProfile?.birthDate, userProfile?.displayName]);
@@ -1375,208 +900,14 @@ function VedicAstrologyPageContent() {
     userProfile.birthTime && 
     userProfile.birthPlace;
 
-  // Load Vedic reading when user profile is available
-  useEffect(() => {
-    if (user && userProfile && hasCompleteDetails && !vedicReading) {
-      setIsLoadingInterpretations(true);
-      
-      // First check if we have cached data in Firebase
-      const checkCachedData = async () => {
-        try {
-          const db = getFirebaseDB();
-          if (db) {
-            const { doc, getDoc } = await import('firebase/firestore');
-            const docRef = doc(db, 'users', user?.uid ?? '', 'mysticalProfile', 'comprehensive');
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {
-              const cachedData = docSnap.data();
-              // Check if data is still valid and matches current birth details
-              if (cachedData.birthDate === userProfile.birthDate &&
-                  cachedData.birthPlace === userProfile.birthPlace &&
-                  cachedData.birthTime === userProfile.birthTime &&
-                  Date.now() - (cachedData.lastFetched || cachedData.cachedAt || 0) < 7 * 24 * 60 * 60 * 1000) { // 7 days cache validity
-                console.log('✅ Using cached Vedic data');
-                setVedicReading(cachedData);
-                setIsLoadingInterpretations(false);
-                return; // Exit early if using cached data
-              } else {
-                console.log('🔄 Cached data outdated or birth details changed, will generate new reading');
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Error checking cached data:', error);
-        }
-        
-        // If no cached data or data is outdated, generate new reading
-        console.log('🔄 Generating new Vedic reading...');
-        
-        // Geocode birth place automatically
-        (async () => {
-          const coords = await getCoordinatesWithFallback(
-            userProfile.birthPlace || 'Mumbai, India'
-          );
-          
-          // Store in state for component access
-          setCoordinates({
-            latitude: coords.latitude,
-            longitude: coords.longitude
-          });
-          
-          console.log('📍 Resolved coordinates:', {
-            birthPlace: userProfile.birthPlace,
-            latitude: coords.latitude,
-            longitude: coords.longitude
-          });
-          
-          getVedicReading(
-            user?.uid ?? '',
-            userProfile.birthDate!,
-            userProfile.birthTime!,
-            userProfile.birthPlace!,
-            coords.latitude,
-            coords.longitude
-          ).then((reading) => {
-          console.log('🔍 Full interpretation object:', JSON.stringify(reading?.interpretations, null, 2));
-          console.log('🔍 Spirituality section:', reading?.interpretations?.spirituality);
-          setVedicReading(reading);
-          
-          // Detect Yogas
-          if (reading?.chartData) {
-            try {
-              // Convert sign names to numbers for Yoga detection
-              const signToNumber = (signName: string): number => {
-                const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 
-                             'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-                return signs.indexOf(signName);
-              };
-              
-              const chartData = {
-                ascendant: {
-                  sign: signToNumber(reading.chartData.ascendant?.sign || 'Aries'),
-                  degree: reading.chartData.ascendant?.degree || 0
-                },
-                planets: reading.chartData.planets?.map((planet: any) => ({
-                  name: planet.name,
-                  sign: signToNumber(planet.sign || 'Aries'),
-                  house: planet.house || 1,
-                  degree: planet.degree || 0,
-                  isRetrograde: planet.isRetrograde || false,
-                  isDebilitated: false, // This would need to be calculated
-                  isExalted: false // This would need to be calculated
-                })) || [],
-                houses: reading.chartData.houses?.map((house: any) => ({
-                  number: house.number,
-                  sign: signToNumber(house.sign || 'Aries'),
-                  lord: house.lord || 'Unknown'
-                })) || []
-              };
-              
-              const detectedYogas = detectYogas(chartData);
-              
-              // Deduplicate yogas by name to prevent duplicates
-              const uniqueYogas = Array.from(
-                new Map(detectedYogas.map(yoga => [yoga.name, yoga])).values()
-              );
-              
-              // Filter yogas that are actually present/valid
-              const validYogas = uniqueYogas.filter(yoga => 
-                yoga.isActive !== false && 
-                yoga.planets && 
-                yoga.planets.length > 0
-              );
-              
-              // Sort yogas by relevance: active first, then by strength
-              const sortedYogas = validYogas.sort((a, b) => {
-                // Active yogas first
-                if (a.isActive && !b.isActive) return -1;
-                if (!a.isActive && b.isActive) return 1;
-                
-                // Then sort by strength (Very Strong > Strong > Moderate > Weak)
-                const strengthOrder = { 'Very Strong': 4, 'Strong': 3, 'Moderate': 2, 'Weak': 1 };
-                const aStrength = strengthOrder[a.strength as keyof typeof strengthOrder] || 0;
-                const bStrength = strengthOrder[b.strength as keyof typeof strengthOrder] || 0;
-                
-                return bStrength - aStrength;
-              });
-              
-              setYogas(sortedYogas);
-            } catch (error) {
-              console.error('Error detecting Yogas:', error);
-            }
-          }
-          
-          setIsLoadingInterpretations(false);
-        }).catch((error) => {
-          console.error('Error loading Vedic reading:', error);
-          setIsLoadingInterpretations(false);
-        });
-        })();
-      };
-      
-      // Fetch additional Vedic data
-      const fetchAdditionalVedicData = async () => {
-        if (!userProfile) return;
-        
-        // Geocode birth place automatically
-        const coordinates = await getCoordinatesWithFallback(
-          userProfile.birthPlace || 'Mumbai, India'
-        );
-        
-        try {
-          // Fetch Dasa data
-          const dasaResponse = await fetch('/api/vedic/dasa', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              birthDate: userProfile.birthDate,
-              birthTime: userProfile.birthTime,
-              birthPlace: userProfile.birthPlace,
-              latitude: coordinates.latitude,
-              longitude: coordinates.longitude
-            })
-          });
-          if (dasaResponse.ok) {
-            const dasaData = await dasaResponse.json();
-            setDasaData(dasaData);
-          }
-          
-          // Fetch detailed planetary positions
-          const planetsResponse = await fetch('/api/vedic/planets', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              birthDate: userProfile.birthDate,
-              birthTime: userProfile.birthTime,
-              birthPlace: userProfile.birthPlace,
-              latitude: coordinates.latitude,
-              longitude: coordinates.longitude
-            })
-          });
-          if (planetsResponse.ok) {
-            const planetsData = await planetsResponse.json();
-            // Extract Shadbala data if available
-            if (planetsData.shadbala) {
-              setShadbalaData(planetsData.shadbala);
-            }
-          }
-          
-        } catch (error) {
-          console.error('Error fetching additional Vedic data:', error);
-        }
-      };
-      
-      checkCachedData();
-    }
-  }, [user, userProfile, hasCompleteDetails, vedicReading]);
+  // Pipeline-only: Vedic report data derived from profile via useVedicProfile (no local state copy)
 
   // Calculate Panchanga when chart data is available
   useEffect(() => {
     if (!newChartData || !userProfile || !coordinates) return;
     
     try {
-      console.log('🔮 Calculating enhanced Panchanga data');
+      devLog.debug('Calculating enhanced Panchanga data', undefined, 'vedic');
       
       // Calculate birth Panchanga from newChartData
       const birthPanchanga = calculateAccuratePanchanga(newChartData, {
@@ -1594,61 +925,15 @@ function VedicAstrologyPageContent() {
       );
       setCurrentPanchangaData(currentPanchanga);
       
-      console.log('✅ Enhanced Panchanga calculated successfully');
-      console.log('🔍 Birth Panchanga:', birthPanchanga);
-      console.log('🔍 Current Panchanga:', currentPanchanga);
+      devLog.debug('Enhanced Panchanga calculated', { hasBirth: !!birthPanchanga, hasCurrent: !!currentPanchanga }, 'vedic');
     } catch (error) {
-      console.error('Error calculating enhanced Panchanga:', error);
+      devLog.error('Error calculating enhanced Panchanga', error, 'vedic');
     }
   }, [newChartData, userProfile, coordinates]);
 
-  // Generate enhanced interpretations when chart data is available
-  useEffect(() => {
-    if (newChartData && user?.uid && userProfile && !hasLoadedInterpretations && !isClearingCache) {
-      // TIER 1: Set fallbacks FIRST (React will batch these updates)
-      setEnhancedOverview(VERIFIED_VEDIC_FALLBACKS.overview.default);
-      setEnhancedPlanets({
-        Sun: VERIFIED_VEDIC_FALLBACKS.planets.Sun,
-        Moon: VERIFIED_VEDIC_FALLBACKS.planets.Moon,
-        Mercury: VERIFIED_VEDIC_FALLBACKS.planets.Mercury,
-        Venus: VERIFIED_VEDIC_FALLBACKS.planets.Venus,
-        Mars: VERIFIED_VEDIC_FALLBACKS.planets.Mars,
-        Jupiter: VERIFIED_VEDIC_FALLBACKS.planets.Jupiter,
-        Saturn: VERIFIED_VEDIC_FALLBACKS.planets.Saturn,
-        Rahu: VERIFIED_VEDIC_FALLBACKS.planets.Rahu,
-        Ketu: VERIFIED_VEDIC_FALLBACKS.planets.Ketu
-      });
-      setEnhancedHouses({
-        1: VERIFIED_VEDIC_FALLBACKS.houses[1],
-        2: VERIFIED_VEDIC_FALLBACKS.houses[2],
-        3: VERIFIED_VEDIC_FALLBACKS.houses[3],
-        4: VERIFIED_VEDIC_FALLBACKS.houses[4],
-        5: VERIFIED_VEDIC_FALLBACKS.houses[5],
-        6: VERIFIED_VEDIC_FALLBACKS.houses[6],
-        7: VERIFIED_VEDIC_FALLBACKS.houses[7],
-        8: VERIFIED_VEDIC_FALLBACKS.houses[8],
-        9: VERIFIED_VEDIC_FALLBACKS.houses[9],
-        10: VERIFIED_VEDIC_FALLBACKS.houses[10],
-        11: VERIFIED_VEDIC_FALLBACKS.houses[11],
-        12: VERIFIED_VEDIC_FALLBACKS.houses[12]
-      });
-      setEnhancedDasha(VERIFIED_VEDIC_FALLBACKS.dasha.default);
-      setEnhancedTransits(VERIFIED_VEDIC_FALLBACKS.transits.default);
-      setEnhancedPanchanga(VERIFIED_VEDIC_FALLBACKS.panchanga.default);
-      setInterpretationSource('fallback');
-      
-      // Now call the async loader (which will upgrade from cache/API)
-      loadInterpretationsWithHybridFallback();
-    }
-  }, [newChartData, user?.uid, userProfile, hasLoadedInterpretations, isClearingCache]);
+  // Pipeline-only: interpretations come from profile.interpretations (see derived state); no loadInterpretationsWithHybridFallback or /api/vedic-interpretations/* on mount
 
-  // Load divisional chart interpretations when chart data is available
-  useEffect(() => {
-    if (newChartData && user?.uid && newChartData.divisionalCharts && !d9Interpretations && !d10Interpretations) {
-      loadDivisionalInterpretations('D9');
-      loadDivisionalInterpretations('D10');
-    }
-  }, [newChartData, user?.uid, loadDivisionalInterpretations, d9Interpretations, d10Interpretations]);
+  // Pipeline-only: divisional data from profile when available; no loadDivisionalInterpretations on mount
 
   if (!user) {
     return (
@@ -1687,7 +972,40 @@ function VedicAstrologyPageContent() {
     );
   }
 
+  // Pipeline-only: no Vedic data without comprehensive profile
+  if (profileLoading) {
+    return (
+      <div className="relative min-h-screen starfield-ultra-sharp flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 text-amber-400 animate-spin" />
+          <p className="text-slate-300">Loading your mystical profile...</p>
+        </div>
+      </div>
+    );
+  }
+  if (!comprehensiveProfile || !hasVedicData) {
+    return (
+      <div className="relative min-h-screen starfield-ultra-sharp">
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <Card className="w-full max-w-md bg-slate-900/50 border-amber-500/50 backdrop-blur-sm m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-xl">
+            <CardContent className="p-6 text-center">
+              <Sparkles className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-amber-200 mb-2">Generate your mystical profile</h2>
+              <p className="text-slate-300 mb-4">
+                Your Vedic chart and interpretations are generated from your mystical profile. Create or update it to see your chart here.
+              </p>
+              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-slate-900">
+                <Link href="/profile">Generate your mystical profile</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
+    <ToolReportGuard loading={profileLoading} error={profileError ?? null} toolLabel="Vedic astrology">
     <div className="relative min-h-screen starfield-ultra-sharp">
       
       {/* Node Change Toast */}
@@ -1765,7 +1083,7 @@ function VedicAstrologyPageContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <h1 className="text-5xl font-sacred-heading font-semibold mb-6">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-sacred-heading font-semibold mb-6">
               <span className="text-yellow-400">🕉️</span>{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Vedic Astrology</span>
             </h1>
@@ -1877,160 +1195,152 @@ function VedicAstrologyPageContent() {
         )}
 
         {/* Main Content */}
-        {(chartData || vedicReading) && !isLoading && (
+        {(chartData || vedicDerived.vedicReading) && !isLoading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full mb-6">
-              {/* First Row - 6 tabs */}
-              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 bg-transparent p-0 mb-2 gap-1.5">
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden min-w-0">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full min-w-0">
+              <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                 <TabsTrigger 
                   value="introduction"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span>Introduction</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="compatibility"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span>Compare</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="overview"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Overview</span>
                   <span className="text-[9px] opacity-75">Samanya Drishti</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="report"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Report</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="charts"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Charts</span>
                   <span className="text-[9px] opacity-75">Kundali</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="divisional"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Divisional</span>
                   <span className="text-[9px] opacity-75">Varga Kundali</span>
                 </TabsTrigger>
-              </TabsList>
-              
-              {/* Second Row - 6 tabs */}
-              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 bg-transparent p-0 mb-2 gap-1.5">
                 <TabsTrigger 
                   value="planets"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Planets</span>
                   <span className="text-[9px] opacity-75">Grahas</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="houses"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Houses</span>
                   <span className="text-[9px] opacity-75">Bhavas</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="yogas"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Planetary Combinations</span>
                   <span className="text-[9px] opacity-75">Yogas</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="nakshatras"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Lunar Mansions</span>
                   <span className="text-[9px] opacity-75">Nakshatras</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="dasha"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Planetary Periods</span>
                   <span className="text-[9px] opacity-75">Dasha</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="transits"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Transits</span>
                   <span className="text-[9px] opacity-75">Gochara</span>
                 </TabsTrigger>
-              </TabsList>
-              
-              {/* Third Row - 5 tabs */}
-              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 bg-transparent p-0 gap-1.5">
                 <TabsTrigger 
                   value="panchanga"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Vedic Calendar</span>
                   <span className="text-[9px] opacity-75">Panchanga</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="interpretations"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Insights</span>
                   <span className="text-[9px] opacity-75">Phalita</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="remedies"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Remedies</span>
                   <span className="text-[9px] opacity-75">Upayas</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="astro-numerology"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Astro-Numerology</span>
                   <span className="text-[9px] opacity-75">Graha Anka</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="gotra"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex flex-col items-center justify-center gap-0.5 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <span className="font-semibold">Gotra</span>
                   <span className="text-[9px] opacity-75">Lineage</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="ask-seer"
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-xl px-1 py-0.5 text-xs font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 m3-transition-standard transition-all flex items-center justify-center gap-1 border-2 border-amber-400/70"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 m3-elevation-transition rounded-t-lg rounded-b-none px-1 py-0.5 text-xs font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 m3-transition-standard transition-all flex items-center justify-center gap-1 border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <MessageCircle className="w-3 h-3" />
-                  <span className="font-semibold">Ask Seer</span>
+                  <span className="font-semibold">Ask the Seer</span>
                 </TabsTrigger>
               </TabsList>
 
               {/* Introduction Tab */}
-              <TabsContent value="introduction" className="space-y-6">
+              <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <ToolIntroductionTab toolSlug="vedic-astrology" />
               </TabsContent>
 
               {/* Compatibility Tab */}
-              <TabsContent value="compatibility" className="space-y-6">
+              <TabsContent value="compatibility" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <CompatibilityTab toolSlug="vedic-astrology" />
               </TabsContent>
 
               {/* Report Tab */}
-              <TabsContent value="report" className="space-y-6">
+              <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <ComprehensiveVedicReport
                   userId={user?.uid}
                   vedicChartData={newChartData}
@@ -2041,14 +1351,14 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Overview Tab */}
-              <TabsContent value="overview" className="space-y-6">
+              <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {/* Vedic Dashboard Hero */}
                 {unifiedChartData && (
                   <VedicDashboardHero
                     chartData={unifiedChartData}
                     userProfile={userProfile}
                     chartStyle={chartStyle === 'north' ? 'north-indian' : chartStyle === 'south' ? 'south-indian' : 'north-indian'}
-                    vedicReading={vedicReading}
+                    vedicReading={vedicDerived.vedicReading}
                   />
                 )}
 
@@ -2111,9 +1421,9 @@ function VedicAstrologyPageContent() {
 
                 {/* Enhanced Overview Interpretation */}
                 {unifiedChartData && (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {/* 1. Enhanced Groq Interpretation (if available) */}
-                    {isGeneratingInterpretations && (
+                    {vedicDerived.isGeneratingInterpretations && (
                       <DevotionistStyleCard
                         icon={<Loader2 className="w-5 h-5 animate-spin" />}
                         title="Generating Personalized Insights"
@@ -2122,18 +1432,21 @@ function VedicAstrologyPageContent() {
                       />
                     )}
                     
-                    {/* Display personalized overview from vedicReading */}
-                    {vedicReading?.interpretations?.personality?.overview && (
+                    {/* Display personalized overview from vedicDerived.vedicReading */}
+                    {(() => {
+                      const personality = vedicDerived.vedicReading?.interpretations?.personality as { overview?: string } | undefined
+                      return personality?.overview ? (
                       <div className="space-y-4">
                         <DevotionistStyleCard
                           icon={<Star className="w-5 h-5" />}
                           title="Your Astrological Profile"
-                          summary={vedicReading.interpretations.personality.overview}
+                          summary={personality.overview}
                           colorScheme="amber"
                           variant="callout"
                         />
                       </div>
-                    )}
+                      ) : null
+                    })()}
                     
                     {/* 2. Structured Key Insights */}
                     <DevotionistStyleCard
@@ -2153,8 +1466,8 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Charts Tab */}
-              <TabsContent value="charts" className="space-y-6">
-                {(chartData || vedicReading) ? (
+              <TabsContent value="charts" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                {(chartData || vedicDerived.vedicReading) ? (
                   <div className="space-y-8">
                     {/* Primary Chart Section */}
                     {/* Chart Disclaimer */}
@@ -2194,7 +1507,7 @@ function VedicAstrologyPageContent() {
                               <h3 className="text-lg font-semibold text-slate-800 text-center">
                                 North Indian Chart
                               </h3>
-                              <div className="flex justify-center items-center w-full" style={{ minHeight: '430px', width: '100%' }}>
+                              <div className="flex justify-center items-center w-full min-h-[280px] sm:min-h-[360px] lg:min-h-[430px]">
                                 {(() => {
                                   const chartData = unifiedChartData || newChartData;
                                   const transformedPlanets = transformPlanetsForChart(chartData);
@@ -2216,7 +1529,7 @@ function VedicAstrologyPageContent() {
                             </div>
                             <div className="space-y-4">
                               <h3 className="text-lg font-semibold text-slate-800 text-center">South Indian Chart</h3>
-                              <div className="flex justify-center items-center w-full" style={{ minHeight: '430px', width: '100%' }}>
+                              <div className="flex justify-center items-center w-full min-h-[280px] sm:min-h-[360px] lg:min-h-[430px]">
                                 {(() => {
                                   if (coordinates) {
                                     return (
@@ -2262,7 +1575,7 @@ function VedicAstrologyPageContent() {
                               <h3 className="text-lg font-semibold text-slate-800 text-center">
                                 East Indian Chart
                               </h3>
-                              <div className="flex justify-center items-center w-full" style={{ minHeight: '430px', width: '100%' }}>
+                              <div className="flex justify-center items-center w-full min-h-[280px] sm:min-h-[360px] lg:min-h-[430px]">
                                 {(() => {
                                   const chartData = unifiedChartData || newChartData;
                                   const transformedPlanets = transformPlanetsForChart(chartData);
@@ -2286,7 +1599,7 @@ function VedicAstrologyPageContent() {
                               <h3 className="text-lg font-semibold text-slate-800 text-center">
                                 Nakshatra Wheel
                               </h3>
-                              <div className="flex justify-center items-center w-full" style={{ minHeight: '430px', width: '100%' }}>
+                              <div className="flex justify-center items-center w-full min-h-[280px] sm:min-h-[360px] lg:min-h-[430px]">
                                 {(() => {
                                   // VedicChartCircular needs planets as an object (Record), not array
                                   // Use newChartData directly as it has planets as object, or reconstruct from unifiedChartData
@@ -2332,7 +1645,7 @@ function VedicAstrologyPageContent() {
 
                     {/* Divisional Charts Section - Simple Grid */}
                     {unifiedChartData?.divisionalCharts && Object.keys(unifiedChartData.divisionalCharts).length > 0 ? (
-                      <div className="space-y-6">
+                      <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                         <DevotionistStyleCard
                           icon={<Sparkles className="w-5 h-5" />}
                           title="Divisional Charts (Vargas)"
@@ -2455,9 +1768,9 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Planets Tab */}
-              <TabsContent value="planets" className="space-y-6">
+              <TabsContent value="planets" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {unifiedChartData ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {/* Planetary Positions */}
                     <DevotionistStyleCard
                       icon={<Star className="w-5 h-5" />}
@@ -2466,7 +1779,7 @@ function VedicAstrologyPageContent() {
                       colorScheme="amber"
                       variant="callout"
                     />
-                    <div className="overflow-x-auto bg-white/80 border-2 border-amber-300 rounded-xl p-6">
+                    <div className="max-w-full overflow-x-auto bg-white/80 border-2 border-amber-300 rounded-xl p-6">
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-amber-300">
@@ -2540,11 +1853,11 @@ function VedicAstrologyPageContent() {
                     <div className="space-y-6 bg-white/80 border-2 border-blue-300 rounded-xl p-6">
                       {unifiedChartData.planets?.map((planet: any, index: number) => {
                         const planetName = planet.name;
-                        const enhancedInterpretation = enhancedPlanets[planetName];
+                        const enhancedInterpretation = vedicDerived.enhancedPlanets[planetName];
                         
                         const planetItems = [
                           { text: `${getDualSignName(planet.sign || planet.signName)} • ${getOrdinal(planet.house)} House • ${planet.nakshatra}`, highlight: true },
-                          ...(isGeneratingInterpretations ? [{ text: 'Generating insights...' }] : enhancedInterpretation ? [{ text: enhancedInterpretation }] : [
+                          ...(vedicDerived.isGeneratingInterpretations ? [{ text: 'Generating insights...' }] : enhancedInterpretation ? [{ text: enhancedInterpretation }] : [
                             { text: `${planetName} in ${getDualSignName(planet.sign || planet.signName)} in the ${getOrdinal(planet.house)} house brings ${getHouseTheme(planet.house)} into your life through ${planetName}'s unique energy.` },
                             { text: `Nakshatra: ${planet.nakshatra} • Dignity: ${planet.dignity?.strength || 'Neutral'} • ${planet.dignity?.exalted ? 'Exalted - Maximum strength' : planet.dignity?.debilitated ? 'Debilitated - Challenges to overcome' : 'Natural expression'}`, type: 'neutral' as const }
                           ])
@@ -2588,14 +1901,14 @@ function VedicAstrologyPageContent() {
                       })}
                     </div>
                   </div>
-                ) : vedicReading ? (
-                  <div className="space-y-6">
+                ) : vedicDerived.vedicReading ? (
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-xl">
                       <CardHeader>
                         <CardTitle className="text-amber-200">Planetary Positions</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="overflow-x-auto">
+                        <div className="max-w-full overflow-x-auto">
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-slate-600">
@@ -2608,14 +1921,14 @@ function VedicAstrologyPageContent() {
                               </tr>
                             </thead>
                             <tbody>
-                              {vedicReading.chartData?.planets?.map((planet: any, index: number) => (
+                              {(vedicDerived.vedicReading as { chartData?: { planets?: Array<Record<string, unknown>> } })?.chartData?.planets?.map((planet: Record<string, unknown>, index: number) => (
                                 <tr key={index} className="border-b border-amber-500/50">
-                                  <td className="py-2 text-slate-300">{planet.name}</td>
-                                  <td className="py-2 text-slate-300">{planet.sign}</td>
-                                  <td className="py-2 text-slate-300">{planet.degree?.toFixed(2)}°</td>
-                                  <td className="py-2 text-slate-300">{planet.house}</td>
-                                  <td className="py-2 text-slate-300">{planet.nakshatra}</td>
-                                  <td className="py-2 text-slate-300">{planet.pada}</td>
+                                  <td className="py-2 text-slate-300">{String(planet.name ?? '')}</td>
+                                  <td className="py-2 text-slate-300">{String(planet.sign ?? '')}</td>
+                                  <td className="py-2 text-slate-300">{typeof planet.degree === 'number' ? planet.degree.toFixed(2) : ''}°</td>
+                                  <td className="py-2 text-slate-300">{String(planet.house ?? '')}</td>
+                                  <td className="py-2 text-slate-300">{String(planet.nakshatra ?? '')}</td>
+                                  <td className="py-2 text-slate-300">{String(planet.pada ?? '')}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -2636,9 +1949,9 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Houses Tab */}
-              <TabsContent value="houses" className="space-y-6">
+              <TabsContent value="houses" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {unifiedChartData ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {/* Enhanced House Interpretations */}
                     <DevotionistStyleCard
                       icon={<Home className="w-5 h-5" />}
@@ -2650,11 +1963,11 @@ function VedicAstrologyPageContent() {
                     <div className="space-y-6 bg-white/80 border-2 border-purple-300 rounded-xl p-6">
                       {unifiedChartData.houses?.map((house: any, index: number) => {
                         const houseNumber = index + 1;
-                        const enhancedInterpretation = enhancedHouses[houseNumber];
+                        const enhancedInterpretation = vedicDerived.enhancedHouses[houseNumber];
                         
                         const houseItems = [
                           { text: `${getDualSignName(house.sign || house.signName)} • Lord: ${getDualPlanetName(house.lord)}`, highlight: true },
-                          ...(isGeneratingInterpretations ? [{ text: 'Generating insights...' }] : enhancedInterpretation ? [{ text: enhancedInterpretation }] : [
+                          ...(vedicDerived.isGeneratingInterpretations ? [{ text: 'Generating insights...' }] : enhancedInterpretation ? [{ text: enhancedInterpretation }] : [
                             { text: `The ${getOrdinal(houseNumber)} house in ${getDualSignName(house.sign || house.signName)}, ruled by ${getDualPlanetName(house.lord)}, governs ${getHouseTheme(houseNumber)} in your life.` },
                             { text: `This house's energy is colored by ${getDualSignName(house.sign || house.signName)}'s qualities, influencing how you experience and express this life area.`, type: 'neutral' as const }
                           ])
@@ -2700,8 +2013,8 @@ function VedicAstrologyPageContent() {
                       })}
                     </div>
                   </div>
-                ) : vedicReading ? (
-                  <div className="space-y-6">
+                ) : vedicDerived.vedicReading ? (
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <DevotionistStyleCard
                       icon={<Home className="w-5 h-5" />}
                       title="House Analysis"
@@ -2710,17 +2023,17 @@ function VedicAstrologyPageContent() {
                       variant="callout"
                     />
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white/80 border-2 border-purple-300 rounded-xl p-6">
-                      {vedicReading.chartData?.houses?.map((house: any, index: number) => {
+                      {(vedicDerived.vedicReading as { chartData?: { houses?: Array<Record<string, unknown>> } })?.chartData?.houses?.map((house: Record<string, unknown>, index: number) => {
                         const houseItems = [
-                          { text: `Sign: ${house.sign}`, highlight: true },
-                          { text: `Lord: ${house.lord}` },
-                          { text: `Degree: ${house.degree?.toFixed(2)}°` }
+                          { text: `Sign: ${String(house.sign ?? '')}`, highlight: true },
+                          { text: `Lord: ${String(house.lord ?? '')}` },
+                          { text: `Degree: ${typeof house.degree === 'number' ? house.degree.toFixed(2) : ''}°` }
                         ];
                         return (
                           <DevotionistStyleCard
                             key={index}
                             icon={<Home className="w-4 h-4" />}
-                            title={`House ${house.number}`}
+                            title={`House ${String(house.number ?? index + 1)}`}
                             items={houseItems}
                             colorScheme="purple"
                             variant="callout"
@@ -2740,14 +2053,14 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Dasha Tab */}
-              <TabsContent value="dasha" className="space-y-6">
+              <TabsContent value="dasha" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {(() => {
                   const dashaData = unifiedChartData?.dasha || [];
                   const currentDasha = unifiedChartData?.currentDasha || null;
                   
                   if (dashaData.length > 0) {
                     return (
-                      <div className="space-y-6">
+                      <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                         {/* Current Dasha Highlight */}
                         {currentDasha && (
                           <div className="space-y-4">
@@ -2775,7 +2088,7 @@ function VedicAstrologyPageContent() {
                             <DevotionistStyleCard
                               icon={<Sparkles className="w-5 h-5" />}
                               title="Period Insights"
-                              summary={isGeneratingInterpretations ? 'Generating insights...' : enhancedDasha || `Your current ${currentDasha.planet || currentDasha.name} planetary period brings significant themes and opportunities to your life. This planetary influence shapes your experiences and growth during this time.`}
+                              summary={vedicDerived.isGeneratingInterpretations ? 'Generating insights...' : vedicDerived.enhancedDasha || `Your current ${currentDasha.planet || currentDasha.name} planetary period brings significant themes and opportunities to your life. This planetary influence shapes your experiences and growth during this time.`}
                               colorScheme="blue"
                             />
                           </div>
@@ -2810,7 +2123,7 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Interpretations Tab */}
-              <TabsContent value="interpretations" className="space-y-6">
+              <TabsContent value="interpretations" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {isLoadingInterpretations ? (
                   <DevotionistStyleCard
                     icon={<Loader2 className="h-8 w-8 animate-spin" />}
@@ -2818,17 +2131,17 @@ function VedicAstrologyPageContent() {
                     summary="Analyzing your birth chart to provide personalized insights..."
                     colorScheme="amber"
                   />
-                ) : vedicReading?.interpretations ? (
-                  <div className="space-y-6">
+                ) : vedicDerived.vedicReading?.interpretations ? (
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {/* Personality Overview */}
                     <DevotionistStyleCard
                       icon={<User className="h-5 w-5" />}
                       title="Personality & Life Purpose"
-                      summary={vedicReading.interpretations.personality?.overview || 'Personality analysis is being generated...'}
+                      summary={((vedicDerived.vedicReading.interpretations.personality as { overview?: string }) ?? {}).overview || 'Personality analysis is being generated...'}
                       items={[
-                        ...(vedicReading.interpretations.personality?.strengths || []).map((strength: string) => ({ text: strength, type: 'positive' as const })),
-                        ...(vedicReading.interpretations.personality?.challenges || []).map((challenge: string) => ({ text: challenge, type: 'challenge' as const })),
-                        { text: `Life Purpose: ${vedicReading.interpretations.lifePurpose?.overview || 'Life purpose analysis is being generated...'}`, highlight: true }
+                        ...((vedicDerived.vedicReading.interpretations.personality as { strengths?: string[] })?.strengths ?? []).map((strength: string) => ({ text: strength, type: 'positive' as const })),
+                        ...((vedicDerived.vedicReading.interpretations.personality as { challenges?: string[] })?.challenges ?? []).map((challenge: string) => ({ text: challenge, type: 'challenge' as const })),
+                        { text: `Life Purpose: ${((vedicDerived.vedicReading.interpretations.lifePurpose as { overview?: string }) ?? {}).overview || 'Life purpose analysis is being generated...'}`, highlight: true }
                       ]}
                       colorScheme="amber"
                       variant="callout"
@@ -2838,57 +2151,72 @@ function VedicAstrologyPageContent() {
                     <DevotionistStyleCard
                       icon={<Heart className="h-5 w-5" />}
                       title="Relationships & Marriage"
-                      summary={vedicReading.interpretations.relationships?.overview || 'Relationship analysis is being generated...'}
+                      summary={((vedicDerived.vedicReading.interpretations.relationships as { overview?: string }) ?? {}).overview || 'Relationship analysis is being generated...'}
                       items={[
-                        { text: `Marriage Timing: ${vedicReading.interpretations.relationships?.marriageTiming || 'Marriage timing analysis is being generated...'}`, highlight: true },
-                        { text: `Compatibility: ${vedicReading.interpretations.relationships?.compatibility || 'Compatibility analysis is being generated...'}` }
+                        { text: `Marriage Timing: ${((vedicDerived.vedicReading.interpretations.relationships as { marriageTiming?: string }) ?? {}).marriageTiming || 'Marriage timing analysis is being generated...'}`, highlight: true },
+                        { text: `Compatibility: ${((vedicDerived.vedicReading.interpretations.relationships as { compatibility?: string }) ?? {}).compatibility || 'Compatibility analysis is being generated...'}` }
                       ]}
                       colorScheme="pink"
                       variant="callout"
                     />
 
                     {/* Career */}
+                    {(() => {
+                      const career = vedicDerived.vedicReading.interpretations.career as { overview?: string; suitableProfessions?: string[]; timing?: string; successFactors?: string[] } | undefined
+                      return (
                     <DevotionistStyleCard
                       icon={<Briefcase className="h-5 w-5" />}
                       title="Career & Profession"
-                      summary={vedicReading.interpretations.career?.overview || 'Career analysis is being generated...'}
+                      summary={career?.overview || 'Career analysis is being generated...'}
                       items={[
-                        ...(vedicReading.interpretations.career?.suitableProfessions || []).map((profession: string) => ({ text: profession, highlight: true })),
-                        { text: `Career Timing: ${vedicReading.interpretations.career?.timing || 'Career timing analysis is being generated...'}` },
-                        ...(vedicReading.interpretations.career?.successFactors || []).map((factor: string) => ({ text: factor, type: 'positive' as const }))
+                        ...(career?.suitableProfessions ?? []).map((profession: string) => ({ text: profession, highlight: true })),
+                        { text: `Career Timing: ${career?.timing || 'Career timing analysis is being generated...'}` },
+                        ...(career?.successFactors ?? []).map((factor: string) => ({ text: factor, type: 'positive' as const }))
                       ]}
                       colorScheme="blue"
                       variant="callout"
                     />
+                      )
+                    })()}
 
                     {/* Health */}
+                    {(() => {
+                      const health = vedicDerived.vedicReading.interpretations.health as { constitution?: string; healthTips?: string[]; vulnerableAreas?: string[] } | undefined
+                      return (
                     <DevotionistStyleCard
                       icon={<Heart className="h-5 w-5" />}
                       title="Health & Constitution"
-                      summary={vedicReading.interpretations.health?.constitution || 'Health constitution analysis is being generated...'}
+                      summary={health?.constitution || 'Health constitution analysis is being generated...'}
                       items={[
-                        ...(vedicReading.interpretations.health?.healthTips || []).map((tip: string) => ({ text: tip, type: 'positive' as const })),
-                        ...(vedicReading.interpretations.health?.vulnerableAreas || []).map((area: string) => ({ text: area, type: 'challenge' as const }))
+                        ...(health?.healthTips ?? []).map((tip: string) => ({ text: tip, type: 'positive' as const })),
+                        ...(health?.vulnerableAreas ?? []).map((area: string) => ({ text: area, type: 'challenge' as const }))
                       ]}
                       colorScheme="green"
                       variant="callout"
                     />
+                      )
+                    })()}
 
                     {/* Spirituality */}
+                    {(() => {
+                      const spirit = vedicDerived.vedicReading.interpretations.spirituality as { spiritualPath?: string; meditationAdvice?: string; karmicLessons?: string[] } | undefined
+                      return (
                     <DevotionistStyleCard
                       icon={<Sun className="h-5 w-5" />}
                       title="Spirituality & Karma"
-                      summary={vedicReading.interpretations.spirituality?.spiritualPath || 'Spiritual path analysis is being generated...'}
+                      summary={spirit?.spiritualPath || 'Spiritual path analysis is being generated...'}
                       items={[
-                        { text: `Meditation Advice: ${vedicReading.interpretations.spirituality?.meditationAdvice || 'Meditation advice is being generated...'}`, highlight: true },
-                        ...(vedicReading.interpretations.spirituality?.karmicLessons || []).map((lesson: string) => ({ text: lesson }))
+                        { text: `Meditation Advice: ${spirit?.meditationAdvice || 'Meditation advice is being generated...'}`, highlight: true },
+                        ...(spirit?.karmicLessons ?? []).map((lesson: string) => ({ text: lesson }))
                       ]}
                       colorScheme="purple"
                       variant="callout"
                     />
+                      )
+                    })()}
 
                     {/* Remedies */}
-                    {vedicReading.remedies && vedicReading.remedies.length > 0 && (
+                    {vedicDerived.vedicReading.remedies && vedicDerived.vedicReading.remedies.length > 0 && (
                       <div className="space-y-4">
                         <DevotionistStyleCard
                           icon={<Sparkles className="h-5 w-5" />}
@@ -2897,7 +2225,7 @@ function VedicAstrologyPageContent() {
                           colorScheme="amber"
                         />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {vedicReading.remedies.map((remedy: any, index: number) => (
+                          {vedicDerived.vedicReading.remedies.map((remedy: any, index: number) => (
                             <DevotionistStyleCard
                               key={index}
                               icon={<Sparkles className="h-5 w-5" />}
@@ -2930,9 +2258,9 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Panchanga Tab */}
-              <TabsContent value="panchanga" className="space-y-6">
+              <TabsContent value="panchanga" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {panchangaData && currentPanchangaData ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <PanchangaPanel 
                       birthPanchanga={panchangaData}
                       currentPanchanga={currentPanchangaData}
@@ -2944,7 +2272,7 @@ function VedicAstrologyPageContent() {
                     <DevotionistStyleCard
                       icon={<Star className="w-5 h-5" />}
                       title="Daily Cosmic Wisdom"
-                      summary={isGeneratingInterpretations ? 'Generating daily insights...' : enhancedPanchanga || "Today's cosmic energies align in unique ways that influence your daily experiences. The current Tithi, Nakshatra, and Yoga create a specific energetic signature that guides your actions and decisions throughout the day."}
+                      summary={vedicDerived.isGeneratingInterpretations ? 'Generating daily insights...' : vedicDerived.enhancedPanchanga || "Today's cosmic energies align in unique ways that influence your daily experiences. The current Tithi, Nakshatra, and Yoga create a specific energetic signature that guides your actions and decisions throughout the day."}
                       colorScheme="amber"
                     />
                     
@@ -2985,9 +2313,9 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Yogas Tab */}
-              <TabsContent value="yogas" className="space-y-6">
+              <TabsContent value="yogas" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {yogas.length > 0 ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     
                     {/* Yoga Panel */}
                     {(() => {
@@ -3040,10 +2368,19 @@ function VedicAstrologyPageContent() {
                 )}
               </TabsContent>
 
-              {/* Divisional Charts Tab */}
-              <TabsContent value="divisional" className="space-y-6">
+              {/* Divisional Charts Tab (pipeline-only: interpretations from profile when available) */}
+              <TabsContent value="divisional" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {newChartData && newChartData.divisionalCharts ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    {!d9Interpretations && !d10Interpretations && (
+                      <Alert className="bg-slate-800/50 border-amber-500/30">
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          Divisional chart interpretations are available from your mystical profile.{' '}
+                          <Link href="/profile" className="text-amber-400 hover:underline">Generate your mystical profile</Link>
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     {/* D9 - Navamsa Chart */}
                     <DevotionistStyleCard
                       icon={<Heart className="w-5 h-5" />}
@@ -3272,7 +2609,7 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Nakshatras Tab */}
-              <TabsContent value="nakshatras" className="space-y-6">
+              <TabsContent value="nakshatras" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {unifiedChartData && unifiedChartData.planets ? (
                   <NakshatraAnalysis nakshatraAnalysis={nakshatraAnalysis ?? undefined} />
                 ) : (
@@ -3290,9 +2627,9 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Transits Tab */}
-              <TabsContent value="transits" className="space-y-6">
+              <TabsContent value="transits" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {unifiedChartData ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {/* Transit Summary Header */}
                     <DevotionistStyleCard
                       icon={<Zap className="h-6 w-6" />}
@@ -3341,14 +2678,14 @@ function VedicAstrologyPageContent() {
                         <DevotionistStyleCard
                           icon={<Star className="w-5 h-5" />}
                           title="Current Transit Insights"
-                          summary={isGeneratingInterpretations 
+                          summary={vedicDerived.isGeneratingInterpretations 
                             ? 'Generating insights...' 
-                            : (enhancedTransits || 'Current planetary transits are influencing your life in significant ways. These cosmic movements bring opportunities for growth and challenges to overcome, shaping your experiences and guiding your path forward.')
+                            : (vedicDerived.enhancedTransits || 'Current planetary transits are influencing your life in significant ways. These cosmic movements bring opportunities for growth and challenges to overcome, shaping your experiences and guiding your path forward.')
                           }
                           colorScheme="purple"
                           variant="callout"
                         >
-                          {isGeneratingInterpretations && (
+                          {vedicDerived.isGeneratingInterpretations && (
                             <div className="flex items-center gap-2 text-slate-600 mt-2">
                               <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
                               <span>Please wait...</span>
@@ -3386,9 +2723,9 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Remedies Tab */}
-              <TabsContent value="remedies" className="space-y-6">
+              <TabsContent value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {newChartData ? (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <DevotionistStyleCard
                       icon={<Sparkles className="w-6 h-6" />}
                       title="Personalized Remedies & Upayas"
@@ -3397,7 +2734,7 @@ function VedicAstrologyPageContent() {
                       variant="callout"
                     />
                     <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-6">
-                        <div className="space-y-6">
+                        <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                           
                           {/* Gemstone Recommendations */}
                           <div>
@@ -3747,13 +3084,13 @@ function VedicAstrologyPageContent() {
                                           <Star className="w-3 h-3 text-amber-400" />
                                           Why This Works for You
                                         </h5>
-                                        {isGeneratingInterpretations ? (
+                                        {vedicDerived.isGeneratingInterpretations ? (
                                           <div className="flex items-center gap-2 text-slate-400 text-xs">
                                             <div className="w-3 h-3 border border-amber-400 border-t-transparent rounded-full animate-spin"></div>
                                             <span>Generating insights...</span>
                                           </div>
-                                        ) : enhancedRemedies[planetName] ? (
-                                          <p className="text-xs text-slate-300 leading-relaxed">{enhancedRemedies[planetName]}</p>
+                                        ) : vedicDerived.enhancedRemedies[planetName] ? (
+                                          <p className="text-xs text-slate-300 leading-relaxed">{vedicDerived.enhancedRemedies[planetName]}</p>
                                         ) : (
                                           <p className="text-xs text-slate-300">
                                             This gemstone resonates with {planetName}'s energy in your chart, 
@@ -4031,20 +3368,31 @@ function VedicAstrologyPageContent() {
                 )}
               </TabsContent>
 
-              {/* Vedic Astro-Numerology Tab */}
-              <TabsContent value="astro-numerology" className="space-y-6">
-                <VedicAstroNumerologyTab
-                  userId={user?.uid || ''}
-                  birthDate={userProfile?.birthDate}
-                  fullName={userProfile?.displayName}
-                  vedicChartData={newChartData}
-                  cachedReport={vedicAstroNumerologyReport}
-                  isLoadingReport={isLoadingVedicAstroNumerology}
-                />
+              {/* Vedic Astro-Numerology Tab (pipeline-only: from profile.vedicAstroNumerology or CTA) */}
+              <TabsContent value="astro-numerology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                {!vedicDerived.vedicAstroNumerologyReport && !vedicDerived.isLoadingVedicAstroNumerology ? (
+                  <Card className="bg-slate-900/50 border-amber-500/50 rounded-xl">
+                    <CardContent className="p-6 text-center">
+                      <p className="text-slate-300 mb-4">Vedic Astro-Numerology is available from your mystical profile.</p>
+                      <Button asChild variant="outline" className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20">
+                        <Link href="/profile">Generate your mystical profile</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <VedicAstroNumerologyTab
+                    userId={user?.uid || ''}
+                    birthDate={userProfile?.birthDate}
+                    fullName={userProfile?.displayName}
+                    vedicChartData={newChartData}
+                    cachedReport={vedicDerived.vedicAstroNumerologyReport as React.ComponentProps<typeof VedicAstroNumerologyTab>['cachedReport']}
+                    isLoadingReport={vedicDerived.isLoadingVedicAstroNumerology}
+                  />
+                )}
               </TabsContent>
 
               {/* Gotra Tab */}
-              <TabsContent value="gotra" className="space-y-6 mt-6">
+              <TabsContent value="gotra" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {unifiedChartData?.planets && (
                   <GotraTab
                     moonNakshatra={unifiedChartData.planets.find((p: any) => p.name?.toLowerCase() === 'moon' || p.name?.toLowerCase() === 'chandra')?.nakshatra || 'Unknown'}
@@ -4056,17 +3404,17 @@ function VedicAstrologyPageContent() {
               </TabsContent>
 
               {/* Ask the Seer Tab */}
-              <TabsContent value="ask-seer" className="space-y-6 mt-6">
+              <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <VedicSeerChatInterface
                   userId={user?.uid || ''}
                   userProfile={userProfile}
                   vedicChartData={unifiedChartData || newChartData}
-                  vedicNumerologyData={vedicAstroNumerologyReport || (vedicNumerologyProfile ? { profile: vedicNumerologyProfile, comprehensiveAnalysis: null } : null)}
+                  vedicNumerologyData={vedicDerived.vedicAstroNumerologyReport || (vedicNumerologyProfile ? { profile: vedicNumerologyProfile, comprehensiveAnalysis: null } : null)}
                 />
               </TabsContent>
 
               {/* Settings Tab */}
-              <TabsContent value="settings" className="space-y-6 mt-6">
+              <TabsContent value="settings" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition rounded-3xl overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -4084,6 +3432,7 @@ function VedicAstrologyPageContent() {
                 </Card>
               </TabsContent>
             </Tabs>
+            </div>
           </motion.div>
         )}
 
@@ -4098,6 +3447,7 @@ function VedicAstrologyPageContent() {
 
       </div>
     </div>
+    </ToolReportGuard>
   );
 }
 

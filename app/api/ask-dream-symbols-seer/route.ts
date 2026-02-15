@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import { buildDreamSymbolsSeerSystemPrompt } from '@/lib/dreamSymbolsSeerPrompts';
 import {
   buildDreamState,
   classifyDreamSymbolsQuestion,
@@ -127,26 +128,9 @@ export async function POST(request: NextRequest) {
     );
 
     const displayName = (userProfile?.displayName ?? '').trim();
-    const namingRule = displayName
-      ? `The user's display name is "${displayName}". Address them only by this name (e.g. "${displayName}" or "${displayName},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a warm generic address.';
-
-    const systemPrompt = `You are an expert Dream Symbols interpreter. Dream symbols describe inner state and processing, not external fate.
-
-RULES:
-- ${namingRule}
-- Emotional tone overrides symbol dictionary; same symbol + different emotion = different meaning. Always anchor interpretation to emotional tone.
-- Apply role logic (participant = active conflict, observer = awareness, victim = overwhelm, controller = responsibility).
-- Apply recurrence gate: one-time = transient; repeating = unresolved. Do not dramatize one-time dreams.
-- Classify symbols by type (Universal, Personal, Cultural, Situational, Archetypal); do not assume universality without context.
-- End with integration guidance (reflect, journal, address conflict, slow down, set boundaries). Do not give predictive action, fear-based advice, or external blame.
-- Refuse event prediction, medical/mental health diagnosis, fatalistic interpretations. Say: "Dream symbols cannot determine external outcomes."
-- Permanent rule: Dream interpretation translates subconscious signals into awareness, not destiny.
-
-STRUCTURED DREAM STATE (use this only):
-${chartSlice}
-
-Answer the user's question using the dream state above. Keep language calm, grounded, and devotionist-style.`;
+    const systemPrompt = buildDreamSymbolsSeerSystemPrompt(chartSlice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const userMessage = question.trim();
 
@@ -171,7 +155,7 @@ Answer the user's question using the dream state above. Keep language calm, grou
               }
             }
           } catch (error) {
-            console.error('Dream Symbols Seer stream error:', error);
+            devLog.error('Dream Symbols Seer stream error:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'

@@ -33,9 +33,9 @@ export interface PendulumAnalysisForState {
   swingDirection?: string;
 }
 
-/** Mandatory refusal phrase. */
+/** Mandatory refusal phrase (Tier 2: rephrase to yes/no). */
 export const PENDULUM_REFUSAL_PHRASE =
-  'Pendulum divination cannot determine this safely.';
+  'Pendulum works with yes/no questions only. Please rephrase to a single decision.';
 
 /** Dependency / repeated-question refusal. */
 export const PENDULUM_DEPENDENCY_PHRASE =
@@ -205,25 +205,21 @@ export function buildPendulumState(
   };
 }
 
-const PERMANENT_RULE =
-  'Pendulum divination answers alignment, not destiny.';
-
 /**
- * Format templated response. No LLM—minimal, precise.
+ * Format templated response. No LLM—minimal, precise. Binary guidance only; no explanation.
  */
 export function formatPendulumResponse(state: PendulumState): string {
-  if (state.confidence === 'inconclusive') {
-    return `The pendulum response is inconclusive. Do not proceed until clarity is achieved.\n\n${PERMANENT_RULE}`;
+  if (state.confidence === 'inconclusive' || state.response === 'neutral') {
+    return 'Unclear. The energy is mixed at this moment.';
   }
 
   if (state.response === 'yes') {
-    return `The pendulum indicates alignment with proceeding at this time. This is a confirmation signal, not a prediction of outcome.\n\n${PERMANENT_RULE}`;
+    return 'Yes. The energy shows alignment at this moment.';
   }
 
   if (state.response === 'no') {
-    return `The pendulum does not indicate alignment with proceeding at this time. This is a confirmation signal, not a prediction of outcome.\n\n${PERMANENT_RULE}`;
+    return 'No. The energy does not show alignment at this time.';
   }
 
-  // neutral
-  return `The pendulum response is inconclusive. Do not proceed until clarity is achieved.\n\n${PERMANENT_RULE}`;
+  return 'Unclear. The energy is mixed at this moment.';
 }
