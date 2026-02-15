@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -86,7 +87,7 @@ export default function AskVedicSeerPage() {
 
       setVedicChartData(mockChartData);
     } catch (err) {
-      console.error('Error loading Vedic chart data:', err);
+      devLog.error('Error loading Vedic chart data:', err, 'page');
       setError(err instanceof Error ? err.message : 'Failed to load chart data');
     } finally {
       setIsLoading(false);
