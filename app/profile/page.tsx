@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useMemo, useRef } from "react"
+import { devLog } from '@/lib/devLogger';
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -15,13 +16,15 @@ import { Switch } from "@/components/ui/switch"
 import { TIME_PERIODS, type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
-import { getUserProfile, updateUserProfile, markProfileAsGenerated, resetProfileGenerationStatus, hasProfileDataChanged, calculateProfileDataHash, getFirebaseDB, cleanupCorruptedBirthTime, type UserProfile } from "@/lib/firebase"
+import { getUserProfile, updateUserProfile, resetProfileGenerationStatus, hasProfileDataChanged, calculateProfileDataHash, cleanupCorruptedBirthTime, clearUserProfileCache, type UserProfile } from "@/lib/firebase"
+import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache } from "@/hooks/useComprehensiveMysticalProfile"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { geocodePlace } from "@/services/geocoding"
 import { SubscriptionStatus } from "@/components/SubscriptionStatus"
 import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
 import { ReferralCodeCard } from "@/components/ReferralCodeCard"
 import { Header } from "@/components/header"
+import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
 
 export default function ProfilePage() {
   const { t } = useTranslation('common')
@@ -40,7 +43,8 @@ export default function ProfilePage() {
   const [birthTimeCorrupted, setBirthTimeCorrupted] = useState(false)
   const [profileFetching, setProfileFetching] = useState(false)
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
-  
+  const lastGenerateClickRef = useRef<number>(0)
+
   // Form state
   const [formData, setFormData] = useState({
     displayName: "",
@@ -102,7 +106,7 @@ export default function ProfilePage() {
   // One-time coordinate migration for existing users
   useEffect(() => {
     if (userProfile?.birthPlace && !userProfile?.birthLatitude && user?.uid) {
-      console.log(`📍 Migrating coordinates for existing user: ${userProfile.birthPlace}`);
+      devLog.debug(`📍 Migrating coordinates for existing user: ${userProfile.birthPlace}`);
       geocodePlace(userProfile.birthPlace).then(coords => {
         if (coords) {
           updateUserProfile(user.uid, {
@@ -110,10 +114,10 @@ export default function ProfilePage() {
             birthLongitude: coords.longitude,
             coordinatesResolvedAt: Date.now()
           });
-          console.log(`📍 Migration completed for ${userProfile.birthPlace}:`, coords);
+          devLog.debug(`📍 Migration completed for ${userProfile.birthPlace}:`, coords);
         }
       }).catch(error => {
-        console.warn('📍 Migration failed:', error);
+        devLog.warn('📍 Migration failed:', error, 'page');
       });
     }
   }, [userProfile?.birthPlace, userProfile?.birthLatitude, user?.uid]);
@@ -124,7 +128,7 @@ export default function ProfilePage() {
       setProfileFetching(true);
       refreshProfile()
         .catch(err => {
-          console.error('Failed to refresh profile on mount:', err);
+          devLog.error('Failed to refresh profile on mount:', err, 'page');
         })
         .finally(() => setProfileFetching(false));
     }
@@ -143,7 +147,7 @@ export default function ProfilePage() {
       
       // Detect and clear corrupted timestamp
       if (/^\d{13,}$/.test(birthTime)) {
-        console.warn('⚠️ Corrupted birth time detected, clearing:', birthTime);
+        devLog.warn('⚠️ Corrupted birth time detected, clearing:', birthTime, 'page');
         setBirthTimeCorrupted(true);
         setError('Your birth time data was corrupted. Please re-enter your birth time.');
         birthTime = '';
@@ -153,9 +157,9 @@ export default function ProfilePage() {
             // Suppress Firestore internal assertion errors
             if (error?.message?.includes('INTERNAL ASSERTION FAILED') || 
                 error?.message?.includes('FIRESTORE')) {
-              console.warn('⚠️ Firestore internal error suppressed during birth time cleanup:', error.message)
+              devLog.warn('⚠️ Firestore internal error suppressed during birth time cleanup:', error.message, 'page')
             } else {
-              console.error('❌ Failed to auto-fix birth time:', error)
+              devLog.error('❌ Failed to auto-fix birth time:', error, 'page')
             }
           })
         }
@@ -190,19 +194,19 @@ export default function ProfilePage() {
       // Ensure display name is properly set - if it's empty or matches full name, use "AnDY"
       let displayName = userProfile.displayName || ""
       if (!displayName || displayName === userProfile.fullName) {
-        console.log('🔧 Auto-fixing displayName from full name to "AnDY"');
+        devLog.debug('🔧 Auto-fixing displayName from full name to "AnDY"');
         displayName = "AnDY"
         // Update Firestore with the fixed display name
         if (user?.uid) {
           updateUserProfile(user.uid, { displayName: "AnDY" }).then(() => {
-            console.log('✅ Display name auto-fixed in Firestore');
+            devLog.debug('✅ Display name auto-fixed in Firestore');
           }).catch((error: any) => {
             // Suppress Firestore internal assertion errors
             if (error?.message?.includes('INTERNAL ASSERTION FAILED') || 
                 error?.message?.includes('FIRESTORE')) {
-              console.warn('⚠️ Firestore internal error suppressed during display name fix:', error.message)
+              devLog.warn('⚠️ Firestore internal error suppressed during display name fix:', error.message, 'page')
             } else {
-              console.error('❌ Failed to auto-fix display name:', error);
+              devLog.error('❌ Failed to auto-fix display name:', error, 'page');
             }
           });
         }
@@ -212,7 +216,7 @@ export default function ProfilePage() {
       const email = user?.email || userProfile.email || ""
       
       // Debug logging for loaded data
-      console.log('🔍 Debug - Loading profile data:', {
+      devLog.debug('🔍 Debug - Loading profile data:', {
         displayName: displayName,
         fullName: userProfile.fullName,
         email: email,
@@ -305,7 +309,7 @@ export default function ProfilePage() {
       try {
         const freshProfile = await getUserProfile(user.uid)
         if (freshProfile && freshProfile.displayName !== userProfile.displayName) {
-          console.log('🔄 Profile data mismatch detected, refreshing...')
+          devLog.debug('🔄 Profile data mismatch detected, refreshing...')
           await refreshProfile()
         }
       } catch (error: any) {
@@ -318,12 +322,12 @@ export default function ProfilePage() {
         // Suppress Firestore internal assertion errors
         if (error?.message?.includes('INTERNAL ASSERTION FAILED') || 
             error?.message?.includes('FIRESTORE')) {
-          console.warn('⚠️ Firestore internal error suppressed during profile check:', error.message)
+          devLog.warn('⚠️ Firestore internal error suppressed during profile check:', error.message, 'page')
           return
         }
         
         if (error.code === 'permission-denied') {
-          console.log('⚠️ Firebase permission error detected, using local data')
+          devLog.debug('⚠️ Firebase permission error detected, using local data')
           // Force refresh to get local data
           try {
             await refreshProfile()
@@ -331,7 +335,7 @@ export default function ProfilePage() {
             // Suppress Firestore internal assertion errors
             if (refreshError?.message?.includes('INTERNAL ASSERTION FAILED') || 
                 refreshError?.message?.includes('FIRESTORE')) {
-              console.warn('⚠️ Firestore internal error suppressed during refresh:', refreshError.message)
+              devLog.warn('⚠️ Firestore internal error suppressed during refresh:', refreshError.message, 'page')
             }
           }
         }
@@ -376,7 +380,7 @@ export default function ProfilePage() {
       }
       
       // Debug logging for preferences
-      console.log('🔍 Debug - Saving profile data:', {
+      devLog.debug('🔍 Debug - Saving profile data:', {
         divinationInterests: formData.divinationInterests,
         notificationPreferences: formData.notificationPreferences,
         relationshipStatus: formData.relationshipStatus,
@@ -389,17 +393,17 @@ export default function ProfilePage() {
 
       if (formData.birthPlace && formData.birthPlace !== userProfile?.birthPlace) {
         try {
-          console.log(`📍 Geocoding birth place: ${formData.birthPlace}`);
+          devLog.debug(`📍 Geocoding birth place: ${formData.birthPlace}`);
           const coords = await geocodePlace(formData.birthPlace);
           if (coords) {
             birthLatitude = coords.latitude;
             birthLongitude = coords.longitude;
-            console.log(`📍 Geocoded ${formData.birthPlace}:`, coords);
+            devLog.debug(`📍 Geocoded ${formData.birthPlace}:`, coords);
           } else {
-            console.warn(`📍 Failed to geocode: ${formData.birthPlace}`);
+            devLog.warn(`📍 Failed to geocode: ${formData.birthPlace}`, undefined, 'page');
           }
         } catch (error) {
-          console.warn('📍 Geocoding failed, coordinates not updated:', error);
+          devLog.warn('📍 Geocoding failed, coordinates not updated:', error, 'page');
         }
       }
 
@@ -427,7 +431,7 @@ export default function ProfilePage() {
         // Suppress Firestore internal assertion errors
         if (firestoreError?.message?.includes('INTERNAL ASSERTION FAILED') || 
             firestoreError?.message?.includes('FIRESTORE')) {
-          console.warn('⚠️ Firestore internal error suppressed during profile save:', firestoreError.message)
+          devLog.warn('⚠️ Firestore internal error suppressed during profile save:', firestoreError.message, 'page')
           // Still try to continue - the operation may have succeeded
         } else {
           throw firestoreError
@@ -438,7 +442,7 @@ export default function ProfilePage() {
       if (profileDataChanged) {
         try {
           await resetProfileGenerationStatus(user.uid)
-          console.log('🔄 Profile data changed, resetting generation status')
+          devLog.debug('🔄 Profile data changed, resetting generation status')
           
           // Clear localStorage for all tools when profile changes
           const allTools = [
@@ -454,14 +458,28 @@ export default function ProfilePage() {
             localStorage.removeItem(`futureseer_${user.uid}_${toolName}`)
           })
           
-          console.log(`🗑️ Cleared localStorage for ${allTools.length} tools due to profile changes`)
+          devLog.debug(`🗑️ Cleared localStorage for ${allTools.length} tools due to profile changes`)
+
+          try {
+            const token = await user.getIdToken()
+            await fetch('/api/profile/invalidate-cache', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+            })
+          } catch (invErr) {
+            devLog.warn('Invalidate cache request failed:', invErr, 'page')
+          }
+          clearUserProfileCache(user.uid)
+          clearComprehensiveMysticalProfileCache(user.uid)
+          clearPersistentProfileCache(user.uid)
+          window.dispatchEvent(new CustomEvent('futureSeer:profileRegenerated'))
         } catch (resetError: any) {
           // Suppress Firestore internal assertion errors
           if (resetError?.message?.includes('INTERNAL ASSERTION FAILED') || 
               resetError?.message?.includes('FIRESTORE')) {
-            console.warn('⚠️ Firestore internal error suppressed during reset:', resetError.message)
+            devLog.warn('⚠️ Firestore internal error suppressed during reset:', resetError.message, 'page')
           } else {
-            console.error('Error resetting profile generation status:', resetError)
+            devLog.error('Error resetting profile generation status:', resetError, 'page')
           }
         }
       }
@@ -479,14 +497,14 @@ export default function ProfilePage() {
           // Suppress Firestore internal assertion errors during refresh
           if (refreshError?.message?.includes('INTERNAL ASSERTION FAILED') || 
               refreshError?.message?.includes('FIRESTORE')) {
-            console.warn('⚠️ Firestore internal error suppressed during refresh:', refreshError.message)
+            devLog.warn('⚠️ Firestore internal error suppressed during refresh:', refreshError.message, 'page')
           } else {
-            console.error('Error refreshing profile:', refreshError)
+            devLog.error('Error refreshing profile:', refreshError, 'page')
           }
         }
       }, 500)
     } catch (error: any) {
-      console.error('Profile save error:', error)
+      devLog.error('Profile save error:', error, 'page')
       // Don't show Firestore internal assertion errors to users
       if (error?.message?.includes('INTERNAL ASSERTION FAILED') || 
           error?.message?.includes('FIRESTORE')) {
@@ -577,7 +595,7 @@ export default function ProfilePage() {
       // signOut will reload the page automatically, no need for router.push
       await signOut()
     } catch (error) {
-      console.error("Sign out error:", error)
+      devLog.error("Sign out error:", error, 'page')
     }
   }
 
@@ -593,236 +611,64 @@ export default function ProfilePage() {
       return
     }
 
+    // Block duplicate clicks within 3 seconds
+    const now = Date.now()
+    if (now - lastGenerateClickRef.current < 3000) {
+      return
+    }
+    lastGenerateClickRef.current = now
+
     setIsGeneratingProfile(true)
-    setProfileGenerationStatus("Initializing mystical profile generation...")
+    setProfileGenerationStatus("Locking profile generation...")
     setError(null)
     setSuccess(null)
 
     try {
-      console.log('🌟 Generating mystical profile using Universal API + astronomia + OpenAI...')
-      setProfileGenerationStatus("Generating Vedic chart data...")
-      
-      // Get Vedic chart data from Universal API (this is what we need for Vedic page)
-      const vedicResponse = await fetch('/api/occult/universal', {
+      devLog.debug('🌟 Generating mystical profile: running ALL tools atomically...')
+      setProfileGenerationStatus("Running all tools (Vedic, Tarot, Numerology, and more)...")
+
+      const token = await user.getIdToken()
+      const res = await fetch('/api/profile/generate-mystical', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          system: 'vedic',
-          birthData: {
-            birthDate: userProfile.birthDate!,
-            birthTime: userProfile.birthTime || '12:00:00',
-            birthPlace: userProfile.birthPlace!,
-            latitude: userProfile.birthLatitude || 0,
-            longitude: userProfile.birthLongitude || 0
-          }
-        })
       })
 
-      if (!vedicResponse.ok) {
-        throw new Error(`Vedic API error: ${vedicResponse.status}`)
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || `Generation failed: ${res.status}`)
       }
 
-      const vedicData = await vedicResponse.json()
-      console.log('✅ Vedic chart data received:', vedicData.data)
-
-      // Generate comprehensive interpretations using Universal Interpretation Engine
-      setProfileGenerationStatus("Generating comprehensive interpretations using Markov + Bayesian algorithms...")
-      
-      // Import the universal interpretation engine
-      const { universalInterpretationEngine } = await import('@/lib/universalInterpretationEngine')
-      
-      // Generate Vedic interpretation
-      const vedicInterpretation = await universalInterpretationEngine.generateInterpretation(
-        'vedic',
-        user.uid,
-        vedicData.data,
-        userProfile
-      )
-      
-      console.log('✅ Universal interpretations generated:', vedicInterpretation)
-
-      // Create comprehensive profile focused on Vedic astrology with detailed interpretations
-      const comprehensiveProfile = {
-        // Vedic data (main focus) - ensure all fields are properly defined
-        vedic: {
-          ascendant: vedicData.data.ascendant || 0,
-          planets: vedicData.data.planets || [],
-          houses: vedicData.data.houses || [],
-          dasha: vedicData.data.dasha || [],
-          currentDasha: vedicData.data.currentDasha || null
-        },
-        // Comprehensive AI interpretations for Vedic data
-        interpretations: {
-          // Main comprehensive interpretation
-          comprehensive: vedicInterpretation.personality.overview,
-          
-          // Structured interpretations for easy display
-          personality: {
-            overview: vedicInterpretation.personality.overview,
-            strengths: vedicInterpretation.personality.strengths,
-            challenges: vedicInterpretation.personality.challenges,
-            traits: vedicInterpretation.personality.traits
-          },
-          
-          lifePurpose: {
-            overview: vedicInterpretation.lifePurpose.overview,
-            dharma: vedicInterpretation.lifePurpose.dharma,
-            karmicLessons: vedicInterpretation.lifePurpose.karmicLessons,
-            spiritualPath: vedicInterpretation.lifePurpose.spiritualPath
-          },
-          
-          relationships: {
-            overview: vedicInterpretation.relationships.overview,
-            marriageTiming: vedicInterpretation.relationships.marriageTiming,
-            compatibility: vedicInterpretation.relationships.compatibility,
-            familyLife: vedicInterpretation.relationships.familyLife
-          },
-          
-          career: {
-            overview: vedicInterpretation.career.overview,
-            suitableProfessions: vedicInterpretation.career.suitableProfessions,
-            successFactors: vedicInterpretation.career.successFactors,
-            timing: vedicInterpretation.career.careerTiming
-          },
-          
-          health: {
-            overview: vedicInterpretation.health.overview,
-            constitution: vedicInterpretation.health.constitution,
-            healthTips: vedicInterpretation.health.healthTips,
-            vulnerableAreas: vedicInterpretation.health.vulnerableAreas
-          },
-          
-          spirituality: {
-            overview: vedicInterpretation.spirituality.overview,
-            practices: vedicInterpretation.remedies.rituals,
-            evolution: vedicInterpretation.lifePurpose.soulEvolution,
-            connection: vedicInterpretation.spirituality.divineConnection
-          },
-          
-          dasha: {
-            overview: vedicInterpretation.timing.overview,
-            current: vedicInterpretation.timing.currentPeriod,
-            upcoming: vedicInterpretation.timing.upcomingPeriods,
-            timing: vedicInterpretation.timing.favorableTiming
-          },
-          
-          remedies: {
-            overview: vedicInterpretation.remedies.overview,
-            mantras: vedicInterpretation.remedies.mantras,
-            gemstones: vedicInterpretation.remedies.gemstones,
-            practices: vedicInterpretation.remedies.rituals
-          }
-        },
-        // Metadata
-        metadata: {
-          source: 'universal_api',
-          version: '2.0',
-          generatedAt: new Date().toISOString(),
-          calculationTime: Date.now(),
-          systemsUsed: ['vedic', 'markov_bayesian'],
-          interpretationType: 'universal_comprehensive'
-        }
+      // API returned already-generated (idempotent): no generation ran
+      if (data.alreadyGenerated) {
+        setProfileGenerationStatus(null)
+        setSuccess("Profile already up to date. No regeneration needed.")
+        await refreshProfile()
+        return
       }
 
-      console.log('✅ Comprehensive mystical profile generated:', {
-        vedicPlanets: comprehensiveProfile.vedic.planets?.length || 0,
-        hasInterpretations: !!comprehensiveProfile.interpretations,
-        source: comprehensiveProfile.metadata.source
-      })
-
-      setProfileGenerationStatus("Storing mystical profile data...")
-      
-      // Ensure vedic.dasha is always an array, never undefined
-      if (comprehensiveProfile.vedic && !comprehensiveProfile.vedic.dasha) {
-        comprehensiveProfile.vedic.dasha = [];
-      }
-      if (comprehensiveProfile.vedic && !comprehensiveProfile.vedic.currentDasha) {
-        comprehensiveProfile.vedic.currentDasha = null;
+      devLog.debug('✅ Profile generation complete:', data.systemsUsed?.length || 0, 'tools ran')
+      if (data.failedTools?.length) {
+        devLog.warn('Some tools failed:', data.failedTools, 'page')
       }
 
-      // Clean data to remove undefined values before saving to Firebase
-      const cleanData = (obj: any): any => {
-        if (obj === null || obj === undefined) return null;
-        if (typeof obj !== 'object') return obj;
-        if (Array.isArray(obj)) return obj.map(cleanData);
-        
-        const cleaned: any = {};
-        for (const [key, value] of Object.entries(obj)) {
-          if (value !== undefined) {
-            cleaned[key] = cleanData(value);
-          }
-        }
-        return cleaned;
-      };
-
-      const cleanedProfile = cleanData(comprehensiveProfile);
-      
-      // Store the data for all tool pages using Firebase
-      const db = getFirebaseDB()
-      if (db) {
-        try {
-          const { doc, setDoc } = await import('firebase/firestore')
-          
-          // Store comprehensive profile
-          await setDoc(doc(db, 'comprehensiveMysticalProfiles', user.uid), {
-            ...cleanedProfile,
-            userId: user.uid,
-            lastUpdated: Date.now(),
-            birthDate: userProfile.birthDate,
-            birthPlace: userProfile.birthPlace,
-            birthTime: userProfile.birthTime
-          })
-          
-          console.log('✅ Mystical profile stored successfully')
-        } catch (firestoreError: any) {
-          // Suppress Firestore internal assertion errors
-          if (firestoreError?.message?.includes('INTERNAL ASSERTION FAILED') || 
-              firestoreError?.message?.includes('FIRESTORE')) {
-            console.warn('⚠️ Firestore internal error suppressed during profile storage:', firestoreError.message)
-            // Continue - the operation may have succeeded
-          } else {
-            throw firestoreError
-          }
-        }
-      }
-
-      // Mark profile as generated
-      try {
-        await markProfileAsGenerated(user.uid, userProfile)
-      } catch (markError: any) {
-        // Suppress Firestore internal assertion errors
-        if (markError?.message?.includes('INTERNAL ASSERTION FAILED') || 
-            markError?.message?.includes('FIRESTORE')) {
-          console.warn('⚠️ Firestore internal error suppressed during mark:', markError.message)
-          // Continue - the operation may have succeeded
-        } else {
-          throw markError
-        }
-      }
-
-      // Invalidate server-side divination cache so tools/Seer see fresh data
-      try {
-        const token = await user.getIdToken()
-        await fetch('/api/profile/invalidate-cache', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      } catch (e) {
-        // Non-blocking; profile is already stored
-      }
       window.dispatchEvent(new CustomEvent('futureSeer:profileRegenerated'))
 
-      setProfileGenerationStatus("✅ Comprehensive mystical profile generated successfully!")
-      setSuccess("Your comprehensive mystical profile has been generated with detailed Vedic astrology interpretations! You can now access the Vedic astrology page for rich, detailed insights.")
-      
-      // Redirect to tools after a short delay
-      setTimeout(() => {
-        router.push('/tools')
-      }, 2000)
+      setProfileGenerationStatus("✅ Mystical profile generated successfully!")
+      setSuccess(
+        "Your mystical profile has been generated with insights from all tools. " +
+        "Each tool page will show its report when you visit. Ask the Seer has comprehensive data."
+      )
+
+      // Refresh profile so UI shows mysticalProfileGenerated
+      await refreshProfile()
+
+      setTimeout(() => router.push(RETURNING_USER_WITH_REPORTS_DESTINATION), 2000)
     } catch (error: any) {
-      console.error('Profile generation error:', error)
+      devLog.error('Profile generation error:', error, 'page')
       setError(`Failed to generate mystical profile: ${error.message}`)
       setProfileGenerationStatus(null)
     } finally {
@@ -1458,9 +1304,10 @@ export default function ProfilePage() {
                     <Button
                       onClick={handleGenerateProfile}
                       disabled={
-                        isGeneratingProfile || 
-                        !userProfile?.birthDate || 
-                        !userProfile?.birthTime || 
+                        authLoading ||
+                        isGeneratingProfile ||
+                        !userProfile?.birthDate ||
+                        !userProfile?.birthTime ||
                         !userProfile?.birthPlace ||
                         (userProfile?.mysticalProfileGenerated && !profileDataChanged)
                       }
@@ -1502,15 +1349,7 @@ export default function ProfilePage() {
                         </p>
                       </div>
                     )}
-                    
-                    {profileDataChanged && userProfile?.mysticalProfileGenerated && (
-                      <div className="text-center">
-                        <p className="text-amber-400 m3-body-small">
-                          🔄 Profile data has changed - you can regenerate your mystical profile
-                        </p>
-                      </div>
-                    )}
-                    
+
                     {(!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) && (
                       <div className="text-center">
                         <p className="text-white/80 m3-body-small">
@@ -1546,7 +1385,7 @@ export default function ProfilePage() {
                   await refreshProfile()
                   setShowUpdatePaymentModal(false)
                 } catch (e) {
-                  console.error('Failed to update payment method:', e)
+                  devLog.error('Failed to update payment method:', e, 'page')
                 }
               }}
               onError={(msg) => {
