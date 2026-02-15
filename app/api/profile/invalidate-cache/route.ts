@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
+import { deleteDocument, isAdminAvailable } from '@/lib/firebase-admin';
+import { devLog } from '@/lib/devLogger';
 
 /**
  * POST /api/profile/invalidate-cache
@@ -24,9 +26,12 @@ export async function POST(request: NextRequest) {
     }
 
     clearCachedDivinationData(uid);
+    if (isAdminAvailable()) {
+      await deleteDocument('comprehensiveMysticalProfiles', uid);
+    }
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Profile invalidate-cache API error:', err);
+    devLog.error('Profile invalidate-cache API error', err, 'invalidate-cache');
     return NextResponse.json({ error: 'Failed to invalidate cache' }, { status: 500 });
   }
 }
