@@ -2,6 +2,20 @@ import type { Config } from "tailwindcss"
 
 const config: Config = {
   darkMode: ["class"],
+  safelist: [
+    "fixed",
+    "inset-0",
+    "z-[10000]",
+    "z-[10001]",
+    "z-[2147483646]",
+    "min-w-[40px]",
+    "min-h-[40px]",
+    "min-w-[44px]",
+    "min-h-[44px]",
+    "w-[calc(100vw-32px)]",
+    "max-w-[90vw]",
+    "max-h-[min(90dvh,90vh)]",
+  ],
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -10,6 +24,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      /* Breakpoints: single source for responsive layout (see docs/LAYOUT.md) */
+      screens: {
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
+        "2xl": "1536px",
+      },
       colors: {
         gold: "#fbbf24",
         background: "hsl(var(--background))",
@@ -62,6 +84,13 @@ const config: Config = {
       spacing: {
         "18": "4.5rem",
         "88": "22rem",
+      },
+      minHeight: {
+        screen: "100vh",
+        svh: "100svh",
+      },
+      height: {
+        svh: "100svh",
       },
     },
   },
