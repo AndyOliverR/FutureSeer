@@ -1,6 +1,7 @@
 "use client"
 
 import React, { Suspense, useState, useEffect } from "react"
+import { devLog } from '@/lib/devLogger';
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
@@ -12,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, User } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
-import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage } from "@/lib/firebase"
+import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 
 // Lazy load SignupFlow component - only loaded when user submits basic info
@@ -64,14 +65,15 @@ function SignUpPageContent() {
     setActiveProvider('google')
     
     try {
-      await signInWithGoogle()
-      router.push("/dashboard")
+      const user = await signInWithGoogle()
+      const returning = isReturningUser(user)
+      router.push(returning ? "/dashboard" : "/profile-setup")
     } catch (error: any) {
       // Handle specific popup errors with better user feedback
       if (error.message && error.message.includes('Redirect initiated')) {
         // This is expected when redirect method is used
         if (process.env.NODE_ENV === 'development') {
-          console.debug('Redirect authentication initiated');
+          devLog.debug('Redirect authentication initiated');
         }
         return; // Don't show error for redirect
       }
@@ -82,7 +84,7 @@ function SignUpPageContent() {
           error.message?.includes('Sign-in is already in progress')) {
         // Don't show error, just wait - the existing sign-in will complete
         if (process.env.NODE_ENV === 'development') {
-          console.debug('Sign-in already in progress');
+          devLog.debug('Sign-in already in progress');
         }
         return;
       }
@@ -107,7 +109,7 @@ function SignUpPageContent() {
         errorMessage = msg && !msg.includes('auth/') && msg.length <= 120 ? msg : fallbackGeneric;
       }
       // Log to help debug (visible in DevTools when user opens console)
-      console.warn('[Signup] Google sign-in failed:', code || 'no-code', error?.message?.slice(0, 80));
+      devLog.warn('[Signup] Google sign-in failed', { code: code || 'no-code', message: error?.message?.slice(0, 80) }, 'signup');
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -157,7 +159,7 @@ function SignUpPageContent() {
       if (!subscriptionId && process.env.NODE_ENV === 'development') {
         // Subscription should have been created during payment capture
         // This is a fallback - in production, ensure subscriptionId is passed through
-        console.debug('Subscription ID not provided, subscription may need to be created separately');
+        devLog.debug('Subscription ID not provided, subscription may need to be created separately');
       }
       
       // Create user account with payment/subscription info
@@ -172,7 +174,7 @@ function SignUpPageContent() {
         subscriptionId,
         referralCode || undefined
       )
-      router.push("/dashboard")
+      router.push("/profile-setup")
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -335,6 +337,7 @@ function SignUpPageContent() {
                     <Input
                       id="displayName"
                       type="text"
+                      autoComplete="name"
                       placeholder="Enter your name"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
@@ -379,6 +382,7 @@ function SignUpPageContent() {
                     <Input
                       id="email"
                       type="email"
+                      autoComplete="email"
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -487,6 +491,7 @@ function SignUpPageContent() {
                     <Input
                       id="referralCode"
                       type="text"
+                      autoComplete="off"
                       placeholder="Enter referral code (e.g., FUTURE_ABC123)"
                       value={referralCode}
                       onChange={(e) => setReferralCode(e.target.value.toUpperCase())}

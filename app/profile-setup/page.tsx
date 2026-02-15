@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,8 +26,10 @@ import {
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
+import Link from 'next/link'
 import { updateUserProfile } from '@/lib/firebase'
-import { BackButton } from '@/components/navigation/BackButton'
+import { Header } from '@/components/header'
+import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
 
 interface ProfileData {
   // Step 1: Basic Info
@@ -114,6 +117,13 @@ export default function ProfileSetupPage() {
     }
   }, [user, router])
 
+  // Redirect to canonical default if profile and reports already exist (e.g. deep link or back button)
+  useEffect(() => {
+    if (user && userProfile?.mysticalProfileGenerated === true) {
+      router.replace(getReturningUserWithReportsDestination())
+    }
+  }, [user, userProfile?.mysticalProfileGenerated, router])
+
   const totalSteps = 5
   const progress = (currentStep / totalSteps) * 100
 
@@ -188,6 +198,14 @@ export default function ProfileSetupPage() {
       })
       return
     }
+    if (!profileData.birthDate?.trim() || !profileData.birthPlace?.trim()) {
+      toast({
+        title: 'Birth details required',
+        description: 'Please enter your date and place of birth to continue.',
+        variant: 'destructive'
+      })
+      return
+    }
 
     setIsLoading(true)
     
@@ -209,7 +227,7 @@ export default function ProfileSetupPage() {
       await updateUserProfile(user.uid, updateData)
       
       // Generate comprehensive astrological profile with single AstroApp API call
-      console.log('🌟 Generating comprehensive astrological profile...')
+      devLog.debug('🌟 Generating comprehensive astrological profile...')
       toast({
         title: 'Generating Your Mystical Profile...',
         description: 'Calling AstroApp API to create your comprehensive astrological data.',
@@ -225,7 +243,7 @@ export default function ProfileSetupPage() {
           true // Force refresh to get fresh data
         )
         
-        console.log('✅ Comprehensive astrological profile generated:', {
+        devLog.debug('✅ Comprehensive astrological profile generated:', {
           planets: comprehensiveData.planets.length,
           houses: comprehensiveData.houses.length,
           source: comprehensiveData.metadata.source
@@ -236,16 +254,16 @@ export default function ProfileSetupPage() {
           description: 'Your mystical journey is now personalized with comprehensive astrological data.',
         })
       } catch (astroError) {
-        console.warn('AstroApp API call failed, but profile is saved:', astroError)
+        devLog.warn('AstroApp API call failed, but profile is saved:', astroError, 'page')
         toast({
           title: 'Profile Setup Complete! 🌟',
           description: 'Your mystical journey is now personalized. Astrological data will be generated when needed.',
         })
       }
       
-      router.push('/dashboard')
+      router.push('/profile')
     } catch (error) {
-      console.error('Profile setup error:', error)
+      devLog.error('Profile setup error:', error, 'page')
       toast({
         title: 'Setup Failed',
         description: 'Could not save your profile. Please try again.',
@@ -268,65 +286,65 @@ export default function ProfileSetupPage() {
           >
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">👋</div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Welcome to FutureSeer</h2>
-              <p className="text-gray-300">Let's personalize your mystical journey</p>
+              <h2 className="m3-headline-small font-serif text-amber-400 mb-2">Welcome to FutureSeer</h2>
+              <p className="text-white/80 m3-body-medium">Let's personalize your mystical journey</p>
             </div>
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="displayName" className="text-white">Display Name</Label>
+                <Label htmlFor="displayName" className="text-amber-400 m3-title-medium">Display Name</Label>
                 <Input
                   id="displayName"
                   type="text"
                   value={profileData.displayName}
                   onChange={(e) => setProfileData(prev => ({ ...prev, displayName: e.target.value }))}
                   placeholder="Enter your preferred display name"
-                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                  className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard rounded-lg"
                 />
-                <p className="text-xs text-gray-300 mt-1">How you'd like to be addressed in the app (optional)</p>
+                <p className="m3-body-small text-[var(--m3-on-surface-variant)] mt-1">How you'd like to be addressed in the app (optional)</p>
               </div>
               
               <div>
-                <Label htmlFor="fullName" className="text-white">Full Name *</Label>
+                <Label htmlFor="fullName" className="text-amber-400 m3-title-medium">Full Name *</Label>
                 <Input
                   id="fullName"
                   type="text"
                   value={profileData.fullName}
                   onChange={(e) => setProfileData(prev => ({ ...prev, fullName: e.target.value }))}
                   placeholder="Enter your full name"
-                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                  className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard rounded-lg"
                 />
-                <p className="text-xs text-gray-300 mt-1">Used for numerological and astrological calculations</p>
+                <p className="m3-body-small text-[var(--m3-on-surface-variant)] mt-1">Used for numerological and astrological calculations</p>
               </div>
               
               <div>
-                <Label htmlFor="email" className="text-white">Email Address</Label>
+                <Label htmlFor="email" className="text-amber-400 m3-title-medium">Email Address</Label>
                 <Input
                   id="email"
                   type="email"
                   value={profileData.email}
                   onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
                   placeholder="your.email@example.com"
-                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                  className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard rounded-lg"
                   disabled
                 />
-                <p className="text-xs text-gray-300 mt-1">Email is managed by your authentication provider</p>
+                <p className="m3-body-small text-[var(--m3-on-surface-variant)] mt-1">Email is managed by your authentication provider</p>
               </div>
               
               <div>
-                <Label htmlFor="gender" className="text-white">Gender Identity *</Label>
+                <Label htmlFor="gender" className="text-amber-400 m3-title-medium">Gender Identity *</Label>
                 <select
                   id="gender"
                   value={profileData.gender}
                   onChange={(e) => setProfileData(prev => ({ ...prev, gender: e.target.value as 'male' | 'female' | 'non-binary' | '' }))}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-full px-4 py-2 rounded-lg bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard [color-scheme:dark]"
                 >
-                  <option value="" className="text-gray-400">Select your gender</option>
-                  <option value="male" className="text-white">Male</option>
-                  <option value="female" className="text-white">Female</option>
-                  <option value="non-binary" className="text-white">Non-binary / Prefer not to specify</option>
+                  <option value="" className="text-[var(--m3-on-surface-variant)]">Select your gender</option>
+                  <option value="male" className="text-[var(--m3-on-surface)]">Male</option>
+                  <option value="female" className="text-[var(--m3-on-surface)]">Female</option>
+                  <option value="non-binary" className="text-[var(--m3-on-surface)]">Non-binary / Prefer not to specify</option>
                 </select>
-                <p className="text-xs text-gray-300 mt-1">Used for palm reading: Right palm for men, left palm for women, both palms for non-binary</p>
+                <p className="m3-body-small text-[var(--m3-on-surface-variant)] mt-1">Used for palm reading: Right palm for men, left palm for women, both palms for non-binary</p>
               </div>
             </div>
           </motion.div>
@@ -342,42 +360,42 @@ export default function ProfileSetupPage() {
           >
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">🌟</div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Birth Details</h2>
-              <p className="text-gray-300">Your cosmic blueprint for accurate readings</p>
+              <h2 className="m3-headline-small font-serif text-amber-400 mb-2">Birth Details</h2>
+              <p className="text-white/80 m3-body-medium">Your cosmic blueprint for accurate readings</p>
             </div>
             
             <div className="space-y-4">
               <div>
-                <Label htmlFor="birthDate" className="text-white">Date of Birth *</Label>
+                <Label htmlFor="birthDate" className="text-amber-400 m3-title-medium">Date of Birth *</Label>
                 <Input
                   id="birthDate"
                   type="date"
                   value={profileData.birthDate}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthDate: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard rounded-lg [color-scheme:dark]"
                 />
               </div>
               
               <div>
-                <Label htmlFor="birthTime" className="text-white">Time of Birth</Label>
+                <Label htmlFor="birthTime" className="text-amber-400 m3-title-medium">Time of Birth</Label>
                 <Input
                   id="birthTime"
                   type="time"
                   value={profileData.birthTime}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthTime: e.target.value }))}
-                  className="bg-white/5 border-white/20 text-white"
+                  className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard rounded-lg [color-scheme:dark]"
                 />
-                <p className="text-xs text-gray-300 mt-1">For more accurate astrological readings</p>
+                <p className="m3-body-small text-[var(--m3-on-surface-variant)] mt-1">For more accurate astrological readings</p>
               </div>
               
               <div>
-                <Label htmlFor="birthPlace" className="text-white">Place of Birth</Label>
+                <Label htmlFor="birthPlace" className="text-amber-400 m3-title-medium">Place of Birth</Label>
                 <Input
                   id="birthPlace"
                   value={profileData.birthPlace}
                   onChange={(e) => setProfileData(prev => ({ ...prev, birthPlace: e.target.value }))}
                   placeholder="City, Country"
-                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
+                  className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard rounded-lg"
                 />
               </div>
             </div>
@@ -394,8 +412,8 @@ export default function ProfileSetupPage() {
           >
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">📸</div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Face Photo</h2>
-              <p className="text-gray-300">For face reading and personality analysis</p>
+              <h2 className="m3-headline-small font-serif text-amber-400 mb-2">Face Photo</h2>
+              <p className="text-white/80 m3-body-medium">For face reading and personality analysis</p>
             </div>
             
             <div className="space-y-4">
@@ -409,15 +427,15 @@ export default function ProfileSetupPage() {
                   <Button
                     variant="outline"
                     onClick={() => setProfileData(prev => ({ ...prev, facePhoto: null, facePhotoUrl: '' }))}
-                    className="text-gray-300"
+                    className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 rounded-xl"
                   >
                     Change Photo
                   </Button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-300/60" />
-                  <p className="text-gray-300 mb-4">Upload a clear face photo</p>
+                <div className="border-2 border-dashed border-[var(--m3-outline-variant)] rounded-lg p-8 text-center">
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-[var(--m3-on-surface-variant)]" />
+                  <p className="text-[var(--m3-on-surface-variant)] mb-4 m3-body-medium">Upload a clear face photo</p>
                   <input
                     type="file"
                     accept="image/*"
@@ -429,7 +447,7 @@ export default function ProfileSetupPage() {
                     id="facePhoto"
                   />
                   <Label htmlFor="facePhoto" asChild>
-                    <Button variant="outline" className="cursor-pointer">
+                    <Button variant="outline" className="cursor-pointer bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 rounded-xl">
                       <Camera className="w-4 h-4 mr-2" />
                       Choose Photo
                     </Button>
@@ -437,7 +455,7 @@ export default function ProfileSetupPage() {
                 </div>
               )}
               
-              <div className="text-xs text-gray-300/60 text-center">
+              <div className="m3-body-small text-[var(--m3-on-surface-variant)] text-center space-y-1">
                 <p>• Clear, well-lit photo of your face</p>
                 <p>• Used for face reading analysis only</p>
                 <p>• Your privacy is protected</p>
@@ -456,8 +474,8 @@ export default function ProfileSetupPage() {
           >
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">🤲</div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Palm Photo</h2>
-              <p className="text-gray-300">
+              <h2 className="m3-headline-small font-serif text-amber-400 mb-2">Palm Photo</h2>
+              <p className="text-white/80 m3-body-medium">
                 {profileData.gender === 'male' && 'Upload your right palm for palmistry analysis'}
                 {profileData.gender === 'female' && 'Upload your left palm for palmistry analysis'}
                 {profileData.gender === 'non-binary' && 'Upload both palms for comprehensive palmistry analysis'}
@@ -476,15 +494,15 @@ export default function ProfileSetupPage() {
                   <Button
                     variant="outline"
                     onClick={() => setProfileData(prev => ({ ...prev, palmPhoto: null, palmPhotoUrl: '' }))}
-                    className="text-gray-300"
+                    className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 rounded-xl"
                   >
                     Change Photo
                   </Button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-8 text-center">
-                  <Hand className="w-12 h-12 mx-auto mb-4 text-gray-300/60" />
-                  <p className="text-gray-300 mb-4">Upload a clear palm photo</p>
+                <div className="border-2 border-dashed border-[var(--m3-outline-variant)] rounded-lg p-8 text-center">
+                  <Hand className="w-12 h-12 mx-auto mb-4 text-[var(--m3-on-surface-variant)]" />
+                  <p className="text-[var(--m3-on-surface-variant)] mb-4 m3-body-medium">Upload a clear palm photo</p>
                   <input
                     type="file"
                     accept="image/*"
@@ -496,7 +514,7 @@ export default function ProfileSetupPage() {
                     id="palmPhoto"
                   />
                   <Label htmlFor="palmPhoto" asChild>
-                    <Button variant="outline" className="cursor-pointer">
+                    <Button variant="outline" className="cursor-pointer bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 rounded-xl">
                       <Camera className="w-4 h-4 mr-2" />
                       Choose Photo
                     </Button>
@@ -504,7 +522,7 @@ export default function ProfileSetupPage() {
                 </div>
               )}
               
-              <div className="text-xs text-gray-300/60 text-center">
+              <div className="m3-body-small text-[var(--m3-on-surface-variant)] text-center space-y-1">
                 {profileData.gender === 'male' && (
                   <>
                     <p>• Clear photo of your right palm</p>
@@ -543,13 +561,13 @@ export default function ProfileSetupPage() {
           >
             <div className="text-center mb-8">
               <div className="text-4xl mb-4">⚙️</div>
-              <h2 className="text-2xl font-semibold text-white mb-2">Preferences</h2>
-              <p className="text-gray-300">Customize your mystical experience</p>
+              <h2 className="m3-headline-small font-serif text-amber-400 mb-2">Preferences</h2>
+              <p className="text-white/80 m3-body-medium">Customize your mystical experience</p>
             </div>
             
             <div className="space-y-6">
               <div>
-                <Label className="text-gray-300 mb-3 block">Areas of Interest</Label>
+                <Label className="text-amber-400 m3-title-medium mb-3 block">Areas of Interest</Label>
                 <div className="grid grid-cols-2 gap-2">
                   {interests.map((interest) => (
                     <Button
@@ -567,7 +585,7 @@ export default function ProfileSetupPage() {
               </div>
               
               <div>
-                <Label className="text-gray-300 mb-3 block">Experience Level</Label>
+                <Label className="text-amber-400 m3-title-medium mb-3 block">Experience Level</Label>
                 <div className="grid grid-cols-3 gap-2">
                   {['beginner', 'intermediate', 'advanced'].map((level) => (
                     <Button
@@ -584,11 +602,11 @@ export default function ProfileSetupPage() {
               </div>
               
               <div>
-                <Label className="text-gray-300 mb-3 block">Notification Preferences</Label>
+                <Label className="text-amber-400 m3-title-medium mb-3 block">Notification Preferences</Label>
                 <div className="space-y-2">
                   {Object.entries(profileData.notificationPreferences).map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between">
-                      <span className="text-gray-300 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <span className="text-[var(--m3-on-surface-variant)] m3-body-medium capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                       <Button
                         variant={value ? "default" : "outline"}
                         size="sm"
@@ -620,35 +638,44 @@ export default function ProfileSetupPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 starfield-ultra-sharp" data-onboarding="profile">
-      <div className="max-w-2xl mx-auto">
+    <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp pt-16" data-onboarding="profile">
+      <Header />
+      <div className="relative z-10 px-3 sm:px-4 md:px-6 py-4 max-w-4xl mx-auto">
         {/* Back Navigation */}
-        <div className="mb-6">
-          <BackButton href="/profile" label="Back to Profile" />
+        <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-3 text-amber-400 hover:text-amber-400/80 m3-transition-standard group"
+          >
+            <div className="p-2 rounded-full bg-[var(--m3-primary-container)] border border-[var(--m3-primary)]/20 group-hover:bg-[var(--m3-primary-container)]/80 group-hover:border-[var(--m3-primary)]/40 m3-transition-standard">
+              <ArrowLeft className="w-4 h-4 text-[var(--m3-primary)] group-hover:-translate-x-1 m3-transition-standard" />
+            </div>
+            <span className="m3-label-large">Back to Dashboard</span>
+          </Link>
         </div>
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-300 text-sm">Step {currentStep} of {totalSteps}</span>
-            <span className="text-gray-300 text-sm">{Math.round(progress)}%</span>
+            <span className="m3-body-small text-[var(--m3-on-surface-variant)]">Step {currentStep} of {totalSteps}</span>
+            <span className="m3-body-small text-[var(--m3-on-surface-variant)]">{Math.round(progress)}%</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
 
         {/* Main Content */}
-        <Card className="glass-card border-white/10">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-2xl">
           <CardContent className="p-8">
             <AnimatePresence mode="wait">
               {renderStep()}
             </AnimatePresence>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-white/10">
+            <div className="flex justify-between mt-8 pt-6 border-t border-[var(--m3-outline-variant)]">
               <Button
                 variant="outline"
                 onClick={prevStep}
                 disabled={currentStep === 1}
-                className="text-gray-300"
+                className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 rounded-xl"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Previous
@@ -658,7 +685,7 @@ export default function ProfileSetupPage() {
                 <Button
                   onClick={nextStep}
                   disabled={!profileData.fullName.trim()}
-                  className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                  className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white rounded-xl m3-label-large"
                 >
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -666,8 +693,8 @@ export default function ProfileSetupPage() {
               ) : (
                 <Button
                   onClick={handleComplete}
-                  disabled={isLoading}
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                  disabled={isLoading || !profileData.birthDate?.trim() || !profileData.birthPlace?.trim()}
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl m3-label-large"
                 >
                   {isLoading ? (
                     <>

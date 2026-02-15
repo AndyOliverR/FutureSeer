@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,11 +11,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
-import { signInWithGoogle, signInWithEmail, resetPassword, getAuthErrorMessage } from "@/lib/firebase"
+import { signInWithGoogle, signInWithEmail, resetPassword, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
 import { isAppleDevice } from "@/utils/isAppleDevice"
 import { useRef } from "react"
+import { devLog } from "@/lib/devLogger"
 
-export default function SignInPage() {
+/** Safe redirect path: must start with / and not be protocol-relative (//). */
+function getSafeRedirect(redirect: string | null): string | null {
+  if (!redirect || typeof redirect !== "string") return null
+  const trimmed = redirect.trim()
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed
+  return null
+}
+
+function SignInContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -27,6 +36,8 @@ export default function SignInPage() {
   
   const { signIn } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = getSafeRedirect(searchParams?.get("redirect") ?? null)
 
   const handleGoogleSignIn = async () => {
     // Prevent multiple clicks
@@ -39,13 +50,14 @@ export default function SignInPage() {
     setActiveProvider('google')
     
     try {
-      await signInWithGoogle()
-      router.push("/dashboard")
+      const user = await signInWithGoogle()
+      const returning = isReturningUser(user)
+      const next = redirectTo ?? (returning ? "/dashboard" : "/profile-setup")
+      router.push(next)
     } catch (error: any) {
       // Handle specific popup errors with better user feedback
       if (error.message && error.message.includes('Redirect initiated')) {
-        // This is expected when redirect method is used
-        console.log('🔄 Redirect authentication initiated');
+        devLog.debug('Redirect authentication initiated', undefined, 'signin');
         return; // Don't show error for redirect
       }
       
@@ -53,8 +65,7 @@ export default function SignInPage() {
       if (error.message?.includes('Target ID already exists') || 
           error.message?.includes('already exists') ||
           error.message?.includes('Sign-in is already in progress')) {
-        // Don't show error, just wait - the existing sign-in will complete
-        console.log('ℹ️ Sign-in already in progress');
+        devLog.debug('Sign-in already in progress', undefined, 'signin');
         return;
       }
       
@@ -100,7 +111,8 @@ export default function SignInPage() {
     
     try {
       await signInWithEmail(email, password)
-      router.push("/dashboard")
+      const next = redirectTo ?? "/dashboard"
+      router.push(next)
     } catch (error: any) {
       const msg = error?.message;
       setError(typeof msg === 'string' && msg.length > 0 ? msg : 'Sign-in failed. Please try again.')
@@ -372,5 +384,13 @@ export default function SignInPage() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-950"><div className="text-amber-400">Loading...</div></div>}>
+      <SignInContent />
+    </Suspense>
   )
 } 
