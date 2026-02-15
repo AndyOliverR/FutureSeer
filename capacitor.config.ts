@@ -9,6 +9,10 @@ const config: CapacitorConfig = {
     androidScheme: 'https'
   },
   plugins: {
+    Keyboard: {
+      resize: "body",
+      resizeOnFullScreen: true
+    },
     SplashScreen: {
       launchShowDuration: 3000,
       backgroundColor: "#0a001e",
