@@ -8,6 +8,7 @@ import { calcPersonalYear } from '@/lib/numerology/personalYear';
 import { calcDriver } from '@/lib/numerology/driverConductor';
 import { getFavorables } from '@/lib/numerology/favorables';
 import { detectKarmicDebtNumbers } from '@/lib/numerology/karmicDebt';
+import { deriveFavorableDates, getCurrentCycleFromPersonalYear } from '@/lib/chaldeanReportChunks';
 
 export type ChaldeanQuestionType =
   | 'name_branding'
@@ -34,6 +35,7 @@ export interface ChaldeanState {
   compound_meaning: string | null;
   personal_year: number | null;
   favorable_numbers: number[];
+  favorable_dates: number[];
   challenging_numbers: number[];
   dominant_planet: string | null;
   favorable_days: string[];
@@ -134,6 +136,8 @@ export function buildChaldeanState(
   const dominant_planet =
     life_path != null ? NUMBER_TO_PLANET[life_path] ?? null : null;
 
+  const favorable_dates = deriveFavorableDates([...new Set(favorable_numbers)]);
+
   return {
     birth_number: birth_number ?? null,
     life_path: life_path ?? null,
@@ -144,6 +148,7 @@ export function buildChaldeanState(
     compound_meaning: comprehensiveReport?.profileOverview ?? null,
     personal_year: personal_year ?? null,
     favorable_numbers: [...new Set(favorable_numbers)],
+    favorable_dates,
     challenging_numbers,
     dominant_planet,
     favorable_days: favorables?.days ?? [],
@@ -151,15 +156,16 @@ export function buildChaldeanState(
 }
 
 /**
- * Classify Chaldean question type. Returns 'refusal' for exact timing,
- * medical, legal, wealth certainty, marriage date, etc.
+ * Classify Chaldean question type. Returns 'refusal' only for medical, legal,
+ * death, or guarantee/certainty. Timing questions get favorable dates; "will my app succeed"
+ * gets reframe (name/timing support), not refusal.
  */
 export function classifyChaldeanQuestion(question: string): ChaldeanQuestionType {
   const lower = question.toLowerCase().trim();
 
-  // Refusals: exact date, marriage date, medical, legal, wealth certainty, death, long-term fate
+  // Tier 3 refusals only: medical, legal, death, guarantee/certainty (not timing or outcome reframe)
   if (
-    /exact\s+date|when\s+exactly|precise\s+timing|when\s+will\s+i\s+(die|get\s+married|marry)|marriage\s+date|wedding\s+date|will\s+i\s+become\s+rich|when\s+will\s+i\s+be\s+rich|exact\s+marriage|life\s+(in|like|be)\s+\d+\s+years|in\s+\d+\s+years|long\s+term\s+fate|when\s+will\s+i\s+die|medical|legal\s+claim|guarantee|certainty|predict\s+exact/.test(
+    /\b(medical|diagnos|treatment|legal\s+claim|court|lawsuit|when\s+will\s+i\s+die|guarantee|certainty|guaranteed\s+result)\b/.test(
       lower
     )
   ) {
@@ -327,30 +333,36 @@ export function getChaldeanSliceForQuestionType(
   }
   lines.push('');
 
-  // Personal year (for cycle_year, decision_alignment)
-  if (
-    (questionType === 'cycle_year' ||
-      questionType === 'decision_alignment' ||
-      questionType === 'personal_year') &&
-    state.personal_year != null
-  ) {
+  // Current cycle (for cycle_year, decision_alignment, general — timing)
+  const timingTypes = ['cycle_year', 'decision_alignment', 'personal_year', 'general'];
+  if (timingTypes.includes(questionType) && state.personal_year != null) {
+    const cycle = getCurrentCycleFromPersonalYear(state.personal_year);
     lines.push('## Current cycle');
     lines.push(
       `- Personal Year: ${state.personal_year}${state.personal_year === 11 || state.personal_year === 22 ? ' (Master)' : ''}`
     );
+    lines.push(`- Theme: ${cycle.theme}`);
+    lines.push(`- Supports new beginnings: ${cycle.supports_new_beginnings}`);
     lines.push('');
   }
 
-  // Favorable / challenging (for correction_remedy, cycle_year)
+  // Alignment data: favorable_dates, numbers, days (for timing, correction, decision, general)
+  const alignmentTypes = ['correction_remedy', 'cycle_year', 'decision_alignment', 'general'];
   if (
-    (questionType === 'correction_remedy' || questionType === 'cycle_year') &&
+    alignmentTypes.includes(questionType) &&
     (state.favorable_numbers.length > 0 ||
+      state.favorable_dates?.length > 0 ||
       state.challenging_numbers.length > 0 ||
       state.favorable_days.length > 0)
   ) {
     lines.push('## Alignment data');
     if (state.favorable_numbers.length > 0) {
       lines.push(`- Favorable numbers: ${state.favorable_numbers.join(', ')}`);
+    }
+    if (state.favorable_dates?.length > 0) {
+      lines.push(
+        `- Favorable dates (day of month): ${state.favorable_dates.join(', ')} — e.g. 1st, 5th, 14th, 23rd`
+      );
     }
     if (state.favorable_days.length > 0) {
       lines.push(`- Favorable days: ${state.favorable_days.join(', ')}`);

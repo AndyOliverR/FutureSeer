@@ -3,9 +3,20 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NameAnalysisCoachInterface } from "@/components/NameAnalysisCoachInterface"
 import { NameAnalysisSeerChatInterface } from "@/components/NameAnalysisSeerChatInterface"
 import { useNameAnalysis } from "@/hooks/use-name-analysis"
+
+const NAME_TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "personality", label: "Personality" },
+  { id: "vibrations", label: "Elements & Vibrations" },
+  { id: "purpose", label: "Career & Purpose" },
+  { id: "compatibility", label: "Relationships" },
+  { id: "advice", label: "Recommendations" },
+  { id: "ask-the-seer", label: "Ask the Seer" },
+] as const
 
 export default function NameAnalysisPage() {
   const { userProfile } = useAuth()
@@ -58,35 +69,22 @@ export default function NameAnalysisPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
           >
-            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-6 shadow-md">
-              {/* Tabs */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {[
-                  { id: "overview", label: "Overview" },
-                  { id: "personality", label: "Personality" },
-                  { id: "vibrations", label: "Elements & Vibrations" },
-                  { id: "purpose", label: "Career & Purpose" },
-                  { id: "compatibility", label: "Relationships" },
-                  { id: "advice", label: "Recommendations" },
-                  { id: "ask-the-seer", label: "Ask the Seer" }
-                ].map((tab) => (
-                  <motion.button
-                    key={tab.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 text-xs sm:text-sm m3-elevation-transition ${
-                      activeTab === tab.id
-                        ? "bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 m3-elevation-1"
-                        : "text-slate-300 hover:text-slate-100 hover:bg-slate-800/30"
-                    }`}
-                  >
-                    {tab.label}
-                  </motion.button>
-                ))}
-              </div>
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
+                <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+                  {NAME_TABS.map((tab) => (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
+                    >
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-              {/* Content */}
+                {/* Content */}
+                <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <AnimatePresence mode="wait">
                 {isLoading ? (
                   <motion.div
@@ -155,6 +153,8 @@ export default function NameAnalysisPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
+                </div>
+              </Tabs>
             </div>
           </motion.div>
         </div>

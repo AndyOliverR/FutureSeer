@@ -8,6 +8,7 @@ export interface ToolIntroduction {
   keyConcepts: string[];
   useCases: string[];
   whyItMatters: string;
+  exampleQuestions?: string[];
 }
 
 export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
@@ -66,6 +67,144 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
       'Historical and philosophical astrological study'
     ],
     whyItMatters: 'Hellenistic Astrology represents the original Western astrological tradition, providing a direct connection to ancient wisdom. Its techniques offer unique insights into timing, planetary strength, and life patterns that differ from modern approaches. By understanding your chart through this ancient lens, you gain access to traditional methods of prediction and interpretation that have been practiced for over two millennia. The system\'s emphasis on fate, fortune, and timing provides a different perspective on life guidance compared to modern psychological astrology.'
+  },
+  'esoteric-astrology': {
+    slug: 'esoteric-astrology',
+    name: 'Esoteric Astrology',
+    icon: '✨',
+    description: 'Soul evolution and spiritual purpose',
+    overview: 'Esoteric Astrology is a soul-evolution system, not a predictive one. Based on the teachings of Alice A. Bailey and the Tibetan, it focuses on why you are here, what your soul seeks to develop, and what higher lesson is unfolding. It does not predict material events, give timing, replace Vedic or KP astrology, or provide remedies—it operates on meaning and inner alignment.',
+    howItWorks: 'The system works with soul ruler vs personality ruler, rays and spiritual qualities, and the evolutionary purpose of signs and houses. Your chart is interpreted from a soul-centered perspective to reveal higher purpose, spiritual lessons, evolutionary themes, and service and contribution focus. Planets, signs, and houses have both exoteric (personality) and esoteric (soul) meanings.',
+    keyConcepts: [
+      'Soul Ruler vs Personality Ruler: Different planetary influences for outer life vs soul direction',
+      'Seven Rays: Universal spiritual energies influencing development (e.g. Love-Wisdom, Will-Power)',
+      'Evolutionary Theme: The overarching soul lesson and growth focus',
+      'Spiritual Challenges: Inner blocks and qualities the soul is here to transform',
+      'Soul Growth Focus: Service and contribution aligned with higher purpose',
+      'Integration Guidance: Aligning action with higher intention'
+    ],
+    useCases: [
+      'Understanding your higher life purpose and why you are here',
+      'Identifying the spiritual lesson you are here to learn',
+      'Reframing inner conflict and blocks to spiritual growth',
+      'Aligning with your higher self and direction',
+      'Clarifying how you serve best and what impact you are meant to create',
+      'Soul-level insight without material prediction or timing'
+    ],
+    whyItMatters: 'Esoteric Astrology answers "why does this matter in my life?" with spiritual framing and purpose clarification. It complements personality astrology (Western) and predictive systems (Vedic, KP) by focusing entirely on soul evolution and higher meaning.'
+  },
+  'psychological-astrology': {
+    slug: 'psychological-astrology',
+    name: 'Psychological Astrology',
+    icon: '🧠',
+    description: 'Inner patterns and emotional dynamics — not prediction',
+    overview: 'Psychological Astrology is a personality-depth system. It works with Sun, Moon, Ascendant dynamics; inner planet aspects (Mercury, Venus, Mars); shadow projections; attachment patterns; and archetypal complexes. It answers why you think, feel, and react the way you do, what subconscious patterns repeat, and how to integrate shadow and growth. It does not predict events, give timing, diagnose mental illness, or replace therapy.',
+    howItWorks: 'Your Western natal chart is interpreted through a psychological lens. The system focuses on core identity pattern, emotional signature, defense mechanisms, shadow theme, relationship pattern, growth focus, and integration guidance. When aspect or chart data is incomplete, analysis stays general. No prediction, no timing, no diagnosis.',
+    keyConcepts: [
+      'Core Identity Pattern: How your ego and sense of self are structured',
+      'Emotional Signature: How you typically feel and express emotion',
+      'Defense Mechanisms: Unconscious strategies (e.g. withdrawal, intellectualization)',
+      'Shadow Theme: Aspects of self that are repressed or projected',
+      'Relationship Pattern: Repeating dynamics in close relationships',
+      'Growth Focus: Direction for emotional integration and development',
+      'Integration Guidance: Practical step toward wholeness'
+    ],
+    useCases: [
+      'Understanding why you react emotionally in certain ways',
+      'Identifying subconscious patterns that repeat',
+      'Exploring shadow traits and how to integrate them',
+      'Clarifying relationship and attachment dynamics',
+      'Improving emotional balance and boundary clarity',
+      'Reflective insight without prediction or therapy'
+    ],
+    exampleQuestions: [
+      'Why do I keep attracting the same type of partner?',
+      'What does my chart say about my emotional triggers?',
+      'Why do I feel divided between logic and emotion?',
+      'What shadow pattern should I integrate?'
+    ],
+    whyItMatters: 'Psychological Astrology explains inner patterns, not external fate. It provides emotional pattern explanation, shadow integration lens, and behavior insight. When users ask "Why do I feel this way?" this tool answers—without prediction, diagnosis, or replacement for professional support.'
+  },
+  'shamanic-astrology': {
+    slug: 'shamanic-astrology',
+    name: 'Shamanic Astrology',
+    icon: '🪶',
+    description: 'Initiatory life journey — power, shadow, soul contracts',
+    overview: 'Shamanic Astrology is an initiatory life-journey system, not a forecast. It works with archetypal life cycles, evolutionary gateways, power vs victim polarity, totemic symbolism, and soul contracts and initiations. It answers what initiation you are in, where your power is being tested, and how to reclaim spiritual authority. It does not predict external events, give timing or dates, replace Vedic or KP astrology, or provide ritual prescriptions.',
+    howItWorks: 'Your Western natal chart is interpreted through shamanic archetypes. The system identifies your current life cycle phase, archetypal theme, shadow pattern, power dynamic, spiritual threshold, and integration path. When chart data is incomplete, interpretation stays archetypal. No prediction, no timing, no ritual prescriptions—only initiatory framing and empowerment.',
+    keyConcepts: [
+      'Life Cycle Phase: The initiation you are currently undergoing',
+      'Archetypal Theme: The governing archetype of your path (e.g. Warrior becoming Guide)',
+      'Shadow Pattern: Where you give away power or hide from visibility',
+      'Power Dynamic: Oscillation between self-doubt and claiming force',
+      'Spiritual Threshold: The edge you are crossing (e.g. claiming authority through service)',
+      'Integration Path: Owning responsibility without domination'
+    ],
+    useCases: [
+      'Understanding what initiation you are going through',
+      'Identifying where your power is being tested',
+      'Reclaiming spiritual authority in difficult situations',
+      'Recognizing soul contracts and repeating lessons',
+      'Moving from victim to empowered cycle',
+      'Initiatory insight without prediction or timing'
+    ],
+    exampleQuestions: [
+      'What initiation am I currently in?',
+      'Why does this period feel like a test?',
+      'What archetypal force governs my life path?',
+      'How can I reclaim my power in this situation?'
+    ],
+    whyItMatters: 'Shamanic Astrology answers "Why does this feel like a life test?" with initiatory framing, empowerment narrative, and archetypal transformation context. It complements psychological and predictive systems by focusing entirely on life as an initiatory journey—symbolic and transformative, not predictive.'
+  },
+  'kabbalistic-astrology': {
+    slug: 'kabbalistic-astrology',
+    name: 'Kabbalistic Astrology',
+    icon: '🪬',
+    description: 'Spiritual blueprint and karmic correction (Tikkun)',
+    overview: 'Kabbalistic Astrology is a karmic correction system, not a predictive one. It works with Hebrew zodiac correspondences, soul correction (Tikkun), past-life residue themes, and spiritual rectification patterns. It answers what your soul came to correct, why certain challenges repeat, and what internal transformation is required. It does not predict material outcomes, give timing or dates, replace Vedic or KP astrology, or provide religious rulings—it is a transformational lens.',
+    howItWorks: 'The system maps your birth chart to Hebrew zodiac correspondences and interprets your spiritual blueprint through the lens of Tikkun (soul correction). Your chart reveals your Hebrew sign, core correction theme, past-life residue patterns, spiritual strengths, growth path, and integration guidance. Planets and signs are read for their karmic and transformative meaning rather than event-level prediction.',
+    keyConcepts: [
+      'Hebrew Sign: Zodiac sign with its Hebrew month/path correspondence',
+      'Tikkun Theme: The central soul correction you are here to work on',
+      'Past-Life Residue: Recurring themes and imbalances carried forward',
+      'Core Correction: The primary inner transformation required',
+      'Spiritual Strength: Innate resilience and depth to draw on',
+      'Growth Path: Qualities to develop and refine',
+      'Integration Guidance: How to respond with awareness rather than reaction'
+    ],
+    useCases: [
+      'Understanding your soul correction (Tikkun) in this lifetime',
+      'Identifying why certain challenges or patterns repeat',
+      'Discovering which traits to develop and weaknesses to refine',
+      'Aligning with your spiritual blueprint and higher self',
+      'Reframing life events through a karmic correction lens',
+      'Spiritual growth insight without event or timing prediction'
+    ],
+    whyItMatters: 'Kabbalistic Astrology answers "why is this happening to me spiritually?" with a focus on Tikkun and karmic correction. It complements Esoteric Astrology (soul evolution) and predictive systems (Vedic, KP) by providing a pattern-based, transformational view of your spiritual blueprint.'
+  },
+  'hermetic-astrology': {
+    slug: 'hermetic-astrology',
+    name: 'Hermetic Astrology',
+    icon: '🔱',
+    description: 'Spiritual mechanics and inner alchemy',
+    overview: 'Hermetic Astrology is a metaphysical mechanics system, not a predictive one. It works with polarity (masculine/feminine forces), elemental balance, planetary archetypes, alchemical symbolism, and microcosm–macrocosm correspondence. It answers how energies operate within you, where imbalance exists, and what internal alchemy is required. It does not predict events, give timing, provide yes/no outcomes, or replace Vedic, KP, or Horary systems.',
+    howItWorks: 'Your birth chart is interpreted through Hermetic principles to reveal dominant element, elemental imbalance, polarity balance, archetypal theme, planetary dynamics, alchemical lesson, and integration guidance. The system focuses on inner transformation and energy mechanics rather than life events or timing.',
+    keyConcepts: [
+      'Polarity: Masculine/feminine (yang/yin) forces and their balance',
+      'Elemental balance: Fire, Earth, Air, Water — dominance and imbalance',
+      'Planetary archetypes: How each planet expresses in your inner mechanics',
+      'Alchemical symbolism: Transmutation, refinement, and inner work',
+      'Microcosm–macrocosm: As above, so below — correspondence between inner and outer'
+    ],
+    useCases: [
+      'Understanding where you are energetically imbalanced',
+      'Identifying what you must transmute or refine',
+      'Discovering which element or force dominates your behavior',
+      'Clarifying your archetypal theme and inner transformation path',
+      'Reframing internal conflict through polarity and alchemical lens',
+      'Spiritual mechanics insight without event or timing prediction'
+    ],
+    whyItMatters: 'Hermetic Astrology answers "what is happening inside me energetically?" with a focus on spiritual mechanics and inner alchemy. It complements Western (personality), Esoteric (soul evolution), and Kabbalistic (Tikkun) systems by providing an energetic and alchemical view of your inner dynamics.'
   },
   'tarot': {
     slug: 'tarot',
@@ -822,6 +961,29 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
       'Spiritual development'
     ],
     whyItMatters: 'The Akashic Records provide profound insights into your soul\'s journey and purpose, helping you understand patterns, heal past-life influences, and align with your spiritual mission. Whether you\'re exploring your purpose, understanding karmic patterns, or seeking spiritual guidance, accessing the Records offers deep wisdom about your soul\'s evolution.'
+  },
+  'astrocartography': {
+    slug: 'astrocartography',
+    name: 'Astrocartography',
+    icon: '🗺️',
+    description: 'Location-based activation: where planetary energies are strongest',
+    overview: 'Astrocartography is a location-based activation system. It works with planetary meridian lines (MC, IC, ASC, DSC), angular planetary strength by geography, relocation influence, and proximity to planetary lines. It answers where certain life themes activate, which places support career, love, growth, or retreat, and why a location feels supportive or challenging. It does not guarantee success, replace personal effort, give exact event timing, or decide fate—it indicates energetic activation, not certainty.',
+    howItWorks: 'Astrocartography calculates planetary lines that cross the Earth\'s surface based on your birth chart. Each planet creates multiple lines (Ascendant, Midheaven, Descendant, and IC lines) where its influence is particularly strong. These lines indicate locations where you experience heightened planetary energies—positive or challenging—depending on the planet and angle. Developed by Jim Lewis, the system maps your birth chart onto the world to reveal where specific energies are strongest for you.',
+    keyConcepts: [
+      'Planetary Lines: Meridian lines (MC, IC, ASC, DSC) where planetary influences are strongest',
+      'Angular Strength: How geography affects the strength of planetary activation',
+      'Relocation Influence: How moving changes which energies are emphasized',
+      'Proximity to Lines: Being near a line amplifies that planet\'s themes',
+      'Activation vs Prediction: Shows where energies activate, not what will happen',
+      'Power Places: Locations where specific planetary energies are strongest for you'
+    ],
+    useCases: [
+      'Relocation: Is this city good for my career? Where should I move for growth?',
+      'Travel: Is this place supportive for launching a project? Where do I feel more aligned?',
+      'Comparative: Which of these two cities suits me better? Does this place align with my goals?',
+      'Understanding: Why did I struggle in a certain country? Why did I feel more confident there?'
+    ],
+    whyItMatters: 'Astrocartography reveals how geography interacts with your birth chart, showing where you experience the strongest planetary influences. It is invaluable for relocation decisions, travel planning, and understanding how different locations can support different aspects of your life—while always emphasizing activation of energies, not guaranteed outcomes.'
   },
   'ogham': {
     slug: 'ogham',

@@ -4,6 +4,8 @@
  * accurate future transit calculations for astrology predictions
  */
 
+import { devLog } from '@/lib/devLogger';
+
 export interface ParsedDateRange {
   startDate: Date;
   endDate: Date | null;
@@ -67,7 +69,7 @@ export function parseDatesFromQuestion(question: string): ParsedDateRange | null
         const parsed = parseMatch(match, normalized);
         if (parsed) return parsed;
       } catch (error) {
-        console.error('Error parsing date match:', error);
+        devLog.error('Error parsing date match:', error, 'dateParser');
         continue;
       }
     }

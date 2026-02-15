@@ -52,6 +52,17 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
+    // Seer Master (normalized insight for Ask the Seer) - user can read own
+    match /seerMaster/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false; // Only server writes via Admin SDK
+    }
+    
+    // Seer decision telemetry - server writes only; admin read for dashboards
+    match /seerDecisionEvents/{eventId} {
+      allow read, write: if false; // Only Admin SDK
+    }
+    
     // Community discussions - anyone authenticated can read, only author can edit/delete
     match /communityDiscussions/{discussionId} {
       allow read: if request.auth != null;

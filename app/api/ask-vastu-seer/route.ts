@@ -4,6 +4,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
+import { buildVastuSeerSystemPrompt } from '@/lib/vastuSeerPrompts';
 import {
   buildVastuState,
   classifyVastuQuestion,
@@ -148,7 +149,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getVastuSliceForQuestionType(questionType, state);
+    const slice = getVastuSliceForQuestionType(questionType, state);
+    const displayName = (userProfile?.displayName ?? '').trim();
+    const systemPrompt = buildVastuSeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
@@ -243,7 +248,7 @@ export async function POST(request: NextRequest) {
               /* non-fatal */
             }
           } catch (error) {
-            console.error('Error during Vastu Seer streaming:', error);
+            devLog.error('Error during Vastu Seer streaming:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -263,7 +268,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error in Vastu Seer API:', error);
+    devLog.error('Error in Vastu Seer API:', error);
     return NextResponse.json(
       {
         success: false,

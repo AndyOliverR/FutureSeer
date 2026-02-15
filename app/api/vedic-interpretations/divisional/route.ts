@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
 import { getUserProfile } from '@/lib/firebase';
 
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       const userProfile = await getUserProfile(userId);
       userName = userProfile?.displayName || userProfile?.fullName;
     } catch (error) {
-      console.warn('Could not fetch user profile for personalization:', error);
+      devLog.warn('Could not fetch user profile for personalization:', error, 'route');
       // Continue without userName - will use "you" instead
     }
     
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ interpretations });
   } catch (error) {
-    console.error('Error generating divisional interpretations:', error);
+    devLog.error('Error generating divisional interpretations:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to generate interpretations' },
       { status: 500 }

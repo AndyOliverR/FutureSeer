@@ -273,11 +273,12 @@ export function getAngelNumberSliceForQuestionType(
   state: AngelNumberState
 ): string {
   if (!state.has_context) {
-    return 'Context missing. Suggest one clarifying question: e.g. What area of life were you focused on when you noticed this number?';
+    return 'Context missing. Ask which number the user is seeing or what area of life they were focused on when they noticed it.';
   }
 
   const lines: string[] = [];
-  if (state.observed_number) lines.push(`observed_number: ${state.observed_number}`);
+  if (state.observed_number) lines.push(`number_sequence: ${state.observed_number}`);
+  else lines.push('If no specific number was given, ask which number the user is seeing or generalize cautiously.');
   lines.push(`frequency: ${state.frequency}`);
   if (state.context) lines.push(`context: ${state.context}`);
   if (state.user_state.current_focus)
@@ -286,7 +287,10 @@ export function getAngelNumberSliceForQuestionType(
     lines.push(`emotional_state: ${state.user_state.emotional_state}`);
   if (state.dominant_numerology != null)
     lines.push(`dominant_numerology: ${state.dominant_numerology}`);
-  if (state.theme) lines.push(`theme: ${state.theme}`);
+  if (state.theme) lines.push(`theme (core_meaning): ${state.theme}`);
+
+  lines.push('');
+  lines.push('Respond with: meaning (theme), guidance, emotional_tone (reassurance/direction), suggested_response when relevant.');
 
   return lines.join('\n');
 }

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -85,7 +86,7 @@ export function HoraryAstrologyCoachInterface() {
 
       setMessages(prev => [...prev, coachMessage])
     } catch (error) {
-      console.error('Error getting Horary coaching:', error)
+      devLog.error('Error getting Horary coaching:', error, 'HoraryAstrologyCoachInterface')
       const errorMessage: HoraryMessage = {
         id: (Date.now() + 1).toString(),
         type: 'coach',

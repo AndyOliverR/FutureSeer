@@ -93,7 +93,7 @@ async function calculateVedicChart(birthData: BirthData, options: any = {}) {
     devLog.info('✅ Real Vedic chart generated successfully', undefined, 'occult');
     return result;
   } catch (error) {
-    console.error('❌ Vedic chart calculation error:', error);
+    devLog.error('❌ Vedic chart calculation error:', error, 'route');
     throw new Error(`Failed to generate Vedic chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -398,7 +398,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     }
   };
   } catch (error) {
-    console.error('❌ Western chart calculation error:', error);
+    devLog.error('❌ Western chart calculation error:', error, 'route');
     throw new Error(`Failed to calculate Western chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -537,7 +537,7 @@ async function calculateMundaneChart(birthData: BirthData, options: any = {}) {
     dailyOutlook = generateThreeDayOutlook(userLocation, country);
     devLog.info('✅ Daily Outlook generated:', { days: dailyOutlook?.length || 0, location: userLocation }, 'occult');
   } catch (error) {
-    console.error('❌ Error generating daily outlook:', error);
+    devLog.error('❌ Error generating daily outlook:', error, 'route');
     dailyOutlook = [];
   }
   
@@ -558,7 +558,7 @@ async function calculateMundaneChart(birthData: BirthData, options: any = {}) {
       riskTimelines: riskTimelines?.length || 0
     }, 'occult');
   } catch (error) {
-    console.error('❌ Error in mundane calculations:', error);
+    devLog.error('❌ Error in mundane calculations:', error, 'route');
     ingressCharts = [];
     eclipseCharts = [];
     planetaryCycles = [];
@@ -616,8 +616,8 @@ async function calculateMundaneChart(birthData: BirthData, options: any = {}) {
       }
     };
   } catch (error) {
-    console.error('❌ Error calculating mundane chart:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    devLog.error('❌ Error calculating mundane chart:', error, 'route');
+    devLog.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace', 'route');
     
     // Return partial data even on error to ensure UI can display something
     const today = new Date();
@@ -2031,7 +2031,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error: any) {
-    console.error('Universal Occult API Error:', error);
+    devLog.error('Universal Occult API Error:', error, 'route');
     return NextResponse.json({ 
       error: 'Failed to process occult calculation',
       details: error instanceof Error ? error.message : 'Unknown error'

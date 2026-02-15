@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { devLog } from '@/lib/devLogger';
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { GemstoneRecommendation } from '@/lib/navaratnaIntelligence'
@@ -64,7 +65,7 @@ export function GemstoneRecommendationCard({
                       alt={recommendation.gemstone.english}
                       className="w-full h-full object-contain p-2"
                       onError={(e) => {
-                        console.warn('Failed to load gemstone icon:', recommendation.gemstone.iconPath)
+                        devLog.warn('Failed to load gemstone icon:', recommendation.gemstone.iconPath, 'GemstoneRecommendationCard')
                         const target = e.currentTarget as HTMLImageElement
                         target.style.display = 'none'
                         const fallback = target.parentElement?.querySelector('.emoji-fallback') as HTMLElement
@@ -73,7 +74,7 @@ export function GemstoneRecommendationCard({
                         }
                       }}
                       onLoad={() => {
-                        console.log('Successfully loaded gemstone icon:', recommendation.gemstone.iconPath)
+                        devLog.debug('Successfully loaded gemstone icon:', recommendation.gemstone.iconPath)
                       }}
                     />
                     <span className="emoji-fallback text-3xl hidden absolute inset-0 flex items-center justify-center">

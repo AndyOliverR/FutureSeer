@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import crypto from 'crypto';
 
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       transactionId: razorpay_payment_id,
     });
   } catch (error: any) {
-    console.error('Error verifying tip payment:', error);
+    devLog.error('Error verifying tip payment:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to verify tip payment' },
       { status: 500 }

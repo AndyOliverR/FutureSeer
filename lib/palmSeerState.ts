@@ -11,6 +11,7 @@ export type PalmQuestionType =
   | 'strengths_weaknesses'
   | 'career_aptitude'
   | 'relationship_style'
+  | 'broad_timing'
   | 'refusal'
   | 'general';
 
@@ -24,6 +25,7 @@ export interface PalmState {
     heart_line?: { depth: string; length?: string; curve?: string; breaks: boolean };
   };
   minor_lines: Record<string, string>;
+  overall_pattern: string | null;
   has_palm_data: boolean;
 }
 
@@ -111,6 +113,7 @@ export function buildPalmState(
       mounts: {},
       major_lines: {},
       minor_lines: {},
+      overall_pattern: null,
       has_palm_data: false,
     };
   }
@@ -142,24 +145,37 @@ export function buildPalmState(
     }
   }
 
+  const overall_pattern = palmistryAnalysis.overallReading?.trim() || null;
+
   return {
     dominant_hand,
     hand_type,
     mounts,
     major_lines,
     minor_lines,
+    overall_pattern: overall_pattern || null,
     has_palm_data: true,
   };
 }
 
 /**
- * Classify palm question. Returns 'refusal' for timing, outcomes, health, death, guarantees.
+ * Classify palm question. Returns 'refusal' only for exact date/year, health, death, guarantees.
+ * Broad timing ("when will my life improve") returns 'broad_timing' for Tier 2 answers.
  */
 export function classifyPalmQuestion(question: string): PalmQuestionType {
   const lower = question.toLowerCase().trim();
 
   if (
-    /when\s+will|when\s+is\s+the\s+best\s+time|what\s+year|life\s+phase|favorable\s+period|when\s+do\s+i|when\s+should\s+i|timing|when\s+will\s+i\s+(get|find|meet|marry|have)|will\s+i\s+get\s+married|will\s+i\s+be\s+rich|will\s+i\s+find\s+love|exact\s+outcome|health\s+diagnosis|illness|disease|how\s+long\s+will\s+i\s+live|death|lifespan|guarantee|certain\s+outcome|predict\s+exact/.test(
+    /when\s+will\s+(my\s+)?(life|things|career|situation)\s+(improve|settle|get\s+better|change)/.test(
+      lower
+    ) ||
+    /when\s+will\s+things\s+(get\s+better|improve)/.test(lower)
+  ) {
+    return 'broad_timing';
+  }
+
+  if (
+    /what\s+year|exact\s+date|in\s+20\d{2}|specific\s+date|when\s+will\s+i\s+(die|get\s+married|find\s+love|have\s+children)|when\s+is\s+the\s+best\s+time|favorable\s+period|predict\s+exact|exact\s+outcome|health\s+diagnosis|illness|disease|how\s+long\s+will\s+i\s+live|death|lifespan|guarantee|certain\s+outcome/.test(
       lower
     )
   ) {
@@ -264,12 +280,22 @@ export function getPalmSliceForQuestionType(
     }
   }
 
+  if (state.overall_pattern) {
+    lines.push('');
+    lines.push(`overall_pattern: ${state.overall_pattern}`);
+  }
+
   if (!state.has_palm_data) {
     lines.push('');
     lines.push(
       'Palm analysis is limited without hand data. This answer reflects general tendencies only.'
     );
   }
+
+  lines.push('');
+  lines.push(
+    'If palm data is vague or missing, generalize from what is given; do not invent features or dates.'
+  );
 
   return lines.join('\n');
 }

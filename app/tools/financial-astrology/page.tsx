@@ -1,8 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,55 +25,17 @@ import {
 
 export default function FinancialAstrologyPage() {
   const { user, userProfile } = useAuth()
-  const [analysis, setAnalysis] = useState<any>(null)
-  const [natalChart, setNatalChart] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'cycles' | 'predictions' | 'timing' | 'markets' | 'ask-the-seer'>('overview')
+  const { report: pipelineReport, loading: isLoading, error } = useToolReport('financialAstrology')
+  const { analysis, natalChart } = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return { analysis: null, natalChart: null }
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return { analysis: null, natalChart: null }
+    const data = (r.data ?? r) as any
+    return { analysis: data ?? null, natalChart: data?.natalChart ?? data?.westernChart ?? null }
+  }, [pipelineReport])
 
-  // Check if user has complete birth details
-  const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
-
-  // Load Financial Astrology Analysis
-  const loadFinancialAnalysis = useCallback(async () => {
-    if (!hasCompleteDetails) return
-    
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      const birthData: BirthData = {
-        birthDate: userProfile?.birthDate || '',
-        birthTime: userProfile?.birthTime || '',
-        birthPlace: userProfile?.birthPlace || '',
-        latitude: userProfile?.latitude || 40.7128,
-        longitude: userProfile?.longitude || -74.0060
-      }
-      
-      const [financialData, westernResult] = await Promise.all([
-        universalOccultService.calculateFinancialChart(birthData, {
-          includeCycles: true,
-          includePredictions: true,
-          includeTiming: true,
-          includeMarkets: true
-        }),
-        universalOccultService.calculateWesternChart(birthData, {})
-      ])
-
-      setAnalysis(financialData)
-      setNatalChart(westernResult?.success ? westernResult.data : null)
-    } catch (err) {
-      console.error('Financial Astrology: failed to load analysis', err)
-      setError('Failed to load Financial Astrology analysis')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [hasCompleteDetails, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.latitude, userProfile?.longitude])
-
-  useEffect(() => {
-    if (!hasCompleteDetails) return
-    loadFinancialAnalysis()
-  }, [hasCompleteDetails, loadFinancialAnalysis])
+  const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
 
   if (!hasCompleteDetails) {
     return (
@@ -82,11 +47,8 @@ export default function FinancialAstrologyPage() {
               <span className="bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent">Financial Astrology</span>
             </h1>
             <p className="text-slate-300 mb-8">Complete your profile to unlock your financial astrology insights</p>
-            <Button 
-              onClick={() => window.location.href = '/profile-setup'}
-              className="bg-amber-500 hover:bg-amber-600 text-white"
-            >
-              Complete Profile
+            <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+              <Link href="/profile">Complete Profile</Link>
             </Button>
           </div>
         </div>
@@ -95,6 +57,7 @@ export default function FinancialAstrologyPage() {
   }
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="financial astrology">
     <div className="relative min-h-screen starfield-ultra-sharp">
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-12">
         {/* Header */}
@@ -104,7 +67,7 @@ export default function FinancialAstrologyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl font-serif mb-2">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif mb-2">
               <span className="text-amber-400">💰</span>{' '}
               <span className="bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent">Financial Astrology</span>
             </h1>
@@ -113,48 +76,49 @@ export default function FinancialAstrologyPage() {
         </div>
 
         {/* Tabs - devotionist styling */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 gap-2 rounded-none">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="overview" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 transition-all"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-t-lg rounded-b-none px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="cycles" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 transition-all"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-t-lg rounded-b-none px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
             >
               Cycles
             </TabsTrigger>
             <TabsTrigger 
               value="predictions" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 transition-all"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-t-lg rounded-b-none px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
             >
               Predictions
             </TabsTrigger>
             <TabsTrigger 
               value="timing" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 transition-all"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-t-lg rounded-b-none px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
             >
               Timing
             </TabsTrigger>
             <TabsTrigger 
               value="markets" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 transition-all"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-t-lg rounded-b-none px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
             >
               Markets
             </TabsTrigger>
             <TabsTrigger 
               value="ask-the-seer" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 transition-all"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 rounded-t-lg rounded-b-none px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
             >
               Ask The Seer
             </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 mt-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4" />
@@ -164,7 +128,7 @@ export default function FinancialAstrologyPage() {
               <div className="text-center py-8">
                 <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
                 <p className="text-red-300 mb-4">{error}</p>
-                <Button onClick={loadFinancialAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white">
+                <Button onClick={() => window.location.reload()} className="bg-amber-500 hover:bg-amber-600 text-white">
                   Try Again
                 </Button>
               </div>
@@ -261,7 +225,7 @@ export default function FinancialAstrologyPage() {
               <div className="text-center py-8">
                 <Info className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                 <p className="text-slate-300 mb-4">No financial astrology data available. Please complete your profile.</p>
-                <Button onClick={loadFinancialAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white">
+                <Button onClick={() => window.location.reload()} className="bg-amber-500 hover:bg-amber-600 text-white">
                   Generate Analysis
                 </Button>
               </div>
@@ -269,7 +233,7 @@ export default function FinancialAstrologyPage() {
           </TabsContent>
 
           {/* Cycles Tab */}
-          <TabsContent value="cycles" className="space-y-6 mt-6">
+          <TabsContent value="cycles" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.planetaryCycles ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {analysis.data.planetaryCycles.map((cycle: any, index: number) => (
@@ -311,7 +275,7 @@ export default function FinancialAstrologyPage() {
           </TabsContent>
 
           {/* Predictions Tab */}
-          <TabsContent value="predictions" className="space-y-6 mt-6">
+          <TabsContent value="predictions" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.predictions ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {analysis.data.predictions.map((prediction: any, index: number) => (
@@ -347,7 +311,7 @@ export default function FinancialAstrologyPage() {
           </TabsContent>
 
           {/* Timing Tab */}
-          <TabsContent value="timing" className="space-y-6 mt-6">
+          <TabsContent value="timing" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.timing ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Optimal Entry Periods */}
@@ -465,7 +429,7 @@ export default function FinancialAstrologyPage() {
           </TabsContent>
 
           {/* Markets Tab */}
-          <TabsContent value="markets" className="space-y-6 mt-6">
+          <TabsContent value="markets" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data ? (
               <div className="space-y-6">
                 {/* Current Market Conditions */}
@@ -643,7 +607,7 @@ export default function FinancialAstrologyPage() {
           </TabsContent>
 
           {/* Ask The Seer Tab */}
-          <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg rounded-3xl h-[600px] overflow-hidden">
               <div className="h-full bg-gradient-to-b from-transparent to-white/30 p-4">
                 <FinancialSeerChatInterface
@@ -657,7 +621,9 @@ export default function FinancialAstrologyPage() {
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }

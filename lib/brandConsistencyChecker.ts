@@ -4,6 +4,8 @@
  * Prevents "sleeping off" on brand consistency
  */
 
+import { devLog } from '@/lib/devLogger';
+
 export interface BrandViolation {
   type: 'color' | 'typography' | 'spacing' | 'component'
   severity: 'critical' | 'warning' | 'info'
@@ -133,10 +135,10 @@ export class BrandConsistencyChecker {
     const criticalViolations = violations.filter(v => v.severity === 'critical')
     
     if (criticalViolations.length > 0) {
-      console.error(`\n🚨 BRAND COMPLIANCE FAILED for ${fileName}:`)
+      devLog.error(`\n🚨 BRAND COMPLIANCE FAILED for ${fileName}:`, undefined, 'brandConsistencyChecker')
       criticalViolations.forEach(violation => {
-        console.error(`   ${violation.message}`)
-        console.error(`   💡 ${violation.suggestion}`)
+        devLog.error(`   ${violation.message}`, undefined, 'brandConsistencyChecker')
+        devLog.error(`   💡 ${violation.suggestion}`, undefined, 'brandConsistencyChecker')
       })
       return false
     }

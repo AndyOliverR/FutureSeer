@@ -4,6 +4,7 @@
  */
 
 import { HumanDesignChart } from './humanDesignCalculator';
+import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase';
 
 export interface HumanDesignReport {
@@ -237,7 +238,7 @@ async function generateAIReport(
     // Post-process each extracted field to replace fullName with displayName
     return cleanAIResponseFields(parsedResponse, userProfile);
   } catch (error) {
-    console.error('Error generating AI report:', error);
+    devLog.error('Error generating AI report:', error, 'humanDesignReportGenerator');
     return {};
   }
 }

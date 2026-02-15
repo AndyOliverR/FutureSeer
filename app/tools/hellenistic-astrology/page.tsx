@@ -1,8 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useMemo } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,51 +50,20 @@ const MATERIAL_3_EASING = [0.4, 0, 0.2, 1] as const;
 
 export default function HellenisticAstrologyPage() {
   const { user, userProfile } = useAuth()
-  const [reading, setReading] = useState<HellenisticAstrologyReading | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'introduction' | 'chart' | 'planets' | 'houses' | 'lots' | 'sect' | 'profections' | 'interpretations' | 'ask-the-seer'>('introduction')
+  const { report: pipelineReport, loading: isLoading, error } = useToolReport('hellenistic')
+  const reading = useMemo((): HellenisticAstrologyReading | null => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    const data = (r.data ?? r) as HellenisticAstrologyReading | undefined
+    return data && typeof data === 'object' ? data : null
+  }, [pipelineReport])
 
-  // Check if user has complete birth details
   const hasCompleteDetails = useMemo(() => 
-    userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace,
+    !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace),
     [userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace]
   )
-
-  // Load Hellenistic analysis - memoized with useCallback
-  const loadHellenisticAnalysis = useCallback(async () => {
-    if (!hasCompleteDetails || !user?.uid) return
-    
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      console.log('FutureSeer: Loading Hellenistic Astrology analysis...')
-      if (!userProfile) return
-      const hellenisticData = await getIntelligentHellenisticAstrologyData(
-        user.uid,
-        userProfile.birthDate ?? '',
-        userProfile.birthTime ?? '',
-        userProfile.birthPlace ?? '',
-        userProfile.birthLatitude || 0,
-        userProfile.birthLongitude || 0
-      )
-      
-      setReading(hellenisticData)
-      console.log('FutureSeer: Hellenistic Astrology analysis loaded successfully')
-    } catch (error: any) {
-      console.error('FutureSeer: Failed to load Hellenistic Astrology analysis:', error)
-      setError('Failed to load Hellenistic Astrology analysis. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [hasCompleteDetails, user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.birthLatitude, userProfile?.birthLongitude])
-
-  useEffect(() => {
-    if (hasCompleteDetails) {
-      loadHellenisticAnalysis()
-    }
-  }, [hasCompleteDetails, loadHellenisticAnalysis])
 
   if (!hasCompleteDetails) {
     return (
@@ -102,12 +74,8 @@ export default function HellenisticAstrologyPage() {
               <Star className="w-12 h-12 text-amber-400 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-amber-200 mb-2">Profile Incomplete</h2>
               <p className="text-slate-300 mb-4">Complete your profile to unlock your Hellenistic astrology chart</p>
-              <Button 
-                onClick={() => window.location.href = '/profile-setup'}
-                className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                aria-label="Navigate to profile setup page"
-              >
-                Complete Profile
+              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg" aria-label="Navigate to profile">
+                <Link href="/profile">Complete Profile</Link>
               </Button>
             </CardContent>
           </Card>
@@ -117,6 +85,7 @@ export default function HellenisticAstrologyPage() {
   }
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Hellenistic chart">
     <div className="starfield-ultra-sharp min-h-screen p-4 pt-4 overflow-hidden">
       {/* Softening overlay to integrate content with starfield */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/10 via-slate-900/30 to-slate-900/40 pointer-events-none"></div>
@@ -133,6 +102,7 @@ export default function HellenisticAstrologyPage() {
         </div>
 
         {/* Tabs */}
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs 
           value={activeTab} 
           onValueChange={(value) => setActiveTab(value as any)} 
@@ -140,62 +110,62 @@ export default function HellenisticAstrologyPage() {
           aria-label="Hellenistic Astrology navigation tabs"
         >
           <TabsList 
-            className="grid w-full grid-cols-9 bg-slate-900/50 backdrop-blur-md border-amber-500/50 rounded-2xl p-1 shadow-lg"
+            className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30"
             role="tablist"
             aria-label="Hellenistic Astrology sections"
           >
             <TabsTrigger 
               value="introduction" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
               aria-label="Introduction to Hellenistic Astrology"
             >
               Introduction
             </TabsTrigger>
             <TabsTrigger 
               value="chart" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Chart
             </TabsTrigger>
             <TabsTrigger 
               value="planets" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Planets
             </TabsTrigger>
             <TabsTrigger 
               value="houses" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Houses
             </TabsTrigger>
             <TabsTrigger 
               value="lots" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Lots
             </TabsTrigger>
             <TabsTrigger 
               value="sect" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Sect
             </TabsTrigger>
             <TabsTrigger 
               value="profections" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Profections
             </TabsTrigger>
             <TabsTrigger 
               value="interpretations" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Interpretations
             </TabsTrigger>
             <TabsTrigger 
               value="ask-the-seer" 
-              className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-2 py-1.5 text-[11px] text-slate-300 transition-all duration-300 ease-in-out data-[state=active]:shadow-md data-[state=active]:scale-105"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Ask the Seer
             </TabsTrigger>
@@ -203,7 +173,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Introduction Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="introduction" className="space-y-6 mt-6">
+            <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <motion.div
                 key="introduction"
                 initial={{ opacity: 0, y: 20 }}
@@ -218,7 +188,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Chart Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="chart" className="space-y-6 mt-6">
+            <TabsContent value="chart" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   key="loading"
@@ -246,11 +216,8 @@ export default function HellenisticAstrologyPage() {
                     <CardContent className="p-8 text-center">
                       <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
                       <p className="text-red-700 mb-4">{error}</p>
-                      <Button 
-                        onClick={loadHellenisticAnalysis} 
-                        className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                      >
-                        Try Again
+                      <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                        <Link href="/profile">Generate your mystical profile</Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -318,7 +285,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Planets Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="planets" className="space-y-6 mt-6">
+            <TabsContent value="planets" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   key="loading"
@@ -411,7 +378,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Houses Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="houses" className="space-y-6 mt-6">
+            <TabsContent value="houses" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   key="loading"
@@ -487,7 +454,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Lots Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="lots" className="space-y-6 mt-6">
+            <TabsContent value="lots" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   key="loading"
@@ -608,7 +575,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Sect Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="sect" className="space-y-6 mt-6">
+            <TabsContent value="sect" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   key="loading"
@@ -679,7 +646,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Profections Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="profections" className="space-y-6 mt-6">
+            <TabsContent value="profections" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   key="loading"
@@ -763,7 +730,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Interpretations Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="interpretations" className="space-y-6 mt-6">
+            <TabsContent value="interpretations" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   key="loading"
@@ -922,7 +889,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Ask the Seer Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+            <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <motion.div
                 key="ask-seer"
                 initial={{ opacity: 0, y: 20 }}
@@ -943,8 +910,10 @@ export default function HellenisticAstrologyPage() {
             </TabsContent>
           </AnimatePresence>
         </Tabs>
+        </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }
 

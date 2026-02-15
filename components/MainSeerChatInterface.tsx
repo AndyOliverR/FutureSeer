@@ -1,0 +1,302 @@
+'use client';
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Send, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SlowRevealText } from '@/components/chat/SlowRevealText';
+
+interface MainSeerChatInterfaceProps {
+  userId: string | undefined;
+  userProfile: { birthDate?: string; birthTime?: string; birthPlace?: string } | null;
+}
+
+type ThreadMessage = { role: 'user' | 'seer'; content: string };
+
+interface Message {
+  id: string;
+  type: 'user' | 'seer';
+  content: string;
+  timestamp: number;
+}
+
+const MAIN_STARTER_QUESTIONS = [
+  'What is my life purpose?',
+  'What should I focus on right now?',
+  'When is a favorable period for me?',
+];
+
+const SEE_MORE_THRESHOLD = 320;
+const PREVIEW_LENGTH = 320;
+
+function threadToMessages(thread: ThreadMessage[]): Message[] {
+  return thread.map((m, i) => ({
+    id: `${m.role}_${i}`,
+    type: m.role,
+    content: m.content,
+    timestamp: 0,
+  }));
+}
+
+export default function MainSeerChatInterface({ userId, userProfile }: MainSeerChatInterfaceProps) {
+  const [thread, setThread] = useState<ThreadMessage[]>([]);
+  const [question, setQuestion] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(new Set());
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const messages = useMemo(() => threadToMessages(thread), [thread]);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const sendMessage = async (questionText?: string) => {
+    const messageToSend = questionText ?? question.trim();
+    if (!messageToSend || isLoading) return;
+
+    setQuestion(questionText ? question : '');
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/seer/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: messageToSend,
+          thread,
+          userId: userId ?? undefined,
+          birthProfile: userProfile
+            ? {
+                birthDate: userProfile.birthDate,
+                birthTime: userProfile.birthTime,
+                birthPlace: userProfile.birthPlace,
+              }
+            : undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setThread((prev) => [
+          ...prev,
+          { role: 'user', content: messageToSend },
+          { role: 'seer', content: data.error || 'The Seer could not respond.' },
+        ]);
+        return;
+      }
+      setThread(data.thread ?? []);
+    } catch {
+      setThread((prev) => [
+        ...prev,
+        { role: 'user', content: messageToSend },
+        { role: 'seer', content: 'The vision is unclear. Try again.' },
+      ]);
+    } finally {
+      setIsLoading(false);
+      if (!questionText) setQuestion('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const clearChat = () => {
+    setThread([]);
+    setExpandedMessageIds(new Set());
+  };
+
+  const formatMessage = (message: Message) => {
+    if (message.type === 'user') {
+      return (
+        <motion.div
+          key={message.id}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex justify-end"
+        >
+          <div className="max-w-[80%] rounded-xl p-4 bg-blue-50 border-2 border-blue-200 text-slate-800">
+            <div className="whitespace-pre-wrap">{message.content}</div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    const isLong = message.content.length > SEE_MORE_THRESHOLD;
+    const isExpanded = expandedMessageIds.has(message.id);
+    const showPreview = isLong && !isExpanded;
+    const displayContent = showPreview
+      ? message.content.slice(0, PREVIEW_LENGTH) + (message.content.length > PREVIEW_LENGTH ? '…' : '')
+      : message.content;
+
+    return (
+      <motion.div
+        key={message.id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex justify-start"
+      >
+        <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
+          <div className="whitespace-pre-wrap leading-relaxed">
+            <SlowRevealText
+              content={showPreview ? displayContent : message.content}
+              minThinkingMs={2000}
+              delayPerWord={85}
+              thinkingLabel="Consulting the stars..."
+              className="text-slate-700"
+            />
+          </div>
+          {isLong && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-2 text-amber-700 hover:text-amber-900 hover:bg-amber-100 p-0 h-auto font-normal flex items-center gap-1"
+              onClick={() => toggleExpanded(message.id)}
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  See less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  See more
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
+  return (
+    <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
+      <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
+        <CardTitle className="text-amber-900 flex items-center gap-2">
+          <span className="text-2xl" aria-hidden>🔮</span>
+          Ask the Seer
+        </CardTitle>
+        {messages.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-slate-600 hover:text-amber-900 hover:bg-amber-100 shrink-0"
+            onClick={clearChat}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Clear chat
+          </Button>
+        )}
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
+          {messages.length === 0 && !isLoading ? (
+            <div className="text-center py-8">
+              <span className="text-6xl mx-auto mb-4 block" aria-hidden>🔮</span>
+              <p className="text-amber-900 font-medium mb-2">Ask me anything about your life and future…</p>
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I draw on Western and Vedic astrology, tarot, numerology, and many other systems to offer guidance.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Life purpose, relationships, and compatibility</li>
+                <li>Career direction and favorable periods</li>
+                <li>Health, spirituality, and personal growth</li>
+                <li>Decisions and timing</li>
+              </ul>
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
+                {MAIN_STARTER_QUESTIONS.map((q, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => sendMessage(q)}
+                    disabled={isLoading}
+                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
+                  >
+                    {q}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: clarity, direction, and grounded insight.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <AnimatePresence>
+                {messages.map((message) => (
+                  <div key={message.id}>{formatMessage(message)}</div>
+                ))}
+              </AnimatePresence>
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+                      Consulting the mystical forces...
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMessage();
+            }}
+            className="flex gap-2"
+          >
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Ask about life, purpose, relationships, career, or future..."
+              disabled={isLoading}
+              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !question.trim()}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </form>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

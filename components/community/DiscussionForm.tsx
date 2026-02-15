@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,7 +73,7 @@ export function DiscussionForm({ onSubmit, onCancel, initialData }: DiscussionFo
       setCategory('general');
       setPriority('medium');
     } catch (error) {
-      console.error('Error submitting discussion:', error);
+      devLog.error('Error submitting discussion:', error, 'DiscussionForm');
     } finally {
       setSubmitting(false);
     }

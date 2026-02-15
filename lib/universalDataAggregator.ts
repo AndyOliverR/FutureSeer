@@ -95,6 +95,7 @@
 
 
 import { UserProfile } from './firebase';
+import { devLog, devWarn } from '@/lib/devLogger';
 
 
 
@@ -164,7 +165,6 @@ import { calculateTransitData } from './transitCalculator';
 import { calculateAccuratePanchanga } from './enhancedPanchangaCalculator';
 import { detectYogas } from './enhancedYogaDetection';
 import { calculateNakshatraAnalysis } from './nakshatraCalculator';
-import { devLog, devWarn } from './devLogger';
 import { CACHE_TTL as CACHE_CONSTANTS } from './cacheConstants';
 
 
@@ -530,7 +530,7 @@ const getHellenisticAstrologyReading = async (profile: any, question?: string) =
       }
     };
   } catch (error: any) {
-    console.error('Error getting Hellenistic Astrology reading:', error);
+    devLog.error('Error getting Hellenistic Astrology reading:', error, 'universalDataAggregator');
     return { reading: 'Hellenistic Astrology reading unavailable. Please ensure your birth data is complete.' };
   }
 };
@@ -1621,7 +1621,7 @@ const getDreamSymbolsReading = async (profile: any, question?: string) => {
 
 
 
-    console.error('Error generating dream symbols reading:', error);
+    devLog.error('Error generating dream symbols reading:', error, 'universalDataAggregator');
 
 
 
@@ -10521,7 +10521,7 @@ export async function getAllDivinationData(
 
 
 
-          console.error('❌ Chart generation failed:', chartError);
+          devLog.error('❌ Chart generation failed:', chartError, 'universalDataAggregator');
 
 
 
@@ -11097,7 +11097,7 @@ export async function getAllDivinationData(
 
 
 
-        console.error('❌ Vedic Astrology failed:', error);
+        devLog.error('❌ Vedic Astrology failed:', error, 'universalDataAggregator');
 
 
 
@@ -11481,7 +11481,7 @@ export async function getAllDivinationData(
 
 
 
-        console.error('❌ Western Astrology failed:', error);
+        devLog.error('❌ Western Astrology failed:', error, 'universalDataAggregator');
 
 
 
@@ -11865,7 +11865,7 @@ export async function getAllDivinationData(
 
 
 
-        console.error('❌ Numerology failed:', error);
+        devLog.error('❌ Numerology failed:', error, 'universalDataAggregator');
 
 
 
@@ -12249,7 +12249,7 @@ export async function getAllDivinationData(
 
 
 
-        console.error('❌ Tarot failed:', error);
+        devLog.error('❌ Tarot failed:', error, 'universalDataAggregator');
 
 
 
@@ -12633,7 +12633,7 @@ export async function getAllDivinationData(
 
 
 
-        console.error('❌ I-Ching failed:', error);
+        devLog.error('❌ I-Ching failed:', error, 'universalDataAggregator');
 
 
 
@@ -19401,7 +19401,7 @@ export async function getAllDivinationData(
 
 
 
-    console.log(`📊 Systems Used: ${systemsUsed.length}`);
+    devLog.debug(`📊 Systems Used: ${systemsUsed.length}`);
 
 
 
@@ -19433,7 +19433,7 @@ export async function getAllDivinationData(
 
 
 
-    console.log(`🎯 Confidence Score: ${(finalConfidence * 100).toFixed(1)}%`);
+    devLog.debug(`🎯 Confidence Score: ${(finalConfidence * 100).toFixed(1)}%`);
 
 
 
@@ -19465,7 +19465,7 @@ export async function getAllDivinationData(
 
 
 
-    console.log(`⏱️ Processing Time: ${processingTime}ms`);
+    devLog.debug(`⏱️ Processing Time: ${processingTime}ms`);
 
 
 
@@ -19561,7 +19561,7 @@ export async function getAllDivinationData(
 
 
 
-      console.warn(`⚠️ ${errors.length} systems failed:`, errors);
+      devLog.warn(`⚠️ ${errors.length} systems failed:`, errors, 'universalDataAggregator');
 
 
 
@@ -19753,7 +19753,7 @@ export async function getAllDivinationData(
 
 
 
-    console.error('❌ Error in Universal Data Aggregation:', error);
+    devLog.error('❌ Error in Universal Data Aggregation:', error, 'universalDataAggregator');
 
 
 
@@ -20982,7 +20982,7 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
 
-    console.error('Error collecting Vedic data:', error);
+    devLog.error('Error collecting Vedic data:', error, 'universalDataAggregator');
 
 
 
@@ -21879,7 +21879,7 @@ export function setCachedDivinationData(userId: string, data: UniversalDivinatio
 
 
 
-  console.log('💾 Cached divination data');
+  devLog.debug('💾 Cached divination data');
 
 
 
@@ -22071,7 +22071,7 @@ export function clearCachedDivinationData(userId?: string): void {
 
 
 
-    console.log(`🗑️ Cleared cached data for user: ${userId}`);
+    devLog.debug(`🗑️ Cleared cached data for user: ${userId}`);
 
 
 
@@ -22167,7 +22167,7 @@ export function clearCachedDivinationData(userId?: string): void {
 
 
 
-    console.log('🗑️ Cleared all cached data');
+    devLog.debug('🗑️ Cleared all cached data');
 
 
 

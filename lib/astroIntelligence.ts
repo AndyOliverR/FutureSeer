@@ -2,6 +2,7 @@
 // Prioritizes internal calculations, learns from external data, and auto-improves
 
 import { generateAstrologicalChart, validateBirthData } from './astroCalculations'
+import { devLog } from '@/lib/devLogger';
 import { generateFallbackAstroData } from './astroFallback'
 import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
@@ -47,7 +48,7 @@ class AstroIntelligence {
     birthTime: string = "12:00",
     forceExternal: boolean = false
   ) {
-    console.log('🤖 AstroIntelligence: Starting intelligent calculation...')
+    devLog.debug('🤖 AstroIntelligence: Starting intelligent calculation...')
     
     // Validate input
     const validation = validateBirthData(birthDate, birthTime, 0, 0)
@@ -62,7 +63,7 @@ class AstroIntelligence {
     const shouldUseExternal = this.shouldUseExternalAPI(forceExternal, birthDate)
     
     // Always use internal calculations - no direct API calls from fallback
-    console.log('🤖 AstroIntelligence: Using internal calculations with high confidence')
+    devLog.debug('🤖 AstroIntelligence: Using internal calculations with high confidence')
     this.updateMetrics('internal_success')
     return this.enhanceInternalData(internalData, 'intelligent_choice')
   }
@@ -92,13 +93,13 @@ class AstroIntelligence {
     // Use external API for learning opportunities (10% of requests)
     const learningChance = Math.random()
     if (learningChance < 0.1) {
-      console.log('🤖 AstroIntelligence: Learning opportunity detected')
+      devLog.debug('🤖 AstroIntelligence: Learning opportunity detected')
       return true
     }
     
     // Use external API if internal confidence is low
     if (this.systemMetrics.confidence < 0.7) {
-      console.log('🤖 AstroIntelligence: Low confidence, using external for improvement')
+      devLog.debug('🤖 AstroIntelligence: Low confidence, using external for improvement')
       return true
     }
     
@@ -109,7 +110,7 @@ class AstroIntelligence {
       const yearDiff = currentDate.getFullYear() - birthYear
       
       if (yearDiff < 18 || yearDiff > 80) {
-        console.log('🤖 AstroIntelligence: Edge case detected, using external for learning')
+        devLog.debug('🤖 AstroIntelligence: Edge case detected, using external for learning')
         return true
       }
     }
@@ -160,7 +161,7 @@ class AstroIntelligence {
     internalData: any,
     externalData: any
   ) {
-    console.log('🤖 AstroIntelligence: Learning from comparison...')
+    devLog.debug('🤖 AstroIntelligence: Learning from comparison...')
     
     const comparison = this.compareCalculations(internalData, externalData)
     const learningData: LearningData = {
@@ -334,15 +335,15 @@ class AstroIntelligence {
     try {
       const db = getFirebaseDB();
       await addDoc(collection(db, 'astroLearning'), learningData)
-      console.log('🤖 AstroIntelligence: Learning data stored')
+      devLog.debug('🤖 AstroIntelligence: Learning data stored')
     } catch (error) {
-      console.warn('🤖 AstroIntelligence: Failed to store learning data:', error)
+      devLog.warn('🤖 AstroIntelligence: Failed to store learning data:', error, 'astroIntelligence')
     }
   }
 
   // Apply improvements to the system
   private async applyImprovements(improvements: string[]) {
-    console.log('🤖 AstroIntelligence: Applying improvements:', improvements)
+    devLog.debug('🤖 AstroIntelligence: Applying improvements:', improvements)
     
     // Store improvements for future reference
     try {
@@ -353,7 +354,7 @@ class AstroIntelligence {
         systemMetrics: this.systemMetrics
       })
     } catch (error) {
-      console.warn('🤖 AstroIntelligence: Failed to store improvements:', error)
+      devLog.warn('🤖 AstroIntelligence: Failed to store improvements:', error, 'astroIntelligence')
     }
   }
 
@@ -368,7 +369,7 @@ class AstroIntelligence {
 
   // Force learning mode (for testing)
   async forceLearningMode(userId: string, birthDate: string, birthPlace: string, birthTime: string) {
-    console.log('🤖 AstroIntelligence: Force learning mode activated')
+    devLog.debug('🤖 AstroIntelligence: Force learning mode activated')
     return this.calculateAstroData(userId, birthDate, birthPlace, birthTime, true)
   }
 }
@@ -383,11 +384,11 @@ export async function getIntelligentAstroData(
   birthPlace: string,
   birthTime?: string
 ) {
-  console.log('🔮 getIntelligentAstroData: Starting with comprehensive data integration...')
+  devLog.debug('🔮 getIntelligentAstroData: Starting with comprehensive data integration...')
   
       try {
         // Use Universal API instead of astroapp
-        console.log('📡 Calling Universal API for astrological data...')
+        devLog.debug('📡 Calling Universal API for astrological data...')
         const response = await fetch('/api/occult/universal', {
           method: 'POST',
           headers: {
@@ -412,7 +413,7 @@ export async function getIntelligentAstroData(
         const universalData = await response.json()
     
     if (universalData && universalData.data && universalData.data.planets && universalData.data.planets.length > 0) {
-      console.log('✅ Successfully retrieved comprehensive astrological data:', {
+      devLog.debug('✅ Successfully retrieved comprehensive astrological data:', {
         planets: universalData.data.planets.length,
         hasChart: !!universalData.data.chart_image,
         hasAscendant: !!universalData.data.ascendant,
@@ -424,7 +425,7 @@ export async function getIntelligentAstroData(
       
       // Note: Chart rendering is now handled by VedicNorthChart and VedicSouthChart components
       // using astronomia-vedic.ts for accurate calculations. No need to fetch chart images.
-      console.log('📊 Chart rendering will be handled by SVG components (VedicNorthChart, VedicSouthChart)');
+      devLog.debug('📊 Chart rendering will be handled by SVG components (VedicNorthChart, VedicSouthChart)');
       
       // Detect if this is Vedic data - check for Vedic-specific fields
       const isVedicFormat = (
@@ -437,7 +438,7 @@ export async function getIntelligentAstroData(
       let transformedData;
       
       if (isVedicFormat) {
-        console.log('🔮 Detected Vedic format data - transforming to unified structure');
+        devLog.debug('🔮 Detected Vedic format data - transforming to unified structure');
         
         // Transform Vedic format to include Western-compatible fields
         const sunPlanet = universalData.data.planets?.find((p: any) => 
@@ -506,7 +507,7 @@ export async function getIntelligentAstroData(
           }
         };
       } else {
-        console.log('🌟 Detected Western format data - using direct fields');
+        devLog.debug('🌟 Detected Western format data - using direct fields');
         
         // Western format - use existing code path
         transformedData = {
@@ -554,7 +555,7 @@ export async function getIntelligentAstroData(
     throw new Error('AstroApp API returned invalid data')
     
   } catch (astroAppError) {
-    console.warn('⚠️ Universal API failed, falling back to internal calculations:', astroAppError)
+    devLog.warn('⚠️ Universal API failed, falling back to internal calculations:', astroAppError, 'astroIntelligence')
     
     // Fallback to internal calculations
     return astroIntelligence.calculateAstroData(userId, birthDate, birthPlace, birthTime || "12:00")

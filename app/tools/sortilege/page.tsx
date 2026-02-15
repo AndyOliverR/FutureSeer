@@ -1,14 +1,17 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { devLog } from '@/lib/devLogger';
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { BackButton } from '@/components/navigation/BackButton'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import SortilegeSeerChatInterface from '@/components/SortilegeSeerChatInterface'
 import { SortilegeCastingInterface } from '@/components/sortilege/SortilegeCastingInterface'
@@ -79,11 +82,20 @@ export default function SortilegePage() {
   const [activeReportTab, setActiveReportTab] = useState<'overview' | 'interpretation' | 'insights' | 'guidance' | 'remedies' | 'history'>('overview')
   const [question, setQuestion] = useState('')
   const [selectedMethod, setSelectedMethod] = useState<CastingMethod>('dice')
+  const { report: pipelineReport, loading: profileLoading, error: profileError } = useToolReport('sortilege')
+  const pipelineReading = useMemo((): SortilegeReading | null => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    const data = (r.data ?? r) as SortilegeReading | undefined
+    return data && typeof data === 'object' && (data as unknown as Record<string, unknown>).outcome != null ? data : null
+  }, [pipelineReport])
+  const displayReading = reading ?? pipelineReading
 
   const hasCompleteProfile = userProfile ? isProfileComplete(userProfile) : false
   const profileStatus = userProfile ? getProfileCompletionStatus(userProfile) : { isComplete: false, missingFields: [], completionPercentage: 0 }
 
-  // Load Sortilege Reading
+  // No mount-triggered API; readings come from pipeline or user-initiated flow (replaced with CTA)
   const loadSortilegeReading = async () => {
     if (!question.trim()) {
       setError('Please enter a question')
@@ -100,7 +112,7 @@ export default function SortilegePage() {
       setIsAnimating(true)
       setError(null)
 
-      console.log('🪄 Starting Sortilege reading...', {
+      devLog.debug('🪄 Starting Sortilege reading...', {
         userId: user.uid,
         question: question.trim(),
         method: selectedMethod,
@@ -123,19 +135,19 @@ export default function SortilegePage() {
         })
       })
 
-      console.log('📡 API Response status:', response.status)
+      devLog.debug('📡 API Response status:', response.status)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        console.error('❌ API Error:', errorData)
+        devLog.error('❌ API Error:', errorData, 'page')
         throw new Error(errorData.error || `Failed to generate reading (${response.status})`)
       }
 
       const result = await response.json()
-      console.log('✅ API Response:', { success: result.success, hasData: !!result.data })
+      devLog.debug('✅ API Response:', { success: result.success, hasData: !!result.data })
 
       if (result.success && result.data) {
-        console.log('📚 Setting reading data:', {
+        devLog.debug('📚 Setting reading data:', {
           id: result.data.id,
           method: result.data.method,
           hasCastResult: !!result.data.castResult,
@@ -145,11 +157,11 @@ export default function SortilegePage() {
         setActiveTab('casting')
         setActiveReportTab('overview')
       } else {
-        console.error('❌ Invalid response format:', result)
+        devLog.error('❌ Invalid response format:', result, 'page')
         throw new Error(result.error || 'Invalid response from server')
       }
     } catch (err) {
-      console.error('❌ Sortilege reading error:', err)
+      devLog.error('❌ Sortilege reading error:', err, 'page')
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate reading'
       setError(errorMessage)
       setIsAnimating(false)
@@ -159,7 +171,7 @@ export default function SortilegePage() {
   }
 
   const resetReading = () => {
-    console.log('🔄 Resetting reading state')
+    devLog.debug('🔄 Resetting reading state')
     setReading(null)
     setQuestion('')
     setError(null)
@@ -170,7 +182,7 @@ export default function SortilegePage() {
 
   // Debug: Log state changes
   useEffect(() => {
-    console.log('📊 [SORTILEGE PAGE] State update:', {
+    devLog.debug('📊 [SORTILEGE PAGE] State update:', {
       activeTab,
       activeReportTab,
       hasReading: !!reading,
@@ -181,15 +193,12 @@ export default function SortilegePage() {
     })
   }, [activeTab, activeReportTab, reading, isLoading, isAnimating, error, question])
 
-  // Loading state
-  if (isLoading && !reading) {
-    return (
+  return (
+    <ToolReportGuard loading={profileLoading} error={profileError ?? null} toolLabel="Sortilege">
+      {isLoading && !displayReading ? (
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
         <div className="relative z-10 container mx-auto px-4 py-8">
-          <div className="mb-4">
-            <BackButton href="/tools" label="Back to Tools" />
-          </div>
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <motion.div
@@ -215,10 +224,7 @@ export default function SortilegePage() {
           </div>
         </div>
       </div>
-    )
-  }
-
-  return (
+      ) : (
     <div className="relative min-h-screen">
       {/* Starfield background */}
       <div 
@@ -235,9 +241,6 @@ export default function SortilegePage() {
       />
       
       <div className="relative z-10 container mx-auto px-4 py-8">
-        <div className="mb-4">
-          <BackButton href="/tools" label="Back to Tools" />
-        </div>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
@@ -285,21 +288,22 @@ export default function SortilegePage() {
           )}
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 bg-transparent p-0 gap-2">
+          <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+            <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
               <TabsTrigger 
                 value="introduction" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Introduction
               </TabsTrigger>
               <TabsTrigger 
                 value="casting" 
-                className={`data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all ${
+                className={`shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all ${
                   !reading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
-                disabled={!reading}
+                disabled={!displayReading}
                 onClick={() => {
                   if (!reading) {
                     setActiveTab('introduction')
@@ -311,10 +315,10 @@ export default function SortilegePage() {
               </TabsTrigger>
               <TabsTrigger 
                 value="report" 
-                className={`data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all ${
+                className={`shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all ${
                   !reading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
-                disabled={!reading}
+                disabled={!displayReading}
                 onClick={() => {
                   if (!reading) {
                     setActiveTab('introduction')
@@ -326,7 +330,7 @@ export default function SortilegePage() {
               </TabsTrigger>
               <TabsTrigger 
                 value="ask-seer" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+                className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Ask The Seer
@@ -334,7 +338,7 @@ export default function SortilegePage() {
             </TabsList>
 
             {/* Introduction Tab */}
-            <TabsContent value="introduction" className="space-y-6">
+            <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <ToolIntroductionTab toolSlug="sortilege" />
               
               {/* Question Input Form */}
@@ -399,22 +403,11 @@ export default function SortilegePage() {
                           Be specific and clear. The more focused your question, the clearer the guidance.
                         </p>
                       </div>
-                      <Button 
-                        onClick={loadSortilegeReading}
-                        disabled={isLoading || !question.trim()}
-                        className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-semibold"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Casting the Lots...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="h-4 w-4 mr-2" />
-                            Cast the Lots
-                          </>
-                        )}
+                      <Button asChild className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-semibold">
+                        <Link href="/profile">
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate your mystical profile
+                        </Link>
                       </Button>
                     </CardContent>
                   </Card>
@@ -423,11 +416,11 @@ export default function SortilegePage() {
             </TabsContent>
 
             {/* Casting Tab */}
-            <TabsContent value="casting" className="space-y-6">
-              {reading && reading.castResult ? (
+            <TabsContent value="casting" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              {displayReading && displayReading.castResult ? (
                 <>
                   <SortilegeCastingInterface 
-                    castResult={reading.castResult} 
+                    castResult={displayReading.castResult} 
                     isAnimating={isAnimating}
                   />
                   <div className="flex justify-end gap-4">
@@ -469,8 +462,8 @@ export default function SortilegePage() {
             </TabsContent>
 
             {/* Report Tab with Nested Tabs */}
-            <TabsContent value="report" className="space-y-6">
-              {reading && reading.comprehensiveReport ? (
+            <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              {displayReading && displayReading.comprehensiveReport ? (
                 <Tabs value={activeReportTab} onValueChange={(value) => setActiveReportTab(value as any)} className="space-y-6">
                   <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 gap-2">
                     <TabsTrigger 
@@ -518,22 +511,22 @@ export default function SortilegePage() {
                   </TabsList>
 
                   <TabsContent value="overview" className="space-y-6">
-                    <SortilegeReport reading={reading} activeTab="overview" />
+                    <SortilegeReport reading={displayReading} activeTab="overview" />
                   </TabsContent>
                   <TabsContent value="interpretation" className="space-y-6">
-                    <SortilegeReport reading={reading} activeTab="interpretation" />
+                    <SortilegeReport reading={displayReading} activeTab="interpretation" />
                   </TabsContent>
                   <TabsContent value="insights" className="space-y-6">
-                    <SortilegeReport reading={reading} activeTab="insights" />
+                    <SortilegeReport reading={displayReading} activeTab="insights" />
                   </TabsContent>
                   <TabsContent value="guidance" className="space-y-6">
-                    <SortilegeReport reading={reading} activeTab="guidance" />
+                    <SortilegeReport reading={displayReading} activeTab="guidance" />
                   </TabsContent>
                   <TabsContent value="remedies" className="space-y-6">
-                    <SortilegeReport reading={reading} activeTab="remedies" />
+                    <SortilegeReport reading={displayReading} activeTab="remedies" />
                   </TabsContent>
                   <TabsContent value="history" className="space-y-6">
-                    <SortilegeReport reading={reading} activeTab="history" />
+                    <SortilegeReport reading={displayReading} activeTab="history" />
                   </TabsContent>
                 </Tabs>
               ) : (
@@ -556,7 +549,7 @@ export default function SortilegePage() {
             </TabsContent>
 
             {/* Ask The Seer Tab */}
-            <TabsContent value="ask-seer" className="space-y-6">
+            <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {user && userProfile ? (
                 reading ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
@@ -564,7 +557,7 @@ export default function SortilegePage() {
                       <SortilegeSeerChatInterface 
                         userId={user.uid} 
                         userProfile={userProfile}
-                        sortilegeReading={reading}
+                        sortilegeReading={displayReading ?? undefined}
                       />
                     </CardContent>
                   </Card>
@@ -598,6 +591,7 @@ export default function SortilegePage() {
               )}
             </TabsContent>
           </Tabs>
+          </div>
 
           {/* Error Display */}
           {error && (
@@ -644,5 +638,7 @@ export default function SortilegePage() {
         </div>
       </div>
     </div>
+      )}
+    </ToolReportGuard>
   )
 }

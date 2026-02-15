@@ -203,6 +203,12 @@ DISCIPLINE (non-negotiable):
 - Permanent rule: Dream interpretation translates subconscious signals into awareness, not destiny.
 `.trim();
 
+  const isVague =
+    dreamDesc === '(no description provided)' || dreamDesc.length < 20;
+  const vagueCaveat = isVague
+    ? '\n\nDream description is vague or minimal; ask for clarification or generalize carefully—do not exaggerate.'
+    : '';
+
   return `${stateBlock}
 
 ${emotionalBlock}
@@ -215,5 +221,5 @@ ${symbolTypesBlock}
 
 ${integrationBlock}
 
-${disciplineNote}`;
+${disciplineNote}${vagueCaveat}`;
 }

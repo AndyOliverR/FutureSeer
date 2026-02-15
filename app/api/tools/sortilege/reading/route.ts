@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!question || !question.trim()) {
-      console.error('❌ [SORTILEGE API] Missing question')
+      devLog.error('❌ [SORTILEGE API] Missing question')
       return NextResponse.json(
         { success: false, error: 'Question is required' },
         { status: 400 }
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!method || !['dice', 'stones', 'cards', 'coins', 'sticks'].includes(method)) {
-      console.error('❌ [SORTILEGE API] Invalid method:', method)
+      devLog.error('❌ [SORTILEGE API] Invalid method:', method)
       return NextResponse.json(
         { success: false, error: 'Valid method (dice, stones, cards, coins, or sticks) is required' },
         { status: 400 }
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!userId) {
-      console.error('❌ [SORTILEGE API] Missing userId')
+      devLog.error('❌ [SORTILEGE API] Missing userId')
       return NextResponse.json(
         { success: false, error: 'User ID is required' },
         { status: 400 }
@@ -99,8 +99,8 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('❌ [SORTILEGE API] Error generating sortilege reading:', error)
-    console.error('❌ [SORTILEGE API] Error stack:', error.stack)
+    devLog.error('❌ [SORTILEGE API] Error generating sortilege reading:', error)
+    devLog.error('❌ [SORTILEGE API] Error stack:', error.stack)
     return NextResponse.json(
       { 
         success: false, 

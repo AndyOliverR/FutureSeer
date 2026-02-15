@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { NameAnalysis } from "@/lib/nameAnalysisIntelligence"
 import { createSynthesis, combineNameAndNumerology, combineNameAndVedic, combineNameAndWestern } from "@/lib/nameAnalysisSynthesis"
@@ -255,7 +256,7 @@ export function NameAnalysisCoachInterface({
         name || analysis.fullName
       );
     } catch (error) {
-      console.error('Error calculating ideal names:', error);
+      devLog.error('Error calculating ideal names:', error, 'NameAnalysisCoachInterface');
       return null;
     }
   }, [analysis, numerologyData, vedicData, westernData, birthDate, name]);

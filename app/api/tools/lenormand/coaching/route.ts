@@ -78,7 +78,7 @@ Keep your response conversational yet informative, helping ${displayName} deepen
     })
 
   } catch (error: any) {
-    console.error('❌ Error generating Lenormand coaching:', error)
+    devLog.error('❌ Error generating Lenormand coaching:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

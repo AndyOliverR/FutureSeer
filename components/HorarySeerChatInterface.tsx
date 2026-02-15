@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2, Clock } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import type { HoraryChartPayload } from '@/lib/horarySeerState';
 
 interface HorarySeerMessage {
@@ -39,8 +40,9 @@ const UNAVAILABLE_MESSAGE =
 const RETRY_DELAY_MS = 1500;
 
 const HORARY_STARTER_QUESTIONS = [
-  'What does the chart say about my question?',
-  'Who or what is signified?',
+  'Will my app launch succeed if I release it now?',
+  'Will this partnership work out?',
+  'Will I receive the offer I\'m waiting for?',
 ];
 
 export default function HorarySeerChatInterface({
@@ -197,7 +199,7 @@ export default function HorarySeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Horary Seer error:', err);
+      devLog.error('Horary Seer error', err, 'HorarySeerChatInterface');
       setStreamingMessageId(null);
       try {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
@@ -314,16 +316,16 @@ export default function HorarySeerChatInterface({
             <Clock className="w-5 h-5 text-amber-700" />
             Ask the Seer — Horary Astrology
           </CardTitle>
-          <p className="text-sm text-amber-800 mt-1">
-            One sincere question, once, at the moment it is asked.
+          <p className="text-sm text-slate-700 mt-1">
+            One clear question, one moment.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
-          <Clock className="w-12 h-12 text-amber-600 mb-4" />
+          <Clock className="w-12 h-12 text-amber-700 mb-4" />
           <p className="text-amber-900 font-medium text-center">
             {EMPTY_STATE_MESSAGE}
           </p>
-          <p className="text-sm text-amber-700 mt-2 text-center">
+          <p className="text-sm text-slate-700 mt-2 text-center">
             Enter your question, time, and place above and generate your horary chart first.
           </p>
         </CardContent>
@@ -339,11 +341,8 @@ export default function HorarySeerChatInterface({
             <MessageCircle className="w-5 h-5 text-amber-700" />
             Ask the Seer — Horary Astrology
           </CardTitle>
-          <p className="text-sm text-amber-800 mt-1">
-            One sincere question, once, at the moment it is asked.
-          </p>
-          <p className="text-xs text-amber-700/90 mt-0.5">
-            If the chart is not radical, Horary must refuse.
+          <p className="text-sm text-slate-700 mt-1">
+            One clear question, one moment.
           </p>
         </div>
         {messages.length > 0 && (
@@ -362,11 +361,19 @@ export default function HorarySeerChatInterface({
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
           {messages.length === 0 && !isLoading ? (
-            <div className="text-center py-8">
-              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
+            <div className="text-center py-8 max-w-lg mx-auto">
+              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-700" />
               <p className="text-amber-900 font-medium mb-2">
-                Welcome to Ask the Seer — Horary. I have your chart for this question; ask about the answer or significators.
+                Ask one clear question right now…
               </p>
+              <p className="text-sm text-slate-700 mb-4">
+                I&apos;ll cast a chart for the moment your question is asked to judge the outcome.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mb-2 text-left">You can ask about:</p>
+              <ul className="text-sm text-slate-700 mb-4 text-left list-disc pl-5 space-y-1">
+                <li>Clear, specific outcome questions (Will I get this job? Will the deal go through? Will my app launch smoothly? Will I hear back from them?)</li>
+                <li>Short-term timing, conditional (Is it likely soon or delayed? What is blocking progress right now?)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {HORARY_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -381,6 +388,12 @@ export default function HorarySeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">
+                Best for: one clear question at one moment; not long-term or multiple outcomes.
+              </p>
+              <p className="text-slate-600 text-xs mt-1">
+                One question at a time. No follow-ups inside the same horary.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -415,7 +428,7 @@ export default function HorarySeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask one clear horary question (will/outcome/where)…"
+              placeholder="e.g. Will my app launch succeed if I release it now?"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

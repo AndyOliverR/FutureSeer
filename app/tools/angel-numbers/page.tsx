@@ -40,7 +40,7 @@ export default function AngelNumbersPage() {
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-serif font-semibold mb-6">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-yellow-400">👼</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Angel Numbers</span>
           </h1>
@@ -50,46 +50,47 @@ export default function AngelNumbersPage() {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-transparent p-0 gap-2">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="introduction" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-300 flex items-center justify-center"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Introduction
             </TabsTrigger>
             <TabsTrigger 
               value="lookup" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-300 flex items-center justify-center"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Number Lookup
             </TabsTrigger>
             <TabsTrigger 
               value="analysis" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-300 flex items-center justify-center"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Your Analysis
             </TabsTrigger>
             <TabsTrigger 
               value="ask-the-seer" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-300 flex items-center justify-center"
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Ask the Seer
             </TabsTrigger>
           </TabsList>
 
           {/* Introduction Tab */}
-          <TabsContent value="introduction" className="space-y-6 mt-6">
+          <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <ToolIntroductionTab toolSlug="angel-numbers" />
           </TabsContent>
 
           {/* Number Lookup Tab */}
-          <TabsContent value="lookup" className="space-y-6 mt-6">
+          <TabsContent value="lookup" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <AngelNumbersLookup onLookupComplete={handleLookupComplete} />
           </TabsContent>
 
           {/* Analysis Tab */}
-          <TabsContent value="analysis" className="space-y-6 mt-6">
+          <TabsContent value="analysis" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {angelNumbersData ? (
               <AngelNumbersAnalysis
                 angelNumbersData={angelNumbersData}
@@ -130,7 +131,7 @@ export default function AngelNumbersPage() {
           </TabsContent>
 
           {/* Ask the Seer Tab */}
-          <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <AngelNumbersCoachInterface
               observedNumber={
                 lastLookupResult?.originalInput != null
@@ -140,6 +141,7 @@ export default function AngelNumbersPage() {
             />
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   )

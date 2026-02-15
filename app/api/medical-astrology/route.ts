@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { devLog } from '@/lib/devLogger';
 import { medicalDatabaseService } from '@/lib/medical/medicalDatabaseService'
 import { searchFormulas } from '@/lib/medical/astrologicalFormulas'
 import { generateFertilityCalendar } from '@/lib/medical/fertilityCalculator'
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
-    console.error('Medical Astrology API Error:', error)
+    devLog.error('Medical Astrology API Error:', error, 'route')
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

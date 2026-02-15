@@ -4,6 +4,7 @@
  * Maps Vedic astrology terms to Western astrology equivalents
  * Ensures consistent Western terminology throughout the application
  */
+import { devLog } from '@/lib/devLogger';
 
 // Map Vedic terms to Western equivalents
 export const VEDIC_TO_WESTERN_MAP = {
@@ -190,7 +191,7 @@ export function validateWesternData(data: any): boolean {
     });
     
     if (hasVedicPlanets) {
-      console.warn('Western astrology data contains Vedic planets (Rahu/Ketu)');
+      devLog.warn('Western astrology data contains Vedic planets (Rahu/Ketu)', undefined, 'westernTerminology');
     }
   }
   

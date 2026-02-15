@@ -1,4 +1,5 @@
 import { getChart } from './astronomia-vedic'
+import { devLog } from '@/lib/devLogger';
 import { nakshatraFromLongitude, getNakshatraLord, vimshottariTimeline, calculateCurrentDasha } from './vedic-core'
 import { getCoordinatesWithFallback } from './geocoding'
 import { getPlanetRemedies } from './yogaRemedyGenerator'
@@ -119,7 +120,7 @@ class KPAstrologyIntelligence {
   }
 
   private async calculateKPChart(data: KPChartData): Promise<KPAnalysis> {
-    console.log('🎯 Calculating KP chart with real data...', data)
+    devLog.debug('🎯 Calculating KP chart with real data...', data)
     
     // Parse date and time
     const [year, month, day] = data.birthDate.split('-').map(Number)
@@ -139,7 +140,7 @@ class KPAstrologyIntelligence {
       houseSystem: 'placidus' as const // KP uses Placidus house system
     })
     
-    console.log('✅ Vedic chart calculated:', {
+    devLog.debug('✅ Vedic chart calculated:', {
       ascendant: chart.ascendant,
       planets: Object.keys(chart.planets).length
     })

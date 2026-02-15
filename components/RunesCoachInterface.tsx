@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth'
 import { runesIntelligence } from '@/lib/runesIntelligence'
 import { Button } from '@/components/ui/button'
@@ -72,7 +73,7 @@ export function RunesCoachInterface({ analysis, activeTab, question, spreadType 
         try {
           coachResponse = await runesIntelligence.getCoaching(inputValue.trim() || question, analysis)
         } catch (coachError) {
-          console.warn('Failed to get coaching from runesIntelligence:', coachError)
+          devLog.warn('Failed to get coaching from runesIntelligence:', coachError, 'RunesCoachInterface')
         }
       }
 
@@ -99,7 +100,7 @@ export function RunesCoachInterface({ analysis, activeTab, question, spreadType 
 
       setMessages(prev => [...prev, coachMessage])
     } catch (error) {
-      console.error('Error getting Runes coaching:', error)
+      devLog.error('Error getting Runes coaching:', error, 'RunesCoachInterface')
       const errorMessage: RunesMessage = {
         id: (Date.now() + 1).toString(),
         type: 'coach',

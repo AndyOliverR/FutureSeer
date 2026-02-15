@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { generateReferralCode } from '@/lib/referralUtils';
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('Error generating referral code:', error);
+    devLog.error('Error generating referral code:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to generate referral code' },
       { status: 500 }

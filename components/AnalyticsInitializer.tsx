@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { analytics } from '@/lib/analytics'
 
 export function AnalyticsInitializer() {
@@ -14,7 +15,7 @@ export function AnalyticsInitializer() {
         try {
           analytics.trackPageView()
         } catch (error) {
-          console.warn('Failed to track page view:', error)
+          devLog.warn('Failed to track page view:', error, 'AnalyticsInitializer')
         }
       }
 
@@ -28,7 +29,7 @@ export function AnalyticsInitializer() {
         window.removeEventListener('popstate', handleRouteChange)
       }
     } catch (error) {
-      console.warn('Failed to initialize analytics:', error)
+      devLog.warn('Failed to initialize analytics:', error, 'AnalyticsInitializer')
     }
   }, [])
 

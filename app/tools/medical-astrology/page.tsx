@@ -1,8 +1,12 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { devLog } from '@/lib/devLogger';
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -29,51 +33,17 @@ import { getCurrentLunarPhase, getNextHealingPhases, isMercuryRetrograde } from 
 
 export default function MedicalAstrologyPage() {
   const { userProfile } = useAuth()
-  const [analysis, setAnalysis] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'health' | 'body-parts' | 'remedies' | 'timing' | 'ask-seer'>('overview')
   const [healthInsights, setHealthInsights] = useState<any>(null)
+  const { report: pipelineReport, loading: isLoading, error } = useToolReport('medicalAstrology')
+  const analysis = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    return (r.data ?? r) as any
+  }, [pipelineReport])
 
-  // Check if user has complete birth details
-  const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
-
-  // Load Medical Astrology Analysis
-  const loadMedicalAnalysis = useCallback(async () => {
-    if (!hasCompleteDetails) return
-    
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      const birthData: BirthData = {
-        birthDate: userProfile?.birthDate || '',
-        birthTime: userProfile?.birthTime || '',
-        birthPlace: userProfile?.birthPlace || '',
-        latitude: userProfile?.latitude || 40.7128,
-        longitude: userProfile?.longitude || -74.0060
-      }
-      
-      const medicalData = await universalOccultService.calculateMedicalChart(birthData, {
-        includeHealthIndicators: true,
-        includeBodyParts: true,
-        includeRemedies: true,
-        includeTiming: true
-      })
-      
-      setAnalysis(medicalData)
-    } catch (err) {
-      console.error('Medical Astrology: failed to load analysis', err)
-      setError('Failed to load Medical Astrology analysis')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [hasCompleteDetails, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.latitude, userProfile?.longitude])
-
-  useEffect(() => {
-    if (!hasCompleteDetails) return
-    loadMedicalAnalysis()
-  }, [hasCompleteDetails, loadMedicalAnalysis])
+  const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
 
   // Planetary strength calculator
   function calculatePlanetaryStrengths(chart: any) {
@@ -210,7 +180,7 @@ export default function MedicalAstrologyPage() {
           planetaryStrengths
         })
       } catch (error) {
-        console.error('Error calculating health insights:', error)
+        devLog.error('Error calculating health insights:', error, 'page')
       }
     }
   }, [analysis])
@@ -236,6 +206,7 @@ export default function MedicalAstrologyPage() {
   }
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="medical astrology">
     <div className="relative min-h-screen starfield-ultra-sharp">
       <div className="relative z-10 max-w-7xl mx-auto px-4 pt-4 pb-8">
         {/* Medical Disclaimer */}
@@ -253,54 +224,55 @@ export default function MedicalAstrologyPage() {
             transition={{ duration: 0.6 }}
           >
             <span className="text-6xl block mx-auto mb-4" aria-hidden>⚕️</span>
-            <h1 className="text-4xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-3">Medical Astrology</h1>
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-3">Medical Astrology</h1>
             <p className="text-slate-300 text-lg">Health-focused astrological analysis and healing guidance</p>
           </motion.div>
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 gap-2 rounded-xl">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="overview" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="health" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Health
             </TabsTrigger>
             <TabsTrigger 
               value="body-parts" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Body Parts
             </TabsTrigger>
             <TabsTrigger 
               value="remedies" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Remedies
             </TabsTrigger>
             <TabsTrigger 
               value="timing" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Health Timing
             </TabsTrigger>
             <TabsTrigger 
               value="ask-seer" 
-              className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all"
+              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
-              Ask Seer
+              Ask the Seer
             </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 mt-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {isLoading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
@@ -310,8 +282,10 @@ export default function MedicalAstrologyPage() {
               <div className="text-center py-8">
                 <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
                 <p className="text-red-300 mb-4">{error}</p>
-                <Button onClick={loadMedicalAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white">
-                  Try Again
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                  <Link href="/profile">
+                    Generate your mystical profile
+                  </Link>
                 </Button>
               </div>
             ) : (analysis?.data || healthInsights) ? (
@@ -495,15 +469,17 @@ export default function MedicalAstrologyPage() {
               <div className="text-center py-8">
                 <Info className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-200 mb-4">No medical astrology data available. Please complete your profile.</p>
-                <Button onClick={loadMedicalAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white">
-                  Generate Analysis
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                  <Link href="/profile">
+                    Generate your mystical profile
+                  </Link>
                 </Button>
               </div>
             )}
           </TabsContent>
 
           {/* Health Tab */}
-          <TabsContent value="health" className="space-y-6 mt-6">
+          <TabsContent value="health" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Health Indicators */}
               {analysis?.data?.healthIndicators && analysis.data.healthIndicators.length > 0 && (
@@ -669,7 +645,7 @@ export default function MedicalAstrologyPage() {
           </TabsContent>
 
           {/* Body Parts Tab */}
-          <TabsContent value="body-parts" className="space-y-6 mt-6">
+          <TabsContent value="body-parts" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <BodyZodiacProjection 
               userChart={analysis?.data?.chart} 
               gender={userProfile?.gender === 'male' ? 'male' : 'female'} 
@@ -677,7 +653,7 @@ export default function MedicalAstrologyPage() {
           </TabsContent>
 
           {/* Remedies Tab */}
-          <TabsContent value="remedies" className="space-y-6 mt-6">
+          <TabsContent value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <RemedyTabs 
               selectedCondition={analysis?.data?.healthIndicators?.[0]?.name}
               bodyPart={analysis?.data?.bodyParts?.[0]?.bodyPart}
@@ -687,7 +663,7 @@ export default function MedicalAstrologyPage() {
           </TabsContent>
 
           {/* Health Timing Tab */}
-          <TabsContent value="timing" className="space-y-6 mt-6">
+          <TabsContent value="timing" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {userProfile?.gender === 'female' && userProfile?.birthDate ? (
               <FertilityCalendar natalDate={userProfile.birthDate} />
             ) : (
@@ -784,11 +760,13 @@ export default function MedicalAstrologyPage() {
           </TabsContent>
 
           {/* Ask the Seer Tab */}
-          <TabsContent value="ask-seer" className="space-y-6 mt-6">
+          <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <MedicalSeerChat userProfile={userProfile} analysis={analysis} />
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 } 

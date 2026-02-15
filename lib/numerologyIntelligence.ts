@@ -2,6 +2,7 @@
 // Prioritizes internal calculations, learns from external data, and provides coaching
 
 import { generateNumerologyProfile, validateNumerologyData } from './numerologyCalculations'
+import { devLog } from '@/lib/devLogger';
 import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
 
@@ -90,7 +91,7 @@ class NumerologyIntelligence {
     birthDate: string,
     forceExternal: boolean = false
   ): Promise<NumerologyData> {
-    console.log('🔢 NumerologyIntelligence: Starting intelligent calculation...')
+    devLog.debug('🔢 NumerologyIntelligence: Starting intelligent calculation...')
     
     // Validate input data
     const validation = validateNumerologyData(fullName, birthDate)
@@ -102,7 +103,7 @@ class NumerologyIntelligence {
     if (this.numerologyCache.has(userId)) {
       const cached = this.numerologyCache.get(userId)!
       if (Date.now() - cached.lastFetched < 24 * 60 * 60 * 1000) {
-        console.log('Using cached numerology data for user:', userId)
+        devLog.debug('Using cached numerology data for user:', userId)
         return cached
       }
     }
@@ -118,17 +119,17 @@ class NumerologyIntelligence {
         if (Date.now() - storedData.lastFetched < 24 * 60 * 60 * 1000 &&
             storedData.fullName === fullName &&
             storedData.birthDate === birthDate) {
-          console.log('Using stored numerology data for user:', userId)
+          devLog.debug('Using stored numerology data for user:', userId)
           this.numerologyCache.set(userId, storedData)
           return storedData
         }
       }
     } catch (error) {
-      console.warn('Error checking stored numerology data:', error)
+      devLog.warn('Error checking stored numerology data:', error, 'numerologyIntelligence')
     }
 
     // Generate internal calculation
-    console.log('🔢 NumerologyIntelligence: Using internal calculations...')
+    devLog.debug('🔢 NumerologyIntelligence: Using internal calculations...')
     const internalProfile = generateNumerologyProfile(fullName, birthDate)
     
     // Transform to comprehensive format
@@ -172,9 +173,9 @@ class NumerologyIntelligence {
       const db = getFirebaseDB();
       const docRef = doc(db, 'users', userId, 'numerologyProfile', 'comprehensive')
       await setDoc(docRef, numerologyData)
-      console.log('Stored intelligent numerology data in Firebase for user:', userId)
+      devLog.debug('Stored intelligent numerology data in Firebase for user:', userId)
     } catch (storageError) {
-      console.warn('Error storing numerology data in Firebase:', storageError)
+      devLog.warn('Error storing numerology data in Firebase:', storageError, 'numerologyIntelligence')
     }
 
     // Store in cache
@@ -186,7 +187,7 @@ class NumerologyIntelligence {
 
   // Provide personalized numerology coaching
   async provideCoaching(context: NumerologyCoachingContext): Promise<NumerologyCoachingResponse> {
-    console.log('🔢 NumerologyIntelligence: Providing personalized coaching...')
+    devLog.debug('🔢 NumerologyIntelligence: Providing personalized coaching...')
     
     const { numerologyData, userQuery } = context
     const query = userQuery.toLowerCase()

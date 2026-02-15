@@ -20,6 +20,7 @@ export interface UserProfile {
 
 // Import current transit service and VedAstro integration for authentic astrological computations
 import { currentTransitService } from './currentTransitService'
+import { devLog } from '@/lib/devLogger';
 // Removed old VedAstro integration - using new TypeScript APIs instead
 
 export interface DasaAnalysis {
@@ -145,7 +146,7 @@ export class FutureSeerAstroService {
    */
   async getComprehensiveAnalysis(userProfile: UserProfile): Promise<ComprehensiveAnalysis | null> {
     try {
-      console.log('🔮 FutureSeer: Generating comprehensive astrological analysis...')
+      devLog.debug('🔮 FutureSeer: Generating comprehensive astrological analysis...')
       
       // For now, return enhanced mock data that simulates real analysis
       // In production, this would call the advanced astrological API
@@ -154,10 +155,10 @@ export class FutureSeerAstroService {
       // Cache the analysis for the user
       this.cacheAnalysis(userProfile.uid, analysis)
       
-      console.log('✅ FutureSeer: Analysis generated successfully')
+      devLog.debug('✅ FutureSeer: Analysis generated successfully')
       return analysis
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating analysis:', error)
+      devLog.error('❌ FutureSeer: Error generating analysis:', error, 'futureSeerAstroService')
       return null
     }
   }
@@ -167,14 +168,14 @@ export class FutureSeerAstroService {
    */
   async getPersonalizedRemedies(userProfile: UserProfile): Promise<PersonalizedRemedy[]> {
     try {
-      console.log('💎 FutureSeer: Generating personalized remedies...')
+      devLog.debug('💎 FutureSeer: Generating personalized remedies...')
       
       const remedies = await this.generatePersonalizedRemedies(userProfile)
       
-      console.log('✅ FutureSeer: Remedies generated successfully')
+      devLog.debug('✅ FutureSeer: Remedies generated successfully')
       return remedies
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating remedies:', error)
+      devLog.error('❌ FutureSeer: Error generating remedies:', error, 'futureSeerAstroService')
       return []
     }
   }
@@ -184,14 +185,14 @@ export class FutureSeerAstroService {
    */
   async getCoachingInsights(userProfile: UserProfile): Promise<CoachingInsight[]> {
     try {
-      console.log('🧠 FutureSeer: Generating AI coaching insights...')
+      devLog.debug('🧠 FutureSeer: Generating AI coaching insights...')
       
       const insights = await this.generateCoachingInsights(userProfile)
       
-      console.log('✅ FutureSeer: Coaching insights generated successfully')
+      devLog.debug('✅ FutureSeer: Coaching insights generated successfully')
       return insights
     } catch (error) {
-      console.error('❌ FutureSeer: Error generating coaching insights:', error)
+      devLog.error('❌ FutureSeer: Error generating coaching insights:', error, 'futureSeerAstroService')
       return []
     }
   }
@@ -339,9 +340,9 @@ export class FutureSeerAstroService {
         timestamp: Date.now(),
         expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
       }))
-      console.log('💾 FutureSeer: Analysis cached successfully')
+      devLog.debug('💾 FutureSeer: Analysis cached successfully')
     } catch (error) {
-      console.error('❌ FutureSeer: Error caching analysis:', error)
+      devLog.error('❌ FutureSeer: Error caching analysis:', error, 'futureSeerAstroService')
     }
   }
 
@@ -362,10 +363,10 @@ export class FutureSeerAstroService {
         return null
       }
       
-      console.log('📦 FutureSeer: Analysis loaded from cache')
+      devLog.debug('📦 FutureSeer: Analysis loaded from cache')
       return analysis
     } catch (error) {
-      console.error('❌ FutureSeer: Error loading cached analysis:', error)
+      devLog.error('❌ FutureSeer: Error loading cached analysis:', error, 'futureSeerAstroService')
       return null
     }
   }
@@ -377,9 +378,9 @@ export class FutureSeerAstroService {
     try {
       const cacheKey = `futureseer_analysis_${userId}`
       localStorage.removeItem(cacheKey)
-      console.log('🗑️ FutureSeer: Cached analysis cleared')
+      devLog.debug('🗑️ FutureSeer: Cached analysis cleared')
     } catch (error) {
-      console.error('❌ FutureSeer: Error clearing cached analysis:', error)
+      devLog.error('❌ FutureSeer: Error clearing cached analysis:', error, 'futureSeerAstroService')
     }
   }
 
@@ -526,7 +527,7 @@ export class FutureSeerAstroService {
    */
   private async getCurrentTransits(userProfile: UserProfile): Promise<any[]> {
     try {
-      console.log('🔮 FutureSeer: Getting current transits...')
+      devLog.debug('🔮 FutureSeer: Getting current transits...')
       
       const currentTransits = await currentTransitService.getCurrentTransits()
       
@@ -540,7 +541,7 @@ export class FutureSeerAstroService {
         duration: `Until ${transit.exitDate.split('-')[1]}/${transit.exitDate.split('-')[2]}`
       }))
     } catch (error) {
-      console.error('❌ FutureSeer: Error getting current transits:', error)
+      devLog.error('❌ FutureSeer: Error getting current transits:', error, 'futureSeerAstroService')
       
       // Fallback to basic transits
       return [

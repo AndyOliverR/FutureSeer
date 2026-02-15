@@ -1,4 +1,5 @@
 import { extractIntentAndSlots, QueryAnalysis } from './intentExtractor';
+import { devLog } from '@/lib/devLogger';
 import { selectRelevantModules, ModuleSelection } from './toolSelector';
 import { aggregateEvidence, AggregatedEvidence } from './evidenceAggregator';
 import { generateSeerResponse, SeerResponse, SynthesisContext } from './synthesisEngine';
@@ -66,16 +67,16 @@ export class SeerChatbot {
     try {
       // Step 1: Extract intent and slots from user query
       const queryAnalysis = extractIntentAndSlots(request.query);
-      console.log('Query Analysis:', queryAnalysis);
+      devLog.debug('Query Analysis:', queryAnalysis);
       
       // Step 2: Select relevant divination modules
       const moduleSelection = selectRelevantModules(queryAnalysis.slots);
-      console.log('Module Selection:', moduleSelection);
+      devLog.debug('Module Selection:', moduleSelection);
       
       // Step 3: Aggregate evidence from selected modules
       const allModules = [...moduleSelection.primary_modules, ...moduleSelection.secondary_modules];
       const evidence = await aggregateEvidence(allModules, queryAnalysis.slots.intent, request.context?.birth_data);
-      console.log('Aggregated Evidence:', evidence);
+      devLog.debug('Aggregated Evidence:', evidence);
       
       // Step 4: Generate comprehensive response
       const synthesisContext: SynthesisContext = {
@@ -100,7 +101,7 @@ export class SeerChatbot {
       return response;
       
     } catch (error) {
-      console.error('Error processing query:', error);
+      devLog.error('Error processing query:', error, 'seerChatbot');
       throw new Error(`Failed to process query: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -216,11 +217,11 @@ export class SeerChatbot {
       "When should I travel abroad for business?"
     ];
     
-    console.log('🧪 Testing Seer Chatbot Pipeline\n');
+    devLog.debug('🧪 Testing Seer Chatbot Pipeline\n');
     
     for (const query of testQueries) {
-      console.log(`\n📝 Query: "${query}"`);
-      console.log('─'.repeat(50));
+      devLog.debug(`\n📝 Query: "${query}"`);
+      devLog.debug('─'.repeat(50));
       
       try {
         const request: SeerQueryRequest = {
@@ -233,26 +234,26 @@ export class SeerChatbot {
         
         const response = await this.processQuery(request);
         
-        console.log(`🔮 Verdict: ${response.verdict}`);
-        console.log(`📊 Confidence: ${Math.round(response.confidence * 100)}%`);
-        console.log(`⏰ Timing: ${response.timing_window ? response.timing_window.join(' to ') : 'Not specified'}`);
-        console.log(`🎯 Actions: ${response.actions.slice(0, 2).join(', ')}`);
-        console.log(`📋 Sources: ${response.source_badges.join(', ')}`);
+        devLog.debug(`🔮 Verdict: ${response.verdict}`);
+        devLog.debug(`📊 Confidence: ${Math.round(response.confidence * 100)}%`);
+        devLog.debug(`⏰ Timing: ${response.timing_window ? response.timing_window.join(' to ') : 'Not specified'}`);
+        devLog.debug(`🎯 Actions: ${response.actions.slice(0, 2).join(', ')}`);
+        devLog.debug(`📋 Sources: ${response.source_badges.join(', ')}`);
         
         if (response.warnings.length > 0) {
-          console.log(`⚠️ Warnings: ${response.warnings.join(', ')}`);
+          devLog.debug(`⚠️ Warnings: ${response.warnings.join(', ')}`);
         }
         
         if (response.clarify) {
-          console.log(`❓ Clarification: ${response.clarify}`);
+          devLog.debug(`❓ Clarification: ${response.clarify}`);
         }
         
       } catch (error) {
-        console.error(`❌ Error processing query: ${error}`);
+        devLog.error(`❌ Error processing query: ${error}`, undefined, 'seerChatbot');
       }
     }
     
-    console.log('\n✅ Chatbot testing completed!');
+    devLog.debug('\n✅ Chatbot testing completed!');
   }
 }
 

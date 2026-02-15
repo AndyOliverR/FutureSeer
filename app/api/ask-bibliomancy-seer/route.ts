@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildBibliomancyState,
@@ -8,6 +9,7 @@ import {
   BIBLIOMANCY_REFUSAL_SAFETY_PHRASE,
   type BibliomancyQuestionType,
 } from '@/lib/bibliomancySeerState';
+import { buildBibliomancySeerSystemPrompt } from '@/lib/bibliomancySeerPrompts';
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,7 +62,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getBibliomancySliceForQuestionType(questionType, state);
+    const slice = getBibliomancySliceForQuestionType(questionType, state);
+    const systemPrompt = buildBibliomancySeerSystemPrompt(slice, questionType);
 
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
@@ -83,7 +86,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Error during Bibliomancy seer streaming:', error);
+            devLog.error('Error during Bibliomancy seer streaming:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -103,7 +106,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: unknown) {
-    console.error('Bibliomancy Seer API error:', error);
+    devLog.error('Bibliomancy Seer API error:', error, 'route');
     return NextResponse.json(
       {
         error:

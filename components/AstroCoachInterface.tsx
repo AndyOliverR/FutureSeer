@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth'
 import { useAstroData } from '@/hooks/useAstroData'
 import { getPersonalizedCoaching } from '@/lib/astroCoach'
@@ -89,7 +90,7 @@ export function AstroCoachInterface() {
 
       setMessages(prev => [...prev, coachMessage])
     } catch (error) {
-      console.error('Error getting coaching:', error)
+      devLog.error('Error getting coaching:', error, 'AstroCoachInterface')
       const errorMessage: CoachingMessage = {
         id: (Date.now() + 1).toString(),
         type: 'coach',

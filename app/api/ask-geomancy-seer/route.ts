@@ -3,6 +3,7 @@ import { getFirebaseDB } from '@/lib/firebase';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
+import { buildGeomancySeerSystemPrompt } from '@/lib/geomancySeerPrompts';
 import {
   buildGeomancyState,
   classifyGeomancyQuestion,
@@ -121,7 +122,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getGeomancySliceForQuestionType(questionType, state);
+    const slice = getGeomancySliceForQuestionType(questionType, state);
+    const systemPrompt = buildGeomancySeerSystemPrompt(slice, questionType);
 
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
@@ -207,7 +209,7 @@ export async function POST(request: NextRequest) {
             await storeConversation(userId, sessionId, question, responseData);
             await cacheQuestionAnswer(userId, question, fullResponse);
           } catch (error) {
-            console.error('Error during Geomancy Seer streaming:', error);
+            devLog.error('Error during Geomancy Seer streaming:', error);
             controller.enqueue(
               new TextEncoder().encode('I encountered an error. Please try again.')
             );
@@ -225,7 +227,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error in Geomancy Seer API:', error);
+    devLog.error('Error in Geomancy Seer API:', error);
     return NextResponse.json(
       {
         success: false,
@@ -272,7 +274,7 @@ async function storeConversation(
     });
     devLog.info('✅ Geomancy conversation stored successfully', undefined, 'ask-geomancy-seer');
   } catch (error) {
-    console.error('Error storing Geomancy conversation:', error);
+    devLog.error('Error storing Geomancy conversation:', error);
   }
 }
 
@@ -322,6 +324,6 @@ async function cacheQuestionAnswer(userId: string, question: string, answer: str
     });
     devLog.info('✅ Geomancy question cached', undefined, 'ask-geomancy-seer');
   } catch (error) {
-    console.error('Error caching Geomancy question:', error);
+    devLog.error('Error caching Geomancy question:', error);
   }
 }

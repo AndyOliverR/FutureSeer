@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         await scryingIntelligence.saveReading(userId, vision)
         devLog.info('✅ Saved Scrying reading to database for user:', userId, 'scrying')
       } catch (saveError) {
-        console.error('⚠️ Failed to save reading to database (non-critical):', saveError)
+        devLog.error('Failed to save reading to database (non-critical)', saveError, 'scrying-reading')
         // Continue even if save fails
       }
     }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Error generating scrying vision:', error)
+    devLog.error('Error generating scrying vision:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

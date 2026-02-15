@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildAngelNumberState,
@@ -8,7 +9,7 @@ import {
   type AngelNumbersContextInput,
   type AngelNumbersProfileInput,
 } from '@/lib/angelNumbersSeerState';
-import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
+import { buildAngelNumberSeerSystemPrompt } from '@/lib/angelNumbersSeerPrompts';
 
 interface AskAngelNumbersSeerRequest {
   userId?: string;
@@ -23,31 +24,6 @@ interface AskAngelNumbersSeerRequest {
     personalYearAngel?: number;
   };
   lookupResult?: { number: number; originalInput?: string | number };
-}
-
-function buildAngelNumberSystemPrompt(
-  chartSlice: string,
-  questionType: AngelNumberQuestionType
-): string {
-  return `You are an expert Angel Numbers guide. You reason only from the state below. Angel Numbers guide attention, not destiny.
-${SEER_GOVERNING_SENTENCE}
-
-## CRITICAL RULES
-- **Rule**: Angel Numbers never introduce new information; they reinforce existing themes. Resolve numbers into themes, not outcomes.
-- **Context anchor**: Angel Numbers amplify the user's active domain. Always state what area of life the message applies to (e.g. career, relationship, general awareness).
-- **Alignment action**: End with one reflective or alignment action (e.g. pause and clarify intention; recheck alignment; proceed consciously; maintain patience; strengthen structure). Never end with a prediction or guarantee.
-- **Frequency**: Frequency increases salience, not certainty. Phrase: "Repeated sightings suggest your attention is being drawn repeatedly to this theme."
-- **Refusal**: Do not predict events, promise outcomes, or encourage dependency. Say: "Angel Numbers are guidance symbols, not predictors of events."
-- **Missing context**: If context (life area or situation) is missing, ask one brief clarifying question only (e.g. What area of life were you focused on when you noticed this number?).
-- Be direct and concise; descriptive but brief.
-
-## Angel Numbers state (use only these)
-${chartSlice}
-
-## Question type
-${questionType}
-
-Answer the user's question with specific references to the state above.`;
 }
 
 const REFUSAL_MESSAGE =
@@ -115,7 +91,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: buildAngelNumberSystemPrompt(chartSlice, questionType),
+          content: buildAngelNumberSeerSystemPrompt(chartSlice, questionType),
         },
         { role: 'user', content: question.trim() },
       ],
@@ -134,7 +110,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Angel Numbers Seer stream error:', error);
+            devLog.error('Angel Numbers Seer stream error:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -154,7 +130,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: any) {
-    console.error('Angel Numbers Seer API error:', error);
+    devLog.error('Angel Numbers Seer API error:', error, 'route');
     return NextResponse.json(
       {
         success: false,

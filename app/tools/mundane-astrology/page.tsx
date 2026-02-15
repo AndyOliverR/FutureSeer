@@ -1,8 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,45 +38,16 @@ import { MundaneSeerChat } from '@/components/mundane/MundaneSeerChat'
 
 export default function MundaneAstrologyPage() {
   const { userProfile } = useAuth()
-  const [analysis, setAnalysis] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'sectors' | 'cycles' | 'eclipses' | 'timeline' | 'analysis' | 'ask-seer'>('overview')
+  const { report: pipelineReport, loading: isLoading, error } = useToolReport('mundaneAstrology')
+  const analysis = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    return (r.data ?? r) as any
+  }, [pipelineReport])
 
   const hasCompleteDetails = Boolean(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
-
-  const loadMundaneAnalysis = useCallback(async () => {
-    if (!hasCompleteDetails) return
-    try {
-      setIsLoading(true)
-      setError(null)
-      const birthData: BirthData = {
-        birthDate: userProfile?.birthDate || '',
-        birthTime: userProfile?.birthTime || '',
-        birthPlace: userProfile?.birthPlace || '',
-        latitude: userProfile?.latitude || 40.7128,
-        longitude: userProfile?.longitude || -74.0060
-      }
-      const mundaneData = await universalOccultService.calculateMundaneChart(birthData, {
-        includeEvents: true,
-        includeWeather: true,
-        includePolitics: true,
-        includeEconomy: true,
-        currentLocation: userProfile?.currentLocation || undefined,
-        userProfile: userProfile || undefined
-      })
-      setAnalysis(mundaneData)
-    } catch (err) {
-      console.error('FutureSeer: Failed to load Mundane Astrology analysis:', err)
-      setError('Failed to load Mundane Astrology analysis')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [hasCompleteDetails, userProfile])
-
-  useEffect(() => {
-    if (hasCompleteDetails) loadMundaneAnalysis()
-  }, [hasCompleteDetails, loadMundaneAnalysis])
 
   if (!hasCompleteDetails) {
     return (
@@ -86,11 +60,8 @@ export default function MundaneAstrologyPage() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Mundane Astrology</span>
             </h1>
             <p className="text-slate-200 mb-8 leading-relaxed">Complete your profile to unlock your mundane astrology insights</p>
-            <Button
-              onClick={() => window.location.href = '/profile-setup'}
-              className="bg-amber-500 hover:bg-amber-600 text-white"
-            >
-              Complete Profile
+            <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+              <Link href="/profile">Complete Profile</Link>
             </Button>
           </div>
         </div>
@@ -99,6 +70,7 @@ export default function MundaneAstrologyPage() {
   }
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="mundane astrology">
     <div className="relative min-h-screen starfield-ultra-sharp">
       <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
         <div className="text-center mb-8">
@@ -107,7 +79,7 @@ export default function MundaneAstrologyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl sm:text-5xl font-serif font-semibold mb-6">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
               <span className="text-amber-500">🌍</span>{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Mundane Astrology</span>
             </h1>
@@ -115,8 +87,9 @@ export default function MundaneAstrologyPage() {
           </motion.div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-transparent p-0 gap-2 rounded-2xl">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             {[
               { value: 'overview', label: 'Overview' },
               { value: 'sectors', label: 'Sectors' },
@@ -129,7 +102,7 @@ export default function MundaneAstrologyPage() {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-2 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 transition-all"
+                className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-t-lg rounded-b-none px-2 sm:px-4 py-2.5 text-xs sm:text-sm font-medium text-slate-300 hover:text-slate-100 hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
               >
                 {tab.label}
               </TabsTrigger>
@@ -137,7 +110,7 @@ export default function MundaneAstrologyPage() {
           </TabsList>
 
           {/* Overview Tab - Daily National Outlook */}
-          <TabsContent value="overview" className="space-y-6 mt-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="mb-6 p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-lg">
               <p className="text-sm text-slate-700 text-center leading-relaxed">
                 <strong className="text-amber-800">Disclaimer:</strong> Mundane astrology analysis is provided for educational and research purposes. Charts are based on publicly available founding dates. Astrological correlations do not guarantee specific outcomes and should be considered alongside geopolitical, economic, and social analysis.
@@ -153,9 +126,9 @@ export default function MundaneAstrologyPage() {
               <div className="text-center py-12 rounded-2xl bg-gradient-to-br from-red-50 to-amber-50 border-2 border-amber-200 shadow-lg">
                 <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
                 <p className="text-slate-700 mb-4">{error}</p>
-                <Button onClick={loadMundaneAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-                  Try Again
-                </Button>
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+              <Link href="/profile">Generate your mystical profile</Link>
+            </Button>
               </div>
             ) : analysis?.data?.dailyOutlook && Array.isArray(analysis.data.dailyOutlook) && analysis.data.dailyOutlook.length > 0 ? (
               <div className="space-y-8">
@@ -330,15 +303,15 @@ export default function MundaneAstrologyPage() {
               <div className="text-center py-12 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg">
                 <Info className="w-12 h-12 text-amber-600 mx-auto mb-4" />
                 <p className="text-slate-700 mb-4">No mundane astrology data available. Please complete your profile.</p>
-                <Button onClick={loadMundaneAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-                  Generate Analysis
-                </Button>
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+              <Link href="/profile">Generate your mystical profile</Link>
+            </Button>
               </div>
             )}
           </TabsContent>
 
           {/* Sectors Tab */}
-          <TabsContent value="sectors" className="space-y-6 mt-6">
+          <TabsContent value="sectors" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.sectorForecasts && Array.isArray(analysis.data.sectorForecasts) && analysis.data.sectorForecasts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {analysis.data.sectorForecasts.map((sector: any, index: number) => (
@@ -394,7 +367,7 @@ export default function MundaneAstrologyPage() {
           </TabsContent>
 
           {/* Cycles Tab */}
-          <TabsContent value="cycles" className="space-y-6 mt-6">
+          <TabsContent value="cycles" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.planetaryCycles && Array.isArray(analysis.data.planetaryCycles) && analysis.data.planetaryCycles.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {analysis.data.planetaryCycles.map((cycle: any, index: number) => (
@@ -453,7 +426,7 @@ export default function MundaneAstrologyPage() {
           </TabsContent>
 
           {/* Eclipses Tab */}
-          <TabsContent value="eclipses" className="space-y-6 mt-6">
+          <TabsContent value="eclipses" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.eclipseCharts && Array.isArray(analysis.data.eclipseCharts) && analysis.data.eclipseCharts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {analysis.data.eclipseCharts.map((eclipse: any, index: number) => (
@@ -504,7 +477,7 @@ export default function MundaneAstrologyPage() {
           </TabsContent>
 
           {/* Timeline Tab */}
-          <TabsContent value="timeline" className="space-y-6 mt-6">
+          <TabsContent value="timeline" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.riskTimelines && Array.isArray(analysis.data.riskTimelines) && analysis.data.riskTimelines.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {analysis.data.riskTimelines.map((timeline: any, index: number) => (
@@ -571,7 +544,7 @@ export default function MundaneAstrologyPage() {
           </TabsContent>
 
           {/* Analysis Tab */}
-          <TabsContent value="analysis" className="space-y-6 mt-6">
+          <TabsContent value="analysis" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data?.analysis ? (
               <div className="space-y-8">
                 {analysis.data.analysis.overview && (
@@ -884,28 +857,30 @@ export default function MundaneAstrologyPage() {
               <div className="text-center py-12 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg">
                 <Brain className="w-12 h-12 text-amber-600 mx-auto mb-4" />
                 <p className="text-slate-700 mb-4">No analysis data available. Please generate your mundane astrology analysis first.</p>
-                <Button onClick={loadMundaneAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-                  Generate Analysis
-                </Button>
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+              <Link href="/profile">Generate your mystical profile</Link>
+            </Button>
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="ask-seer" className="space-y-6 mt-6">
+          <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {analysis?.data ? (
               <MundaneSeerChat userProfile={userProfile} analysis={analysis} />
             ) : (
               <div className="text-center py-12 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg">
                 <MessageCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
                 <p className="text-slate-700 mb-4">Please generate your mundane astrology analysis first.</p>
-                <Button onClick={loadMundaneAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-                  Generate Analysis
-                </Button>
+                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+              <Link href="/profile">Generate your mystical profile</Link>
+            </Button>
               </div>
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 } 

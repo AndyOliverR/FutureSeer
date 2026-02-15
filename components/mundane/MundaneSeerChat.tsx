@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -104,7 +105,7 @@ export function MundaneSeerChat({ userProfile, analysis }: MundaneSeerChatProps)
         }
       }
     } catch (error) {
-      console.error('Error calling Mundane Seer API:', error);
+      devLog.error('Error calling Mundane Seer API:', error, 'MundaneSeerChat');
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantId

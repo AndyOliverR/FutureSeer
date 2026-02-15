@@ -119,18 +119,33 @@ export function buildTrichakraState(analysis: TrichakraAnalysis): TrichakraState
 }
 
 /**
- * Classify Trichakra question. Returns 'refusal' for predictive, medical, guarantee, or
- * mental-health phrasing. Other questions map to action buckets.
+ * Classify Trichakra question. Returns 'refusal' only for Tier 3: predictive outcomes
+ * (will I get married, will my app succeed) or medical/mental health substitution.
+ * Timing questions ("when will things get better", "when should I launch") are NOT
+ * refused; they get Tier 2 (conditions) from the prompt.
  */
 export function classifyTrichakraQuestion(question: string): TrichakraQuestionType {
   const lower = question.toLowerCase().trim()
 
-  if (
-    /will\s+this\s+work|will\s+it\s+work|guarantee|guaranteed|predict|when\s+will|medical|diagnos|treatment|mental\s+health|therapy|cure\s+my|fix\s+my\s+health|replace\s+medical|substitute\s+for\s+(medical|doctor|therapy)/.test(
+  // Tier 3 refusals only: predictive "will" (outcome) + medical/mental health substitution
+  const isPredictiveWill =
+    /\bwill\s+i\s+(get|be|have|marry|succeed|win|find|land)\b/.test(lower) ||
+    /\bwill\s+my\s+(app|business|marriage|job|relationship)\s+(succeed|work|happen)\b/.test(lower) ||
+    /\bwill\s+this\s+(work|succeed|happen)\b/.test(lower) ||
+    /\bwill\s+it\s+(work|succeed|happen)\b/.test(lower) ||
+    /\bwill\s+i\s+get\s+married\b/.test(lower) ||
+    /\bguarantee|guaranteed\s+result/.test(lower)
+  const isMedicalMental =
+    /\b(medical|diagnos|treatment|mental\s+health|therapy|cure\s+my|fix\s+my\s+health|replace\s+medical|substitute\s+for\s+(medical|doctor|therapy))\b/.test(
       lower
     )
-  ) {
+  if (isPredictiveWill || isMedicalMental) {
     return 'refusal'
+  }
+
+  // Timing / conditions: do NOT refuse; map to general so prompt gives Tier 2 (conditions) answer
+  if (/when\s+should\s+i\s+(launch|start|act)|when\s+to\s+(launch|start|act)|best\s+time\s+to|when\s+will\s+things\s+get\s+better|when\s+will\s+i\s+see\s+improvement/.test(lower)) {
+    return 'general'
   }
 
   if (/what\s+should\s+i\s+do\s+right\s+now|what\s+to\s+do\s+now|what\s+do\s+i\s+do\s+first/.test(lower)) {

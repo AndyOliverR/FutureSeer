@@ -3,6 +3,8 @@
  * Solar-Lunar calendar conversions and Chinese zodiac calculations
  */
 
+import { devLog } from '@/lib/devLogger';
+
 export interface SolarDate {
   year: number
   month: number
@@ -122,7 +124,7 @@ export class ChineseCalendarService {
         isLeapMonth
       }
     } catch (error) {
-      console.error('Error converting solar to lunar:', error)
+      devLog.error('Error converting solar to lunar:', error, 'chineseCalendar')
       throw new Error('Failed to convert solar date to lunar')
     }
   }
@@ -142,7 +144,7 @@ export class ChineseCalendarService {
         day
       }
     } catch (error) {
-      console.error('Error converting lunar to solar:', error)
+      devLog.error('Error converting lunar to solar:', error, 'chineseCalendar')
       throw new Error('Failed to convert lunar date to solar')
     }
   }
@@ -181,7 +183,7 @@ export class ChineseCalendarService {
         endDate
       }
     } catch (error) {
-      console.error('Error getting Chinese zodiac:', error)
+      devLog.error('Error getting Chinese zodiac:', error, 'chineseCalendar')
       throw new Error('Failed to get Chinese zodiac animal')
     }
   }
@@ -258,7 +260,7 @@ export class ChineseCalendarService {
         }
       }
     } catch (error) {
-      console.error('Error calculating Four Pillars:', error)
+      devLog.error('Error calculating Four Pillars:', error, 'chineseCalendar')
       throw new Error('Failed to calculate Four Pillars')
     }
   }

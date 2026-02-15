@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2, Compass } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import type { FengShuiAnalysis } from '@/lib/fengshui/fengShuiService';
 
 interface FengShuiSeerMessage {
@@ -50,8 +51,10 @@ const UNAVAILABLE_MESSAGE =
 const RETRY_DELAY_MS = 1500;
 
 const FENGSHUI_STARTER_QUESTIONS = [
-  'What are my favorable directions?',
-  'How can I improve flow in my space?',
+  'Is my workspace supporting productivity?',
+  'What changes can improve energy in my home?',
+  'Which area of my space needs attention?',
+  'How can I balance the energy for focus or calm?',
 ];
 
 export default function FengShuiSeerChatInterface({
@@ -207,7 +210,7 @@ export default function FengShuiSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Feng Shui Seer error:', err);
+      devLog.error('Feng Shui Seer error', err, 'FengShuiSeerChatInterface');
       setStreamingMessageId(null);
       try {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
@@ -322,18 +325,18 @@ export default function FengShuiSeerChatInterface({
         <CardHeader className="border-b border-amber-200 bg-white/80 shrink-0">
           <CardTitle className="flex items-center gap-2 text-amber-900">
             <Compass className="w-5 h-5 text-amber-700" />
-            Ask the Seer — Feng Shui Analysis
+            Ask the Seer — Feng Shui
           </CardTitle>
-          <p className="text-sm text-amber-800 mt-1">
-            Environmental systems; flow, placement, and interaction.
+          <p className="text-sm text-slate-700 mt-1">
+            Environment, not destiny.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
-          <Compass className="w-12 h-12 text-amber-600 mb-4" />
+          <Compass className="w-12 h-12 text-amber-700 mb-4" />
           <p className="text-amber-900 font-medium text-center">
             {EMPTY_STATE_MESSAGE}
           </p>
-          <p className="text-sm text-amber-700 mt-2 text-center">
+          <p className="text-sm text-slate-700 mt-2 text-center">
             Complete your profile with birth date and gender, then load the Feng Shui tool to get personalized analysis.
           </p>
         </CardContent>
@@ -347,13 +350,10 @@ export default function FengShuiSeerChatInterface({
         <div>
           <CardTitle className="flex items-center gap-2 text-amber-900">
             <MessageCircle className="w-5 h-5 text-amber-700" />
-            Ask the Seer — Feng Shui Analysis
+            Ask the Seer — Feng Shui
           </CardTitle>
-          <p className="text-sm text-amber-800 mt-1">
-            Environmental systems; flow, placement, and interaction.
-          </p>
-          <p className="text-xs text-amber-700/90 mt-0.5">
-            Feng Shui removes resistance; it does not replace effort.
+          <p className="text-sm text-slate-700 mt-1">
+            Environment, not destiny.
           </p>
         </div>
         {messages.length > 0 && (
@@ -373,10 +373,21 @@ export default function FengShuiSeerChatInterface({
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
-              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
+              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-700" />
               <p className="text-amber-900 font-medium mb-2">
-                Welcome to Ask the Seer — Feng Shui. I have your analysis; ask about flow, placement, or Kua.
+                Ask me anything about your space and energy flow…
               </p>
+              <p className="text-sm text-slate-700 mb-3 max-w-md mx-auto">
+                I'll analyze your environment to identify imbalances and suggest adjustments that support harmony, productivity, and well-being.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-sm text-slate-700 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Home and workspace (energy quality of rooms, desk/bed/entrance placement, productivity or rest issues, clutter and blockages)</li>
+                <li>Purpose-based (improving focus, calm, or motivation; supporting career or finances; enhancing relationships or sleep)</li>
+                <li>Directional guidance (which areas need strengthening, which elements are excessive or weak, how to balance a specific zone)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {FENGSHUI_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -391,6 +402,9 @@ export default function FengShuiSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">
+                Best for: space and energy flow, not predictions or timelines.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -425,7 +439,7 @@ export default function FengShuiSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about layout, placement, blockage, or how to improve stability, health, or focus…"
+              placeholder="Ask about space, flow, placement, or balance…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

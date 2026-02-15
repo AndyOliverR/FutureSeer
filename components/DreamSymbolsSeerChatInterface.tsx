@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Moon, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import type { DreamAnalysis } from '@/lib/dreamSymbolsIntelligence';
 
 interface DreamSymbolsMessage {
@@ -39,13 +40,11 @@ const UNAVAILABLE_MESSAGE =
 
 const RETRY_DELAY_MS = 1500;
 
-const DREAM_SYMBOLS_QUICK_QUESTIONS = [
-  'What does this dream reflect?',
-  'Why am I seeing these symbols?',
-  'What theme might be repeating?',
-  'What should I reflect on?',
-  'What is my mind processing?',
-  'What theme is unresolved?',
+const DREAM_SYMBOLS_STARTER_QUESTIONS = [
+  'What does my dream about water mean?',
+  'Why do I keep dreaming about the same person or place?',
+  'What message is this dream trying to show me?',
+  'Is my dream reflecting fear or change?',
 ];
 
 export default function DreamSymbolsSeerChatInterface({
@@ -203,7 +202,7 @@ export default function DreamSymbolsSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Dream Symbols Seer error:', err);
+      devLog.error('Dream Symbols Seer error', err, 'DreamSymbolsSeerChatInterface');
       setStreamingMessageId(null);
       try {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
@@ -321,7 +320,7 @@ export default function DreamSymbolsSeerChatInterface({
             Ask the Seer — Dream Symbols
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Inner state and processing, not external fate.
+            The message, not the future.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
@@ -345,7 +344,7 @@ export default function DreamSymbolsSeerChatInterface({
           Ask the Seer — Dream Symbols
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Inner state and processing, not external fate.
+          The message, not the future.
         </p>
         {messages.length > 0 && (
           <Button
@@ -365,14 +364,22 @@ export default function DreamSymbolsSeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
-              <p className="text-amber-900 font-medium">
-                Welcome to Dream Symbols Seer. Ask about what the dream reflects, symbols, themes, or what to reflect on.
+              <p className="text-amber-900 font-medium mb-2">
+                Ask me anything about your dreams…
               </p>
-              <p className="text-sm mt-2 text-slate-700">
-                I have your dream analysis; ask about meaning, symbols, or recurring themes.
+              <p className="text-sm text-amber-800 mb-3 max-w-md mx-auto">
+                I'll interpret symbols and themes from your dreams to reveal messages from your subconscious and current life state.
               </p>
+              <p className="text-amber-900 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Symbol interpretation (meaning of specific dream symbols, why a dream felt intense or recurring, what a symbol represents in waking life)</li>
+                <li>Emotional & mental state (stress, fear, desire, or confusion reflected in dreams; inner conflicts or unresolved thoughts; transitional life phases reflected symbolically)</li>
+                <li>Pattern recognition (repeating dreams; nightmares vs guidance dreams; what a dream is urging awareness of)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
-                {DREAM_SYMBOLS_QUICK_QUESTIONS.slice(0, 2).map((q, i) => (
+                {DREAM_SYMBOLS_STARTER_QUESTIONS.map((q, i) => (
                   <Button
                     key={i}
                     variant="outline"
@@ -385,6 +392,9 @@ export default function DreamSymbolsSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-amber-700 text-xs mt-4">
+                Best for: messages from your subconscious and current life state, not the future or timelines.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -419,7 +429,7 @@ export default function DreamSymbolsSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about what the dream reflects, symbols, themes, or what to reflect on…"
+              placeholder="Ask about symbols, themes, emotions, or what the dream reflects…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

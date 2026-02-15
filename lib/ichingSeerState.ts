@@ -183,11 +183,17 @@ Lower trigram (internal condition): ${hexagram.trigramLower} (${hexagram.element
     ? '\nMore than 3 changing lines: situation is highly unstable; acknowledge this in your response.'
     : '';
 
+  const noChangingLinesNote =
+    state.changing_lines.length === 0
+      ? '- When no changing lines: emphasize stability or stillness; do not invent transformation.'
+      : '';
+
   const disciplineNote = `
 DISCIPLINE (non-negotiable):
 - I Ching advises how to move, not what will happen.
 - Answer must end with one of: Advance (act deliberately), Hold (maintain position), or Withdraw (pause or disengage). No ambiguity.
 - No timelines, no outcome predictions.
+${noChangingLinesNote}
 `.trim();
 
   return `${primaryBlock}

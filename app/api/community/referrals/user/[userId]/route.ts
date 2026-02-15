@@ -154,7 +154,7 @@ export async function GET(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error fetching user referrals:', error);
+    devLog.error('Error fetching user referrals:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch user referrals' }, { status: 500 });
   }
 }

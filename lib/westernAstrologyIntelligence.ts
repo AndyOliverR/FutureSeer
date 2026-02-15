@@ -2,6 +2,7 @@
 // Analyzes Western astrological charts using tropical zodiac and modern interpretations
 
 import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 import { generatePersonalizedInsights, generateCareerGuidance, generateRelationshipInsights } from './western/interpretationEngine';
 
@@ -472,18 +473,18 @@ export async function getIntelligentWesternAstrologyData(
           cachedData.birthDate === birthDate && 
           cachedData.birthTime === birthTime && 
           cachedData.birthPlace === birthPlace) {
-        console.log('Returning cached Western Astrology data for user:', userId);
+        devLog.debug('Returning cached Western Astrology data for user:', userId);
         return cachedData;
       } else {
-        console.log('Cache invalid - forcing recalculation for user:', userId);
+        devLog.debug('Cache invalid - forcing recalculation for user:', userId);
       }
     }
   } catch (error) {
-    console.warn('Error checking cached Western Astrology data:', error);
+    devLog.warn('Error checking cached Western Astrology data:', error, 'westernAstrologyIntelligence');
   }
   
   // Calculate new Western Astrology analysis
-  console.log('Calculating new Western Astrology analysis for user:', userId);
+  devLog.debug('Calculating new Western Astrology analysis for user:', userId);
   
   const sunSign = calculateSunSign(birthDate);
   const moonSign = calculateMoonSign(birthDate, birthTime);
@@ -552,9 +553,9 @@ export async function getIntelligentWesternAstrologyData(
   // Cache the data
   try {
     await setDoc(docRef, reading);
-    console.log('Cached Western Astrology data for user:', userId);
+    devLog.debug('Cached Western Astrology data for user:', userId);
   } catch (error) {
-    console.warn('Error caching Western Astrology data:', error);
+    devLog.warn('Error caching Western Astrology data:', error, 'westernAstrologyIntelligence');
   }
   
   return reading;
@@ -569,8 +570,8 @@ export async function clearWesternAstrologyDataCache(userId: string): Promise<vo
   
   try {
     await setDoc(docRef, {});
-    console.log('Cleared Western Astrology data cache for user:', userId);
+    devLog.debug('Cleared Western Astrology data cache for user:', userId);
   } catch (error) {
-    console.warn('Error clearing Western Astrology data cache:', error);
+    devLog.warn('Error clearing Western Astrology data cache:', error, 'westernAstrologyIntelligence');
   }
 } 

@@ -2,6 +2,7 @@
  * Comprehensive VedAstro API Service
  * Handles all VedAstro endpoints for strategic integration into FutureSeer
  */
+import { devLog } from '@/lib/devLogger';
 
 export interface VedAstroApiConfig {
   baseUrl: string
@@ -56,7 +57,7 @@ export class VedAstroApiService {
     
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
-        console.log(`🔄 VedAstro API Call (Attempt ${attempt}): ${endpoint}`)
+        devLog.debug(`🔄 VedAstro API Call (Attempt ${attempt}): ${endpoint}`)
         
         const response = await fetch(url, {
           method,
@@ -74,17 +75,17 @@ export class VedAstroApiService {
         }
 
         const result = await response.json()
-        console.log(`✅ VedAstro API Success: ${endpoint}`)
+        devLog.debug(`✅ VedAstro API Success: ${endpoint}`)
         return result
 
       } catch (error) {
         // Handle 404 errors more gracefully - these are expected for some endpoints
         if (error instanceof Error && error.message.includes('404')) {
-          console.log(`ℹ️ VedAstro endpoint not available: ${endpoint}`)
+          devLog.debug(`ℹ️ VedAstro endpoint not available: ${endpoint}`)
           throw error
         }
         
-        console.error(`❌ VedAstro API Error (Attempt ${attempt}):`, error)
+        devLog.error('VedAstro API Error', { attempt, endpoint, error }, 'vedAstroApiService')
         
         if (attempt === this.config.retryAttempts) {
           throw error
@@ -556,7 +557,7 @@ export class VedAstroApiService {
       })
       return response.ok
     } catch (error) {
-      console.error('VedAstro API connection test failed:', error)
+      devLog.error('VedAstro API connection test failed:', error, 'vedAstroApiService')
       return false
     }
   }
@@ -572,7 +573,7 @@ export class VedAstroApiService {
       })
       return response.json()
     } catch (error) {
-      console.error('Failed to get VedAstro API status:', error)
+      devLog.error('Failed to get VedAstro API status:', error, 'vedAstroApiService')
       return null
     }
   }
@@ -614,10 +615,10 @@ export class VedAstroApiService {
             results.tarabala = await this.getTarabala(birthData)
             break
           default:
-            console.warn(`Unknown feature: ${feature}`)
+            devLog.warn(`Unknown feature: ${feature}`, undefined, 'vedAstroApiService')
         }
       } catch (error) {
-        console.error(`Failed to fetch ${feature}:`, error)
+        devLog.error(`Failed to fetch ${feature}:`, error, 'vedAstroApiService')
         results[feature] = { Status: 'Error', Input: null, Payload: null }
       }
     })

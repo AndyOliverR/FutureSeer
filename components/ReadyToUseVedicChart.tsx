@@ -3,6 +3,7 @@
 // Shows both North Indian (diamond) and South Indian (square) layouts
 
 import React, { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { getChart } from '@/lib/astronomia-vedic'
 import SouthIndianVedicChart from './SouthIndianVedicChart'
 
@@ -369,7 +370,7 @@ const ReadyToUseVedicChart: React.FC<ChartProps> = ({
         setPlacements(newPlacements)
         setLoading(false)
       } catch (err) {
-        console.error('Error generating chart:', err)
+        devLog.error('Error generating chart:', err, 'ReadyToUseVedicChart')
         setError(err instanceof Error ? err.message : 'Failed to generate chart')
         setLoading(false)
       }

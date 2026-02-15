@@ -1,4 +1,5 @@
 // Chart Storage System for Permanent Chart Storage
+import { devLog } from '@/lib/devLogger';
 
 export interface BirthData {
   birthDate: string;
@@ -61,14 +62,14 @@ export class ChartStorageManager {
       // Store in memory
       this.charts.set(chartKey, storedChart);
       
-      console.log(`📦 Chart cached in memory: ${chartType} for user ${userId}`);
-      console.log(`✅ Chart stored permanently: ${chartType} for user ${userId} from ${source}`);
+      devLog.debug(`📦 Chart cached in memory: ${chartType} for user ${userId}`);
+      devLog.debug(`✅ Chart stored permanently: ${chartType} for user ${userId} from ${source}`);
       if (birthData) {
-        console.log(`📋 Birth data stored: DOB=${birthData.birthDate}, TOB=${birthData.birthTime}, POB=${birthData.birthPlace}`);
+        devLog.debug(`📋 Birth data stored: DOB=${birthData.birthDate}, TOB=${birthData.birthTime}, POB=${birthData.birthPlace}`);
       }
-      console.log(`📊 Total stored charts: ${this.charts.size}`);
+      devLog.debug(`📊 Total stored charts: ${this.charts.size}`);
     } catch (error) {
-      console.error(`❌ Failed to store chart ${chartType} for user ${userId}:`, error);
+      devLog.error(`❌ Failed to store chart ${chartType} for user ${userId}:`, error, 'chartStorage');
     }
   }
 
@@ -88,7 +89,7 @@ export class ChartStorageManager {
       const storedChart = this.charts.get(chartKey);
       
       if (!storedChart) {
-        console.log(`📭 No stored chart found: ${chartType} for user ${userId}`);
+        devLog.debug(`📭 No stored chart found: ${chartType} for user ${userId}`);
         return null;
       }
       
@@ -96,17 +97,17 @@ export class ChartStorageManager {
       if (currentBirthData && storedChart.birthData) {
         const birthDataMatches = this.validateBirthData(storedChart.birthData, currentBirthData);
         if (!birthDataMatches) {
-          console.log(`🔄 Birth data changed for user ${userId}, chart ${chartType} needs regeneration`);
-          console.log(`📋 Old birth data: DOB=${storedChart.birthData.birthDate}, TOB=${storedChart.birthData.birthTime}, POB=${storedChart.birthData.birthPlace}`);
-          console.log(`📋 New birth data: DOB=${currentBirthData.birthDate}, TOB=${currentBirthData.birthTime}, POB=${currentBirthData.birthPlace}`);
+          devLog.debug(`🔄 Birth data changed for user ${userId}, chart ${chartType} needs regeneration`);
+          devLog.debug(`📋 Old birth data: DOB=${storedChart.birthData.birthDate}, TOB=${storedChart.birthData.birthTime}, POB=${storedChart.birthData.birthPlace}`);
+          devLog.debug(`📋 New birth data: DOB=${currentBirthData.birthDate}, TOB=${currentBirthData.birthTime}, POB=${currentBirthData.birthPlace}`);
           return null;
         }
       }
       
-      console.log(`✅ Retrieved stored chart: ${chartType} for user ${userId} (generated: ${storedChart.generatedAt})`);
+      devLog.debug(`✅ Retrieved stored chart: ${chartType} for user ${userId} (generated: ${storedChart.generatedAt})`);
       return storedChart;
     } catch (error) {
-      console.error(`❌ Failed to retrieve chart ${chartType} for user ${userId}:`, error);
+      devLog.error(`❌ Failed to retrieve chart ${chartType} for user ${userId}:`, error, 'chartStorage');
       return null;
     }
   }
@@ -141,15 +142,15 @@ export class ChartStorageManager {
       if (currentBirthData && storedChart.birthData) {
         const birthDataMatches = this.validateBirthData(storedChart.birthData, currentBirthData);
         if (!birthDataMatches) {
-          console.log(`🔄 Birth data changed for user ${userId}, chart ${chartType} needs regeneration`);
+          devLog.debug(`🔄 Birth data changed for user ${userId}, chart ${chartType} needs regeneration`);
           return false;
         }
       }
 
-      console.log(`✅ Valid permanent chart found: ${chartType} for user ${userId}`);
+      devLog.debug(`✅ Valid permanent chart found: ${chartType} for user ${userId}`);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to check chart validity ${chartType} for user ${userId}:`, error);
+      devLog.error(`❌ Failed to check chart validity ${chartType} for user ${userId}:`, error, 'chartStorage');
       return false;
     }
   }
@@ -164,13 +165,13 @@ export class ChartStorageManager {
       
       keysToDelete.forEach(key => {
         this.charts.delete(key);
-        console.log(`🗑️ Removed chart from memory cache: ${key}`);
+        devLog.debug(`🗑️ Removed chart from memory cache: ${key}`);
       });
 
-      console.log(`🗑️ Cleared ${keysToDelete.length} charts for user ${userId}`);
-      console.log(`📊 Remaining stored charts: ${this.charts.size}`);
+      devLog.debug(`🗑️ Cleared ${keysToDelete.length} charts for user ${userId}`);
+      devLog.debug(`📊 Remaining stored charts: ${this.charts.size}`);
     } catch (error) {
-      console.error(`❌ Failed to clear charts for user ${userId}:`, error);
+      devLog.error(`❌ Failed to clear charts for user ${userId}:`, error, 'chartStorage');
     }
   }
 
@@ -190,10 +191,10 @@ export class ChartStorageManager {
         }
       }
 
-      console.log(`📊 Retrieved ${charts.length} stored charts for user ${userId}`);
+      devLog.debug(`📊 Retrieved ${charts.length} stored charts for user ${userId}`);
       return charts;
     } catch (error) {
-      console.error(`❌ Failed to get all charts for user ${userId}:`, error);
+      devLog.error(`❌ Failed to get all charts for user ${userId}:`, error, 'chartStorage');
       return [];
     }
   }

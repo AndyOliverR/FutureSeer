@@ -64,7 +64,7 @@ export function TipJarCard({ countryCode = 'IN' }: TipJarCardProps) {
 
         {/* CTA Button */}
         <Button
-          onClick={openTipJar}
+          onClick={() => openTipJar()}
           className="w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white font-semibold py-3 transition-all duration-300"
         >
           <Heart className="w-5 h-5 mr-2" />

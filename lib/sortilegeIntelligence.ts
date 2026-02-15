@@ -4,6 +4,7 @@
  */
 
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
@@ -73,7 +74,7 @@ class SortilegeIntelligence {
     try {
       this.db = getFirebaseDB()
     } catch (error) {
-      console.warn('Firebase not available for Sortilege Intelligence')
+      devLog.warn('Firebase not available for Sortilege Intelligence', undefined, 'sortilegeIntelligence')
     }
   }
 
@@ -620,7 +621,7 @@ class SortilegeIntelligence {
         try {
           universalData = await getAllDivinationData(userProfile, question)
         } catch (error) {
-          console.warn('Could not fetch universal data:', error)
+          devLog.warn('Could not fetch universal data:', error, 'sortilegeIntelligence')
         }
       }
 
@@ -705,7 +706,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
       return this.parseAIResponse(aiResponse, displayName)
 
     } catch (error) {
-      console.error('Error generating comprehensive report:', error)
+      devLog.error('Error generating comprehensive report:', error, 'sortilegeIntelligence')
       return this.generateFallbackReport(question, method, castResult, displayName)
     }
   }
@@ -885,7 +886,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
    */
   async saveReading(userId: string, reading: SortilegeReading): Promise<void> {
     if (!this.db) {
-      console.warn('Firestore not available, skipping save')
+      devLog.warn('Firestore not available, skipping save', 'sortilegeIntelligence')
       return
     }
 
@@ -898,9 +899,9 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
           timestamp: Timestamp.fromDate(reading.castResult.timestamp)
         }
       })
-      console.log('✅ Saved Sortilege reading to Firestore')
+      devLog.debug('✅ Saved Sortilege reading to Firestore')
     } catch (error) {
-      console.error('Error saving Sortilege reading:', error)
+      devLog.error('Error saving Sortilege reading:', error, 'sortilegeIntelligence')
     }
   }
 
@@ -929,7 +930,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
       
       return null
     } catch (error) {
-      console.error('Error loading Sortilege reading:', error)
+      devLog.error('Error loading Sortilege reading:', error, 'sortilegeIntelligence')
       return null
     }
   }

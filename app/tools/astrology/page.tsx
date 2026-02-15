@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from "@/hooks/use-auth"
 import { updateUserProfile } from "@/lib/firebase"
 import { Input } from "@/components/ui/input"
@@ -22,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 // Real AstroApp API integration
 async function fetchAstroData({ birthDate, birthTime, birthPlace, displayName }: any, userId?: string) {
   try {
-    console.log('Fetching comprehensive astro data for:', { birthDate, birthTime, birthPlace, displayName, userId })
+    devLog.debug('Fetching comprehensive astro data for:', { birthDate, birthTime, birthPlace, displayName, userId })
     
     // Use comprehensive astro data service with userId for caching
     const { getComprehensiveAstroData } = await import('@/lib/astroDataService')
@@ -61,7 +62,7 @@ async function fetchAstroData({ birthDate, birthTime, birthPlace, displayName }:
       metadata: comprehensiveData.metadata
     }
   } catch (error: any) {
-    console.error('Error fetching comprehensive astro data:', error)
+    devLog.error('Error fetching comprehensive astro data:', error, 'page')
     throw new Error(`Failed to fetch astrological data: ${error.message}`)
   }
 }

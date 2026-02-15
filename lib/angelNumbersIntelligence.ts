@@ -2,6 +2,7 @@
 // Prioritizes internal calculations, provides personalized guidance, and includes coaching
 
 import { generateAngelNumbersProfile, validateAngelNumbersData } from './angelNumbersCalculations'
+import { devLog } from '@/lib/devLogger';
 import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
 import { CACHE_TTL } from './cacheConstants';
@@ -93,7 +94,7 @@ class AngelNumbersIntelligence {
     forceExternal: boolean = false
   ): Promise<AngelNumbersData> {
     if (process.env.NODE_ENV === 'development') {
-      console.log('👼 AngelNumbersIntelligence: Starting intelligent calculation...')
+      devLog.debug('👼 AngelNumbersIntelligence: Starting intelligent calculation...')
     }
     
     // Validate input data
@@ -107,7 +108,7 @@ class AngelNumbersIntelligence {
       const cached = this.angelNumbersCache.get(userId)!
       if (Date.now() - cached.lastFetched < CACHE_TTL.REPORTS) {
         if (process.env.NODE_ENV === 'development') {
-          console.log('Using cached angel numbers data for user:', userId)
+          devLog.debug('Using cached angel numbers data for user:', userId)
         }
         return cached
       }
@@ -125,7 +126,7 @@ class AngelNumbersIntelligence {
             storedData.fullName === fullName &&
             storedData.birthDate === birthDate) {
           if (process.env.NODE_ENV === 'development') {
-            console.log('Using stored angel numbers data for user:', userId)
+            devLog.debug('Using stored angel numbers data for user:', userId)
           }
           this.angelNumbersCache.set(userId, storedData)
           return storedData
@@ -133,13 +134,13 @@ class AngelNumbersIntelligence {
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Error checking stored angel numbers data:', error)
+        devLog.warn('Error checking stored angel numbers data:', error, 'angelNumbersIntelligence')
       }
     }
 
     // Generate internal calculation
     if (process.env.NODE_ENV === 'development') {
-      console.log('👼 AngelNumbersIntelligence: Using internal calculations...')
+      devLog.debug('👼 AngelNumbersIntelligence: Using internal calculations...')
     }
     const internalProfile = generateAngelNumbersProfile(userId, fullName, birthDate)
     
@@ -182,11 +183,11 @@ class AngelNumbersIntelligence {
       const docRef = doc(db, 'users', userId, 'angelNumbersProfile', 'comprehensive')
       await setDoc(docRef, angelNumbersData)
       if (process.env.NODE_ENV === 'development') {
-        console.log('Stored intelligent angel numbers data in Firebase for user:', userId)
+        devLog.debug('Stored intelligent angel numbers data in Firebase for user:', userId)
       }
     } catch (storageError) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Error storing angel numbers data in Firebase:', storageError)
+        devLog.warn('Error storing angel numbers data in Firebase:', storageError, 'angelNumbersIntelligence')
       }
     }
 
@@ -200,7 +201,7 @@ class AngelNumbersIntelligence {
   // Provide personalized angel numbers coaching
   async provideCoaching(context: AngelNumbersCoachingContext): Promise<AngelNumbersCoachingResponse> {
     if (process.env.NODE_ENV === 'development') {
-      console.log('👼 AngelNumbersIntelligence: Providing personalized coaching...')
+      devLog.debug('👼 AngelNumbersIntelligence: Providing personalized coaching...')
     }
     
     const { angelNumbersData, userQuery } = context

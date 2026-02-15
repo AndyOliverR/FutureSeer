@@ -90,32 +90,33 @@ export default function LenormandPage() {
         </motion.div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 gap-2">
-            <TabsTrigger value="overview" className="devotionist-tab-trigger">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+            <TabsTrigger value="overview" className="devotionist-tab-trigger shrink-0 rounded-t-lg rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 border border-transparent data-[state=inactive]:border-slate-600/50 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30">
               <Eye className="w-4 h-4 mr-1" />
               Overview
             </TabsTrigger>
-            <TabsTrigger value="reading" className="devotionist-tab-trigger">
+            <TabsTrigger value="reading" className="devotionist-tab-trigger shrink-0 rounded-t-lg rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 border border-transparent data-[state=inactive]:border-slate-600/50 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30">
               <Sparkles className="w-4 h-4 mr-1" />
               Reading
             </TabsTrigger>
-            <TabsTrigger value="cards" className="devotionist-tab-trigger">
+            <TabsTrigger value="cards" className="devotionist-tab-trigger shrink-0 rounded-t-lg rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 border border-transparent data-[state=inactive]:border-slate-600/50 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30">
               <BookOpen className="w-4 h-4 mr-1" />
               Cards
             </TabsTrigger>
-            <TabsTrigger value="guidance" className="devotionist-tab-trigger">
+            <TabsTrigger value="guidance" className="devotionist-tab-trigger shrink-0 rounded-t-lg rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 border border-transparent data-[state=inactive]:border-slate-600/50 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30">
               <Target className="w-4 h-4 mr-1" />
               Guidance
             </TabsTrigger>
-            <TabsTrigger value="ask-the-seer" className="devotionist-tab-trigger">
+            <TabsTrigger value="ask-the-seer" className="devotionist-tab-trigger shrink-0 rounded-t-lg rounded-b-none data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 border border-transparent data-[state=inactive]:border-slate-600/50 text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30">
               <Brain className="w-4 h-4 mr-1" />
               Ask the seer
             </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Lenormand Profile Summary */}
               <Card elevation={2} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl shadow-sm">
@@ -183,7 +184,7 @@ export default function LenormandPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-amber-700">Cards:</span>
                       <span className="text-slate-900 font-semibold">36</span>
@@ -240,7 +241,7 @@ export default function LenormandPage() {
           </TabsContent>
 
           {/* Reading Tab */}
-          <TabsContent value="reading" className="space-y-6">
+          <TabsContent value="reading" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card elevation={2} className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
               <CardHeader>
                 <CardTitle className="text-amber-900 text-lg flex items-center">
@@ -248,7 +249,7 @@ export default function LenormandPage() {
                   Lenormand Reading
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {!currentReading ? (
                   <div className="space-y-4">
                     {/* Question Input */}
@@ -319,7 +320,7 @@ export default function LenormandPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {/* Reading Header */}
                     <div className="text-center">
                       <h3 className="text-xl font-semibold bg-gradient-to-b from-amber-600 via-yellow-600 to-amber-700 bg-clip-text text-transparent mb-2">
@@ -478,7 +479,7 @@ export default function LenormandPage() {
           </TabsContent>
 
           {/* Cards Tab */}
-          <TabsContent value="cards" className="space-y-6">
+          <TabsContent value="cards" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 rounded-2xl shadow-lg">
               <CardHeader>
                 <CardTitle className="text-purple-900 text-lg flex items-center">
@@ -538,7 +539,7 @@ export default function LenormandPage() {
           </TabsContent>
 
           {/* Guidance Tab */}
-          <TabsContent value="guidance" className="space-y-6">
+          <TabsContent value="guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 border-2 border-purple-200 rounded-2xl shadow-lg">
               <CardHeader>
                 <CardTitle className="text-purple-900 text-lg flex items-center">
@@ -631,7 +632,7 @@ export default function LenormandPage() {
           </TabsContent>
 
           {/* Ask the Seer Tab */}
-          <TabsContent value="ask-the-seer" className="space-y-6">
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <LenormandCoachInterface
               reading={currentReading ?? null}
               userProfile={userProfile}
@@ -639,6 +640,7 @@ export default function LenormandPage() {
             />
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   )

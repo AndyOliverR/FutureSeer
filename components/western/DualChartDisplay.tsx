@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ColorfulWesternChart from './ColorfulWesternChart'
 import ChartMetadataComponent, { ChartMetadata } from './ChartMetadata'
@@ -58,8 +59,8 @@ export default function DualChartDisplay({
 }: DualChartDisplayProps) {
   // Debug logs only in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('DualChartDisplay: Received transit planets:', transitPlanets)
-    console.log('DualChartDisplay: Received transit houses:', transitHouses)
+    devLog.debug('DualChartDisplay: Received transit planets:', transitPlanets)
+    devLog.debug('DualChartDisplay: Received transit houses:', transitHouses)
   }
   
   return (

@@ -1,6 +1,7 @@
 // Energy Healing Image Analyzer Service
 // Formats Groq API responses into structured Energy Healing data
 
+import { devLog } from '@/lib/devLogger';
 import { 
   CHAKRA_DATA, 
   AURA_LAYERS, 
@@ -142,7 +143,7 @@ class EnergyHealingImageAnalyzer {
    * Format chakra analysis from Groq API response
    */
   formatChakraAnalysis(aiData: GroqChakraResponse): ChakraAnalysis {
-    console.log('📊 Formatting chakra analysis from API response:', {
+    devLog.debug('📊 Formatting chakra analysis from API response:', {
       hasChakras: !!aiData.chakras,
       overallBalance: aiData.overallBalance
     });
@@ -188,7 +189,7 @@ class EnergyHealingImageAnalyzer {
    * Format aura reading from Groq API response
    */
   formatAuraReading(aiData: GroqAuraResponse): AuraReading {
-    console.log('📊 Formatting aura reading from API response:', {
+    devLog.debug('📊 Formatting aura reading from API response:', {
       hasLayers: !!aiData.layers,
       layersType: typeof aiData.layers,
       isArray: Array.isArray(aiData.layers),
@@ -203,7 +204,7 @@ class EnergyHealingImageAnalyzer {
     } else if (aiData.layers && typeof aiData.layers === 'object') {
       // Convert object to array if needed
       layersArray = Object.values(aiData.layers);
-      console.log('⚠️ Converted layers object to array:', layersArray);
+      devLog.debug('⚠️ Converted layers object to array:', layersArray);
     } else {
       // Use fallback from AURA_LAYERS
       layersArray = AURA_LAYERS.slice(0, 4).map((layer, index) => ({
@@ -212,7 +213,7 @@ class EnergyHealingImageAnalyzer {
         thickness: 'medium',
         clarity: 'clear'
       }));
-      console.log('⚠️ Using fallback layers array');
+      devLog.debug('⚠️ Using fallback layers array');
     }
 
     // Ensure we have at least 4 layers
@@ -286,7 +287,7 @@ class EnergyHealingImageAnalyzer {
    * Format Reiki analysis from Groq API response
    */
   formatReikiAnalysis(aiData: GroqReikiResponse): ReikiAnalysis {
-    console.log('📊 Formatting Reiki analysis from API response:', {
+    devLog.debug('📊 Formatting Reiki analysis from API response:', {
       energyLevel: aiData.energyLevel,
       hasBlockages: !!aiData.blockages
     });
@@ -311,7 +312,7 @@ class EnergyHealingImageAnalyzer {
    * Format crystal recommendations from Groq API response
    */
   formatCrystalAnalysis(aiData: GroqCrystalResponse): CrystalRecommendation {
-    console.log('📊 Formatting crystal analysis from API response:', {
+    devLog.debug('📊 Formatting crystal analysis from API response:', {
       hasCrystals: !!aiData.crystals
     });
 
@@ -364,7 +365,7 @@ class EnergyHealingImageAnalyzer {
    * Format energy balance analysis from Groq API response
    */
   formatEnergyBalance(aiData: GroqEnergyBalanceResponse): EnergyBalanceAnalysis {
-    console.log('📊 Formatting energy balance from API response:', {
+    devLog.debug('📊 Formatting energy balance from API response:', {
       overallBalance: aiData.overallBalance,
       energyFlow: aiData.energyFlow
     });

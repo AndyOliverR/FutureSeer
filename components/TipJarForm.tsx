@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Heart, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -134,7 +135,7 @@ export function TipJarForm({ countryCode, onSuccess }: TipJarFormProps) {
             setSelectedAmount(null);
             onSuccess?.();
           } catch (err: unknown) {
-            console.error('Tip verify error:', err);
+            devLog.error('Tip verify error:', err, 'TipJarForm');
             toast({
               title: "Payment failed",
               description: err instanceof Error ? err.message : 'Verification failed. Please contact support.',
@@ -154,7 +155,7 @@ export function TipJarForm({ countryCode, onSuccess }: TipJarFormProps) {
         },
       });
     } catch (error: unknown) {
-      console.error('Error processing tip:', error);
+      devLog.error('Error processing tip:', error, 'TipJarForm');
       toast({
         title: "Payment failed",
         description: error instanceof Error ? error.message : 'Unable to process your tip. Please try again.',

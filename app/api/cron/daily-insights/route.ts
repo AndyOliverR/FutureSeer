@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 import { sendDailyInsightEmail } from '@/lib/notificationEmail';
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!adminDb) {
-    console.error('Cron daily-insights: adminDb not available');
+    devLog.error('Cron daily-insights: adminDb not available', undefined, 'route');
     return NextResponse.json({ error: 'Database not available' }, { status: 500 });
   }
 
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ sent, failed });
   } catch (err) {
-    console.error('Cron daily-insights error:', err);
+    devLog.error('Cron daily-insights error:', err, 'route');
     return NextResponse.json({ error: 'Cron failed' }, { status: 500 });
   }
 }

@@ -235,7 +235,7 @@ export default function VastuPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-10"
         >
-          <h1 className="text-5xl font-bold gold-glow mb-4">🏠 Vastu</h1>
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold gold-glow mb-4">🏠 Vastu</h1>
           <p className="text-white leading-relaxed text-lg mb-6">
             Ancient Indian science of sacred architecture and cosmic harmony
           </p>
@@ -348,16 +348,16 @@ export default function VastuPage() {
             )}
 
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-sm">
-              <TabsList className="flex flex-wrap gap-2 bg-transparent p-0 h-auto mb-6">
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
+              <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                 {tabs.map((tab) => {
                   const Icon = tab.icon
                   return (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="devotionist-tab-trigger flex items-center gap-2 px-4 py-2 [&:not([data-state=active])]:text-slate-600 [&:not([data-state=active])]:hover:text-slate-800"
+                      className="shrink-0 devotionist-tab-trigger flex items-center gap-2 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
                     >
                       <Icon className="w-4 h-4" />
                       {tab.label}
@@ -367,7 +367,7 @@ export default function VastuPage() {
               </TabsList>
 
               {/* Tab Content */}
-                <TabsContent value="overview" className="mt-0">
+                <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <div className="space-y-6">
                         <div className="text-center mb-6">
                           <div className="text-6xl mb-4">🏠</div>
@@ -568,7 +568,7 @@ export default function VastuPage() {
                         </div>
                       </div>
                 </TabsContent>
-                <TabsContent value="entrance" className="mt-0">
+                <TabsContent value="entrance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       {analysis.mainEntranceAnalysis ? (
                         <VastuMainEntranceGuide analysis={analysis.mainEntranceAnalysis} />
                       ) : (
@@ -640,7 +640,7 @@ export default function VastuPage() {
                         </div>
                       )}
                 </TabsContent>
-                <TabsContent value="rooms" className="mt-0">
+                <TabsContent value="rooms" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <div className="space-y-4">
                         <h3 className="text-2xl font-bold text-amber-900 mb-4">Room Placement Recommendations</h3>
                             {analysis.rooms && analysis.rooms.length > 0 ? (
@@ -654,10 +654,10 @@ export default function VastuPage() {
                         )}
                       </div>
                 </TabsContent>
-                <TabsContent value="construction" className="mt-0">
+                <TabsContent value="construction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <VastuConstructionPlanner />
                 </TabsContent>
-                <TabsContent value="timing" className="mt-0">
+                <TabsContent value="timing" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <div className="space-y-6">
                         <h3 className="text-2xl font-bold text-amber-900 mb-4">Auspicious Timing for Vastu Activities</h3>
                         {vastuTiming ? (
@@ -781,7 +781,7 @@ export default function VastuPage() {
                         )}
                       </div>
                 </TabsContent>
-                <TabsContent value="aaya" className="mt-0">
+                <TabsContent value="aaya" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <div className="space-y-6">
                         <h3 className="text-2xl font-bold text-amber-900 mb-4">Aaya & Aayushya Calculations</h3>
                         {aayaCalculation ? (
@@ -845,7 +845,7 @@ export default function VastuPage() {
                         )}
                       </div>
                 </TabsContent>
-                <TabsContent value="remedies" className="mt-0">
+                <TabsContent value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <div className="space-y-6">
                         <VastuDocumentedRemedies />
                         {analysis.remedies && (
@@ -870,7 +870,7 @@ export default function VastuPage() {
                         )}
                       </div>
                 </TabsContent>
-                <TabsContent value="coach" className="mt-0">
+                <TabsContent value="coach" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <VastuCoachInterface
                         analysis={analysis ?? null}
                         userProfile={userProfile}
@@ -879,8 +879,8 @@ export default function VastuPage() {
                         layout={(facingDirection && [layout.kitchen, layout.bedroom, layout.toilet, layout.main_door, layout.living_room, layout.prayer_room, layout.center].some(Boolean)) ? { facing_direction: facingDirection, ...layout } : undefined}
                       />
                 </TabsContent>
-            </div>
             </Tabs>
+            </div>
           </motion.div>
         ) : null}
 

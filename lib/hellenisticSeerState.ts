@@ -258,11 +258,27 @@ export function getHellenisticSliceForQuestionType(
     }
   }
 
-  lines.push('houses:');
+  lines.push('whole_sign_houses:');
   for (let i = 1; i <= 12; i++) {
     const h = state.houses[String(i)];
     if (h) lines.push(`  ${i}: ${h.sign} ruler ${h.ruler}`);
   }
+
+  const conditionToPlacement = (c: PlanetCondition): string => {
+    if (c === 'strong') return 'well placed';
+    if (c === 'weak') return 'challenging';
+    return 'moderate';
+  };
+  lines.push('benefics:');
+  const venus = state.planets['Venus'];
+  const jupiter = state.planets['Jupiter'];
+  if (venus) lines.push(`  venus: ${conditionToPlacement(venus.condition)}`);
+  if (jupiter) lines.push(`  jupiter: ${conditionToPlacement(jupiter.condition)}`);
+  lines.push('malefics:');
+  const saturn = state.planets['Saturn'];
+  const mars = state.planets['Mars'];
+  if (saturn) lines.push(`  saturn: ${conditionToPlacement(saturn.condition)}`);
+  if (mars) lines.push(`  mars: ${conditionToPlacement(mars.condition)}`);
 
   lines.push('planets (house, condition):');
   for (const [name, data] of Object.entries(state.planets)) {
@@ -280,6 +296,31 @@ export function getHellenisticSliceForQuestionType(
   lines.push('annual_profection:');
   lines.push(
     `  age ${state.annual_profection.age} house ${state.annual_profection.house} lord ${state.annual_profection.lord}`
+  );
+
+  const topicLabels: Record<number, string> = {
+    1: 'life direction',
+    2: 'wealth',
+    6: 'health',
+    7: 'marriage',
+    10: 'career',
+  };
+  const dominantTopics: string[] = [];
+  for (const [houseNumStr, topicName] of Object.entries(topicLabels)) {
+    const houseData = state.houses[houseNumStr];
+    if (houseData?.ruler) {
+      const cond = state.planets[houseData.ruler]?.condition;
+      if (cond === 'strong') dominantTopics.push(topicName);
+    }
+  }
+  if (dominantTopics.length > 0) {
+    lines.push('dominant_topics:');
+    lines.push(`  ${dominantTopics.join(', ')}`);
+  }
+
+  lines.push('');
+  lines.push(
+    'Without whole-sign houses and sect, Hellenistic cannot answer. Use only the data above.'
   );
 
   return lines.join('\n');

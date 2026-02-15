@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAICompletion } from '@/lib/aiGateway';
 import { devLog, devWarn } from '@/lib/devLogger';
+import { transformComprehensiveToChunks } from '@/lib/westernReportChunks';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -304,15 +305,15 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
   
   // Verify response structure before parsing
   if (!response || response.length === 0) {
-    console.error('❌ Response is empty - cannot parse');
+    devLog.error('❌ Response is empty - cannot parse');
     throw new Error('Empty response from Groq');
   }
   
   // Check if response contains any JSON-like structure
   const hasJsonStructure = /\{[\s\S]*\}/.test(response);
   if (!hasJsonStructure) {
-    console.error('❌ Response does not contain JSON structure');
-    console.error('❌ Response preview:', response.substring(0, 500));
+    devLog.error('❌ Response does not contain JSON structure');
+    devLog.error('❌ Response preview:', response.substring(0, 500));
     throw new Error('Response does not contain valid JSON structure');
   }
   
@@ -388,8 +389,8 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
         devLog.debug('✅ JSON.parse successful!', undefined, 'western');
         devLog.debug(`🔍 Parsed object keys: ${Object.keys(parsed || {}).join(', ')}`, undefined, 'western');
       } catch (parseError: any) {
-        console.error('❌ JSON.parse failed:', parseError.message);
-        console.error('❌ Error at position:', parseError.message.match(/position (\d+)/)?.[1] || 'unknown');
+        devLog.error('❌ JSON.parse failed:', parseError.message);
+        devLog.error('❌ Error at position:', parseError.message.match(/position (\d+)/)?.[1] || 'unknown');
         
         // Try to fix common JSON issues and parse again
         devLog.debug('🔍 Attempting to fix JSON...', undefined, 'western');
@@ -412,11 +413,11 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
             }
           }
         } catch (secondError: any) {
-          console.error('❌ All JSON parsing strategies failed');
-          console.error('❌ Original error:', parseError.message);
-          console.error('❌ Second attempt error:', secondError.message);
-          console.error('❌ JSON that failed to parse (first 500 chars):', jsonString.substring(0, 500));
-          console.error('❌ JSON that failed to parse (last 500 chars):', jsonString.substring(Math.max(0, jsonString.length - 500)));
+          devLog.error('❌ All JSON parsing strategies failed');
+          devLog.error('❌ Original error:', parseError.message);
+          devLog.error('❌ Second attempt error:', secondError.message);
+          devLog.error('❌ JSON that failed to parse (first 500 chars):', jsonString.substring(0, 500));
+          devLog.error('❌ JSON that failed to parse (last 500 chars):', jsonString.substring(Math.max(0, jsonString.length - 500)));
           throw parseError;
         }
       }
@@ -561,19 +562,19 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
       
       return result;
     } else {
-      console.error('❌ ========== NO JSON FOUND IN RESPONSE ==========');
-      console.error('❌ Response does not contain valid JSON structure');
-      console.error('❌ Response preview (first 500 chars):', response.substring(0, 500));
-      console.error('❌ Response preview (last 500 chars):', response.substring(Math.max(0, response.length - 500)));
-      console.error('❌ ==============================================');
+      devLog.error('❌ ========== NO JSON FOUND IN RESPONSE ==========');
+      devLog.error('❌ Response does not contain valid JSON structure');
+      devLog.error('❌ Response preview (first 500 chars):', response.substring(0, 500));
+      devLog.error('❌ Response preview (last 500 chars):', response.substring(Math.max(0, response.length - 500)));
+      devLog.error('❌ ==============================================');
       throw new Error('No JSON structure found in Groq response');
     }
   } catch (error: any) {
-    console.error('❌ ========== PARSEGROQRESPONSE ERROR ==========');
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
-    console.error('❌ Response that caused error (first 1000 chars):', response.substring(0, 1000));
-    console.error('❌ ============================================');
+    devLog.error('❌ ========== PARSEGROQRESPONSE ERROR ==========');
+    devLog.error('❌ Error message:', error.message);
+    devLog.error('❌ Error stack:', error.stack);
+    devLog.error('❌ Response that caused error (first 1000 chars):', response.substring(0, 1000));
+    devLog.error('❌ ============================================');
     throw error; // Re-throw to be caught by route-level handler
   }
 
@@ -799,7 +800,7 @@ export async function POST(request: NextRequest) {
 
     // Check if Groq API key is available
     if (!process.env.GROQ_API_KEY) {
-      console.error('❌ GROQ_API_KEY is not configured');
+      devLog.error('❌ GROQ_API_KEY is not configured');
       // Return fallback response
       const fallbackAnalysis = parseGroqResponse('', chartData.planets || [], chartData.houses || [], chartData.aspects || [], chartData.transits || []);
       return NextResponse.json({
@@ -859,7 +860,7 @@ export async function POST(request: NextRequest) {
       devLog.debug('📝   - Mentions "chartOverview":', hasChartOverview, 'western');
       devLog.debug('📝   - Mentions "planetaryAnalysis":', hasPlanetaryAnalysis, 'western');
     } else {
-      console.error('❌ ERROR: Groq response is EMPTY!');
+      devLog.error('❌ ERROR: Groq response is EMPTY!');
     }
     devLog.debug('📝 =======================================', undefined, 'western');
 
@@ -877,11 +878,11 @@ export async function POST(request: NextRequest) {
       );
     } catch (parseError: any) {
       parsingFailed = true;
-      console.error('❌ ========== PARSING ERROR ==========');
-      console.error('❌ Error message:', parseError.message);
-      console.error('❌ Error stack:', parseError.stack);
-      console.error('❌ Raw response that caused error (first 1000 chars):', aiResponse.substring(0, 1000));
-      console.error('❌ ====================================');
+      devLog.error('❌ ========== PARSING ERROR ==========');
+      devLog.error('❌ Error message:', parseError.message);
+      devLog.error('❌ Error stack:', parseError.stack);
+      devLog.error('❌ Raw response that caused error (first 1000 chars):', aiResponse.substring(0, 1000));
+      devLog.error('❌ ====================================');
       
       // Use fallback but don't cache it
       comprehensiveAnalysis = null;
@@ -952,12 +953,14 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now()
     };
 
-    // Cache in Firebase
+    // Cache in Firebase (include reportChunks for retrieval-only Seer)
     try {
+      const reportChunks = transformComprehensiveToChunks(comprehensiveAnalysis, chartData);
       await setCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive', {
         data: responseData,
         timestamp: Date.now(),
-        schemaVersion: PREDICTIVE_INSIGHTS_SCHEMA_VERSION
+        schemaVersion: PREDICTIVE_INSIGHTS_SCHEMA_VERSION,
+        reportChunks
       });
       devLog.info('✅ Cached comprehensive Western astrology report in Firebase with schema version:', PREDICTIVE_INSIGHTS_SCHEMA_VERSION, 'western-astrology');
     } catch (cacheError: any) {
@@ -973,7 +976,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Comprehensive Western Astrology API error:', error);
+    devLog.error('❌ Comprehensive Western Astrology API error:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Failed to generate comprehensive Western astrology analysis'

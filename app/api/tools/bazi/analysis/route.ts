@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     try {
       userProfile = await getUserProfile(userId)
     } catch (profileError) {
-      console.error('⚠️ Failed to fetch user profile:', profileError)
+      devLog.error('⚠️ Failed to fetch user profile:', profileError, 'route')
       return NextResponse.json(
         { success: false, error: 'Failed to fetch user profile' },
         { status: 400 }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Error generating BaZi reading:', error)
+    devLog.error('Error generating BaZi reading:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Error fetching BaZi reading:', error)
+    devLog.error('Error fetching BaZi reading:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

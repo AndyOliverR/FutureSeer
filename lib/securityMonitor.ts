@@ -1,4 +1,5 @@
 // Security monitoring and logging system for Firebase
+import { devLog } from '@/lib/devLogger';
 interface SecurityEvent {
   timestamp: number;
   eventType: 'auth_success' | 'auth_failure' | 'data_access' | 'data_modification' | 'rate_limit' | 'suspicious_activity';
@@ -47,7 +48,7 @@ class SecurityMonitor {
 
     // Log to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔒 Security Event:', {
+      devLog.debug('🔒 Security Event:', {
         type: fullEvent.eventType,
         severity: fullEvent.severity,
         userId: fullEvent.userId,
@@ -142,7 +143,7 @@ class SecurityMonitor {
     
     // In production, send to your alerting system (email, Slack, etc.)
     if (process.env.NODE_ENV === 'development') {
-      console.warn('🚨 SECURITY ALERT:', {
+      devLog.warn('🚨 SECURITY ALERT:', {
         count: this.alertCount,
         event: event,
         recentEvents: this.getRecentEvents(15 * 60 * 1000) // Last 15 minutes

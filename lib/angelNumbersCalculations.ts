@@ -1,4 +1,5 @@
 // Comprehensive Angel Numbers Calculation Engine
+import { devLog } from '@/lib/devLogger';
 // This provides all interpretations and insights needed for a self-reliant angel numbers system
 
 interface AngelNumberInterpretation {
@@ -564,7 +565,7 @@ export function generateAngelNumbersProfile(
   birthDate: string
 ): AngelNumbersProfile {
   try {
-    console.log('Generating comprehensive angel numbers profile')
+    devLog.debug('Generating comprehensive angel numbers profile')
     
     // Validate input
     if (!fullName || !birthDate) {
@@ -647,11 +648,11 @@ export function generateAngelNumbersProfile(
       }
     }
     
-    console.log('Successfully generated angel numbers profile')
+    devLog.debug('Successfully generated angel numbers profile')
     return profile
     
   } catch (error) {
-    console.error('Error generating angel numbers profile:', error)
+    devLog.error('Error generating angel numbers profile:', error, 'angelNumbersCalculations')
     throw new Error(`Failed to generate angel numbers profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

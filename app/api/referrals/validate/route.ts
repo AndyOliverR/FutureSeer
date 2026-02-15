@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { validateReferralCode } from '@/lib/referralUtils';
 
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    console.error('Error validating referral code:', error);
+    devLog.error('Error validating referral code:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to validate referral code' },
       { status: 500 }

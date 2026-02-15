@@ -1,3 +1,5 @@
+import { devLog } from '@/lib/devLogger';
+
 export interface KabbalisticData {
   fullName: string
   birthDate: string
@@ -1172,7 +1174,7 @@ class KabbalisticNumerologyIntelligence {
 
   async saveAnalysis(userId: string, analysis: KabbalisticAnalysis): Promise<void> {
     // In a real implementation, this would save to a database
-    console.log('Saving Kabbalistic analysis for user:', userId)
+    devLog.debug('Saving Kabbalistic analysis for user:', userId)
   }
 
   async getAnalysisHistory(userId: string): Promise<KabbalisticAnalysis[]> {

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Star, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import { HellenisticAstrologyReading } from '@/lib/hellenisticAstrologyIntelligence';
 
 interface HellenisticSeerChatInterfaceProps {
@@ -24,8 +25,10 @@ interface Message {
 }
 
 const HELENISTIC_STARTER_QUESTIONS = [
-  'What does my chart say about career?',
-  'How do profections apply this year?',
+  'Which areas of my life are most active or important?',
+  'Where does my chart show fortune or difficulty?',
+  'Which life topics demand the most effort?',
+  'What themes repeat in my life path?',
 ];
 
 export default function HellenisticSeerChatInterface({
@@ -159,7 +162,7 @@ export default function HellenisticSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (error) {
-      console.error('Hellenistic Seer error:', error);
+      devLog.error('Hellenistic Seer error', error, 'HellenisticSeerChatInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -258,7 +261,7 @@ export default function HellenisticSeerChatInterface({
           Ask the Hellenistic Seer
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Sect, house rulership, lots, and profections — rule-based Hellenistic guidance.
+          Fate mechanics and life topics, not modern psychology.
         </p>
         {messages.length > 0 && (
           <Button
@@ -279,8 +282,17 @@ export default function HellenisticSeerChatInterface({
             <div className="text-center py-8">
               <Star className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Ask about career, wealth, marriage, sect, lots, or profections.
+                Ask me anything about fate, fortune, and life topics…
               </p>
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I'll interpret your chart using ancient Greco-Roman techniques to reveal life topics, periods of activity, and areas of fortune or struggle.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Life topics (career, marriage, wealth, children, health; which areas are strong or challenged; where effort vs ease appears)</li>
+                <li>Fate & fortune (which areas bring support, which require struggle, how fortune operates)</li>
+                <li>Broad timing (active years or phases, life chapters, when a topic becomes important—no exact dates)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {HELENISTIC_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -295,6 +307,7 @@ export default function HellenisticSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: understanding fate mechanics and life topics, not exact dates or emotional psychology.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -329,7 +342,7 @@ export default function HellenisticSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask about career, wealth, marriage, sect, lots, profections..."
+              placeholder="Ask about fate, fortune, life topics, or profections…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

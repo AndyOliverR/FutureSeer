@@ -1,4 +1,5 @@
 import { GeomanticAnalysis, GeomanticFigure, GeomanticHouse } from '@/hooks/useGeomancy'
+import { devLog } from '@/lib/devLogger';
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
 
@@ -179,7 +180,7 @@ class GeomancyIntelligence {
         advice
       }
     } catch (error) {
-      console.error('Geomancy analysis error:', error)
+      devLog.error('Geomancy analysis error:', error, 'geomancyIntelligence')
       throw new Error('Failed to perform geomancy')
     }
   }
@@ -232,7 +233,7 @@ class GeomancyIntelligence {
     
     // Validate: Should have exactly 15 figures (4 Mothers + 4 Daughters + 4 Nephews + 2 Witnesses + 1 Judge)
     if (figures.length !== 15) {
-      console.error(`Geomancy figure generation error: Expected 15 figures, got ${figures.length}`)
+      devLog.error(`Geomancy figure generation error: Expected 15 figures, got ${figures.length}`, 'geomancyIntelligence')
       throw new Error(`Invalid figure count: ${figures.length} instead of 15`)
     }
     

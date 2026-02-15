@@ -43,6 +43,7 @@ export type DailyDecisionQuestionType =
   | 'hair_oil'
   | 'property_construction'
   | 'when_today'
+  | 'today_or_tomorrow'
   | 'general'
   | 'refusal';
 
@@ -97,13 +98,29 @@ export function buildDailyDecisionState(
 export function classifyDailyDecisionQuestion(question: string): DailyDecisionQuestionType {
   const lower = question.toLowerCase().trim();
 
-  // Refusal: outcome prediction, success, karma, "what will happen"
+  // Refusal: outcome prediction, success, karma, life questions, emotional counseling
   if (
     /will\s+this\s+bring\s+success|will\s+i\s+succeed|what\s+will\s+happen\s+if\s+i\s+do|is\s+this\s+karmically\s+good|will\s+i\s+get\s+rich|will\s+it\s+work\s+out|guarantee|certain\s+outcome|proof\s+that|predict/.test(
       lower
     )
   ) {
     return 'refusal';
+  }
+  if (
+    /will\s+i\s+get\s+married|career\s+destiny|life\s+purpose|life\s+path\s+question|should\s+i\s+leave\s+my\s+job|how\s+do\s+i\s+feel|emotional\s+counseling|therapy|relationship\s+destiny/.test(
+      lower
+    )
+  ) {
+    return 'refusal';
+  }
+
+  // Choice comparison: today or tomorrow / today or wait
+  if (
+    /today\s+or\s+tomorrow|should\s+i\s+do\s+this\s+today\s+or\s+wait|better\s+today\s+or\s+tomorrow|start\s+this\s+task\s+today\s+or\s+wait/.test(
+      lower
+    )
+  ) {
+    return 'today_or_tomorrow';
   }
 
   // When today (micro-muhurta)
@@ -161,6 +178,60 @@ function formatRecommendationForSlice(rec: DailyDecisionRecommendation): string 
   ];
   if (rec.avoidAfterSunset) parts.push('avoidAfterSunset: true');
   return parts.join('\n');
+}
+
+const ACTIVITY_LABELS: Record<string, string> = {
+  lendMoney: 'lending money',
+  borrowMoney: 'borrowing',
+  payBackDebts: 'paying debts',
+  travel: 'travel',
+  haircut: 'grooming',
+  cutNails: 'cut nails',
+  hairOil: 'hair oil',
+};
+
+function buildSummaryBlock(state: DailyDecisionState): string {
+  const recs = state.recommendations;
+  const entries = [
+    { key: 'lendMoney', score: recs.lendMoney.score },
+    { key: 'borrowMoney', score: recs.borrowMoney.score },
+    { key: 'payBackDebts', score: recs.payBackDebts.score },
+    { key: 'travel', score: recs.travel.score },
+    { key: 'haircut', score: recs.haircut.score },
+    { key: 'cutNails', score: recs.cutNails.score },
+    { key: 'hairOil', score: recs.hairOil.score },
+  ];
+  const favorable: string[] = [];
+  const neutral: string[] = [];
+  const avoid: string[] = [];
+  for (const { key, score } of entries) {
+    const label = ACTIVITY_LABELS[key] ?? key;
+    if (score >= 70) favorable.push(label);
+    else if (score >= 40) neutral.push(label);
+    else avoid.push(label);
+  }
+  const avg =
+    entries.reduce((s, e) => s + e.score, 0) / entries.length;
+  let day_quality: string;
+  if (avg >= 70) day_quality = 'favorable';
+  else if (avg >= 40) day_quality = 'neutral';
+  else day_quality = 'avoid';
+
+  const lines: string[] = [
+    `day_quality: ${day_quality}`,
+    `favorable_activities: ${favorable.length ? favorable.join(', ') : 'none'}`,
+    `neutral_activities: ${neutral.length ? neutral.join(', ') : 'none'}`,
+    `avoid_activities: ${avoid.length ? avoid.join(', ') : 'none'}`,
+  ];
+  const recMap = state.recommendations as Record<string, DailyDecisionRecommendation>;
+  const notes = entries
+    .map(e => recMap[e.key]?.personalizedNote)
+    .filter((n): n is string => Boolean(n));
+  if (notes.length > 0) {
+    lines.push(`overall_guidance: ${notes.slice(0, 2).join(' ')}`);
+  }
+  lines.push(`time_windows: avoid Rahu Kaal and Gulika Kaal (see inauspicious_times below).`);
+  return lines.join('\n');
 }
 
 /**
@@ -292,8 +363,8 @@ ${absoluteProhibitionsNote}`;
 
 TIME WINDOW RESOLVER: Remove Rahu Kaal and Gulika Kaal from the day; for grooming (haircut, nails, hair oil), also remove time after sunset until sunrise. Return only the remaining safe windows. No astrology narration.`;
     }
-    case 'general':
-    default: {
+    case 'today_or_tomorrow': {
+      const summary = buildSummaryBlock(state);
       const activityScores = [
         `lend_money: ${state.recommendations.lendMoney.score}`,
         `borrow_money: ${state.recommendations.borrowMoney.score}`,
@@ -307,6 +378,31 @@ TIME WINDOW RESOLVER: Remove Rahu Kaal and Gulika Kaal from the day; for groomin
         activityScores.push(`property_construction: ${state.property_construction.auspiciousScore}`);
       }
       return `${panchangaBlock}
+
+${summary}
+
+Activities (scores 0–100): ${activityScores.join('; ')}
+
+User is asking to compare today vs another day. Use Tier 2: compare day quality for this date; recommend the stronger day for the activity or suggest preparation today and execution on a better day.`;
+    }
+    case 'general':
+    default: {
+      const summary = buildSummaryBlock(state);
+      const activityScores = [
+        `lend_money: ${state.recommendations.lendMoney.score}`,
+        `borrow_money: ${state.recommendations.borrowMoney.score}`,
+        `pay_debts: ${state.recommendations.payBackDebts.score}`,
+        `travel: ${state.recommendations.travel.score}`,
+        `haircut: ${state.recommendations.haircut.score}`,
+        `cut_nails: ${state.recommendations.cutNails.score}`,
+        `hair_oil: ${state.recommendations.hairOil.score}`,
+      ];
+      if (state.property_construction) {
+        activityScores.push(`property_construction: ${state.property_construction.auspiciousScore}`);
+      }
+      return `${panchangaBlock}
+
+${summary}
 
 Activities (scores 0–100): ${activityScores.join('; ')}
 

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { devLog } from '@/lib/devLogger';
 
 interface BaZiMessage {
   id: string;
@@ -28,8 +29,10 @@ const REGENERATE_MESSAGE =
   'Generate your BaZi reading first to use Ask the Seer.';
 
 const BAZI_STARTER_QUESTIONS = [
-  'What does my chart say about career?',
-  'When is a good decade for wealth?',
+  'What does my BaZi chart say about my life structure?',
+  'Which phases of my life are more favorable?',
+  'How do my luck cycles affect career or wealth?',
+  'Why do certain years feel more challenging?',
 ];
 
 export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
@@ -163,7 +166,7 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('BaZi Seer error:', err);
+      devLog.error('BaZi Seer error', err, 'BaZiCoachInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -261,7 +264,7 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
             Ask the Seer — BaZi
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Life direction, career, wealth, timing by phase. Four Pillars wisdom.
+            Destiny structure and life cycles, not daily advice.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
@@ -285,7 +288,7 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
           Ask the Seer — BaZi
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Life direction, career, wealth, relationships, health constitution, timing by decade.
+          Destiny structure and life cycles, not daily advice.
         </p>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
@@ -294,8 +297,20 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Ask about life direction, career, wealth, timing…
+                Ask me anything about your destiny and life cycles…
               </p>
+              <p className="text-sm text-amber-800 mb-3">
+                I&apos;ll interpret your Four Pillars of Destiny to reveal life structure, strength phases, and long-term fortune patterns.
+              </p>
+              <p className="text-xs text-amber-800 font-medium mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Life structure &amp; strength</li>
+                <li>Luck cycles (good vs difficult periods, which phases support growth)</li>
+                <li>Career &amp; wealth structure</li>
+                <li>Relationships (structural patterns, compatibility—not dates)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {BAZI_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -310,6 +325,9 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
                   </Button>
                 ))}
               </div>
+              <p className="text-xs text-amber-700 mt-4">
+                Best for: Destiny structure and long-term life cycles, not daily advice or exact dates.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -344,7 +362,7 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about life direction, career, wealth, timing…"
+              placeholder="Ask about life structure, luck cycles, career, or wealth…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

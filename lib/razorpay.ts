@@ -4,6 +4,7 @@
  */
 
 import Razorpay from 'razorpay';
+import { devLog } from '@/lib/devLogger';
 
 let razorpayInstance: Razorpay | null = null;
 
@@ -66,7 +67,7 @@ export async function createOrder(params: {
     });
     return order;
   } catch (error: unknown) {
-    console.error('Error creating Razorpay order:', error);
+    devLog.error('Error creating Razorpay order:', error, 'razorpay');
     throw new Error(`Failed to create order: ${getRazorpayErrorMessage(error)}`);
   }
 }
@@ -109,7 +110,7 @@ export async function createSubscription(params: {
     const subscription = await razorpay.subscriptions.create(subscriptionParams);
     return subscription;
   } catch (error: any) {
-    console.error('Error creating Razorpay subscription:', error);
+    devLog.error('Error creating Razorpay subscription:', error, 'razorpay');
     throw new Error(`Failed to create subscription: ${error.message || 'Unknown error'}`);
   }
 }
@@ -153,7 +154,7 @@ export async function createPlan(params: {
     const plan = await razorpay.plans.create(planParams);
     return plan;
   } catch (error: unknown) {
-    console.error('Error creating Razorpay plan:', error);
+    devLog.error('Error creating Razorpay plan:', error, 'razorpay');
     throw new Error(`Failed to create plan: ${getRazorpayErrorMessage(error)}`);
   }
 }
@@ -172,7 +173,7 @@ export async function refundPayment(paymentId: string, amount?: number): Promise
     const refund = await razorpay.payments.refund(paymentId, params);
     return refund;
   } catch (error: unknown) {
-    console.error('Error refunding payment:', error);
+    devLog.error('Error refunding payment:', error, 'razorpay');
     throw new Error(`Failed to refund payment: ${getRazorpayErrorMessage(error)}`);
   }
 }
@@ -187,7 +188,7 @@ export async function cancelSubscription(subscriptionId: string, cancelAtCycleEn
     const subscription = await razorpay.subscriptions.cancel(subscriptionId, cancelAtCycleEnd ? 1 : 0);
     return subscription;
   } catch (error: any) {
-    console.error('Error cancelling Razorpay subscription:', error);
+    devLog.error('Error cancelling Razorpay subscription:', error, 'razorpay');
     throw new Error(`Failed to cancel subscription: ${error.message || 'Unknown error'}`);
   }
 }
@@ -202,7 +203,7 @@ export async function getSubscription(subscriptionId: string) {
     const subscription = await razorpay.subscriptions.fetch(subscriptionId);
     return subscription;
   } catch (error: any) {
-    console.error('Error fetching Razorpay subscription:', error);
+    devLog.error('Error fetching Razorpay subscription:', error, 'razorpay');
     throw new Error(`Failed to fetch subscription: ${error.message || 'Unknown error'}`);
   }
 }

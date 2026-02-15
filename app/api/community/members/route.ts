@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { getLevelFromKarma, getReputation, calculateBadges } from '@/lib/firestore/communityHelpers';
 
@@ -26,6 +27,13 @@ function toDateSafe(value: CommunityMemberDoc['joinDate']): Date {
   }
   return new Date(value as string | number);
 }
+
+/** Emails for which Karma/Level/Streak are hidden on the community UI (God mode, Mary mode, special user) */
+const HIDE_STATS_EMAILS = new Set([
+  'andyrozario@hotmail.com',
+  'andyoliverrozario2@gmail.com',
+  'andyrozario7@gmail.com',
+]);
 
 // GET - Fetch member list with stats
 export async function GET(request: NextRequest) {
@@ -80,6 +88,7 @@ export async function GET(request: NextRequest) {
         const isFounderByUid = founderUid && (userId === founderUid || doc.id === founderUid);
         const isFounderByEmail = founderEmail && memberEmail && memberEmail === founderEmail;
         const isFounder = isFounderByUid || isFounderByEmail;
+        const hideStats = HIDE_STATS_EMAILS.has(memberEmail);
 
         if (isFounder) {
           const existingBadges = Array.isArray(data.badges) ? data.badges : [];
@@ -101,6 +110,7 @@ export async function GET(request: NextRequest) {
             reputation: 'Mystical' as const,
             flair: 'Founder',
             isOnline: false,
+            hideStats,
           };
         }
 
@@ -121,6 +131,7 @@ export async function GET(request: NextRequest) {
           reputation: getReputation(karma, contributions, streak),
           flair: (data.flair as string) || '',
           isOnline: false, // TODO: Implement real-time online status
+          hideStats,
         };
       });
 
@@ -131,6 +142,8 @@ export async function GET(request: NextRequest) {
           const founderDoc = await db.collection('communityMembers').doc(founderUid).get();
           if (founderDoc.exists) {
             const data = founderDoc.data() as CommunityMemberDoc;
+            const founderEmailFromDoc = String(data.email ?? '').trim().toLowerCase();
+            const hideStats = HIDE_STATS_EMAILS.has(founderEmailFromDoc);
             const joinDate = toDateSafe(data.joinDate);
             const existingBadges = Array.isArray(data.badges) ? data.badges : [];
             const badges = existingBadges.includes('Creator') ? existingBadges : [...existingBadges, 'Creator'];
@@ -151,6 +164,7 @@ export async function GET(request: NextRequest) {
               reputation: 'Mystical' as const,
               flair: 'Founder',
               isOnline: false,
+              hideStats,
             };
             members.unshift(founderMember);
           }
@@ -167,7 +181,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error fetching members:', error);
+    devLog.error('Error fetching members:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch members' }, { status: 500 });
   }
 }

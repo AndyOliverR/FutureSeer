@@ -1,4 +1,5 @@
 // Tarot API Service - Integration with external Tarot API and local card images
+import { devLog } from '@/lib/devLogger';
 // Based on https://github.com/krates98/tarotcardapi
 
 export interface TarotCard {
@@ -364,7 +365,7 @@ class TarotApiService {
       const data = await response.json();
       return this.mapExternalCardToLocal(data);
     } catch (error) {
-      console.error('Error fetching random card:', error);
+      devLog.error('Error fetching random card:', error, 'tarotApiService');
       return this.getRandomLocalCard();
     }
   }
@@ -377,7 +378,7 @@ class TarotApiService {
       const data = await response.json();
       return data.cards.map((card: any) => this.mapExternalCardToLocal(card));
     } catch (error) {
-      console.error('Error fetching all cards:', error);
+      devLog.error('Error fetching all cards:', error, 'tarotApiService');
       return LOCAL_TAROT_CARDS;
     }
   }

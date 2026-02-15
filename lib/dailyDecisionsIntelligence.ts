@@ -2,6 +2,7 @@
 // Provides personalized recommendations for daily life decisions based on Vedic Astrology and Numerology
 
 import { vedicIntelligence } from './vedicIntelligence';
+import { devLog } from '@/lib/devLogger';
 import { calculateAccuratePanchanga, calculateCurrentPanchanga } from './enhancedPanchangaCalculator';
 import { calculateRahuGulika, RahuGulikaTimings } from './rahuGulikaCalculator';
 import { getChart } from './astronomia-vedic';
@@ -169,7 +170,7 @@ class DailyDecisionsIntelligence {
 
     // Fallback to current Panchanga if calculation fails
     if (!targetPanchanga) {
-      console.warn('⚠️ Failed to calculate Panchanga for target date, using current Panchanga');
+      devLog.warn('⚠️ Failed to calculate Panchanga for target date, using current Panchanga', 'dailyDecisionsIntelligence');
       targetPanchanga = calculateCurrentPanchanga(birthPlace, latitude, longitude);
     }
 
@@ -246,7 +247,7 @@ class DailyDecisionsIntelligence {
         };
       }
     } catch (e) {
-      console.warn('Vastu timing skipped:', e);
+      devLog.warn('Vastu timing skipped:', e, 'dailyDecisionsIntelligence');
     }
 
     return {

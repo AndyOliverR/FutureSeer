@@ -4,6 +4,7 @@
  */
 
 import { calculateTropicalPlanets, getTropicalSign } from '../western/tropicalCalculator'
+import { devLog } from '@/lib/devLogger';
 
 /**
  * Generate a unique seed from a date for deterministic but varied randomization
@@ -123,7 +124,7 @@ function calculateMoonAspects(date: Date): {
       dominantAspect: dominantAspect || 'Neutral'
     }
   } catch (error) {
-    console.error('Error calculating Moon aspects:', error)
+    devLog.error('Error calculating Moon aspects:', error, 'dailyOutlook')
     return {
       moonSign: 'Unknown',
       aspectScore: 0,

@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 
 export interface DreamData {
@@ -959,7 +960,7 @@ class DreamSymbolsIntelligence {
 
   async saveAnalysis(userId: string, analysis: DreamAnalysis): Promise<void> {
     // In a real implementation, this would save to a database
-    console.log('Saving Dream analysis for user:', userId)
+    devLog.debug('Saving Dream analysis for user:', userId)
   }
 
   async getAnalysisHistory(userId: string): Promise<DreamAnalysis[]> {

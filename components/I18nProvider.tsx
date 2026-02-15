@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
@@ -157,7 +158,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
           i18n.changeLanguage(settings.language)
         }
       } catch (error) {
-        console.error('Failed to load language setting:', error)
+        devLog.error('Failed to load language setting:', error, 'I18nProvider')
       }
     }
   }, [])

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useNumerologyData } from '@/hooks/use-numerology-data'
 import { getNumerologyCoaching } from '@/lib/numerologyIntelligence'
 import { Button } from '@/components/ui/button'
@@ -89,7 +90,7 @@ export function NumerologyCoachInterface() {
 
       setMessages(prev => [...prev, coachMessage])
     } catch (error) {
-      console.error('Error getting numerology coaching:', error)
+      devLog.error('Error getting numerology coaching:', error, 'NumerologyCoachInterface')
       const errorMessage: NumerologyMessage = {
         id: (Date.now() + 1).toString(),
         type: 'coach',

@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -137,11 +138,15 @@ export default function VedicAstroNumerologyTab({
     }
   }, [cachedReport])
 
-  // Fetch comprehensive analysis
+  // Fetch comprehensive analysis (skipped when cachedReport or parent loading; aborted if cache arrives during fetch)
+  const abortRef = useRef<AbortController | null>(null)
   useEffect(() => {
     if (isLoadingReport || cachedReport || comprehensiveAnalysis) return
     
     if (!userId || !birthDate || !fullName || !numerologyProfile || moonSign === 'Unknown') return
+
+    const controller = new AbortController()
+    abortRef.current = controller
 
     const fetchAnalysis = async () => {
       setIsLoadingAnalysis(true)
@@ -160,6 +165,7 @@ export default function VedicAstroNumerologyTab({
             sunSign,
             numerologyProfile
           }),
+          signal: controller.signal,
         })
 
         if (!response.ok) {
@@ -174,14 +180,19 @@ export default function VedicAstroNumerologyTab({
           throw new Error(result.error || 'Failed to generate analysis')
         }
       } catch (error: any) {
-        console.error('Error fetching Vedic Astro-Numerology analysis:', error)
+        if (error?.name === 'AbortError') return
+        devLog.error('Error fetching Vedic Astro-Numerology analysis:', error, 'VedicAstroNumerologyTab')
         setAnalysisError(error?.message || 'Failed to generate analysis')
       } finally {
-        setIsLoadingAnalysis(false)
+        if (!controller.signal.aborted) setIsLoadingAnalysis(false)
       }
     }
 
     fetchAnalysis()
+    return () => {
+      controller.abort()
+      abortRef.current = null
+    }
   }, [userId, birthDate, fullName, numerologyProfile, moonSign, lagnaSign, sunSign, cachedReport, isLoadingReport, comprehensiveAnalysis])
 
   if (!birthDate || !fullName || !numerologyProfile) {

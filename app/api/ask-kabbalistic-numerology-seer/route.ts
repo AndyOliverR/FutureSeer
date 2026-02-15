@@ -11,6 +11,7 @@ import {
   KABBALISTIC_REFUSAL_PHRASE,
   type KabbalisticAnalysisPayload,
 } from '@/lib/kabbalisticNumerologySeerState';
+import { buildKabbalisticNumerologySeerSystemPrompt } from '@/lib/kabbalisticNumerologySeerPrompts';
 
 /** Normalize kabbalistic payload from request or comprehensiveProfile. */
 function normalizeToKabbalisticPayload(
@@ -107,7 +108,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getKabbalisticSliceForQuestionType(questionType, state);
+    const slice = getKabbalisticSliceForQuestionType(questionType, state);
+    const displayName = (userProfile?.displayName ?? '').trim();
+    const systemPrompt = buildKabbalisticNumerologySeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
@@ -202,7 +207,7 @@ export async function POST(request: NextRequest) {
               /* non-fatal */
             }
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -222,7 +227,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error in Kabbalistic Numerology Seer API:', error);
+    devLog.error('Error in Kabbalistic Numerology Seer API:', error);
     return NextResponse.json(
       {
         success: false,

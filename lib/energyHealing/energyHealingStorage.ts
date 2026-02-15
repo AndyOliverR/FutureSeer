@@ -2,6 +2,7 @@
 // Handles Firebase storage and retrieval of energy healing analyses
 
 import { getFirebaseDB } from '@/lib/firebase';
+import { devLog } from '@/lib/devLogger';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   ChakraAnalysis,
@@ -80,7 +81,7 @@ export async function storeEnergyHealingAnalysis(
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('⚠️ Firebase DB not available, skipping storage');
+      devLog.warn('⚠️ Firebase DB not available, skipping storage', 'energyHealingStorage');
       return;
     }
 
@@ -95,9 +96,9 @@ export async function storeEnergyHealingAnalysis(
     const docRef = doc(db, 'users', userId, 'energyHealing', method);
     await setDoc(docRef, storedAnalysis);
     
-    console.log(`✅ Stored ${method} analysis for user ${userId}`);
+    devLog.debug(`✅ Stored ${method} analysis for user ${userId}`);
   } catch (error) {
-    console.error(`❌ Error storing ${method} analysis:`, error);
+    devLog.error(`❌ Error storing ${method} analysis:`, error, 'energyHealingStorage');
     // Don't throw - storage failure shouldn't break the app
   }
 }
@@ -112,7 +113,7 @@ export async function getEnergyHealingAnalysis(
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('⚠️ Firebase DB not available');
+      devLog.warn('⚠️ Firebase DB not available', undefined, 'energyHealingStorage');
       return null;
     }
 
@@ -121,13 +122,13 @@ export async function getEnergyHealingAnalysis(
     
     if (docSnap.exists()) {
       const data = docSnap.data() as StoredEnergyHealingAnalysis;
-      console.log(`✅ Retrieved ${method} analysis for user ${userId}`);
+      devLog.debug(`✅ Retrieved ${method} analysis for user ${userId}`);
       return data;
     }
     
     return null;
   } catch (error) {
-    console.error(`❌ Error retrieving ${method} analysis:`, error);
+    devLog.error(`❌ Error retrieving ${method} analysis:`, error, 'energyHealingStorage');
     return null;
   }
 }

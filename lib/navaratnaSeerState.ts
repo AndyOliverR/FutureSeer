@@ -279,6 +279,12 @@ DISCIPLINE (non-negotiable):
 - Gemstones amplify planetary energy; they do not discriminate between good and bad outcomes.
 `.trim();
 
+  const navaratnaCautiousCaveat =
+    state.functional_benefics.length === 0 ||
+    Object.keys(state.planet_strength).length === 0
+      ? '\n\nPlanetary strength data is limited or unclear; recommend cautiously or defer to qualified analysis.'
+      : '';
+
   return `${lagneshBlock}
 ${wearingBlock ? `\n\n${wearingBlock}` : ''}
 
@@ -290,5 +296,5 @@ ${dashaBlock}
 ${stonesBlock}
 ${safetyBlock}
 
-${disciplineNote}`;
+${disciplineNote}${navaratnaCautiousCaveat}`;
 }

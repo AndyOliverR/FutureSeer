@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -124,7 +125,7 @@ export default function GeomancySeerChatInterface({
         }
       }
     } catch (error) {
-      console.error('Error:', error);
+      devLog.error('Error:', error, 'GeomancySeerChatInterface');
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === aiMessageId

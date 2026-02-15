@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Send, MessageCircle, Brain, Trash2 } from "lucide-react"
 import type { SimplifiedKabbalisticAnalysis } from '@/lib/kabbalisticNumerologyIntelligence'
+import { devLog } from '@/lib/devLogger'
 
 interface KabbalisticMessage {
   id: string
@@ -21,8 +22,10 @@ interface KabbalisticNumerologyCoachInterfaceProps {
 }
 
 const KABBALISTIC_STARTER_QUESTIONS = [
-  'What does my soul number suggest about my life path?',
-  'How can I align my name with my destiny according to Kabbalistic wisdom?',
+  'What does my Kabbalistic numerology say about my soul path?',
+  'Why do I keep facing similar challenges?',
+  'What inner lesson am I meant to learn?',
+  'How does my name influence my life direction?',
 ]
 
 export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark", userProfile }: KabbalisticNumerologyCoachInterfaceProps) {
@@ -128,7 +131,7 @@ export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark"
         }
       }
     } catch (error) {
-      console.error('Error getting Kabbalistic coaching:', error)
+      devLog.error('Error getting Kabbalistic coaching', error, 'KabbalisticNumerologyCoachInterface')
       setMessages(prev =>
         prev.map(m => m.id === coachMessageId ? { ...m, content: "I'm having trouble accessing the Kabbalistic wisdom right now. Please try again in a moment." } : m)
       )
@@ -199,9 +202,9 @@ export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark"
     <div className={cardWrapper}>
       <div className={headerStrip}>
         <div>
-          <h3 className={headerTitleClass}>Kabbalistic Seer</h3>
+          <h3 className={headerTitleClass}>Ask the Seer — Kabbalistic Numerology</h3>
           <p className={headerSubtitleClass}>
-            Ask about soul lessons, name alignment, and inner correction.
+            I'll interpret your name and numbers through Kabbalistic principles to reveal soul lessons, challenges, and spiritual strengths.
           </p>
         </div>
         {messages.length > 0 && (
@@ -224,11 +227,19 @@ export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark"
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <MessageCircle className={`w-12 h-12 ${emptyIconClass} mb-4`} />
               <p className={isLight ? "text-slate-700 font-medium mb-2" : "text-slate-300 font-medium mb-2"}>
-                Welcome to Ask the Seer — Kabbalistic Numerology.
+                Ask me anything about your soul numbers and inner patterns…
               </p>
               <p className={isLight ? "text-slate-600 text-sm mb-4" : "text-slate-400 text-sm mb-4"}>
-                Ask about soul lessons, name alignment, or Gematria—or pick a question below.
+                I'll interpret your name and numbers through Kabbalistic principles to reveal soul lessons, challenges, and spiritual strengths.
               </p>
+              <p className={isLight ? "text-slate-700 text-sm font-medium mb-2" : "text-slate-300 text-sm font-medium mb-2"}>
+                You can ask about:
+              </p>
+              <ul className={`text-left text-sm mb-4 list-disc list-inside ${isLight ? "text-slate-600" : "text-slate-400"}`}>
+                <li>Soul and inner nature (core soul lessons, inner motivations, hidden strengths or fears, karmic challenges)</li>
+                <li>Life themes (why certain struggles recur, what areas demand growth, how to align with purpose)</li>
+                <li>Name-based questions (how my name influences me, whether my name supports or conflicts with my nature, what energies my name activates)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center">
                 {KABBALISTIC_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -275,7 +286,7 @@ export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about Kabbalistic Numerology..."
+            placeholder="e.g. What does my Kabbalistic numerology say about my soul path?"
             className={inputClass}
             disabled={isLoading || !user}
           />

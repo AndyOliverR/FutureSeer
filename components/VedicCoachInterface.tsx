@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { useVedic } from '@/hooks/use-vedic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -137,7 +138,7 @@ export function VedicCoachInterface() {
 
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      console.error('Error generating AI response:', error);
+      devLog.error('Error generating AI response:', error, 'VedicCoachInterface');
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',

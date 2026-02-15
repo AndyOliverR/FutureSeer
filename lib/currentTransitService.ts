@@ -7,6 +7,8 @@
  * Third-party attribution: See internal documentation for details.
  */
 
+import { devLog } from '@/lib/devLogger';
+
 export interface CurrentTransit {
   planet: string
   currentSign: string
@@ -34,7 +36,7 @@ export class CurrentTransitService {
    */
   async getCurrentTransits(): Promise<CurrentTransit[]> {
     try {
-      console.log('🔮 FutureSeer: Getting CURRENT transits for 2025...')
+      devLog.debug('🔮 FutureSeer: Getting CURRENT transits for 2025...')
       
       const currentTransits: CurrentTransit[] = [
         {
@@ -94,10 +96,10 @@ export class CurrentTransitService {
         }
       ]
       
-      console.log('✅ FutureSeer: CURRENT transits retrieved successfully')
+      devLog.debug('✅ FutureSeer: CURRENT transits retrieved successfully')
       return currentTransits
     } catch (error) {
-      console.error('❌ FutureSeer: Error getting current transits:', error)
+      devLog.error('❌ FutureSeer: Error getting current transits:', error, 'currentTransitService')
       throw error
     }
   }
@@ -107,7 +109,7 @@ export class CurrentTransitService {
    */
   async getUpcomingEvents(): Promise<CurrentTransit[]> {
     try {
-      console.log('🔮 FutureSeer: Getting UPCOMING events for 2025...')
+      devLog.debug('🔮 FutureSeer: Getting UPCOMING events for 2025...')
       
       const upcomingEvents: CurrentTransit[] = [
         {
@@ -145,10 +147,10 @@ export class CurrentTransitService {
         }
       ]
       
-      console.log('✅ FutureSeer: UPCOMING events retrieved successfully')
+      devLog.debug('✅ FutureSeer: UPCOMING events retrieved successfully')
       return upcomingEvents
     } catch (error) {
-      console.error('❌ FutureSeer: Error getting upcoming events:', error)
+      devLog.error('❌ FutureSeer: Error getting upcoming events:', error, 'currentTransitService')
       throw error
     }
   }

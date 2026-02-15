@@ -46,16 +46,17 @@ export default function PendulumPage() {
         </motion.div>
 
         {/* Page-level tabs: Cast Reading | Ask the Seer */}
-        <Tabs value={pageTab} onValueChange={(v) => setPageTab(v as "cast" | "ask-the-seer")} className="mb-6">
-          <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-1">
-            <TabsTrigger value="cast" className="rounded-xl data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Cast Reading</TabsTrigger>
-            <TabsTrigger value="ask-the-seer" className="rounded-xl data-[state=active]:text-amber-100 data-[state=active]:font-semibold flex items-center gap-2">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={pageTab} onValueChange={(v) => setPageTab(v as "cast" | "ask-the-seer")} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+            <TabsTrigger value="cast" className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:font-semibold data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all border border-transparent data-[state=inactive]:border-slate-600/50">Cast Reading</TabsTrigger>
+            <TabsTrigger value="ask-the-seer" className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:font-semibold data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all border border-transparent data-[state=inactive]:border-slate-600/50 flex items-center gap-2">
               <MessageCircle className="w-4 h-4" />
               Ask the Seer
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="ask-the-seer" className="mt-6">
+          <TabsContent value="ask-the-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg rounded-3xl h-[600px] overflow-hidden">
               <div className="h-full bg-gradient-to-b from-transparent to-white/30 p-4">
                 <PendulumSeerChatInterface
@@ -68,7 +69,7 @@ export default function PendulumPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="cast" className="mt-0">
+          <TabsContent value="cast" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
         {/* Question Input Form */}
         {!analysis && (
           <motion.div
@@ -301,6 +302,7 @@ export default function PendulumPage() {
         )}
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -160,7 +161,7 @@ export default function ComprehensiveWesternReport({
           throw new Error(result.error || 'Failed to generate analysis. Please try again.')
         }
       } catch (error: any) {
-        console.error('Error fetching comprehensive analysis:', error)
+        devLog.error('Error fetching comprehensive analysis:', error, 'ComprehensiveWesternReport')
         const errorMessage = error?.message || 'Failed to generate comprehensive analysis'
         setAnalysisError(errorMessage)
         // Don't fail silently - show user-friendly error

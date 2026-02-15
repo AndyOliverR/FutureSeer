@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import { buildRunesSeerSystemPrompt } from '@/lib/runesSeerPrompts';
 import {
   buildRuneState,
   classifyRuneQuestion,
@@ -107,26 +108,9 @@ export async function POST(request: NextRequest) {
     );
 
     const displayName = (userProfile?.displayName ?? '').trim();
-    const namingRule = displayName
-      ? `The user's display name is "${displayName}". Address them only by this name. Do not use generic terms.`
-      : 'If no display name is provided, you may use a brief generic address.';
-
-    const systemPrompt = `You are an expert Rune Divination reader (Elder Futhark). Runes describe forces and consequences, not guarantees or timelines.
-
-RULES:
-- ${namingRule}
-- Interpret primary rune → position → orientation; then supporting runes. Do not draw many runes or stack meanings; use only the rune state provided (1–3 runes).
-- Emphasize warning vs support: disruptive runes mean "do not proceed blindly," not "bad." State explicitly when a rune signals caution / disruption / correction.
-- End with one clear action stance: Proceed / Proceed with caution / Pause / Adjust approach. No ambiguity.
-- Focus on function + context (resources, direction, disruption, pause, clarity, etc.), not mythology or long stories.
-- Do not predict dates, timelines, or guarantees. Refuse: "Will I succeed?", "When will this happen?", "Is this guaranteed?"
-- Refuse repeated casts for the same question without change in circumstances. Say: "Runes should not be repeatedly cast for the same question without a change in circumstances."
-- Permanent rule: Runes reveal the nature of forces at play, not the certainty of results.
-
-RUNES STATE (use this only):
-${chartSlice}
-
-Answer the user's question using the rune state above. Keep language direct, grounded, and non-mystical.`;
+    const systemPrompt = buildRunesSeerSystemPrompt(chartSlice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const userMessage = question.trim();
 
@@ -151,7 +135,7 @@ Answer the user's question using the rune state above. Keep language direct, gro
               }
             }
           } catch (error) {
-            console.error('Runes Seer stream error:', error);
+            devLog.error('Runes Seer stream error:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I encountered an error. Please try again.'

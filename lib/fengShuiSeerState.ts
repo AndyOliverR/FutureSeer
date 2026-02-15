@@ -196,6 +196,21 @@ DISCIPLINE (non-negotiable):
 - Permanent rule: Feng Shui removes resistance; it does not replace effort.
 `.trim();
 
+  const facingUnknown =
+    !state.facing_direction ||
+    state.facing_direction.trim() === '' ||
+    state.facing_direction.toLowerCase() === 'unknown';
+  const layoutMissing =
+    !state.layout ||
+    (state.layout.main_door == null &&
+      state.layout.bedroom == null &&
+      state.layout.kitchen == null &&
+      state.layout.toilet == null);
+  const spatialIncomplete = facingUnknown || layoutMissing;
+  const caveat = spatialIncomplete
+    ? '\n\nSpatial data is incomplete; offer general principles, not specific placements.'
+    : '';
+
   return `${stateBlock}
 
 ${formSchoolBlock}
@@ -206,5 +221,5 @@ ${cureBlock}
 
 ${schoolBlock}
 
-${disciplineBlock}`;
+${disciplineBlock}${caveat}`;
 }

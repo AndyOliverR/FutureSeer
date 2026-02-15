@@ -222,6 +222,14 @@ DISCIPLINE (non-negotiable):
 - Permanent rule: Horary answers only one sincere question, once, at the moment it is asked.
 `.trim();
 
+  const noApplyingAspect =
+    !state.aspects_summary ||
+    state.aspects_summary.trim() === '' ||
+    state.aspects_summary === 'No applying aspects listed.';
+  const aspectCaveat = noApplyingAspect
+    ? '\n\nNo applying aspect exists; answer trends no or delayed.'
+    : '';
+
   return `${stateBlock}
 ${radicalityBlock}
 
@@ -229,5 +237,5 @@ ${orderBlock}
 
 ${answerBlock}
 
-${disciplineBlock}`;
+${disciplineBlock}${aspectCaveat}`;
 }

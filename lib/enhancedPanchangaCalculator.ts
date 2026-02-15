@@ -2,6 +2,7 @@
 // Provides accurate Panchanga calculations for both birth date and current date
 
 import { getChart } from './astronomia-vedic';
+import { devLog } from '@/lib/devLogger';
 
 export interface AccuratePanchangaData {
   tithi: { 
@@ -91,11 +92,11 @@ const NAKSHATRA_LORDS = [
 
 // Calculate Panchanga from existing chart data (birth date)
 export function calculateAccuratePanchanga(chartData: any, birthData: any): AccuratePanchangaData | null {
-  console.log('🔮 Calculating accurate Panchanga from chart data');
+  devLog.debug('🔮 Calculating accurate Panchanga from chart data');
   
   // Add null check for defensive programming
   if (!chartData || !chartData.planets || !chartData.metadata) {
-    console.error('❌ Invalid chart data for Panchanga calculation:', {
+    devLog.error('❌ Invalid chart data for Panchanga calculation:', {
       chartData: !!chartData,
       hasPlanets: chartData?.planets ? 'yes' : 'no',
       hasMetadata: chartData?.metadata ? 'yes' : 'no',
@@ -107,11 +108,11 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
 
   // Validate planets object has sun and moon
   if (!chartData.planets.sun && !chartData.planets.Sun) {
-    console.error('❌ No Sun data in planets object');
+    devLog.error('❌ No Sun data in planets object', undefined, 'enhancedPanchangaCalculator');
     return null;
   }
   if (!chartData.planets.moon && !chartData.planets.Moon) {
-    console.error('❌ No Moon data in planets object');
+    devLog.error('❌ No Moon data in planets object', undefined, 'enhancedPanchangaCalculator');
     return null;
   }
   
@@ -122,8 +123,8 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   const sunLon = planets.sun?.lonSidereal || planets.Sun?.lonSidereal || 0;
   const moonLon = planets.moon?.lonSidereal || planets.Moon?.lonSidereal || 0;
   
-  console.log('📊 Sun longitude:', sunLon);
-  console.log('📊 Moon longitude:', moonLon);
+  devLog.debug('📊 Sun longitude:', sunLon);
+  devLog.debug('📊 Moon longitude:', moonLon);
   
   const tithi = calculateTithiFromLongitudes(sunLon, moonLon);
   const nakshatra = calculateNakshatraFromLongitude(moonLon);
@@ -133,21 +134,21 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   
   // Validate metadata has coordinates
   if (!metadata || typeof metadata.latitude !== 'number' || typeof metadata.longitude !== 'number') {
-    console.error('❌ Missing or invalid coordinates in metadata:', {
+    devLog.error('❌ Missing or invalid coordinates in metadata:', {
       hasMetadata: !!metadata,
       latitude: metadata?.latitude,
       longitude: metadata?.longitude
-    });
+    }, 'enhancedPanchangaCalculator');
     return null;
   }
   
-  console.log('✅ Valid metadata coordinates:', {
+  devLog.debug('✅ Valid metadata coordinates:', {
     latitude: metadata.latitude,
     longitude: metadata.longitude
   });
   
   // Get accurate sunrise/sunset from astronomia-vedic
-  console.log('🔍 Sunrise/Sunset debug:', {
+  devLog.debug('🔍 Sunrise/Sunset debug:', {
     sunrise: metadata.sunrise,
     sunriseType: typeof metadata.sunrise,
     sunriseJSON: JSON.stringify(metadata.sunrise),
@@ -162,7 +163,7 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
     metadata.longitude
   );
 
-  console.log('🔍 Raw sunrise/sunset from getAccurateSunriseSunset:', {
+  devLog.debug('🔍 Raw sunrise/sunset from getAccurateSunriseSunset:', {
     sunrise,
     sunriseType: typeof sunrise,
     sunriseString: String(sunrise),
@@ -175,7 +176,7 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   const parsedSunrise = sunrise;
   const parsedSunset = sunset;
   
-  console.log('🔍 Ayanamsha debug:', {
+  devLog.debug('🔍 Ayanamsha debug:', {
     metadataAyanamsha: metadata.ayanamsha,
     metadataAyanamshaType: typeof metadata.ayanamsha,
     metadataAyanamshaJSON: JSON.stringify(metadata.ayanamsha),
@@ -195,7 +196,7 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
     ayanamsa = Number(ayanamshaRaw) || 23.85;
   }
   
-  console.log('✅ Panchanga calculated:', {
+  devLog.debug('✅ Panchanga calculated:', {
     tithi: tithi.name,
     nakshatra: nakshatra.name,
     yoga: yoga.name,
@@ -210,7 +211,7 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
 
 // Calculate current Panchanga for today
 export function calculateCurrentPanchanga(birthPlace: string, latitude: number, longitude: number): AccuratePanchangaData {
-  console.log('🔮 Calculating current Panchanga for today');
+  devLog.debug('🔮 Calculating current Panchanga for today');
   
   const today = new Date();
   const currentChart = getChart({
@@ -317,11 +318,11 @@ function calculateVaraFromDate(birthDate: string) {
 
 // Get accurate sunrise/sunset using corrected astronomical algorithm
 function getAccurateSunriseSunset(date: string, latitude: number, longitude: number) {
-  console.log('🔍 getAccurateSunriseSunset called with:', { date, latitude, longitude });
+  devLog.debug('🔍 getAccurateSunriseSunset called with:', { date, latitude, longitude });
   
   // Validate inputs
   if (typeof latitude !== 'number' || isNaN(latitude) || latitude < -90 || latitude > 90) {
-    console.error('❌ Invalid latitude:', latitude);
+    devLog.error('❌ Invalid latitude:', latitude, 'enhancedPanchangaCalculator');
     return {
       sunrise: new Date(1983, 1, 24, 6, 0),
       sunset: new Date(1983, 1, 24, 18, 0)
@@ -329,19 +330,19 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   }
   
   if (typeof longitude !== 'number' || isNaN(longitude) || longitude < -180 || longitude > 180) {
-    console.error('❌ Invalid longitude:', longitude);
+    devLog.error('❌ Invalid longitude:', longitude, 'enhancedPanchangaCalculator');
     return {
       sunrise: new Date(1983, 1, 24, 6, 0),
       sunset: new Date(1983, 1, 24, 18, 0)
     };
   }
   
-  console.log('✅ Valid coordinates:', { latitude, longitude });
+  devLog.debug('✅ Valid coordinates:', { latitude, longitude });
   
   // Validate date string parsing
   const targetDate = new Date(date);
   if (isNaN(targetDate.getTime())) {
-    console.error('❌ Invalid date string:', date);
+    devLog.error('❌ Invalid date string:', date, 'enhancedPanchangaCalculator');
     return {
       sunrise: new Date(1983, 1, 24, 6, 0),  // Fallback with hardcoded values
       sunset: new Date(1983, 1, 24, 18, 0)
@@ -352,7 +353,7 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   const month = targetDate.getMonth();
   const day = targetDate.getDate();
   
-  console.log('🔍 Parsed date components:', { year, month, day, originalDate: date });
+  devLog.debug('🔍 Parsed date components:', { year, month, day, originalDate: date });
   
   // Calculate day of year (1-366)
   const startOfYear = new Date(year, 0, 1);
@@ -374,7 +375,7 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   
   // Check for polar day/night
   if (cosHourAngle > 1 || cosHourAngle < -1) {
-    console.warn('⚠️ Polar day/night detected, using fallback times');
+    devLog.warn('⚠️ Polar day/night detected, using fallback times', 'enhancedPanchangaCalculator');
     return {
       sunrise: new Date(year, month, day, 6, 0),
       sunset: new Date(year, month, day, 18, 0)
@@ -388,12 +389,12 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   const sunsetLocalMean = 12 + hourAngle / 15;
   
   // Log astronomical calculation inputs
-  console.log('🔍 Astronomical calculation inputs:');
-  console.log('  dayOfYear:', dayOfYear);
-  console.log('  declination:', declination);
-  console.log('  hourAngle:', hourAngle);
-  console.log('  sunriseLocalMean:', sunriseLocalMean);
-  console.log('  sunsetLocalMean:', sunsetLocalMean);
+  devLog.debug('🔍 Astronomical calculation inputs:');
+  devLog.debug('  dayOfYear:', dayOfYear);
+  devLog.debug('  declination:', declination);
+  devLog.debug('  hourAngle:', hourAngle);
+  devLog.debug('  sunriseLocalMean:', sunriseLocalMean);
+  devLog.debug('  sunsetLocalMean:', sunsetLocalMean);
   
   // Apply longitude correction (4 minutes per degree)
   // For locations east of prime meridian, sunrise is earlier
@@ -409,13 +410,13 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   const sunsetLocal = sunsetUTC + timezoneOffset;
   
   // Log before normalization to debug calculation - EXPLICIT VALUES
-  console.log('🔍 Before normalization - EXPLICIT VALUES:');
-  console.log('  sunriseLocal:', sunriseLocal);
-  console.log('  sunsetLocal:', sunsetLocal);
-  console.log('  sunriseUTC:', sunriseUTC);
-  console.log('  sunsetUTC:', sunsetUTC);
-  console.log('  timezoneOffset:', timezoneOffset);
-  console.log('  longitudeCorrection:', longitudeCorrection);
+  devLog.debug('🔍 Before normalization - EXPLICIT VALUES:');
+  devLog.debug('  sunriseLocal:', sunriseLocal);
+  devLog.debug('  sunsetLocal:', sunsetLocal);
+  devLog.debug('  sunriseUTC:', sunriseUTC);
+  devLog.debug('  sunsetUTC:', sunsetUTC);
+  devLog.debug('  timezoneOffset:', timezoneOffset);
+  devLog.debug('  longitudeCorrection:', longitudeCorrection);
   
   // Normalize to 0-24 range and handle edge cases
   let normalizeSunriseLocal = ((sunriseLocal % 24) + 24) % 24;
@@ -429,33 +430,33 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   
   // Validate reasonable sunrise/sunset times (4 AM - 8 AM for sunrise, 4 PM - 8 PM for sunset)
   if (sunriseHour < 4 || sunriseHour > 8) {
-    console.warn('⚠️ Unusual sunrise time calculated:', sunriseHour, ':', sunriseMinute.toString().padStart(2, '0'));
+    devLog.warn('Unusual sunrise time calculated', { sunriseHour, sunriseMinute: sunriseMinute.toString().padStart(2, '0') }, 'enhancedPanchangaCalculator');
   }
   if (sunsetHour < 16 || sunsetHour > 20) {
-    console.warn('⚠️ Unusual sunset time calculated:', sunsetHour, ':', sunsetMinute.toString().padStart(2, '0'));
+    devLog.warn('Unusual sunset time calculated', { sunsetHour, sunsetMinute: sunsetMinute.toString().padStart(2, '0') }, 'enhancedPanchangaCalculator');
   }
   
   // Check for NaN values before creating Date objects
   if (isNaN(year) || isNaN(month) || isNaN(day) || 
       isNaN(sunriseHour) || isNaN(sunriseMinute) ||
       isNaN(sunsetHour) || isNaN(sunsetMinute)) {
-    console.error('❌ NaN detected in date components:', {
+    devLog.error('❌ NaN detected in date components:', {
       year, month, day, sunriseHour, sunriseMinute, sunsetHour, sunsetMinute
-    });
+    }, 'enhancedPanchangaCalculator');
     return {
       sunrise: new Date(year || 1983, month || 1, day || 24, 6, 0),
       sunset: new Date(year || 1983, month || 1, day || 24, 18, 0)
     };
   }
   
-  console.log('🔍 About to create Date - EXPLICIT VALUES:');
-  console.log('  year:', year);
-  console.log('  month:', month);
-  console.log('  day:', day);
-  console.log('  sunriseHour:', sunriseHour);
-  console.log('  sunriseMinute:', sunriseMinute);
-  console.log('  sunsetHour:', sunsetHour);
-  console.log('  sunsetMinute:', sunsetMinute);
+  devLog.debug('🔍 About to create Date - EXPLICIT VALUES:');
+  devLog.debug('  year:', year);
+  devLog.debug('  month:', month);
+  devLog.debug('  day:', day);
+  devLog.debug('  sunriseHour:', sunriseHour);
+  devLog.debug('  sunriseMinute:', sunriseMinute);
+  devLog.debug('  sunsetHour:', sunsetHour);
+  devLog.debug('  sunsetMinute:', sunsetMinute);
   
   // Create Date objects in local time with validated values
   const sunrise = new Date(year, month, day, sunriseHour, sunriseMinute);
@@ -463,22 +464,22 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   
   // Verify dates are valid
   if (isNaN(sunrise.getTime()) || isNaN(sunset.getTime())) {
-    console.error('❌ Invalid dates created, using fallback');
+    devLog.error('❌ Invalid dates created, using fallback', 'enhancedPanchangaCalculator');
     return {
       sunrise: new Date(year, month, day, 6, 0),
       sunset: new Date(year, month, day, 18, 0)
     };
   }
   
-  console.log('🔍 Created Date objects - EXPLICIT VALUES:');
-  console.log('  sunrise.toString():', sunrise.toString());
-  console.log('  sunset.toString():', sunset.toString());
-  console.log('  sunriseValid:', !isNaN(sunrise.getTime()));
-  console.log('  sunsetValid:', !isNaN(sunset.getTime()));
-  console.log('  sunrise.getTime():', sunrise.getTime());
-  console.log('  sunset.getTime():', sunset.getTime());
+  devLog.debug('🔍 Created Date objects - EXPLICIT VALUES:');
+  devLog.debug('  sunrise.toString():', sunrise.toString());
+  devLog.debug('  sunset.toString():', sunset.toString());
+  devLog.debug('  sunriseValid:', !isNaN(sunrise.getTime()));
+  devLog.debug('  sunsetValid:', !isNaN(sunset.getTime()));
+  devLog.debug('  sunrise.getTime():', sunrise.getTime());
+  devLog.debug('  sunset.getTime():', sunset.getTime());
   
-  console.log('🔍 Calculated times:', {
+  devLog.debug('🔍 Calculated times:', {
     dayOfYear,
     declination: declination.toFixed(2),
     hourAngle: hourAngle.toFixed(2),

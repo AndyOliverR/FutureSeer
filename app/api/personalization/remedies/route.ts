@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { generateAdvancedPersonalizedRemedies } from '@/lib/comprehensiveRemedyGenerator';
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error generating remedies:', error);
+    devLog.error('Error generating remedies:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to generate remedies' },
       { status: 500 }
@@ -104,7 +105,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching remedies:', error);
+    devLog.error('Error fetching remedies:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to fetch remedies' },
       { status: 500 }

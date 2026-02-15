@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
@@ -60,7 +61,7 @@ export function ToolInterestForm({ techniqueName, techniqueSlug, onSuccess, vari
         onSuccess()
       }
     } catch (error) {
-      console.error('Error submitting interest:', error)
+      devLog.error('Error submitting interest:', error, 'ToolInterestForm')
       toast({
         title: "Submission Failed",
         description: "Please try again later.",

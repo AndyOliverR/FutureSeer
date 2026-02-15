@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { pendulumIntelligence } from '@/lib/pendulumIntelligence';
 import {
   classifyPendulumQuestion,
@@ -133,7 +134,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Ask Pendulum Seer API error:', error);
+    devLog.error('Ask Pendulum Seer API error:', error, 'route');
     return NextResponse.json(
       {
         success: false,

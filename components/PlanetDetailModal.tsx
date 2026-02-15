@@ -4,6 +4,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ModalPortal } from "@/components/ui/ModalPortal";
 
 interface PlanetDetailModalProps {
   planet: string | null;
@@ -43,19 +44,21 @@ export default function PlanetDetailModal({ planet, data, onClose }: PlanetDetai
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-md bg-slate-900 border-slate-700 text-white">
-        <CardHeader className="relative">
-          <CardTitle className="text-amber-200 flex items-center justify-between">
-            <span>{planetNames[planet] || planet}</span>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </CardTitle>
-        </CardHeader>
+    <ModalPortal open={!!(planet && data)}>
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <Card className="w-full max-w-md max-w-[90vw] max-h-[min(90dvh,90vh)] overflow-y-auto bg-slate-900 border-slate-700 text-white z-[10001]">
+          <CardHeader className="relative shrink-0">
+            <CardTitle className="text-amber-200 flex items-center justify-between">
+              <span>{planetNames[planet] || planet}</span>
+              <button
+                onClick={onClose}
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center text-gray-400 hover:text-white transition-colors shrink-0"
+                aria-label="Close"
+              >
+                <span className="shrink-0"><X className="w-5 h-5" /></span>
+              </button>
+            </CardTitle>
+          </CardHeader>
         <CardContent className="space-y-4">
           {/* Dignity */}
           <div>
@@ -139,5 +142,6 @@ export default function PlanetDetailModal({ planet, data, onClose }: PlanetDetai
         </CardContent>
       </Card>
     </div>
+    </ModalPortal>
   );
 }

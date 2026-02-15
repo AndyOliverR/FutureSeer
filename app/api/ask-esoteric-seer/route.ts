@@ -1,0 +1,114 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
+import { createAIStream } from '@/lib/aiGateway';
+import { buildEsotericSeerSystemPrompt } from '@/lib/esotericSeerPrompts';
+
+interface AskEsotericSeerRequest {
+  userId: string;
+  question: string;
+  userProfile: any;
+  westernChartData?: any;
+  esotericReport?: Record<string, unknown>;
+  sessionId?: string;
+}
+
+function formatEsotericReportContext(report: Record<string, unknown> | undefined): string {
+  if (!report || typeof report !== 'object') return '';
+  const lines: string[] = [];
+  if (report.soul_ruler) lines.push(`Soul ruler: ${report.soul_ruler}`);
+  if (report.personality_ruler) lines.push(`Personality ruler: ${report.personality_ruler}`);
+  if (report.dominant_ray) lines.push(`Dominant ray: ${report.dominant_ray}`);
+  if (report.evolutionary_theme) lines.push(`Evolutionary theme: ${report.evolutionary_theme}`);
+  if (Array.isArray(report.spiritual_challenges) && report.spiritual_challenges.length)
+    lines.push(`Spiritual challenges: ${report.spiritual_challenges.join(', ')}`);
+  if (report.soul_growth_focus) lines.push(`Soul growth focus: ${report.soul_growth_focus}`);
+  if (report.integration_guidance) lines.push(`Integration guidance: ${report.integration_guidance}`);
+  return lines.join('\n');
+}
+
+function formatChartSummary(chartData: any): string {
+  if (!chartData?.planets?.length) return '';
+  const sun = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'sun');
+  const moon = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'moon');
+  const rising = chartData.houses?.[0] || chartData.houses?.find((h: any) => (h.number || 1) === 1);
+  const parts: string[] = [];
+  if (sun) parts.push(`Sun: ${sun.sign?.signName || sun.sign} in House ${sun.house}`);
+  if (moon) parts.push(`Moon: ${moon.sign?.signName || moon.sign} in House ${moon.house}`);
+  if (rising) parts.push(`Rising: ${rising.sign?.signName || rising.sign}`);
+  return parts.join('; ');
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: AskEsotericSeerRequest = await request.json();
+    const { userId, question, userProfile, westernChartData, esotericReport } = body;
+
+    if (!userId || !question?.trim() || !userProfile) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing required parameters: userId, question, or userProfile',
+        },
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const reportData =
+      esotericReport && typeof esotericReport === 'object' && 'comprehensiveAnalysis' in esotericReport
+        ? (esotericReport as { comprehensiveAnalysis?: Record<string, unknown> }).comprehensiveAnalysis
+        : esotericReport;
+    const reportContext = formatEsotericReportContext(
+      (reportData as Record<string, unknown>) ?? undefined
+    );
+    const chartSummary = formatChartSummary(westernChartData);
+    const systemPrompt = buildEsotericSeerSystemPrompt(reportContext, chartSummary);
+
+    const stream = await createAIStream({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: question.trim() },
+      ],
+      temperature: 0.6,
+      maxTokens: 800,
+    });
+
+    return new Response(
+      new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of stream) {
+              const content = chunk.choices?.[0]?.delta?.content ?? '';
+              if (content) {
+                controller.enqueue(new TextEncoder().encode(content));
+              }
+            }
+          } catch (error) {
+            devLog.error('Esoteric Seer stream error:', error, 'route');
+            controller.enqueue(
+              new TextEncoder().encode('I encountered an error. Please try again.')
+            );
+          } finally {
+            controller.close();
+          }
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      }
+    );
+  } catch (error) {
+    devLog.error('Ask Esoteric Seer API error:', error, 'route');
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to process question',
+      },
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}

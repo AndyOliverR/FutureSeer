@@ -1,6 +1,7 @@
 'use client'
 
 import { PersonData, SynastryCompatibility, SynastryAspect, HouseOverlay, PersonNatalSummary } from '@/hooks/useSynastry'
+import { devLog } from '@/lib/devLogger';
 import { universalOccultService, BirthData } from './universalOccultService'
 import { getCoordinatesWithFallback } from './geocoding'
 
@@ -29,14 +30,14 @@ class SynastryIntelligence {
       
       return result.data
     } catch (error) {
-      console.error('Error fetching astro data:', error)
+      devLog.error('Error fetching astro data:', error, 'synastryIntelligence')
       throw new Error('Unable to calculate birth chart')
     }
   }
 
   async analyzeCompatibility(person1: PersonData, person2: PersonData): Promise<SynastryCompatibility> {
     try {
-      console.log('💕 SynastryIntelligence.analyzeCompatibility called', { person1, person2 })
+      devLog.debug('💕 SynastryIntelligence.analyzeCompatibility called', { person1, person2 })
       
       // Parse birth dates from birthTime strings (format: "YYYY-MM-DD HH:MM" or separate date/time)
       // BirthTime format can be "YYYY-MM-DD HH:MM" or just "HH:MM"
@@ -60,22 +61,22 @@ class SynastryIntelligence {
       
       // If no date in birthTime, we need to get it from caller - for now use today's date as fallback
       if (!person1Date) {
-        console.warn('⚠️ No birth date found in person1.birthTime, using today as fallback')
+        devLog.warn('⚠️ No birth date found in person1.birthTime, using today as fallback', 'synastryIntelligence')
         person1Date = new Date().toISOString().split('T')[0]
       }
       
       if (!person2Date) {
-        console.warn('⚠️ No birth date found in person2.birthTime, using today as fallback')
+        devLog.warn('⚠️ No birth date found in person2.birthTime, using today as fallback', 'synastryIntelligence')
         person2Date = new Date().toISOString().split('T')[0]
       }
       
-      console.log('💕 Parsed dates and times:', {
+      devLog.debug('💕 Parsed dates and times:', {
         person1: { date: person1Date, time: person1Time },
         person2: { date: person2Date, time: person2Time }
       })
       
       // Geocode birth locations
-      console.log('💕 Geocoding locations...', {
+      devLog.debug('💕 Geocoding locations...', {
         person1Location: person1.birthPlace,
         person2Location: person2.birthPlace
       })
@@ -85,7 +86,7 @@ class SynastryIntelligence {
         getCoordinatesWithFallback(person2.birthPlace)
       ])
       
-      console.log('💕 Geocoding complete:', { coords1, coords2 })
+      devLog.debug('💕 Geocoding complete:', { coords1, coords2 })
       
       // Prepare birth data for both persons
       const birthData1: BirthData = {
@@ -105,7 +106,7 @@ class SynastryIntelligence {
       }
       
       // Get birth charts for both people using universalOccultService
-      console.log('💕 Calculating Western charts...')
+      devLog.debug('💕 Calculating Western charts...')
       const [chart1Result, chart2Result] = await Promise.all([
         universalOccultService.calculateWesternChart(birthData1, {
           houseSystem: 'placidus',
@@ -117,7 +118,7 @@ class SynastryIntelligence {
         })
       ])
       
-      console.log('💕 Chart calculations complete:', {
+      devLog.debug('💕 Chart calculations complete:', {
         chart1Success: chart1Result.success,
         chart2Success: chart2Result.success,
         chart1Planets: chart1Result.data?.planets?.length || 0,
@@ -126,7 +127,7 @@ class SynastryIntelligence {
       
       if (!chart1Result.success || !chart2Result.success) {
         const errorMsg = `Failed to calculate charts: chart1=${chart1Result.success ? 'OK' : 'FAIL'}, chart2=${chart2Result.success ? 'OK' : 'FAIL'}`
-        console.error('❌', errorMsg)
+        devLog.error('❌', errorMsg, 'synastryIntelligence')
         throw new Error(errorMsg)
       }
       
@@ -134,29 +135,29 @@ class SynastryIntelligence {
       const chart2 = chart2Result.data
 
       // Calculate aspects between charts
-      console.log('💕 Calculating aspects...')
+      devLog.debug('💕 Calculating aspects...')
       const aspects = this.calculateAspects(chart1, chart2)
-      console.log('💕 Calculated', aspects.length, 'aspects')
+      devLog.debug('💕 Calculated', aspects.length, 'aspects')
       
       // Calculate house overlays
-      console.log('💕 Calculating house overlays...')
+      devLog.debug('💕 Calculating house overlays...')
       const houseOverlays = this.calculateHouseOverlays(chart1, chart2)
-      console.log('💕 Calculated', houseOverlays.length, 'house overlays')
+      devLog.debug('💕 Calculated', houseOverlays.length, 'house overlays')
       
       // Calculate composite chart
-      console.log('💕 Calculating composite chart...')
+      devLog.debug('💕 Calculating composite chart...')
       const composite = this.calculateComposite(chart1, chart2)
-      console.log('💕 Composite chart:', composite)
+      devLog.debug('💕 Composite chart:', composite)
       
       // Generate overview
-      console.log('💕 Generating overview...')
+      devLog.debug('💕 Generating overview...')
       const overview = this.generateOverview(aspects, houseOverlays, composite)
-      console.log('💕 Overview generated:', overview)
+      devLog.debug('💕 Overview generated:', overview)
       
       // Generate timing insights
-      console.log('💕 Generating timing insights...')
+      devLog.debug('💕 Generating timing insights...')
       const timing = this.generateTimingInsights(chart1, chart2)
-      console.log('💕 Timing insights generated')
+      devLog.debug('💕 Timing insights generated')
 
       // Build per-person natal summaries (Sun/Moon/Venus/Mars sign + house) for Ask the Seer
       const person1Natal = this.buildNatalSummary(chart1)
@@ -172,7 +173,7 @@ class SynastryIntelligence {
         person2Natal
       }
       
-      console.log('✅ Synastry analysis complete:', {
+      devLog.debug('✅ Synastry analysis complete:', {
         score: overview.overallScore,
         aspectsCount: aspects.length,
         houseOverlaysCount: houseOverlays.length
@@ -180,8 +181,8 @@ class SynastryIntelligence {
       
       return result
     } catch (error) {
-      console.error('❌ Synastry analysis error:', error)
-      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+      devLog.error('❌ Synastry analysis error:', error, 'synastryIntelligence')
+      devLog.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace', 'synastryIntelligence')
       throw new Error(`Failed to analyze compatibility: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

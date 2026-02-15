@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useMemo } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -259,7 +260,7 @@ export default function FourPillarsChart({
                   
                   // Safety check - if info doesn't exist, skip this pillar
                   if (!info || !info.icon) {
-                    console.warn(`Pillar info not found for: ${pillarName} at index ${pillarIndex}`)
+                    devLog.warn(`Pillar info not found for: ${pillarName} at index ${pillarIndex}`, undefined, 'FourPillarsChart')
                     return null
                   }
                   

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useAstroData } from '@/hooks/useAstroData'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,7 +25,7 @@ export function AstroDataStatus() {
     try {
       await refreshData()
     } catch (error) {
-      console.error('Error refreshing astro data:', error)
+      devLog.error('Error refreshing astro data:', error, 'AstroDataStatus')
     } finally {
       setRefreshing(false)
     }

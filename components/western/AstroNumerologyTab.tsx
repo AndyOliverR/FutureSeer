@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -236,7 +237,7 @@ export default function AstroNumerologyTab({
           throw new Error(result.error || 'Failed to generate analysis. Please try again.')
         }
       } catch (error: any) {
-        console.error('Error fetching comprehensive analysis:', error)
+        devLog.error('Error fetching comprehensive analysis:', error, 'AstroNumerologyTab')
         const errorMessage = error?.message || 'Failed to generate comprehensive analysis'
         setAnalysisError(errorMessage)
       } finally {

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -75,7 +76,7 @@ export function ChartDisplay({ chartType, name, description, significance, image
         }
       }
     } catch (err) {
-      console.error('Error fetching chart data:', err)
+      devLog.error('Error fetching chart data:', err, 'ChartDisplay')
       setError(err instanceof Error ? err.message : 'Failed to load chart')
     } finally {
       setLoading(false)
@@ -182,7 +183,7 @@ export function ChartDisplay({ chartType, name, description, significance, image
                         alt={`${name} Chart`}
                         className="w-full h-64 object-contain rounded-lg"
                         onError={(e) => {
-                          console.error('Failed to load chart image:', chartData.imageUrl)
+                          devLog.error('Failed to load chart image:', chartData.imageUrl, 'ChartDisplay')
                           e.currentTarget.style.display = 'none'
                           // Fallback to placeholder
                           const parent = e.currentTarget.parentElement
@@ -284,7 +285,7 @@ export function ChartDisplay({ chartType, name, description, significance, image
                               alt={`${name} Chart`}
                               className="w-full max-w-md h-auto object-contain rounded-lg"
                               onError={(e) => {
-                                console.error('Failed to load full chart image:', chartData.imageUrl)
+                                devLog.error('Failed to load full chart image:', chartData.imageUrl, 'ChartDisplay')
                                 e.currentTarget.style.display = 'none'
                                 // Fallback to placeholder
                                 const parent = e.currentTarget.parentElement

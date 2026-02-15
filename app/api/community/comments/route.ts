@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { calculateKarmaForAction, calculateMemberStatsUpdate } from '@/lib/firestore/communityHelpers';
 
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error creating comment:', error);
+    devLog.error('Error creating comment:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to create comment' }, { status: 500 });
   }
 }
@@ -145,7 +146,7 @@ async function updateMemberStats(db: any, userId: string, action: 'createDiscuss
       });
     }
   } catch (error) {
-    console.error('Error updating member stats:', error);
+    devLog.error('Error updating member stats:', error, 'route');
   }
 }
 
@@ -176,7 +177,7 @@ async function ensureMemberProfile(db: any, userId: string, authorName: string) 
       }
     }
   } catch (error) {
-    console.error('Error ensuring member profile:', error);
+    devLog.error('Error ensuring member profile:', error, 'route');
   }
 }
 
@@ -204,7 +205,7 @@ async function updateCommunityStats(db: any, updates: { comments?: number }) {
       });
     }
   } catch (error) {
-    console.error('Error updating community stats:', error);
+    devLog.error('Error updating community stats:', error, 'route');
   }
 }
 

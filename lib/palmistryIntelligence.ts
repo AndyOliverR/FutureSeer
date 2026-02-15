@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 import { db } from '@/lib/firebase'
 import { palmistryImageAnalyzer } from './palmistry/palmistryImageAnalyzer'
@@ -238,12 +239,12 @@ class PalmistryIntelligence {
     // (Llama 4 Maverick - 128 expert MoE model optimized for vision tasks)
     if (imageUrl) {
       try {
-        console.log('🤲 Analyzing palm image with vision AI...');
+        devLog.debug('🤲 Analyzing palm image with vision AI...');
         const aiAnalysis = await palmistryImageAnalyzer.analyzePalmImage(imageUrl);
         const formattedAnalysis = palmistryImageAnalyzer.formatPalmistryData(aiAnalysis, hand, dominantHand, age, gender);
         return formattedAnalysis;
       } catch (error) {
-        console.error('⚠️ Vision AI analysis failed, falling back to random generation:', error);
+        devLog.error('⚠️ Vision AI analysis failed, falling back to random generation:', error, 'palmistryIntelligence');
         // Fall through to random generation below (not ideal, but maintains functionality)
       }
     }

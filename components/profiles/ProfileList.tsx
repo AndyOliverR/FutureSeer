@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { AdditionalProfile } from '@/lib/types/profileTypes'
 import { profileManager } from '@/lib/services/profileManager'
 import { Card, CardContent } from '@/components/ui/card'
@@ -61,7 +62,7 @@ export function ProfileList({ userId, onSelectProfile, selectedProfileId, toolSl
       const uniqueProfiles = deduplicateProfiles(data)
       setProfiles(uniqueProfiles)
     } catch (error) {
-      console.error('Error loading profiles:', error)
+      devLog.error('Error loading profiles:', error, 'ProfileList')
       toast({
         title: 'Error',
         description: 'Failed to load profiles. Please try again.',
@@ -91,7 +92,7 @@ export function ProfileList({ userId, onSelectProfile, selectedProfileId, toolSl
       })
       loadProfiles()
     } catch (error) {
-      console.error('Error deleting profile:', error)
+      devLog.error('Error deleting profile:', error, 'ProfileList')
       toast({
         title: 'Error',
         description: 'Failed to delete profile. Please try again.',

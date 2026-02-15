@@ -1,4 +1,5 @@
 // Swiss Ephemeris Integration Service
+import { devLog } from '@/lib/devLogger';
 // Provides precise astronomical calculations for all occult systems
 
 export interface BirthData {
@@ -85,7 +86,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.planets || [];
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (planets):', error);
+      devLog.error('Swiss Ephemeris Service Error (planets)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackPlanetaryPositions(birthData, date);
     }
@@ -109,7 +110,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.houses || [];
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (houses):', error);
+      devLog.error('Swiss Ephemeris Service Error (houses)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackHouseCusps(birthData, houseSystem);
     }
@@ -133,7 +134,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.aspects || [];
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (aspects):', error);
+      devLog.error('Swiss Ephemeris Service Error (aspects)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackAspects(birthData, date);
     }
@@ -157,7 +158,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.lunarPhase || this.getFallbackLunarPhase(birthData, date);
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (lunar-phase):', error);
+      devLog.error('Swiss Ephemeris Service Error (lunar-phase)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackLunarPhase(birthData, date);
     }
@@ -181,7 +182,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.fixedStars || [];
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (fixed-stars):', error);
+      devLog.error('Swiss Ephemeris Service Error (fixed-stars)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackFixedStars(birthData, date);
     }
@@ -210,7 +211,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.transits || { natal: [], transiting: [], aspects: [] };
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (transits):', error);
+      devLog.error('Swiss Ephemeris Service Error (transits)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackTransits(birthData, targetDate);
     }
@@ -238,7 +239,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.progressions || { natal: [], progressed: [], aspects: [] };
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (progressions):', error);
+      devLog.error('Swiss Ephemeris Service Error (progressions)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackProgressions(birthData, targetDate);
     }
@@ -266,7 +267,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.solarReturn || { natal: [], solarReturn: [], aspects: [] };
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (solar-return):', error);
+      devLog.error('Swiss Ephemeris Service Error (solar-return)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackSolarReturn(birthData, year);
     }
@@ -294,7 +295,7 @@ export class SwissEphemerisService {
       const data = await response.json();
       return data.lunarReturn || { natal: [], lunarReturn: [], aspects: [] };
     } catch (error) {
-      console.error('Swiss Ephemeris Service Error (lunar-return):', error);
+      devLog.error('Swiss Ephemeris Service Error (lunar-return)', error, 'swissEphemerisService');
       // Fallback to simplified calculations
       return this.getFallbackLunarReturn(birthData, targetDate);
     }

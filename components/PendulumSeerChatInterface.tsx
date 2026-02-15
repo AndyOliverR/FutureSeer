@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Trash2, MessageCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Send, Trash2, MessageCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface PendulumSeerChatInterfaceProps {
   userId: string;
@@ -22,8 +24,9 @@ interface Message {
 }
 
 const PENDULUM_STARTER_QUESTIONS = [
-  'What does the pendulum suggest about my current path?',
-  'Should I proceed with this decision, or wait for better alignment?',
+  'Is it a good idea to proceed with this decision?',
+  'Is this opportunity aligned for me right now?',
+  'Should I move forward today?',
 ];
 
 export default function PendulumSeerChatInterface({
@@ -93,7 +96,7 @@ export default function PendulumSeerChatInterface({
 
       setMessages((prev) => [...prev, seerMessage]);
     } catch (error) {
-      console.error('Error:', error);
+      devLog.error('Pendulum Seer error', error, 'PendulumSeerChatInterface');
       const errorMessage: Message = {
         id: Date.now().toString(),
         type: 'seer',
@@ -108,132 +111,144 @@ export default function PendulumSeerChatInterface({
   };
 
   return (
-    <div className="h-full flex flex-col bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-700/50 overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-amber-900/20 to-slate-900/50">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-white">Pendulum Seer</h3>
-            <p className="text-sm text-slate-400 mt-1">
-              Confirmation only—alignment, not destiny
-            </p>
-          </div>
-          {messages.length > 0 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="text-slate-400 hover:text-amber-400 hover:bg-slate-700/50 shrink-0"
-              onClick={() => setMessages([])}
-            >
-              <Trash2 className="w-4 h-4 mr-1" />
-              Clear chat
-            </Button>
+    <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
+      <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
+        <div>
+          <CardTitle className="text-amber-900 flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-amber-700" />
+            Ask the Seer — Pendulum
+          </CardTitle>
+          <p className="text-slate-700 text-sm mt-1">
+            I&apos;ll use pendulum guidance to provide a direct energetic response.
+          </p>
+        </div>
+        {messages.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-slate-600 hover:text-amber-900 hover:bg-amber-100 shrink-0"
+            onClick={() => setMessages([])}
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Clear chat
+          </Button>
+        )}
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
+          {messages.length === 0 && !isLoading ? (
+            <div className="text-center py-8 max-w-lg mx-auto">
+              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-700" />
+              <p className="text-amber-900 font-medium mb-2">
+                Ask one clear yes/no question…
+              </p>
+              <p className="text-slate-700 text-sm mb-4">
+                I&apos;ll use pendulum guidance to provide a direct energetic response.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mb-2 text-left">You can ask about:</p>
+              <ul className="text-slate-700 text-sm mb-4 text-left list-disc pl-5 space-y-1">
+                <li>Binary questions only (Is this the right choice? Should I proceed now? Is this aligned for me? Is this person/situation supportive?)</li>
+                <li>Immediate decisions (whether to act or wait, whether something is energetically suitable now)</li>
+              </ul>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {PENDULUM_STARTER_QUESTIONS.map((q, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSend(q)}
+                    disabled={isLoading}
+                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
+                  >
+                    {q}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-slate-600 text-xs mt-4">
+                Questions must be clear, singular, and answerable by yes/no.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-xl p-4 ${
+                      message.type === 'user'
+                        ? 'bg-blue-50 border-2 border-blue-200 text-slate-800'
+                        : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700'
+                    }`}
+                  >
+                    {message.type === 'user' ? (
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                    ) : (
+                      <p className="whitespace-pre-wrap">
+                        <SlowRevealText
+                          content={message.content}
+                          minThinkingMs={2000}
+                          delayPerWord={85}
+                          thinkingLabel="Consulting the stars..."
+                          className="text-slate-700"
+                        />
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+                      Consulting the pendulum…
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && !isLoading ? (
-          <div className="text-center py-8">
-            <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-400" />
-            <p className="text-white font-medium mb-2">
-              Welcome to Ask the Seer — Pendulum Divination.
-            </p>
-            <p className="text-sm text-slate-400 mb-4">
-              Ask a clear yes/no alignment question—or pick one below.
-            </p>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {PENDULUM_STARTER_QUESTIONS.map((q, i) => (
-                <Button
-                  key={i}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSend(q)}
-                  disabled={isLoading}
-                  className="text-slate-200 border-slate-600 hover:bg-amber-500/20 hover:border-amber-500/50"
-                >
-                  {q}
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-        {messages.map((message) => (
-          <motion.div
-            key={message.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            className="flex gap-2"
           >
-            <div
-              className={`max-w-[80%] rounded-2xl p-4 ${
-                  message.type === 'user'
-                    ? 'bg-amber-500/20 border border-amber-500/30 text-white'
-                    : 'bg-slate-800/50 border border-slate-700/50 text-slate-200'
-              }`}
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+              placeholder="e.g. Should I proceed with this decision now?"
+              disabled={isLoading}
+              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !question.trim()}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
             >
-              {message.type === 'user' ? (
-                <p className="whitespace-pre-wrap">{message.content}</p>
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <p className="whitespace-pre-wrap">
-                  <SlowRevealText
-                    content={message.content}
-                    minThinkingMs={2000}
-                    delayPerWord={85}
-                    thinkingLabel="Consulting the stars..."
-                    className="text-slate-200"
-                  />
-                </p>
+                <Send className="w-4 h-4" />
               )}
-            </div>
-          </motion.div>
-        ))}
-
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-slate-800/50 rounded-2xl p-4 border border-slate-700/50">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.2s' }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0.4s' }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Input */}
-      <div className="p-4 border-t border-slate-700/50">
-        <div className="flex space-x-2">
-          <Input
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="Ask a clear yes/no alignment question..."
-            className="bg-slate-800/50 border-slate-700/50 text-white placeholder:text-slate-500"
-          />
-          <Button
-            onClick={() => handleSend()}
-            disabled={isLoading || !question.trim()}
-            className="bg-amber-500 hover:bg-amber-600 text-white"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
+            </Button>
+          </form>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

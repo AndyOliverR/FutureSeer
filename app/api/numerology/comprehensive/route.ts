@@ -425,7 +425,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Comprehensive Numerology API error:', error);
+    devLog.error('❌ Comprehensive Numerology API error:', error, 'route');
     return NextResponse.json({
       success: false,
       error: error.message || 'Failed to generate comprehensive Numerology analysis'

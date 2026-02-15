@@ -3,6 +3,7 @@
  * Calculates Human Design chart from birth data
  */
 
+import { devLog } from '@/lib/devLogger';
 import { 
   GATES, 
   CENTERS, 
@@ -179,7 +180,7 @@ async function getAstrologicalChart(birthData: BirthData): Promise<{
 
     return { planets, ascendant };
   } catch (error) {
-    console.error('Error calculating astrological chart:', error);
+    devLog.error('Error calculating astrological chart:', error, 'humanDesignCalculator');
     // Fallback: calculate basic positions if calculation fails
     return calculateBasicPlanetaryPositions(birthData);
   }

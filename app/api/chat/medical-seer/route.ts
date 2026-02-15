@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { devLog } from '@/lib/devLogger';
 import { createAICompletion } from '@/lib/aiGateway'
 import {
   buildMedicalAstrologyState,
@@ -7,6 +8,7 @@ import {
   MEDICAL_DISCLAIMER,
   type MedicalAstrologyChartPayload,
 } from '@/lib/medicalAstrologySeerState'
+import { buildMedicalAstrologySeerSystemPrompt } from '@/lib/medicalAstrologySeerPrompts'
 
 const REFUSAL_PHRASE = 'This question requires professional medical evaluation.'
 
@@ -75,8 +77,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build system prompt from discipline slice (no remedies, no treatments)
-    const systemPrompt = getMedicalAstrologySliceForQuestionType(questionType, state)
+    const slice = getMedicalAstrologySliceForQuestionType(questionType, state)
+    const displayName = (userProfile?.displayName ?? '').trim()
+    const systemPrompt = buildMedicalAstrologySeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    })
 
     const result = await createAICompletion({
       messages: [
@@ -106,7 +111,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     })
   } catch (error: unknown) {
-    console.error('Medical Seer API error:', error)
+    devLog.error('Medical Seer API error:', error, 'route')
     return NextResponse.json(
       {
         error:

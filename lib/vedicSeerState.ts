@@ -50,6 +50,8 @@ export interface VedicState {
   moon_sign: string;
   nakshatra: string;
   dashas: VedicDashas | null;
+  yogas: string[];
+  doshas: string[];
   houses: Record<string, { lord: string; occupants: string[] }>;
   planet_strength: Record<string, string>;
   transits: Array<{ planet: string; house: number | string }> | Record<string, { house: number } | { house: string }>;
@@ -61,6 +63,21 @@ type ChartInput = {
   houses?: Record<string, { signName?: string; lord?: string; planets?: string[] }> | Array<{ signName?: string; lord?: string; planets?: string[] }>;
   currentDasha?: { planet?: string; name?: string; antardasha?: string; startDate?: string; endDate?: string; progress?: number };
   transits?: { favorable?: any[]; challenging?: any[]; [k: string]: any };
+  yogas?: Array<{ name?: string } | string>;
+  doshas?: string[];
+};
+
+/** One-line theme for current dasha (for slice). */
+const DASHA_THEMES: Record<string, string> = {
+  Sun: 'leadership, recognition, authority',
+  Moon: 'emotions, intuition, nurturing',
+  Mars: 'action, courage, initiative',
+  Mercury: 'communication, learning, commerce',
+  Jupiter: 'growth, wisdom, expansion',
+  Venus: 'relationships, beauty, harmony',
+  Saturn: 'discipline, structure, karma',
+  Rahu: 'innovation, ambition, material drive',
+  Ketu: 'spirituality, release, past karma'
 };
 
 function getPlanetMap(planets: ChartInput['planets']): Record<string, { sign?: string; house?: number; nakshatra?: string; strength?: string }> {
@@ -130,6 +147,8 @@ export function buildVedicState(
       moon_sign: '',
       nakshatra: '',
       dashas: null,
+      yogas: [],
+      doshas: [],
       houses: {},
       planet_strength: {},
       transits: []
@@ -183,12 +202,25 @@ export function buildVedicState(
     }
   }
 
+  const rawYogas = (vedicChartData as any).yogas;
+  const yogas: string[] = [];
+  if (Array.isArray(rawYogas)) {
+    for (const y of rawYogas) {
+      if (typeof y === 'string') yogas.push(y);
+      else if (y && typeof y === 'object' && (y as any).name) yogas.push((y as any).name);
+    }
+  }
+  const rawDoshas = (vedicChartData as any).doshas;
+  const doshas: string[] = Array.isArray(rawDoshas) ? rawDoshas.filter((d): d is string => typeof d === 'string') : [];
+
   return {
     lagna,
     lagna_lord,
     moon_sign,
     nakshatra,
     dashas,
+    yogas,
+    doshas,
     houses: housesMap,
     planet_strength,
     transits
@@ -246,6 +278,8 @@ export function getVedicSliceForQuestionType(questionType: VedicQuestionType, st
       if (state.dashas) {
         lines.push('## Dasha');
         lines.push(`- Mahadasha: ${state.dashas.mahadasha}, Antardasha: ${state.dashas.antardasha || 'N/A'}, Period: ${state.dashas.period}`);
+        const theme = DASHA_THEMES[state.dashas.mahadasha];
+        if (theme) lines.push(`- Current dasha theme: ${theme}`);
         lines.push('');
       }
       if (state.transits && (Array.isArray(state.transits) ? state.transits.length : Object.keys(state.transits).length)) {
@@ -263,6 +297,8 @@ export function getVedicSliceForQuestionType(questionType: VedicQuestionType, st
       if (state.dashas) {
         lines.push('## Dasha');
         lines.push(`- Mahadasha: ${state.dashas.mahadasha}, Antardasha: ${state.dashas.antardasha || 'N/A'}, Period: ${state.dashas.period}`);
+        const themeEc = DASHA_THEMES[state.dashas.mahadasha];
+        if (themeEc) lines.push(`- Current dasha theme: ${themeEc}`);
         lines.push('');
       }
       lines.push('## Houses (lord, occupants)');
@@ -281,6 +317,8 @@ export function getVedicSliceForQuestionType(questionType: VedicQuestionType, st
       if (state.dashas) {
         lines.push('## Dasha');
         lines.push(`- Mahadasha: ${state.dashas.mahadasha}, Antardasha: ${state.dashas.antardasha || 'N/A'}, Period: ${state.dashas.period}`);
+        const themeCar = DASHA_THEMES[state.dashas.mahadasha];
+        if (themeCar) lines.push(`- Current dasha theme: ${themeCar}`);
         lines.push('');
       }
       for (const key of ['10', '2', '6', '11']) {
@@ -298,6 +336,8 @@ export function getVedicSliceForQuestionType(questionType: VedicQuestionType, st
       if (state.dashas) {
         lines.push('## Dasha');
         lines.push(`- Mahadasha: ${state.dashas.mahadasha}, Antardasha: ${state.dashas.antardasha || 'N/A'}, Period: ${state.dashas.period}`);
+        const themeMar = DASHA_THEMES[state.dashas.mahadasha];
+        if (themeMar) lines.push(`- Current dasha theme: ${themeMar}`);
         lines.push('');
       }
       const h7 = state.houses['7'];
@@ -338,6 +378,8 @@ export function getVedicSliceForQuestionType(questionType: VedicQuestionType, st
         lines.push(`- Period: ${state.dashas.period}`);
         if (state.dashas.startDate) lines.push(`- Start: ${state.dashas.startDate}`);
         if (state.dashas.endDate) lines.push(`- End: ${state.dashas.endDate}`);
+        const themeD = DASHA_THEMES[state.dashas.mahadasha];
+        if (themeD) lines.push(`- Current dasha theme: ${themeD}`);
         lines.push('');
       }
       break;
@@ -347,6 +389,8 @@ export function getVedicSliceForQuestionType(questionType: VedicQuestionType, st
       lines.push(`- Lagna: ${state.lagna || 'N/A'}, Moon sign: ${state.moon_sign || 'N/A'}, Nakshatra: ${state.nakshatra || 'N/A'}`);
       if (state.dashas) {
         lines.push(`- Dasha: ${state.dashas.mahadasha} (${state.dashas.period})`);
+        const themeG = DASHA_THEMES[state.dashas.mahadasha];
+        if (themeG) lines.push(`- Current dasha theme: ${themeG}`);
       }
       lines.push('');
       for (const [num, h] of Object.entries(state.houses)) {
@@ -354,6 +398,20 @@ export function getVedicSliceForQuestionType(questionType: VedicQuestionType, st
       }
       lines.push('');
       break;
+  }
+
+  const sliceTypesWithYogasDoshas: VedicQuestionType[] = ['general', 'career', 'marriage', 'event_confirmation'];
+  if (sliceTypesWithYogasDoshas.includes(questionType)) {
+    if (state.yogas?.length) {
+      lines.push('## Yogas');
+      state.yogas.forEach(name => lines.push(`- ${name}`));
+      lines.push('');
+    }
+    if (state.doshas?.length) {
+      lines.push('## Doshas');
+      state.doshas.forEach(d => lines.push(`- ${d}`));
+      lines.push('');
+    }
   }
 
   return lines.join('\n').trim();

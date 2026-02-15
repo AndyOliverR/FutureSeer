@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
 export const dynamic = 'force-static'
@@ -66,7 +67,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error updating comment:', error);
+    devLog.error('Error updating comment:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to update comment' }, { status: 500 });
   }
 }
@@ -131,7 +132,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error deleting comment:', error);
+    devLog.error('Error deleting comment:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to delete comment' }, { status: 500 });
   }
 }
@@ -150,7 +151,7 @@ async function updateCommunityStats(db: any, updates: { comments?: number }) {
       });
     }
   } catch (error) {
-    console.error('Error updating community stats:', error);
+    devLog.error('Error updating community stats:', error, 'route');
   }
 }
 

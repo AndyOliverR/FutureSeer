@@ -6,16 +6,19 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "cross-env BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true next build --webpack",
+    "build": "next build --webpack",
     "start": "next start",
-    "lint": "cross-env BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true next lint",
+    "lint": "next lint",
     "setup-users": "node scripts/setup-user-modes.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:integration": "jest tests/integration --testTimeout=15000",
+    "test:seer": "npx ts-node tests/regressionRunner.ts",
+    "test:core-stability": "npx ts-node tests/runCoreStabilityCheck.ts",
     "electron": "electron .",
     "desktop": "next build && concurrently -k \"next start\" \"wait-on http://localhost:3000 && electron .\"",
-    "build:capacitor": "cross-env CAPACITOR_BUILD=1 BASELINE_BROWSER_MAPPING_IGNORE_OLD_DATA=true next build --webpack",
+    "build:capacitor": "cross-env CAPACITOR_BUILD=1 next build --webpack",
     "cap:add:ios": "npx cap add ios",
     "cap:add:android": "npx cap add android",
     "cap:sync": "npx cap sync",
@@ -25,7 +28,12 @@
     "node": "22.x"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": ["swisseph"]
+    "ignoredBuiltDependencies": [
+      "swisseph"
+    ],
+    "overrides": {
+      "baseline-browser-mapping": "latest"
+    }
   },
   "dependencies": {
     "@astrodraw/astrochart": "^3.0.2",
@@ -87,7 +95,7 @@
     "iztro": "^2.5.3",
     "lucide-react": "^0.454.0",
     "luxon": "^3.6.1",
-    "next": "16.0.10",
+    "next": "16.1.6",
     "next-i18next": "^15.4.2",
     "next-themes": "latest",
     "node-fetch": "^3.3.2",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { isHotDiscussion } from '@/lib/firestore/communityHelpers';
 
@@ -63,7 +64,7 @@ export async function GET(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error fetching discussion:', error);
+    devLog.error('Error fetching discussion:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch discussion' }, { status: 500 });
   }
 }
@@ -138,7 +139,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error updating discussion:', error);
+    devLog.error('Error updating discussion:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to update discussion' }, { status: 500 });
   }
 }
@@ -202,7 +203,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error deleting discussion:', error);
+    devLog.error('Error deleting discussion:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to delete discussion' }, { status: 500 });
   }
 }
@@ -222,7 +223,7 @@ async function updateCommunityStats(db: any, updates: { discussions?: number; co
       });
     }
   } catch (error) {
-    console.error('Error updating community stats:', error);
+    devLog.error('Error updating community stats:', error, 'route');
   }
 }
 

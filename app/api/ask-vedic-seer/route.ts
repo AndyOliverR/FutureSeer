@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
-import { analyzeQuestionType, buildSpecializedPrompt, generateFollowUpQuestions } from '@/lib/vedicSeerPrompts';
+import { analyzeQuestionType, buildSpecializedPrompt, buildVedicSeerSystemPrompt, generateFollowUpQuestions } from '@/lib/vedicSeerPrompts';
 import { TimingAnalyzer } from '@/lib/timingAnalyzer';
 import { PredictiveSystem } from '@/lib/predictiveAlgorithms';
 import { parseDatesFromQuestion, formatDateForContext } from '@/lib/dateParser';
@@ -14,7 +14,6 @@ import {
   getVedicSliceForQuestionType,
   type VedicQuestionType,
 } from '@/lib/vedicSeerState';
-import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
 
 interface VedicSeerRequest {
   userId: string;
@@ -118,7 +117,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: buildVedicSystemPrompt(chartSlice, questionType)
+          content: buildVedicSeerSystemPrompt(chartSlice, questionType)
         },
         ...conversationHistory.flatMap((h) =>
           h ? [
@@ -198,7 +197,7 @@ export async function POST(request: NextRequest) {
             await cacheQuestionAnswer(userId, question, fullResponse);
             
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
           } finally {
             controller.close();
@@ -215,7 +214,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error in Vedic Seer API:', error);
+    devLog.error('Error in Vedic Seer API:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -250,7 +249,7 @@ async function calculateTimingAnalysis(vedicChartData: any, question: string, us
 
     return timingAnalysis;
   } catch (error) {
-    console.error('Error calculating timing analysis:', error);
+    devLog.error('Error calculating timing analysis:', error);
     return null;
   }
 }
@@ -283,7 +282,7 @@ async function generatePredictiveAnalysis(vedicChartData: any, question: string,
       timing: prediction.timing
     };
   } catch (error) {
-    console.error('Error generating predictive analysis:', error);
+    devLog.error('Error generating predictive analysis:', error);
     return null;
   }
 }
@@ -321,7 +320,7 @@ async function generateVedicInterpretation(vedicChartData: any, questionType: st
     
     return interpretation;
   } catch (error) {
-    console.error('Error generating interpretation:', error);
+    devLog.error('Error generating interpretation:', error);
     return {
       remedies: [],
       personality: { overview: 'Your chart reveals unique patterns' },
@@ -385,30 +384,6 @@ IMPORTANT: For numerology questions, combine planetary influences with numerolog
   }
 
   return context;
-}
-
-// Expert Vedic system prompt: slice only, Dasha supremacy, transit, strength/house, prediction framing
-function buildVedicSystemPrompt(chartSlice: string, questionType: VedicQuestionType): string {
-  return `You are an expert Vedic (Jyotish) astrologer. Reason ONLY from the chart state below. Do not invent data.
-${SEER_GOVERNING_SENTENCE}
-
-## CRITICAL RULES
-- **Dasha supremacy**: No prediction without Dasha context for timing/will/career/marriage/dasha questions. State clearly: "This period supports / does not support this outcome." Dasha decides possibility; transit decides timing; remedies reduce friction.
-- **Transit**: Transits confirm timing windows; they do not override Dasha. If transit contradicts Dasha, Dasha wins.
-- **Strength and house logic**: Use planet strength and house dignity. Example: "Even though Jupiter rules the 10th, its weakness limits full results."
-- **Prediction framing**: Time-bounded, conditional, probability-aware. Example: "The period between X–Y shows the highest probability for Z, provided efforts are sustained." Never guarantee outcomes.
-- **Remedies**: Only if planet is weak/afflicted or Dasha is challenging. 1 planet → 1 remedy set. No stacking unless specified.
-- **Gemstone/remedy recommendations**: When the user asks which gemstone or remedy to use, give ONE clear, confident recommendation when the chart supports it (e.g. Lagna lord's gem when no planet is weak; or weak planet's remedy). Do NOT hedge with "consult an astrologer" or "ideally under guidance"; you are the expert. State the primary recommendation (e.g. Emerald for your Lagna lord Mercury) with brief reasoning, then stop. For shadow planets (Rahu/Ketu) with no direct gemstone, recommend the Lagna lord's gem as the primary remedy when appropriate. "Vedic astrology indicates tendencies, not certainties" applies to outcome guarantees, not to recommendations you can make from the chart; for recommendations, be direct.
-- **Refusal**: No medical diagnosis, death prediction, or absolute certainty. Phrase: "Vedic astrology indicates tendencies and periods, not certainties."
-- Be direct and brief; time-aware.
-
-## Vedic chart state (use only these)
-${chartSlice}
-
-## Question type
-${questionType}
-
-Answer the user's question with specific references to the state above.`;
 }
 
 // Build system prompt for AI (legacy; used only if expert path is bypassed)
@@ -612,7 +587,7 @@ async function generateVedicResponse(question: string, context: any): Promise<Ve
     };
 
   } catch (error) {
-    console.error('Error generating Vedic response with FutureSeer intelligence:', error);
+    devLog.error('Error generating Vedic response with FutureSeer intelligence:', error);
     
     // Fallback to template-based response
     return generateTemplateResponse(question, context);
@@ -1527,7 +1502,7 @@ async function getConversationHistory(userId: string, sessionId?: string): Promi
     
     return snapshot.docs.map(doc => doc.data()).reverse(); // Reverse to get chronological order
   } catch (error) {
-    console.error('Error getting conversation history:', error);
+    devLog.error('Error getting conversation history:', error);
     return []; // Return empty array on error
   }
 }
@@ -1554,7 +1529,7 @@ async function storeConversation(userId: string, sessionId: string | undefined, 
     
     devLog.info('✅ Conversation stored successfully', undefined, 'vedic-seer');
   } catch (error) {
-    console.error('Error storing conversation:', error);
+    devLog.error('Error storing conversation:', error);
     // Don't throw - conversation storage failure shouldn't break the response
   }
 }
@@ -1777,7 +1752,7 @@ async function checkCachedQuestions(userId: string, question: string): Promise<a
     
     return null;
   } catch (error) {
-    console.error('Error checking cached questions:', error);
+    devLog.error('Error checking cached questions:', error);
     return null;
   }
 }
@@ -1800,6 +1775,6 @@ async function cacheQuestionAnswer(userId: string, question: string, answer: str
     
     devLog.info('✅ Question cached for future similar questions', undefined, 'vedic-seer');
   } catch (error) {
-    console.error('Error caching question:', error);
+    devLog.error('Error caching question:', error);
   }
 }

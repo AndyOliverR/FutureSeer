@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface VedicSeerChatInterfaceProps {
   userId: string;
@@ -24,8 +25,10 @@ interface Message {
 }
 
 const VEDIC_STARTER_QUESTIONS = [
-  'What does my chart say about career timing?',
-  'What remedies are suggested?',
+  'When is a favorable period for career or business?',
+  'Does my chart show marriage, and when?',
+  'Which dasha am I running, and what does it bring?',
+  'Why do I face repeated obstacles despite effort?',
 ];
 
 export default function VedicSeerChatInterface({
@@ -153,7 +156,7 @@ export default function VedicSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (error) {
-      console.error('Error:', error);
+      devLog.error('Vedic Seer error', error, 'VedicSeerChatInterface');
       setStreamingMessageId(null);
       setMessages(prev =>
         prev.map(msg =>
@@ -195,13 +198,18 @@ export default function VedicSeerChatInterface({
     const contentToShow = isStreaming
       ? message.content.slice(0, streamingDisplayLength)
       : message.content;
-    const isLong = message.content.length > SEE_MORE_THRESHOLD;
+    const contentLength = message.content.trim().length;
+    const isLong = contentLength > SEE_MORE_THRESHOLD;
     const isExpanded = expandedMessageIds.has(message.id);
     const showPreview = !isStreaming && isLong && !isExpanded;
     const displayContent = showPreview
       ? message.content.slice(0, PREVIEW_LENGTH) +
         (message.content.length > PREVIEW_LENGTH ? '…' : '')
       : contentToShow;
+
+    const truncatedPreview =
+      message.content.slice(0, PREVIEW_LENGTH) +
+      (message.content.length > PREVIEW_LENGTH ? '…' : '');
 
     return (
       <motion.div
@@ -212,7 +220,11 @@ export default function VedicSeerChatInterface({
       >
         <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
           <div className="whitespace-pre-wrap leading-relaxed">
-            {isStreaming ? displayContent : (
+            {isStreaming ? (
+              displayContent
+            ) : isLong && !isExpanded ? (
+              truncatedPreview
+            ) : (
               <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
             )}
           </div>
@@ -267,10 +279,16 @@ export default function VedicSeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
-              <p className="text-amber-900 font-medium mb-2">Ask me anything about your Vedic chart…</p>
-              <p className="text-sm mt-2 text-slate-700 mb-4">
-                I have your chart; ask about timing, career, marriage, or remedies.
+              <p className="text-amber-900 font-medium mb-2">Ask me anything about your destiny, timing, and life path…</p>
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I'll consult your Vedic birth chart, planetary periods, and yogas to reveal outcomes, timing, and karmic patterns.
               </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Life events and outcomes (marriage, career, health tendencies, wealth, education, relocation)</li>
+                <li>Timing (favorable periods, when a phase improves, when to act vs wait, which dasha supports which goal)</li>
+                <li>Karmic and pattern questions (why struggles repeat, strengths from past karma, major life themes)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {VEDIC_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -285,6 +303,7 @@ export default function VedicSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: understanding what will happen and when, within astrological limits.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -319,7 +338,7 @@ export default function VedicSeerChatInterface({
               value={question}
               onChange={e => setQuestion(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask about timing, career, marriage, or remedies..."
+              placeholder="Ask about timing, career, marriage, dashas, or remedies..."
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
             />

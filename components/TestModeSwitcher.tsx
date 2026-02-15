@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -90,7 +91,7 @@ export function TestModeSwitcher() {
     // Always show for testing - remove conditional logic
     setIsVisible(true)
     
-    console.log('🔄 TestModeSwitcher mounted on client')
+    devLog.debug('🔄 TestModeSwitcher mounted on client')
   }, [])
 
   const handleSwitchMode = async (mode: UserMode) => {

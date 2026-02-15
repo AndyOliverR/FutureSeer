@@ -2,6 +2,7 @@
 // Implements Working, Short-term, Long-term, Episodic, and Procedural memory
 
 import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 
 export interface MemoryMessage {
@@ -15,11 +16,59 @@ export interface MemoryMessage {
   sources?: string[];
 }
 
+/** Session state for Seer conversation layer (Phase 2). */
+export interface SeerSessionState {
+  questionType?: string;
+  emotionalWeight?: 'low' | 'medium' | 'high';
+  certaintyLevel?: 'exploring' | 'confirming' | 'concluding';
+  systemConfidence?: number;
+  lastThemes?: string[];
+  /** Intent router: active intent for this session. */
+  activeIntent?: string;
+  /** Intent router: active sub-intent (e.g. mudras, launch_date). */
+  activeSubIntent?: string;
+  /** Hash of last answer (to avoid verbatim repetition). */
+  lastAnswerHash?: string;
+  /** Consumed entities: dates, remedy sets, options already given. Exclude from next answer. */
+  consumedEntities?: string[];
+  /** Domains blocked for this session (e.g. gemstones when user asked mudra). */
+  blockedDomains?: string[];
+  /** When set, next user message that matches expectedValues resolves this and we answer without re-routing. */
+  pendingClarification?: {
+    intent: string;
+    expectedValues: string[];
+    clarificationQuestion?: string;
+  };
+  /** After name-analysis clarification: which name to use (full legal vs public). */
+  nameAnalysisNameType?: 'full_legal' | 'public';
+  /** After Lenormand situation clarification: the situation to bind for the next Lenormand reading. */
+  lenormandSituation?: string;
+  /** After Vastu spatial clarification: direction or room/area to bind for the next Vastu answer. */
+  vastuSpatialContext?: string;
+  /** After Human Design scope clarification: full overview vs authority-only. */
+  humanDesignScope?: 'overview' | 'authority';
+  /** After Geomancy situation clarification: the situation to bind for the next Geomancy answer. */
+  geomancySituation?: string;
+  /** After Energy & Healing scope clarification: physical vitality, emotional balance, or spiritual energy. */
+  energyHealingClarification?: 'physical_vitality' | 'emotional_balance' | 'spiritual_energy';
+  /** After Scrying clarification: focus/situation for "About which situation?". */
+  scryingSituation?: string;
+  /** After Mundane context clarification: global, political, or economic. */
+  mundaneClarification?: 'global' | 'political' | 'economic';
+  /** After Akashic area clarification: area of life (e.g. relationship, career, purpose, health, family). */
+  akashicClarification?: string;
+  /** When user is in a specific tool flow: lock context so follow-ups stay in that tool (e.g. Navaratna). */
+  activeTool?: string;
+  /** When activeTool is Navaratna: stones already recommended so finger/metal/ratti/day questions use them. */
+  remedyGemstoneContext?: { recommendedStones: string[] };
+}
+
 export interface WorkingMemory {
   lastExchanges: MemoryMessage[];
   currentContext: string;
   sessionStartTime: number;
   activeTopics: string[];
+  seerSessionState?: SeerSessionState;
 }
 
 export interface ShortTermMemory {
@@ -312,6 +361,50 @@ export class ConversationalMemory {
   getWorkingMemory(): WorkingMemory {
     return this.workingMemory;
   }
+
+  /** Update Seer session state (Phase 2). */
+  setSeerSessionState(state: Partial<SeerSessionState>): void {
+    if (!this.workingMemory.seerSessionState) {
+      this.workingMemory.seerSessionState = {};
+    }
+    Object.assign(this.workingMemory.seerSessionState, state);
+  }
+
+  /** Get Seer session state for conversation layer. */
+  getSeerSessionState(): SeerSessionState | undefined {
+    return this.workingMemory.seerSessionState;
+  }
+
+  /** Consume an entity (date, remedy set, etc.) so it is excluded from future answers. */
+  consumeEntity(entity: string): void {
+    if (!this.workingMemory.seerSessionState) this.workingMemory.seerSessionState = {};
+    const consumed = this.workingMemory.seerSessionState.consumedEntities ?? [];
+    if (!consumed.includes(entity)) {
+      this.workingMemory.seerSessionState.consumedEntities = [...consumed, entity];
+    }
+  }
+
+  /** Check if entity was already consumed. */
+  isEntityConsumed(entity: string): boolean {
+    const consumed = this.workingMemory.seerSessionState?.consumedEntities ?? [];
+    return consumed.includes(entity);
+  }
+
+  /** Get consumed dates (YYYY-MM-DD) for timing exclusion. */
+  getConsumedDates(): string[] {
+    const consumed = this.workingMemory.seerSessionState?.consumedEntities ?? [];
+    return consumed.filter((e) => /^\d{4}-\d{2}-\d{2}$/.test(e));
+  }
+
+  /** Reset scope when sub-intent changes (e.g. user switches from mudra to gemstone). */
+  resetScopeOnSubIntentChange(newSubIntent: string): void {
+    const current = this.workingMemory.seerSessionState?.activeSubIntent;
+    if (current !== newSubIntent) {
+      if (!this.workingMemory.seerSessionState) this.workingMemory.seerSessionState = {};
+      this.workingMemory.seerSessionState.consumedEntities = [];
+      this.workingMemory.seerSessionState.activeSubIntent = newSubIntent;
+    }
+  }
   
   private updateCurrentContext(message: MemoryMessage): void {
     const keywords = message.keywords || [];
@@ -368,7 +461,7 @@ export class ConversationalMemory {
   async loadLongTermMemory(): Promise<void> {
     try {
       if (!this.db) {
-        console.warn('⚠️ Firebase not available, using default long-term memory');
+        devLog.warn('⚠️ Firebase not available, using default long-term memory', 'conversationalMemory');
         this.longTermMemory = this.getDefaultLongTermMemory();
         return;
       }
@@ -378,13 +471,13 @@ export class ConversationalMemory {
       
       if (docSnap.exists()) {
         this.longTermMemory = docSnap.data() as LongTermMemory;
-        console.log('✅ Loaded long-term memory for user:', this.userId);
+        devLog.debug('✅ Loaded long-term memory for user:', this.userId);
       } else {
         this.longTermMemory = this.getDefaultLongTermMemory();
         await this.saveLongTermMemory();
       }
     } catch (error) {
-      console.error('❌ Error loading long-term memory:', error);
+      devLog.error('❌ Error loading long-term memory:', error, 'conversationalMemory');
       this.longTermMemory = this.getDefaultLongTermMemory();
     }
   }
@@ -399,9 +492,9 @@ export class ConversationalMemory {
         lastUpdated: Date.now()
       });
       
-      console.log('✅ Saved long-term memory for user:', this.userId);
+      devLog.debug('✅ Saved long-term memory for user:', this.userId);
     } catch (error) {
-      console.error('❌ Error saving long-term memory:', error);
+      devLog.error('❌ Error saving long-term memory:', error, 'conversationalMemory');
     }
   }
   
@@ -483,7 +576,7 @@ export class ConversationalMemory {
         await this.saveEpisodicMemory();
       }
     } catch (error) {
-      console.error('❌ Error loading episodic memory:', error);
+      devLog.error('❌ Error loading episodic memory:', error, 'conversationalMemory');
       this.episodicMemory = this.getDefaultEpisodicMemory();
     }
   }
@@ -495,7 +588,7 @@ export class ConversationalMemory {
       const docRef = doc(this.db, 'users', this.userId, 'memory', 'episodic');
       await setDoc(docRef, this.episodicMemory);
     } catch (error) {
-      console.error('❌ Error saving episodic memory:', error);
+      devLog.error('❌ Error saving episodic memory:', error, 'conversationalMemory');
     }
   }
   
@@ -565,7 +658,7 @@ export class ConversationalMemory {
         await this.saveProceduralMemory();
       }
     } catch (error) {
-      console.error('❌ Error loading procedural memory:', error);
+      devLog.error('❌ Error loading procedural memory:', error, 'conversationalMemory');
       this.proceduralMemory = this.getDefaultProceduralMemory();
     }
   }
@@ -577,7 +670,7 @@ export class ConversationalMemory {
       const docRef = doc(this.db, 'users', this.userId, 'memory', 'procedural');
       await setDoc(docRef, this.proceduralMemory);
     } catch (error) {
-      console.error('❌ Error saving procedural memory:', error);
+      devLog.error('❌ Error saving procedural memory:', error, 'conversationalMemory');
     }
   }
   
@@ -696,7 +789,7 @@ export class ConversationalMemory {
         await setDoc(historyRef, history);
       }
     } catch (error) {
-      console.error('❌ Error saving version:', error);
+      devLog.error('❌ Error saving version:', error, 'conversationalMemory');
     }
 
     return version;
@@ -711,7 +804,7 @@ export class ConversationalMemory {
       
       return docSnap.exists() ? (docSnap.data() as MemoryVersion) : null;
     } catch (error) {
-      console.error('❌ Error loading version:', error);
+      devLog.error('❌ Error loading version:', error, 'conversationalMemory');
       return null;
     }
   }
@@ -753,7 +846,7 @@ export class ConversationalMemory {
 
     this.currentVersion = version;
     await this.saveAllMemory();
-    console.log('✅ Rolled back to version:', version);
+    devLog.debug('✅ Rolled back to version:', version);
   }
 
   async getVersionHistory(limit?: number): Promise<MemoryVersion[]> {
@@ -770,7 +863,7 @@ export class ConversationalMemory {
       
       return limit ? versions.slice(-limit) : versions;
     } catch (error) {
-      console.error('❌ Error loading version history:', error);
+      devLog.error('❌ Error loading version history:', error, 'conversationalMemory');
       return [];
     }
   }
@@ -839,7 +932,8 @@ export class ConversationalMemory {
     await Promise.all([
       this.loadLongTermMemory(),
       this.loadEpisodicMemory(),
-      this.loadProceduralMemory()
+      this.loadProceduralMemory(),
+      this.loadSeerSessionState()
     ]);
     
     if (loadRecentContext) {
@@ -854,17 +948,44 @@ export class ConversationalMemory {
       }
     }
     
-    console.log('✅ All memory systems initialized for user:', this.userId);
+    devLog.debug('✅ All memory systems initialized for user:', this.userId);
   }
   
   async saveAllMemory(): Promise<void> {
     await Promise.all([
       this.saveLongTermMemory(),
       this.saveEpisodicMemory(),
-      this.saveProceduralMemory()
+      this.saveProceduralMemory(),
+      this.saveSeerSessionState()
     ]);
     
-    console.log('✅ All memory systems saved for user:', this.userId);
+    devLog.debug('✅ All memory systems saved for user:', this.userId);
+  }
+
+  async saveSeerSessionState(): Promise<void> {
+    try {
+      if (!this.db || !this.workingMemory.seerSessionState) return;
+      const docRef = doc(this.db, 'users', this.userId, 'memory', 'seerSession');
+      await setDoc(docRef, {
+        ...this.workingMemory.seerSessionState,
+        lastUpdated: Date.now()
+      });
+    } catch (err) {
+      devLog.warn('⚠️ saveSeerSessionState failed:', err, 'conversationalMemory');
+    }
+  }
+
+  async loadSeerSessionState(): Promise<void> {
+    try {
+      if (!this.db) return;
+      const docRef = doc(this.db, 'users', this.userId, 'memory', 'seerSession');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        this.workingMemory.seerSessionState = docSnap.data() as SeerSessionState;
+      }
+    } catch (err) {
+      devLog.warn('⚠️ loadSeerSessionState failed:', err, 'conversationalMemory');
+    }
   }
   
   getContextForQuestion(questionType: string): string {
@@ -989,7 +1110,7 @@ Respond in JSON format:
 
       return summary;
     } catch (error) {
-      console.error('Error generating AI summary:', error);
+      devLog.error('Error generating AI summary:', error, 'conversationalMemory');
       // Fallback to simple summary
       return this.createSimpleSummary(exchanges);
     }
@@ -1034,7 +1155,7 @@ Respond in JSON format:
   async addContextSummary(summary: ContextSummary): Promise<void> {
     try {
       if (!this.db) {
-        console.warn('⚠️ Firebase not available, cannot save context summary');
+        devLog.warn('⚠️ Firebase not available, cannot save context summary', 'conversationalMemory');
         return;
       }
 
@@ -1047,9 +1168,9 @@ Respond in JSON format:
         this.recentSummaries.pop();
       }
       
-      console.log('✅ Saved context summary:', summary.id);
+      devLog.debug('✅ Saved context summary:', summary.id);
     } catch (error) {
-      console.error('❌ Error saving context summary:', error);
+      devLog.error('❌ Error saving context summary:', error, 'conversationalMemory');
     }
   }
 
@@ -1068,7 +1189,7 @@ Respond in JSON format:
       this.recentSummaries = summaries;
       return summaries;
     } catch (error) {
-      console.error('❌ Error loading recent summaries:', error);
+      devLog.error('❌ Error loading recent summaries:', error, 'conversationalMemory');
       return this.recentSummaries.slice(0, limit || this.config.maxSummariesToLoad);
     }
   }
@@ -1083,9 +1204,9 @@ Respond in JSON format:
       try {
         const summary = await this.summarizeContext();
         await this.addContextSummary(summary);
-        console.log('✅ Auto-summarized context after', exchangeCount, 'exchanges');
+        devLog.debug('✅ Auto-summarized context after', exchangeCount, 'exchanges');
       } catch (error) {
-        console.error('❌ Error in auto-summarization:', error);
+        devLog.error('❌ Error in auto-summarization:', error, 'conversationalMemory');
       }
     }
   }
@@ -1169,9 +1290,9 @@ Respond in JSON format:
       const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
       await Promise.all(deletePromises);
 
-      console.log(`✅ Cleared ${snapshot.docs.length} old summaries`);
+      devLog.debug(`✅ Cleared ${snapshot.docs.length} old summaries`);
     } catch (error) {
-      console.error('❌ Error clearing old summaries:', error);
+      devLog.error('❌ Error clearing old summaries:', error, 'conversationalMemory');
     }
   }
 
@@ -1238,9 +1359,9 @@ Respond in JSON format:
         }
       }
 
-      console.log('✅ Memory imported successfully');
+      devLog.debug('✅ Memory imported successfully');
     } catch (error) {
-      console.error('❌ Error importing memory:', error);
+      devLog.error('❌ Error importing memory:', error, 'conversationalMemory');
       throw error;
     }
   }

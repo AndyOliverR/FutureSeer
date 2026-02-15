@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('❌ Custom Horary Astrology API Error:', error)
+    devLog.error('❌ Custom Horary Astrology API Error:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

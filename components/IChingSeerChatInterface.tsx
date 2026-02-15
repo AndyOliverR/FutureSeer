@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface IChingMessage {
   id: string;
@@ -34,8 +35,10 @@ const REGENERATE_MESSAGE =
   'Consult the I Ching first to use Ask the Seer.';
 
 const ICHING_STARTER_QUESTIONS = [
-  'What does this hexagram suggest for my situation?',
-  'How should I approach this?',
+  'What does the I Ching say about my current situation?',
+  'Is now the right time to act or wait?',
+  'What should I be mindful of as things change?',
+  'How should I respond to this challenge?',
 ];
 
 export default function IChingSeerChatInterface({
@@ -173,7 +176,7 @@ export default function IChingSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('I Ching Seer error:', err);
+      devLog.error('I Ching Seer error', err, 'IChingSeerChatInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -270,16 +273,13 @@ export default function IChingSeerChatInterface({
             Ask the Seer — I Ching
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Directional guidance, process awareness, alignment—not prediction.
+            The moment, not the lifetime.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
           <MessageCircle className="w-12 h-12 text-amber-600 mb-4" />
           <p className="text-amber-900 font-medium text-center">
             {EMPTY_STATE_MESSAGE}
-          </p>
-          <p className="text-sm text-amber-700 mt-2 text-center">
-            Consult the I Ching above to get personalized guidance.
           </p>
         </CardContent>
       </Card>
@@ -294,7 +294,7 @@ export default function IChingSeerChatInterface({
           Ask the Seer — I Ching
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Directional guidance, process awareness, alignment—not prediction.
+          The moment, not the lifetime.
         </p>
         {messages.length > 0 && (
           <Button
@@ -314,12 +314,20 @@ export default function IChingSeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
-              <p className="text-amber-900 font-medium">
-                Welcome to I Ching Seer. Ask about your hexagram, situation, process, or direction.
+              <p className="text-amber-900 font-medium mb-2">
+                Ask me anything about your current situation…
               </p>
-              <p className="text-sm mt-2 text-slate-700">
-                I have your hexagram; ask about meaning, approach, or next steps.
+              <p className="text-sm text-amber-800 mb-3">
+                I&apos;ll interpret your hexagram to reveal the energy of the moment, what is changing, and how to respond wisely.
               </p>
+              <p className="text-xs text-amber-800 font-medium mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Situational guidance (proceed, pause, or adapt; uncertainty; attitude or action now)</li>
+                <li>Decision support (clarity at crossroads, obstacles, timing as readiness not dates)</li>
+                <li>Change and transition (what phase, what is evolving, what to avoid during change)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {ICHING_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -334,6 +342,9 @@ export default function IChingSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-xs text-amber-700 mt-4">
+                Best for: The energy of the moment and wise response, not dates or fixed outcomes.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -368,7 +379,7 @@ export default function IChingSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about the situation, approach, or advance / hold / withdraw…"
+              placeholder="Ask about your situation, timing, or how to respond…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

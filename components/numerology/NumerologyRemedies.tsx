@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -49,7 +50,7 @@ export function NumerologyRemedies({ numerologyData, birthDate, onNavigateToTab 
           setCompletedRemedies(new Set(savedArray))
         }
       } catch (error) {
-        console.error('Failed to load completed remedies from localStorage:', error)
+        devLog.error('Failed to load completed remedies from localStorage:', error, 'NumerologyRemedies')
       }
     }
   }, [])
@@ -61,14 +62,14 @@ export function NumerologyRemedies({ numerologyData, birthDate, onNavigateToTab 
         const array = Array.from(completedRemedies)
         localStorage.setItem('numerology-remedies-completed', JSON.stringify(array))
       } catch (error) {
-        console.error('Failed to save completed remedies to localStorage:', error)
+        devLog.error('Failed to save completed remedies to localStorage:', error, 'NumerologyRemedies')
       }
     } else if (typeof window !== 'undefined' && completedRemedies.size === 0) {
       // Clear localStorage if no completed remedies
       try {
         localStorage.removeItem('numerology-remedies-completed')
       } catch (error) {
-        console.error('Failed to clear completed remedies from localStorage:', error)
+        devLog.error('Failed to clear completed remedies from localStorage:', error, 'NumerologyRemedies')
       }
     }
   }, [completedRemedies])

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, CreditCard, X, Coffee, Gift, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -212,7 +213,7 @@ export function SubscriptionStatus({ userProfile, onCancel, onUpdatePaymentClick
                 onCancel();
               }
             } catch (error: any) {
-              console.error('Error cancelling subscription:', error);
+              devLog.error('Error cancelling subscription:', error, 'SubscriptionStatus');
             }
           }
         }}

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import { buildFengShuiSeerSystemPrompt } from '@/lib/fengShuiSeerPrompts';
 import {
   buildFengShuiState,
   classifyFengShuiQuestion,
@@ -132,26 +133,9 @@ export async function POST(request: NextRequest) {
     );
 
     const displayName = (userProfile?.displayName ?? '').trim();
-    const namingRule = displayName
-      ? `The user's display name is "${displayName}". Address them only by this name. Do not use generic terms.`
-      : 'If no display name is provided, you may use a brief generic address.';
-
-    const systemPrompt = `You are an expert Feng Shui advisor (environmental systems). Feng Shui optimizes space; it does not force results.
-
-RULES:
-- ${namingRule}
-- Apply Form School first: Qi must enter, circulate, settle. Evaluate entrance, flow path, rest areas, work areas. If Form is bad, do not apply advanced cures.
-- Respect occupant compatibility (Eight Mansions / Kua): Say "This space is supportive / draining for you specifically." No generic advice.
-- Lock to one school per answer. Never mix Form School, Eight Mansions, and Flying Star rules mid-answer.
-- Recommend minimal, specific corrections only: repositioning, decluttering, light, airflow, color moderation. One issue → one correction. No symbol stacking or aggressive remedies.
-- Do not predict outcomes, guarantee success, or promise wealth. Refuse: "Will this bring money?", "Will this guarantee success?", "When will things change?"
-- Refuse without sufficient spatial data when critical. Say: "Feng Shui analysis requires accurate spatial data to be reliable."
-- Permanent rule: Feng Shui removes resistance; it does not replace effort.
-
-FENG SHUI STATE (use this only):
-${slice}
-
-Answer the user's question using the state above. Keep language practical, unemotional, and actionable.`;
+    const systemPrompt = buildFengShuiSeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const userMessage = question.trim();
 
@@ -176,7 +160,7 @@ Answer the user's question using the state above. Keep language practical, unemo
               }
             }
           } catch (error) {
-            console.error('Feng Shui Seer stream error:', error);
+            devLog.error('Feng Shui Seer stream error:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I encountered an error. Please try again.'

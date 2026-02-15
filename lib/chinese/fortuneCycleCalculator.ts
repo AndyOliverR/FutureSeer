@@ -4,6 +4,8 @@
  * Uses fortel-ziweidoushu library for advanced calculations
  */
 
+import { devLog } from '@/lib/devLogger';
+
 // Import fortel-ziweidoushu types
 // Note: The library structure may vary, adjust imports as needed
 let DestinyBoard: any
@@ -20,7 +22,7 @@ try {
   ConfigType = fortel.ConfigType || fortel.default?.ConfigType
   Gender = fortel.Gender || fortel.default?.Gender
 } catch (error) {
-  console.warn('fortel-ziweidoushu not available, using fallback calculations')
+  devLog.warn('fortel-ziweidoushu not available, using fallback calculations', undefined, 'fortuneCycleCalculator')
 }
 
 export interface FortuneCycleData {
@@ -127,7 +129,7 @@ export function calculateFortuneCycles(
           // ... continue with extraction
         }
       } catch (fortelError) {
-        console.warn('Fortel library error, using fallback:', fortelError)
+        devLog.warn('Fortel library error, using fallback:', fortelError, 'fortuneCycleCalculator')
       }
     }
     
@@ -186,7 +188,7 @@ export function calculateFortuneCycles(
       effectiveMonth: runtimeContext?.effectiveMonth || target.getMonth() + 1,
     }
   } catch (error) {
-    console.error('Error calculating fortune cycles:', error)
+    devLog.error('Error calculating fortune cycles:', error, 'fortuneCycleCalculator')
     // Return fallback data
     return getFallbackFortuneCycles()
   }

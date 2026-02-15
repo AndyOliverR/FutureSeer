@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { devLog } from '@/lib/devLogger';
 
 interface CancelSubscriptionModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ export function CancelSubscriptionModal({
     try {
       await onConfirm();
     } catch (error) {
-      console.error('Error cancelling:', error);
+      devLog.error('Error cancelling', error, 'CancelSubscriptionModal');
     } finally {
       setIsCancelling(false);
     }
@@ -44,7 +45,7 @@ export function CancelSubscriptionModal({
       <DialogContent className="bg-slate-900 border-amber-500/30 max-w-md">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl font-serif flex items-center gap-2">
-            <Heart className="w-6 h-6 text-amber-400" />
+            <span className="shrink-0"><Heart className="w-6 h-6 text-amber-400" /></span>
             We're Sorry to See You Go
           </DialogTitle>
           <DialogDescription className="text-slate-300 font-serif">

@@ -9,6 +9,8 @@ import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import { buildChartState, getChartSliceForQuestionType } from '@/lib/westernChartState';
 import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
+import { getWesternReportChunksForUser, getSectionsForIntent, formatChunksForPrompt } from '@/lib/westernSeerRetrieval';
+import { buildWesternRetrievalSystemPrompt } from '@/lib/westernSeerPrompts';
 
 interface WesternSeerRequest {
   userId: string;
@@ -85,6 +87,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Analyze question type early so we can compute default future transits for timing/career when no date in question
+    const questionType = analyzeWesternQuestionType(question);
+
     // Parse dates from question for future transit calculations
     const parsedDates = parseDatesFromQuestion(question);
     let futureTransits: any[] | null = null;
@@ -132,7 +137,7 @@ export async function POST(request: NextRequest) {
           }
           devLog.info('✅ Future transits calculated for quarterly dates in', year, 'ask-western-seer');
         } catch (error) {
-          console.error('⚠️ Failed to calculate quarterly future transits:', error);
+          devLog.error('⚠️ Failed to calculate quarterly future transits:', error);
           futureTransitsByDate = null;
         }
       } else {
@@ -147,8 +152,44 @@ export async function POST(request: NextRequest) {
           futureTransits = transitChartData.data.transits;
           devLog.info('✅ Future transits calculated for', formatDateForContext(parsedDates.startDate), 'ask-western-seer');
         } catch (error) {
-          console.error('⚠️ Failed to calculate future transits:', error);
+          devLog.error('⚠️ Failed to calculate future transits:', error);
         }
+      }
+    } else if (!parsedDates && (questionType === 'timing' || questionType === 'career')) {
+      // Default future transits for next 4 months when user asks about favorable period but does not specify a date
+      const birthData: BirthData = {
+        birthDate: userProfile.birthDate || '',
+        birthTime: userProfile.birthTime || '',
+        birthPlace: userProfile.birthPlace || '',
+        latitude: userProfile.birthLatitude ?? 12.3051828,
+        longitude: userProfile.birthLongitude ?? 76.6553609
+      };
+      const now = new Date();
+      const defaultDates = [
+        new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)),
+        new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)),
+        new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 2, 1)),
+        new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 1)),
+        new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 4, 1))
+      ];
+      futureTransitsByDate = [];
+      try {
+        for (const d of defaultDates) {
+          const transitChartData = await universalOccultService.calculateWesternChart(birthData, {
+            houseSystem: 'placidus',
+            includeAspects: false,
+            includeTransits: true,
+            transitDate: d.toISOString()
+          });
+          futureTransitsByDate.push({
+            date: formatDateForContext(d),
+            transits: transitChartData.data.transits || []
+          });
+        }
+        devLog.info('✅ Default future transits calculated for timing/career (next 5 months)', undefined, 'ask-western-seer');
+      } catch (error) {
+        devLog.error('⚠️ Failed to calculate default future transits:', error);
+        futureTransitsByDate = null;
       }
     }
 
@@ -173,9 +214,6 @@ export async function POST(request: NextRequest) {
       .filter((item: any) => item !== null)
       .slice(-10);
 
-    // Analyze question type (Western-specific and Astro-Numerology)
-    const questionType = analyzeWesternQuestionType(question);
-
     // Refusal: synastry requires partner chart — we only have the user's natal + transits
     const synastryRefusalMessage = "Relationship comparison (synastry) requires a partner's birth data. Please use the Synastry tool with both birth details to get insights into compatibility.";
     if (questionType === 'synastry') {
@@ -197,24 +235,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Chart state + slice: reason only from relevant chart data
-    const chartState = buildChartState(
-      westernChartData,
-      futureTransits ?? undefined,
-      futureTransitsByDate ?? undefined
-    );
-    const chartSlice = getChartSliceForQuestionType(questionType, chartState);
+    // Prefer retrieval from stored report chunks when available; else chart-slice fallback
+    let systemPromptContent: string;
+    const reportChunks = await getWesternReportChunksForUser(userId);
+    if (reportChunks) {
+      const chunkKeys = getSectionsForIntent(questionType);
+      const chunkContext = formatChunksForPrompt(reportChunks, chunkKeys);
+      systemPromptContent = buildWesternRetrievalSystemPrompt(chunkContext);
+      devLog.info('✅ Western Seer: using retrieval path (report chunks)', undefined, 'ask-western-seer');
+    } else {
+      const chartState = buildChartState(
+        westernChartData,
+        futureTransits ?? undefined,
+        futureTransitsByDate ?? undefined
+      );
+      const chartSlice = getChartSliceForQuestionType(questionType, chartState);
+      const numerologyContext = numerologyData ? buildAstroNumerologyContext(numerologyData) : '';
+      systemPromptContent = buildWesternSystemPrompt(chartSlice, numerologyContext, questionType);
+    }
 
-    // Build Astro-Numerology context if data is available
-    const numerologyContext = numerologyData ? buildAstroNumerologyContext(numerologyData) : '';
-
-    // Stream conversational response via AI Gateway or direct Groq (strict: slice only)
+    // Stream conversational response via AI Gateway or direct Groq
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile', // Fast, high-quality, free tier
       messages: [
         {
           role: 'system',
-          content: buildWesternSystemPrompt(chartSlice, numerologyContext, questionType)
+          content: systemPromptContent
         },
         ...conversationHistory.flatMap((h) =>
           h ? [
@@ -284,7 +330,7 @@ export async function POST(request: NextRequest) {
             });
             
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
           } finally {
             controller.close();
@@ -301,7 +347,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error in Western Seer API:', error);
+    devLog.error('Error in Western Seer API:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -571,8 +617,8 @@ ${SEER_GOVERNING_SENTENCE}
 
 ## CRITICAL RULES
 - Answer strictly using the following chart facts. Do not use generic astrology knowledge.
-- If data is missing for this question, say so explicitly (e.g. "This can't be concluded without progressions" or "I don't have transit data for that date").
-- Never improvise meanings or add placements not in the slice. If the slice doesn't contain something, say "data not available" or "can't be concluded without [X]".
+- If data is missing for a non-timing question, say so explicitly (e.g. "This can't be concluded without progressions"). For timing questions (launch, release, marriage, relocation, etc.), use the Timing fallback below to give derived guidance from natal placements before refusing.
+- Never improvise meanings or add placements not in the slice. Do not invent calendar dates or mention transits not in the slice. If the slice doesn't contain something and it's not a timing question, say "data not available" or "can't be concluded without [X]".
 - Use Western terminology only: Sun sign, Moon sign, Rising sign, aspects (conjunction, square, trine, sextile, opposition), houses, transits. DO NOT mention Vedic concepts (nakshatras, dashas, Rahu/Ketu, sidereal).
 
 ## CHART FACTS (use only these)
@@ -586,8 +632,11 @@ ${hasNumerology ? `\n${numerologyContext}` : ''}
 ## EXPLANATION LAYER (how to answer)
 - State why you're saying something: reference placements explicitly (e.g. "This comes from Saturn transiting your 10th house Sun...").
 - Avoid absolutes; use language like "often correlates with," "can suggest," "may indicate."
-- If data is missing: say "This can't be concluded without [X]."
-- Keep answers short: 1–2 sentences when possible. For timing/electional, state the date and one brief reason; avoid long paragraphs unless the user asks for more detail. Be conversational, warm, and supportive. Be direct; no beating around the bush. Descriptive but brief.
+- If data is missing for a non-timing question: say "This can't be concluded without [X]." For timing questions, use the Timing fallback below before refusing.
+- Keep answers short: 1–2 sentences when possible. For timing/electional, state the date and one brief reason when transit data exists; avoid long paragraphs unless the user asks for more detail. Be conversational, warm, and supportive. Be direct; no beating around the bush. Descriptive but brief.
+
+## Timing fallback
+- If the user asks for timing (launch, release, marriage, relocation, etc.) and exact dates or transit data are not in the chart facts, do not only say "can't be concluded." Use the natal chart (e.g. 10th/6th/7th house, Sun, Mercury, Jupiter) to give favorable periods, themes, or preparation/action guidance. Allowed: favorable periods, themes, avoid/prepare/proceed guidance. Not allowed: inventing dates, mentioning transits not in the slice.
 
 ## Future dates
 - If "Future transits" are in the chart facts above, USE THEM for timing questions. Never say you need exact transits for that period if they are already provided.
@@ -606,11 +655,11 @@ ${hasNumerology ? `\n${numerologyContext}` : ''}
     rising_sign: `Focus on: Outer personality, first impressions, life approach, physical appearance, life path`,
     aspects: `Focus on: Planetary relationships, inner dynamics, challenges and gifts, integration of energies`,
     transits: `Focus on: Current planetary influences, timing, opportunities, challenges, growth areas`,
-    timing: `Focus on: Transits (current and future if provided). Use only transit data in the slice. If progressions are noted as not available, say so. Response format: First line = recommended date (e.g. **YYYY-MM-DD** or "Recommended: YYYY-MM-DD"). Second line blank. Then full reasoning (comparison of transit dates, numerology if available, caveats). Keep the answer brief: recommended date plus 1–2 short sentences; only add more detail if the user explicitly asks.`,
-    electional: `Focus on: Transits for the asked date. Use only transit data in the slice. If data for the date is missing, say "This can't be concluded without transit data for that date." Response format: First line = recommended date (e.g. **YYYY-MM-DD** or "Recommended: YYYY-MM-DD"). Second line blank. Then full reasoning (comparison of transit dates, numerology if available, caveats). Keep the answer brief: recommended date plus 1–2 short sentences; only add more detail if the user explicitly asks.`,
+    timing: `Focus on: Transits (current and future if provided). Use only transit data in the slice. When Current transits or Future transits are present in the chart facts, you MUST include at least one specific favorable date or window (e.g. **YYYY-MM-DD** or "early March", "mid-April") in your answer. First line = recommended date or window; then reasoning. If no transit dates are in the slice, still give derived timing from natal placements (periods, themes, preparation vs action) instead of refusing. If progressions are noted as not available, say so. Do not end with "timing isn't indicated" without first offering the best available dates or windows, or Tier 2 guidance.`,
+    electional: `Focus on: Transits for the asked date. Use only transit data in the slice. When transit data is present, you MUST include at least one specific favorable date or window (e.g. **YYYY-MM-DD** or "early March"). First line = recommended date or window; then reasoning. If data for the date is missing, say "This can't be concluded without transit data for that date."`,
     synastry: `(Not used — synastry questions are refused; partner chart required.)`,
     houses: `Focus on: Life areas, experiences, where energies manifest, environmental influences`,
-    career: `Focus on: 10th house, Midheaven, Sun/Saturn placements, vocational indicators, success potential`,
+    career: `Focus on: 10th house, Midheaven, Sun/Saturn placements, vocational indicators, success potential. When the slice includes "Current transits" or "Future transits for [date]", the answer must include at least one favorable date or window for career (e.g. recommended date or "Good windows: early March, late April") before any caveat. If no transit dates are in the slice, still give derived timing from natal placements (periods, themes, preparation vs action) instead of refusing.`,
     relationships: `Focus on: 7th house, Venus/Mars placements, partnership patterns, love style (single chart only)`,
     wealth: `Focus on: 2nd house (earned income), 8th house (shared resources), Jupiter/Saturn aspects`,
     life_purpose: `Focus on: Sun placement, North Node, 10th house, major aspects, life direction. If Astro-Numerology data is available, also integrate Life Path Number insights about life purpose.`,
@@ -728,7 +777,7 @@ async function getConversationHistory(userId: string, sessionId?: string): Promi
     
     return snapshot.docs.map(doc => doc.data()).reverse();
   } catch (error) {
-    console.error('Error getting conversation history:', error);
+    devLog.error('Error getting conversation history:', error);
     return [];
   }
 }
@@ -754,7 +803,7 @@ async function storeConversation(userId: string, sessionId: string | undefined, 
     
     devLog.info('✅ Western Seer conversation stored successfully', undefined, 'ask-western-seer');
   } catch (error) {
-    console.error('Error storing conversation:', error);
+    devLog.error('Error storing conversation:', error);
   }
 }
 

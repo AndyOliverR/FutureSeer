@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import type { RuneReading } from '@/lib/runesIntelligence';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface RunesSeerMessage {
   id: string;
@@ -39,8 +40,10 @@ const UNAVAILABLE_MESSAGE =
 const RETRY_DELAY_MS = 1500;
 
 const RUNES_STARTER_QUESTIONS = [
-  'What do these runes say about my situation?',
-  'What should I pay attention to?',
+  'What do the runes say about my situation?',
+  'What energy surrounds this decision?',
+  'What is blocking my progress?',
+  'What direction should I move toward?',
 ];
 
 export default function RunesSeerChatInterface({
@@ -192,7 +195,7 @@ export default function RunesSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Runes Seer error:', err);
+      devLog.error('Runes Seer error', err, 'RunesSeerChatInterface');
       setStreamingMessageId(null);
       try {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
@@ -307,10 +310,10 @@ export default function RunesSeerChatInterface({
         <CardHeader className="border-b border-amber-200 bg-white/80 shrink-0">
           <CardTitle className="flex items-center gap-2 text-amber-900">
             <MessageCircle className="w-5 h-5 text-amber-700" />
-            Ask the Seer — ᚱ Rune Divination
+            Ask the Seer — Runes
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Forces and consequences, not guarantees or timelines.
+            Directional insight, not fixed outcomes.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
@@ -332,13 +335,10 @@ export default function RunesSeerChatInterface({
         <div>
           <CardTitle className="flex items-center gap-2 text-amber-900">
             <MessageCircle className="w-5 h-5 text-amber-700" />
-            Ask the Seer — ᚱ Rune Divination
+            Ask the Seer — Runes
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Forces and consequences, not guarantees or timelines.
-          </p>
-          <p className="text-xs text-amber-700/90 mt-0.5">
-            For reflection only; no fixed outcomes or dates.
+            Directional insight, not fixed outcomes.
           </p>
         </div>
         {messages.length > 0 && (
@@ -360,11 +360,19 @@ export default function RunesSeerChatInterface({
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Welcome to Ask the Seer — ᚱ Rune Divination.
+                Ask me anything about guidance and direction…
               </p>
-              <p className="text-sm text-amber-800 mb-4">
-                I have your cast. Ask about forces, consequences, or direction—or pick a question below.
+              <p className="text-sm text-amber-800 mb-3 max-w-md mx-auto">
+                I'll interpret your runes to reveal forces at play, obstacles, and the direction your situation is moving toward.
               </p>
+              <p className="text-amber-900 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Situational direction (whether energy supports action or caution, what force is influencing the situation, what is blocking progress)</li>
+                <li>Decision guidance (whether to proceed, pause, or change approach; what attitude or action aligns best now)</li>
+                <li>Conflict and challenge (why resistance exists, what must be confronted or released, where strength or patience is needed)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {RUNES_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -379,6 +387,9 @@ export default function RunesSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-amber-700 text-xs mt-4">
+                Best for: guidance and direction, not fixed outcomes or dates.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -413,7 +424,7 @@ export default function RunesSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about energy, caution, alignment, or consequences…"
+              placeholder="Ask about guidance, direction, or forces at play…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

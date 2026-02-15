@@ -2,6 +2,7 @@
 // Demonstrates how to integrate Western chart data from AstroApp with Vedic chart conversion
 
 import { convertWesternToVedicCharts, generateStyledChartImage, WesternChartData } from './vedicChartConverter';
+import { devLog } from '@/lib/devLogger';
 
 export interface AstroAppChartResponse {
   objects: Array<{
@@ -158,7 +159,7 @@ export async function generateVedicChartsFromAstroApp(
     };
 
   } catch (error) {
-    console.error('Error generating Vedic charts from AstroApp:', error);
+    devLog.error('Error generating Vedic charts from AstroApp:', error, 'astroAppChartIntegration');
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -214,7 +215,7 @@ export async function enhanceVedicReportWithConvertedCharts(
     return enhancedData;
 
   } catch (error) {
-    console.error('Error enhancing Vedic report:', error);
+    devLog.error('Error enhancing Vedic report:', error, 'astroAppChartIntegration');
     return existingVedicData; // Return original data if enhancement fails
   }
 }

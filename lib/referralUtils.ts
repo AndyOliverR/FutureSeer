@@ -4,6 +4,7 @@
  */
 
 import { getFirebaseDB } from './firebase';
+import { devLog } from '@/lib/devLogger';
 
 /**
  * Generate a unique referral code for a user
@@ -55,7 +56,7 @@ export async function validateReferralCode(code: string, db: any): Promise<{ val
       return { valid: true, userId: userDoc.id };
     }
   } catch (error) {
-    console.error('Error validating referral code:', error);
+    devLog.error('Error validating referral code:', error, 'referralUtils');
     return { valid: false };
   }
 }
@@ -72,7 +73,7 @@ export async function applyReferralCredit(referrerId: string, db: any): Promise<
       const userDoc = await userRef.get();
       
       if (!userDoc.exists) {
-        console.error('Referrer user not found:', referrerId);
+        devLog.error('Referrer user not found:', referrerId, 'referralUtils');
         return;
       }
 
@@ -86,7 +87,7 @@ export async function applyReferralCredit(referrerId: string, db: any): Promise<
         updatedAt: Date.now()
       });
 
-      console.log(`✅ Applied referral credit to user ${referrerId}: +1 free month`);
+      devLog.debug(`✅ Applied referral credit to user ${referrerId}: +1 free month`);
     } else {
       // Client-side: Use Firestore SDK
       const { doc, getDoc, updateDoc } = await import('firebase/firestore');
@@ -95,7 +96,7 @@ export async function applyReferralCredit(referrerId: string, db: any): Promise<
       const userDoc = await getDoc(userRef);
       
       if (!userDoc.exists()) {
-        console.error('Referrer user not found:', referrerId);
+        devLog.error('Referrer user not found:', referrerId, 'referralUtils');
         return;
       }
 
@@ -109,10 +110,10 @@ export async function applyReferralCredit(referrerId: string, db: any): Promise<
         updatedAt: Date.now()
       });
 
-      console.log(`✅ Applied referral credit to user ${referrerId}: +1 free month`);
+      devLog.debug(`✅ Applied referral credit to user ${referrerId}: +1 free month`);
     }
   } catch (error) {
-    console.error('Error applying referral credit:', error);
+    devLog.error('Error applying referral credit:', error, 'referralUtils');
     throw error;
   }
 }
@@ -131,7 +132,7 @@ export async function trackReferralSignup(
     const validation = await validateReferralCode(referralCode, db);
     
     if (!validation.valid || !validation.userId) {
-      console.error('Invalid referral code:', referralCode);
+      devLog.error('Invalid referral code:', referralCode, 'referralUtils');
       return;
     }
 
@@ -139,7 +140,7 @@ export async function trackReferralSignup(
 
     // Don't allow self-referrals
     if (referrerId === newUserId) {
-      console.error('Cannot refer yourself');
+      devLog.error('Cannot refer yourself', undefined, 'referralUtils');
       return;
     }
 
@@ -183,9 +184,9 @@ export async function trackReferralSignup(
       });
     }
 
-    console.log(`✅ Referral tracked: ${newUserId} referred by ${referrerId}`);
+    devLog.debug(`✅ Referral tracked: ${newUserId} referred by ${referrerId}`);
   } catch (error) {
-    console.error('Error tracking referral signup:', error);
+    devLog.error('Error tracking referral signup:', error, 'referralUtils');
     throw error;
   }
 }
@@ -240,7 +241,7 @@ export async function getReferralStats(userId: string, db: any): Promise<{
       };
     }
   } catch (error) {
-    console.error('Error getting referral stats:', error);
+    devLog.error('Error getting referral stats:', error, 'referralUtils');
     return {
       referralCode: '',
       referralCount: 0,

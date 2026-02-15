@@ -1,4 +1,5 @@
 // Comprehensive Astrological Calculation Engine
+import { devLog } from '@/lib/devLogger';
 // This provides all calculations needed for a self-reliant astrological system
 
 // Ephemeris data for planetary positions (simplified but accurate)
@@ -405,7 +406,7 @@ export function generateAstrologicalChart(birthDate: string, birthTime: string, 
       }
     }
   } catch (error) {
-    console.error('Error generating astrological chart:', error)
+    devLog.error('Error generating astrological chart:', error, 'astroCalculations')
     throw new Error('Failed to generate astrological chart')
   }
 }

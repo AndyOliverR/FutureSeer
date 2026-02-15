@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { getAngelNumbersSystemStatus } from '@/lib/angelNumbersIntelligence'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -39,7 +40,7 @@ export function AngelNumbersSystemStatus() {
         const status = getAngelNumbersSystemStatus()
         setSystemStatus(status)
       } catch (error) {
-        console.error('Error loading angel numbers system status:', error)
+        devLog.error('Error loading angel numbers system status:', error, 'AngelNumbersSystemStatus')
       } finally {
         setLoading(false)
       }

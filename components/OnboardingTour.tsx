@@ -6,6 +6,7 @@ import { X, ChevronRight, ChevronLeft, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { onboardingSteps, OnboardingStep } from '@/lib/onboardingSteps';
+import { ModalPortal } from '@/components/ui/ModalPortal';
 
 export function OnboardingTour() {
   const { isTourActive, shouldShowTour, startTour, markCompleted, markSkipped, setIsTourActive } = useOnboarding();
@@ -123,7 +124,7 @@ export function OnboardingTour() {
   };
 
   return (
-    <>
+    <ModalPortal open={isTourActive}>
       {/* Overlay */}
       <AnimatePresence>
         {isTourActive && (
@@ -132,7 +133,7 @@ export function OnboardingTour() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9998]"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000]"
             onClick={(e) => {
               // Only close on overlay click, not tooltip
               if (e.target === overlayRef.current) {
@@ -166,22 +167,22 @@ export function OnboardingTour() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed z-[9999] max-w-sm"
+            className="fixed z-[10001] max-w-sm max-h-[min(90dvh,90vh)] overflow-y-auto"
             style={getTooltipPosition()}
           >
             <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-400/50 rounded-xl p-6 shadow-2xl">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
                   <p className="text-white/80 text-sm leading-relaxed">{step.content}</p>
                 </div>
                 <button
                   onClick={handleSkip}
-                  className="ml-4 text-white/60 hover:text-white transition-colors"
+                  className="ml-4 min-w-[44px] min-h-[44px] flex items-center justify-center text-white/60 hover:text-white transition-colors shrink-0"
                   aria-label="Close tour"
                 >
-                  <X className="w-5 h-5" />
+                  <span className="shrink-0"><X className="w-5 h-5" /></span>
                 </button>
               </div>
 
@@ -207,28 +208,28 @@ export function OnboardingTour() {
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
-                  className="text-white/70 hover:text-white"
+                  className="text-white/70 hover:text-white min-h-[44px]"
                 >
-                  <SkipForward className="w-4 h-4 mr-2" />
+                  <span className="shrink-0"><SkipForward className="w-4 h-4 mr-2" /></span>
                   Skip Tour
                 </Button>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   {!isFirstStep && (
                     <Button
                       variant="outline"
                       onClick={handlePrevious}
-                      className="border-amber-400/50 text-white hover:bg-amber-400/10"
+                      className="border-amber-400/50 text-white hover:bg-amber-400/10 min-w-[44px] min-h-[44px]"
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <span className="shrink-0"><ChevronLeft className="w-4 h-4" /></span>
                     </Button>
                   )}
                   <Button
                     onClick={isLastStep ? handleComplete : handleNext}
-                    className="bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 hover:from-amber-600 hover:to-yellow-500"
+                    className="bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 hover:from-amber-600 hover:to-yellow-500 min-h-[44px]"
                   >
                     {isLastStep ? 'Get Started' : 'Next'}
-                    {!isLastStep && <ChevronRight className="w-4 h-4 ml-2" />}
+                    {!isLastStep && <span className="shrink-0 ml-2"><ChevronRight className="w-4 h-4" /></span>}
                   </Button>
                 </div>
               </div>
@@ -257,6 +258,6 @@ export function OnboardingTour() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </ModalPortal>
   );
 }

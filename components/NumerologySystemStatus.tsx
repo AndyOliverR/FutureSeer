@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { getNumerologySystemStatus } from '@/lib/numerologyIntelligence'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +39,7 @@ export function NumerologySystemStatus() {
         const status = getNumerologySystemStatus()
         setSystemStatus(status)
       } catch (error) {
-        console.error('Error loading numerology system status:', error)
+        devLog.error('Error loading numerology system status:', error, 'NumerologySystemStatus')
       } finally {
         setLoading(false)
       }

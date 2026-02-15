@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth'
 import { ichingIntelligence, IChingAnalysis, IChingCoaching } from '@/lib/ichingIntelligence'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -48,12 +49,12 @@ export function IChingCoachInterface({ analysis }: IChingCoachInterfaceProps) {
           try {
             await ichingIntelligence.saveCoaching(user.uid, response)
           } catch (saveError) {
-            console.error('Failed to save coaching:', saveError)
+            devLog.error('Failed to save coaching:', saveError, 'IChingCoachInterface')
           }
         }
       }
     } catch (error) {
-      console.error('Error getting coaching:', error)
+      devLog.error('Error getting coaching:', error, 'IChingCoachInterface')
       setCurrentResponse('I apologize, but I encountered an error while processing your question. Please try again.')
     } finally {
       setIsAsking(false)

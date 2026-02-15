@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Eye, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import type { FaceReadingAnalysis } from '@/lib/faceReadingIntelligence';
 
 interface FaceReadingMessage {
@@ -39,8 +40,10 @@ const UNAVAILABLE_MESSAGE =
 const RETRY_DELAY_MS = 1500;
 
 const FACE_READING_STARTER_QUESTIONS = [
-  'What do my features suggest about my strengths?',
-  'How can I use this in career or relationships?',
+  'What does my face say about my personality?',
+  'What strengths or challenges does my face indicate?',
+  'Does my face suggest leadership or creative tendencies?',
+  'Which areas of life improve as I grow older?',
 ];
 
 export default function FaceReadingSeerChatInterface({
@@ -191,7 +194,7 @@ export default function FaceReadingSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Face Reading Seer error:', err);
+      devLog.error('Face Reading Seer error', err, 'FaceReadingSeerChatInterface');
       setStreamingMessageId(null);
       try {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
@@ -309,7 +312,7 @@ export default function FaceReadingSeerChatInterface({
             Ask the Seer — Face Reading
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Tendencies and capacities, not fate or events.
+            Tendencies and first-impression destiny, not events.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
@@ -333,7 +336,7 @@ export default function FaceReadingSeerChatInterface({
           Ask the Seer — Face Reading
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Tendencies and capacities, not fate or events.
+          Tendencies and first-impression destiny, not events.
         </p>
         {messages.length > 0 && (
           <Button
@@ -354,8 +357,19 @@ export default function FaceReadingSeerChatInterface({
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Welcome to Ask the Seer — Face Reading. I have your analysis; ask about traits, zones, or tendencies.
+                Ask me anything about your facial features and life tendencies…
               </p>
+              <p className="text-sm text-amber-800 mb-3 max-w-md mx-auto">
+                I'll interpret facial structure and features to reveal personality traits, strengths, challenges, and life patterns.
+              </p>
+              <p className="text-amber-900 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Personality & traits (strengths, weaknesses, leadership vs support, emotional expression, decision-making style)</li>
+                <li>Life tendencies (career inclinations, relationship style, wealth-handling, stress and adaptability)</li>
+                <li>Life phases (early vs later-life improvement, areas that mature with age, where discipline matters most)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {FACE_READING_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -370,6 +384,9 @@ export default function FaceReadingSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-amber-700 text-xs mt-4">
+                Best for: tendencies and first-impression destiny, not events or timelines.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -404,7 +421,7 @@ export default function FaceReadingSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about traits, zones, strengths, career inclination, or balance…"
+              placeholder="Ask about traits, tendencies, career inclination, or life phases…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

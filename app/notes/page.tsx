@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { useNotes } from "@/hooks/useNotes"
 import { Note } from "@/lib/firebase"
@@ -58,7 +59,7 @@ export default function NotesPage() {
       setNoteTitle("")
       setSelectedColor("gray")
     } catch (error) {
-      console.error('Error saving note:', error)
+      devLog.error('Error saving note:', error, 'page')
     } finally {
       setIsSubmitting(false)
     }

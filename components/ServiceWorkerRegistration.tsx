@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { useToast } from '@/components/ui/use-toast';
 
 /**
@@ -37,7 +38,7 @@ export function ServiceWorkerRegistration() {
       });
 
       setRegistration(reg);
-      console.log('[App] Service worker registered successfully');
+      devLog.debug('[App] Service worker registered successfully');
 
       // Check for updates
       reg.addEventListener('updatefound', () => {
@@ -59,7 +60,7 @@ export function ServiceWorkerRegistration() {
       }, 60 * 60 * 1000);
 
     } catch (error) {
-      console.error('[App] Service worker registration failed:', error);
+      devLog.error('[App] Service worker registration failed:', error, 'ServiceWorkerRegistration');
     }
   };
 

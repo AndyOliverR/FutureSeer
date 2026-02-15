@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         await runesIntelligence.saveReading(userId, reading)
         devLog.info('✅ Saved Runes reading to database for user:', userId, 'runes')
       } catch (saveError) {
-        console.error('⚠️ Failed to save reading to database (non-critical):', saveError)
+        devLog.error('Failed to save reading to database (non-critical)', saveError, 'runes-reading')
         // Continue even if save fails
       }
     }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Error generating runes reading:', error)
+    devLog.error('Error generating runes reading:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

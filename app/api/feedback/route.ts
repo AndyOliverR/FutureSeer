@@ -99,7 +99,7 @@ async function uploadScreenshotToStorage(
       return downloadURL;
     }
   } catch (error) {
-    console.error('❌ Error uploading screenshot to Storage:', error);
+    devLog.error('❌ Error uploading screenshot to Storage:', error, 'route');
     throw error;
   }
 }
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         screenshotUrls.push(...(await Promise.all(uploadPromises)));
         devLog.info(`✅ Uploaded ${screenshotUrls.length} screenshot(s) to Firebase Storage`, undefined, 'feedback');
       } catch (uploadError) {
-        console.error('❌ Error uploading screenshots:', uploadError);
+        devLog.error('❌ Error uploading screenshots:', uploadError, 'route');
         // Continue with feedback submission even if screenshot upload fails
         // Screenshots will be empty array
       }
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('❌ Feedback submission error:', error)
+    devLog.error('❌ Feedback submission error:', error, 'route')
     
     return NextResponse.json(
       { error: 'Failed to submit feedback. Please try again.' },

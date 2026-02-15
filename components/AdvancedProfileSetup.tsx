@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,7 +162,7 @@ export default function AdvancedProfileSetup({
         throw new Error('Failed to save profile');
       }
     } catch (error) {
-      console.error('Error saving advanced profile:', error);
+      devLog.error('Error saving advanced profile:', error, 'AdvancedProfileSetup');
     } finally {
       setIsSubmitting(false);
     }

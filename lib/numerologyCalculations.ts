@@ -1,4 +1,5 @@
 // Comprehensive Numerology Calculation Engine
+import { devLog } from '@/lib/devLogger';
 // This provides all calculations needed for a self-reliant numerology system
 
 interface NumerologyProfile {
@@ -306,7 +307,7 @@ export function generateNumerologyProfile(
   targetYear?: number
 ): NumerologyProfile {
   try {
-    console.log('Generating comprehensive numerology profile')
+    devLog.debug('Generating comprehensive numerology profile')
     
     // Validate input
     if (!fullName || !birthDate) {
@@ -374,11 +375,11 @@ export function generateNumerologyProfile(
     // Generate insights
     profile.insights = generateInsights(profile)
     
-    console.log('Successfully generated numerology profile')
+    devLog.debug('Successfully generated numerology profile')
     return profile
     
   } catch (error) {
-    console.error('Error generating numerology profile:', error)
+    devLog.error('Error generating numerology profile:', error, 'numerologyCalculations')
     throw new Error(`Failed to generate numerology profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

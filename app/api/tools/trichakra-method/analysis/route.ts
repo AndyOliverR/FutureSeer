@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
           };
         }
       } catch (profileError) {
-        console.error('⚠️ Failed to fetch user profile:', profileError);
+        devLog.error('⚠️ Failed to fetch user profile:', profileError, 'route');
       }
     }
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('❌ Error generating Trichakra analysis:', error);
+    devLog.error('❌ Error generating Trichakra analysis:', error, 'route');
     
     return NextResponse.json(
       {
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('❌ Error fetching Trichakra analysis:', error);
+    devLog.error('❌ Error fetching Trichakra analysis:', error, 'route');
     return NextResponse.json(
       { 
         success: false, 

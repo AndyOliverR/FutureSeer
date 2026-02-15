@@ -53,6 +53,10 @@ const AboutFAQ = dynamic(() => import("@/components/about/AboutFAQ").then(mod =>
   loading: () => <AboutSectionSkeleton />
 });
 
+const AboutValueProposition = dynamic(() => import("@/components/about/AboutValueProposition").then(mod => ({ default: mod.AboutValueProposition })), {
+  loading: () => <AboutSectionSkeleton />
+});
+
 export default function AboutPage() {
   return (
     <div className="min-h-screen flex flex-col starfield-ultra-sharp">
@@ -63,6 +67,9 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto w-full">
           {/* Personal Note Section - Above the fold, no lazy loading */}
           <PersonalNote />
+
+          {/* Why FutureSeer - problem, solution, differentiation, fit, promise */}
+          <AboutValueProposition />
           
           {/* Below-the-fold sections - Lazy loaded */}
           <AboutHowItWorks />

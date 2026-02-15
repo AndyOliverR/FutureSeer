@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         await tarotIntelligence.saveReading(userId, reading)
         devLog.info('✅ Saved Tarot reading to database for user:', userId, 'tarot')
       } catch (saveError) {
-        console.error('⚠️ Failed to save reading to database (non-critical):', saveError)
+        devLog.error('Failed to save reading to database (non-critical)', saveError, 'tarot-reading')
         // Continue even if save fails
       }
     }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('Error generating tarot reading:', error)
+    devLog.error('Error generating tarot reading:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

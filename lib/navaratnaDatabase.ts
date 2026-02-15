@@ -462,11 +462,32 @@ export const NAVARATNA_DATABASE: Record<string, NavaratnaGemstone> = {
   }
 };
 
+/** Sanskrit to English planet mapping for gemstone lookup. */
+const SANSKRIT_TO_ENGLISH: Record<string, string> = {
+  budh: 'Mercury',
+  surya: 'Sun',
+  chandra: 'Moon',
+  mangal: 'Mars',
+  guru: 'Jupiter',
+  shukra: 'Venus',
+  shani: 'Saturn',
+  rahu: 'Rahu',
+  ketu: 'Ketu'
+};
+
+/** Normalize planet name (Sanskrit or variant) to English for getGemstoneByPlanet. */
+export function normalizePlanetName(planetName: string): string {
+  if (!planetName || typeof planetName !== 'string') return '';
+  const key = planetName.trim().toLowerCase();
+  return SANSKRIT_TO_ENGLISH[key] ?? planetName.trim();
+}
+
 /**
  * Get gemstone data by planet name
  */
 export function getGemstoneByPlanet(planetName: string): NavaratnaGemstone | null {
-  const key = planetName.toLowerCase();
+  const normalized = normalizePlanetName(planetName) || planetName;
+  const key = (normalized || planetName).toLowerCase();
   return NAVARATNA_DATABASE[key] || null;
 }
 
@@ -475,6 +496,17 @@ export function getGemstoneByPlanet(planetName: string): NavaratnaGemstone | nul
  */
 export function getAllNavaratnaGemstones(): NavaratnaGemstone[] {
   return Object.values(NAVARATNA_DATABASE);
+}
+
+/**
+ * Get gemstone data by English name (e.g. "Emerald", "Ruby") for wearing-instruction lookups.
+ */
+export function getGemstoneByEnglishName(englishName: string): NavaratnaGemstone | null {
+  if (!englishName || typeof englishName !== 'string') return null;
+  const name = englishName.trim();
+  return getAllNavaratnaGemstones().find(
+    (g) => g.gemstone.english.toLowerCase() === name.toLowerCase()
+  ) ?? null;
 }
 
 /**

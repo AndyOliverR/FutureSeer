@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
 import { useSettings } from "@/hooks/useSettings"
@@ -60,7 +61,7 @@ export default function SettingsPage() {
       await signOut()
       // Redirect will be handled by auth state change
     } catch (error) {
-      console.error('Failed to sign out:', error)
+      devLog.error('Failed to sign out:', error, 'page')
     }
   }
 
@@ -248,7 +249,7 @@ export default function SettingsPage() {
                         await updateUserProfile(user.uid, { notificationsEnabled: v });
                         await refreshProfile();
                       } catch (e) {
-                        console.error('Failed to update notifications preference:', e);
+                        devLog.error('Failed to update notifications preference:', e, 'page');
                       }
                     }
                     updateSetting('notifications', v);
@@ -268,7 +269,7 @@ export default function SettingsPage() {
                         await updateUserProfile(user.uid, { emailUpdates: v });
                         await refreshProfile();
                       } catch (e) {
-                        console.error('Failed to update email updates preference:', e);
+                        devLog.error('Failed to update email updates preference:', e, 'page');
                       }
                     }
                     updateSetting('emailUpdates', v);
@@ -329,7 +330,7 @@ export default function SettingsPage() {
                         await updateUserProfile(user.uid, { relationshipStatus });
                         await refreshProfile();
                       } catch (error) {
-                        console.error('Failed to update relationship status:', error);
+                        devLog.error('Failed to update relationship status:', error, 'page');
                       }
                     }
                   }}
@@ -363,7 +364,7 @@ export default function SettingsPage() {
                         });
                         await refreshProfile();
                       } catch (error) {
-                        console.error('Failed to update children information:', error);
+                        devLog.error('Failed to update children information:', error, 'page');
                       }
                     }
                   }}
@@ -390,7 +391,7 @@ export default function SettingsPage() {
                             });
                             await refreshProfile();
                           } catch (error) {
-                            console.error('Failed to update number of children:', error);
+                            devLog.error('Failed to update number of children:', error, 'page');
                           }
                         }
                       }}
@@ -432,7 +433,7 @@ export default function SettingsPage() {
                           await updateUserProfile(user.uid, { divinationInterests: newInterests });
                           await refreshProfile();
                         } catch (error) {
-                          console.error('Failed to update divination interests:', error);
+                          devLog.error('Failed to update divination interests:', error, 'page');
                         }
                       }
                     }}
@@ -483,7 +484,7 @@ export default function SettingsPage() {
                           });
                           await refreshProfile();
                         } catch (error) {
-                          console.error('Failed to update notification preferences:', error);
+                          devLog.error('Failed to update notification preferences:', error, 'page');
                         }
                       }
                     }}

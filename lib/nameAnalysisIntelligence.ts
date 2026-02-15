@@ -2,6 +2,7 @@
 // Analyzes names using various numerological and mystical systems
 
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 
 export interface NameAnalysis {
@@ -405,16 +406,16 @@ export async function getIntelligentNameAnalysisData(
       
       // Return cached data if less than 24 hours old and name hasn't changed
       if (hoursSinceUpdate < 24 && cachedData.fullName === fullName) {
-        console.log('Returning cached name analysis data for user:', userId);
+        devLog.debug('Returning cached name analysis data for user:', userId);
         return cachedData;
       }
     }
   } catch (error) {
-    console.warn('Error checking cached name analysis data:', error);
+    devLog.warn('Error checking cached name analysis data:', error, 'nameAnalysisIntelligence');
   }
   
   // Calculate new name analysis
-  console.log('Calculating new name analysis for user:', userId);
+  devLog.debug('Calculating new name analysis for user:', userId);
   
   const cleanName = fullName.replace(/[^A-Z\s]/gi, '').toUpperCase();
   const nameParts = cleanName.split(' ').filter(part => part.length > 0);
@@ -487,9 +488,9 @@ export async function getIntelligentNameAnalysisData(
   // Cache the data
   try {
     await setDoc(docRef, analysis);
-    console.log('Cached name analysis data for user:', userId);
+    devLog.debug('Cached name analysis data for user:', userId);
   } catch (error) {
-    console.warn('Error caching name analysis data:', error);
+    devLog.warn('Error caching name analysis data:', error, 'nameAnalysisIntelligence');
   }
   
   return analysis;
@@ -505,8 +506,8 @@ export async function clearNameAnalysisDataCache(userId: string): Promise<void> 
   
   try {
     await setDoc(docRef, {});
-    console.log('Cleared name analysis data cache for user:', userId);
+    devLog.debug('Cleared name analysis data cache for user:', userId);
   } catch (error) {
-    console.warn('Error clearing name analysis data cache:', error);
+    devLog.warn('Error clearing name analysis data cache:', error, 'nameAnalysisIntelligence');
   }
 } 

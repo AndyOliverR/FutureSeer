@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { placeLookupService } from '@/services/place';
 
 export const dynamic = 'force-static'
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Place lookup error:', error);
+    devLog.error('Place lookup error:', error, 'route');
     
     return NextResponse.json(
       { 
@@ -88,7 +89,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Place lookup error:', error);
+    devLog.error('Place lookup error:', error, 'route');
     
     return NextResponse.json(
       { 

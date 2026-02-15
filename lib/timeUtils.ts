@@ -2,6 +2,8 @@
  * Time normalization utilities for handling various birthTime formats
  */
 
+import { devLog } from './devLogger';
+
 /**
  * Normalizes birthTime input to HH:MM format
  * Handles both timestamp (Unix milliseconds) and string formats
@@ -52,8 +54,8 @@ export function normalizeDateString(birthDate: any): string {
       const day = String(date.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
-  } catch (error) {
-    console.warn('Failed to normalize date:', dateString);
+  } catch {
+    devLog.warn('Failed to normalize date', dateString, 'timeUtils');
   }
   
   return dateString;

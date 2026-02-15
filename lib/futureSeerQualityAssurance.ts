@@ -4,6 +4,8 @@
  * Ensures consistent professional-grade experience across all 27 divination tools
  */
 
+import { devLog } from '@/lib/devLogger';
+
 export interface QualityMetrics {
   uiConsistency: UIConsistencyScore
   backendPerformance: BackendPerformanceScore
@@ -126,7 +128,7 @@ export class FutureSeerQualityAssurance {
     componentName: string,
     data?: any
   ): Promise<QualityMetrics> {
-    console.log(`🔍 Performing Quality Check for ${componentType}: ${componentName}`)
+    devLog.debug(`🔍 Performing Quality Check for ${componentType}: ${componentName}`)
 
     const uiConsistency = await this.checkUIConsistency(componentName, data)
     const backendPerformance = await this.checkBackendPerformance(componentName, data)
@@ -692,21 +694,21 @@ export class FutureSeerQualityAssurance {
    * Log Quality Results
    */
   private logQualityResults(componentName: string, metrics: QualityMetrics): void {
-    console.log(`\n🔍 Quality Check Results for ${componentName}:`)
-    console.log(`📊 Overall Score: ${metrics.overallScore.toFixed(1)}/100`)
-    console.log(`🎨 UI Consistency: ${metrics.uiConsistency.totalScore.toFixed(1)}/100`)
-    console.log(`⚙️ Backend Performance: ${metrics.backendPerformance.totalScore.toFixed(1)}/100`)
-    console.log(`📊 Data Quality: ${metrics.dataQuality.totalScore.toFixed(1)}/100`)
-    console.log(`👤 User Experience: ${metrics.userExperience.totalScore.toFixed(1)}/100`)
+    devLog.debug(`\n🔍 Quality Check Results for ${componentName}:`)
+    devLog.debug(`📊 Overall Score: ${metrics.overallScore.toFixed(1)}/100`)
+    devLog.debug(`🎨 UI Consistency: ${metrics.uiConsistency.totalScore.toFixed(1)}/100`)
+    devLog.debug(`⚙️ Backend Performance: ${metrics.backendPerformance.totalScore.toFixed(1)}/100`)
+    devLog.debug(`📊 Data Quality: ${metrics.dataQuality.totalScore.toFixed(1)}/100`)
+    devLog.debug(`👤 User Experience: ${metrics.userExperience.totalScore.toFixed(1)}/100`)
     
     if (metrics.recommendations.length > 0) {
-      console.log(`\n💡 Recommendations:`)
-      metrics.recommendations.forEach(rec => console.log(`   ${rec}`))
+      devLog.debug(`\n💡 Recommendations:`)
+      metrics.recommendations.forEach(rec => devLog.debug(`   ${rec}`))
     }
     
     if (metrics.criticalIssues.length > 0) {
-      console.log(`\n🚨 Critical Issues:`)
-      metrics.criticalIssues.forEach(issue => console.log(`   ${issue}`))
+      devLog.debug(`\n🚨 Critical Issues:`)
+      metrics.criticalIssues.forEach(issue => devLog.debug(`   ${issue}`))
     }
   }
 
@@ -714,9 +716,9 @@ export class FutureSeerQualityAssurance {
    * Alert Critical Issues
    */
   private alertCriticalIssues(componentName: string, criticalIssues: string[]): void {
-    console.error(`\n🚨 CRITICAL QUALITY ISSUES DETECTED in ${componentName}:`)
-    criticalIssues.forEach(issue => console.error(`   ${issue}`))
-    console.error(`\n🔧 IMMEDIATE ACTION REQUIRED - Please fix these issues before proceeding!`)
+    devLog.error(`\n🚨 CRITICAL QUALITY ISSUES DETECTED in ${componentName}:`, undefined, 'futureSeerQualityAssurance')
+    criticalIssues.forEach(issue => devLog.error(`   ${issue}`, undefined, 'futureSeerQualityAssurance'))
+    devLog.error(`\n🔧 IMMEDIATE ACTION REQUIRED - Please fix these issues before proceeding!`, undefined, 'futureSeerQualityAssurance')
   }
 
   /**

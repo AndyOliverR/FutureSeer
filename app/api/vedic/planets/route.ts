@@ -371,7 +371,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Error calculating planetary positions:', error)
+    devLog.error('Error calculating planetary positions:', error)
     return NextResponse.json(
       { 
         error: 'Failed to calculate planetary positions',

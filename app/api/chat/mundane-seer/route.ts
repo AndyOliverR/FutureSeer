@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
+import { buildMundaneSeerSystemPrompt } from '@/lib/mundaneSeerPrompts';
 import {
   buildMundaneState,
   classifyMundaneQuestion,
@@ -11,7 +13,7 @@ import {
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, analysis, userProfile } = await request.json();
+    const { question, analysis: analysisInput, userProfile, comprehensiveProfile } = await request.json();
 
     if (!question?.trim()) {
       return NextResponse.json(
@@ -19,6 +21,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Aggregator can send comprehensiveProfile; derive analysis from profile when not provided
+    const analysis =
+      analysisInput ??
+      comprehensiveProfile?.mundaneAstrology ??
+      comprehensiveProfile?.['Mundane Astrology'];
 
     const data = analysis?.data ?? analysis;
     let state;
@@ -53,7 +61,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getMundaneSliceForQuestionType(questionType, state);
+    const slice = getMundaneSliceForQuestionType(questionType, state);
+    const systemPrompt = buildMundaneSeerSystemPrompt(slice, questionType);
 
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
@@ -76,7 +85,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Error during mundane seer streaming:', error);
+            devLog.error('Error during mundane seer streaming:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -96,7 +105,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: unknown) {
-    console.error('Mundane Seer API error:', error);
+    devLog.error('Mundane Seer API error:', error, 'route');
     return NextResponse.json(
       {
         error:

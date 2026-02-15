@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { devLog } from '@/lib/devLogger';
 import { profileManager } from '@/lib/services/profileManager'
 
 export const dynamic = 'force-static'
@@ -37,7 +38,7 @@ export async function GET(
 
     return NextResponse.json({ success: true, profile })
   } catch (error: any) {
-    console.error('Error fetching profile:', error)
+    devLog.error('Error fetching profile:', error, 'route')
     return NextResponse.json(
       { error: error.message || 'Failed to fetch profile' },
       { status: 500 }
@@ -72,7 +73,7 @@ export async function PUT(
 
     return NextResponse.json({ success: true, profile })
   } catch (error: any) {
-    console.error('Error updating profile:', error)
+    devLog.error('Error updating profile:', error, 'route')
     return NextResponse.json(
       { error: error.message || 'Failed to update profile' },
       { status: 500 }
@@ -107,7 +108,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    console.error('Error deleting profile:', error)
+    devLog.error('Error deleting profile:', error, 'route')
     return NextResponse.json(
       { error: error.message || 'Failed to delete profile' },
       { status: 500 }

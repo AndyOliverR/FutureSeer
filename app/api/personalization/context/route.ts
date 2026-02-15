@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
 export const dynamic = 'force-static'
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error updating context:', error);
+    devLog.error('Error updating context:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to update context' },
       { status: 500 }
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching context:', error);
+    devLog.error('Error fetching context:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to fetch context' },
       { status: 500 }
@@ -149,7 +150,7 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error updating context:', error);
+    devLog.error('Error updating context:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to update context' },
       { status: 500 }
