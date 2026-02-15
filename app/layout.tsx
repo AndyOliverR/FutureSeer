@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next"
+import { devLog } from '@/lib/devLogger';
 import { Inter } from "next/font/google"
 import "./globals.css"
 // Suppress source map warnings from node_modules (must be imported early)
@@ -14,6 +15,7 @@ import { FloatingTipJar } from "@/components/FloatingTipJar"
 import { FeedbackProvider } from "@/components/FeedbackContext"
 import { SchemaMarkup } from "@/components/schema-markup"
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration"
+import { ViewportHeightSync } from "@/components/ViewportHeightSync"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -59,8 +61,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: process.env.CAPACITOR_BUILD === "1" ? 1 : 5,
+  userScalable: process.env.CAPACITOR_BUILD === "1" ? false : true,
   themeColor: "#000000",
   viewportFit: "cover",
 }
@@ -134,8 +136,6 @@ export default function RootLayout({
         event.preventDefault();
         return;
       }
-      // Only log other unhandled rejections for debugging
-      // console.warn('🛡️ Unhandled promise rejection caught:', event.reason);
       event.preventDefault();
     });
     
@@ -152,15 +152,14 @@ export default function RootLayout({
         event.preventDefault();
         return;
       }
-      // Only log other errors for debugging
-      // console.warn('🛡️ Global error caught:', event.error);
     });
   }
 
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className={`${inter.className} starfield-ultra-sharp`}>
+    <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
+      <body className={`${inter.className} starfield-ultra-sharp min-h-screen overflow-x-hidden`}>
         <ServiceWorkerRegistration />
+        <ViewportHeightSync />
         <SchemaMarkup />
         <script
           dangerouslySetInnerHTML={{
