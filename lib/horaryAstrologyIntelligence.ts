@@ -1,3 +1,5 @@
+import { devLog } from '@/lib/devLogger';
+
 export interface HoraryQuestion {
   question: string
   category: 'career' | 'relationships' | 'health' | 'wealth' | 'travel' | 'education' | 'legal' | 'general'
@@ -474,7 +476,7 @@ class HoraryAstrologyIntelligence {
 
   async saveReading(userId: string, reading: HoraryReading): Promise<void> {
     // In a real implementation, this would save to a database
-    console.log('Saving horary reading for user:', userId)
+    devLog.debug('Saving horary reading for user:', userId)
   }
 
   async getReadingHistory(userId: string): Promise<HoraryReading[]> {

@@ -1,9 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { motion } from "framer-motion"
+import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
+import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
+import { ToolReportGuard } from "@/components/ToolReportGuard"
 import { 
   Sparkles,
   User,
@@ -167,89 +170,10 @@ export default function HumanDesignPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
-  const [chart, setChart] = useState<HumanDesignChart | null>(null)
-  const [report, setReport] = useState<HumanDesignReport | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const generateReport = async () => {
-    if (!user) {
-      setError("Please sign in to generate your Human Design report.")
-      return
-    }
-
-    if (!userProfile) {
-      setError("Please complete your profile to generate your Human Design report.")
-      return
-    }
-
-    if (!userProfile.birthDate || !userProfile.birthTime || !userProfile.birthPlace) {
-      setError("Please complete your profile with birth date, time, and place to generate your Human Design report.")
-      return
-    }
-
-    setIsGenerating(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/tools/human-design/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.uid,
-          userProfile: userProfile
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate Human Design report')
-      }
-
-      const result = await response.json()
-      
-      if (result.success) {
-        setChart(result.data.chart)
-        setReport(result.data.report)
-        setIsLoading(false)
-      } else {
-        throw new Error(result.error || 'Failed to generate report')
-      }
-    } catch (err: any) {
-      console.error('Error generating Human Design report:', err)
-      setError(err.message || "An error occurred while generating your Human Design report.")
-      setIsLoading(false)
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  // Auto-generate report on page load if profile is complete
-  useEffect(() => {
-    const autoGenerateReport = async () => {
-      if (!userProfile) {
-        setIsLoading(false)
-        return
-      }
-
-      if (!userProfile.birthDate || !userProfile.birthTime || !userProfile.birthPlace) {
-        setError("Please complete your profile with birth date, time, and place to generate your Human Design report.")
-        setIsLoading(false)
-        return
-      }
-
-      // Auto-generate the report
-      await generateReport()
-    }
-
-    if (user && userProfile) {
-      autoGenerateReport()
-    } else {
-      setIsLoading(false)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, userProfile])
+  const { report: pipelineReport, loading: isLoading, error } = useToolReport('humanDesign')
+  const chart = useMemo(() => (pipelineReport as Record<string, unknown> | undefined)?.chart as HumanDesignChart | undefined, [pipelineReport])
+  const report = useMemo(() => (pipelineReport as Record<string, unknown> | undefined)?.report as HumanDesignReport | undefined, [pipelineReport])
+  const hasReport = !!chart && !!report
 
   if (!user) {
     return (
@@ -268,9 +192,9 @@ export default function HumanDesignPage() {
   }
 
   const hasCompleteProfile = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
-  const hasReport = chart && report
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Human Design">
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
       <div className="p-4">
         <div className="max-w-7xl mx-auto">
@@ -281,7 +205,7 @@ export default function HumanDesignPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-8 pt-4"
           >
-            <h1 className="text-5xl font-serif font-semibold mb-6">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
               <span className="text-yellow-400">🧬</span>{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Human Design</span>
             </h1>
@@ -298,23 +222,9 @@ export default function HumanDesignPage() {
 
             {!hasReport && !isLoading && (
               <div className="mt-6">
-                <Button
-                  onClick={generateReport}
-                  disabled={isGenerating || !hasCompleteProfile}
-                  size="lg"
-                  className="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Generating Your Design...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Human Design Report
-                    </>
-                  )}
+                <p className="text-slate-300 mb-4">Generate your mystical profile to unlock your Human Design report.</p>
+                <Button asChild size="lg" className="bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-700 hover:to-yellow-600 text-white">
+                  <Link href="/profile">Generate your mystical profile</Link>
                 </Button>
               </div>
             )}
@@ -358,17 +268,18 @@ export default function HumanDesignPage() {
 
           {/* Main Content */}
           {!isLoading && hasReport ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 bg-transparent p-0 gap-2 mb-6">
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
+              <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                 {tabs.map((tab) => {
                   const Icon = tab.icon
                   return (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-2 py-2.5 text-xs lg:text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center"
+                      className="shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all flex items-center justify-center gap-2"
                     >
-                      <Icon className="w-4 h-4 mr-1 hidden lg:inline" />
+                      <Icon className="w-4 h-4 hidden lg:inline" />
                       <span className="hidden lg:inline">{tab.label}</span>
                       <span className="lg:hidden">{tab.label.split(' ')[0]}</span>
                     </TabsTrigger>
@@ -377,7 +288,7 @@ export default function HumanDesignPage() {
               </TabsList>
 
               {/* Overview Tab */}
-              <TabsContent value="overview" className="space-y-6">
+              <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -432,7 +343,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* BodyGraph Tab */}
-              <TabsContent value="bodygraph" className="space-y-6">
+              <TabsContent value="bodygraph" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -464,7 +375,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Centers Tab */}
-              <TabsContent value="centers" className="space-y-6">
+              <TabsContent value="centers" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                     <div className="h-1 bg-amber-400" />
@@ -525,7 +436,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Gates & Channels Tab */}
-              <TabsContent value="gates" className="space-y-6">
+              <TabsContent value="gates" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -571,7 +482,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Profile Tab */}
-              <TabsContent value="profile" className="space-y-6">
+              <TabsContent value="profile" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -615,7 +526,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Incarnation Cross Tab */}
-              <TabsContent value="cross" className="space-y-6">
+              <TabsContent value="cross" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -651,7 +562,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Full Report Tab */}
-              <TabsContent value="report" className="space-y-6">
+              <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -719,8 +630,8 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Ask The Seer Tab */}
-              <TabsContent value="ask-seer" className="mt-6">
-                <div className="h-[600px]">
+              <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <div className="h-[800px] min-h-0">
                   <HumanDesignSeerChatInterface
                     userId={user?.uid ?? ''}
                     userProfile={userProfile}
@@ -730,6 +641,7 @@ export default function HumanDesignPage() {
                 </div>
               </TabsContent>
             </Tabs>
+            </div>
           ) : !isLoading ? (
             <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
               <div className="h-1 bg-amber-400" />
@@ -754,6 +666,7 @@ export default function HumanDesignPage() {
         </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }
 

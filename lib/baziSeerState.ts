@@ -199,6 +199,11 @@ luck_cycle: ${state.luck_cycle ? `${state.luck_cycle.current} (${state.luck_cycl
   const disciplineNote =
     'Every answer must start from Day Master strength. Interpret elements by function (Resource, Companion, Output, Wealth, Power), not symbolism. Favor useful elements; reduce unfavorable. Luck Cycle is the primary timing axis.';
 
+  const luckPillarsCaveat =
+    !state.luck_cycle || !reading.luckCycles?.length
+      ? '\n\nLuck pillars missing or incomplete. Do not give specific timing or phase predictions; say timing cannot be concluded from current data or reduce confidence.'
+      : '';
+
   switch (questionType) {
     case 'life_direction': {
       const rec = reading.recommendations?.slice(0, 4).join('; ') ?? '—';
@@ -208,7 +213,7 @@ DOMAIN: Life direction
 recommendations: ${rec}
 personality_career_summary: ${reading.personality?.career ?? '—'}
 
-${disciplineNote}`;
+${disciplineNote}${luckPillarsCaveat}`;
     }
     case 'career': {
       const c = reading.career as CareerAnalysis;
@@ -220,7 +225,7 @@ favorable_industries: ${c?.favorableIndustries?.join(', ') ?? '—'}
 career_timing: ${c?.careerTiming?.join(', ') ?? '—'}
 challenges: ${c?.challenges?.join(', ') ?? '—'}
 
-${disciplineNote}`;
+${disciplineNote}${luckPillarsCaveat}`;
     }
     case 'wealth': {
       const w = reading.wealth as WealthAnalysis;
@@ -232,7 +237,7 @@ income_sources: ${w?.incomeSources?.join(', ') ?? '—'}
 favorable_periods: ${w?.favorablePeriods?.join(', ') ?? '—'}
 cautionary_periods: ${w?.cautionaryPeriods?.join(', ') ?? '—'}
 
-${disciplineNote}`;
+${disciplineNote}${luckPillarsCaveat}`;
     }
     case 'relationship': {
       const r = reading.relationships as RelationshipAnalysis;
@@ -243,7 +248,7 @@ interpersonal_dynamics: ${r?.interpersonalDynamics ?? '—'}
 best_elements: ${r?.compatibility?.bestElements?.join(', ') ?? '—'}
 challenging_elements: ${r?.compatibility?.challengingElements?.join(', ') ?? '—'}
 
-${disciplineNote}`;
+${disciplineNote}${luckPillarsCaveat}`;
     }
     case 'health': {
       const h = reading.health as HealthAnalysis;
@@ -254,7 +259,7 @@ constitution: ${h?.constitution ?? '—'}
 favorable_practices: ${h?.favorablePractices?.join(', ') ?? '—'}
 wellness_advice: ${h?.wellnessAdvice?.join(', ') ?? '—'}
 
-${disciplineNote}`;
+${disciplineNote}${luckPillarsCaveat}`;
     }
     case 'timing_period': {
       const lc = state.luck_cycle;
@@ -272,7 +277,7 @@ DOMAIN: Timing by period (Luck Cycle / Da Yun)
 current_luck_cycle: ${lc ? `${lc.current} (${lc.period})` : '—'}
 luck_cycles_summary: ${cyclesSummary}
 
-${disciplineNote}`;
+${disciplineNote}${luckPillarsCaveat}`;
     }
     case 'general':
     default: {
@@ -280,7 +285,7 @@ ${disciplineNote}`;
 
 DOMAIN: General. If the user did not specify a domain, you may ask once: "Which area—life direction, career, wealth, relationships, health, or timing by period—would you like to focus on?"
 
-${disciplineNote}`;
+${disciplineNote}${luckPillarsCaveat}`;
     }
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Share2, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
@@ -33,7 +34,7 @@ export function AboutReferral() {
         } catch (error) {
           // Silent error handling in production
           if (process.env.NODE_ENV === 'development') {
-            console.debug('Error fetching referral stats:', error);
+            devLog.debug('Error fetching referral stats:', error);
           }
         } finally {
           setLoading(false);

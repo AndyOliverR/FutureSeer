@@ -1,4 +1,5 @@
 import { calculateTropicalPlanets, calculateTropicalHouses } from '@/lib/western/tropicalCalculator';
+import { devLog } from '@/lib/devLogger';
 import * as julian from "astronomia/julian";
 
 // Helper to normalize degree
@@ -36,8 +37,8 @@ function getSignFromLongitude(lon: number): string {
 
 // Convert tropical to sidereal
 export function calculateSiderealPlanets(date: Date, latitude: number, longitude: number) {
-  console.log('🕉️ Calculating SIDEREAL positions for Vedic astrology');
-  console.log('🕉️ DEBUG - Input coordinates:', { latitude, longitude });
+  devLog.debug('🕉️ Calculating SIDEREAL positions for Vedic astrology');
+  devLog.debug('🕉️ DEBUG - Input coordinates:', { latitude, longitude });
   
   // Step 1: Get TROPICAL positions (verified working)
   const tropicalPlanets = calculateTropicalPlanets(date);
@@ -46,7 +47,7 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
   const jd = toJD_TT(date);
   const ayanamsha = calculateLahiriAyanamsha(jd);
   
-  console.log(`🕉️ Lahiri Ayanamsha: ${ayanamsha.toFixed(2)}°`);
+  devLog.debug(`🕉️ Lahiri Ayanamsha: ${ayanamsha.toFixed(2)}°`);
   
   // Step 3: Convert each planet from tropical to sidereal
   const siderealPlanets: any = {};
@@ -55,7 +56,7 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
     const tropicalLon = data.longitude;
     const siderealLon = norm360(tropicalLon - ayanamsha);
     
-    console.log(`🕉️ ${name}: Tropical ${tropicalLon.toFixed(2)}° → Sidereal ${siderealLon.toFixed(2)}°`);
+    devLog.debug(`🕉️ ${name}: Tropical ${tropicalLon.toFixed(2)}° → Sidereal ${siderealLon.toFixed(2)}°`);
     
     siderealPlanets[name] = {
       ...data,
@@ -73,16 +74,16 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
   const tropicalAsc = tropicalHouses[0].longitude;
   const siderealAsc = norm360(tropicalAsc - ayanamsha);
   
-  console.log(`🕉️ Ascendant: Tropical ${tropicalAsc.toFixed(2)}° → Sidereal ${siderealAsc.toFixed(2)}°`);
+  devLog.debug(`🕉️ Ascendant: Tropical ${tropicalAsc.toFixed(2)}° → Sidereal ${siderealAsc.toFixed(2)}°`);
   
   // Validate Feb 24, 1983
   if (date.getUTCFullYear() === 1983 && 
       date.getUTCMonth() === 1 && 
       date.getUTCDate() === 24) {
     
-    console.log('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
-    console.log('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
-    console.log('🕉️ Expected Ascendant: ~7° Cancer (sidereal ~97°)');
+    devLog.debug('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
+    devLog.debug('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
+    devLog.debug('🕉️ Expected Ascendant: ~7° Cancer (sidereal ~97°)');
     
     const sunLon = siderealPlanets.sun.siderealLongitude;
     const ascLon = siderealAsc;
@@ -91,11 +92,11 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
     const ascCorrect = Math.abs(ascLon - 97) < 5;
     
     if (sunCorrect && ascCorrect) {
-      console.log('✅ Feb 24, 1983 Vedic positions CORRECT');
+      devLog.debug('Feb 24, 1983 Vedic positions CORRECT', undefined, 'siderealCalculator');
     } else {
-      console.error('❌ Feb 24, 1983 Vedic positions WRONG');
-      console.error(`  Sun: ${sunLon.toFixed(2)}° (expected ~311°)`);
-      console.error(`  Asc: ${ascLon.toFixed(2)}° (expected ~97°)`);
+      devLog.error('Feb 24, 1983 Vedic positions WRONG', { sunLon, ascLon, expectedSun: 311, expectedAsc: 97 }, 'siderealCalculator');
+      devLog.error(`  Sun: ${sunLon.toFixed(2)}° (expected ~311°)`, undefined, 'siderealCalculator');
+      devLog.error(`  Asc: ${ascLon.toFixed(2)}° (expected ~97°)`, undefined, 'siderealCalculator');
     }
   }
   

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 import { getAuth } from '@/lib/firebase-admin';
 
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ logs, nextPageToken });
   } catch (err) {
-    console.error('Admin audit-logs error:', err);
+    devLog.error('Admin audit-logs error:', err, 'route');
     return NextResponse.json({ error: 'Failed to fetch audit logs' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 // Yoga Detection System for Vedic Astrology
+import { devLog } from '@/lib/devLogger';
 // Identifies classical Yogas and their conditions
 
 export interface Yoga {
@@ -37,7 +38,7 @@ export interface ChartData {
 }
 
 export function detectYogas(chartData: ChartData): Yoga[] {
-  console.log('🔍 Starting Yoga Detection for chart:', chartData);
+  devLog.debug('🔍 Starting Yoga Detection for chart:', chartData);
   
   const yogas: Yoga[] = [];
   
@@ -45,17 +46,17 @@ export function detectYogas(chartData: ChartData): Yoga[] {
   const planets = chartData.planets;
   const ascendant = chartData.ascendant;
   
-  console.log('📊 Planets for yoga analysis:', planets);
-  console.log('📊 Ascendant:', ascendant);
+  devLog.debug('📊 Planets for yoga analysis:', planets);
+  devLog.debug('📊 Ascendant:', ascendant);
   
   // Raj Yogas
   const rajYogas = detectRajYogas(planets, ascendant);
-  console.log('👑 Raj Yogas detected:', rajYogas.length);
+  devLog.debug('👑 Raj Yogas detected:', rajYogas.length);
   yogas.push(...rajYogas);
   
   // Dhana Yogas
   const dhanaYogas = detectDhanaYogas(planets, ascendant);
-  console.log('💰 Dhana Yogas detected:', dhanaYogas.length);
+  devLog.debug('💰 Dhana Yogas detected:', dhanaYogas.length);
   yogas.push(...dhanaYogas);
   
   // Pancha Mahapurusha Yogas
@@ -84,11 +85,11 @@ export function detectYogas(chartData: ChartData): Yoga[] {
   
   // If no yogas detected from actual calculations, create basic ones from chart data
   if (activeYogas.length === 0) {
-    console.log('⚠️ No yogas detected from calculations, generating from chart data');
+    devLog.debug('⚠️ No yogas detected from calculations, generating from chart data');
     return generateBasicYogasFromChart(chartData);
   }
   
-  console.log('✅ Total yogas detected:', activeYogas.length);
+  devLog.debug('✅ Total yogas detected:', activeYogas.length);
   return activeYogas;
 }
 

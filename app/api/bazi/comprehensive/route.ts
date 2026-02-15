@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAICompletion } from '@/lib/aiGateway';
 import { BaziReading } from '@/lib/baziIntelligence';
@@ -45,7 +46,7 @@ async function getCachedDoc(collectionPath: string[], docId: string): Promise<an
     }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[BAZI] Error getting document:', error);
+      devLog.warn('[BAZI] Error getting document:', error, 'route');
     }
     return { exists: () => false, data: () => null };
   }
@@ -80,7 +81,7 @@ async function setCachedDoc(collectionPath: string[], docId: string, data: any):
     }
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[BAZI] Error setting document:', error);
+      devLog.warn('[BAZI] Error setting document:', error, 'route');
     }
   }
 }
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
       body = await req.json();
     } catch (parseError) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('[BAZI] JSON parse error:', parseError);
+        devLog.error('[BAZI] JSON parse error:', parseError, 'route');
       }
       return NextResponse.json(
         { success: false, error: 'Invalid JSON in request body' },
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest) {
     const validation = validateRequest(body);
     if (!validation.valid) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[BAZI] Validation failed:', validation.error);
+        devLog.warn('[BAZI] Validation failed:', validation.error, 'route');
       }
       return NextResponse.json(
         { success: false, error: validation.error },
@@ -168,7 +169,7 @@ export async function POST(req: NextRequest) {
         if (cacheAge < thirtyDays && cachedData?.cacheKey === cacheKey) {
           const cacheAgeDays = Math.floor(cacheAge / (24 * 60 * 60 * 1000));
           if (process.env.NODE_ENV === 'development') {
-            console.log(`[BAZI] Returning cached report (${cacheAgeDays} days old)`);
+            devLog.debug(`[BAZI] Returning cached report (${cacheAgeDays} days old)`);
           }
           return NextResponse.json({
             success: true,
@@ -182,13 +183,13 @@ export async function POST(req: NextRequest) {
     } catch (cacheError) {
       // Log cache error but continue with generation
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[BAZI] Cache read error (continuing with generation):', cacheError);
+        devLog.warn('[BAZI] Cache read error (continuing with generation)', cacheError, 'bazi-comprehensive');
       }
     }
 
     // Generate comprehensive analysis
     if (process.env.NODE_ENV === 'development') {
-      console.log('[BAZI] Generating new comprehensive report...');
+      devLog.debug('[BAZI] Generating new comprehensive report...');
     }
 
     const comprehensiveAnalysis = await generateComprehensiveAnalysis(reading, userProfile);
@@ -206,13 +207,13 @@ export async function POST(req: NextRequest) {
     ).catch((cacheError) => {
       // Log cache write error but don't fail the request
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[BAZI] Cache write error (non-critical):', cacheError);
+        devLog.warn('[BAZI] Cache write error (non-critical)', cacheError, 'bazi-comprehensive');
       }
     });
 
     const responseTime = Date.now() - startTime;
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[BAZI] Report generated successfully in ${responseTime}ms`);
+      devLog.debug(`[BAZI] Report generated successfully in ${responseTime}ms`);
     }
 
     return NextResponse.json({
@@ -227,14 +228,14 @@ export async function POST(req: NextRequest) {
     const errorStack = error instanceof Error ? error.stack : undefined;
     
     if (process.env.NODE_ENV === 'development') {
-      console.error('[BAZI] Error generating comprehensive report:', {
+      devLog.error('[BAZI] Error generating comprehensive report:', {
         message: errorMessage,
         stack: errorStack,
         responseTime: `${Date.now() - startTime}ms`
       });
     } else {
       // Production logging (less verbose)
-      console.error('[BAZI] Error generating report:', errorMessage);
+      devLog.error('[BAZI] Error generating report:', errorMessage, 'route');
     }
     
     return NextResponse.json(

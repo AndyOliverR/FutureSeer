@@ -157,7 +157,7 @@ export async function GET(
           }
         }
       } catch (error) {
-        console.error('Error fetching referrals:', error);
+        devLog.error('Error fetching referrals:', error, 'route');
       }
 
       // Generate thank you messages based on activity
@@ -195,7 +195,7 @@ export async function GET(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error fetching user attribution:', error);
+    devLog.error('Error fetching user attribution:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch user attribution' }, { status: 500 });
   }
 }

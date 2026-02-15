@@ -2,6 +2,7 @@
 // Extracts and formats user data for personalized energy healing analysis
 
 import { UserProfile } from '@/lib/firebase';
+import { devLog } from '@/lib/devLogger';
 
 export interface UserContext {
   age: number;
@@ -45,7 +46,7 @@ function calculateAge(birthDate: string): number {
     
     return age;
   } catch (error) {
-    console.error('Error calculating age:', error);
+    devLog.error('Error calculating age:', error, 'userProfileExtractor');
     return 30;
   }
 }
@@ -131,7 +132,7 @@ function calculateSunSign(birthDate: string): string {
     
     return 'Unknown';
   } catch (error) {
-    console.error('Error calculating sun sign:', error);
+    devLog.error('Error calculating sun sign:', error, 'userProfileExtractor');
     return 'Unknown';
   }
 }

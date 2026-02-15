@@ -10,7 +10,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
  */
 function devLogFunction(message: string, ...args: any[]): void {
   if (isDevelopment) {
-    console.log(message, ...args);
+    devLog.debug(message, ...args);
   }
 }
 
@@ -19,7 +19,7 @@ function devLogFunction(message: string, ...args: any[]): void {
  */
 function devWarnFunction(message: string, ...args: any[]): void {
   if (isDevelopment) {
-    console.warn(message, ...args);
+    devLog.warn(message, ...args, 'devLogger');
   }
 }
 
@@ -36,7 +36,7 @@ function devInfoFunction(message: string, ...args: any[]): void {
  * Always log errors (even in production)
  */
 function devErrorFunction(message: string, ...args: any[]): void {
-  console.error(message, ...args);
+  devLog.error(message, ...args, 'devLogger');
 }
 
 /**
@@ -47,30 +47,30 @@ export const devLog = {
   info: (msg: string, data?: any, source?: string) => {
     if (isDevelopment) {
       const prefix = source ? `[${source.toUpperCase()}]` : '';
-      console.log(`${prefix} ${msg}`, data !== undefined ? data : '');
+      devLog.debug(`${prefix} ${msg}`, data !== undefined ? data : '');
     }
   },
   warn: (msg: string, data?: any, source?: string) => {
     if (isDevelopment) {
       const prefix = source ? `[${source.toUpperCase()}]` : '';
-      console.warn(`${prefix} ${msg}`, data !== undefined ? data : '');
+      devLog.warn(`${prefix} ${msg}`, data !== undefined ? data : '', 'devLogger');
     }
   },
   debug: (msg: string, data?: any, source?: string) => {
     if (isDevelopment) {
       const prefix = source ? `[${source.toUpperCase()}]` : '';
-      console.log(`${prefix} ${msg}`, data !== undefined ? data : '');
+      devLog.debug(`${prefix} ${msg}`, data !== undefined ? data : '');
     }
   },
   error: (msg: string, data?: any, source?: string) => {
     // Always log errors, even in production
     const prefix = source ? `[${source.toUpperCase()}]` : '';
-    console.error(`${prefix} ${msg}`, data !== undefined ? data : '');
+    devLog.error(`${prefix} ${msg}`, data !== undefined ? data : '', 'devLogger');
   },
   trace: (msg: string, data?: any, source?: string) => {
     if (isDevelopment) {
       const prefix = source ? `[${source.toUpperCase()}]` : '';
-      console.log(`${prefix} ${msg}`, data !== undefined ? data : '');
+      devLog.debug(`${prefix} ${msg}`, data !== undefined ? data : '');
     }
   }
 };

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import {
   CheckCircle,
   Zap
 } from 'lucide-react'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 import { VedicPlanetaryPosition } from '@/lib/firestoreSchemas'
 import { getPlanetEmoji, getSignEmoji, formatDegree } from '@/lib/vedicDataNormalizer'
 
@@ -253,7 +255,7 @@ export function TransitsOverlay({
           url: window.location.href
         })
       } catch (error) {
-        console.log('Error sharing:', error)
+        devLog.debug('Error sharing:', error)
       }
     } else {
       navigator.clipboard.writeText(window.location.href)
@@ -480,35 +482,37 @@ export function TransitsOverlay({
       </Card>
 
       {/* Transit Details Modal */}
-      <AnimatePresence>
-        {selectedTransit && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedTransit(null)}
-          >
+      <ModalPortal open={!!selectedTransit}>
+        <AnimatePresence>
+          {selectedTransit && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-slate-800 border border-white/20 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-[10000] p-4"
+              onClick={() => setSelectedTransit(null)}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                  {getPlanetEmoji(selectedTransit.planet)} {selectedTransit.planet} Transit
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedTransit(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  ×
-                </Button>
-              </div>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-slate-800 border border-white/20 rounded-lg p-6 max-w-2xl w-full max-w-[90vw] max-h-[min(90dvh,90vh)] overflow-y-auto z-[10001]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-white flex items-center gap-2 min-w-0">
+                    {getPlanetEmoji(selectedTransit.planet)} {selectedTransit.planet} Transit
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedTransit(null)}
+                    className="min-w-[44px] min-h-[44px] text-gray-400 hover:text-white shrink-0"
+                    aria-label="Close"
+                  >
+                    ×
+                  </Button>
+                </div>
               
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -588,10 +592,11 @@ export function TransitsOverlay({
                   </div>
                 </div>
               </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </ModalPortal>
     </div>
   )
 }

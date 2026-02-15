@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createOrder } from '@/lib/razorpay';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       currency,
     });
   } catch (error: any) {
-    console.error('Error creating tip order:', error);
+    devLog.error('Error creating tip order:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to create tip order' },
       { status: 500 }
@@ -121,7 +122,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    console.error('Error getting tip history:', error);
+    devLog.error('Error getting tip history:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to get tip history' },
       { status: 500 }

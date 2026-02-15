@@ -2,6 +2,7 @@
 // Analyzes palm images using AI and formats the results into PalmistryAnalysis structure
 
 import { PalmistryAnalysis, PalmLine, PalmMount, FingerAnalysis } from '@/lib/palmistryIntelligence';
+import { devLog } from '@/lib/devLogger';
 
 interface GroqPalmAnalysis {
   lines: {
@@ -127,7 +128,7 @@ class PalmistryImageAnalyzer {
 
       return result.data as GroqPalmAnalysis;
     } catch (error: any) {
-      console.error('Error analyzing palm image:', error);
+      devLog.error('Error analyzing palm image:', error, 'palmistryImageAnalyzer');
       throw error;
     }
   }
@@ -149,7 +150,7 @@ class PalmistryImageAnalyzer {
     gender: 'male' | 'female' | 'other'
   ): PalmistryAnalysis {
     // Log received API structure for debugging
-    console.log('📊 Formatting palmistry data from API response:', {
+    devLog.debug('📊 Formatting palmistry data from API response:', {
       hasLines: !!aiData.lines,
       hasMounts: !!aiData.mounts,
       hasFingers: !!aiData.fingers,
@@ -158,19 +159,19 @@ class PalmistryImageAnalyzer {
 
     // Validate and provide defaults for missing top-level properties
     if (!aiData.lines) {
-      console.warn('⚠️ API response missing "lines" property, using defaults');
+      devLog.warn('⚠️ API response missing "lines" property, using defaults', 'palmistryImageAnalyzer');
       aiData.lines = {} as any;
     }
     if (!aiData.mounts) {
-      console.warn('⚠️ API response missing "mounts" property, using defaults');
+      devLog.warn('⚠️ API response missing "mounts" property, using defaults', 'palmistryImageAnalyzer');
       aiData.mounts = {} as any;
     }
     if (!aiData.fingers) {
-      console.warn('⚠️ API response missing "fingers" property, using defaults');
+      devLog.warn('⚠️ API response missing "fingers" property, using defaults', 'palmistryImageAnalyzer');
       aiData.fingers = {} as any;
     }
     if (!aiData.handShape) {
-      console.warn('⚠️ API response missing "handShape" property, using defaults');
+      devLog.warn('⚠️ API response missing "handShape" property, using defaults', 'palmistryImageAnalyzer');
       aiData.handShape = { type: 'mixed', characteristics: [], interpretation: 'Mixed hand shape' };
     }
 

@@ -160,7 +160,7 @@ export function getChartSliceForQuestionType(questionType: string, chartState: W
   const needsRelationships = relationshipTypes.includes(questionType);
 
   const timingTypes = ['transits', 'timing', 'electional'];
-  const needsTiming = timingTypes.includes(questionType);
+  const needsTiming = timingTypes.includes(questionType) || questionType === 'career';
 
   const emotionalTypes = ['moon_sign', 'remedies'];
   const needsEmotional = emotionalTypes.includes(questionType) || questionType === 'remedies';

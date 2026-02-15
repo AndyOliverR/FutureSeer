@@ -9,6 +9,7 @@ import {
   type HoraryQuestionType,
   type HoraryChartPayload,
 } from '@/lib/horarySeerState';
+import { buildHorarySeerSystemPrompt } from '@/lib/horarySeerPrompts';
 
 interface HorarySeerRequest {
   userId: string;
@@ -128,26 +129,9 @@ export async function POST(request: NextRequest) {
     const slice = getHorarySliceForQuestionType(questionType, state, verdict);
 
     const displayName = (userProfile?.displayName ?? '').trim();
-    const namingRule = displayName
-      ? `The user's display name is "${displayName}". Address them only by this name. Do not use generic terms.`
-      : 'If no display name is provided, you may use a brief generic address.';
-
-    const systemPrompt = `You are an expert Horary astrologer. Horary answers one sincere question, once, at the moment it is asked.
-
-RULES:
-- ${namingRule}
-- Judge in order: (1) radicality, (2) significators, (3) planetary condition, (4) applying aspects, (5) reception, (6) Moon, (7) clear judgment. Do not interpret the whole chart.
-- State significators explicitly: "You are signified by X; the matter is signified by Y."
-- Only applying aspects matter. Aspect hierarchy: conjunction > trine/sextile > square (with effort) > opposition (with loss). Reception explains why an aspect works or fails.
-- Moon: next applying aspect; void = no action. If Moon does not support, outcome weak or delayed.
-- Answer Yes / No / Not now. Direct, decisive. Never hedge with "There is a chance."
-- Refuse: no clear question; missing time/location; radicality failure; vague or life-advice questions.
-- Permanent rule: Horary answers only one sincere question, once, at the moment it is asked.
-
-HORARY STATE (use this only):
-${slice}
-
-Answer the user's question using the state above. Keep language direct, decisive, and actionable.`;
+    const systemPrompt = buildHorarySeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const userMessage = question.trim();
 
@@ -172,7 +156,7 @@ Answer the user's question using the state above. Keep language direct, decisive
               }
             }
           } catch (error) {
-            console.error('Horary Seer stream error:', error);
+            devLog.error('Horary Seer stream error:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I encountered an error. Please try again.'

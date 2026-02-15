@@ -1,4 +1,5 @@
 // Console Logger Optimizer
+import { devLog } from '@/lib/devLogger';
 // Provides controlled logging with different levels and filtering
 
 export enum LogLevel {
@@ -50,13 +51,13 @@ class ConsoleLogger {
   // Configure logging
   configure(config: Partial<LogConfig>): void {
     this.config = { ...this.config, ...config };
-    console.log('🔧 Console logging configured:', this.config);
+    devLog.debug('🔧 Console logging configured:', this.config);
   }
 
   // Set log level
   setLogLevel(level: LogLevel): void {
     this.config.level = level;
-    console.log(`🔧 Log level set to: ${LogLevel[level]}`);
+    devLog.debug(`🔧 Log level set to: ${LogLevel[level]}`);
   }
 
   // Enable/disable specific debug categories
@@ -182,7 +183,7 @@ class ConsoleLogger {
     this.logBuffer = [];
     this.messageCounts.clear();
     this.suppressedMessages.clear();
-    console.log('🧹 Console logs cleared');
+    devLog.debug('🧹 Console logs cleared');
   }
 
   // Export logs for debugging
@@ -242,24 +243,24 @@ class ConsoleLogger {
     
     switch (level) {
       case LogLevel.ERROR:
-        console.error(`${prefix} ${message}`, data);
+        devLog.error(`${prefix} ${message}`, data, 'consoleLogger');
         break;
       case LogLevel.WARN:
-        console.warn(`${prefix} ${message}`, data);
+        devLog.warn(`${prefix} ${message}`, data, 'consoleLogger');
         break;
       case LogLevel.INFO:
         if (!isProduction) {
-          console.log(`${prefix} ${message}`, data);
+          devLog.debug(`${prefix} ${message}`, data);
         }
         break;
       case LogLevel.DEBUG:
         if (!isProduction) {
-          console.log(`${prefix} ${message}`, data);
+          devLog.debug(`${prefix} ${message}`, data);
         }
         break;
       case LogLevel.TRACE:
         if (!isProduction) {
-          console.log(`${prefix} ${message}`, data);
+          devLog.debug(`${prefix} ${message}`, data);
         }
         break;
     }

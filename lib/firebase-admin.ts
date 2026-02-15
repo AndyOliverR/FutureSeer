@@ -2,6 +2,7 @@
 // Server-side Firebase operations
 
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { devLog } from '@/lib/devLogger';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
@@ -18,7 +19,7 @@ if (getApps().length === 0) {
       projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
     });
   } catch (error) {
-    console.error('❌ Firebase Admin initialization failed:', error);
+    devLog.error('❌ Firebase Admin initialization failed:', error, 'firebase-admin');
     // Fallback to client-side Firebase for development
     adminApp = null;
   }
@@ -51,6 +52,15 @@ export async function setDocument(collection: string, docId: string, data: any) 
   if (adminDb) {
     const docRef = adminDb.collection(collection).doc(docId);
     await docRef.set(data, { merge: true });
+    return true;
+  }
+  return false;
+}
+
+export async function deleteDocument(collection: string, docId: string): Promise<boolean> {
+  if (adminDb) {
+    const docRef = adminDb.collection(collection).doc(docId);
+    await docRef.delete();
     return true;
   }
   return false;

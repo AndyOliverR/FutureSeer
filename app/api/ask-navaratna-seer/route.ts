@@ -9,6 +9,7 @@ import {
   getNavaratnaSliceForQuestionType,
   type NavaratnaQuestionType,
 } from '@/lib/navaratnaSeerState';
+import { buildNavaratnaSeerSystemPrompt } from '@/lib/navaratnaSeerPrompts';
 
 interface NavaratnaSeerRequest {
   userId: string;
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
       .slice(-10);
 
     const chartSlice = getNavaratnaSliceForQuestionType(questionType, state, navaratnaAnalysis);
-    const systemPrompt = buildNavaratnaSystemPrompt(chartSlice, questionType);
+    const systemPrompt = buildNavaratnaSeerSystemPrompt(chartSlice, questionType);
 
     return new Response(
       new ReadableStream({
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
             await storeConversation(userId, sessionId, question, responseData);
             await cacheQuestionAnswer(userId, question, fullResponse);
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
           } finally {
             controller.close();
@@ -231,33 +232,12 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error in Navaratna Seer API:', error);
+    devLog.error('Error in Navaratna Seer API:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });
   }
-}
-
-function buildNavaratnaSystemPrompt(chartSlice: string, _questionType: NavaratnaQuestionType): string {
-  return `You are an expert Vedic astrologer and Navaratna gemstone specialist. Navaratna is a Vedic remedial system (Upaya); gemstones strengthen or stabilize planetary influences only when the planet is functionally benefic and safe to strengthen.
-
-CORE RULES (non-negotiable):
-1. No gemstone may be recommended unless the planet is both functionally benefic and safe to strengthen.
-2. Lagnesh supremacy: Life Stone = Lagnesh gemstone. When recommending the Life Stone, state explicitly: "This is your Life Stone because it strengthens the Ascendant."
-3. Never recommend gemstones for Maraka planets. No exceptions.
-4. Dasha: Strengthen Dasha lord only if functionally benefic and not Maraka; otherwise say: "Even though this planet is active in Dasha, strengthening it is not advised."
-5. Give complete procedural details (day, time, metal, finger, hand, weight, mantra, purification) from the provided data in your response; do not be vague. When the data includes wearing instructions and weight, state them explicitly (e.g. "Wear on Wednesday, in silver, on the little finger of the right hand, 5–7 ratti"). Recommend minimum gemstones only; cite exact values from the data.
-6. You are the expert. Do not tell the user to "consult an experienced Vedic astrologer" or to seek another source for procedural details—provide the details yourself from the data above.
-7. Include testing period for intense stones (e.g. Blue Sapphire); contraindication warnings; explicit avoidance list where relevant.
-8. Permanent rule: "Gemstones amplify planetary energy; they do not discriminate between good and bad outcomes."
-9. Do not promise outcomes (wealth, success, destiny change). Do not recommend multiple stones casually.
-10. You may mention that authentic, purified gemstones are essential and that a trusted source for purchasing can be recommended when available (no external link or "consult" redirect here).
-
-GEMSTONE ELIGIBILITY DATA (use only this):
-${chartSlice}
-
-Be conversational and direct. Use "you" and "your." Reference Lagnesh, Life Stone, allowed/forbidden gemstones. Cite the exact wearing instructions (day, metal, finger, weight, mantra, purification) from the data when answering how to wear a stone. Explain why stones are avoided (Maraka, malefic). Include safety/testing where relevant. No markdown headers.`;
 }
 
 function generateFollowUpQuestions(questionType: NavaratnaQuestionType, context: any): string[] {
@@ -307,7 +287,7 @@ async function getConversationHistory(userId: string, sessionId?: string): Promi
     
     return snapshot.docs.map(doc => doc.data()).reverse();
   } catch (error) {
-    console.error('Error getting conversation history:', error);
+    devLog.error('Error getting conversation history:', error);
     return [];
   }
 }
@@ -333,7 +313,7 @@ async function storeConversation(userId: string, sessionId: string | undefined, 
     
     devLog.info('✅ Navaratna conversation stored successfully', undefined, 'ask-navaratna-seer');
   } catch (error) {
-    console.error('Error storing conversation:', error);
+    devLog.error('Error storing conversation:', error);
   }
 }
 
@@ -372,7 +352,7 @@ async function checkCachedQuestions(userId: string, question: string): Promise<a
     
     return null;
   } catch (error) {
-    console.error('Error checking cached questions:', error);
+    devLog.error('Error checking cached questions:', error);
     return null;
   }
 }
@@ -394,6 +374,6 @@ async function cacheQuestionAnswer(userId: string, question: string, answer: str
     
     devLog.info('✅ Navaratna question cached for future similar questions', undefined, 'ask-navaratna-seer');
   } catch (error) {
-    console.error('Error caching question:', error);
+    devLog.error('Error caching question:', error);
   }
 }

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Hand, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import { PalmistryAnalysis } from '@/lib/palmistryIntelligence';
 
 interface PalmistrySeerChatInterfaceProps {
@@ -24,8 +25,9 @@ interface Message {
 }
 
 const PALMISTRY_STARTER_QUESTIONS = [
-  'What do my hands say about my strengths?',
-  'What timing do my lines suggest?',
+  'What does my palm say about my personality?',
+  'What patterns does my palm show about career or relationships?',
+  'Does my palm indicate growth or struggle over time?',
 ];
 
 export default function PalmistrySeerChatInterface({
@@ -145,7 +147,7 @@ export default function PalmistrySeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (error) {
-      console.error('Palmistry Seer error:', error);
+      devLog.error('Palmistry Seer error', error, 'PalmistrySeerChatInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -245,7 +247,7 @@ export default function PalmistrySeerChatInterface({
           Ask the Palmistry Seer
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Trait-based guidance from your palm; tendencies and capacities, not events.
+          Tendencies and life patterns, not timelines.
         </p>
         {messages.length > 0 && (
           <Button
@@ -266,8 +268,17 @@ export default function PalmistrySeerChatInterface({
             <div className="text-center py-8">
               <Hand className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Ask about your tendencies, strengths, career aptitude, or relationship style.
+                Ask me anything about your hands and life patterns…
               </p>
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I'll interpret your palm features to reveal personality traits, life tendencies, strengths, and long-term patterns.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Personality & nature (emotional nature, decision-making style, talents, stress handling)</li>
+                <li>Life patterns (career tendencies, relationship style, energy levels, long-term ups and downs)</li>
+                <li>Change & growth (whether life improves with age, periods of struggle vs stability, strengthening weak areas)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {PALMISTRY_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -282,6 +293,7 @@ export default function PalmistrySeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: understanding life patterns and tendencies, not exact dates or events.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -316,7 +328,7 @@ export default function PalmistrySeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask about tendencies, strengths, career aptitude, relationship style..."
+              placeholder="Ask about personality, career tendencies, relationship style, or growth…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

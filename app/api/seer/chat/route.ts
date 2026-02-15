@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { devLog } from '@/lib/devLogger';
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
@@ -40,12 +41,18 @@ Rules:
 - No confidence percentages.
 - No disclaimers.
 - No long essays.
-- 3–6 sentences maximum.
+- 3–4 sentences maximum.
 - Tone: calm, precise, mystical but grounded.
 - Ask at most one clarifying question if needed.
 - If the user changes topic, adapt naturally.
 - If birth data is missing, ask for it once.
-- Do not contradict yourself within the same answer.`;
+- Do not contradict yourself within the same answer.
+- For relationship or betrayal questions, be supportive and reflective; avoid declaring likelihoods or certainties about others' behavior.
+- If the user's question lacks a clear subject (e.g. "When will it happen?"), do not assume what "it" refers to. Ask one short clarifying question instead. Do not fabricate timelines or events.
+- Do not invent specific time ranges (e.g. "6–12 months") unless explicitly derived from birth data with clear reasoning.
+- Never use these phrases: "The astrological influences", "The planetary transits suggest", "Your birth chart indicates", "The astrocartography map reveals". Speak with declarative presence and observational insight; do not name mechanics or tools.
+- When asked to choose or recommend one thing (e.g. which country, which option), give one clear answer and one reason; no lists, no "could" or "may" for the main conclusion.
+- Authority: No more than 4 sentences. First sentence must contain the conclusion. No filler intro. No mention of astrological mechanics.`;
 
 type ToneMode = "subtle" | "elevated" | "oracle";
 
@@ -125,7 +132,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     const apiKey = process.env.GROQ_API_KEY?.trim();
     if (!apiKey) {
-      console.warn("[Seer] Missing API key. GROQ_API_KEY not set.");
+      devLog.warn("[Seer] Missing API key. GROQ_API_KEY not set.", undefined, 'route');
       return NextResponse.json(
         {
           error:
@@ -154,7 +161,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     if (!response.ok) {
       const err = await response.text();
-      console.warn("Groq API error:", response.status, err);
+      devLog.warn('Groq API error', { status: response.status, err }, 'seer-chat');
       return NextResponse.json(
         { error: "The Seer could not respond. Try again." },
         { status: 502 }
@@ -172,7 +179,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     return NextResponse.json({ reply, thread: updatedThread });
   } catch (err) {
-    console.error("Seer chat error:", err);
+    devLog.error("Seer chat error:", err, 'route');
     return NextResponse.json(
       { error: "Seer connection failed." },
       { status: 500 }

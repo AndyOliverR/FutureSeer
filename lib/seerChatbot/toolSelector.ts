@@ -1,4 +1,5 @@
 import { IntentSlots } from './intentExtractor';
+import { devLog } from '@/lib/devLogger';
 
 export interface DivinationModule {
   name: string;
@@ -301,11 +302,11 @@ export function testToolSelection() {
   
   testIntents.forEach(intentSlots => {
     const selection = selectRelevantModules(intentSlots);
-    console.log(`Intent: ${intentSlots.intent}`);
-    console.log(`Primary Modules: ${selection.primary_modules.map(m => m.name).join(', ')}`);
-    console.log(`Secondary Modules: ${selection.secondary_modules.map(m => m.name).join(', ')}`);
-    console.log(`Confidence: ${selection.confidence_score.toFixed(2)}`);
-    console.log(`Reasoning: ${selection.reasoning}`);
-    console.log('---');
+    devLog.debug(`Intent: ${intentSlots.intent}`);
+    devLog.debug(`Primary Modules: ${selection.primary_modules.map(m => m.name).join(', ')}`);
+    devLog.debug(`Secondary Modules: ${selection.secondary_modules.map(m => m.name).join(', ')}`);
+    devLog.debug(`Confidence: ${selection.confidence_score.toFixed(2)}`);
+    devLog.debug(`Reasoning: ${selection.reasoning}`);
+    devLog.debug('---');
   });
 } 

@@ -9,6 +9,7 @@
  */
 
 import { streamText, generateText } from 'ai';
+import { devLog } from '@/lib/devLogger';
 import Groq from 'groq-sdk';
 import OpenAI from 'openai';
 
@@ -103,7 +104,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
         }
       };
     } catch (error) {
-      console.error('AI Gateway error, falling back to direct SDK:', error);
+      devLog.error('AI Gateway error, falling back to direct SDK:', error, 'aiGateway');
       // Fall through to direct SDK
     }
   }
@@ -202,7 +203,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
         finishReason: result.finishReason,
       };
     } catch (error) {
-      console.error('AI Gateway error, falling back to direct SDK:', error);
+      devLog.error('AI Gateway error, falling back to direct SDK:', error, 'aiGateway');
       // Fall through to direct SDK
     }
   }

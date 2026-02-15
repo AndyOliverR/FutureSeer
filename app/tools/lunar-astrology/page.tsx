@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -56,7 +57,7 @@ export default function LunarAstrologyPage() {
       setIsLoading(true)
       setError(null)
       
-      console.log('🌙 FutureSeer: Loading Lunar Astrology analysis...')
+      devLog.debug('🌙 FutureSeer: Loading Lunar Astrology analysis...')
       
       const birthData: BirthData = {
         birthDate: userProfile?.birthDate || '',
@@ -75,9 +76,9 @@ export default function LunarAstrologyPage() {
       
       setAnalysis(lunarData)
       
-      console.log('✅ FutureSeer: Lunar Astrology analysis loaded successfully:', lunarData)
+      devLog.debug('✅ FutureSeer: Lunar Astrology analysis loaded successfully:', lunarData)
     } catch (error) {
-      console.error('❌ FutureSeer: Failed to load Lunar Astrology analysis:', error)
+      devLog.error('❌ FutureSeer: Failed to load Lunar Astrology analysis:', error, 'page')
       setError('Failed to load Lunar Astrology analysis')
     } finally {
       setIsLoading(false)
@@ -121,13 +122,13 @@ export default function LunarAstrologyPage() {
             transition={{ duration: 0.6 }}
           >
             <Moon className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-white mb-2">Lunar Astrology</h1>
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-2">Lunar Astrology</h1>
             <p className="text-slate-300 text-lg">Moon-based astrological systems and lunar cycles</p>
           </motion.div>
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
           <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl p-1">
             <TabsTrigger 
               value="overview" 

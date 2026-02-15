@@ -4,6 +4,7 @@
  */
 
 import { astro, star } from 'iztro'
+import { devLog } from '@/lib/devLogger';
 import { calculateFortuneCycles, generateTenYearCycles, FortuneCycleData } from './fortuneCycleCalculator'
 
 export interface BirthInfo {
@@ -180,7 +181,7 @@ export class ChineseAstrologyService {
         
         // Debug: Log chart structure for investigation (only in development)
         if (process.env.NODE_ENV === 'development') {
-          console.log('🔮 Iztro Chart Structure:', {
+          devLog.debug('🔮 Iztro Chart Structure:', {
             hasPalaces: !!this.chart.palaces,
             palaceCount: this.chart.palaces?.length,
             firstPalace: this.chart.palaces?.[0] ? {
@@ -196,7 +197,7 @@ export class ChineseAstrologyService {
         }
       } catch (iztroError) {
         // Iztro library may have issues in browser environment, use fallback gracefully
-        console.warn('Iztro library unavailable, using fallback calculation:', iztroError instanceof Error ? iztroError.message : 'Unknown error')
+        devLog.warn('Iztro library unavailable, using fallback calculation:', iztroError instanceof Error ? iztroError.message : 'Unknown error', 'chineseAstrologyService')
         // Create a fallback chart structure if iztro fails
         this.chart = this.createFallbackChart(birthInfo)
       }
@@ -238,7 +239,7 @@ export class ChineseAstrologyService {
           }
         }
       } catch (fortelError) {
-        console.warn('Fortel calculation failed, using fallback:', fortelError)
+        devLog.warn('Fortel calculation failed, using fallback:', fortelError, 'chineseAstrologyService')
         // Fallback to original method
         fortuneCycles = this.generateFortunePredictions()
       }
@@ -259,7 +260,7 @@ export class ChineseAstrologyService {
         runtimeContext
       }
     } catch (error) {
-      console.error('Error calculating Zi Wei chart:', error)
+      devLog.error('Error calculating Zi Wei chart:', error, 'chineseAstrologyService')
       throw new Error('Failed to calculate Chinese astrology chart')
     }
   }
@@ -285,7 +286,7 @@ export class ChineseAstrologyService {
         effectiveMonth: fortuneData.effectiveMonth,
       }
     } catch (error) {
-      console.error('Error calculating runtime context:', error)
+      devLog.error('Error calculating runtime context:', error, 'chineseAstrologyService')
       throw new Error('Failed to calculate runtime context')
     }
   }
@@ -321,7 +322,7 @@ export class ChineseAstrologyService {
         lunarDay: this.getChineseDayName(lunarInfo.day || day)
       }
     } catch (error) {
-      console.error('Error converting to lunar date:', error)
+      devLog.error('Error converting to lunar date:', error, 'chineseAstrologyService')
       // Fallback to solar date
       const [year, month, day] = solarDate.split('-').map(Number)
       return {
@@ -400,7 +401,7 @@ export class ChineseAstrologyService {
 
       return palaceList
     } catch (error) {
-      console.error('Error analyzing palaces:', error)
+      devLog.error('Error analyzing palaces:', error, 'chineseAstrologyService')
       throw new Error('Failed to analyze palaces')
     }
   }
@@ -446,7 +447,7 @@ export class ChineseAstrologyService {
       
       return Array.from(starMap.values())
     } catch (error) {
-      console.error('Error calculating main stars:', error)
+      devLog.error('Error calculating main stars:', error, 'chineseAstrologyService')
       throw new Error('Failed to calculate main stars')
     }
   }
@@ -519,7 +520,7 @@ export class ChineseAstrologyService {
       
       return Array.from(starMap.values())
     } catch (error) {
-      console.error('Error calculating supporting stars:', error)
+      devLog.error('Error calculating supporting stars:', error, 'chineseAstrologyService')
       throw new Error('Failed to calculate supporting stars')
     }
   }
@@ -550,7 +551,7 @@ export class ChineseAstrologyService {
         elementBalance: this.calculateElementBalance(fourPillarsObj as FourPillars)
       }
     } catch (error) {
-      console.error('Error analyzing Four Pillars:', error)
+      devLog.error('Error analyzing Four Pillars:', error, 'chineseAstrologyService')
       throw new Error('Failed to analyze Four Pillars')
     }
   }
@@ -570,7 +571,7 @@ export class ChineseAstrologyService {
 
       return fortuneCycles
     } catch (error) {
-      console.error('Error generating fortune predictions:', error)
+      devLog.error('Error generating fortune predictions:', error, 'chineseAstrologyService')
       throw new Error('Failed to generate fortune predictions')
     }
   }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
 
 async function verifyAdmin(request: NextRequest): Promise<boolean> {
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(users);
   } catch (err) {
-    console.error('Admin export-users error:', err);
+    devLog.error('Admin export-users error:', err, 'route');
     return NextResponse.json({ error: 'Failed to export users' }, { status: 500 });
   }
 }

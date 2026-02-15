@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { cancelSubscription } from '@/lib/razorpay';
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('Admin cancel-user-subscription error:', err);
+    devLog.error('Admin cancel-user-subscription error:', err, 'route');
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to cancel subscription' },
       { status: 500 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { timezoneService } from '@/services/timezone';
 
 export const dynamic = 'force-static'
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Timezone service error:', error);
+    devLog.error('Timezone service error:', error, 'route');
     
     return NextResponse.json(
       { 
@@ -91,7 +92,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Timezone service error:', error);
+    devLog.error('Timezone service error:', error, 'route');
     
     return NextResponse.json(
       { 

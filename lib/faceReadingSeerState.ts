@@ -268,11 +268,17 @@ DISCIPLINE (non-negotiable):
 - Permanent rule: Face reading reflects how energy is expressed, not what the future will deliver.
 `.trim();
 
+  const featureKeys = ['forehead', 'eyes', 'nose', 'mouth', 'jaw'] as const;
+  const presentCount = featureKeys.filter((k) => state.features[k] != null && state.features[k] !== '').length;
+  const partialCaveat = presentCount < 2
+    ? '\n\nFacial data is partial; generalize cautiously and do not exaggerate.'
+    : '';
+
   return `${zoneBlock}
 
 ${featureBlock}
 
 ${stateBlock}
 
-${disciplineNote}`;
+${disciplineNote}${partialCaveat}`;
 }

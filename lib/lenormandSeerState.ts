@@ -21,6 +21,7 @@ export type LenormandQuestionType =
   | 'what_happening'
   | 'near_term'
   | 'blocked_forward'
+  | 'yes_no'
   | 'general'
   | 'refusal';
 
@@ -73,6 +74,11 @@ export function classifyLenormandQuestion(question: string): LenormandQuestionTy
   }
   if (/\b(multiple questions|and also|what about.*and|several questions)\b/.test(lower)) {
     return 'refusal';
+  }
+  if (
+    /\b(will i get (this job|the job|it)|will (they|he|she) (call|reply|accept)|is (it|this) (likely|going to happen)|should i (expect|get))\b/i.test(lower)
+  ) {
+    return 'yes_no';
   }
   if (
     /\b(will i get (a )?response|hear back|get (an )?answer|get (a )?reply)\b/.test(lower)

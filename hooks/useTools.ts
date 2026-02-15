@@ -111,12 +111,13 @@ export function useTools() {
   const getCategoryIcon = (category: string) => {
     const icons: { [key: string]: string } = {
       "Astrology": "⭐",
-      "Numerology": "🔢", 
+      "Numerology": "🔢",
       "Divination": "🔮",
       "Reading": "📖",
       "Analysis": "🔍",
       "Chinese": "🐉",
       "Indian": "🕉️",
+      "Remedies": "💎",
       "Energy": "✨"
     };
     return icons[category] || "✨";
@@ -131,6 +132,7 @@ export function useTools() {
       "Analysis": "from-orange-500 to-red-600",
       "Chinese": "from-red-500 to-orange-600",
       "Indian": "from-orange-500 to-yellow-600",
+      "Remedies": "from-amber-500 to-yellow-600",
       "Energy": "from-indigo-500 to-purple-600"
     };
     return colors[category] || "from-gray-500 to-slate-600";

@@ -2,6 +2,7 @@
 // Handles CRUD operations for user's additional profiles (family, business partners, etc.)
 
 import { AdditionalProfile } from '@/lib/types/profileTypes'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase'
 
 const STORAGE_KEY = 'futureseer_additional_profiles'
@@ -32,7 +33,7 @@ class ProfileManager {
       // Fetch from Firebase
       const db = getFirebaseDB()
       if (!db) {
-        console.warn('Firebase not initialized, using localStorage only')
+        devLog.warn('Firebase not initialized, using localStorage only', 'profileManager')
         const deduplicated = this.deduplicateProfiles(localData || [])
         return deduplicated.sort((a, b) => b.updatedAt - a.updatedAt)
       }
@@ -57,7 +58,7 @@ class ProfileManager {
       
       return deduplicated.sort((a, b) => b.updatedAt - a.updatedAt)
     } catch (error) {
-      console.error('Error fetching additional profiles:', error)
+      devLog.error('Error fetching additional profiles:', error, 'profileManager')
       // Fallback to localStorage
       const localData = this.getLocalProfiles(userId) || []
       const deduplicated = this.deduplicateProfiles(localData)
@@ -71,7 +72,7 @@ class ProfileManager {
       const profiles = await this.getAdditionalProfiles(userId)
       return profiles.find(p => p.id === profileId) || null
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      devLog.error('Error fetching profile:', error, 'profileManager')
       return null
     }
   }
@@ -127,7 +128,7 @@ class ProfileManager {
         return createdProfile
       }
     } catch (error) {
-      console.error('Error creating profile:', error)
+      devLog.error('Error creating profile:', error, 'profileManager')
       // Fallback to localStorage
       const id = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       const createdProfile: AdditionalProfile = {
@@ -198,7 +199,7 @@ class ProfileManager {
         return updatedProfile
       }
     } catch (error) {
-      console.error('Error updating profile:', error)
+      devLog.error('Error updating profile:', error, 'profileManager')
       return null
     }
   }
@@ -222,7 +223,7 @@ class ProfileManager {
 
       return true
     } catch (error) {
-      console.error('Error deleting profile:', error)
+      devLog.error('Error deleting profile:', error, 'profileManager')
       // Still update localStorage
       const profiles = this.getLocalProfiles(userId) || []
       const filtered = profiles.filter(p => p.id !== profileId)
@@ -240,7 +241,7 @@ class ProfileManager {
       const data = localStorage.getItem(key)
       return data ? JSON.parse(data) : []
     } catch (error) {
-      console.error('Error reading local profiles:', error)
+      devLog.error('Error reading local profiles:', error, 'profileManager')
       return []
     }
   }
@@ -250,7 +251,7 @@ class ProfileManager {
       const key = `${STORAGE_KEY}_${userId}`
       localStorage.setItem(key, JSON.stringify(profiles))
     } catch (error) {
-      console.error('Error saving local profiles:', error)
+      devLog.error('Error saving local profiles:', error, 'profileManager')
     }
   }
 }

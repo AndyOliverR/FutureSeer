@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -106,7 +107,7 @@ export function ImageUploadSection({
         setIsCameraOpen(true);
       }
     } catch (err) {
-      console.error('Camera access error:', err);
+      devLog.error('Camera access error:', err, 'ImageUploadSection');
       setError('Unable to access camera. Please check permissions or use file upload instead.');
     } finally {
       setIsCapturing(false);
@@ -158,7 +159,7 @@ export function ImageUploadSection({
           closeCamera();
         })
         .catch(err => {
-          console.error('Error converting captured image:', err);
+          devLog.error('Error converting captured image:', err, 'ImageUploadSection');
           setError('Error processing captured image. Please try again.');
         });
     }
@@ -274,7 +275,7 @@ export function ImageUploadSection({
               onError={() => {
                 setImageLoading(false);
                 setImageError(true);
-                console.error(`Failed to load ${type} image:`, currentImage);
+                devLog.error(`Failed to load ${type} image:`, currentImage, 'ImageUploadSection');
               }}
             />
             {!imageError ? (

@@ -2,6 +2,7 @@
 // Maps AstroApp data to all 27 FutureSeer tools
 
 import { log } from '@/lib/consoleLogger';
+import { devLog } from '@/lib/devLogger';
 
 export interface ToolDataMapping {
   toolName: string;
@@ -455,7 +456,7 @@ export const FUTURESEER_TOOLS: ToolDataMapping[] = [
           profile: chart.profile.name
         };
       } catch (error) {
-        console.error('Error calculating Human Design:', error);
+        devLog.error('Error calculating Human Design:', error);
         return {
           type: 'Error',
           strategy: 'Error calculating',
@@ -512,7 +513,7 @@ export const FUTURESEER_TOOLS: ToolDataMapping[] = [
           guidance: reading.guidance
         };
       } catch (error) {
-        console.error('Error accessing Akashic Records:', error);
+        devLog.error('Error accessing Akashic Records:', error);
         return {
           soul_journey: 'Error accessing Records',
           past_lives: [],

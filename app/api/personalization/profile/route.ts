@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
 export const dynamic = 'force-static'
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error fetching advanced profile:', error);
+    devLog.error('Error fetching advanced profile:', error, 'route');
     // Return empty profile instead of error
     return NextResponse.json({
       success: true,
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error updating advanced profile:', error);
+    devLog.error('Error updating advanced profile:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to update advanced profile' },
       { status: 500 }
@@ -160,7 +161,7 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error merging advanced profile:', error);
+    devLog.error('Error merging advanced profile:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to merge advanced profile' },
       { status: 500 }

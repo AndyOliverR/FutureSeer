@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 
 interface ZiWeiMessage {
   id: string;
@@ -34,8 +35,10 @@ const REGENERATE_MESSAGE =
   'Generate your Zi Wei chart and report first to use Ask the Seer.';
 
 const ZIWEI_STARTER_QUESTIONS = [
-  'What does my chart say about career?',
-  'When is a good time for this decision?',
+  'Which areas of my life are strongest or weakest?',
+  'Which palace is currently active in my chart?',
+  'When does career or wealth become more favorable?',
+  'Why does a certain life area keep demanding attention?',
 ];
 
 export function ZiWeiSeerChatInterface({
@@ -183,7 +186,7 @@ export function ZiWeiSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Zi Wei Seer error:', err);
+      devLog.error('Zi Wei Seer error', err, 'ZiWeiSeerChatInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -283,7 +286,7 @@ export function ZiWeiSeerChatInterface({
             Ask the Seer — Zi Wei Dou Shu
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Career, wealth, relationships, health, life direction, property, travel by palace and cycle.
+            Life domains and fortune cycles, not daily advice.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
@@ -307,7 +310,7 @@ export function ZiWeiSeerChatInterface({
           Ask the Seer — Zi Wei Dou Shu
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Career, wealth, relationships, health, life direction, property, travel by palace and cycle.
+          Life domains and fortune cycles, not daily advice.
         </p>
         {messages.length > 0 && (
           <Button
@@ -328,8 +331,19 @@ export function ZiWeiSeerChatInterface({
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Ask about career, wealth, relationships, health, life direction, property, or travel…
+                Ask me anything about your life domains and fortune cycles…
               </p>
+              <p className="text-sm text-amber-800 mb-3">
+                I&apos;ll interpret your Zi Wei Dou Shu chart to reveal how different areas of life unfold over time.
+              </p>
+              <p className="text-xs text-amber-800 font-medium mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>Life domains (career, wealth, marriage, health, family, travel, reputation)</li>
+                <li>Fortune cycles (which areas improve or face pressure, which decade/year favors which domain)</li>
+                <li>Pattern and destiny (repeating life themes, strength vs challenge across domains)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {ZIWEI_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -344,6 +358,9 @@ export function ZiWeiSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-xs text-amber-700 mt-4">
+                Best for: Life domains and fortune cycles, not daily advice or exact dates.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -378,7 +395,7 @@ export function ZiWeiSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about career, wealth, relationships, health, life direction…"
+              placeholder="Ask about life domains, fortune cycles, career, or wealth…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

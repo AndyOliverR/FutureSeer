@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -56,7 +57,7 @@ export default function FixedStarAstrologyPage() {
       setIsLoading(true)
       setError(null)
       
-      console.log('⭐ FutureSeer: Loading Fixed Star Astrology analysis...')
+      devLog.debug('⭐ FutureSeer: Loading Fixed Star Astrology analysis...')
       
       const birthData: BirthData = {
         birthDate: userProfile?.birthDate || '',
@@ -76,9 +77,9 @@ export default function FixedStarAstrologyPage() {
       
       setAnalysis(fixedStarData)
       
-      console.log('✅ FutureSeer: Fixed Star Astrology analysis loaded successfully:', fixedStarData)
+      devLog.debug('✅ FutureSeer: Fixed Star Astrology analysis loaded successfully:', fixedStarData)
     } catch (error) {
-      console.error('❌ FutureSeer: Failed to load Fixed Star Astrology analysis:', error)
+      devLog.error('❌ FutureSeer: Failed to load Fixed Star Astrology analysis:', error, 'page')
       setError('Failed to load Fixed Star Astrology analysis')
     } finally {
       setIsLoading(false)
@@ -122,13 +123,13 @@ export default function FixedStarAstrologyPage() {
             transition={{ duration: 0.6 }}
           >
             <Star className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-white mb-2">Fixed Star Astrology</h1>
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-2">Fixed Star Astrology</h1>
             <p className="text-slate-300 text-lg">Fixed star influences and aspects</p>
           </motion.div>
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
           <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl p-1">
             <TabsTrigger 
               value="overview" 

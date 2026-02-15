@@ -1,4 +1,5 @@
 // Local storage utilities for when Firebase is unavailable
+import { devLog } from '@/lib/devLogger';
 
 export interface LocalAskHistory {
   id: string;
@@ -38,10 +39,10 @@ export const saveLocalAskHistory = (data: Omit<LocalAskHistory, 'id'>): string =
     };
     existing.push(newEntry);
     localStorage.setItem(STORAGE_KEYS.ASK_HISTORY, JSON.stringify(existing));
-    console.log('Saved ask history to local storage:', newEntry.id);
+    devLog.debug('Saved ask history to local storage:', newEntry.id);
     return newEntry.id;
   } catch (error) {
-    console.error('Error saving to local storage:', error);
+    devLog.error('Error saving to local storage:', error, 'localStorage');
     return 'local-save-failed';
   }
 };
@@ -50,7 +51,7 @@ export const getLocalAskHistory = (): LocalAskHistory[] => {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.ASK_HISTORY) || '[]');
   } catch (error) {
-    console.error('Error reading from local storage:', error);
+    devLog.error('Error reading from local storage:', error, 'localStorage');
     return [];
   }
 };
@@ -65,10 +66,10 @@ export const saveLocalNote = (data: Omit<LocalNote, 'id'>): string => {
     };
     existing.push(newEntry);
     localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(existing));
-    console.log('Saved note to local storage:', newEntry.id);
+    devLog.debug('Saved note to local storage:', newEntry.id);
     return newEntry.id;
   } catch (error) {
-    console.error('Error saving note to local storage:', error);
+    devLog.error('Error saving note to local storage:', error, 'localStorage');
     return 'local-save-failed';
   }
 };
@@ -77,7 +78,7 @@ export const getLocalNotes = (): LocalNote[] => {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTES) || '[]');
   } catch (error) {
-    console.error('Error reading notes from local storage:', error);
+    devLog.error('Error reading notes from local storage:', error, 'localStorage');
     return [];
   }
 };
@@ -89,12 +90,12 @@ export const updateLocalNote = (id: string, updates: Partial<LocalNote>): boolea
     if (index !== -1) {
       existing[index] = { ...existing[index], ...updates, updatedAt: Date.now() };
       localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(existing));
-      console.log('Updated note in local storage:', id);
+      devLog.debug('Updated note in local storage:', id);
       return true;
     }
     return false;
   } catch (error) {
-    console.error('Error updating note in local storage:', error);
+    devLog.error('Error updating note in local storage:', error, 'localStorage');
     return false;
   }
 };
@@ -104,10 +105,10 @@ export const deleteLocalNote = (id: string): boolean => {
     const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.NOTES) || '[]');
     const filtered = existing.filter((note: LocalNote) => note.id !== id);
     localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(filtered));
-    console.log('Deleted note from local storage:', id);
+    devLog.debug('Deleted note from local storage:', id);
     return true;
   } catch (error) {
-    console.error('Error deleting note from local storage:', error);
+    devLog.error('Error deleting note from local storage:', error, 'localStorage');
     return false;
   }
 };
@@ -116,9 +117,9 @@ export const deleteLocalNote = (id: string): boolean => {
 export const saveLocalUserProfile = (profile: any): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(profile));
-    console.log('Saved user profile to local storage');
+    devLog.debug('Saved user profile to local storage');
   } catch (error) {
-    console.error('Error saving user profile to local storage:', error);
+    devLog.error('Error saving user profile to local storage:', error, 'localStorage');
   }
 };
 
@@ -126,7 +127,7 @@ export const getLocalUserProfile = (): any => {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.USER_PROFILE) || 'null');
   } catch (error) {
-    console.error('Error reading user profile from local storage:', error);
+    devLog.error('Error reading user profile from local storage:', error, 'localStorage');
     return null;
   }
 };
@@ -137,9 +138,9 @@ export const clearLocalData = (): void => {
     Object.values(STORAGE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
-    console.log('✅ Cleared all local data');
+    devLog.debug('✅ Cleared all local data');
   } catch (error) {
-    console.error('Error clearing local data:', error);
+    devLog.error('Error clearing local data:', error, 'localStorage');
   }
 };
 
@@ -147,9 +148,9 @@ export const clearLocalData = (): void => {
 export const clearLocalUserProfile = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
-    console.log('✅ Cleared user profile from local storage');
+    devLog.debug('✅ Cleared user profile from local storage');
   } catch (error) {
-    console.error('Error clearing user profile from local storage:', error);
+    devLog.error('Error clearing user profile from local storage:', error, 'localStorage');
   }
 };
 
@@ -171,7 +172,7 @@ export const getStorageInfo = () => {
       ]).size
     };
   } catch (error) {
-    console.error('Error getting storage info:', error);
+    devLog.error('Error getting storage info:', error, 'localStorage');
     return { askHistoryCount: 0, notesCount: 0, hasProfile: false, totalSize: 0 };
   }
 }; 

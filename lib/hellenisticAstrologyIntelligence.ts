@@ -10,6 +10,7 @@
 // - Philosophical influences: Stoicism, Neoplatonism, Neopythagoreanism
 
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 import { calculateTropicalPlanets, calculateTropicalHouses, getTropicalSign, getDegreeInSign, calculateTropicalAspects } from './western/tropicalCalculator';
 
@@ -1148,18 +1149,18 @@ export async function getIntelligentHellenisticAstrologyData(
           cachedData.birthTime === birthTime && 
           cachedData.birthPlace === birthPlace &&
           cachedData.metadata?.version === HELLENISTIC_ALGORITHM_VERSION) {
-        console.log('Returning cached Hellenistic Astrology data for user:', userId);
+        devLog.debug('Returning cached Hellenistic Astrology data for user:', userId);
         return cachedData;
       } else {
-        console.log('Cache invalid - forcing recalculation (version mismatch or data changed) for user:', userId);
+        devLog.debug('Cache invalid - forcing recalculation (version mismatch or data changed) for user:', userId);
       }
     }
   } catch (error) {
-    console.warn('Error checking cached Hellenistic Astrology data:', error);
+    devLog.warn('Error checking cached Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
   }
   
   // Calculate new Hellenistic Astrology analysis
-  console.log('Calculating new Hellenistic Astrology analysis for user:', userId);
+  devLog.debug('Calculating new Hellenistic Astrology analysis for user:', userId);
   
   // Parse birth date and time
   const birthDateTime = new Date(`${birthDate}T${birthTime}`);
@@ -1327,9 +1328,9 @@ export async function getIntelligentHellenisticAstrologyData(
   // Cache the data
   try {
     await setDoc(docRef, reading);
-    console.log('Cached Hellenistic Astrology data for user:', userId);
+    devLog.debug('Cached Hellenistic Astrology data for user:', userId);
   } catch (error) {
-    console.warn('Error caching Hellenistic Astrology data:', error);
+    devLog.warn('Error caching Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
   }
   
   return reading;
@@ -1344,9 +1345,9 @@ export async function clearHellenisticAstrologyDataCache(userId: string): Promis
   
   try {
     await setDoc(docRef, {});
-    console.log('Cleared Hellenistic Astrology data cache for user:', userId);
+    devLog.debug('Cleared Hellenistic Astrology data cache for user:', userId);
   } catch (error) {
-    console.warn('Error clearing Hellenistic Astrology data cache:', error);
+    devLog.warn('Error clearing Hellenistic Astrology data cache:', error, 'hellenisticAstrologyIntelligence');
   }
 }
 

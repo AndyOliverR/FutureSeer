@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       throw new Error(`Stability AI API error: ${response.status}`)
     }
   } catch (error) {
-    console.error("[FutureSeer] Stability AI API failed:", error)
+    devLog.error("[FutureSeer] Stability AI API failed:", error, 'route')
     return NextResponse.json({
       success: false,
       error: "Image generation failed",

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useTarotData } from '@/hooks/use-tarot'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -39,7 +40,7 @@ export function TarotTool() {
     try {
       await drawTarot(question, spreadType)
     } catch (error) {
-      console.error('Error drawing tarot:', error)
+      devLog.error('Error drawing tarot:', error, 'TarotTool')
     } finally {
       setIsDrawing(false)
     }

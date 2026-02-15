@@ -4,6 +4,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
+import { buildLenormandSeerSystemPrompt } from '@/lib/lenormandSeerPrompts';
 import {
   buildLenormandState,
   classifyLenormandQuestion,
@@ -96,7 +97,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getLenormandSliceForQuestionType(questionType, state);
+    const slice = getLenormandSliceForQuestionType(questionType, state);
+    const displayName = (userProfile?.displayName ?? '').trim();
+    const systemPrompt = buildLenormandSeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
@@ -191,7 +196,7 @@ export async function POST(request: NextRequest) {
               /* non-fatal */
             }
           } catch (error) {
-            console.error('Error during Lenormand Seer streaming:', error);
+            devLog.error('Error during Lenormand Seer streaming:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -211,7 +216,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error in Lenormand Seer API:', error);
+    devLog.error('Error in Lenormand Seer API:', error);
     return NextResponse.json(
       {
         success: false,

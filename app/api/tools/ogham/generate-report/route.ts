@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('❌ Error generating Ogham report:', error)
+    devLog.error('❌ Error generating Ogham report:', error, 'route')
     
     return NextResponse.json(
       {

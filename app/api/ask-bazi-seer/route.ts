@@ -1,44 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildBaziChartState,
   classifyBaziQuestion,
   getBaziSliceForQuestionType,
-  type BaziQuestionType,
 } from '@/lib/baziSeerState';
 import type { BaziReading } from '@/lib/baziIntelligence';
-import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
+import { buildBaziSeerSystemPrompt } from '@/lib/baziSeerPrompts';
 
 interface AskBaziSeerRequest {
   userId?: string;
   question: string;
   userProfile?: unknown;
   baziReading?: BaziReading;
-}
-
-function buildBaziSystemPrompt(
-  chartSlice: string,
-  questionType: BaziQuestionType
-): string {
-  return `You are an expert BaZi (Four Pillars of Destiny) practitioner. You reason only from the state below. BaZi is a structural and timing system based on elemental balance; it is not a daily muhurta system, a yes/no oracle, or a psychological therapy tool.
-${SEER_GOVERNING_SENTENCE}
-
-## CRITICAL RULES
-- **Day Master gate**: No BaZi answer is valid without determining Day Master strength. Every answer must reference whether the Day Master is strong or weak and what that implies: weak Day Master needs support elements; strong Day Master needs control/output elements.
-- **Element function**: Interpret elements by function relative to the Day Master: Resource (support), Companion (competition), Output (expression), Wealth (control), Power (pressure). Do not interpret emotionally or symbolically.
-- **Useful vs unfavorable**: Advice must increase useful elements and reduce exposure to unfavorable ones. Do not recommend activities aligned to unfavorable elements during weak cycles.
-- **Luck Cycle supremacy**: Timing hierarchy is Luck Cycle (10-year) first, then annual, then month. If Luck Cycle does not support, outcomes are limited regardless of effort. Give phase-based guidance only; no exact dates.
-- **Refusals**: Refuse daily timing ("what should I do today"), guarantees, psychological counseling, and medical diagnosis. Say: "BaZi does not operate at that time scale."
-- **Permanent rule**: BaZi answers must always reference element balance and time phase. If an answer lacks both, it is invalid.
-- **Mandatory state**: Do not answer without the BaZi Chart State; the slice below is your only input.
-
-## BaZi Chart state (use only these)
-${chartSlice}
-
-## Question type
-${questionType}
-
-Answer the user's question with specific references to the state above.`;
 }
 
 const REFUSAL_MESSAGE =
@@ -99,7 +74,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: buildBaziSystemPrompt(chartSlice, questionType),
+          content: buildBaziSeerSystemPrompt(chartSlice, questionType),
         },
         { role: 'user', content: question.trim() },
       ],
@@ -118,7 +93,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('BaZi Seer stream error:', error);
+            devLog.error('BaZi Seer stream error:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -138,7 +113,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: unknown) {
-    console.error('BaZi Seer API error:', error);
+    devLog.error('BaZi Seer API error:', error, 'route');
     return NextResponse.json(
       {
         success: false,

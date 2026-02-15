@@ -197,6 +197,11 @@ fortune_cycles:
   const disciplineNote =
     'Every answer must state: palace, star, and cycle. Main stars dominate; supporting stars modify. Four Transformations are dynamic modifiers (Hua Lu = gain, Hua Quan = power, Hua Ke = reputation, Hua Ji = blockage). If palace is not activated by fortune cycle, outcomes remain latent.';
 
+  const ziweiDataCaveat =
+    state.fortune_cycles.current_10yr === '—'
+      ? '\n\nPalace or fortune cycle data missing or incomplete. Do not give specific timing or phase predictions; reduce confidence or say timing cannot be concluded from current data.'
+      : '';
+
   const relevantKey = questionType !== 'general' ? questionType : null;
   const relevantPalace = relevantKey ? state.palaces[relevantKey] : null;
   const palaceBlock = relevantPalace
@@ -213,5 +218,5 @@ ${fourTransBlock}
 ${fortuneBlock}
 ${palaceBlock}${recommendationsBlock}
 
-${disciplineNote}`;
+${disciplineNote}${ziweiDataCaveat}`;
 }

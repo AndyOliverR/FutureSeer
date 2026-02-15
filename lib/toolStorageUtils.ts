@@ -14,7 +14,7 @@ export function loadToolData(userId: string, toolName: string): ToolData | null 
     }
     return null
   } catch (error) {
-    console.error(`Error loading ${toolName} data:`, error)
+    devLog.error(`Error loading ${toolName} data:`, error, 'toolStorageUtils')
     return null
   }
 }
@@ -23,9 +23,9 @@ export function loadToolData(userId: string, toolName: string): ToolData | null 
 export function saveToolData(userId: string, toolName: string, data: ToolData): void {
   try {
     localStorage.setItem(`futureseer_${userId}_${toolName}`, JSON.stringify(data))
-    console.log(`✅ ${toolName} data saved to localStorage`)
+    devLog.debug(`✅ ${toolName} data saved to localStorage`)
   } catch (error) {
-    console.error(`Error saving ${toolName} data:`, error)
+    devLog.error(`Error saving ${toolName} data:`, error, 'toolStorageUtils')
   }
 }
 
@@ -33,9 +33,9 @@ export function saveToolData(userId: string, toolName: string, data: ToolData): 
 export function clearToolData(userId: string, toolName: string): void {
   try {
     localStorage.removeItem(`futureseer_${userId}_${toolName}`)
-    console.log(`🗑️ ${toolName} data cleared from localStorage`)
+    devLog.debug(`🗑️ ${toolName} data cleared from localStorage`)
   } catch (error) {
-    console.error(`Error clearing ${toolName} data:`, error)
+    devLog.error(`Error clearing ${toolName} data:`, error, 'toolStorageUtils')
   }
 }
 
@@ -54,7 +54,7 @@ export function clearAllToolData(userId: string): void {
     clearToolData(userId, toolName)
   })
   
-  console.log(`🗑️ All tool data cleared for user: ${userId}`)
+  devLog.debug(`🗑️ All tool data cleared for user: ${userId}`)
 }
 
 // Template hook for tool pages
@@ -74,20 +74,20 @@ export function useToolData(userId: string | undefined, toolName: string, hasCom
         setIsLoading(true)
         setError(null)
         
-        console.log(`Loading ${toolName} data from localStorage for user:`, userId)
+        devLog.debug(`Loading ${toolName} data from localStorage for user:`, userId)
         
         const data = loadToolData(userId, toolName)
         
         if (data) {
-          console.log(`✅ ${toolName} data loaded from localStorage:`, data)
+          devLog.debug(`✅ ${toolName} data loaded from localStorage:`, data)
           setToolData(data)
         } else {
-          console.log(`No ${toolName} data found in localStorage`)
+          devLog.debug(`No ${toolName} data found in localStorage`)
           setToolData(null)
           // Do not set error for "no data" — consumers show Preparing/Generate UI for !toolData
         }
       } catch (err: any) {
-        console.error(`Error loading ${toolName} data:`, err)
+        devLog.error(`Error loading ${toolName} data:`, err, 'toolStorageUtils')
         setError(err.message || `Failed to load ${toolName} data`)
       } finally {
         setIsLoading(false)
@@ -104,19 +104,19 @@ export function useToolData(userId: string | undefined, toolName: string, hasCom
       setIsLoading(true)
       setError(null)
       
-      console.log(`🔄 Reloading ${toolName} data from localStorage...`)
+      devLog.debug(`🔄 Reloading ${toolName} data from localStorage...`)
       
       const data = loadToolData(userId, toolName)
       
       if (data) {
         setToolData(data)
-        console.log(`✅ ${toolName} data reloaded from localStorage`)
+        devLog.debug(`✅ ${toolName} data reloaded from localStorage`)
       } else {
         setToolData(null)
         // Do not set error for "no data" — consumers show Preparing/Generate UI for !toolData
       }
     } catch (err: any) {
-      console.error(`Error refetching ${toolName} data:`, err)
+      devLog.error(`Error refetching ${toolName} data:`, err, 'toolStorageUtils')
       setError(err.message || `Failed to load ${toolName} data`)
     } finally {
       setIsLoading(false)
@@ -133,3 +133,4 @@ export function useToolData(userId: string | undefined, toolName: string, hasCom
 
 // Import useState for the hook
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';

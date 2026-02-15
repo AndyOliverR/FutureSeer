@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ModalPortal } from '@/components/ui/ModalPortal'
 import { OghamReport } from '@/lib/ogham/oghamReportGenerator'
 import OghamNameDisplay from './OghamNameDisplay'
 import OghamStave from './OghamStave'
@@ -363,31 +364,33 @@ export default function OghamReportDisplay({
       </Tabs>
 
       {/* Letter Detail Modal */}
-      {selectedLetter && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedLetter(null)}
-        >
+      <ModalPortal open={!!selectedLetter}>
+        {selectedLetter && (
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl p-6 max-w-2xl max-h-[90vh] overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000] flex items-center justify-center p-4"
+            onClick={() => setSelectedLetter(null)}
           >
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-2xl font-bold text-amber-900">
-                {selectedLetter.tree} - {selectedLetter.name}
-              </h2>
-              <button
-                onClick={() => setSelectedLetter(null)}
-                className="text-slate-600 hover:text-slate-900"
-              >
-                ×
-              </button>
-            </div>
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl p-6 max-w-2xl max-w-[90vw] max-h-[min(90dvh,90vh)] overflow-y-auto z-[10001]"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-amber-900 min-w-0">
+                  {selectedLetter.tree} - {selectedLetter.name}
+                </h2>
+                <button
+                  onClick={() => setSelectedLetter(null)}
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-600 hover:text-slate-900 shrink-0"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
             <div className="space-y-4">
               <div>
                 <h3 className="text-amber-900 font-semibold mb-2">Meaning</h3>
@@ -416,9 +419,10 @@ export default function OghamReportDisplay({
                 </div>
               </div>
             </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </ModalPortal>
     </div>
   )
 }

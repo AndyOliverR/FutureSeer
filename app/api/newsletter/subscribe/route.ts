@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
 interface NewsletterSubscription {
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error subscribing to newsletter:', error);
+    devLog.error('Error subscribing to newsletter:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to subscribe. Please try again later.' },
       { status: 500 }

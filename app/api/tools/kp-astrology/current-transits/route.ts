@@ -21,7 +21,7 @@ async function getCoordinatesWithFallback(place: string): Promise<{ latitude: nu
       }
     }
   } catch (error) {
-    console.error('❌ Geocoding error:', error)
+    devLog.error('❌ Geocoding error:', error, 'route')
   }
   
   // Fallback to common Indian cities
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
           )
         }
       } catch (error) {
-        console.error('❌ Error fetching user profile:', error)
+        devLog.error('❌ Error fetching user profile:', error, 'route')
         return NextResponse.json(
           { success: false, error: 'Failed to fetch user profile' },
           { status: 500 }
@@ -149,8 +149,8 @@ export async function POST(request: NextRequest) {
         upcoming: transitData.upcoming.length
       }, 'kp-astrology')
     } catch (transitError: any) {
-      console.error('❌ Error in calculateTransitData:', transitError)
-      console.error('Stack:', transitError.stack)
+      devLog.error('❌ Error in calculateTransitData:', transitError, 'route')
+      devLog.error('Stack:', transitError.stack, 'route')
       return NextResponse.json(
         { 
           success: false, 
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('❌ Error calculating current transits:', error)
+    devLog.error('❌ Error calculating current transits:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

@@ -11,11 +11,11 @@ import { saveUserActivity } from '@/lib/firebase'
  */
 export function useActivityLogger() {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const loggedRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!user?.uid || !pathname) return
+    if (loading || !user?.uid || !pathname) return
     if (loggedRef.current === pathname) return
     loggedRef.current = pathname
 
@@ -30,5 +30,5 @@ export function useActivityLogger() {
     ) {
       saveUserActivity(user.uid, 'page_view', { path }).catch(() => {})
     }
-  }, [user?.uid, pathname])
+  }, [loading, user?.uid, pathname])
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
 export const dynamic = 'force-static'
@@ -131,7 +132,7 @@ export async function GET(
       return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
     }
   } catch (error: any) {
-    console.error('Error fetching member stats:', error);
+    devLog.error('Error fetching member stats:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch member stats' }, { status: 500 });
   }
 }

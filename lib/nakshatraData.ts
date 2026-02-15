@@ -1,4 +1,5 @@
 // Comprehensive Nakshatra Data System
+import { devLog } from '@/lib/devLogger';
 // 27 Lunar Mansions with detailed characteristics
 
 export interface NakshatraData {
@@ -1419,7 +1420,7 @@ export const NAKSHATRAS: NakshatraData[] = [
 export function getNakshatraFromLongitude(longitude: number): NakshatraData | null {
   // Validate longitude
   if (longitude === undefined || longitude === null || isNaN(longitude)) {
-    console.warn('⚠️ Invalid longitude for nakshatra calculation:', longitude);
+    devLog.warn('⚠️ Invalid longitude for nakshatra calculation:', longitude, 'nakshatraData');
     return null;
   }
   

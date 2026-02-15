@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 
 // Local types aligned with useMedicalAstrology (avoid type-only import from .tsx in lib)
 export interface UserData {
@@ -56,7 +57,7 @@ class MedicalAstrologyIntelligence {
       if (!response.ok) throw new Error('Failed to fetch astro data')
       return await response.json()
     } catch (error) {
-      console.error('Error fetching astro data:', error)
+      devLog.error('Error fetching astro data:', error, 'medicalAstrologyIntelligence')
       throw new Error('Unable to calculate birth chart')
     }
   }
@@ -93,7 +94,7 @@ class MedicalAstrologyIntelligence {
         advice
       }
     } catch (error) {
-      console.error('Medical astrology analysis error:', error)
+      devLog.error('Medical astrology analysis error:', error, 'medicalAstrologyIntelligence')
       throw new Error('Failed to analyze health timing')
     }
   }

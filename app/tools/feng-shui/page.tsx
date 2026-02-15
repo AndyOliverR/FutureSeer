@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { devLog } from '@/lib/devLogger';
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
@@ -88,7 +89,7 @@ export default function FengShuiPage() {
         const fengShuiReading = await generateFengShuiReading(userProfile, fengShuiAnalysis)
         setReading(fengShuiReading)
       } catch (err: any) {
-        console.error('Error loading Feng Shui analysis:', err)
+        devLog.error('Error loading Feng Shui analysis:', err, 'page')
         setError(err.message || "An error occurred while generating your Feng Shui analysis.")
       } finally {
         setIsLoading(false)
@@ -127,7 +128,7 @@ export default function FengShuiPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-12 pt-4"
           >
-            <h1 className="text-5xl font-serif font-semibold mb-6">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
               <span className="text-yellow-400">🏮</span>{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Feng Shui Analysis</span>
             </h1>
@@ -209,40 +210,27 @@ export default function FengShuiPage() {
                 </div>
               </motion.div>
 
-              {/* Tabs - no Card wrapper, match Western Astrology */}
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full">
-                <TabsList className="flex w-full flex-nowrap gap-3 bg-transparent p-0">
+              {/* Tabs - filing-cabinet, match Western Astrology */}
+              <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full min-w-0">
+                <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                     {tabs.map((tab) => {
                       const Icon = tab.icon
                       return (
-                        <motion.div
+                        <TabsTrigger
                           key={tab.id}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                          className="relative flex-1 min-w-0 flex justify-center"
+                          value={tab.id}
+                          className="shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all flex items-center justify-center gap-2"
                         >
-                          <TabsTrigger 
-                            value={tab.id} 
-                            className="w-full data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center gap-2 relative overflow-hidden"
-                          >
-                            <Icon className="w-4 h-4" />
-                            {tab.label}
-                            {activeTab === tab.id && (
-                              <motion.div
-                                layoutId="activeTab"
-                                className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                              />
-                            )}
-                          </TabsTrigger>
-                        </motion.div>
+                          <Icon className="w-4 h-4" />
+                          {tab.label}
+                        </TabsTrigger>
                       )
                     })}
                   </TabsList>
 
                   {/* Tab Content - always-mounted TabsContent, Radix controls visibility */}
-                  <TabsContent value="overview" className="space-y-6 mt-2">
+                  <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
                         <CardHeader>
@@ -417,30 +405,30 @@ export default function FengShuiPage() {
                     </Card>
                   </TabsContent>
 
-                  <TabsContent value="bagua" className="mt-2">
+                  <TabsContent value="bagua" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <BaguaMap 
                       areas={analysis.bagua} 
                       favorableDirections={analysis.favorableDirections}
                     />
                   </TabsContent>
 
-                  <TabsContent value="rooms" className="mt-2">
+                  <TabsContent value="rooms" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <RoomGuidance rooms={reading.roomGuidance} />
                   </TabsContent>
 
-                  <TabsContent value="elements" className="mt-2">
+                  <TabsContent value="elements" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <ElementBalance elementAnalysis={analysis.elementAnalysis} />
                   </TabsContent>
 
-                  <TabsContent value="report" className="mt-2">
+                  <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <FengShuiReport reading={reading} />
                   </TabsContent>
 
-                  <TabsContent value="cures" className="mt-2">
+                  <TabsContent value="cures" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <FengShuiCures cures={reading.cures} />
                   </TabsContent>
 
-                  <TabsContent value="ask-seer" className="mt-2">
+                  <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
                       <FengShuiSeerChatInterface
                         analysis={analysis}
@@ -453,6 +441,7 @@ export default function FengShuiPage() {
                     </div>
                   </TabsContent>
                 </Tabs>
+                </div>
             </>
           )}
 

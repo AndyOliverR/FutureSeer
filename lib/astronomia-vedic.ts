@@ -9,6 +9,7 @@
  * ✅ TT correction for improved ephemeris accuracy
  */
 
+import { devLog } from '@/lib/devLogger';
 import * as julian from "astronomia/julian";
 import * as solarxyz from "astronomia/solarxyz";
 import * as planetposition from "astronomia/planetposition";
@@ -83,7 +84,7 @@ const initPlanet = (data: any, name: string) => {
     if (!data) throw new Error(`${name} VSOP data missing`);
     return new planetposition.Planet(data);
   } catch (err) {
-    console.error(`Failed to init planet ${name}:`, err);
+    devLog.error(`Failed to init planet ${name}:`, err, 'astronomia-vedic');
     return null;
   }
 };
@@ -159,7 +160,7 @@ const getMoonEcliptic = (jd: number) => {
     }
     return null;
   } catch (err) {
-    console.error("moonposition failed:", err);
+    devLog.error("moonposition failed:", err, 'astronomia-vedic');
     return null;
   }
 };
@@ -369,13 +370,13 @@ export const getPlanetCoords = (
     if (name === "moon") {
       const m = getMoonEcliptic(jd);
       if (!m) {
-        console.error(`Moon calculation failed for JD: ${jd}`);
+        devLog.error(`Moon calculation failed for JD: ${jd}`, undefined, 'astronomia-vedic');
         throw new Error(`Moon calc failed for Julian Day ${jd}`);
       }
       const ay = ayanamshaValue(jd, ayanamshaType);
-      console.log(`🕉️ Moon calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${m.lon}°`);
+      devLog.debug(`🕉️ Moon calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${m.lon}°`);
       const lonSidereal = norm360(m.lon - ay);
-      console.log(`🕉️ Moon sidereal longitude: ${lonSidereal}° (${m.lon}° - ${ay}°)`);
+      devLog.debug(`🕉️ Moon sidereal longitude: ${lonSidereal}° (${m.lon}° - ${ay}°)`);
       const sign = Math.floor(lonSidereal / 30);
       const degreeInSign = lonSidereal % 30;
       const { nakshatra, nakshatraPada } = getNakshatraInfo(lonSidereal);
@@ -465,9 +466,9 @@ export const getPlanetCoords = (
         throw new Error(`Unsupported planet: ${name}`);
     }
     const ay = ayanamshaValue(jd, ayanamshaType);
-    console.log(`🕉️ ${name} calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${lon}°`);
+    devLog.debug(`🕉️ ${name} calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${lon}°`);
     const lonSidereal = norm360(lon - ay);
-    console.log(`🕉️ ${name} sidereal longitude: ${lonSidereal}° (${lon}° - ${ay}°)`);
+    devLog.debug(`🕉️ ${name} sidereal longitude: ${lonSidereal}° (${lon}° - ${ay}°)`);
     const sign = Math.floor(lonSidereal / 30);
     const degreeInSign = lonSidereal % 30;
     const { nakshatra, nakshatraPada } = getNakshatraInfo(lonSidereal);
@@ -490,7 +491,7 @@ export const getPlanetCoords = (
       valid: true,
     };
   } catch (err) {
-    console.error(`getPlanetCoords(${name})`, err);
+    devLog.error(`getPlanetCoords(${name}) failed`, err, 'astronomia-vedic');
     return { lon: 0, lat: 0, dist: 0, jd, valid: false };
   }
 };
@@ -544,18 +545,18 @@ const calculateAscendant = (jd: number, latitude: number, longitude: number, aya
     
     // DEBUG: Log LST and RAMC values for Feb 24, 1983
     if (Math.abs(jd - 2445389.865) < 0.1) { // Feb 24, 1983 test case
-      console.log('🔍 ASCENDANT DEBUG for Feb 24, 1983:');
-      console.log('  JD:', jd);
-      console.log('  JD at 0h UT:', jd0);
-      console.log('  T0:', T0);
-      console.log('  GMST at 0h UT (seconds):', gmst0Seconds);
-      console.log('  GMST at 0h UT (degrees):', gmst0);
-      console.log('  UT hours:', utHours);
-      console.log('  GMST (raw):', gmstRaw);
-      console.log('  GMST (normalized):', gmst);
-      console.log('  Longitude:', longitude);
-      console.log('  LST:', lst);
-      console.log('  RAMC:', ramc);
+      devLog.debug('🔍 ASCENDANT DEBUG for Feb 24, 1983:');
+      devLog.debug('  JD:', jd);
+      devLog.debug('  JD at 0h UT:', jd0);
+      devLog.debug('  T0:', T0);
+      devLog.debug('  GMST at 0h UT (seconds):', gmst0Seconds);
+      devLog.debug('  GMST at 0h UT (degrees):', gmst0);
+      devLog.debug('  UT hours:', utHours);
+      devLog.debug('  GMST (raw):', gmstRaw);
+      devLog.debug('  GMST (normalized):', gmst);
+      devLog.debug('  Longitude:', longitude);
+      devLog.debug('  LST:', lst);
+      devLog.debug('  RAMC:', ramc);
     }
     
     // Use working tropical houses calculator for ascendant
@@ -580,7 +581,7 @@ const calculateAscendant = (jd: number, latitude: number, longitude: number, aya
       lord: HOUSE_LORDS[sign],
     };
   } catch (err) {
-    console.error("Ascendant calculation error:", err);
+    devLog.error("Ascendant calculation error:", err, 'astronomia-vedic');
     // Fallback: use Sun's position as approximate ascendant
     return null;
   }
@@ -665,7 +666,7 @@ export const getHouseCusps = (
       }
     };
   } catch (err) {
-    console.error("getHouseCusps error:", err);
+    devLog.error("getHouseCusps error:", err, 'astronomia-vedic');
     return { houses: [], ascendant: null, metadata: { error: String(err) } };
   }
 };
@@ -698,18 +699,18 @@ export const getChart = (
     // Calculate Vimshottari Dasha (requires Moon position)
     const moonData = planets.moon;
     if (moonData) {
-      console.log('🔮 MOON DATA FOR DASHA:');
-      console.log('  Moon lonSidereal:', moonData.lonSidereal);
-      console.log('  Moon sign:', moonData.sign, '(' + moonData.signName + ')');
-      console.log('  Moon degreeInSign:', moonData.degreeInSign);
-      console.log('  Moon nakshatra:', moonData.nakshatra);
+      devLog.debug('🔮 MOON DATA FOR DASHA:');
+      devLog.debug('  Moon lonSidereal:', moonData.lonSidereal);
+      devLog.debug('  Moon sign:', moonData.sign, '(' + moonData.signName + ')');
+      devLog.debug('  Moon degreeInSign:', moonData.degreeInSign);
+      devLog.debug('  Moon nakshatra:', moonData.nakshatra);
     }
     
     // Use birthDate if provided, otherwise fall back to date (for backward compatibility)
     // Handle explicit null birthDate to skip Dasha calculation
     const actualBirthDate = birthData.birthDate === null ? null : (birthData.birthDate ?? birthData.date);
     const actualBirthDateObj = actualBirthDate == null ? undefined : (actualBirthDate instanceof Date ? actualBirthDate : new Date(actualBirthDate));
-    console.log('🔮 DASHA BIRTH DATE:', actualBirthDate);
+    devLog.debug('🔮 DASHA BIRTH DATE:', actualBirthDate);
     const dashaList = moonData && actualBirthDateObj 
       ? calculateVimshottariDasha(moonData.lonSidereal, actualBirthDateObj) 
       : [];
@@ -731,7 +732,7 @@ export const getChart = (
       }
     };
   } catch (err) {
-    console.error("getChart error:", err);
+    devLog.error("getChart error:", err, 'astronomia-vedic');
     return {
       birthData,
       ascendant: null,
@@ -845,13 +846,13 @@ const DASHA_SEQUENCE = [
  * @returns Array of Mahadasha periods with start/end dates
  */
 export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
-  console.log('🔮 DASHA CALCULATION DEBUG:');
-  console.log('  Moon longitude:', moonLon);
-  console.log('  Birth date:', birthDate);
+  devLog.debug('🔮 DASHA CALCULATION DEBUG:');
+  devLog.debug('  Moon longitude:', moonLon);
+  devLog.debug('  Birth date:', birthDate);
   
   // Determine starting nakshatra (0-26)
   const nakIndex = Math.floor((moonLon % 360) / (360 / 27));
-  console.log('  Nakshatra index:', nakIndex);
+  devLog.debug('  Nakshatra index:', nakIndex);
   
   // Calculate how much of the first dasha has already elapsed at birth
   const degreesInNak = moonLon % (360 / 27);
@@ -859,10 +860,10 @@ export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
   
   // Starting dasha lord based on nakshatra
   const startDashaIndex = nakIndex % 9;
-  console.log('  Start Dasha index:', startDashaIndex);
+  devLog.debug('  Start Dasha index:', startDashaIndex);
   
   const startLord = DASHA_SEQUENCE[startDashaIndex];
-  console.log('  Start Dasha lord:', startLord.lord);
+  devLog.debug('  Start Dasha lord:', startLord.lord);
   
   // Validate startLord exists
   if (!startLord || typeof startLord.years !== 'number') {
@@ -987,9 +988,9 @@ export function validateVedicPosition(date: Date, expectedSun: number, expectedA
       date.getUTCMonth() === 1 && 
       date.getUTCDate() === 24) {
     
-    console.log('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
-    console.log('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
-    console.log('🕉️ Expected Ascendant: ~13° Gemini (sidereal ~73°)');
+    devLog.debug('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
+    devLog.debug('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
+    devLog.debug('🕉️ Expected Ascendant: ~13° Gemini (sidereal ~73°)');
     
     // Sun should be around 311° (11° Aquarius)
     // Ascendant should be around 73° (13° Gemini)
@@ -997,11 +998,11 @@ export function validateVedicPosition(date: Date, expectedSun: number, expectedA
     const ascCorrect = Math.abs(expectedAsc - 73) < 5;
     
     if (sunCorrect && ascCorrect) {
-      console.log('✅ Feb 24, 1983 Vedic positions CORRECT');
+      devLog.debug('✅ Feb 24, 1983 Vedic positions CORRECT');
     } else {
-      console.error('❌ Feb 24, 1983 Vedic positions WRONG');
-      console.error(`  Sun: ${expectedSun}° (expected ~311°)`);
-      console.error(`  Asc: ${expectedAsc}° (expected ~97°)`);
+      devLog.error('Feb 24, 1983 Vedic positions WRONG', undefined, 'astronomia-vedic');
+      devLog.error(`Sun: ${expectedSun}° (expected ~311°)`, undefined, 'astronomia-vedic');
+      devLog.error(`Asc: ${expectedAsc}° (expected ~97°)`, undefined, 'astronomia-vedic');
     }
   }
 }

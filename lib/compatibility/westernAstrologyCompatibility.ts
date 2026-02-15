@@ -2,6 +2,7 @@
 // Calculates real synastry (relationship compatibility) between two birth charts
 
 import { CompatibilityReport, AdditionalProfile } from '@/lib/types/profileTypes'
+import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase'
 import { universalOccultService, BirthData } from '@/lib/universalOccultService'
 
@@ -418,7 +419,7 @@ export async function calculateWesternAstrologyCompatibility(
       generatedAt: Date.now()
     }
   } catch (error: any) {
-    console.error('Error calculating Western astrology compatibility:', error)
+    devLog.error('Error calculating Western astrology compatibility:', error, 'westernAstrologyCompatibility')
     
     // Fallback to basic compatibility
     return {

@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 
 // Local types aligned with useFinancialAstrology (avoid type-only import from .tsx in lib)
 export interface UserData {
@@ -64,7 +65,7 @@ class FinancialAstrologyIntelligence {
       if (!response.ok) throw new Error('Failed to fetch astro data')
       return await response.json()
     } catch (error) {
-      console.error('Error fetching astro data:', error)
+      devLog.error('Error fetching astro data:', error, 'financialAstrologyIntelligence')
       throw new Error('Unable to calculate birth chart')
     }
   }
@@ -101,7 +102,7 @@ class FinancialAstrologyIntelligence {
         advice
       }
     } catch (error) {
-      console.error('Financial astrology analysis error:', error)
+      devLog.error('Financial astrology analysis error:', error, 'financialAstrologyIntelligence')
       throw new Error('Failed to analyze financial timing')
     }
   }

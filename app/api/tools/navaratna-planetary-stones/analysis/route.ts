@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!userId) {
-      console.error('❌ [NAVARATNA API] Missing userId')
+      devLog.error('❌ [NAVARATNA API] Missing userId', undefined, 'route')
       return NextResponse.json(
         { success: false, error: 'User ID is required' },
         { status: 400 }
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.error('❌ [NAVARATNA API] Geocoding error:', error)
+      devLog.error('❌ [NAVARATNA API] Geocoding error:', error, 'route')
       // Fallback to Mumbai
       latitude = 19.0760
       longitude = 72.8777
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('❌ [NAVARATNA API] Error generating Navaratna analysis:', error)
-    console.error('❌ [NAVARATNA API] Error stack:', error.stack)
+    devLog.error('❌ [NAVARATNA API] Error generating Navaratna analysis:', error, 'route')
+    devLog.error('❌ [NAVARATNA API] Error stack:', error.stack, 'route')
     return NextResponse.json(
       { 
         success: false, 

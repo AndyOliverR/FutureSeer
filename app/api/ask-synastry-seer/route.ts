@@ -1,45 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildSynastryDualChartState,
   classifySynastryQuestion,
   getSynastrySliceForQuestionType,
-  type SynastryQuestionType,
 } from '@/lib/synastrySeerState';
 import type { SynastryCompatibility } from '@/hooks/useSynastry';
-import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
+import { buildSynastrySeerSystemPrompt } from '@/lib/synastrySeerPrompts';
 
 interface AskSynastrySeerRequest {
   userId?: string;
   question: string;
   userProfile?: unknown;
   synastryAnalysis?: SynastryCompatibility;
-}
-
-function buildSynastrySystemPrompt(
-  chartSlice: string,
-  questionType: SynastryQuestionType
-): string {
-  return `You are an expert Synastry (relationship dynamics) astrologer. You reason only from the state below. Synastry describes HOW two people interact—relational mechanics, not destiny. It is not a marriage prediction tool, compatibility score generator, or soulmate confirmation.
-${SEER_GOVERNING_SENTENCE}
-
-## CRITICAL RULES
-- **Individual chart supremacy**: Synastry never overrides individual charts. If one natal cannot sustain the relationship, say so clearly. Do not answer without both charts in the state.
-- **Aspect priority**: Order is Moon–Moon, Moon–Sun, Sun–Sun, Venus–Mars, Mercury–Mercury first; outer planets (Uranus, Neptune, Pluto) are context only. Do not let low-priority contacts override these.
-- **House overlays**: House overlays matter more than sign harmony. Sun/Moon in 7th → partnership focus; Venus in 5th → romance; Saturn in 7th → commitment and pressure; Pluto in 8th → intensity and control.
-- **Malefic realism**: Saturn = binding, duty, delay; Mars = conflict, desire, friction; Pluto = power, obsession, transformation. Never sugarcoat these.
-- **Composite**: Composite chart describes the relationship entity; use only if synastry shows viability. Never use composite to override synastry problems.
-- **Refusals**: Refuse marriage/divorce prediction, emotional dependency reinforcement, judging worthiness. Say: "Synastry cannot determine outcomes without individual readiness."
-- **Permanent rule**: Synastry explains interaction patterns, not destiny. Every answer must frame dynamics, not outcomes.
-- **Mandatory state**: Do not answer without the dual chart state; the slice below is your only input.
-
-## Synastry dual chart state (use only these)
-${chartSlice}
-
-## Question type
-${questionType}
-
-Answer the user's question with specific references to the state above. Frame as dynamics, not outcomes.`;
 }
 
 const REFUSAL_MESSAGE =
@@ -103,7 +77,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: buildSynastrySystemPrompt(chartSlice, questionType),
+          content: buildSynastrySeerSystemPrompt(chartSlice, questionType),
         },
         { role: 'user', content: question.trim() },
       ],
@@ -122,7 +96,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Synastry Seer stream error:', error);
+            devLog.error('Synastry Seer stream error:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -142,7 +116,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: unknown) {
-    console.error('Synastry Seer API error:', error);
+    devLog.error('Synastry Seer API error:', error, 'route');
     return NextResponse.json(
       {
         success: false,

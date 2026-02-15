@@ -2,6 +2,7 @@
 // Converts Astronomia calculations to placements[] format for React components
 
 import { generateVedicChart, generateDivisionalChart, BirthData, VedicChart } from './vedicAstrology'
+import { devLog } from '@/lib/devLogger';
 import { generateVedicChart as generateVedicChartUnified } from './astrologyUnified'
 
 export interface PlanetPlacement {
@@ -35,7 +36,7 @@ export async function generatePlacements(
       try {
         chart = await generateVedicChartUnified(birthData, chartType) as unknown as import('@/lib/vedicAstrology').VedicChart
       } catch (error) {
-        console.warn('Unified Swiss Ephemeris failed, falling back to Astronomia:', error)
+        devLog.warn('Unified Swiss Ephemeris failed, falling back to Astronomia:', error, 'astrologyUtils')
         chart = generateVedicChart(birthData, chartType)
       }
     } else {
@@ -70,7 +71,7 @@ export async function generatePlacements(
 
     return placements
   } catch (error) {
-    console.error('Error generating placements:', error)
+    devLog.error('Error generating placements:', error, 'astrologyUtils')
     // Return empty placements as fallback
     return Array.from(
       { length: 12 },
@@ -93,7 +94,7 @@ export async function generateMultiplePlacements(
     try {
       results[chartType] = await generatePlacements(birthDate, birthTime, lat, lon, chartType)
     } catch (error) {
-      console.error(`Error generating ${chartType} placements:`, error)
+      devLog.error(`Error generating ${chartType} placements:`, error, 'astrologyUtils')
       results[chartType] = Array.from(
         { length: 12 },
         (_, i) => ({ house: i + 1, planets: [], signs: [] })
@@ -146,7 +147,7 @@ export function getChartSummary(
       housesCount: chart.houses.length
     }
   } catch (error) {
-    console.error('Error getting chart summary:', error)
+    devLog.error('Error getting chart summary:', error, 'astrologyUtils')
     return {
       ascendant: 'Unknown',
       sunSign: 'Unknown',

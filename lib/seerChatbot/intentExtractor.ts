@@ -1,3 +1,5 @@
+import { devLog } from '@/lib/devLogger';
+
 export interface IntentSlots {
   intent: string;
   domain: string;
@@ -175,12 +177,12 @@ export function testIntentExtraction() {
   
   testQueries.forEach(query => {
     const analysis = extractIntentAndSlots(query);
-    console.log(`Query: "${query}"`);
-    console.log(`Intent: ${analysis.slots.intent} (${analysis.slots.confidence_level})`);
-    console.log(`Domain: ${analysis.slots.domain}`);
-    console.log(`Time Horizon: ${analysis.slots.time_horizon}`);
-    console.log(`Urgency: ${analysis.slots.urgency}`);
-    console.log(`Sentiment: ${analysis.sentiment}`);
-    console.log('---');
+    devLog.debug(`Query: "${query}"`);
+    devLog.debug(`Intent: ${analysis.slots.intent} (${analysis.slots.confidence_level})`);
+    devLog.debug(`Domain: ${analysis.slots.domain}`);
+    devLog.debug(`Time Horizon: ${analysis.slots.time_horizon}`);
+    devLog.debug(`Urgency: ${analysis.slots.urgency}`);
+    devLog.debug(`Sentiment: ${analysis.sentiment}`);
+    devLog.debug('---');
   });
 } 

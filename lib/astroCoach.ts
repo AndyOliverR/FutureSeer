@@ -2,6 +2,7 @@
 // Acts as a personalized trainer using comprehensive astrological insights
 
 import { ComprehensiveAstroData } from './astroDataService'
+import { devLog } from '@/lib/devLogger';
 
 interface CoachingContext {
   userId: string
@@ -61,7 +62,7 @@ export class AstroCoach {
 
   // Main coaching method
   async provideCoaching(context: CoachingContext): Promise<CoachingResponse> {
-    console.log('🧠 AstroCoach: Providing personalized coaching for user:', context.userId)
+    devLog.debug('🧠 AstroCoach: Providing personalized coaching for user:', context.userId)
     
     const personalityProfile = this.analyzePersonality(context.astroData)
     const currentTransits = this.analyzeCurrentTransits(context.astroData)

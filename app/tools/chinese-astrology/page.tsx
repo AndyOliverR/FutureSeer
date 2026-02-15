@@ -2,11 +2,11 @@
 
 /**
  * Chinese Astrology Page
- * Main page for Zi Wei Dou Shu (Purple Star Astrology)
- * Enhanced with comprehensive reports, runtime context, and profile integration
+ * Reads from pipeline only (useToolReport). No auto-call to tool API.
  */
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { 
@@ -50,12 +52,22 @@ import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 export default function ChineseAstrologyPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
-  const [chartData, setChartData] = useState<ZiWeiChartData | null>(null)
-  const [report, setReport] = useState<ZiWeiReport | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'introduction' | 'overview' | 'chart' | 'palaces' | 'pillars' | 'zodiac' | 'fortune' | 'transformations' | 'report' | 'ask-seer'>('introduction')
+  const { report: pipelineReport, loading: isLoading, error: profileError } = useToolReport('chineseAstrology')
+  const { chartData, report } = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return { chartData: null, report: null }
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return { chartData: null, report: null }
+    const data = (r.data ?? r) as Record<string, unknown> | undefined
+    if (!data) return { chartData: null, report: null }
+    const chart = (data.chartData ?? data.chart ?? r.chartData ?? r.chart) as ZiWeiChartData | null | undefined
+    const rep = (data.report ?? r.report) as ZiWeiReport | null | undefined
+    return {
+      chartData: chart && typeof chart === 'object' ? chart : null,
+      report: rep && typeof rep === 'object' ? rep : null
+    }
+  }, [pipelineReport])
   
   // Check for reduced motion preference
   const prefersReducedMotion = useMemo(() => {
@@ -95,110 +107,24 @@ export default function ChineseAstrologyPage() {
     }
   })
 
-  // Check if user has complete birth details
-  const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
+  const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
 
-  // Initialize birth data from user profile and auto-load chart
   useEffect(() => {
-    if (hasCompleteDetails && !chartData && !isLoading && userProfile) {
-      const gender = userProfile.gender === 'female' ? 'female' : 'male'
-      const newBirthData: BirthInfo = {
+    if (hasCompleteDetails && userProfile && !birthData.solarDate) {
+      setBirthData({
         solarDate: userProfile.birthDate!,
         solarTime: userProfile.birthTime!,
-        gender,
+        gender: userProfile.gender === 'female' ? 'female' : 'male',
         location: {
-          latitude: userProfile.latitude || 0,
-          longitude: userProfile.longitude || 0,
+          latitude: userProfile.latitude ?? 0,
+          longitude: userProfile.longitude ?? 0,
           timezone: 'UTC'
         }
-      }
-      setBirthData(newBirthData)
-      
-      // Auto-load chart and generate report
-      calculateChart(newBirthData, true)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasCompleteDetails])
-
-  // Calculate Chinese astrology chart
-  const calculateChart = async (data?: BirthInfo, autoLoad = false) => {
-    const birthInfo = data || birthData
-    
-    if (!birthInfo.solarDate || !birthInfo.solarTime) {
-      setError('Please provide both birth date and time')
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const result = chineseAstrologyService.calculateZiWeiChart(birthInfo, true)
-      setChartData(result)
-      
-      // Auto-generate report if auto-loading or if we have chart data
-      if (autoLoad) {
-        await generateReport(result)
-      }
-    } catch (err) {
-      setError('Failed to calculate Chinese astrology chart. Please check your birth data.')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // Generate comprehensive report
-  const generateReport = async (data?: ZiWeiChartData) => {
-    const chart = data || chartData
-    if (!chart) return
-
-    setIsGeneratingReport(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/tools/chinese-astrology/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user?.uid,
-          birthData: chart.birthInfo,
-          userProfile,
-        }),
       })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate report')
-      }
-
-      const result = await response.json()
-      if (result.success) {
-        setReport(result.data.report)
-        setChartData(result.data.chartData)
-      } else {
-        // Fallback to local generation - ensure displayName is set
-        const profileWithDisplayName = userProfile ? {
-          ...userProfile,
-          displayName: userProfile.displayName && userProfile.displayName !== userProfile.fullName 
-            ? userProfile.displayName 
-            : 'AnDY'
-        } : null
-        const localReport = generateZiWeiReport(chart, profileWithDisplayName)
-        setReport(localReport)
-      }
-    } catch (err) {
-      // Fallback to local generation - ensure displayName is set
-      const profileWithDisplayName = userProfile ? {
-        ...userProfile,
-        displayName: userProfile.displayName || (userProfile.displayName === userProfile.fullName ? 'AnDY' : 'AnDY')
-      } : null
-      const localReport = generateZiWeiReport(chart, profileWithDisplayName)
-      setReport(localReport)
-    } finally {
-      setIsGeneratingReport(false)
     }
-  }
+  }, [hasCompleteDetails, userProfile])
 
-  // Handle birth data changes
+  // Handle birth data changes (for display only; no API call)
   const handleBirthDataChange = (field: keyof BirthInfo, value: any) => {
     setBirthData(prev => ({
       ...prev,
@@ -233,6 +159,7 @@ export default function ChineseAstrologyPage() {
   }
 
   return (
+    <ToolReportGuard loading={isLoading} error={profileError ?? null} toolLabel="Chinese astrology">
     <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         <motion.div
@@ -241,7 +168,7 @@ export default function ChineseAstrologyPage() {
           transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
         >
           <div className="text-center mb-8 pt-4">
-            <h1 className="text-5xl font-serif font-semibold mb-6">
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
               <span className="text-yellow-400">🏮</span>{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">紫微斗數 (Zi Wei Dou Shu)</span>
             </h1>
@@ -310,20 +237,11 @@ export default function ChineseAstrologyPage() {
                 </div>
                 
                 <div className="flex gap-4">
-                  <Button
-                    onClick={() => calculateChart()}
-                    disabled={isLoading || !birthData.solarDate || !birthData.solarTime}
-                    variant="filled"
-                    className="font-semibold"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Calculating...
-                      </>
-                    ) : (
-                      'Calculate Chart'
-                    )}
+                  <Button asChild variant="filled" className="font-semibold">
+                    <Link href="/profile">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate your mystical profile
+                    </Link>
                   </Button>
                   
                   {!hasCompleteDetails && (
@@ -404,25 +322,26 @@ export default function ChineseAstrologyPage() {
               </Card>
 
               {/* Main Tabs */}
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-                <TabsList className="grid w-full grid-cols-10 bg-transparent p-0 gap-2">
+              <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+                <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                   {tabsConfig.map((tab) => (
                     <motion.div
                       key={tab.value}
                       whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                       transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                      className="relative"
+                      className="relative shrink-0"
                     >
                       <TabsTrigger 
                         value={tab.value} 
-                        className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 hover:text-slate-900 data-[state=inactive]:hover:bg-slate-200/50 transition-all flex items-center justify-center relative overflow-hidden"
+                        className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden border border-transparent data-[state=inactive]:border-slate-600/50"
                       >
                         {tab.label}
                         {activeTab === tab.value && (
                           <motion.div
                             layoutId="activeTab"
-                            className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
+                            className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-t-lg rounded-b-none -z-10"
                             transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
                           />
                         )}
@@ -441,7 +360,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="introduction" className="space-y-6 mt-6">
+                      <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                         <ToolIntroductionTab toolSlug="chinese-astrology" />
                       </TabsContent>
                     </motion.div>
@@ -455,7 +374,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="overview" className="space-y-6 mt-6">
+                      <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                         {report && chartData ? (
                           <ZiWeiOverview 
                             report={report} 
@@ -465,21 +384,13 @@ export default function ChineseAstrologyPage() {
                         ) : (
                           <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                             <CardContent className="p-12 text-center">
-                              <Sparkles className="w-12 h-12 text-purple-600 mx-auto mb-4 animate-pulse" />
-                              <p className="text-purple-900 mb-4 font-medium">Generating your comprehensive report...</p>
-                              <Button
-                                onClick={() => generateReport()}
-                                disabled={isGeneratingReport}
-                                variant="filled"
-                              >
-                                {isGeneratingReport ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Generating...
-                                  </>
-                                ) : (
-                                  'Generate Report'
-                                )}
+                              <Sparkles className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+                              <p className="text-purple-900 mb-4 font-medium">Generate your mystical profile to see your Zi Wei report.</p>
+                              <Button asChild variant="filled">
+                                <Link href="/profile">
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  Generate your mystical profile
+                                </Link>
                               </Button>
                             </CardContent>
                           </Card>
@@ -496,31 +407,23 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="report" className="space-y-6 mt-6">
+                      <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   {report ? (
                     <ZiWeiReportGenerator 
                       report={report} 
                       chartData={chartData}
-                      isLoading={isGeneratingReport}
+                      isLoading={isLoading}
                     />
                   ) : (
                     <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                       <CardContent className="p-12 text-center">
-                        <Sparkles className="w-12 h-12 text-purple-600 mx-auto mb-4 animate-pulse" />
-                        <p className="text-purple-900 mb-4 font-medium">Generating your comprehensive report...</p>
-                        <Button
-                          onClick={() => generateReport()}
-                          disabled={isGeneratingReport}
-                          variant="filled"
-                        >
-                          {isGeneratingReport ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Generating Report...
-                            </>
-                          ) : (
-                            'Generate Comprehensive Report'
-                          )}
+                        <Sparkles className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+                        <p className="text-purple-900 mb-4 font-medium">Generate your mystical profile to see your comprehensive Zi Wei report.</p>
+                        <Button asChild variant="filled">
+                          <Link href="/profile">
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate your mystical profile
+                          </Link>
                         </Button>
                       </CardContent>
                     </Card>
@@ -537,7 +440,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="chart" className="space-y-6 mt-6">
+                      <TabsContent value="chart" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                     <CardHeader>
                       <CardTitle className="text-purple-900 flex items-center gap-2">
@@ -576,7 +479,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="palaces" className="space-y-6 mt-6">
+                      <TabsContent value="palaces" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                     <CardContent className="p-6">
                       <PalaceAnalysis
@@ -599,7 +502,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="pillars" className="space-y-6 mt-6">
+                      <TabsContent value="pillars" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                     <CardContent className="p-6">
                       <FourPillarsChart
@@ -621,7 +524,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="zodiac" className="space-y-6 mt-6">
+                      <TabsContent value="zodiac" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                     <CardContent className="p-6">
                       <ChineseZodiacWheel
@@ -645,7 +548,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="fortune" className="space-y-6 mt-6">
+                      <TabsContent value="fortune" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   {chartData.runtimeContext ? (
                     <FortuneCycleTimeline 
                       runtimeContext={chartData.runtimeContext}
@@ -670,7 +573,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="transformations" className="space-y-6 mt-6">
+                      <TabsContent value="transformations" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                         <Card elevation={2} className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                           <CardContent className="p-6">
                             <FourTransformationsPanel chartData={chartData} />
@@ -688,7 +591,7 @@ export default function ChineseAstrologyPage() {
                       exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                       transition={motionConfig}
                     >
-                      <TabsContent value="ask-seer" className="space-y-6 mt-6">
+                      <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                         <ZiWeiSeerChatInterface
                           chartData={chartData}
                           report={report}
@@ -699,6 +602,7 @@ export default function ChineseAstrologyPage() {
                   )}
                 </AnimatePresence>
               </Tabs>
+              </div>
             </motion.div>
           )}
 
@@ -782,5 +686,6 @@ export default function ChineseAstrologyPage() {
         </motion.div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }

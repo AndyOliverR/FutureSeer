@@ -1,24 +1,76 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useMemo, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import { useSearchParams } from "next/navigation"
 import { useTools } from "@/hooks/useTools"
 import { useRouter } from 'next/navigation'
 import { ContextualHelp } from '@/components/ContextualHelp'
 import { navigateToTool } from '@/lib/utils/toolRouting'
 import { Header } from "@/components/header"
+import { ArrowLeft } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
+import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting"
 
-export default function ToolsPage() {
+// Fixed category order for consistent section ordering (matches dropdown)
+const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
+const VALID_CATEGORIES = new Set<string>(CATEGORY_ORDER);
+
+function ToolsPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get('category');
+  const isDrillDown = Boolean(categoryParam && VALID_CATEGORIES.has(categoryParam));
+  const { user, userProfile, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user && !hasRequiredProfileSetup(userProfile)) {
+      router.replace(PROFILE_SETUP_PATH);
+    }
+  }, [authLoading, user, userProfile, router]);
+
+  if (user && !hasRequiredProfileSetup(userProfile)) {
+    return null;
+  }
+
   const {
+    tools,
     filteredTools,
     categories,
     selectedCategory,
     setSelectedCategory,
     searchTerm,
     setSearchTerm,
+    getCategoryIcon,
   } = useTools()
+
+  // Category cards: categories that have at least one tool, with tool count
+  const categoryCardsData = useMemo(() => {
+    const countByCategory: Record<string, number> = {};
+    tools.forEach((t) => {
+      countByCategory[t.category] = (countByCategory[t.category] || 0) + 1;
+    });
+    return CATEGORY_ORDER.filter((cat) => (countByCategory[cat] || 0) > 0).map((category) => ({
+      category,
+      toolCount: countByCategory[category] ?? 0,
+    }));
+  }, [tools]);
+
+  // Drill-down: tools in the selected category, optionally filtered by search
+  const toolsInCategory = useMemo(() => {
+    if (!isDrillDown || !categoryParam) return [];
+    let list = tools.filter((t) => t.category === categoryParam);
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      list = list.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [tools, isDrillDown, categoryParam, searchTerm]);
 
   // Memoized tool exploration handler using routing utility
   const handleToolExplore = useCallback((toolId: string) => {
@@ -60,77 +112,93 @@ export default function ToolsPage() {
             </motion.div>
           </motion.div>
 
-          {/* Enhanced Search and Filter Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-3xl p-4 sm:p-6 md:p-8 mb-8 sm:mb-12"
-          >
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1 relative">
-                <motion.input
-                  whileFocus={{ scale: 1.02 }}
+          {/* Drill-down: back link and optional search */}
+          {isDrillDown && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mb-6 sm:mb-8"
+            >
+              <Link
+                href="/tools"
+                className="inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 m3-body-medium m3-transition-standard"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                All categories
+              </Link>
+            </motion.div>
+          )}
+
+          {isDrillDown && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.05 }}
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-4 sm:p-6 mb-8"
+            >
+              <div className="flex items-center bg-[var(--m3-surface-container)] border border-[var(--m3-outline-variant)] rounded-2xl overflow-hidden focus-within:border-[var(--m3-primary)]/50 m3-transition-standard">
+                <span className="pl-4 flex-shrink-0 text-amber-400 text-xl" aria-hidden>🔍</span>
+                <input
                   type="text"
-                  placeholder="Search mystical tools..."
+                  placeholder="Search within this category..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-[var(--m3-surface-container)] border border-[var(--m3-outline-variant)] rounded-2xl p-4 pl-14 text-[var(--m3-on-surface)] placeholder-[var(--m3-on-surface-variant)]/60 focus:outline-none focus:border-[var(--m3-primary)]/50 focus:ring-2 focus:ring-[var(--m3-primary)]/20 m3-transition-standard m3-input-focus backdrop-blur-sm"
+                  className="flex-1 min-w-0 bg-transparent border-0 py-4 pr-4 pl-2 text-[var(--m3-on-surface)] placeholder-[var(--m3-on-surface-variant)]/60 focus:outline-none focus:ring-0 m3-transition-standard"
                 />
-                <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-amber-400 text-xl">🔍</span>
               </div>
-              <motion.select
-                whileFocus={{ scale: 1.02 }}
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-[var(--m3-surface-container)] border border-[var(--m3-outline-variant)] rounded-2xl p-4 text-[var(--m3-on-surface)] focus:outline-none focus:border-[var(--m3-primary)]/50 focus:ring-2 focus:ring-[var(--m3-primary)]/20 m3-transition-standard m3-input-focus backdrop-blur-sm min-w-[200px]"
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category} className="bg-[var(--m3-surface-container)] text-[var(--m3-on-surface)]">
-                    {category === "all" ? "All Categories" : category}
-                  </option>
-                ))}
-              </motion.select>
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
 
-          {/* Enhanced Tools Display */}
-          <AnimatePresence>
-            {filteredTools.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-center py-20"
-              >
+          {/* Category-cards mode: grid of category cards only */}
+          {!isDrillDown && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 mb-12"
+            >
+              {categoryCardsData.map(({ category, toolCount }, index) => (
+                <CategoryCard
+                  key={category}
+                  category={category}
+                  icon={getCategoryIcon(category)}
+                  toolCount={toolCount}
+                  index={index}
+                />
+              ))}
+            </motion.div>
+          )}
+
+          {/* Drill-down: tool grid for selected category */}
+          {isDrillDown && (
+            <AnimatePresence>
+              {toolsInCategory.length === 0 ? (
                 <motion.div
-                  animate={{ 
-                    scale: [1, 1.1],
-                    rotate: [0, 10]
-                  }}
-                  transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
-                  className="text-8xl mb-8"
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-center py-20"
                 >
-                  🔮
+                  <p className="text-amber-400 m3-title-large mb-3">No tools found</p>
+                  <p className="text-white/80 m3-body-medium">
+                    {searchTerm.trim() ? "Try adjusting your search." : "No tools in this category."}
+                  </p>
                 </motion.div>
-                <p className="text-amber-400 m3-title-large mb-3">No mystical tools found</p>
-                <p className="text-white/80 m3-body-medium">Try adjusting your search or filter criteria</p>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="space-y-12 sm:space-y-16"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-                  {filteredTools.map((tool, index) => (
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8"
+                >
+                  {toolsInCategory.map((tool, index) => (
                     <ToolCard key={tool.slug} tool={tool} index={index} onExplore={handleToolExplore} />
                   ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          )}
 
           {/* Enhanced Quick Access Section */}
           <motion.div
@@ -178,6 +246,49 @@ export default function ToolsPage() {
       </div>
     </div>
   )
+}
+
+// Category card: links to drill-down view for that category
+function CategoryCard({
+  category,
+  icon,
+  toolCount,
+  index,
+}: {
+  category: string;
+  icon: string;
+  toolCount: number;
+  index: number;
+}) {
+  const href = `/tools?category=${encodeURIComponent(category)}`;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, delay: index * 0.05 }}
+      whileHover={{ scale: 1.03, y: -6 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      <Link href={href} className="block h-full">
+        <div className="group relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl p-6 sm:p-8 h-full min-h-[200px] flex flex-col items-center justify-center text-center cursor-pointer">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[var(--m3-primary-container)] to-[var(--m3-primary-container)] opacity-0 group-hover:opacity-100 m3-transition-standard blur-xl pointer-events-none" />
+          <div className="relative z-10">
+            <div className="text-5xl mb-4 m3-transition-standard group-hover:scale-110" aria-hidden>
+              {icon}
+            </div>
+            <h3 className="text-amber-400 font-bold m3-title-large mb-2">{category}</h3>
+            <p className="text-white/70 m3-body-small mb-4">
+              {toolCount} {toolCount === 1 ? "tool" : "tools"}
+            </p>
+            <span className="text-amber-400 m3-label-medium font-semibold inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+              Explore more
+              <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+            </span>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
 }
 
 // Enhanced Tool Card Component
@@ -269,5 +380,13 @@ function ToolCard({ tool, index, onExplore }: { tool: any; index: number; onExpl
         </div>
       </div>
     </motion.div>
+  )
+}
+
+export default function ToolsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-950"><div className="text-amber-400">Loading...</div></div>}>
+      <ToolsPageContent />
+    </Suspense>
   )
 }

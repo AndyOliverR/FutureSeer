@@ -1,5 +1,6 @@
 // Service to extract specific tool data from stored comprehensive FutureSeer profile
 import { ComprehensiveAstroData } from './astroDataService';
+import { devLog } from '@/lib/devLogger';
 import { getComprehensiveAstroData } from './astroDataService';
 import { doc, getDoc, collection, query, orderBy, getDocs, limit } from 'firebase/firestore';
 import { getFirebaseDB } from './firebase';
@@ -171,7 +172,7 @@ export async function extractToolData(
         throw new Error(`Tool '${toolName}' not found in comprehensive profile`);
     }
   } catch (error: any) {
-    console.error(`Error extracting ${toolName} data:`, error);
+    devLog.error(`Error extracting ${toolName} data:`, error, 'toolDataExtractor');
     throw new Error(`Tool '${toolName}' not found in comprehensive profile`);
   }
 }
@@ -185,7 +186,7 @@ export async function extractToolData(
 
       if (comprehensiveDocSnap.exists()) {
         const comprehensiveData = comprehensiveDocSnap.data();
-        console.log('Found comprehensive AstroApp data:', {
+        devLog.debug('Found comprehensive AstroApp data:', {
           planets: comprehensiveData.planets?.length || 0,
           charts: Object.keys(comprehensiveData.vedicCharts || {}).length,
           source: comprehensiveData.metadata?.source
@@ -242,7 +243,7 @@ export async function extractToolData(
 
       if (vedicDocSnap.exists()) {
         const vedicData = vedicDocSnap.data();
-        console.log('Found Vedic data in vedic-readings:', vedicData);
+        devLog.debug('Found Vedic data in vedic-readings:', vedicData);
 
         return {
           planetary_positions: vedicData.planets?.map((planet: any) => ({
@@ -289,7 +290,7 @@ export async function extractToolData(
       }
     
       // If no stored data exists, return empty data structure instead of making API calls
-      console.log('No Vedic data found in storage - returning empty structure');
+      devLog.debug('No Vedic data found in storage - returning empty structure');
       
       return {
         planetary_positions: [],
@@ -308,7 +309,7 @@ export async function extractToolData(
       };
     
     } catch (error) {
-      console.error('Error extracting Vedic Astrology data:', error);
+      devLog.error('Error extracting Vedic Astrology data:', error, 'toolDataExtractor');
       throw new Error('Vedic Astrology data not found in comprehensive profile');
     }
   }
@@ -338,7 +339,7 @@ async function extractWesternAstrologyDataFromFirebase(db: any, userId: string):
     
     throw new Error('No Western Astrology data found for user');
   } catch (error) {
-    console.error('Error extracting Western Astrology data:', error);
+    devLog.error('Error extracting Western Astrology data:', error, 'toolDataExtractor');
     throw new Error('Western Astrology data not found in comprehensive profile');
   }
 }
@@ -368,7 +369,7 @@ async function extractNumerologyDataFromFirebase(db: any, userId: string): Promi
     
     throw new Error('No Numerology data found for user');
   } catch (error) {
-    console.error('Error extracting Numerology data:', error);
+    devLog.error('Error extracting Numerology data:', error, 'toolDataExtractor');
     throw new Error('Numerology data not found in comprehensive profile');
   }
 }
@@ -385,7 +386,7 @@ async function extractAngelNumbersDataFromFirebase(db: any, userId: string): Pro
     
     throw new Error('No Angel Numbers data found for user');
   } catch (error) {
-    console.error('Error extracting Angel Numbers data:', error);
+    devLog.error('Error extracting Angel Numbers data:', error, 'toolDataExtractor');
     throw new Error('Angel Numbers data not found in comprehensive profile');
   }
 }
@@ -419,7 +420,7 @@ async function extractDreamSymbolsDataFromFirebase(db: any, userId: string): Pro
       const dreamSymbolsData = profileData.dreamSymbols;
       
       if (dreamSymbolsData) {
-        console.log('Found Dream Symbols data in comprehensiveMysticalProfiles');
+        devLog.debug('Found Dream Symbols data in comprehensiveMysticalProfiles');
         return {
           symbols: dreamSymbolsData.symbols || [],
           overallTheme: dreamSymbolsData.overallTheme || '',
@@ -449,7 +450,7 @@ async function extractDreamSymbolsDataFromFirebase(db: any, userId: string): Pro
       const dreamSymbolsData = profileData.dreamSymbols;
       
       if (dreamSymbolsData) {
-        console.log('Found Dream Symbols data in comprehensiveProfiles');
+        devLog.debug('Found Dream Symbols data in comprehensiveProfiles');
         return {
           symbols: dreamSymbolsData.symbols || [],
           overallTheme: dreamSymbolsData.overallTheme || '',
@@ -472,7 +473,7 @@ async function extractDreamSymbolsDataFromFirebase(db: any, userId: string): Pro
     
     throw new Error('No Dream Symbols data found for user');
   } catch (error) {
-    console.error('Error extracting Dream Symbols data:', error);
+    devLog.error('Error extracting Dream Symbols data:', error, 'toolDataExtractor');
     throw new Error('Dream Symbols data not found in comprehensive profile');
   }
 }
@@ -512,7 +513,7 @@ async function extractAkashicRecordsDataFromFirebase(db: any, userId: string): P
     }
     return null
   } catch (error) {
-    console.error('Error extracting Akashic Records data:', error)
+    devLog.error('Error extracting Akashic Records data:', error, 'toolDataExtractor')
     return null
   }
 }

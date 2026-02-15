@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ interface CommunityMember {
   level: 'Novice' | 'Apprentice' | 'Adept' | 'Master' | 'Grandmaster';
   streak: number;
   reputation: 'Respected' | 'Trusted' | 'Legendary' | 'Mystical';
+  hideStats?: boolean;
 }
 
 export interface DiscussionThread {
@@ -130,7 +132,7 @@ export default function CommunityAttributionPage() {
             }),
           });
         } catch (error) {
-          console.error('Error auto-joining community:', error);
+          devLog.error('Error auto-joining community:', error, 'page');
           // Continue even if auto-join fails
         }
       }
@@ -155,6 +157,7 @@ export default function CommunityAttributionPage() {
             level: m.level || 'Novice',
             streak: m.streak || 0,
             reputation: m.reputation || 'Respected',
+            hideStats: m.hideStats === true,
           })));
         }
       }
@@ -264,7 +267,7 @@ export default function CommunityAttributionPage() {
             });
           }
         } catch (error) {
-          console.error('Error loading user attribution:', error);
+          devLog.error('Error loading user attribution:', error, 'page');
           // Fallback to empty data on error
           setAttribution({
             contributions: [],
@@ -285,7 +288,7 @@ export default function CommunityAttributionPage() {
 
       setLoading(false);
     } catch (error) {
-      console.error('Error loading community data:', error);
+      devLog.error('Error loading community data:', error, 'page');
       toast({
         title: "Error",
         description: "Failed to load community data",
@@ -340,7 +343,7 @@ export default function CommunityAttributionPage() {
       setConnectionRequest({ topic: '', message: '' });
       setSelectedMember(null);
     } catch (error: any) {
-      console.error('Error sending connection request:', error);
+      devLog.error('Error sending connection request:', error, 'page');
       toast({
         title: "Error",
         description: error.message || "Failed to send connection request",
@@ -424,7 +427,7 @@ export default function CommunityAttributionPage() {
         }
       }
     } catch (error) {
-      console.error('Error voting:', error);
+      devLog.error('Error voting:', error, 'page');
       toast({
         title: "Error",
         description: "Failed to record vote",
@@ -474,7 +477,7 @@ export default function CommunityAttributionPage() {
       setShowDiscussionForm(false);
       await loadCommunityData();
     } catch (error: any) {
-      console.error('Error creating discussion:', error);
+      devLog.error('Error creating discussion:', error, 'page');
       toast({
         title: "Error",
         description: error.message || "Failed to create discussion",
@@ -682,23 +685,27 @@ export default function CommunityAttributionPage() {
                             {member.flair}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-sm mb-1">
-                          <span className="text-slate-700 font-medium">Karma: <span className="text-amber-700">{member.karma.toLocaleString()}</span></span>
-                          <span className="text-slate-700">Level: <span className="font-semibold text-slate-800">{member.level}</span></span>
-                          <span className="text-slate-700">Streak: <span className="text-orange-700 font-semibold">{member.streak}</span> days</span>
-                        </div>
-                        <div className="flex gap-2">
-                          {member.badges.slice(0, 2).map((badge, index) => (
-                            <Badge key={index} variant="outline" className="text-xs bg-purple-100/80 border-purple-400/40 text-purple-800">
-                              {badge}
-                            </Badge>
-                          ))}
-                          {member.badges.length > 2 && (
-                            <Badge variant="outline" className="text-xs bg-blue-100/80 border-blue-400/40 text-blue-800">
-                              +{member.badges.length - 2} more
-                            </Badge>
-                          )}
-                        </div>
+                        {!member.hideStats && (
+                          <>
+                            <div className="flex items-center gap-4 text-sm mb-1">
+                              <span className="text-slate-700 font-medium">Karma: <span className="text-amber-700">{member.karma.toLocaleString()}</span></span>
+                              <span className="text-slate-700">Level: <span className="font-semibold text-slate-800">{member.level}</span></span>
+                              <span className="text-slate-700">Streak: <span className="text-orange-700 font-semibold">{member.streak}</span> days</span>
+                            </div>
+                            <div className="flex gap-2">
+                              {member.badges.slice(0, 2).map((badge, index) => (
+                                <Badge key={index} variant="outline" className="text-xs bg-purple-100/80 border-purple-400/40 text-purple-800">
+                                  {badge}
+                                </Badge>
+                              ))}
+                              {member.badges.length > 2 && (
+                                <Badge variant="outline" className="text-xs bg-blue-100/80 border-blue-400/40 text-blue-800">
+                                  +{member.badges.length - 2} more
+                                </Badge>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                     <Button

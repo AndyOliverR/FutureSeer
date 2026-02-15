@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb } from '@/lib/firebase-admin';
 
@@ -73,7 +74,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, message: 'Response submitted' });
   } catch (err) {
-    console.error('Support tickets PATCH error:', err);
+    devLog.error('Support tickets PATCH error:', err, 'route');
     return NextResponse.json({ error: 'Failed to update ticket' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { ProfessionalAstroEngine } from './professionalAstroEngine'
+import { devLog } from '@/lib/devLogger';
 import { ProfessionalChartGenerator } from './professionalChartGenerator'
 
 export interface HoraryChartData {
@@ -59,19 +60,19 @@ export class HybridHoraryEngine {
     try {
       // Try AstroApp first for maximum accuracy
       if (this.astroAppApiKey && this.shouldUseAstroApp(request)) {
-        console.log('🔄 Using AstroApp API for maximum accuracy...')
+        devLog.debug('🔄 Using AstroApp API for maximum accuracy...')
         return await this.generateWithAstroApp(request)
       }
     } catch (error) {
-      console.warn('⚠️ AstroApp failed, falling back to custom engine:', error)
+      devLog.warn('⚠️ AstroApp failed, falling back to custom engine:', error, 'hybridHoraryEngine')
     }
 
     // Fallback to our custom engine
-    console.log('🔄 Using FutureSeer Custom Engine...')
+    devLog.debug('🔄 Using FutureSeer Custom Engine...')
     try {
       return await this.generateWithCustomEngine(request)
     } catch (error) {
-      console.error('❌ Both engines failed:', error)
+      devLog.error('❌ Both engines failed:', error, 'hybridHoraryEngine')
       throw new Error(`All engines failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -142,17 +143,17 @@ export class HybridHoraryEngine {
    */
   private async generateWithCustomEngine(request: HoraryRequest): Promise<HoraryChartData> {
     try {
-      console.log('🔧 Custom Engine: Starting horary calculation...')
-      console.log('📅 Date:', request.questionDate)
-      console.log('⏰ Time:', request.questionTime)
-      console.log('📍 Location:', request.latitude, request.longitude)
+      devLog.debug('🔧 Custom Engine: Starting horary calculation...')
+      devLog.debug('📅 Date:', request.questionDate)
+      devLog.debug('⏰ Time:', request.questionTime)
+      devLog.debug('Location', { latitude: request.latitude, longitude: request.longitude }, 'hybridHoraryEngine')
       
       // Check if the method exists
       if (typeof this.customEngine.calculateHoraryChart !== 'function') {
         throw new Error('calculateHoraryChart method not found on customEngine')
       }
       
-      console.log('🔧 Custom Engine: About to call calculateHoraryChart...')
+      devLog.debug('🔧 Custom Engine: About to call calculateHoraryChart...')
       
       const chartData = await this.customEngine.calculateHoraryChart(
         request.questionDate,
@@ -162,10 +163,10 @@ export class HybridHoraryEngine {
         request.timezone || 'UTC'
       )
 
-      console.log('✅ Custom Engine: Chart data calculated successfully')
-      console.log('📊 Planets count:', chartData.planets?.length || 0)
-      console.log('🏠 Houses count:', chartData.houses?.length || 0)
-      console.log('🔗 Aspects count:', chartData.aspects?.length || 0)
+      devLog.debug('✅ Custom Engine: Chart data calculated successfully')
+      devLog.debug('📊 Planets count:', chartData.planets?.length || 0)
+      devLog.debug('🏠 Houses count:', chartData.houses?.length || 0)
+      devLog.debug('🔗 Aspects count:', chartData.aspects?.length || 0)
 
       const chartImage = this.chartGenerator.generateProfessionalHoraryChart(
         chartData.planets,
@@ -180,7 +181,7 @@ export class HybridHoraryEngine {
         }
       )
 
-      console.log('🎨 Custom Engine: Chart image generated successfully')
+      devLog.debug('🎨 Custom Engine: Chart image generated successfully')
 
       return {
         chartImage,
@@ -194,7 +195,7 @@ export class HybridHoraryEngine {
         }
       }
     } catch (error) {
-      console.error('❌ Custom Engine Error:', error)
+      devLog.error('❌ Custom Engine Error:', error, 'hybridHoraryEngine')
       throw new Error(`Custom engine failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }

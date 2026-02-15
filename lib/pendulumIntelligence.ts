@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 
 export interface PendulumData {
@@ -277,7 +278,7 @@ class PendulumIntelligence {
 
   async saveAnalysis(userId: string, analysis: PendulumAnalysis): Promise<void> {
     // In a real implementation, this would save to a database
-    console.log('Saving Pendulum analysis for user:', userId)
+    devLog.debug('Saving Pendulum analysis for user:', userId)
   }
 
   async getAnalysisHistory(userId: string): Promise<PendulumAnalysis[]> {

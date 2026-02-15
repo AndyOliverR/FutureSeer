@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { FutureSeerQualityAssurance, QualityMetrics } from '@/lib/futureSeerQualityAssurance'
 
 interface QualityDashboardProps {
@@ -33,7 +34,7 @@ export default function QualityDashboard({
       setQualityMetrics(metrics)
       setLastChecked(new Date())
     } catch (error) {
-      console.error('Quality check failed:', error)
+      devLog.error('Quality check failed:', error, 'QualityDashboard')
     } finally {
       setIsLoading(false)
     }

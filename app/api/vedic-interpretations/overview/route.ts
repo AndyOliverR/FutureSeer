@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { VedicInterpretationEnhancer } from '@/lib/vedicInterpretationEnhancer';
 
 export async function POST(request: NextRequest) {
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ interpretation });
   } catch (error) {
-    console.error('Overview interpretation error:', error);
+    devLog.error('Overview interpretation error:', error, 'route');
     return NextResponse.json(
       { error: 'Failed to generate interpretation' },
       { status: 500 }

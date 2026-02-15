@@ -1,4 +1,5 @@
 import { getChart } from './astronomia-vedic'
+import { devLog } from '@/lib/devLogger';
 
 export interface TransitData {
   favorable: TransitEffect[]
@@ -36,7 +37,7 @@ export function calculateTransitData(
   }
 ): TransitData {
   try {
-    console.log('🔮 Calculating transit data for:', birthData.birthDate, birthData.birthTime, birthData.birthPlace);
+    devLog.debug('Calculating transit data', { birthDate: birthData.birthDate, birthTime: birthData.birthTime, birthPlace: birthData.birthPlace }, 'transitCalculatorServer');
     
     // Get current planetary positions
     const currentDate = new Date()
@@ -52,16 +53,16 @@ export function calculateTransitData(
       houseSystem: 'placidus'
     })
 
-    console.log('📊 Current chart generated:', !!currentChart);
-    console.log('📊 Current chart planets:', currentChart?.planets ? Object.keys(currentChart.planets).length : 0);
-    console.log('📊 Current chart ascendant:', !!currentChart?.ascendant);
-    console.log('📊 Natal chart available:', !!natalChart);
-    console.log('📊 Natal chart ascendant:', !!natalChart?.ascendant);
-    console.log('📊 Natal chart ascendant lonSidereal:', natalChart?.ascendant?.lonSidereal);
-    console.log('📊 Natal chart planets:', natalChart?.planets ? Object.keys(natalChart.planets).length : 0);
+    devLog.debug('📊 Current chart generated:', !!currentChart);
+    devLog.debug('📊 Current chart planets:', currentChart?.planets ? Object.keys(currentChart.planets).length : 0);
+    devLog.debug('📊 Current chart ascendant:', !!currentChart?.ascendant);
+    devLog.debug('📊 Natal chart available:', !!natalChart);
+    devLog.debug('📊 Natal chart ascendant:', !!natalChart?.ascendant);
+    devLog.debug('📊 Natal chart ascendant lonSidereal:', natalChart?.ascendant?.lonSidereal);
+    devLog.debug('📊 Natal chart planets:', natalChart?.planets ? Object.keys(natalChart.planets).length : 0);
 
     if (!currentChart || !natalChart) {
-      console.log('⚠️ Missing chart data, returning empty transits');
+      devLog.debug('⚠️ Missing chart data, returning empty transits');
       return {
         favorable: [],
         challenging: [],
@@ -70,9 +71,9 @@ export function calculateTransitData(
     }
 
     if (!currentChart.planets || !natalChart.ascendant) {
-      console.log('⚠️ Missing required chart data (planets or ascendant), returning empty transits');
-      console.log('  Current chart planets:', !!currentChart.planets);
-      console.log('  Natal chart ascendant:', !!natalChart.ascendant);
+      devLog.debug('⚠️ Missing required chart data (planets or ascendant), returning empty transits');
+      devLog.debug('  Current chart planets:', !!currentChart.planets);
+      devLog.debug('  Natal chart ascendant:', !!natalChart.ascendant);
       return {
         favorable: [],
         challenging: [],
@@ -85,7 +86,7 @@ export function calculateTransitData(
     const challengingTransits = calculateChallengingTransits(currentChart, natalChart)
     const upcomingTransits = calculateUpcomingTransits(natalChart, birthData)
     
-    console.log('📊 Transit calculation details:', {
+    devLog.debug('📊 Transit calculation details:', {
       favorableCount: favorableTransits.length,
       challengingCount: challengingTransits.length,
       upcomingCount: upcomingTransits.length,
@@ -93,10 +94,10 @@ export function calculateTransitData(
       sampleChallenging: challengingTransits[0]
     })
 
-    console.log('✅ Transit calculation results:');
-    console.log('  Favorable:', favorableTransits.length);
-    console.log('  Challenging:', challengingTransits.length);
-    console.log('  Upcoming:', upcomingTransits.length);
+    devLog.debug('✅ Transit calculation results:');
+    devLog.debug('  Favorable:', favorableTransits.length);
+    devLog.debug('  Challenging:', challengingTransits.length);
+    devLog.debug('  Upcoming:', upcomingTransits.length);
 
     return {
       favorable: favorableTransits,
@@ -104,7 +105,7 @@ export function calculateTransitData(
       upcoming: upcomingTransits
     }
   } catch (error) {
-    console.error('Error calculating transit data:', error)
+    devLog.error('Error calculating transit data:', error, 'transitCalculatorServer')
     return {
       favorable: [],
       challenging: [],
@@ -311,7 +312,7 @@ function calculateUpcomingTransits(
     }
 
   } catch (error) {
-    console.error('Error calculating upcoming transits:', error)
+    devLog.error('Error calculating upcoming transits:', error, 'transitCalculatorServer')
   }
 
   return upcoming

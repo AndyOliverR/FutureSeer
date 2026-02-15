@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 
 interface QualityMetrics {
   overallScore: number
@@ -54,7 +55,7 @@ export default function QualityMonitor({
       setQualityMetrics(mockMetrics)
       setLastUpdate(new Date())
     } catch (error) {
-      console.error('Failed to fetch quality metrics:', error)
+      devLog.error('Failed to fetch quality metrics:', error, 'QualityMonitor')
     }
   }
 

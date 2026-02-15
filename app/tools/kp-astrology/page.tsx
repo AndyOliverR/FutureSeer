@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+import { devLog } from '@/lib/devLogger';
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   Clock, 
@@ -22,6 +24,7 @@ import {
   Brain,
   Shield
 } from "lucide-react"
+import { Button } from '@/components/ui/button'
 import { AffiliateLink } from '@/components/AffiliateLink'
 import { getGemstoneAffiliateUrl } from '@/lib/affiliateConfig'
 import NorthIndianVedicChart from "@/components/NorthIndianVedicChart"
@@ -30,7 +33,45 @@ import { KPAstrologyCoachInterface } from "@/components/KPAstrologyCoachInterfac
 import KPSeerChatInterface from "@/components/KPSeerChatInterface"
 import { KPAnalysis as KPIntelligenceAnalysis } from "@/lib/kpAstrologyIntelligence"
 import { useAuth } from "@/hooks/use-auth"
+import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
+
+const CHART_CANVAS_W = 450
+const CHART_CANVAS_H = 333
+
+function ResponsiveChartWrap({ children }: { children: React.ReactNode }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(CHART_CANVAS_W)
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? CHART_CANVAS_W
+      setWidth(Math.min(w, CHART_CANVAS_W))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const scale = width / CHART_CANVAS_W
+  return (
+    <div
+      ref={wrapRef}
+      className="w-full max-w-[450px] mx-auto aspect-[450/333] min-h-0 relative overflow-hidden bg-white p-0 leading-none text-[0px]"
+    >
+      <div
+        className="absolute left-0 top-0 origin-top-left bg-white"
+        style={{
+          width: CHART_CANVAS_W,
+          height: CHART_CANVAS_H,
+          transform: `scale(${scale})`,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
 
 // Helper functions for generating interpretations
 const getPlanetInterpretation = (planet: string, sign: string, house: number, nakshatra: string, sublord: string): string => {
@@ -278,27 +319,33 @@ interface KPAnalysis {
 
 export default function KPAstrologyPage() {
   const { user, userProfile } = useAuth()
+  const { report: pipelineReport, loading: isLoadingPipeline, error: profileError } = useToolReport('kp')
+  const analysisFromPipeline = useMemo((): KPAnalysis | null => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    const data = (r.data ?? r) as KPAnalysis | undefined
+    if (!data || typeof data !== 'object') return null
+    if (data.basicInfo ?? data.rawAstroAppData ?? data.interpretations) return data
+    return null
+  }, [pipelineReport])
   const [analysis, setAnalysis] = useState<KPAnalysis | null>(null)
+  useEffect(() => {
+    if (analysisFromPipeline) setAnalysis(analysisFromPipeline)
+  }, [analysisFromPipeline])
+  const [currentTransits, setCurrentTransits] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const isLoadingAny = isLoading || isLoadingPipeline
   
   // Debug: Log analysis state changes
   useEffect(() => {
-    console.log('🔍 Analysis state changed:', {
+    if (!analysis) return
+    devLog.debug('🔍 Analysis state changed:', {
       hasAnalysis: !!analysis,
       hasBasicInfo: !!analysis?.basicInfo,
-      basicInfo: analysis?.basicInfo ? {
-        name: analysis.basicInfo.name,
-        dateOfBirth: analysis.basicInfo.dateOfBirth,
-        timeOfBirth: analysis.basicInfo.timeOfBirth,
-        placeOfBirth: analysis.basicInfo.placeOfBirth
-      } : null,
-      hasRawData: !!analysis?.rawAstroAppData,
-      hasInterpretations: !!analysis?.interpretations,
-      hasAscendant: !!analysis?.rawAstroAppData?.ascendant,
       analysisKeys: analysis ? Object.keys(analysis) : []
     })
   }, [analysis])
-  const [currentTransits, setCurrentTransits] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [isLoadingTransits, setIsLoadingTransits] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'chart_images' | 'planetary_positions' | 'sublord_analysis' | 'dasha_forecast' | 'remedies' | 'current_transits' | 'kp_astrology_expert'>('chart_images')
@@ -384,7 +431,7 @@ export default function KPAstrologyPage() {
 
     setIsLoadingTransits(true)
     try {
-      console.log('🔄 Fetching current transits for KP astrology...')
+      devLog.debug('🔄 Fetching current transits for KP astrology...')
       const response = await fetch('/api/tools/kp-astrology/current-transits', {
         method: 'POST',
         headers: {
@@ -403,7 +450,7 @@ export default function KPAstrologyPage() {
 
       if (response.ok) {
         const result = await response.json()
-        console.log('📡 Transits API response:', {
+        devLog.debug('📡 Transits API response:', {
           success: result.success,
           hasData: !!result.data,
           activeTransitsCount: result.data?.activeTransits?.length || 0,
@@ -425,21 +472,21 @@ export default function KPAstrologyPage() {
             },
             { maxAge: 2 * 60 * 60 * 1000 } // 2 hours
           )
-          console.log('✅ Fresh current transits loaded and cached:', {
+          devLog.debug('✅ Fresh current transits loaded and cached:', {
             activeTransits: result.data?.activeTransits?.length || 0,
             upcomingTransits: result.data?.upcomingTransits?.length || 0
           })
         } else {
-          console.warn('⚠️ Failed to fetch transits:', result.error)
+          devLog.warn('⚠️ Failed to fetch transits:', result.error, 'page')
           setCurrentTransits(null) // Clear transits on error
         }
       } else {
         const errorData = await response.json().catch(() => ({}))
-        console.warn('⚠️ Transits API error:', response.status, errorData.error || 'Unknown error')
+        devLog.warn('Transits API error', { status: response.status, error: errorData.error || 'Unknown error' }, 'kp-astrology')
         setCurrentTransits(null) // Clear transits on error
       }
     } catch (err) {
-      console.error('❌ Error loading current transits:', err)
+      devLog.error('❌ Error loading current transits:', err, 'page')
     } finally {
       setIsLoadingTransits(false)
     }
@@ -452,7 +499,7 @@ export default function KPAstrologyPage() {
     const cachedTransits = getCurrentChart(userProfile.uid || 'default', 'kp-astrology')
     if (cachedTransits) {
       setCurrentTransits(cachedTransits)
-      console.log('✅ Loaded current transits from cache')
+      devLog.debug('✅ Loaded current transits from cache')
       return
     }
 
@@ -470,7 +517,7 @@ export default function KPAstrologyPage() {
     setError(null)
 
     try {
-      console.log('🔄 Generating KP Astrology report...')
+      devLog.debug('🔄 Generating KP Astrology report...')
       
       const formattedBirthData = {
         birthDate: userProfile.birthDate,
@@ -480,7 +527,7 @@ export default function KPAstrologyPage() {
       }
       
       // Generate KP astrology report using the new API endpoint
-      console.log('📡 Calling KP astrology API endpoint...', {
+      devLog.debug('📡 Calling KP astrology API endpoint...', {
         userId: userProfile.uid,
         birthData: formattedBirthData
       })
@@ -494,7 +541,7 @@ export default function KPAstrologyPage() {
         })
       })
 
-      console.log('📡 API Response status:', response.status, response.statusText)
+      devLog.debug('📡 API Response status:', response.status, response.statusText)
 
       if (!response.ok) {
         let errorData
@@ -503,29 +550,29 @@ export default function KPAstrologyPage() {
         } catch (e) {
           errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
         }
-        console.error('❌ API Error Response:', errorData)
+        devLog.error('❌ API Error Response:', errorData, 'page')
         throw new Error(errorData.error || `Failed to generate KP astrology report (${response.status})`)
       }
 
       const result = await response.json()
-      console.log('📡 API Response received:', {
+      devLog.debug('📡 API Response received:', {
         success: result.success,
         hasData: !!result.data,
         dataKeys: result.data ? Object.keys(result.data) : []
       })
       
       if (!result.success) {
-        console.error('❌ API returned error:', result.error)
+        devLog.error('❌ API returned error:', result.error, 'page')
         throw new Error(result.error || 'Failed to generate KP astrology report')
       }
 
       if (!result.data) {
-        console.error('❌ API response missing data field')
+        devLog.error('❌ API response missing data field', undefined, 'page')
         throw new Error('API response missing data field')
       }
 
       const kpData = result.data // This is KPAnalysis from intelligence service
-      console.log('✅ KP Astrology data received:', {
+      devLog.debug('✅ KP Astrology data received:', {
         hasAscendant: !!kpData.ascendant,
         ascendantSign: kpData.ascendant?.sign,
         hasPlanets: !!kpData.planets && kpData.planets.length > 0,
@@ -628,7 +675,7 @@ export default function KPAstrologyPage() {
         }
       }
 
-      console.log('✅ KP analysis data transformed successfully:', {
+      devLog.debug('✅ KP analysis data transformed successfully:', {
         hasBasicInfo: !!analysisData.basicInfo,
         hasRawData: !!analysisData.rawAstroAppData,
         hasInterpretations: !!analysisData.interpretations,
@@ -664,139 +711,36 @@ export default function KPAstrologyPage() {
           birthDataForStorage,
           { analysisData } // Also store in metadata for easier retrieval
         ).catch(err => {
-          console.warn('⚠️ Failed to store chart:', err)
+          devLog.warn('⚠️ Failed to store chart:', err, 'page')
         })
         
-        console.log('✅ KP analysis stored in cache with birth data validation')
+        devLog.debug('✅ KP analysis stored in cache with birth data validation')
       } catch (cacheError) {
-        console.warn('⚠️ Failed to cache KP analysis:', cacheError)
+        devLog.warn('⚠️ Failed to cache KP analysis:', cacheError, 'page')
         // Don't throw - caching failure shouldn't prevent analysis display
       }
       
       // Also load current transits (don't wait for it to complete)
       loadCurrentTransits().catch(err => {
-        console.warn('⚠️ Failed to load current transits:', err)
+        devLog.warn('⚠️ Failed to load current transits:', err, 'page')
         // Don't throw - transits are optional
       })
       
     } catch (err: any) {
-      console.error('❌ KP Astrology analysis failed:', {
+      devLog.error('❌ KP Astrology analysis failed:', {
         error: err,
         message: err.message,
         stack: err.stack,
         name: err.name
-      })
+      }, 'page')
       const errorMessage = err.message || 'Failed to perform KP astrology analysis'
       setError(errorMessage)
       setAnalysis(null) // Clear any partial analysis on error
     } finally {
       setIsLoading(false)
-      console.log('✅ KP analysis process completed, loading state:', false)
+      devLog.debug('✅ KP analysis process completed, loading state:', false)
     }
   }, [hasCompleteProfile, userProfile?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.fullName, userProfile?.displayName, loadCurrentTransits])
-
-  // Auto-generate analysis when component loads and user has complete profile
-  useEffect(() => {
-    if (!user || !userProfile || !hasCompleteProfile) {
-      console.log('⏳ Waiting for user profile...', { hasUser: !!user, hasProfile: !!userProfile, hasComplete: hasCompleteProfile })
-      return
-    }
-
-    if (analysis || isLoading) {
-      console.log('⏸️ Analysis already exists or loading in progress', { hasAnalysis: !!analysis, isLoading })
-      return
-    }
-
-    console.log('🎯 Starting KP astrology auto-generation...', {
-      userId: userProfile.uid,
-      hasProfile: hasCompleteProfile,
-      birthDate: userProfile.birthDate,
-      birthTime: userProfile.birthTime,
-      birthPlace: userProfile.birthPlace
-    })
-
-    // First try to load permanent birth chart data
-    const permanentChart = getPermanentChart(userProfile.uid || 'default', 'kp-astrology')
-    
-    if (permanentChart) {
-      try {
-        console.log('✅ Found cached KP astrology data, validating structure...', {
-          hasChart: !!permanentChart,
-          chartKeys: permanentChart ? Object.keys(permanentChart) : [],
-          hasData: !!(permanentChart as any)?.data,
-          hasChartUrl: !!(permanentChart as any)?.chartUrl
-        })
-        
-        // Extract the actual analysis data from the stored chart
-        // The stored chart may have the data in different places depending on how it was stored
-        let analysisData: KPAnalysis | null = null
-        
-        // Check if data is directly in permanentChart (legacy format - analysis object stored directly)
-        if ((permanentChart as any)?.basicInfo || (permanentChart as any)?.rawAstroAppData) {
-          analysisData = permanentChart as any as KPAnalysis
-        }
-        // Check if data is in metadata property (new format)
-        else if ((permanentChart as any)?.metadata?.analysisData) {
-          analysisData = (permanentChart as any).metadata.analysisData as KPAnalysis
-        }
-        // Check if data is in chartUrl property as JSON string (standard format)
-        else if ((permanentChart as any)?.chartUrl) {
-          const chartUrlData = (permanentChart as any).chartUrl
-          if (typeof chartUrlData === 'string') {
-            try {
-              analysisData = JSON.parse(chartUrlData) as KPAnalysis
-            } catch (e) {
-              console.warn('⚠️ Failed to parse chartUrl as JSON:', e)
-            }
-          } else if (typeof chartUrlData === 'object') {
-            // If chartUrl is already an object, use it directly
-            analysisData = chartUrlData as KPAnalysis
-          }
-        }
-        // Check if data is in data property (fallback)
-        else if ((permanentChart as any)?.data) {
-          analysisData = (permanentChart as any).data as KPAnalysis
-        }
-        
-        // Validate the analysis data structure
-        if (analysisData && analysisData.basicInfo && (
-          analysisData.rawAstroAppData || 
-          analysisData.interpretations ||
-          analysisData.sunSign
-        )) {
-          console.log('✅ Valid KP astrology data structure found:', {
-            hasBasicInfo: !!analysisData.basicInfo,
-            hasRawData: !!analysisData.rawAstroAppData,
-            hasInterpretations: !!analysisData.interpretations,
-            birthDate: analysisData.basicInfo.dateOfBirth,
-            birthTime: analysisData.basicInfo.timeOfBirth,
-            birthPlace: analysisData.basicInfo.placeOfBirth
-          })
-          
-          setAnalysis(analysisData)
-          console.log('📊 Loaded permanent KP astrology data from cache')
-          
-          // Also try to load current transits
-          loadCurrentTransits()
-          return
-        } else {
-          console.warn('⚠️ Cached data structure invalid, will generate new analysis:', {
-            hasAnalysisData: !!analysisData,
-            hasBasicInfo: analysisData?.basicInfo ? 'yes' : 'no',
-            hasRawData: analysisData?.rawAstroAppData ? 'yes' : 'no',
-            structure: analysisData ? Object.keys(analysisData) : 'no data'
-          })
-        }
-      } catch (error) {
-        console.error('❌ Failed to load stored KP analysis:', error)
-        console.log('🔄 Will generate new analysis...')
-      }
-    }
-    
-    // Generate new analysis if no permanent data exists
-    console.log('🚀 No cached data found, generating new KP analysis...')
-    performKPAnalysis()
-  }, [user, userProfile?.uid, hasCompleteProfile, analysis, isLoading, performKPAnalysis, loadCurrentTransits])
 
   if (!hasCompleteProfile) {
     return (
@@ -829,6 +773,7 @@ export default function KPAstrologyPage() {
   }
 
   return (
+    <ToolReportGuard loading={isLoadingPipeline} error={profileError ?? null} toolLabel="KP Astrology">
     <div className="starfield-ultra-sharp min-h-screen p-4">
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
@@ -879,19 +824,15 @@ export default function KPAstrologyPage() {
             <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-300 rounded-2xl p-8 max-w-2xl mx-auto shadow-md">
               <h2 className="text-2xl font-bold text-red-700 mb-4">Analysis Error</h2>
               <p className="text-slate-700 text-lg mb-6">{error}</p>
-              <button
-                onClick={performKPAnalysis}
-                disabled={isLoading}
-                className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed"
-              >
-                {isLoading ? 'Generating...' : 'Try Again'}
-              </button>
+              <Button asChild className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-semibold">
+                <Link href="/profile">Generate your mystical profile</Link>
+              </Button>
             </div>
                   </motion.div>
                 )}
 
-        {/* Generate Button - Show when no analysis exists */}
-        {hasCompleteProfile && !analysis && !isLoading && !error && (
+        {/* CTA when no analysis from pipeline */}
+        {hasCompleteProfile && !analysis && !isLoadingAny && !error && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -899,20 +840,16 @@ export default function KPAstrologyPage() {
           >
             <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-8 max-w-2xl mx-auto shadow-md">
               <Target className="w-16 h-16 text-amber-700 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold text-amber-900 mb-4">Ready to Generate Your KP Chart</h2>
+              <h2 className="text-2xl font-bold text-amber-900 mb-4">KP Astrology Analysis</h2>
               <p className="text-slate-700 text-lg mb-6 leading-relaxed">
-                Your profile is complete. Generate your KP astrology analysis to discover precise timing predictions based on sub-lords and cusps.
+                Generate your mystical profile to get your KP astrology analysis and precise timing predictions based on sub-lords and cusps.
               </p>
-              <motion.button
-                onClick={performKPAnalysis}
-                disabled={isLoading}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
-              >
-                <Target className="w-5 h-5" />
-                Generate KP Analysis
-              </motion.button>
+              <Button asChild className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold flex items-center gap-2 mx-auto">
+                <Link href="/profile">
+                  <Target className="w-5 h-5" />
+                  Generate your mystical profile
+                </Link>
+              </Button>
             </div>
           </motion.div>
         )}
@@ -1087,14 +1024,14 @@ export default function KPAstrologyPage() {
                             <Globe className="w-6 h-6 text-amber-700" />
                             North Indian Chart
                           </h3>
-                          <div className="bg-white overflow-visible" style={{ width: '450px', height: '333px', margin: '0 auto', padding: 0, lineHeight: 0, fontSize: 0 }}>
+                          <ResponsiveChartWrap>
                             <NorthIndianVedicChart
                               planets={transformedPlanets}
                               ascendantSign={ascendantSign}
                               ascendantDegree={ascendantDegree}
                               chartType="KP"
                             />
-                      </div>
+                      </ResponsiveChartWrap>
                 </div>
 
                         {/* South Indian Chart */}
@@ -1103,9 +1040,9 @@ export default function KPAstrologyPage() {
                             <Globe className="w-6 h-6 text-purple-700" />
                             South Indian Chart
                           </h3>
-                          <div className="bg-white overflow-visible" style={{ width: '450px', height: '333px', margin: '0 auto', padding: 0, lineHeight: 0, fontSize: 0 }}>
+                          <ResponsiveChartWrap>
                             <VedicSouthChart chart={chartData} />
-                    </div>
+                    </ResponsiveChartWrap>
                     </div>
                     </div>
 
@@ -2037,5 +1974,6 @@ export default function KPAstrologyPage() {
         )}
       </div>
     </div>
+    </ToolReportGuard>
   )
 } 

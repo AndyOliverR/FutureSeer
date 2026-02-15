@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('❌ Current Transits API Error:', error)
+    devLog.error('❌ Current Transits API Error:', error, 'route')
     return NextResponse.json(
       { 
         success: false, 

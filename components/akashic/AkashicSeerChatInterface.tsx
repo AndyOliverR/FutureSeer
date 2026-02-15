@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -105,7 +106,7 @@ export function AkashicSeerChatInterface({ reading, userProfile }: AkashicSeerCh
         }
       }
     } catch (error) {
-      console.error('Error calling Akashic Seer API:', error);
+      devLog.error('Error calling Akashic Seer API:', error, 'AkashicSeerChatInterface');
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantId

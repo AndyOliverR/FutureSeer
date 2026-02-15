@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -47,7 +48,7 @@ export function PalmistryRemedies({ palmistryData, onNavigateToTab }: PalmistryR
           setCompletedRemedies(new Set(savedArray))
         }
       } catch (error) {
-        console.error('Failed to load completed remedies from localStorage:', error)
+        devLog.error('Failed to load completed remedies from localStorage:', error, 'PalmistryRemedies')
       }
     }
   }, [])
@@ -59,13 +60,13 @@ export function PalmistryRemedies({ palmistryData, onNavigateToTab }: PalmistryR
         const array = Array.from(completedRemedies)
         localStorage.setItem('palmistry-remedies-completed', JSON.stringify(array))
       } catch (error) {
-        console.error('Failed to save completed remedies to localStorage:', error)
+        devLog.error('Failed to save completed remedies to localStorage:', error, 'PalmistryRemedies')
       }
     } else if (typeof window !== 'undefined' && completedRemedies.size === 0) {
       try {
         localStorage.removeItem('palmistry-remedies-completed')
       } catch (error) {
-        console.error('Failed to clear completed remedies from localStorage:', error)
+        devLog.error('Failed to clear completed remedies from localStorage:', error, 'PalmistryRemedies')
       }
     }
   }, [completedRemedies])

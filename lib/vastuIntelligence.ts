@@ -1,4 +1,5 @@
 import { doc, getDoc, setDoc, getFirestore } from 'firebase/firestore';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB, UserProfile } from './firebase';
 import { getEntranceRecommendations, getAuspiciousPadas, getInauspiciousPadas, getWorstPadas, type VastuPada } from './vastu32Padas';
 import { calculatePersonalizedVastuDirections, matchAstrologicalElements, getPersonalizedRoomRecommendations } from './vastuPersonalization';
@@ -613,7 +614,7 @@ function calculateVastuAnalysis(
       
       // Safety check: skip invalid room keys
       if (!roomData) {
-        console.warn(`Room data not found for key: ${roomKey}. Skipping room analysis.`);
+        devLog.warn(`Room data not found for key: ${roomKey}. Skipping room analysis.`, undefined, 'vastuIntelligence');
         return null;
       }
       
@@ -1303,16 +1304,16 @@ export async function getIntelligentVastuData(
       
       // Return cached data if less than 24 hours old
       if (hoursSinceUpdate < 24) {
-        console.log('Returning cached Vastu data for user:', userId);
+        devLog.debug('Returning cached Vastu data for user:', userId);
         return cachedData;
       }
     }
   } catch (error) {
-    console.warn('Error checking cached Vastu data:', error);
+    devLog.warn('Error checking cached Vastu data:', error, 'vastuIntelligence');
   }
   
   // Calculate new Vastu analysis with personalization
-  console.log('Calculating new Vastu analysis for user:', userId, userProfile ? `(${userProfile.fullName})` : '');
+  devLog.debug('Calculating new Vastu analysis for user:', userId, userProfile ? `(${userProfile.fullName})` : '');
   const {
     directions,
     roomAnalysis,
@@ -1362,9 +1363,9 @@ export async function getIntelligentVastuData(
   // Cache the data
   try {
     await setDoc(docRef, reading);
-    console.log('Cached Vastu data for user:', userId);
+    devLog.debug('Cached Vastu data for user:', userId);
   } catch (error) {
-    console.warn('Error caching Vastu data:', error);
+    devLog.warn('Error caching Vastu data:', error, 'vastuIntelligence');
   }
   
   return reading;
@@ -1390,22 +1391,22 @@ export async function getPersonalizedVastuReport(
       
       // Force refresh if cached data doesn't have isProfileBased flag (legacy data) or cache version mismatch
       if (!cachedData.metadata?.isProfileBased) {
-        console.log('Cached data missing isProfileBased flag, forcing refresh for user:', userId);
+        devLog.debug('Cached data missing isProfileBased flag, forcing refresh for user:', userId);
       } else if (cachedVersion !== CACHE_VERSION) {
-        console.log(`Cache version mismatch (cached: ${cachedVersion}, current: ${CACHE_VERSION}), forcing refresh for user:`, userId);
+        devLog.debug(`Cache version mismatch (cached: ${cachedVersion}, current: ${CACHE_VERSION}), forcing refresh for user:`, userId);
       } else {
         const lastUpdated = cachedData.metadata.lastUpdated;
         const lastUpdatedMs = lastUpdated instanceof Date ? lastUpdated.getTime() : (lastUpdated as { toDate(): Date }).toDate().getTime();
         const hoursSinceUpdate = (new Date().getTime() - lastUpdatedMs) / (1000 * 60 * 60);
         
         if (hoursSinceUpdate < 24) {
-          console.log('Returning cached personalized Vastu report for user:', userId);
+          devLog.debug('Returning cached personalized Vastu report for user:', userId);
           return cachedData;
         }
       }
     }
   } catch (error) {
-    console.warn('Error checking cached personalized Vastu data:', error);
+    devLog.warn('Error checking cached personalized Vastu data:', error, 'vastuIntelligence');
   }
   
   // Get user's personalized directions
@@ -1436,8 +1437,8 @@ export async function getPersonalizedVastuReport(
     storage: true
   };
   
-  console.log('Generating personalized Vastu report for user:', userId, userProfile ? `(${userProfile.fullName})` : '');
-  console.log('Using best direction:', defaultEntranceDirection);
+  devLog.debug('Generating personalized Vastu report for user:', userId, userProfile ? `(${userProfile.fullName})` : '');
+  devLog.debug('Using best direction:', defaultEntranceDirection);
   
   // Generate analysis using defaults and user profile
   const {
@@ -1496,9 +1497,9 @@ export async function getPersonalizedVastuReport(
   // Cache the personalized report
   try {
     await setDoc(docRef, reading);
-    console.log('Cached personalized Vastu report for user:', userId);
+    devLog.debug('Cached personalized Vastu report for user:', userId);
   } catch (error) {
-    console.warn('Error caching personalized Vastu report:', error);
+    devLog.warn('Error caching personalized Vastu report:', error, 'vastuIntelligence');
   }
   
   return reading;
@@ -1513,8 +1514,8 @@ export async function clearVastuDataCache(userId: string): Promise<void> {
   
   try {
     await setDoc(docRef, {});
-    console.log('Cleared Vastu data cache for user:', userId);
+    devLog.debug('Cleared Vastu data cache for user:', userId);
   } catch (error) {
-    console.warn('Error clearing Vastu data cache:', error);
+    devLog.warn('Error clearing Vastu data cache:', error, 'vastuIntelligence');
   }
 } 

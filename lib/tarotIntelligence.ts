@@ -1,4 +1,5 @@
 import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { devLog } from '@/lib/devLogger';
 import { db } from '@/lib/firebase'
 import { LOCAL_TAROT_CARDS } from './tarotApiService'
 
@@ -681,7 +682,7 @@ class TarotIntelligence {
         personalityCard
       }
     } catch (error) {
-      console.error('Error calculating profile cards:', error)
+      devLog.error('Error calculating profile cards:', error, 'tarotIntelligence')
       return {
         birthCard: null,
         lifePathCard: null,

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     )
 
   } catch (error) {
-    console.error('❌ Tool interest submission error:', error)
+    devLog.error('❌ Tool interest submission error:', error, 'route')
     
     return NextResponse.json(
       { error: 'Failed to submit interest. Please try again.' },

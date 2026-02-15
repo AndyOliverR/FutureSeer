@@ -1,17 +1,18 @@
 "use client"
 
-import { Suspense, useState, useEffect, useMemo, useCallback } from 'react'
+import { Suspense, useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { universalOccultService, BirthData } from '@/lib/universalOccultService'
 import { convertObjectToWestern } from '@/lib/western/westernTerminology'
 import WesternSeerChatInterface from '@/components/WesternSeerChatInterface'
-import Link from 'next/link'
 import { getAllAdvancedTechniques } from '@/lib/data/advancedTechniques';
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
 import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab';
@@ -40,8 +41,6 @@ import {
 function WesternAstrologyPageContent() {
   const { user, userProfile } = useAuth()
   const searchParams = useSearchParams()
-  const [analysis, setAnalysis] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'introduction' | 'compatibility' | 'western-astrology' | 'advanced' | 'astro-numerology' | 'ask-the-seer'>('introduction')
 
@@ -52,188 +51,25 @@ function WesternAstrologyPageContent() {
     }
   }, [searchParams])
 
-  // Comprehensive report state - persisted across tab switches
-  const [comprehensiveWesternReport, setComprehensiveWesternReport] = useState<any>(null)
+  const { report: westernPipelineReport, loading: isLoading, error: profileError, hasReport } = useToolReport('western')
+  const analysis = useMemo(() => {
+    const raw = (westernPipelineReport as Record<string, unknown> | undefined)?.chart
+    if (!raw) return null
+    return convertObjectToWestern(raw)
+  }, [westernPipelineReport])
+  const comprehensiveWesternReport = useMemo(() => {
+    const raw = westernPipelineReport as Record<string, unknown> | undefined
+    return (raw?.comprehensiveAnalysis ?? null) as {
+      chartOverview?: string
+      planetaryAnalysis?: { planet: string; analysis: string }[]
+      houseAnalysis?: { house: number; analysis: string }[]
+      predictiveInsights?: unknown
+    } | null
+  }, [westernPipelineReport])
   const [comprehensiveAstroNumerologyReport, setComprehensiveAstroNumerologyReport] = useState<any>(null)
-  const [isLoadingWesternReport, setIsLoadingWesternReport] = useState(false)
   const [isLoadingAstroNumerologyReport, setIsLoadingAstroNumerologyReport] = useState(false)
-  const [lastProfileKey, setLastProfileKey] = useState<string>('')
 
-  // Check if user has complete birth details
   const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
-
-  // Reset reports if profile data changes - MUST reset BEFORE new fetches
-  useEffect(() => {
-    const currentProfileKey = `${userProfile?.birthDate}_${userProfile?.birthTime}_${userProfile?.birthPlace}_${userProfile?.displayName || userProfile?.fullName}`
-    if (lastProfileKey && lastProfileKey !== currentProfileKey && lastProfileKey !== '') {
-      // Profile changed, reset reports immediately
-      console.log('🔄 Profile changed - resetting reports')
-      setComprehensiveWesternReport(null)
-      setComprehensiveAstroNumerologyReport(null)
-    }
-    setLastProfileKey(currentProfileKey)
-  }, [userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.displayName, userProfile?.fullName])
-
-  const loadWesternAnalysis = useCallback(async () => {
-    if (!hasCompleteDetails) return
-    
-    try {
-      setIsLoading(true)
-      setError(null)
-      
-      console.log('FutureSeer: Loading Western Astrology analysis...')
-      
-      const birthData: BirthData = {
-        birthDate: userProfile?.birthDate || '',
-        birthTime: userProfile?.birthTime || '',
-        birthPlace: userProfile?.birthPlace || '',
-        latitude: userProfile?.birthLatitude || 12.3051828, // Mysore, Karnataka, India
-        longitude: userProfile?.birthLongitude || 76.6553609
-      }
-      
-      // Load comprehensive analysis from Universal Occult API
-      const westernData = await universalOccultService.calculateWesternChart(birthData, {
-        houseSystem: 'placidus',
-        includeAspects: true,
-        includeTransits: true
-      })
-      
-      // Apply Western terminology conversion
-      const convertedData = convertObjectToWestern(westernData)
-      setAnalysis(convertedData)
-      
-      console.log('FutureSeer: Western Astrology analysis loaded successfully:', westernData)
-      console.log('FutureSeer: Transit data received:', westernData?.data?.transits)
-    } catch (error) {
-      console.error('FutureSeer: Failed to load Western Astrology analysis:', error)
-      setError('Failed to load Western Astrology analysis')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [hasCompleteDetails, userProfile])
-
-  // Fetch comprehensive Western astrology report once when analysis is ready
-  useEffect(() => {
-    const fetchComprehensiveWesternReport = async () => {
-      // Don't fetch if we already have the report for this profile
-      if (comprehensiveWesternReport && lastProfileKey) {
-        return
-      }
-      
-      if (!user?.uid || !analysis?.data || !lastProfileKey) {
-        return
-      }
-
-      console.log('🔄 Fetching comprehensive Western astrology report...')
-      setIsLoadingWesternReport(true)
-      try {
-        const response = await fetch('/api/western-astrology/comprehensive', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            chartData: {
-              planets: analysis.data.planets || [],
-              houses: analysis.data.houses || [],
-              aspects: analysis.data.aspects || [],
-              transits: analysis.data.transits || []
-            },
-            userProfile: userProfile
-          }),
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          if (result.success && result.data?.comprehensiveAnalysis) {
-            console.log('✅ Comprehensive Western astrology report fetched successfully')
-            setComprehensiveWesternReport(result.data.comprehensiveAnalysis)
-          } else {
-            console.warn('⚠️ Comprehensive Western report response missing data')
-          }
-        } else {
-          console.error('❌ Failed to fetch comprehensive Western report:', response.status)
-        }
-      } catch (error) {
-        console.error('❌ Error fetching comprehensive Western report:', error)
-      } finally {
-        setIsLoadingWesternReport(false)
-      }
-    }
-
-    fetchComprehensiveWesternReport()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, analysis?.data, lastProfileKey])
-
-  // Fetch comprehensive Astro-Numerology report once when data is ready
-  useEffect(() => {
-    const fetchComprehensiveAstroNumerologyReport = async () => {
-      // Don't fetch if we already have the report for this profile
-      if (comprehensiveAstroNumerologyReport && lastProfileKey) {
-        return
-      }
-      
-      if (!user?.uid || !userProfile?.birthDate || !userProfile?.displayName || !lastProfileKey) {
-        return // Missing required data
-      }
-
-      const sunSign = analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName || 
-                     analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign || 
-                     'Unknown'
-      
-      if (sunSign === 'Unknown') {
-        console.log('⏳ Waiting for analysis data to get sun sign...')
-        return // Wait for analysis data
-      }
-
-      console.log('🔄 Fetching comprehensive Astro-Numerology report...')
-      setIsLoadingAstroNumerologyReport(true)
-      try {
-        const fullName = userProfile.displayName || userProfile.fullName || user?.displayName || ''
-        const response = await fetch('/api/astro-numerology/analysis', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            birthDate: userProfile.birthDate,
-            fullName: fullName,
-            sunSign: sunSign,
-          }),
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          if (result.success && result.data) {
-            console.log('✅ Comprehensive Astro-Numerology report fetched successfully')
-            // Store the full data structure including sunSign, lifePathNumber, nameNumber, and comprehensiveAnalysis
-            setComprehensiveAstroNumerologyReport(result.data)
-          } else {
-            console.warn('⚠️ Astro-Numerology report response missing data')
-          }
-        } else {
-          console.error('❌ Failed to fetch Astro-Numerology report:', response.status)
-        }
-      } catch (error) {
-        console.error('❌ Error fetching comprehensive Astro-Numerology report:', error)
-      } finally {
-        setIsLoadingAstroNumerologyReport(false)
-      }
-    }
-
-    fetchComprehensiveAstroNumerologyReport()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, userProfile?.birthDate, userProfile?.displayName, userProfile?.fullName, analysis?.data, lastProfileKey])
-
-  // Auto-load analysis when profile is complete - this triggers the report generation cascade
-  useEffect(() => {
-    if (hasCompleteDetails) {
-      console.log('✅ Profile complete - loading Western Astrology analysis')
-      loadWesternAnalysis()
-    }
-  }, [hasCompleteDetails, loadWesternAnalysis])
 
   // Check for reduced motion preference
   const prefersReducedMotion = useMemo(() => {
@@ -286,45 +122,47 @@ function WesternAstrologyPageContent() {
   }
 
   return (
+    <ToolReportGuard loading={isLoading} error={profileError ?? null} toolLabel="Western astrology">
     <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         <div className="text-center mb-8 pt-4">
-          <h1 className="text-5xl font-serif font-semibold mb-6">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-yellow-400">⭐</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Western Astrology</span>
           </h1>
           <p className="text-slate-200 leading-relaxed text-xl font-light">Traditional Western zodiac system with precise calculations</p>
         </div>
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 gap-2">
-            {tabsConfig.map((tab) => (
-              <motion.div
-                key={tab.value}
-                whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
-                whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-                transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                className="relative"
-              >
-                <TabsTrigger 
-                  value={tab.value} 
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden"
+        {/* Tabs – filing-cabinet style: one bordered container so tabs stay attached to content on all screens */}
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+            <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+              {tabsConfig.map((tab) => (
+                <motion.div
+                  key={tab.value}
+                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                  transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
+                  className="relative shrink-0"
                 >
-                  {tab.label}
-                  {activeTab === tab.value && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
-                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                </TabsTrigger>
-              </motion.div>
-            ))}
-          </TabsList>
+                  <TabsTrigger 
+                    value={tab.value} 
+                    className="w-full sm:w-auto shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden border border-transparent data-[state=inactive]:border-slate-600/50"
+                  >
+                    {tab.label}
+                    {activeTab === tab.value && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-t-lg rounded-b-none -z-10"
+                        transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
+                      />
+                    )}
+                  </TabsTrigger>
+                </motion.div>
+              ))}
+            </TabsList>
 
-          {/* Tab Content with Material 3 Transitions */}
-          <AnimatePresence mode="wait">
+            {/* Tab Content – inside same bordered container, no visual gap */}
+            <AnimatePresence mode="wait">
             {/* Introduction Tab */}
             {activeTab === 'introduction' && (
               <motion.div
@@ -334,7 +172,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="introduction" className="space-y-6 mt-6">
+                <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <ToolIntroductionTab toolSlug="western-astrology" />
                 </TabsContent>
               </motion.div>
@@ -349,7 +187,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="compatibility" className="space-y-6 mt-6">
+                <TabsContent value="compatibility" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <CompatibilityTab toolSlug="western-astrology" />
                 </TabsContent>
               </motion.div>
@@ -364,7 +202,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="western-astrology" className="space-y-6 mt-6">
+                <TabsContent value="western-astrology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {isLoading ? (
               <motion.div 
                 className="text-center py-8"
@@ -413,17 +251,17 @@ function WesternAstrologyPageContent() {
                   FutureSeer is analyzing your Western astrology chart...
                 </motion.p>
               </motion.div>
-            ) : error ? (
+            ) : profileError ? (
               <div className="text-center py-8">
                 <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-                <p className="text-red-300 mb-4">{error}</p>
+                <p className="text-red-300 mb-4">{profileError}</p>
                 <motion.div
                   whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                   transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <Button onClick={loadWesternAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent">
-                    <span className="relative z-10">Try Again</span>
+                  <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent">
+                    <Link href="/profile">Generate your mystical profile</Link>
                   </Button>
                 </motion.div>
               </div>
@@ -452,7 +290,7 @@ function WesternAstrologyPageContent() {
                           {comprehensiveWesternReport.chartOverview}
                         </p>
                       </div>
-                    ) : isLoadingWesternReport ? (
+                    ) : isLoading ? (
                       <motion.div 
                         className="text-center py-8"
                         initial={{ opacity: 0 }}
@@ -686,7 +524,7 @@ function WesternAstrologyPageContent() {
                           )
                         })()}
                       </div>
-                    ) : isLoadingWesternReport ? (
+                    ) : isLoading ? (
                       <motion.div 
                         className="text-center py-8"
                         initial={{ opacity: 0 }}
@@ -753,8 +591,8 @@ function WesternAstrologyPageContent() {
                   whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                   transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <Button onClick={loadWesternAnalysis} className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent">
-                    <span className="relative z-10">Generate Analysis</span>
+                  <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent">
+                    <Link href="/profile">Generate your mystical profile</Link>
                   </Button>
                 </motion.div>
               </div>
@@ -772,7 +610,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="astro-numerology" className="space-y-6 mt-6">
+                <TabsContent value="astro-numerology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <AstroNumerologyTab
                     userId={user?.uid}
                     birthDate={userProfile?.birthDate}
@@ -795,7 +633,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="advanced" className="space-y-6 mt-6">
+                <TabsContent value="advanced" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="space-y-6">
               <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                 <CardHeader>
@@ -867,7 +705,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+                <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <div className="h-[800px] min-h-0">
                     <WesternSeerChatInterface
                       userId={user?.uid || ''}
@@ -890,9 +728,11 @@ function WesternAstrologyPageContent() {
               </motion.div>
             )}
           </AnimatePresence>
-        </Tabs>
+          </Tabs>
+        </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }
 

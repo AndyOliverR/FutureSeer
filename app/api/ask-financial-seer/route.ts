@@ -11,8 +11,9 @@ import {
   FINANCIAL_DISCLAIMER,
   type FinancialAstrologyChartPayload,
 } from '@/lib/financialAstrologySeerState';
+import { buildFinancialAstrologySeerSystemPrompt } from '@/lib/financialAstrologySeerPrompts';
 
-const REFUSAL_PHRASE = 'Financial astrology does not evaluate specific investments or predict returns.';
+const REFUSAL_PHRASE = "Astrology can't provide investment advice or guarantees. Please consult a qualified financial professional.";
 
 /** Normalize natal chart from western/vedic/comprehensiveProfile format to FinancialAstrologyChartPayload. */
 function normalizeToFinancialPayload(
@@ -162,7 +163,11 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const systemPrompt = getFinancialAstrologySliceForQuestionType(questionType, state);
+    const slice = getFinancialAstrologySliceForQuestionType(questionType, state);
+    const displayName = (userProfile?.displayName ?? '').trim();
+    const systemPrompt = buildFinancialAstrologySeerSystemPrompt(slice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
@@ -257,7 +262,7 @@ export async function POST(request: NextRequest) {
               /* non-fatal */
             }
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -277,7 +282,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error in Financial Seer API:', error);
+    devLog.error('Error in Financial Seer API:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

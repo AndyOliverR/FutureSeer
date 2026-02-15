@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import { buildFaceReadingSeerSystemPrompt } from '@/lib/faceReadingSeerPrompts';
 import {
   buildFaceReadingState,
   classifyFaceReadingQuestion,
@@ -116,24 +117,9 @@ export async function POST(request: NextRequest) {
     );
 
     const displayName = (userProfile?.displayName ?? '').trim();
-    const namingRule = displayName
-      ? `The user's display name is "${displayName}". Address them only by this name (e.g. "${displayName}" or "${displayName},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a warm generic address.';
-
-    const systemPrompt = `You are an expert Face Reading (Physiognomy) advisor. You describe tendencies and capacities, not fate or events.
-
-RULES:
-- ${namingRule}
-- Face reading reflects how energy is expressed, not what the future will deliver.
-- Anchor all analysis in the three zones (Upper: thinking/early life; Middle: career/action; Lower: stability/relationships). Apply feature hierarchy: face shape > zone dominance > major features (eyes, nose, mouth) > minor details.
-- Resolve contradictions explicitly (e.g. dominant middle zone + soft jaw → "strong drive toward achievement, balanced by a cooperative approach rather than rigid control").
-- Speak only in tendencies and capacities. Do not predict events, dates, or outcomes. Do not give health diagnosis or moral judgment. Emphasize current state vs permanent destiny.
-- If asked about timing, outcomes, health, or morality, say: "Face reading cannot determine this with certainty."
-
-STRUCTURED FACE STATE (use this morphology only):
-${chartSlice}
-
-Answer the user's question using the face state above. Keep language clear, warm, and devotionist-style.`;
+    const systemPrompt = buildFaceReadingSeerSystemPrompt(chartSlice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const userMessage = question.trim();
 
@@ -158,7 +144,7 @@ Answer the user's question using the face state above. Keep language clear, warm
               }
             }
           } catch (error) {
-            console.error('Face Reading Seer stream error:', error);
+            devLog.error('Face Reading Seer stream error:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'

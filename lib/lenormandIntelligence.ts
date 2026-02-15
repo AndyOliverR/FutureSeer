@@ -1,3 +1,5 @@
+import { devLog } from '@/lib/devLogger';
+
 export interface LenormandCard {
   number: number
   name: string
@@ -131,7 +133,7 @@ class LenormandIntelligence {
       const { getFirebaseDB } = require('./firebase')
       this.db = getFirebaseDB()
     } catch (error) {
-      console.warn('Firebase not available for Lenormand Intelligence')
+      devLog.warn('Firebase not available for Lenormand Intelligence', undefined, 'lenormandIntelligence')
     }
   }
 
@@ -232,7 +234,7 @@ class LenormandIntelligence {
 
   async saveReading(userId: string, reading: LenormandReading): Promise<void> {
     if (!this.db) {
-      console.warn('Database not available, cannot save reading')
+      devLog.warn('Database not available, cannot save reading', 'lenormandIntelligence')
       return
     }
     try {
@@ -242,15 +244,15 @@ class LenormandIntelligence {
         ...reading,
         timestamp: reading.timestamp.toISOString()
       })
-      console.log('✅ Saved Lenormand reading for user:', userId)
+      devLog.debug('✅ Saved Lenormand reading for user:', userId)
     } catch (error) {
-      console.error('Error saving Lenormand reading:', error)
+      devLog.error('Error saving Lenormand reading:', error, 'lenormandIntelligence')
     }
   }
 
   async getReading(userId: string, readingId: string): Promise<LenormandReading | null> {
     if (!this.db) {
-      console.warn('Database not available')
+      devLog.warn('Database not available', undefined, 'lenormandIntelligence')
       return null
     }
     try {
@@ -266,14 +268,14 @@ class LenormandIntelligence {
       }
       return null
     } catch (error) {
-      console.error('Error getting Lenormand reading:', error)
+      devLog.error('Error getting Lenormand reading:', error, 'lenormandIntelligence')
       return null
     }
   }
 
   async getReadingHistory(userId: string, limit: number = 10): Promise<LenormandReading[]> {
     if (!this.db) {
-      console.warn('Database not available')
+      devLog.warn('Database not available', undefined, 'lenormandIntelligence')
       return []
     }
     try {
@@ -292,14 +294,14 @@ class LenormandIntelligence {
       })
       return readings
     } catch (error) {
-      console.error('Error getting Lenormand reading history:', error)
+      devLog.error('Error getting Lenormand reading history:', error, 'lenormandIntelligence')
       return []
     }
   }
 
   async saveAnalysis(userId: string, analysis: LenormandAnalysis): Promise<void> {
     // Legacy method for backward compatibility
-    console.log('Saving Lenormand analysis for user:', userId)
+    devLog.debug('Saving Lenormand analysis for user:', userId)
   }
 
   async getAnalysisHistory(userId: string): Promise<LenormandAnalysis[]> {

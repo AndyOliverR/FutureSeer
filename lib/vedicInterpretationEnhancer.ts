@@ -1,4 +1,5 @@
 import { createAICompletion } from './aiGateway';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { VERIFIED_VEDIC_FALLBACKS } from './verifiedFallbacks';
@@ -11,22 +12,22 @@ export class VedicInterpretationEnhancer {
   
   // Generate enhanced overview
   async generateEnhancedOverview(chartData: any, userId: string): Promise<string> {
-    console.log('🔍 Generating overview for degree:', chartData.ascendant?.degree);
+    devLog.debug('🔍 Generating overview for degree:', chartData.ascendant?.degree);
     
     // Validate ascendant data
     if (!chartData.ascendant?.degree) {
-      console.warn('⚠️ Ascendant degree missing, using fallback');
+      devLog.warn('⚠️ Ascendant degree missing, using fallback', 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.overview.default;
     }
     
     // Use versioned cache key to invalidate old cache
     const cached = await this.getCachedInterpretation(userId, 'overview_v2', chartData);
     if (cached) {
-      console.log('✅ Using cached overview (validated)');
+      devLog.debug('✅ Using cached overview (validated)');
       return cached;
     }
     
-    console.log('🔄 Generating new overview with Groq...');
+    devLog.debug('🔄 Generating new overview with Groq...');
     
     // Generate with Groq
     try {
@@ -35,24 +36,24 @@ export class VedicInterpretationEnhancer {
       
       // Validate that interpretation doesn't contain "at 0°" when degree is not 0
       if (chartData.ascendant.degree > 0.1 && interpretation.includes('at 0°')) {
-        console.warn('⚠️ Groq generated incorrect 0° degree, regenerating...');
+        devLog.warn('⚠️ Groq generated incorrect 0° degree, regenerating...', 'vedicInterpretationEnhancer');
         // Force regeneration with more explicit prompt
         const enhancedPrompt = prompt + '\n\nREMINDER: The ascendant degree is NOT 0°. Use the exact degree provided above.';
         const correctedInterpretation = await this.callGroq(enhancedPrompt);
         
         // Cache corrected result
         await this.cacheInterpretation(userId, 'overview_v2', correctedInterpretation);
-        console.log('✅ Corrected interpretation cached');
+        devLog.debug('✅ Corrected interpretation cached');
         return correctedInterpretation;
       }
       
       // Cache result
       await this.cacheInterpretation(userId, 'overview_v2', interpretation);
-      console.log('✅ New interpretation cached');
+      devLog.debug('✅ New interpretation cached');
       
       return interpretation;
     } catch (error) {
-      console.error('Failed to generate overview:', error);
+      devLog.error('Failed to generate overview:', error, 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.overview.default;
     }
   }
@@ -72,7 +73,7 @@ export class VedicInterpretationEnhancer {
       await this.cacheInterpretation(userId, `planets/${planet}`, interpretation);
       return interpretation;
     } catch (error) {
-      console.error(`Failed to generate ${planet} interpretation:`, error);
+      devLog.error(`Failed to generate ${planet} interpretation:`, error, 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.planets[planet as keyof typeof VERIFIED_VEDIC_FALLBACKS.planets] || `${planet} influences your life path and karmic lessons. Consult with a Vedic astrologer for personalized insights.`;
     }
   }
@@ -92,7 +93,7 @@ export class VedicInterpretationEnhancer {
       await this.cacheInterpretation(userId, `houses/${houseNumber}`, interpretation);
       return interpretation;
     } catch (error) {
-      console.error(`Failed to generate house ${houseNumber} interpretation:`, error);
+      devLog.error(`Failed to generate house ${houseNumber} interpretation:`, error, 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.houses[houseNumber as keyof typeof VERIFIED_VEDIC_FALLBACKS.houses] || `The ${houseNumber}${houseNumber === 1 ? 'st' : houseNumber === 2 ? 'nd' : houseNumber === 3 ? 'rd' : 'th'} house governs important life areas. Consult with a Vedic astrologer for personalized insights.`;
     }
   }
@@ -130,7 +131,7 @@ export class VedicInterpretationEnhancer {
       // Fallback if content is invalid
       return VERIFIED_VEDIC_FALLBACKS.dasha.default;
     } catch (error) {
-      console.error('Failed to generate dasha interpretation:', error);
+      devLog.error('Failed to generate dasha interpretation:', error, 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.dasha.default;
     }
   }
@@ -151,7 +152,7 @@ export class VedicInterpretationEnhancer {
       await this.cacheInterpretation(userId, `transits/${today}`, interpretation);
       return interpretation;
     } catch (error) {
-      console.error('Failed to generate transit interpretation:', error);
+      devLog.error('Failed to generate transit interpretation:', error, 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.transits.default;
     }
   }
@@ -172,7 +173,7 @@ export class VedicInterpretationEnhancer {
       await this.cacheInterpretation(userId, `remedies/${planet}`, interpretation);
       return interpretation;
     } catch (error) {
-      console.error(`Failed to generate remedy interpretation for ${planet}:`, error);
+      devLog.error(`Failed to generate remedy interpretation for ${planet}:`, error, 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.remedies[planet as keyof typeof VERIFIED_VEDIC_FALLBACKS.remedies] || 'Remedies help strengthen planetary influences. Consult with a Vedic astrologer for personalized guidance.';
     }
   }
@@ -193,7 +194,7 @@ export class VedicInterpretationEnhancer {
       await this.cacheInterpretation(userId, `panchanga/${today}`, interpretation);
       return interpretation;
     } catch (error) {
-      console.error('Failed to generate panchanga insight:', error);
+      devLog.error('Failed to generate panchanga insight:', error, 'vedicInterpretationEnhancer');
       return VERIFIED_VEDIC_FALLBACKS.panchanga.default;
     }
   }
@@ -246,7 +247,7 @@ export class VedicInterpretationEnhancer {
       
       return interpretation;
     } catch (error) {
-      console.error(`Failed to generate ${chartType} ${insightType} insight:`, error);
+      devLog.error(`Failed to generate ${chartType} ${insightType} insight:`, error, 'vedicInterpretationEnhancer');
       return 'Divisional charts provide deeper insights into specific life areas. The D9 (Navamsa) reveals your inner strength and marriage potential, while the D10 (Dasamsa) illuminates your career path and professional achievements.';
     }
   }
@@ -328,7 +329,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
   private async callGroq(prompt: string): Promise<string> {
     // Validate API key first (either Gateway or direct Groq)
     if (!process.env.GROQ_API_KEY && !process.env.AI_GATEWAY_API_KEY) {
-      console.error('❌ GROQ_API_KEY or AI_GATEWAY_API_KEY is not configured. Please add one to your .env.local file.');
+      devLog.error('❌ GROQ_API_KEY or AI_GATEWAY_API_KEY is not configured. Please add one to your .env.local file.', undefined, 'vedicInterpretationEnhancer');
       throw new Error('GROQ_API_KEY or AI_GATEWAY_API_KEY is not configured');
     }
 
@@ -337,7 +338,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`🔄 Calling AI Gateway/Groq API (attempt ${attempt}/${maxRetries})...`);
+        devLog.debug(`🔄 Calling AI Gateway/Groq API (attempt ${attempt}/${maxRetries})...`);
         const result = await createAICompletion({
           model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }],
@@ -346,14 +347,14 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
         });
 
         const text = result.content || '';
-        console.log(`✅ AI Gateway/Groq response received: ${text.substring(0, 100)}...`);
+        devLog.debug(`✅ AI Gateway/Groq response received: ${text.substring(0, 100)}...`);
         
         // Validate response
         if (this.isValidInterpretation(text)) {
-          console.log('✅ AI Gateway/Groq content validated successfully');
+          devLog.debug('✅ AI Gateway/Groq content validated successfully');
           return text;
         } else {
-          console.log(`❌ AI Gateway/Groq returned invalid content (attempt ${attempt}/${maxRetries})`);
+          devLog.debug(`❌ AI Gateway/Groq returned invalid content (attempt ${attempt}/${maxRetries})`);
           lastError = new Error('Invalid content from AI Gateway/Groq');
           if (attempt < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
@@ -364,10 +365,10 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
         lastError = error;
         if (error?.status === 429) {
           const delay = 2000 * Math.pow(2, attempt - 1);
-          console.log(`Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})...`);
+          devLog.debug(`Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         } else {
-          console.error('Groq error:', error);
+          devLog.error('Groq error:', error, 'vedicInterpretationEnhancer');
           if (attempt < maxRetries) {
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
@@ -395,7 +396,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
         
         // Check cache version FIRST
         if (!data.version || data.version < VEDIC_CACHE_VERSION) {
-          console.log(`🗑️ Old cache version (${data.version || 0}) detected for ${path}, deleting...`);
+          devLog.debug(`🗑️ Old cache version (${data.version || 0}) detected for ${path}, deleting...`);
           await this.deleteCachedInterpretation(userId, path);
           return null; // Force regeneration
         }
@@ -407,14 +408,14 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
           if (this.isValidInterpretation(cachedText, chartData)) {
             return cachedText;
           } else {
-            console.log(`🗑️ Invalid cached content detected for ${path}, deleting...`);
+            devLog.debug(`🗑️ Invalid cached content detected for ${path}, deleting...`);
             await this.deleteCachedInterpretation(userId, path);
             return null;
           }
         }
       }
     } catch (error) {
-      console.error('Cache read error:', error);
+      devLog.error('Cache read error:', error, 'vedicInterpretationEnhancer');
     }
     return null;
   }
@@ -429,9 +430,9 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
       const { deleteDoc } = await import('firebase/firestore');
       const docRef = doc(db, 'users', userId, 'vedicInterpretations', path);
       await deleteDoc(docRef);
-      console.log('✅ Bad cache deleted:', path);
+      devLog.debug('✅ Bad cache deleted:', path);
     } catch (error) {
-      console.error('Error deleting cache:', error);
+      devLog.error('Error deleting cache:', error, 'vedicInterpretationEnhancer');
     }
   }
   
@@ -449,9 +450,9 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
         generatedAt: Date.now(),
         version: VEDIC_CACHE_VERSION, // Save current version
       });
-      console.log(`✅ Cache saved: ${path} (v${VEDIC_CACHE_VERSION})`);
+      devLog.debug(`✅ Cache saved: ${path} (v${VEDIC_CACHE_VERSION})`);
     } catch (error) {
-      console.error('Cache write error:', error);
+      devLog.error('Cache write error:', error, 'vedicInterpretationEnhancer');
     }
   }
   
@@ -492,12 +493,12 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
       if (phrase.includes('[') && phrase.includes(']')) {
         const regex = new RegExp(phrase, 'i');
         if (regex.test(text)) {
-          console.log(`❌ Invalid phrase: "${phrase}"`);
+          devLog.debug(`❌ Invalid phrase: "${phrase}"`);
           return false;
         }
       } else {
         if (text.toLowerCase().includes(phrase.toLowerCase())) {
-          console.log(`❌ Invalid phrase: "${phrase}"`);
+          devLog.debug(`❌ Invalid phrase: "${phrase}"`);
           return false;
         }
       }
@@ -506,7 +507,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
     // Check for incorrect 0° when actual degree is not 0
     if (chartData?.ascendant?.degree && chartData.ascendant.degree > 0.1) {
       if (text.includes('at 0°') || text.includes('at 0 degrees')) {
-        console.log('❌ Incorrect 0° degree');
+        devLog.debug('❌ Incorrect 0° degree');
         return false;
       }
     }
@@ -514,14 +515,14 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
     // Check for "in X in the Yth house" pattern (e.g., "Sun in 10 in the 9th house")
     const incorrectHousePattern = /\b(Sun|Moon|Mercury|Venus|Mars|Jupiter|Saturn|Rahu|Ketu)\s+in\s+\d+\s+in\s+the\s+\d+(st|nd|rd|th)\s+house/i;
     if (incorrectHousePattern.test(text)) {
-      console.log('❌ Incorrect "Planet in X in the Yth house" pattern');
+      devLog.debug('❌ Incorrect "Planet in X in the Yth house" pattern');
       return false;
     }
     
     // Check for "The Xth house in Y" pattern (e.g., "The 1st house in 2")
     const houseInSignNumberPattern = /The\s+\d+(st|nd|rd|th)\s+house\s+in\s+\d+/i;
     if (houseInSignNumberPattern.test(text)) {
-      console.log('❌ Incorrect "The Xth house in Y" pattern');
+      devLog.debug('❌ Incorrect "The Xth house in Y" pattern');
       return false;
     }
     
@@ -533,7 +534,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
       // Check if it's NOT followed by ordinal suffix
       const afterMatch = text.substring(match.index! + match[0].length, match.index! + match[0].length + 2);
       if (!['st', 'nd', 'rd', 'th'].includes(afterMatch)) {
-        console.log(`❌ Unordinal house number: "${match[0]}"`);
+        devLog.debug(`❌ Unordinal house number: "${match[0]}"`);
         return false;
       }
     }
@@ -744,9 +745,9 @@ Tone: Warm, insightful, empowering. Mix practical wisdom with mystical insights.
       });
 
       await Promise.all(deletePromises);
-      console.log(`🗑️ Deleted ${querySnapshot.size} cached interpretations for user ${userId}`);
+      devLog.debug(`🗑️ Deleted ${querySnapshot.size} cached interpretations for user ${userId}`);
     } catch (error) {
-      console.error('Error deleting all interpretations:', error);
+      devLog.error('Error deleting all interpretations:', error, 'vedicInterpretationEnhancer');
     }
   }
 }

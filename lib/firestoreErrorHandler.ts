@@ -2,6 +2,7 @@
 // Provides centralized error handling and recovery for Firestore operations
 
 import { getFirebaseDB } from './firebase';
+import { devLog } from '@/lib/devLogger';
 
 export interface FirestoreErrorInfo {
   error: Error;
@@ -71,46 +72,46 @@ class FirestoreErrorHandler {
     
     // Provide specific error messages and recovery suggestions
     if (error.message.includes('400')) {
-      console.error('🔥 Firestore 400 Error:', {
+      devLog.error('🔥 Firestore 400 Error:', {
         operation,
         collection,
         documentId,
         message: 'Bad Request - Check data format and permissions',
         suggestion: 'Verify document structure and Firestore rules'
-      });
+      }, 'firestoreErrorHandler');
     } else if (error.message.includes('403')) {
-      console.error('🔥 Firestore 403 Error:', {
+      devLog.error('🔥 Firestore 403 Error:', {
         operation,
         collection,
         documentId,
         message: 'Forbidden - Check Firestore security rules',
         suggestion: 'Review Firestore security rules for this collection'
-      });
+      }, 'firestoreErrorHandler');
     } else if (error.message.includes('404')) {
-      console.error('🔥 Firestore 404 Error:', {
+      devLog.error('🔥 Firestore 404 Error:', {
         operation,
         collection,
         documentId,
         message: 'Document not found',
         suggestion: 'Verify document ID and collection path'
-      });
+      }, 'firestoreErrorHandler');
     } else if (this.isOfflineError(error)) {
       // Only log offline errors if not in initialization phase
-      console.error('🔥 Firestore Offline Error:', {
+      devLog.error('🔥 Firestore Offline Error:', {
         operation,
         collection,
         documentId,
         message: 'Client is offline',
         suggestion: 'Check internet connection and Firebase project status'
-      });
+      }, 'firestoreErrorHandler');
     } else {
-      console.error('🔥 Firestore Unknown Error:', {
+      devLog.error('🔥 Firestore Unknown Error:', {
         operation,
         collection,
         documentId,
         message: error.message,
         suggestion: 'Check Firebase configuration and network status'
-      });
+      }, 'firestoreErrorHandler');
     }
 
     return errorInfo;
@@ -137,7 +138,7 @@ class FirestoreErrorHandler {
         
         // Wait before retrying
         const delay = this.RETRY_DELAYS[attempt] || 5000;
-        console.log(`🔄 Retrying ${operationName} in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
+        devLog.debug(`🔄 Retrying ${operationName} in ${delay}ms (attempt ${attempt + 1}/${maxRetries + 1})`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -150,7 +151,7 @@ class FirestoreErrorHandler {
     try {
       const db = getFirebaseDB();
       if (!db) {
-        console.error('🔥 Firestore not initialized');
+        devLog.error('🔥 Firestore not initialized', undefined, 'firestoreErrorHandler');
         return false;
       }
 
@@ -169,7 +170,7 @@ class FirestoreErrorHandler {
         return true;
       }
       
-      console.error('🔥 Firestore connection validation failed:', errorMessage);
+      devLog.error('🔥 Firestore connection validation failed:', errorMessage, 'firestoreErrorHandler');
       return false;
     }
   }
@@ -210,7 +211,7 @@ class FirestoreErrorHandler {
   // Clear error log
   clearErrorLog(): void {
     this.errorLog = [];
-    console.log('🧹 Firestore error log cleared');
+    devLog.debug('🧹 Firestore error log cleared');
   }
 
   private logError(errorInfo: FirestoreErrorInfo): void {
@@ -244,7 +245,7 @@ export async function safeFirestoreOperation<T>(
   try {
     return await firestoreErrorHandler.retryOperation(operation, 3, operationName);
   } catch (error) {
-    console.error(`❌ Firestore operation failed: ${operationName}`, error);
+    devLog.error(`❌ Firestore operation failed: ${operationName}`, error, 'firestoreErrorHandler');
     throw error;
   }
 }

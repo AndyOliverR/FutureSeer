@@ -2,6 +2,7 @@
 // Integrates missing tools from GitHub repositories: VedAstro, Kerykeion, AstroChart, iztro, Sortilege
 
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
 
 // ============================================================================
@@ -116,7 +117,7 @@ export class VedAstroIntegration {
       return data;
       
     } catch (error) {
-      console.error('VedAstro integration error:', error);
+      devLog.error('VedAstro integration error:', error, 'enhancedToolIntegration');
       throw error;
     }
   }
@@ -215,7 +216,7 @@ export class KerykeionIntegration {
       return result;
       
     } catch (error) {
-      console.error('Kerykeion integration error:', error);
+      devLog.error('Kerykeion integration error:', error, 'enhancedToolIntegration');
       throw error;
     }
   }
@@ -331,7 +332,7 @@ export class IztroIntegration {
       return result;
       
     } catch (error) {
-      console.error('Iztro integration error:', error);
+      devLog.error('Iztro integration error:', error, 'enhancedToolIntegration');
       throw error;
     }
   }
@@ -445,7 +446,7 @@ export class SortilegeIntegration {
       return result;
       
     } catch (error) {
-      console.error('Sortilege integration error:', error);
+      devLog.error('Sortilege integration error:', error, 'enhancedToolIntegration');
       // Fallback to old methods for backward compatibility
       return this.generateLegacyReading(userId, method, question);
     }
@@ -717,7 +718,7 @@ export class BibliomancyIntegration {
       return result;
       
     } catch (error) {
-      console.error('Bibliomancy integration error:', error);
+      devLog.error('Bibliomancy integration error:', error, 'enhancedToolIntegration');
       throw error;
     }
   }
@@ -807,7 +808,7 @@ export class EnhancedUniversalInterpretationEngine {
       return result;
       
     } catch (error) {
-      console.error(`Error generating ${system} reading:`, error);
+      devLog.error(`Error generating ${system} reading:`, error, 'enhancedToolIntegration');
       throw error;
     }
   }

@@ -1,4 +1,5 @@
 import { ThirteenSignsAnalysis, BirthData, ZodiacSign, CompatibilityMatch } from '@/hooks/useThirteenSignsZodiac'
+import { devLog } from '@/lib/devLogger';
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
 
@@ -185,7 +186,7 @@ class ThirteenSignsZodiacIntelligence {
         advice
       }
     } catch (error) {
-      console.error('13 Signs analysis error:', error)
+      devLog.error('13 Signs analysis error:', error, 'thirteenSignsZodiacIntelligence')
       throw new Error('Failed to perform 13 signs analysis')
     }
   }

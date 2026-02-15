@@ -11,6 +11,7 @@ import {
   SCRYING_REFUSAL_SAFETY_PHRASE,
   type ScryingQuestionType,
 } from '@/lib/scryingSeerState';
+import { buildScryingSeerSystemPrompt } from '@/lib/scryingSeerPrompts';
 
 interface ScryingSeerRequest {
   userId: string;
@@ -19,18 +20,24 @@ interface ScryingSeerRequest {
   scryingVision?: any;
   scryingMethod?: 'crystal-ball' | 'mirror';
   sessionId?: string;
+  /** Aggregator contract: pass comprehensiveProfile to derive scrying vision */
+  comprehensiveProfile?: any;
 }
 
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
     const {
       userId,
       question,
       userProfile,
-      scryingVision,
-      scryingMethod,
+      scryingVision: bodyScryingVision,
+      scryingMethod: bodyScryingMethod,
       sessionId,
-    }: ScryingSeerRequest = await request.json();
+      comprehensiveProfile,
+    }: ScryingSeerRequest = body;
+    const scryingVision = bodyScryingVision ?? comprehensiveProfile?.scrying ?? comprehensiveProfile?.['Scrying'];
+    const scryingMethod = bodyScryingMethod ?? scryingVision?.method ?? 'crystal-ball';
 
     if (!userId || !question || !userProfile) {
       return NextResponse.json(
@@ -77,7 +84,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getScryingSliceForQuestionType(questionType, state);
+    const slice = getScryingSliceForQuestionType(questionType, state);
+    const systemPrompt = buildScryingSeerSystemPrompt(slice, questionType);
 
     const memory = new ConversationalMemory(userId);
     await memory.initializeAllMemory(true);
@@ -152,7 +160,7 @@ export async function POST(request: NextRequest) {
             memory.addRecentQuestion(question.trim());
             await memory.saveAllMemory();
           } catch (error) {
-            console.error('Error during scrying seer streaming:', error);
+            devLog.error('Error during scrying seer streaming:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -172,7 +180,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error in Scrying Seer API:', error);
+    devLog.error('Error in Scrying Seer API:', error);
     return NextResponse.json(
       {
         success: false,

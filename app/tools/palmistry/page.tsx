@@ -67,7 +67,7 @@ export default function PalmistryPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-center mb-8"
         >
-          <h1 className="text-5xl font-serif font-semibold mb-6">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-amber-400">🤲</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600">Palmistry</span>
           </h1>
@@ -75,59 +75,54 @@ export default function PalmistryPage() {
         </motion.div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-          >
-            <TabsList className="grid w-full grid-cols-5 bg-transparent p-0 gap-2" role="tablist" aria-label="Palmistry navigation tabs">
-              <TabsTrigger 
-                value="introduction" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
-                role="tab"
-                aria-label="Introduction to Palmistry"
-              >
-                Introduction
-              </TabsTrigger>
-              <TabsTrigger 
-                value="palmistry-analysis" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
-                role="tab"
-                aria-label="View your comprehensive palm analysis"
-              >
-                Palm Analysis
-              </TabsTrigger>
-              <TabsTrigger 
-                value="timing-guidance" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
-                role="tab"
-                aria-label="View timing and life guidance"
-              >
-                Timing & Guidance
-              </TabsTrigger>
-              <TabsTrigger 
-                value="remedies" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
-                role="tab"
-                aria-label="View personalized palmistry remedies"
-              >
-                Remedies
-              </TabsTrigger>
-              <TabsTrigger 
-                value="ask-the-seer" 
-                className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-amber-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:shadow-amber-200/50 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all duration-200"
-                role="tab"
-                aria-label="Ask palmistry questions to the expert seer"
-              >
-                Ask the Seer
-              </TabsTrigger>
-            </TabsList>
-          </motion.div>
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30" role="tablist" aria-label="Palmistry navigation tabs">
+            <TabsTrigger 
+              value="introduction" 
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
+              role="tab"
+              aria-label="Introduction to Palmistry"
+            >
+              Introduction
+            </TabsTrigger>
+            <TabsTrigger 
+              value="palmistry-analysis" 
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
+              role="tab"
+              aria-label="View your comprehensive palm analysis"
+            >
+              Palm Analysis
+            </TabsTrigger>
+            <TabsTrigger 
+              value="timing-guidance" 
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
+              role="tab"
+              aria-label="View timing and life guidance"
+            >
+              Timing & Guidance
+            </TabsTrigger>
+            <TabsTrigger 
+              value="remedies" 
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
+              role="tab"
+              aria-label="View personalized palmistry remedies"
+            >
+              Remedies
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ask-the-seer" 
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
+              role="tab"
+              aria-label="Ask palmistry questions to the expert seer"
+            >
+              Ask the Seer
+            </TabsTrigger>
+          </TabsList>
 
           {/* Introduction Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent key="introduction" value="introduction" className="space-y-6 mt-6">
+            <TabsContent key="introduction" value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <motion.div
                 variants={cardVariants}
                 initial="initial"
@@ -142,7 +137,7 @@ export default function PalmistryPage() {
 
           {/* Palmistry Analysis Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent key="palmistry-analysis" value="palmistry-analysis" className="space-y-6 mt-6">
+            <TabsContent key="palmistry-analysis" value="palmistry-analysis" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -318,7 +313,7 @@ export default function PalmistryPage() {
 
           {/* Timing & Guidance Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent key="timing-guidance" value="timing-guidance" className="space-y-6 mt-6">
+            <TabsContent key="timing-guidance" value="timing-guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {analysisData ? (
                 <motion.div
                   variants={cardVariants}
@@ -507,7 +502,7 @@ export default function PalmistryPage() {
 
           {/* Remedies Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent key="remedies" value="remedies" className="space-y-6 mt-6">
+            <TabsContent key="remedies" value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <motion.div
                 variants={cardVariants}
                 initial="initial"
@@ -525,7 +520,7 @@ export default function PalmistryPage() {
 
           {/* Ask the Seer Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent key="ask-the-seer" value="ask-the-seer" className="space-y-6 mt-6">
+            <TabsContent key="ask-the-seer" value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <motion.div
                 variants={cardVariants}
                 initial="initial"
@@ -546,6 +541,7 @@ export default function PalmistryPage() {
             </TabsContent>
           </AnimatePresence>
         </Tabs>
+        </div>
       </div>
     </motion.div>
   )

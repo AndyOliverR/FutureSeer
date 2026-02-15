@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import { buildKPSeerSystemPrompt } from '@/lib/kpSeerPrompts';
 import {
   buildKPChartState,
   classifyKPQuestion,
@@ -23,6 +24,9 @@ const ANALYSIS_REQUIRED_MESSAGE =
 function getRefusalMessage(): string {
   return 'KP astrology requires a precise question and exact chart data. KP astrology answers outcome-based questions, not explanations.';
 }
+
+const CLARIFICATION_TIMING_MESSAGE =
+  "To give timing in KP astrology, I need the exact outcome you're asking about. For example: 'Will my app launch succeed, and when?'";
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,6 +105,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (questionType === 'clarification_timing') {
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode(CLARIFICATION_TIMING_MESSAGE));
+            controller.close();
+          },
+        }),
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+          },
+        }
+      );
+    }
+
     const chartSlice = getKPSliceForQuestionType(
       questionType,
       state,
@@ -108,27 +130,9 @@ export async function POST(request: NextRequest) {
     );
 
     const displayName = (userProfile?.displayName ?? '').trim();
-    const namingRule = displayName
-      ? `The user's display name is "${displayName}". Address them only by this name. Do not use generic terms.`
-      : 'If no display name is provided, you may use a brief generic address.';
-
-    const systemPrompt = `You are an expert KP (Krishnamurti Paddhati) astrologer. In KP, the Sub-Lord decides. Always.
-
-RULES:
-- ${namingRule}
-- Answer only outcome-based, binary questions (yes / no / conditional or delayed). Do not narrate stories or give personality readings.
-- Follow the MATTER RULE in the chart state: for questions with NO denial houses (e.g. job, venture, loan, litigation win), say YES if the relevant cusp sub-lords signify ANY of the support houses listed; say NO only when they do NOT signify any support house. Do not invent "denial" or "neutral" when the matter has no denial houses.
-- Do not default to NO. Judge only from the cusp sub-lords of the RELEVANT houses and the Significators map (a planet signifies the houses listed next to it). A sub-lord supports the outcome if it signifies a support house for this matter.
-- Use the KP chart state below. Route strictly via relevant houses; let the cusp sub-lord decide. Rank significators: planet in house > lord of house > star-lord of planet in house.
-- Dasha confirms timing; it cannot override a denying sub-lord. Favorable sub-lord + wrong Dasha → delay, not denial.
-- State which houses support or deny the matter. Answer directly and traceably.
-- Refuse: no clear question, non-binary questions, "why/what should I do", "when exactly", or remedy requests. Say: "KP astrology requires a precise question and exact chart data."
-- Permanent rule: KP answers outcomes; Vedic answers periods; Tarot answers process.
-
-KP CHART STATE (use this only):
-${chartSlice}
-
-Answer the user's question using the chart state above. Keep language direct, traceable, and non-emotional.`;
+    const systemPrompt = buildKPSeerSystemPrompt(chartSlice, questionType, {
+      displayName: displayName || undefined,
+    });
 
     const userMessage = question.trim();
 
@@ -153,7 +157,7 @@ Answer the user's question using the chart state above. Keep language direct, tr
               }
             }
           } catch (error) {
-            console.error('KP Astrology Seer stream error:', error);
+            devLog.error('KP Astrology Seer stream error:', error);
             controller.enqueue(
               new TextEncoder().encode(
                 'I encountered an error. Please try again.'

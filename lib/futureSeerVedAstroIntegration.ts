@@ -4,6 +4,7 @@
  */
 
 import { vedAstroApiService, BirthData, VedAstroResponse } from './vedAstroApiService'
+import { devLog } from '@/lib/devLogger';
 
 export interface FutureSeerUserProfile {
   id: string
@@ -69,7 +70,7 @@ export class FutureSeerVedAstroIntegration {
    * Get comprehensive analysis for a user
    */
   async getComprehensiveAnalysis(userProfile: FutureSeerUserProfile): Promise<IntegratedAnalysis> {
-    console.log('🔮 FutureSeer: Starting comprehensive VedAstro analysis...')
+    devLog.debug('🔮 FutureSeer: Starting comprehensive VedAstro analysis...')
     
     const birthData: BirthData = {
       birthDate: userProfile.birthDate,
@@ -130,11 +131,11 @@ export class FutureSeerVedAstroIntegration {
         eventPredictions: []
       }
 
-      console.log('✅ FutureSeer: Comprehensive analysis completed')
+      devLog.debug('✅ FutureSeer: Comprehensive analysis completed')
       return analysis
 
     } catch (error) {
-      console.error('❌ FutureSeer: Comprehensive analysis failed:', error)
+      devLog.error('❌ FutureSeer: Comprehensive analysis failed:', error, 'futureSeerVedAstroIntegration')
       throw new Error('VedAstro API is not available. Please try again later.')
     }
   }
@@ -151,7 +152,7 @@ export class FutureSeerVedAstroIntegration {
         const result = await vedAstroApiService.getDivisionalChart(chartType, birthData)
         charts[chartType] = result
       } catch (error) {
-        console.error(`Failed to get ${chartType} chart:`, error)
+        devLog.error(`Failed to get ${chartType} chart:`, error, 'futureSeerVedAstroIntegration')
         charts[chartType] = null
       }
     })
@@ -184,7 +185,7 @@ export class FutureSeerVedAstroIntegration {
       }
 
     } catch (error) {
-      console.error('Failed to get Indian charts:', error)
+      devLog.error('Failed to get Indian charts:', error, 'futureSeerVedAstroIntegration')
     }
 
     return charts
@@ -238,7 +239,7 @@ export class FutureSeerVedAstroIntegration {
       }
 
     } catch (error) {
-      console.error('Failed to get compatibility analysis:', error)
+      devLog.error('Failed to get compatibility analysis:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Compatibility analysis is not available. VedAstro API is not accessible.')
     }
   }
@@ -270,10 +271,10 @@ export class FutureSeerVedAstroIntegration {
       // Handle 404 errors gracefully - these are expected for some endpoints
       const error = result.reason
       if (error?.message?.includes('404')) {
-        console.log('ℹ️ VedAstro endpoint not available (expected for some features)')
+        devLog.debug('ℹ️ VedAstro endpoint not available (expected for some features)')
         return null
       } else {
-        console.error('Promise rejected:', result.reason)
+        devLog.error('Promise rejected:', result.reason, 'futureSeerVedAstroIntegration')
         return null
       }
     }
@@ -406,7 +407,7 @@ export class FutureSeerVedAstroIntegration {
       const result = await vedAstroApiService.getPanchanga(birthData, '2025-09-25')
       return this.processVedAstroResponse(result)
     } catch (error) {
-      console.error('Failed to get Panchanga:', error)
+      devLog.error('Failed to get Panchanga:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Panchanga data is not available. VedAstro API is not accessible.')
     }
   }
@@ -419,7 +420,7 @@ export class FutureSeerVedAstroIntegration {
       const result = await vedAstroApiService.getTarabala(birthData, '2025-09-25')
       return this.processVedAstroResponse(result)
     } catch (error) {
-      console.error('Failed to get Tarabala:', error)
+      devLog.error('Failed to get Tarabala:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Tarabala data is not available. VedAstro API is not accessible.')
     }
   }
@@ -432,7 +433,7 @@ export class FutureSeerVedAstroIntegration {
       const result = await vedAstroApiService.getNakshatraAnalysis(birthData)
       return this.processVedAstroResponse(result)
     } catch (error) {
-      console.error('Failed to get Nakshatra analysis:', error)
+      devLog.error('Failed to get Nakshatra analysis:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Nakshatra analysis is not available. VedAstro API is not accessible.')
     }
   }
@@ -445,7 +446,7 @@ export class FutureSeerVedAstroIntegration {
       const result = await vedAstroApiService.getPlanetaryStrength(birthData)
       return this.processVedAstroResponse(result)
     } catch (error) {
-      console.error('Failed to get planetary strength:', error)
+      devLog.error('Failed to get planetary strength:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Planetary strength data is not available. VedAstro API is not accessible.')
     }
   }
@@ -458,7 +459,7 @@ export class FutureSeerVedAstroIntegration {
       const result = await vedAstroApiService.getPlanetPositions(birthData)
       return this.processVedAstroResponse(result)
     } catch (error) {
-      console.error('Failed to get planet data:', error)
+      devLog.error('Failed to get planet data:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Planet data is not available. VedAstro API is not accessible.')
     }
   }
@@ -471,7 +472,7 @@ export class FutureSeerVedAstroIntegration {
       const result = await vedAstroApiService.getHousePositions(birthData)
       return this.processVedAstroResponse(result)
     } catch (error) {
-      console.error('Failed to get house data:', error)
+      devLog.error('Failed to get house data:', error, 'futureSeerVedAstroIntegration')
       throw new Error('House data is not available. VedAstro API is not accessible.')
     }
   }
@@ -484,7 +485,7 @@ export class FutureSeerVedAstroIntegration {
       const result = await vedAstroApiService.getFutureTransits(birthData, '2025-09-25', '2030-12-31')
       return this.processVedAstroResponse(result)
     } catch (error) {
-      console.error('Failed to get future transits:', error)
+      devLog.error('Failed to get future transits:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Future transits data is not available. VedAstro API is not accessible.')
     }
   }
@@ -525,7 +526,7 @@ export class FutureSeerVedAstroIntegration {
         lunarReturn: lunarReturn.status === 'fulfilled' ? this.processVedAstroResponse(lunarReturn.value) : null
       }
     } catch (error) {
-      console.error('Failed to get advanced analysis:', error)
+      devLog.error('Failed to get advanced analysis:', error, 'futureSeerVedAstroIntegration')
       throw new Error('Advanced analysis is not available. VedAstro API is not accessible.')
     }
   }

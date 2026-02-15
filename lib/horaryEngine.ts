@@ -2,6 +2,7 @@
 // Real astronomical calculations using NASA JPL data
 
 import { format, parseISO } from 'date-fns'
+import { devLog } from '@/lib/devLogger';
 import { ProfessionalAstroEngine, ProfessionalPlanetaryPosition, ProfessionalHouseData, ProfessionalAspect } from './professionalAstroEngine'
 import { ProfessionalChartGenerator } from './professionalChartGenerator'
 
@@ -86,13 +87,13 @@ export class HoraryEngine {
     // Initialize professional astronomical calculations
     this.professionalEngine = new ProfessionalAstroEngine()
     this.chartGenerator = new ProfessionalChartGenerator()
-    console.log('🔮 Initializing Professional Horary Engine with Real Astronomical Data')
+    devLog.debug('🔮 Initializing Professional Horary Engine with Real Astronomical Data')
   }
 
   // Main method to generate complete Horary chart
   async generateHoraryChart(question: HoraryQuestion): Promise<HoraryChart> {
     try {
-      console.log('🔮 Generating Horary chart for:', question.question)
+      devLog.debug('🔮 Generating Horary chart for:', question.question)
 
       // Convert question time to Julian Day
       const questionDate = new Date(question.questionTime)
@@ -151,7 +152,7 @@ export class HoraryEngine {
       }
 
     } catch (error) {
-      console.error('❌ Error generating Horary chart:', error)
+      devLog.error('❌ Error generating Horary chart:', error, 'horaryEngine')
       throw new Error(`Failed to generate Horary chart: ${error}`)
     }
   }
@@ -278,7 +279,7 @@ export class HoraryEngine {
           retrograde: position.speed < 0
         })
       } catch (error) {
-        console.warn(`Failed to calculate real position for ${planetName}:`, error)
+        devLog.warn(`Failed to calculate real position for ${planetName}:`, error, 'horaryEngine')
         // Fallback to enhanced calculation
         const longitude = this.calculatePlanetLongitude(planetName, julianDay)
         positions.push({
@@ -528,7 +529,7 @@ export class HoraryEngine {
       // Use enhanced Regiomontanus house calculation
       return this.calculateRegiomontanusHouses(julianDay, question)
     } catch (error) {
-      console.error('Error calculating houses:', error)
+      devLog.error('Error calculating houses:', error, 'horaryEngine')
       // Fallback to equal houses
       return this.calculateEqualHouses(question)
     }

@@ -1,4 +1,5 @@
 'use client';
+import { devLog } from '@/lib/devLogger';
 
 export interface Coordinates {
   latitude: number;
@@ -19,7 +20,7 @@ export async function geocodePlace(place: string): Promise<Coordinates | null> {
   // Check cache first
   const cacheKey = place.toLowerCase().trim();
   if (GEOCODING_CACHE[cacheKey]) {
-    console.log('📍 Using cached coordinates for:', place);
+    devLog.debug('📍 Using cached coordinates for:', place);
     return GEOCODING_CACHE[cacheKey];
   }
   
@@ -50,14 +51,14 @@ export async function geocodePlace(place: string): Promise<Coordinates | null> {
       // Cache the result
       GEOCODING_CACHE[cacheKey] = coordinates;
       
-      console.log('📍 Geocoded:', place, '→', coordinates);
+      devLog.debug('Geocoded', { place, coordinates }, 'geocoding');
       return coordinates;
     }
     
-    console.warn('⚠️ No coordinates found for:', place);
+    devLog.warn('⚠️ No coordinates found for:', place, 'geocoding');
     return null;
   } catch (error) {
-    console.error('❌ Geocoding error:', error);
+    devLog.error('❌ Geocoding error:', error, 'geocoding');
     return null;
   }
 }
@@ -85,12 +86,12 @@ export async function getCoordinatesWithFallback(place: string): Promise<Coordin
   const placeLower = place.toLowerCase();
   for (const [city, coords] of Object.entries(fallbacks)) {
     if (placeLower.includes(city)) {
-      console.log('📍 Using fallback coordinates for:', place, '→', city);
+      devLog.debug('Using fallback coordinates', { place, city }, 'geocoding');
       return coords;
     }
   }
   
   // Ultimate fallback: Mumbai (center of India)
-  console.warn('⚠️ Using default Mumbai coordinates for:', place);
+  devLog.warn('⚠️ Using default Mumbai coordinates for:', place, 'geocoding');
   return { latitude: 19.0760, longitude: 72.8777 };
 }

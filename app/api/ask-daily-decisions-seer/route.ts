@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildDailyDecisionState,
@@ -7,7 +8,7 @@ import {
   type DailyDecisionQuestionType,
 } from '@/lib/dailyDecisionsSeerState';
 import type { DailyDecisionsAnalysis } from '@/lib/dailyDecisionsIntelligence';
-import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
+import { buildDailyDecisionSeerSystemPrompt } from '@/lib/dailyDecisionsSeerPrompts';
 
 interface AskDailyDecisionsSeerRequest {
   userId?: string;
@@ -15,34 +16,6 @@ interface AskDailyDecisionsSeerRequest {
   userProfile?: unknown;
   dailyDecisionsAnalysis?: DailyDecisionsAnalysis;
   selectedDate?: string;
-}
-
-function buildDailyDecisionSystemPrompt(
-  chartSlice: string,
-  questionType: DailyDecisionQuestionType
-): string {
-  return `You are an expert Daily Decisions (Vedic Panchanga) guide. You reason only from the state below. Daily Decisions addresses timing suitability, not outcomes.
-${SEER_GOVERNING_SENTENCE}
-
-## CRITICAL RULES
-- **Vara (Sanskrit) to English**: Shukravar = Friday, Guruvar = Thursday, Ravivar = Sunday, Somavar = Monday, Mangalvar = Tuesday, Budhvar = Wednesday, Shanivar = Saturday. When referring to the day of the week, always use the English weekday (e.g. Friday). Never say Shukravar is Thursday. Shukravar is Friday. When stating what day today is, use the value of weekday_english from the state.
-- **Mandatory state**: Do not answer without the Daily Decision state; the slice below is your only input.
-- **Valid questions**: Only timing-suitability questions (e.g. "Is today good for X?", "When should I do X today?", "Should I avoid X today?"). Refuse outcome prediction: "Daily Decisions does not assess outcomes, only timing suitability."
-- **Activity-specific rules**: Each activity has its own guidance; answer only for the activity in question. Do not use the word "rulebook" in your answers. Phrase in plain language (e.g. "Best days for lending money are Monday", "Avoid haircut on your Janma Tithi").
-- **Absolute prohibitions gate**: If Janma Nakshatra day, Janma Tithi (for grooming), Rahu Kaal, Gulika Kaal, or after sunset (for grooming) applies, score cannot exceed 65 and you must explicitly say "avoid."
-- **Scores**: Scores express ease of timing, not benefit or success.
-- **Dasha**: Current Dasha modifies caution level only, not permission. Phrase: "Current Dasha suggests caution, not avoidance."
-- **Time window resolver**: For "when today?" questions, remove Rahu Kaal, Gulika Kaal, and (for grooming) post-sunset; return only the remaining safe windows. No astrology narration.
-- **Explanation style**: Short, rule-referenced, emotionless. Example: "Haircut is discouraged today because it coincides with your Janma Tithi."
-- **Permanent rule**: Daily Decisions reduces avoidable friction; it does not create success.
-
-## Daily Decision state (use only these)
-${chartSlice}
-
-## Question type
-${questionType}
-
-Answer the user's question with specific references to the state above.`;
 }
 
 const REFUSAL_MESSAGE =
@@ -102,7 +75,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: buildDailyDecisionSystemPrompt(chartSlice, questionType),
+          content: buildDailyDecisionSeerSystemPrompt(chartSlice, questionType),
         },
         { role: 'user', content: question.trim() },
       ],
@@ -121,7 +94,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Daily Decisions Seer stream error:', error);
+            devLog.error('Daily Decisions Seer stream error:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -141,7 +114,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: unknown) {
-    console.error('Daily Decisions Seer API error:', error);
+    devLog.error('Daily Decisions Seer API error:', error, 'route');
     return NextResponse.json(
       {
         success: false,

@@ -2,6 +2,7 @@
 // Provides human-readable explanations of complex astrological data
 
 import { VedicReportSchema } from '@/types/vedicReport'
+import { devLog } from '@/lib/devLogger';
 
 export interface AIInterpretation {
   summary: string
@@ -24,7 +25,7 @@ export class VedicAIInterpreter {
       // In the future, this can be replaced with actual AI model calls
       return this.generateRuleBasedInterpretation(vedicData)
     } catch (error) {
-      console.error('Error interpreting Vedic data:', error)
+      devLog.error('Error interpreting Vedic data:', error, 'aiInterpretation')
       return this.getDefaultInterpretation()
     }
   }

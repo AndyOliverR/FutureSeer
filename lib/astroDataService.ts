@@ -1,9 +1,9 @@
 import { generateChartData } from './astrology'
+import { devLog, devWarn } from '@/lib/devLogger';
 import { generateFallbackAstroData, isFallbackDataReliable } from './astroFallback'
 import { getIntelligentAstroData, getSystemStatus } from './astroIntelligence'
 import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
-import { devLog, devWarn } from './devLogger';
 import { CACHE_TTL } from './cacheConstants';
 
 // Comprehensive astrological data structure
@@ -144,7 +144,7 @@ export async function getComprehensiveAstroData(
         //     storedData.birthDate === birthDate &&
         //     storedData.birthPlace === birthPlace &&
         //     storedData.birthTime === birthTime) {
-        //   console.log('Using stored astrological data for user:', userId)
+        //   devLog.debug('Using stored astrological data for user:', userId)
         //   astroDataCache.set(userId, storedData)
         //   return storedData
         // }
@@ -225,7 +225,7 @@ export async function getComprehensiveAstroData(
     return comprehensiveData
     
   } catch (intelligentError) {
-    console.error('Intelligent system failed:', intelligentError)
+    devLog.error('Intelligent system failed:', intelligentError, 'astroDataService')
     throw new Error('Astrological data service is not available. Please try again later.')
   }
 }

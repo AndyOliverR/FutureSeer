@@ -327,7 +327,7 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
     try {
       palmData = JSON.parse(analysisText);
     } catch (parseError) {
-      console.error('Failed to parse Groq response:', parseError);
+      devLog.error('Failed to parse Groq response:', parseError, 'route');
       devLog.debug('Raw response:', analysisText, 'palmistry');
       // Try to extract JSON from markdown code blocks if present
       const jsonMatch = analysisText.match(/```json\s*([\s\S]*?)\s*```/) || analysisText.match(/```\s*([\s\S]*?)\s*```/);
@@ -486,11 +486,11 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
       statusCode = 504;
     }
 
-    console.error('❌ Palm analysis error:', {
+    devLog.error('❌ Palm analysis error:', {
       error: error.message,
       stack: error.stack,
       userMessage
-    });
+    }, 'route');
 
     return NextResponse.json(
       {

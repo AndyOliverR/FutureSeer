@@ -70,7 +70,7 @@ function generateChartImage(chartType: string, birthData: BirthData, style: 'nor
     
     return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
   } catch (error) {
-    console.error('Error generating chart image:', error)
+    devLog.error('Error generating chart image:', error, 'route')
     // Return fallback image
     return `data:image/svg+xml;base64,${Buffer.from(`
       <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Error generating chart image:', error)
+    devLog.error('Error generating chart image:', error, 'route')
     return NextResponse.json(
       { 
         error: 'Failed to generate chart image',
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Error generating chart image:', error)
+    devLog.error('Error generating chart image:', error, 'route')
     return NextResponse.json(
       { 
         error: 'Failed to generate chart image',

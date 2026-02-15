@@ -1,4 +1,5 @@
 import { DivinationModule } from './toolSelector';
+import { devLog } from '@/lib/devLogger';
 
 export interface EvidenceSource {
   source: string;
@@ -141,13 +142,13 @@ export async function fetchModuleEvidence(
   // Get mock data for the module and intent
   const moduleData = MOCK_EVIDENCE_DATA[moduleName as keyof typeof MOCK_EVIDENCE_DATA];
   if (!moduleData) {
-    console.warn(`No mock data available for module: ${moduleName}`);
+    devLog.warn(`No mock data available for module: ${moduleName}`, undefined, 'evidenceAggregator');
     return null;
   }
   
   const intentData = moduleData[intent as keyof typeof moduleData];
   if (!intentData) {
-    console.warn(`No mock data available for intent: ${intent} in module: ${moduleName}`);
+    devLog.warn(`No mock data available for intent: ${intent} in module: ${moduleName}`, undefined, 'evidenceAggregator');
     return null;
   }
   
@@ -260,14 +261,14 @@ export async function testEvidenceAggregation() {
   
   const intent = "financial_approval";
   
-  console.log(`Testing evidence aggregation for intent: ${intent}`);
+  devLog.debug(`Testing evidence aggregation for intent: ${intent}`);
   const aggregated = await aggregateEvidence(testModules, intent);
   
-  console.log(`Overall Strength: ${aggregated.overall_strength.toFixed(2)}`);
-  console.log(`Confidence Score: ${aggregated.confidence_score.toFixed(2)}`);
-  console.log(`Primary Themes: ${aggregated.primary_themes.join(', ')}`);
-  console.log(`Warnings: ${aggregated.warnings.join(', ')}`);
-  console.log(`Conflicting Signals: ${aggregated.conflicting_signals}`);
-  console.log(`Timing Consensus: ${aggregated.timing_consensus ? aggregated.timing_consensus.join(' to ') : 'None'}`);
-  console.log(`Sources: ${aggregated.sources.map(s => s.source).join(', ')}`);
+  devLog.debug(`Overall Strength: ${aggregated.overall_strength.toFixed(2)}`);
+  devLog.debug(`Confidence Score: ${aggregated.confidence_score.toFixed(2)}`);
+  devLog.debug(`Primary Themes: ${aggregated.primary_themes.join(', ')}`);
+  devLog.debug(`Warnings: ${aggregated.warnings.join(', ')}`);
+  devLog.debug(`Conflicting Signals: ${aggregated.conflicting_signals}`);
+  devLog.debug(`Timing Consensus: ${aggregated.timing_consensus ? aggregated.timing_consensus.join(' to ') : 'None'}`);
+  devLog.debug(`Sources: ${aggregated.sources.map(s => s.source).join(', ')}`);
 } 

@@ -188,7 +188,7 @@ Return JSON.`;
         }, 'energy-healing');
       }
     } catch (parseError) {
-      console.error('Failed to parse Groq response:', parseError);
+      devLog.error('Failed to parse Groq response:', parseError, 'route');
       devLog.debug('Raw response:', analysisText, 'energy-healing');
       // Try to extract JSON from markdown code blocks if present
       const jsonMatch = analysisText.match(/```json\s*([\s\S]*?)\s*```/) || analysisText.match(/```\s*([\s\S]*?)\s*```/);
@@ -210,7 +210,7 @@ Return JSON.`;
     // Check for context length errors specifically
     if (error.message?.includes('context_length_exceeded') || 
         error.message?.includes('reduce the length')) {
-      console.error('❌ Groq API context length exceeded. Prompt too long.');
+      devLog.error('❌ Groq API context length exceeded. Prompt too long.', undefined, 'route');
       return NextResponse.json(
         {
           success: false,
@@ -220,7 +220,7 @@ Return JSON.`;
       );
     }
     
-    console.error(`❌ ${method ?? 'energy-healing'} analysis error:`, error);
+    devLog.error(`❌ ${method ?? 'energy-healing'} analysis error:`, error, 'route');
     return NextResponse.json(
       {
         success: false,

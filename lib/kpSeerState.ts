@@ -23,6 +23,7 @@ export type KPQuestionType =
   | 'venture'
   | 'property'
   | 'general'
+  | 'clarification_timing'
   | 'refusal';
 
 /** House clusters: favorable (support) vs denial (deny) for common matters */
@@ -115,9 +116,20 @@ export function buildKPChartState(
 
 /**
  * Classify KP question. Refuse non-binary, explanatory, remedy, or "when exactly" questions.
+ * If question is timing-led but mentions no event, return clarification_timing so the route can ask for restatement.
  */
 export function classifyKPQuestion(question: string): KPQuestionType {
   const lower = question.toLowerCase().trim();
+
+  const timingLed =
+    /^\s*when\b/.test(lower) ||
+    /\b(when is the|when will|when can|which period|what timing|favorable period)\b/.test(lower);
+  const hasExplicitEvent = /\b(job|marriage|loan|venture|business|relationship|app|offer|deal|property|court|case|succeed|approved|formalize|litigation|marry)\b/.test(
+    lower
+  );
+  if (timingLed && !hasExplicitEvent) {
+    return 'clarification_timing';
+  }
 
   if (
     /\b(why is this|what should i do|describe my future|when exactly|remedy|remedies|what do i do)\b/.test(
@@ -191,7 +203,7 @@ export function classifyKPQuestion(question: string): KPQuestionType {
 function getRelevantHousesForType(
   type: KPQuestionType
 ): { support: number[]; deny: number[] } {
-  if (type === 'refusal') {
+  if (type === 'refusal' || type === 'clarification_timing') {
     return { support: [], deny: [] };
   }
   if (type === 'general') {
@@ -210,6 +222,9 @@ export function getKPSliceForQuestionType(
 ): string {
   if (questionType === 'refusal') {
     return 'Refuse with: "KP astrology requires a precise question and exact chart data." or "KP astrology answers outcome-based questions, not explanations."';
+  }
+  if (questionType === 'clarification_timing') {
+    return 'Return the clarification message; do not invoke chart.';
   }
 
   const { support, deny } = getRelevantHousesForType(questionType);
@@ -282,6 +297,17 @@ DISCIPLINE (non-negotiable):
 - Permanent rule: KP answers outcomes; Vedic answers periods; Tarot answers process.
 `.trim();
 
+  const subLordCount = relevantHouses.filter(
+    (h) => {
+      const sl = state.cusp_sub_lords[String(h)];
+      return sl != null && String(sl).trim() !== '' && String(sl).trim() !== '—';
+    }
+  ).length;
+  const subLordIncomplete = relevantHouses.length > 0 && subLordCount < Math.ceil(relevantHouses.length / 2);
+  const subLordCaveat = subLordIncomplete
+    ? '\n\nSub-lord logic is missing or incomplete for key houses; reduce certainty and do not fabricate.'
+    : '';
+
   return `${stateBlock}
 
 ${subLordBlock}
@@ -290,5 +316,5 @@ ${significatorPriorityBlock}
 
 ${dashaBlock}
 
-${disciplineBlock}`;
+${disciplineBlock}${subLordCaveat}`;
 }

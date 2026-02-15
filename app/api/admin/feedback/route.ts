@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb } from '@/lib/firebase-admin';
 
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, submissions });
   } catch (err) {
-    console.error('Admin feedback API error:', err);
+    devLog.error('Admin feedback API error:', err, 'route');
     return NextResponse.json({ error: 'Failed to fetch feedback' }, { status: 500 });
   }
 }

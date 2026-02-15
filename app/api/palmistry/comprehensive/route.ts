@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAICompletion } from '@/lib/aiGateway';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
         const cached = cacheDoc.data();
         // Return cached if less than 7 days old
         if (cached && cached.timestamp && (Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000)) {
-          console.log('✅ Returning cached comprehensive palmistry analysis');
+          devLog.debug('✅ Returning cached comprehensive palmistry analysis');
           return NextResponse.json({
             success: true,
             data: cached.analysis,
@@ -50,10 +51,10 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (cacheError) {
-      console.warn('Cache check failed, continuing with fresh analysis:', cacheError);
+      devLog.warn('Cache check failed, continuing with fresh analysis:', cacheError, 'route');
     }
 
-    console.log('🔮 Generating comprehensive palmistry analysis...');
+    devLog.debug('🔮 Generating comprehensive palmistry analysis...');
 
     // Build comprehensive analysis prompt
     const analysisPrompt = `You are an expert palmist providing a comprehensive palm reading analysis. Analyze the following palm data and provide detailed, insightful interpretations.
@@ -128,7 +129,7 @@ Provide only valid JSON in your response.`;
     try {
       comprehensiveAnalysis = JSON.parse(analysisText);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', parseError);
+      devLog.error('Failed to parse AI response:', parseError, 'route');
       // Try to extract JSON from markdown code blocks if present
       const jsonMatch = analysisText.match(/```json\s*([\s\S]*?)\s*```/) || analysisText.match(/```\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
@@ -176,9 +177,9 @@ Provide only valid JSON in your response.`;
         }
       });
       
-      console.log('✅ Cached comprehensive palmistry analysis');
+      devLog.debug('✅ Cached comprehensive palmistry analysis');
     } catch (cacheError) {
-      console.warn('Failed to cache analysis:', cacheError);
+      devLog.warn('Failed to cache analysis:', cacheError, 'route');
     }
 
     return NextResponse.json({
@@ -188,7 +189,7 @@ Provide only valid JSON in your response.`;
     });
 
   } catch (error: any) {
-    console.error('Comprehensive palmistry API error:', error);
+    devLog.error('Comprehensive palmistry API error:', error, 'route');
     return NextResponse.json(
       { 
         success: false, 

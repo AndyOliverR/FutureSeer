@@ -25,6 +25,8 @@ export type JurisdictionTag =
   | 'financial'
   | 'spatial'
   | 'directional'
+  | 'relocation'
+  | 'collective'
   | 'general';
 
 /** Tool key must match SeerAggregator tool keys. */
@@ -45,6 +47,8 @@ export const DOMAIN_JURISDICTION_MATRIX: ToolJurisdiction[] = [
   { tool: 'nameAnalysis', answersWhat: ['expression', 'name-vibration', 'identity', 'general'] },
   { tool: 'lenormand', answersWhat: ['situational', 'literal', 'guidance', 'general'] },
   { tool: 'iching', answersWhat: ['guidance', 'symbolic', 'situational', 'timing', 'general'] },
+  { tool: 'kp', answersWhat: ['timing', 'guidance', 'situational', 'general'] },
+  { tool: 'palmistry', answersWhat: ['identity', 'expression', 'guidance', 'general'] },
   { tool: 'geomancy', answersWhat: ['guidance', 'structural', 'situational', 'general'] },
   { tool: 'financial', answersWhat: ['financial', 'timing', 'structural', 'general'] },
   { tool: 'medical', answersWhat: ['health', 'structural', 'general'] },
@@ -59,15 +63,27 @@ export const DOMAIN_JURISDICTION_MATRIX: ToolJurisdiction[] = [
   { tool: 'trichakra', answersWhat: ['identity', 'symbolic', 'guidance', 'general'] },
   { tool: 'sortilege', answersWhat: ['confirmation', 'alignment', 'directional', 'general'] },
   { tool: 'pendulum', answersWhat: ['confirmation', 'alignment', 'general'] },
+  { tool: 'energyHealing', answersWhat: ['health', 'guidance', 'general'] },
+  { tool: 'scrying', answersWhat: ['situational', 'symbolic', 'guidance', 'general'] },
+  { tool: 'mundaneAstrology', answersWhat: ['collective', 'guidance', 'general'] },
+  { tool: 'akashicRecords', answersWhat: ['soul-lesson', 'identity', 'guidance', 'general'] },
+  { tool: 'astrocartography', answersWhat: ['spatial', 'relocation', 'alignment', 'general'] },
 ];
 
 /** Intent -> jurisdiction tags that are relevant for that intent. */
 const INTENT_TO_JURISDICTIONS: Record<string, JurisdictionTag[]> = {
   decision: ['guidance', 'situational', 'alignment', 'confirmation', 'general'],
   identity: ['identity', 'expression', 'name-vibration', 'soul-lesson', 'karmic', 'general'],
+  purpose: ['karmic', 'soul-lesson', 'identity', 'life-structure', 'general'], // no timing; exclude Panchanga for purpose
   timing: ['timing', 'life-structure', 'general'],
   alignment: ['alignment', 'confirmation', 'directional', 'general'],
   confirmation: ['confirmation', 'alignment', 'general'],
+  family: ['relationship', 'life-structure', 'guidance', 'situational', 'spatial', 'general'],
+  relocation: ['spatial', 'relocation', 'timing', 'life-structure', 'general'],
+  'truth-seeking': ['general', 'guidance', 'identity', 'timing', 'relationship', 'symbolic', 'situational'],
+  health: ['health', 'guidance', 'general'],
+  world_events: ['collective', 'guidance', 'general'],
+  symbolic: ['symbolic', 'guidance', 'general'],
   general: ['general', 'guidance', 'identity', 'timing', 'relationship', 'health', 'financial', 'symbolic', 'situational'],
 };
 

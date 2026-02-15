@@ -2,6 +2,7 @@
 // 100% FREE - Uses existing data, ZERO external API calls
 
 import { VedicReading } from './vedicIntelligence';
+import { devLog } from '@/lib/devLogger';
 import { LifePathMarkovChain, BayesianBeliefNetwork, PredictiveSystem } from './predictiveAlgorithms';
 import { UniversalInterpretationEngine } from './universalInterpretationEngine';
 import { SwissEphemerisService } from './swissEphemerisService';
@@ -83,13 +84,13 @@ export class VedicResponseEngine {
   }
   
   async answerQuestion(question: string): Promise<VedicResponse> {
-    console.log('🔮 VedicResponseEngine: Processing question:', question);
+    devLog.debug('🔮 VedicResponseEngine: Processing question:', question);
     
     // Detect question type
     const questionType = this.detectQuestionType(question);
     const keywords = this.extractKeywords(question);
     
-    console.log('📊 Question Type:', questionType, 'Keywords:', keywords);
+    devLog.debug('Question Type / Keywords', { questionType, keywords }, 'vedicResponseEngine');
     
     // Generate response based on type
     let response: VedicResponse;

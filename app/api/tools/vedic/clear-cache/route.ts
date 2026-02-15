@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error clearing cache:', error)
+    devLog.error('Error clearing cache:', error, 'route')
     return NextResponse.json(
       { error: 'Failed to clear cache' },
       { status: 500 }

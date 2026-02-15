@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { devLog } from '@/lib/devLogger';
 import { getKabbalisticAnalysis } from '@/lib/kabbalisticNumerologyIntelligence'
 
 /**
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: result })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to generate Kabbalistic analysis'
-    console.error('Kabbalistic analysis API error:', err)
+    devLog.error('Kabbalistic analysis API error:', err, 'route')
     return NextResponse.json(
       { success: false, error: message },
       { status: 500 }

@@ -6,6 +6,7 @@
 // - Returns formatted label AND raw numeric sign/degree for sorting/filtering
 
 import { getPlanetCoords, getAllPlanetCoords, getHouseCusps } from "./astronomia-vedic";
+import { devLog } from '@/lib/devLogger';
 
 export type NodeMode = "true" | "mean";
 
@@ -192,12 +193,12 @@ export async function generatePlacements(
   lon: number,            // longitude (deg, East positive)
   nodeMode: NodeMode = "mean" // 'true' | 'mean' - default to mean for Vedic
 ): Promise<Placements> {
-  console.log('🔮 Generating placements with NEW astronomia wrapper');
-  console.log(`Birth data: ${birthDate} ${birthTime}, Lat: ${lat}, Lon: ${lon}, Node: ${nodeMode}`);
+  devLog.debug('🔮 Generating placements with NEW astronomia wrapper');
+  devLog.debug(`Birth data: ${birthDate} ${birthTime}, Lat: ${lat}, Lon: ${lon}, Node: ${nodeMode}`);
   
   // Validate inputs
   if (isNaN(lat) || isNaN(lon)) {
-    console.error(`Invalid coordinates: lat=${lat}, lon=${lon}`);
+    devLog.error(`Invalid coordinates: lat=${lat}, lon=${lon}`, 'astrology');
     lat = 12.2958; // Default to Mysore coordinates
     lon = 76.6394;
   }
@@ -259,7 +260,7 @@ export async function generatePlacements(
     for (const planetName of planetNames) {
       const planetData = allPlanets[planetName];
       if (!planetData || !planetData.valid) {
-        console.warn(`Invalid data for ${planetName}:`, planetData);
+        devLog.warn(`Invalid data for ${planetName}:`, planetData, 'astrology');
         continue;
       }
 
@@ -294,14 +295,14 @@ export async function generatePlacements(
           nakshatraLabel: `${nakshatraData.name} ${nakshatraData.pada}`
         });
       } else {
-        console.error(`Invalid house number ${house} for ${planetName}`);
+        devLog.error(`Invalid house number ${house} for ${planetName}`, undefined, 'astrology');
       }
     }
 
     return placements;
     
   } catch (error) {
-    console.error('Error generating placements:', error);
+    devLog.error('Error generating placements:', error, 'astrology');
     // Return empty placements on error
     return Array.from({ length: 12 }, (_, i) => ({
       house: i + 1,
@@ -357,7 +358,7 @@ export async function generateChartData(
   lon: number,
   nodeMode: NodeMode = "mean"
 ): Promise<VedicChart> {
-  console.log('🔮 Generating chart data with astronomia wrapper');
+  devLog.debug('🔮 Generating chart data with astronomia wrapper');
   
   try {
     // Create date object for astronomia wrapper
@@ -420,7 +421,7 @@ export async function generateChartData(
     };
     
   } catch (error) {
-    console.error('Error generating chart data:', error);
+    devLog.error('Error generating chart data:', error, 'astrology');
     throw error;
   }
 }

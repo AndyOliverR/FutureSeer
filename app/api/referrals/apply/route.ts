@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { applyReferralCredit } from '@/lib/referralUtils';
 
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
       message: 'Referral credit applied successfully'
     });
   } catch (error: any) {
-    console.error('Error applying referral credit:', error);
+    devLog.error('Error applying referral credit:', error, 'route');
     return NextResponse.json(
       { error: error.message || 'Failed to apply referral credit' },
       { status: 500 }

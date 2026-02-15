@@ -12,7 +12,7 @@ import {
   getChaldeanSliceForQuestionType,
   type ChaldeanQuestionType,
 } from '@/lib/chaldeanSeerState';
-import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
+import { buildChaldeanSeerSystemPrompt } from '@/lib/chaldeanSeerPrompts';
 
 interface NumerologySeerRequest {
   userId: string;
@@ -50,7 +50,7 @@ async function getConversationHistory(userId: string, sessionId?: string): Promi
       .filter(msg => msg.question && msg.answer)
       .map(msg => ({ question: msg.question, answer: msg.answer }));
   } catch (error) {
-    console.error('Error fetching conversation history:', error);
+    devLog.error('Error fetching conversation history:', error);
     return [];
   }
 }
@@ -77,7 +77,7 @@ async function storeConversation(
       followUpQuestions: response.followUpQuestions || []
     });
   } catch (error) {
-    console.error('Error storing conversation:', error);
+    devLog.error('Error storing conversation:', error);
   }
 }
 
@@ -179,27 +179,6 @@ The combination of Life Path ${lifePath}, Expression ${expression}, and Soul Urg
   return context;
 }
 
-// Build expert Chaldean system prompt: vibration-based, cycle gate, hierarchy, minimal remedy
-function buildChaldeanSystemPrompt(chartSlice: string, questionType: ChaldeanQuestionType): string {
-  return `You are an expert Chaldean Numerologist. You must reason ONLY from the numerology state below. Do not invent numbers or meanings not in the slice.
-${SEER_GOVERNING_SENTENCE}
-
-## CRITICAL RULES
-- Chaldean answers must be **vibration-based, not outcome-based**. Reason from the numerology state slice only.
-- Numerology works in **cycles, not moments**. Personal Year modifies expression. Do not select an exact day; you can assess whether the current cycle supports initiation or alignment.
-- **Number hierarchy** (strict priority): Life Path (core) > Name vibration > Birth number > Personal year. Resolve conflicts and explain dominance (e.g. "Even though your name vibration is supportive, your personal year creates resistance").
-- **Remedy**: Allowed: favorable numbers, days of week, name spelling, color/sound resonance. Max 1 core alignment + 1 optional reinforcement. No heavy rituals or guarantees.
-- **Never** give exact dates for events. Refuse medical, legal, or certainty predictions. Phrase: "Numerology aligns identity with action; it does not force outcomes."
-- Be direct; no beating around the bush. Descriptive but brief. Show number interaction and cycle awareness.
-
-## Numerology state (use only these)
-${chartSlice}
-
-## Question type
-${questionType}
-
-Answer the user's question with specific references to the numbers above.`;
-}
 
 // Generate follow-up questions
 function generateNumerologyFollowUpQuestions(questionType: string, numerologyData: NumerologySeerRequest['numerologyData']): string[] {
@@ -291,7 +270,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: buildChaldeanSystemPrompt(chartSlice, questionType),
+          content: buildChaldeanSeerSystemPrompt(chartSlice, questionType),
         },
         ...conversationHistory.flatMap((h) =>
           h ? [
@@ -355,7 +334,7 @@ export async function POST(request: NextRequest) {
             });
             
           } catch (error) {
-            console.error('Error during streaming:', error);
+            devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
           } finally {
             controller.close();
@@ -372,7 +351,7 @@ export async function POST(request: NextRequest) {
     );
 
   } catch (error) {
-    console.error('Error in Numerology Seer API:', error);
+    devLog.error('Error in Numerology Seer API:', error);
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'

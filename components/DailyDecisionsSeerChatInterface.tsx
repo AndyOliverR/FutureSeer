@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import type { DailyDecisionsAnalysis } from '@/lib/dailyDecisionsIntelligence';
 
 interface DailyDecisionsMessage {
@@ -31,8 +32,10 @@ const REGENERATE_MESSAGE =
   'Generate your Daily Decisions recommendations first to use Ask the Seer.';
 
 const DAILY_DECISIONS_STARTER_QUESTIONS = [
-  'Should I lend money now?',
-  'Is today good for travel?',
+  'Is today a good day to lend or borrow money?',
+  'Is it favorable to get a haircut today?',
+  'Should I start this task today or wait?',
+  'What should I avoid today?',
 ];
 
 export function DailyDecisionsSeerChatInterface({
@@ -170,7 +173,7 @@ export function DailyDecisionsSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('Daily Decisions Seer error:', err);
+      devLog.error('Daily Decisions Seer error', err, 'DailyDecisionsSeerChatInterface');
       setStreamingMessageId(null);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -295,7 +298,7 @@ export function DailyDecisionsSeerChatInterface({
           Ask the Seer — Daily Decisions
         </CardTitle>
         <p className="text-sm text-amber-800 mt-1">
-          Timing suitability only. Ask about lending money, haircuts, travel, and more.
+          Tactical timing, not destiny.
         </p>
         {messages.length > 0 && (
           <Button
@@ -315,9 +318,17 @@ export function DailyDecisionsSeerChatInterface({
           {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
-              <p className="text-amber-900 font-medium">
-                Ask about lending money, haircuts, travel…
+              <p className="text-amber-900 font-medium mb-2">
+                Ask me anything about today&apos;s actions…
               </p>
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I&apos;ll guide you on day-to-day decisions using personalized Vedic timing and practical suitability.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Everyday actions (lending or borrowing money, haircuts, grooming, shopping, signing documents, meetings, travel starts, small tasks)</li>
+                <li>Short-term planning (whether to act today or wait, which part of the day is better, what to avoid today)</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {DAILY_DECISIONS_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -332,6 +343,7 @@ export function DailyDecisionsSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: tactical timing for today or near-term, not long-term destiny.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -366,7 +378,7 @@ export function DailyDecisionsSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about lending money, haircuts, travel…"
+              placeholder="Ask about lending, haircuts, travel, or what to avoid today…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

@@ -4,9 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '@/lib/seerChatbot/seerChatbot';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatInput } from './ChatInput';
-import { ConfidenceMeter } from './ConfidenceMeter';
-import { ModuleBadges } from './ModuleBadges';
-import { TimingDisplay } from './TimingDisplay';
+import { devLog } from '@/lib/devLogger';
 
 interface SeerChatInterfaceProps {
   userId: string;
@@ -14,10 +12,9 @@ interface SeerChatInterfaceProps {
   onSessionCreated?: (sessionId: string) => void;
 }
 
-export function SeerChatInterface({ userId, sessionId, onSessionCreated }: SeerChatInterfaceProps) {
+export function SeerChatInterface({ userId }: SeerChatInterfaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -25,125 +22,55 @@ export function SeerChatInterface({ userId, sessionId, onSessionCreated }: SeerC
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const threadToMessages = (thread: Array<{ role: string; content: string }>): ChatMessage[] =>
+    thread.map((m, i) => ({
+      id: `${m.role}_${i}_${Date.now()}`,
+      type: m.role === 'seer' ? 'seer' : 'user',
+      content: m.content,
+      timestamp: new Date(),
+    }));
+
   const sendMessage = async (content: string) => {
     if (!content.trim() || isLoading) return;
 
-    // Add user message immediately
-    const userMessage: ChatMessage = {
-      id: `user_${Date.now()}`,
-      type: 'user',
-      content: content.trim(),
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const trimmed = content.trim();
+    const thread = messages.map((m) => ({ role: m.type, content: m.content }));
+    setMessages((prev) => [...prev, { id: `user_${Date.now()}`, type: 'user', content: trimmed, timestamp: new Date() }]);
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/seer/query', {
+      const response = await fetch('/api/seer/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          query: content.trim(),
-          context: {
-            session_id: currentSessionId
-          }
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: trimmed, thread, userId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response from Seer');
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to get response from Seer');
       }
 
-      const result = await response.json();
-      
-      if (result.success) {
-        const seerResponse = result.data;
-        
-        // Update session ID if this is the first message
-        if (!currentSessionId && seerResponse.session_id) {
-          setCurrentSessionId(seerResponse.session_id);
-          onSessionCreated?.(seerResponse.session_id);
-        }
-
-        // Add Seer response
-        const seerMessage: ChatMessage = {
-          id: `seer_${Date.now()}`,
-          type: 'seer',
-          content: formatSeerResponse(seerResponse),
-          timestamp: new Date(),
-          metadata: {
-            intent: seerResponse.source_badges[0],
-            confidence: seerResponse.confidence,
-            sources: seerResponse.source_badges,
-            timing: seerResponse.timing_window
-          }
-        };
-
-        setMessages(prev => [...prev, seerMessage]);
-      } else {
-        throw new Error(result.error || 'Unknown error');
-      }
+      const data = await response.json();
+      const newThread = data.thread ?? [];
+      setMessages(threadToMessages(newThread));
     } catch (error) {
-      console.error('Error sending message:', error);
-      
-      // Add error message
-      const errorMessage: ChatMessage = {
-        id: `error_${Date.now()}`,
-        type: 'seer',
-        content: `❌ Sorry, I encountered an error while processing your question. Please try again.`,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
+      devLog.error('Error sending message', error, 'SeerChatInterface');
+      setMessages((prev) => [
+        ...prev,
+        { id: `user_${Date.now()}`, type: 'user', content: content.trim(), timestamp: new Date() },
+        {
+          id: `error_${Date.now()}`,
+          type: 'seer',
+          content: 'Sorry, I could not reach the Seer. Please try again.',
+          timestamp: new Date(),
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatSeerResponse = (response: any): string => {
-    let formatted = `🔮 **${response.verdict}**\n\n`;
-    
-    if (response.support && response.support.length > 0) {
-      formatted += `✨ **Supporting Factors:**\n`;
-      response.support.forEach((support: any) => {
-        formatted += `• ${support.module}: ${support.summary}\n`;
-      });
-      formatted += '\n';
-    }
-    
-    if (response.warnings && response.warnings.length > 0) {
-      formatted += `⚠️ **Considerations:**\n`;
-      response.warnings.forEach((warning: string) => {
-        formatted += `• ${warning}\n`;
-      });
-      formatted += '\n';
-    }
-    
-    if (response.actions && response.actions.length > 0) {
-      formatted += `🎯 **Recommended Actions:**\n`;
-      response.actions.forEach((action: string) => {
-        formatted += `• ${action}\n`;
-      });
-      formatted += '\n';
-    }
-    
-    formatted += `📊 **Sources:** ${response.source_badges.join(', ')}`;
-    
-    if (response.clarify) {
-      formatted += `\n\n❓ **Clarification needed:** ${response.clarify}`;
-    }
-    
-    return formatted;
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-    setCurrentSessionId(undefined);
-  };
+  const clearChat = () => setMessages([]);
 
   return (
     <div className="flex flex-col h-full bg-slate-900/50 backdrop-blur-sm rounded-lg border border-yellow-700/20">
@@ -191,14 +118,7 @@ export function SeerChatInterface({ userId, sessionId, onSessionCreated }: SeerC
         )}
         
         {isLoading && (
-          <div className="flex items-center space-x-2 text-gray-400">
-            <div className="flex space-x-1">
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
-            <span className="text-sm">Consulting the stars...</span>
-          </div>
+          <div className="text-blue-300 animate-pulse text-sm">The Seer is gazing...</div>
         )}
         
         <div ref={messagesEndRef} />

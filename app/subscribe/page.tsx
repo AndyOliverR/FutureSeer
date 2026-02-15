@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { devLog } from '@/lib/devLogger';
 import { useSubscribe } from "@/hooks/useSubscribe";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export default function SubscribePage() {
       trackPricingEvent('plan_selected', planId);
       await subscribeToPlan(planId);
     } catch (err) {
-      console.error("Subscription error:", err);
+      devLog.error("Subscription error:", err, 'page');
     }
   };
 

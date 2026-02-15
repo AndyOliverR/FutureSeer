@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef } from "react";
+import { devLog } from '@/lib/devLogger';
 import { motion } from "framer-motion";
 import { toPng } from "html-to-image";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ const VedicChartNorthPro: React.FC<VedicChartNorthProProps> = ({
       link.href = dataUrl;
       link.click();
     } catch (error) {
-      console.error("Error exporting chart:", error);
+      devLog.error("Error exporting chart:", error, 'VedicChartNorthPro');
     }
   };
 

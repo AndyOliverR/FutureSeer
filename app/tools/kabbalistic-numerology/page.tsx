@@ -30,7 +30,6 @@ import { NumberDisplay } from "@/components/kabbalistic/NumberDisplay"
 import { HebrewLetterGrid } from "@/components/kabbalistic/HebrewLetterGrid"
 import { GematriaVisualization } from "@/components/kabbalistic/GematriaVisualization"
 import { KabbalisticNumerologyCoachInterface } from "@/components/KabbalisticNumerologyCoachInterface"
-import { BackButton } from "@/components/navigation/BackButton"
 
 type TabId = "overview" | "gematria" | "soul" | "destiny" | "personality" | "hebrew" | "guidance" | "ask-the-seer"
 
@@ -51,9 +50,6 @@ export default function KabbalisticNumerologyPage() {
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="mb-4">
-            <BackButton href="/tools" label="Back to Tools" />
-          </div>
           <div className="flex items-center justify-center h-64">
             <div className={`${stateCardClass} p-8 max-w-md mx-auto overflow-hidden`}>
               <div className="text-center">
@@ -73,9 +69,6 @@ export default function KabbalisticNumerologyPage() {
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="mb-4">
-            <BackButton href="/tools" label="Back to Tools" />
-          </div>
           <div className={`${stateCardClass} p-6 text-center max-w-2xl mx-auto overflow-hidden`}>
             <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className={stateErrorTitleClass}>Error Loading Kabbalistic Data</h3>
@@ -96,9 +89,6 @@ export default function KabbalisticNumerologyPage() {
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="mb-4">
-            <BackButton href="/tools" label="Back to Tools" />
-          </div>
           <div className={`${stateCardClass} p-6 text-center max-w-2xl mx-auto overflow-hidden`}>
             <Info className="w-12 h-12 text-purple-600 mx-auto mb-4" />
             <h3 className={stateTitleClass}>Complete Your Profile</h3>
@@ -124,9 +114,6 @@ export default function KabbalisticNumerologyPage() {
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="mb-4">
-            <BackButton href="/tools" label="Back to Tools" />
-          </div>
           <div className={`${stateCardClass} p-6 text-center max-w-2xl mx-auto overflow-hidden`}>
             <Info className="w-12 h-12 text-purple-600 mx-auto mb-4" />
             <h3 className={stateTitleClass}>Preparing Your Kabbalistic Analysis</h3>
@@ -166,9 +153,6 @@ export default function KabbalisticNumerologyPage() {
         }}
       />
       <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-        <div className="mb-4">
-          <BackButton href="/tools" label="Back to Tools" />
-        </div>
         {/* Header: plain h1 + subtitle, no container (match Numerology / Angel Numbers) */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -185,15 +169,16 @@ export default function KabbalisticNumerologyPage() {
           </p>
         </motion.div>
 
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)}>
-          <TabsList className="flex flex-wrap gap-2 justify-center mb-6 h-auto bg-transparent p-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             {tabConfig.map((tab) => {
               const Icon = tab.icon
               return (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="devotionist-tab-trigger flex items-center gap-2"
+                  className="shrink-0 devotionist-tab-trigger flex items-center gap-2 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
@@ -209,7 +194,7 @@ export default function KabbalisticNumerologyPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
-              className="space-y-6 mt-6"
+              className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
             >
             {activeTab === "overview" && (
               <div className="space-y-6">
@@ -471,6 +456,7 @@ export default function KabbalisticNumerologyPage() {
             </motion.div>
           </AnimatePresence>
         </Tabs>
+        </div>
       </div>
     </div>
   )

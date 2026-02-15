@@ -1,11 +1,14 @@
-// Streamlined Tarot page that integrates with comprehensive profile data and external Tarot API
+// Tarot page: combined/system data from pipeline only (useToolReport). No auto-call to tool API.
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { useAuth } from '@/hooks/use-auth'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { useTarot } from '@/hooks/use-tarot'
 import { tarotIntelligence } from '@/lib/tarotIntelligence'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -65,74 +68,22 @@ function TarotPage() {
   const [availableSpreads, setAvailableSpreads] = useState<SpreadType[]>([])
   const [allCards, setAllCards] = useState<TarotCard[]>([])
   
-  // Combined System state
-  const [combinedSystemData, setCombinedSystemData] = useState<CombinedSystemData | null>(null)
-  const [isLoadingCombinedSystem, setIsLoadingCombinedSystem] = useState(false)
   const [profileCardsError, setProfileCardsError] = useState<string | null>(null)
-  
+  const { report: pipelineReport, loading: isLoadingCombinedSystem, error: profileError } = useToolReport('tarot')
+  const combinedSystemData = useMemo((): CombinedSystemData | null => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    const data = (r.data ?? r) as CombinedSystemData | undefined
+    return data && typeof data === 'object' && ((data as unknown as Record<string, unknown>).profileCards ?? (data as unknown as Record<string, unknown>).combinedAnalysis) ? data : null
+  }, [pipelineReport])
+
   useEffect(() => {
     const spreads = tarotIntelligence.getAvailableSpreads()
     setAvailableSpreads(spreads)
-    
-    // Get all cards from tarotIntelligence
     const cards = tarotIntelligence.getAllCards()
     setAllCards(cards)
   }, [])
-
-  // Fetch Combined System analysis when profile is complete
-  const fetchCombinedSystemAnalysis = useCallback(async (abortController: AbortController) => {
-      if (!user?.uid || !userProfile?.birthDate || !userProfile?.fullName && !userProfile?.displayName) {
-        return
-      }
-
-      // Don't refetch if we already have data
-      if (combinedSystemData) {
-        return
-      }
-
-      setIsLoadingCombinedSystem(true)
-      try {
-        if (!user?.uid || !userProfile) return
-        const fullName = userProfile.fullName || userProfile.displayName || ''
-        const response = await fetch('/api/tarot-combined-system/analysis', {
-          method: 'POST',
-          signal: abortController.signal,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: user.uid,
-            birthDate: userProfile.birthDate,
-            birthTime: userProfile.birthTime,
-            birthPlace: userProfile.birthPlace,
-            fullName: fullName,
-          }),
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          if (result.success && result.data) {
-            setCombinedSystemData(result.data)
-          }
-        } else {
-          console.error('Failed to fetch Combined System analysis:', response.status)
-        }
-      } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          console.error('Error fetching Combined System analysis:', error)
-        }
-      } finally {
-        if (!abortController.signal.aborted) {
-          setIsLoadingCombinedSystem(false)
-        }
-      }
-    }, [user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.fullName, userProfile?.displayName, combinedSystemData])
-
-  useEffect(() => {
-    const abortController = new AbortController()
-    fetchCombinedSystemAnalysis(abortController)
-    return () => abortController.abort()
-  }, [fetchCombinedSystemAnalysis])
 
   // Calculate profile cards if birth date and name are available (memoized for performance)
   const profileCards = useMemo((): ProfileCardsData | null => {
@@ -177,10 +128,11 @@ function TarotPage() {
   ], [])
 
   return (
+    <ToolReportGuard loading={isLoadingCombinedSystem} error={profileError ?? null} toolLabel="tarot">
     <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         <div className="text-center mb-8 pt-4">
-          <h1 className="text-5xl font-serif font-semibold mb-6">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-purple-300">🔮</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-pink-400 to-purple-600">Tarot Divination</span>
           </h1>
@@ -193,8 +145,9 @@ function TarotPage() {
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-transparent p-0 gap-2">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             {tabsConfig.map((tab) => {
               const IconComponent = tab.icon
               return (
@@ -203,18 +156,18 @@ function TarotPage() {
                   whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                   transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                  className="relative"
+                  className="relative shrink-0"
                 >
                   <TabsTrigger 
                     value={tab.value} 
-                    className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-3 py-2 text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden"
+                    className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden border border-transparent data-[state=inactive]:border-slate-600/50"
                   >
                     {IconComponent && <IconComponent className="w-4 h-4 mr-1.5" />}
                     {tab.label}
                     {activeTab === tab.value && (
                       <motion.div
                         layoutId="activeTab"
-                        className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
+                        className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-t-lg rounded-b-none -z-10"
                         transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
                       />
                     )}
@@ -235,7 +188,7 @@ function TarotPage() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="introduction" className="space-y-6">
+                <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <ToolIntroductionTab toolSlug="tarot" />
                 </TabsContent>
               </motion.div>
@@ -250,7 +203,7 @@ function TarotPage() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="compatibility" className="space-y-6">
+                <TabsContent value="compatibility" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <CompatibilityTab toolSlug="tarot" />
                 </TabsContent>
               </motion.div>
@@ -265,7 +218,7 @@ function TarotPage() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="tarot-profile" className="space-y-6 mt-6">
+                <TabsContent value="tarot-profile" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {/* Loading State for Combined System in Hero */}
             {isLoadingCombinedSystem && (
               <motion.div
@@ -567,7 +520,7 @@ function TarotPage() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="reading" className="space-y-6 mt-6">
+                <TabsContent value="reading" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-amber-200 shadow-lg rounded-3xl">
               <CardHeader className="pb-4">
                 <CardTitle className="text-amber-900 text-2xl font-serif flex items-center">
@@ -964,7 +917,7 @@ function TarotPage() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="cards" className="space-y-6 mt-6">
+                <TabsContent value="cards" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-amber-200 shadow-lg rounded-3xl">
               <CardHeader className="pb-4">
                 <CardTitle className="text-amber-900 text-2xl font-serif flex items-center">
@@ -1102,7 +1055,7 @@ function TarotPage() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="combined-system" className="space-y-6 mt-6">
+                <TabsContent value="combined-system" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-amber-200 shadow-lg rounded-3xl p-6">
               <CardHeader className="p-0 mb-4">
                 <div className="flex items-center gap-4">
@@ -1430,23 +1383,14 @@ function TarotPage() {
                   </div>
                 ) : (
                   <div className="text-center py-8">
-                    <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                    <p className="text-slate-700 mb-4">Unable to generate combined analysis. Please try again later.</p>
-                    <motion.div
-                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                      whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                      transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                    >
-                      <Button 
-                        onClick={() => {
-                          setCombinedSystemData(null)
-                          setIsLoadingCombinedSystem(false)
-                        }}
-                        className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
-                      >
-                        <span className="relative z-10">Retry</span>
-                      </Button>
-                    </motion.div>
+                    <Info className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+                    <p className="text-slate-700 mb-4">Generate your mystical profile to unlock the Combined Divination System (Tarot, Astrology & Numerology).</p>
+                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                      <Link href="/profile">
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate your mystical profile
+                      </Link>
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -1464,7 +1408,7 @@ function TarotPage() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="ask-the-seer" className="space-y-6 mt-6">
+                <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                   <div className="h-[800px] min-h-0">
                     <TarotSeerChatInterface
                       userId={user?.uid || ''}
@@ -1480,8 +1424,10 @@ function TarotPage() {
             )}
           </AnimatePresence>
         </Tabs>
+        </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }
 

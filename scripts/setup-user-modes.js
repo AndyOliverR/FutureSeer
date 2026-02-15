@@ -64,7 +64,8 @@ async function setupUserModes() {
               featureFlags: true,
               dataExport: true,
               impersonate: true,
-              deleteUser: true
+              deleteUser: true,
+              askSeerBeta: true
             };
             console.log('   Setting God Mode claims (full access)');
             break;
@@ -80,7 +81,8 @@ async function setupUserModes() {
               featureFlags: false,
               dataExport: false,
               impersonate: false,
-              deleteUser: false
+              deleteUser: false,
+              askSeerBeta: true
             };
             console.log('   Setting Mary Mode claims (limited admin)');
             break;
@@ -96,7 +98,8 @@ async function setupUserModes() {
               featureFlags: false,
               dataExport: false,
               impersonate: false,
-              deleteUser: false
+              deleteUser: false,
+              askSeerBeta: true
             };
             console.log('   Setting Normal User claims (no admin access)');
             break;

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Target, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
+import { devLog } from '@/lib/devLogger';
 import type { KPAnalysis } from '@/lib/kpAstrologyIntelligence';
 
 interface KPSeerMessage {
@@ -39,8 +40,10 @@ const UNAVAILABLE_MESSAGE =
 const RETRY_DELAY_MS = 1500;
 
 const KP_STARTER_QUESTIONS = [
-  'Will I get this job?',
-  'Is this the right time to proceed?',
+  'Will my app launch succeed?',
+  'Will I get this job offer?',
+  'Will this relationship lead to marriage?',
+  'If yes, when is the favorable period?',
 ];
 
 export default function KPSeerChatInterface({
@@ -187,7 +190,7 @@ export default function KPSeerChatInterface({
       }
       setStreamingMessageId(null);
     } catch (err) {
-      console.error('KP Seer error:', err);
+      devLog.error('KP Seer error', err, 'KPSeerChatInterface');
       setStreamingMessageId(null);
       try {
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
@@ -305,7 +308,7 @@ export default function KPSeerChatInterface({
             Ask the Seer — KP Astrology
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Outcome-based yes/no; the Sub-Lord decides.
+            Clear yes/no and timing.
           </p>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col items-center justify-center p-8">
@@ -337,7 +340,7 @@ export default function KPSeerChatInterface({
             Ask the Seer — KP Astrology
           </CardTitle>
           <p className="text-sm text-amber-800 mt-1">
-            Outcome-based yes/no; the Sub-Lord decides.
+            Clear yes/no and timing.
           </p>
           <p className="text-xs text-amber-700/90 mt-0.5">
             Results depend on accurate birth time; for reflection only.
@@ -362,8 +365,22 @@ export default function KPSeerChatInterface({
             <div className="text-center py-8">
               <MessageCircle className="w-12 h-12 mx-auto mb-4 text-amber-600" />
               <p className="text-amber-900 font-medium mb-2">
-                Welcome to Ask the Seer — KP Astrology. I have your chart; ask a yes/no outcome question.
+                Ask one clear, specific question about an outcome.
               </p>
+              <p className="text-sm text-amber-800 mb-2 max-w-md mx-auto">
+                KP works best when you ask about a single event or decision.
+              </p>
+              <p className="text-sm text-amber-800 mb-3 max-w-md mx-auto">
+                Before you ask, be specific about: what exactly you want to know, and the outcome you're asking about.
+              </p>
+              <p className="text-amber-900 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-xs text-amber-800 text-left max-w-md mx-auto mb-3 list-disc list-inside">
+                <li>One specific outcome: Will I get this job? Will this relationship lead to marriage? Will my app launch succeed? Will my loan get approved?</li>
+                <li>Timing after outcome: e.g. "If yes, when is the favorable period?" Ask outcome first, then timing.</li>
+                <li>Decision: Is this the right move now? Should I proceed or wait?</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {KP_STARTER_QUESTIONS.map((q, i) => (
                   <Button
@@ -378,6 +395,9 @@ export default function KPSeerChatInterface({
                   </Button>
                 ))}
               </div>
+              <p className="text-amber-700 text-xs mt-4">
+                Best for: one clear outcome at a time; then timing.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -412,7 +432,7 @@ export default function KPSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask a yes/no outcome question (e.g. Will I get this job?)"
+              placeholder="e.g. Will my app launch succeed?"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />

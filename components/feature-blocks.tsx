@@ -132,6 +132,40 @@ export function FeatureBlocks() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* Why FutureSeer - marketing value proposition */}
+        <motion.div
+          className="mt-12 sm:mt-16 md:mt-20 max-w-3xl mx-auto"
+          initial={{ opacity: 0, y: 24 }}
+          animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+          transition={{ duration: 0.5, delay: 0.3, ease: [0.2, 0, 0, 1] }}
+        >
+          <h3 className="m3-headline-small sm:m3-headline-medium text-amber-400 text-center mb-6 sm:mb-8">
+            Why FutureSeer
+          </h3>
+          <ul className="space-y-4 sm:space-y-5 list-none">
+            {[
+              "You're facing confusion from fragmented divination tools, conflicting interpretations, and scattered remedies across multiple sources.",
+              "FutureSeer unifies 40+ occult systems into one structured platform that generates tool-specific reports and a consolidated, deterministic answer.",
+              "What differentiates FutureSeer is its cross-disciplinary synthesis engine that correlates multiple divination outputs into a single coherent insight.",
+              "If you seek clarity, structured analysis, and reduced contradiction in occult guidance, this platform is built for you.",
+              "The promise is continuous refinement, methodological consistency, and a steadily improving system driven by user feedback and precision.",
+            ].map((text, i) => (
+              <li
+                key={i}
+                className="flex gap-3 sm:gap-4 items-start text-left"
+              >
+                <span
+                  className="shrink-0 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[var(--m3-primary)] mt-2 sm:mt-2.5"
+                  aria-hidden
+                />
+                <span className="m3-body-large text-[var(--m3-on-surface-variant)] leading-relaxed">
+                  {text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </motion.div>
       </div>
     </section>
   )

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildPalmState,
@@ -6,29 +7,7 @@ import {
   getPalmSliceForQuestionType,
   type PalmQuestionType,
 } from '@/lib/palmSeerState';
-import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
-
-function buildPalmSystemPrompt(chartSlice: string, questionType: PalmQuestionType): string {
-  return `You are an expert Palmistry Seer. You reason only from the palm morphology below. Palmistry describes capacity and inclination, not destiny.
-${SEER_GOVERNING_SENTENCE}
-
-## CRITICAL RULES
-- **Dominance gate**: Always state which hand you are reading from. If only one hand is given, say so.
-- **Feature priority**: Hand type (elemental base) overrides mounts; mounts override major lines; major lines override minor lines. If a minor line contradicts hand type, hand type wins.
-- **Line logic**: Depth = strength; clarity = consistency; breaks = change, not disaster; multiple lines = multiple interests. Do not dramatize breaks.
-- **Contradiction resolver**: Synthesize apparent contradictions (e.g. strong Venus + straight heart line) into a single trait-based sentence.
-- **Answer framing**: Speak in probabilities and present-tense traits. No fate language. No "you will have a difficult marriage"; use "You tend to approach relationships cautiously..."
-- **Refusal reminder**: Do not predict dates, health, death, or guarantees. Say: "Palmistry does not determine this with certainty."
-- Be direct and concise; descriptive but brief.
-
-## Palm state (use only these)
-${chartSlice}
-
-## Question type
-${questionType}
-
-Answer the user's question with specific references to the palm state above.`;
-}
+import { buildPalmSeerSystemPrompt } from '@/lib/palmSeerPrompts';
 
 const REFUSAL_MESSAGE =
   'Palmistry shows tendencies, not events. It does not determine timing, health outcomes, or exact life events. I can speak to your tendencies, strengths, and relationship style instead.';
@@ -70,7 +49,7 @@ export async function POST(request: NextRequest) {
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
       messages: [
-        { role: 'system', content: buildPalmSystemPrompt(chartSlice, questionType) },
+        { role: 'system', content: buildPalmSeerSystemPrompt(chartSlice, questionType) },
         { role: 'user', content: question.trim() },
       ],
       temperature: 0.7,
@@ -88,7 +67,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Palmistry Seer stream error:', error);
+            devLog.error('Palmistry Seer stream error:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode('I apologize, but I encountered an error. Please try again.')
             );
@@ -106,7 +85,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: any) {
-    console.error('Palmistry Seer API error:', error);
+    devLog.error('Palmistry Seer API error:', error, 'route');
     return NextResponse.json(
       {
         success: false,

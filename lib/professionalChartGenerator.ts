@@ -2,6 +2,7 @@
 // High-quality SVG charts with professional styling inspired by Align27, Jothishi, CoStar Astrology
 
 import { ProfessionalPlanetaryPosition, ProfessionalHouseData, ProfessionalAspect } from './professionalAstroEngine'
+import { devLog } from '@/lib/devLogger';
 import { ProfessionalVisualSystem, PROFESSIONAL_VISUAL_CONFIG, PROFESSIONAL_SYMBOLS } from './professionalVisualSystem'
 
 export interface ProfessionalChartConfig {
@@ -34,7 +35,7 @@ export class ProfessionalChartGenerator {
 
   constructor() {
     this.visualSystem = new ProfessionalVisualSystem()
-    console.log('🎨 Initializing Professional Chart Generator with Enhanced Visual System')
+    devLog.debug('🎨 Initializing Professional Chart Generator with Enhanced Visual System')
   }
 
   // Generate professional horary chart

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { devLog } from '@/lib/devLogger';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -54,7 +55,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     // Suppress Firestore internal errors - don't show error boundary
     if (isFirestoreInternalError(error)) {
-      console.warn('⚠️ ErrorBoundary suppressed Firestore internal error:', error.message);
+      devLog.warn('⚠️ ErrorBoundary suppressed Firestore internal error:', error.message, 'ErrorBoundary');
       return { hasError: false };
     }
     return { hasError: true, error };
@@ -63,10 +64,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Suppress Firestore internal errors - don't log as errors
     if (isFirestoreInternalError(error)) {
-      console.warn('⚠️ ErrorBoundary suppressed Firestore internal error:', error.message);
+      devLog.warn('⚠️ ErrorBoundary suppressed Firestore internal error:', error.message, 'ErrorBoundary');
       return;
     }
-    console.error('🛡️ ErrorBoundary caught an error:', error, errorInfo);
+    devLog.error('ErrorBoundary caught an error', { error, errorInfo }, 'ErrorBoundary');
   }
 
   render() {

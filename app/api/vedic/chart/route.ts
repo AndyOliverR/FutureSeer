@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('❌ Vedic chart error:', error);
+    devLog.error('❌ Vedic chart error:', error, 'route');
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

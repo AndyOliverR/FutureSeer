@@ -1,4 +1,5 @@
 // AstroApp API authentication and utility functions
+import { devLog } from '@/lib/devLogger';
 
 interface AstroAppToken {
   token: string;
@@ -30,7 +31,7 @@ export async function getAstroAppToken(): Promise<string> {
     }
 
     // Log credential status (without exposing actual values)
-    console.log('AstroApp credentials status:', {
+    devLog.debug('AstroApp credentials status:', {
       email: email ? '✅ Set' : '❌ Missing',
       password: password ? '✅ Set' : '❌ Missing',
       apiKey: apiKey ? '✅ Set' : '❌ Missing',
@@ -41,7 +42,7 @@ export async function getAstroAppToken(): Promise<string> {
     const cleanPassword = password.trim();
     const cleanApiKey = apiKey.trim();
 
-    console.log('AstroApp credentials validation:', {
+    devLog.debug('AstroApp credentials validation:', {
       emailLength: cleanEmail.length,
       passwordLength: cleanPassword.length,
       apiKeyLength: cleanApiKey.length,
@@ -88,7 +89,7 @@ export async function getAstroAppToken(): Promise<string> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AstroApp authentication failed:', {
+      devLog.error('AstroApp authentication failed:', {
         status: response.status,
         statusText: response.statusText,
         errorText: errorText,
@@ -112,7 +113,7 @@ export async function getAstroAppToken(): Promise<string> {
     // AstroApp doesn't return a JWT token - it returns chart data directly
     // We'll use the API key for authentication instead
     if (!data.calcResultsAvailable) {
-      console.error('AstroApp response structure:', data);
+      devLog.error('AstroApp response structure:', data, 'astroapp');
       throw new Error('AstroApp API returned invalid response. Please check your account status.');
     }
 
@@ -123,11 +124,11 @@ export async function getAstroAppToken(): Promise<string> {
       usageCount: 1,
     };
 
-    console.log('Successfully authenticated with AstroApp API');
+    devLog.debug('Successfully authenticated with AstroApp API');
     return cleanApiKey;
 
   } catch (error) {
-    console.error('Error getting AstroApp token:', error);
+    devLog.error('Error getting AstroApp token:', error, 'astroapp');
     throw error;
   }
 }
@@ -244,7 +245,7 @@ export async function getBirthChart(birthDate: string, birthPlace: string = "New
     };
 
   } catch (error) {
-    console.error('Error getting birth chart:', error);
+    devLog.error('Error getting birth chart:', error, 'astroapp');
     throw error;
   }
 } 

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 
@@ -28,7 +29,7 @@ export class DashboardErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error to console in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('Dashboard Error Boundary caught an error:', error, errorInfo)
+      devLog.error('Dashboard Error Boundary caught an error', { error, errorInfo }, 'DashboardErrorBoundary')
     }
   }
 

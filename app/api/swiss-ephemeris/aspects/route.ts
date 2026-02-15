@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 
 export const dynamic = 'force-static'
 
@@ -156,7 +157,7 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error: any) {
-    console.error('Swiss Ephemeris Aspects API Error:', error);
+    devLog.error('Swiss Ephemeris Aspects API Error:', error, 'route');
     return NextResponse.json({ 
       error: 'Failed to calculate aspects',
       details: error instanceof Error ? error.message : 'Unknown error'

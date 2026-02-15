@@ -1,9 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
+import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { ToolReportGuard } from '@/components/ToolReportGuard'
 import {
   BookOpen,
   Sparkles,
@@ -43,132 +46,21 @@ export default function BibliomancyPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'overview' | 'reading' | 'question' | 'passages' | 'guidance' | 'ask-seer'>('overview')
-  const [reading, setReading] = useState<BibliomancyReading | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [profileComplete, setProfileComplete] = useState(false)
   const [question, setQuestion] = useState('')
-  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false)
   const [selectedText, setSelectedText] = useState<SacredTextType | null>(null)
-
-  // Check profile completeness
+  const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('bibliomancy')
+  const reading = useMemo((): BibliomancyReading | null => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    const r = pipelineReport as Record<string, unknown>
+    if (r.placeholder === true) return null
+    const data = (r.data ?? r) as Record<string, unknown> | undefined
+    const hasReading = data && typeof data === 'object' && (Array.isArray((data as Record<string, unknown>).selectedPassages) || (data as Record<string, unknown>).selectedPassages != null)
+    return hasReading ? (data as unknown as BibliomancyReading) : null
+  }, [pipelineReport])
+  const [profileComplete, setProfileComplete] = useState(false)
   useEffect(() => {
-    if (userProfile) {
-      const complete = !!(userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace)
-      setProfileComplete(complete)
-    }
+    if (userProfile) setProfileComplete(!!(userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace))
   }, [userProfile])
-
-  // Generate comprehensive reading
-  const generateReading = useCallback(async () => {
-    if (!user?.uid) {
-      setError('Please log in to generate a bibliomancy reading')
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-
-    const textTypeToSend = selectedText || 'bible'
-    console.log('📤 Sending bibliomancy request with textType:', textTypeToSend)
-
-    try {
-      const response = await fetch('/api/tools/bibliomancy/reading', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          textType: textTypeToSend // Default to bible if not selected (backward compatibility)
-        })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate bibliomancy reading')
-      }
-
-      if (data.success && data.data) {
-        setReading(data.data)
-        setProfileComplete(data.profileComplete || false)
-        // Navigate to reading tab after generation
-        setTimeout(() => {
-          setActiveTab('reading')
-        }, 300)
-      } else {
-        throw new Error('Invalid response from server')
-      }
-    } catch (err: any) {
-      console.error('Error generating bibliomancy reading:', err)
-      setError(err.message || 'Failed to generate bibliomancy reading. Please try again.')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [user?.uid, selectedText])
-
-  // Auto-generate reading when profile is complete and text is selected
-  useEffect(() => {
-    if (profileComplete && !reading && !isLoading && user?.uid && selectedText) {
-      console.log('✨ Auto-generating bibliomancy reading for complete profile')
-      const timer = setTimeout(() => {
-        generateReading()
-      }, 500)
-      return () => clearTimeout(timer)
-    }
-  }, [profileComplete, reading, isLoading, user?.uid, selectedText, generateReading])
-
-  // Generate question-based reading
-  const generateQuestionReading = useCallback(async () => {
-    if (!question.trim()) {
-      setError('Please enter a question')
-      return
-    }
-
-    if (!user?.uid) {
-      setError('Please log in to generate a question reading')
-      return
-    }
-
-    setIsGeneratingQuestion(true)
-    setError(null)
-
-    const textTypeToSend = selectedText || 'bible'
-    console.log('📤 Sending question reading request with textType:', textTypeToSend)
-
-    try {
-      const response = await fetch('/api/tools/bibliomancy/reading', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId: user.uid,
-          question: question.trim(),
-          textType: textTypeToSend // Default to bible if not selected (backward compatibility)
-        })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate question reading')
-      }
-
-      if (data.success && data.data) {
-        setReading(data.data)
-        setActiveTab('question')
-      } else {
-        throw new Error('Invalid response from server')
-      }
-    } catch (err: any) {
-      console.error('Error generating question reading:', err)
-      setError(err.message || 'Failed to generate question reading. Please try again.')
-    } finally {
-      setIsGeneratingQuestion(false)
-    }
-  }, [question, user?.uid, selectedText])
 
   const missingFields = useMemo(() => {
     if (!userProfile) return ['Birth Date', 'Birth Time', 'Birth Place']
@@ -180,6 +72,7 @@ export default function BibliomancyPage() {
   }, [userProfile])
 
   return (
+    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="bibliomancy">
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
       <div className="relative z-10 container mx-auto px-4 py-8">
         {/* Header */}
@@ -194,7 +87,7 @@ export default function BibliomancyPage() {
               📖
             </div>
             <div>
-              <h1 className="text-4xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-2">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-2">
                 Bibliomancy
               </h1>
               <p className="text-slate-300">
@@ -256,15 +149,16 @@ export default function BibliomancyPage() {
         )}
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 gap-2">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             {tabs.map((tab) => {
               const Icon = tab.icon
               return (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-slate-300 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center"
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
                 >
                   <Icon className="w-4 h-4 mr-1" />
                   {tab.label}
@@ -274,7 +168,7 @@ export default function BibliomancyPage() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <ToolIntroductionTab toolSlug="bibliomancy" />
             
             {/* Sacred Text Selector */}
@@ -288,27 +182,16 @@ export default function BibliomancyPage() {
               </CardContent>
             </Card>
 
-            {/* Generate Button */}
-            {selectedText && (
+            {/* CTA when no reading from pipeline */}
+            {selectedText && !reading && (
               <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <CardContent className="p-6 text-center">
-                  <Button
-                    onClick={generateReading}
-                    disabled={isLoading || !selectedText}
-                    className="bg-amber-600 hover:bg-amber-500 text-white px-8 py-6 text-lg"
-                    size="lg"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                        Generating Reading...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5 mr-2" />
-                        Generate My Bibliomancy Reading
-                      </>
-                    )}
+                  <p className="text-slate-700 mb-4">Generate your mystical profile to get your Bibliomancy reading.</p>
+                  <Button asChild className="bg-amber-600 hover:bg-amber-500 text-white px-8 py-6 text-lg" size="lg">
+                    <Link href="/profile">
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Generate your mystical profile
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -316,7 +199,7 @@ export default function BibliomancyPage() {
           </TabsContent>
 
           {/* Reading Tab */}
-          <TabsContent value="reading" className="space-y-6">
+          <TabsContent value="reading" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {!profileComplete ? (
               <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <CardContent className="p-6 text-center">
@@ -338,31 +221,15 @@ export default function BibliomancyPage() {
               <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <CardContent className="p-6 text-center">
                   <Info className="w-12 h-12 text-amber-700 mx-auto mb-4" />
-                  <h3 className="text-amber-900 font-semibold mb-2 text-xl">Generate Your Bibliomancy Reading</h3>
+                  <h3 className="text-amber-900 font-semibold mb-2 text-xl">Bibliomancy Reading</h3>
                   <p className="text-slate-700 mb-4">
-                    Receive a comprehensive bibliomancy reading based on your birth information, with guidance for all areas of your life.
+                    Generate your mystical profile to receive a comprehensive bibliomancy reading with guidance for all areas of your life.
                   </p>
-                  <Button
-                    onClick={generateReading}
-                    disabled={isLoading || !selectedText}
-                    className="bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Generating Reading...
-                      </>
-                    ) : !selectedText ? (
-                      <>
-                        <Info className="w-4 h-4 mr-2" />
-                        Select a Sacred Text First
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        Generate My Reading
-                      </>
-                    )}
+                  <Button asChild className="bg-amber-600 hover:bg-amber-500 text-white">
+                    <Link href="/profile">
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate your mystical profile
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -372,7 +239,7 @@ export default function BibliomancyPage() {
           </TabsContent>
 
           {/* Question Reading Tab */}
-          <TabsContent value="question" className="space-y-6">
+          <TabsContent value="question" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
                 <CardTitle className="text-amber-900 flex items-center gap-2">
@@ -399,27 +266,14 @@ export default function BibliomancyPage() {
                     </p>
                   </div>
                 )}
-                <Button
-                  onClick={generateQuestionReading}
-                  disabled={isGeneratingQuestion || !question.trim() || !selectedText}
-                  className="w-full bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGeneratingQuestion ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Consulting the Sacred Texts...
-                    </>
-                  ) : !selectedText ? (
-                    <>
-                      <Info className="w-4 h-4 mr-2" />
-                      Select a Sacred Text First
-                    </>
-                  ) : (
-                    <>
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Open the Book
-                    </>
-                  )}
+                <p className="text-sm text-slate-600">
+                  Question-based readings are included when you generate your mystical profile.
+                </p>
+                <Button asChild className="w-full bg-amber-600 hover:bg-amber-500 text-white">
+                  <Link href="/profile">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate your mystical profile
+                  </Link>
                 </Button>
               </CardContent>
             </Card>
@@ -459,7 +313,7 @@ export default function BibliomancyPage() {
           </TabsContent>
 
           {/* Passages Tab */}
-          <TabsContent value="passages" className="space-y-6">
+          <TabsContent value="passages" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading && reading.selectedPassages && reading.selectedPassages.length > 0 ? (
               <div className="space-y-4">
                 {reading.selectedPassages.map((passage, idx) => (
@@ -519,25 +373,21 @@ export default function BibliomancyPage() {
                   <Info className="w-12 h-12 text-amber-700 mx-auto mb-4" />
                   <h3 className="text-amber-900 font-semibold mb-2 text-xl">No Passages Yet</h3>
                   <p className="text-slate-700 mb-4">
-                    Generate a bibliomancy reading to see selected Bible passages and their interpretations.
+                    Generate your mystical profile to see selected passages and their interpretations.
                   </p>
-                  {profileComplete && (
-                    <Button
-                      onClick={generateReading}
-                      disabled={isLoading}
-                      className="bg-amber-600 hover:bg-amber-500 text-white"
-                    >
+                  <Button asChild className="bg-amber-600 hover:bg-amber-500 text-white">
+                    <Link href="/profile">
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Reading
-                    </Button>
-                  )}
+                      Generate your mystical profile
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             )}
           </TabsContent>
 
           {/* Guidance Tab */}
-          <TabsContent value="guidance" className="space-y-6">
+          <TabsContent value="guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading && reading.lifeAreaGuidance ? (
               <div className="space-y-6">
                 {Object.entries(reading.lifeAreaGuidance).map(([area, guidance]) => (
@@ -603,25 +453,21 @@ export default function BibliomancyPage() {
                   <Info className="w-12 h-12 text-amber-700 mx-auto mb-4" />
                   <h3 className="text-amber-900 font-semibold mb-2 text-xl">No Guidance Yet</h3>
                   <p className="text-slate-700 mb-4">
-                    Generate a bibliomancy reading to receive personalized guidance for all areas of your life.
+                    Generate your mystical profile to receive personalized guidance for all areas of your life.
                   </p>
-                  {profileComplete && (
-                    <Button
-                      onClick={generateReading}
-                      disabled={isLoading}
-                      className="bg-amber-600 hover:bg-amber-500 text-white"
-                    >
+                  <Button asChild className="bg-amber-600 hover:bg-amber-500 text-white">
+                    <Link href="/profile">
                       <Sparkles className="w-4 h-4 mr-2" />
-                      Generate Reading
-                    </Button>
-                  )}
+                      Generate your mystical profile
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             )}
           </TabsContent>
 
           {/* Ask The Seer Tab */}
-          <TabsContent value="ask-seer" className="space-y-6">
+          <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {user?.uid ? (
               reading ? (
                 <BibliomancySeerChatInterface
@@ -633,20 +479,12 @@ export default function BibliomancyPage() {
                 <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden hover:shadow-xl transition-shadow duration-300">
                   <CardContent className="p-12 text-center">
                     <MessageCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                    <p className="text-slate-700 mb-4">Generate your bibliomancy reading first.</p>
-                    <Button
-                      onClick={generateReading}
-                      disabled={isLoading}
-                      className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        'Generate Your Bibliomancy Reading'
-                      )}
+                    <p className="text-slate-700 mb-4">Generate your mystical profile to get your bibliomancy reading first.</p>
+                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+                      <Link href="/profile">
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate your mystical profile
+                      </Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -660,7 +498,9 @@ export default function BibliomancyPage() {
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </div>
     </div>
+    </ToolReportGuard>
   )
 }

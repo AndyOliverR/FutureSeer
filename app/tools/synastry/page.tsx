@@ -71,7 +71,7 @@ export default function SynastryPage() {
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         {/* Header */}
         <div className="text-center mb-8 pt-4">
-          <h1 className="text-5xl font-heading font-semibold mb-6">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-heading font-semibold mb-6">
             <span className="text-yellow-400">💕</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Synastry</span>
           </h1>
@@ -267,25 +267,26 @@ export default function SynastryPage() {
               </div>
 
               {/* Tabs */}
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-                <TabsList className="grid w-full grid-cols-7 bg-transparent p-0 gap-2 mb-6">
+              <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+                <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                   {tabsConfig.map((tab) => (
                     <motion.div
                       key={tab.value}
                       whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                       transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                      className="relative"
+                      className="relative shrink-0"
                     >
                       <TabsTrigger 
                         value={tab.value} 
-                        className="m3-elevation-0 m3-elevation-transition m3-transition-standard data-[state=active]:m3-elevation-1 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium m3-label-medium bg-white/40 text-slate-800 data-[state=inactive]:hover:text-slate-900 data-[state=inactive]:hover:bg-amber-50/70 data-[state=inactive]:hover:m3-elevation-1 transition-all flex items-center justify-center relative overflow-hidden w-full"
+                        className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden border border-transparent data-[state=inactive]:border-slate-600/50"
                       >
                         {tab.label}
                         {activeTab === tab.value && (
                           <motion.div
                             layoutId="activeTab"
-                            className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
+                            className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-t-lg rounded-b-none -z-10"
                             transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
                           />
                         )}
@@ -296,7 +297,7 @@ export default function SynastryPage() {
 
                 {/* Tab Content with Material 3 Transitions */}
                 {tabsConfig.map((tab) => (
-                  <TabsContent key={tab.value} value={tab.value} className="space-y-6 mt-6">
+                  <TabsContent key={tab.value} value={tab.value} className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     {tab.value === 'ask-seer' ? (
                       <SynastrySeerChatInterface analysis={analysis} userId={user?.uid} />
                     ) : (
@@ -453,6 +454,7 @@ export default function SynastryPage() {
                   </TabsContent>
                 ))}
               </Tabs>
+              </div>
               </CardContent>
             </Card>
           </motion.div>

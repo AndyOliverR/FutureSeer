@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -83,7 +84,7 @@ export function BirthDetailsCard({
         setShowSuggestions(true)
       }
     } catch (error) {
-      console.error('Place search error:', error)
+      devLog.error('Place search error:', error, 'BirthDetailsCard')
     } finally {
       setIsLoadingPlace(false)
     }

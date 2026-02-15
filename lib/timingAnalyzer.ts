@@ -177,6 +177,15 @@ export class TimingAnalyzer {
     };
   }
 
+  /** Returns wealth score and favorability for a specific date (for day-level recommendations). */
+  analyzeDate(date: Date): { wealthScore: number; favorability: 'excellent' | 'good' | 'neutral' | 'challenging' } {
+    const antardasha = this.calculateAntardashaForDate(date);
+    const transits = this.calculateTransitsForDate(date);
+    const wealthScore = this.calculateWealthScore(antardasha, transits);
+    const favorability = this.calculateFavorability(antardasha, transits);
+    return { wealthScore, favorability };
+  }
+
   // Calculate wealth score based on 2nd, 11th house transits and Dasha
   calculateWealthScore(antardasha: AntardashaInfo, transits: any): number {
     let score = 50; // Base neutral score

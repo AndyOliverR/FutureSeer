@@ -221,6 +221,15 @@ DISCIPLINE (non-negotiable):
 - Permanent rule: Runes reveal the nature of forces at play, not the certainty of results.
 `.trim();
 
+  const fewRunes = state.runes.length < 2;
+  const unclearPosition = state.runes.some(
+    (r) => !r.position || r.position.trim() === '' || r.position.toLowerCase() === 'unknown'
+  );
+  const fewOrUnclear = fewRunes || unclearPosition;
+  const caveat = fewOrUnclear
+    ? '\n\nRunes or positions are few or unclear; keep guidance general, not absolute.'
+    : '';
+
   return `${stateBlock}
 
 ${priorityBlock}
@@ -229,5 +238,5 @@ ${warningBlock}
 
 ${actionBlock}
 
-${disciplineBlock}`;
+${disciplineBlock}${caveat}`;
 }

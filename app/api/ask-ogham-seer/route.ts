@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
+import { buildOghamSeerSystemPrompt } from '@/lib/oghamSeerPrompts';
 import {
   buildOghamState,
   classifyOghamQuestion,
@@ -58,7 +60,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const systemPrompt = getOghamSliceForQuestionType(questionType, state);
+    const slice = getOghamSliceForQuestionType(questionType, state);
+    const systemPrompt = buildOghamSeerSystemPrompt(slice, questionType);
 
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } catch (error) {
-            console.error('Error during Ogham seer streaming:', error);
+            devLog.error('Error during Ogham seer streaming:', error, 'route');
             controller.enqueue(
               new TextEncoder().encode(
                 'I apologize, but I encountered an error. Please try again.'
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error: unknown) {
-    console.error('Ogham Seer API error:', error);
+    devLog.error('Ogham Seer API error:', error, 'route');
     return NextResponse.json(
       {
         error:

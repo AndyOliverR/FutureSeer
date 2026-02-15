@@ -45,7 +45,7 @@ export default function FaceReadingPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-8 pt-4"
         >
-          <h1 className="text-5xl font-serif font-semibold mb-6">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-yellow-400">👁️</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Face Reading</span>
           </h1>
@@ -265,36 +265,22 @@ export default function FaceReadingPage() {
               className="bg-blue-50/80 border-2 border-blue-300 shadow-md m3-elevation-transition rounded-3xl"
             >
               <CardContent className="p-6">
-                {/* Tabs */}
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-6 bg-transparent p-0 gap-2 mb-6">
+                <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full min-w-0">
+                  <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                     {["overview", "features", "personality", "character", "destiny", "ask-the-seer"].map((tab) => (
-                      <motion.div
+                      <TabsTrigger
                         key={tab}
-                        whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
-                        whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
-                        transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                        className="relative"
+                        value={tab}
+                        className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all flex items-center justify-center"
                       >
-                        <TabsTrigger 
-                          value={tab}
-                          className="data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 data-[state=inactive]:hover:bg-blue-100/50 transition-all flex items-center justify-center relative overflow-hidden"
-                        >
-                          {tab === 'ask-the-seer' ? 'Ask the Seer' : tab.charAt(0).toUpperCase() + tab.slice(1)}
-                          {activeTab === tab && (
-                            <motion.div
-                              layoutId="activeTab"
-                              className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-xl -z-10"
-                              transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 300, damping: 30 }}
-                            />
-                          )}
-                        </TabsTrigger>
-                      </motion.div>
+                        {tab === 'ask-the-seer' ? 'Ask the Seer' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </TabsTrigger>
                     ))}
                   </TabsList>
-                </Tabs>
 
-              {/* Content */}
+                  {/* Content */}
+                  <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <AnimatePresence mode="wait">
                 {isLoading ? (
                   <motion.div
@@ -356,6 +342,9 @@ export default function FaceReadingPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
+                  </div>
+                </Tabs>
+                </div>
               </CardContent>
             </Card>
           </motion.div>

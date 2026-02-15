@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { LenormandReading } from "@/lib/lenormandIntelligence";
+import { lenormandIntelligence, LenormandReading } from "@/lib/lenormandIntelligence";
 
 export interface LenormandReadingResponse {
   question: string;
@@ -19,6 +19,27 @@ export function useLenormand() {
   const [reading, setReading] = useState<LenormandReading | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load last saved reading on mount so Ask the Seer tab has a reading after refresh or return
+  useEffect(() => {
+    if (!user?.uid) return;
+    let cancelled = false;
+    (async () => {
+      const history = await lenormandIntelligence.getReadingHistory(user.uid, 1);
+      if (cancelled) return;
+      if (history.length > 0) {
+        const last = history[0];
+        const normalized = {
+          ...last,
+          timestamp: last.timestamp instanceof Date ? last.timestamp : new Date((last as unknown as { timestamp: string }).timestamp),
+        };
+        setReading((prev) => (prev !== null ? prev : (normalized as LenormandReading)));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
 
   async function performLenormandReading() {
     if (!question.trim()) {

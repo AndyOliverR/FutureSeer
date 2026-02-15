@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -87,7 +88,7 @@ export function ConvertedChartsViewer({
       setLocalConvertedCharts(convertedCharts)
       setIsConverting(false)
       setError(null)
-      console.log('✅ Using real AstroApp converted charts:', convertedCharts)
+      devLog.debug('✅ Using real AstroApp converted charts:', convertedCharts)
     } else if (westernChartData && !convertedCharts && !isConverting) {
       // Fallback: convert charts if no converted charts provided
       convertCharts()
@@ -101,7 +102,7 @@ export function ConvertedChartsViewer({
     setError(null)
 
     try {
-      console.log('🔄 Converting Western chart to Vedic formats...')
+      devLog.debug('🔄 Converting Western chart to Vedic formats...')
       
       const response = await fetch('/api/tools/vedic/convert-charts', {
         method: 'POST',
@@ -120,12 +121,12 @@ export function ConvertedChartsViewer({
       
       if (result.success) {
         setLocalConvertedCharts(result.charts)
-        console.log('✅ Charts converted successfully:', Object.keys(result.charts))
+        devLog.debug('✅ Charts converted successfully:', Object.keys(result.charts))
       } else {
         throw new Error(result.error || 'Chart conversion failed')
       }
     } catch (err) {
-      console.error('❌ Chart conversion error:', err)
+      devLog.error('❌ Chart conversion error:', err, 'ConvertedChartsViewer')
       setError(err instanceof Error ? err.message : 'Failed to convert charts')
     } finally {
       setIsConverting(false)
@@ -165,7 +166,7 @@ export function ConvertedChartsViewer({
           url: window.location.href
         })
       } catch (error) {
-        console.log('Error sharing:', error)
+        devLog.debug('Error sharing:', error)
       }
     } else {
       navigator.clipboard.writeText(window.location.href)

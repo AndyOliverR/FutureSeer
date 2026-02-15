@@ -2,6 +2,7 @@
 // Extracts key insights from comprehensive mystical profile for dashboard snippets
 
 import type { ComprehensiveMysticalProfile } from '@/hooks/useComprehensiveMysticalProfile'
+import { devLog } from '@/lib/devLogger';
 import type { ToolSnippetCardProps } from '@/components/dashboard/ToolSnippetCard'
 import { toolManager } from '@/lib/services/toolManager'
 
@@ -12,14 +13,14 @@ function getToolIcon(slug: string, fallback: string): string {
 
 // Extended profile type to include all possible tool data
 export interface ExtendedMysticalProfile extends ComprehensiveMysticalProfile {
-  western?: any
-  numerology?: any
-  tarot?: any
-  iching?: any
-  geomancy?: any
-  angelNumbers?: any
-  nameAnalysis?: any
-  [key: string]: any // Allow additional tool data
+  western?: unknown
+  numerology?: unknown
+  tarot?: unknown
+  iching?: unknown
+  geomancy?: unknown
+  angelNumbers?: unknown
+  nameAnalysis?: unknown
+  [key: string]: unknown // Allow additional tool data
 }
 
 export interface ToolSnippet {
@@ -32,6 +33,7 @@ export interface ToolSnippet {
   href: string
   colorScheme: ToolSnippetCardProps['colorScheme']
   priority: number
+  iconClassName?: string
 }
 
 /** Discovery snippets: fixed cards for tools without cached data. Shown after data-driven snippets. */
@@ -90,7 +92,8 @@ function getDiscoverySnippets(): ToolSnippet[] {
       insight: 'Draw runes for insight and guidance.',
       href: '/tools/runes',
       colorScheme: 'teal',
-      priority: 14
+      priority: 14,
+      iconClassName: 'text-amber-400'
     },
     {
       toolName: 'Dream Symbols',
@@ -145,7 +148,7 @@ export function extractToolSnippets(profile: ExtendedMysticalProfile | Comprehen
 
   // If no snippets found but profile exists, ensure at least Vedic shows
   if (snippets.length === 0 && profile) {
-    console.warn('⚠️ No tool snippets extracted, adding fallback Vedic snippet')
+    devLog.warn('⚠️ No tool snippets extracted, adding fallback Vedic snippet', 'dashboardDataExtractor')
     snippets.push({
       toolName: 'Vedic Astrology',
       toolSlug: 'vedic',

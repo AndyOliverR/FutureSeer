@@ -2,6 +2,7 @@
 // Coordinates all symbolic systems, AI predictions, and remedy generation
 
 import { PredictiveSystem } from './predictiveAlgorithms'
+import { devLog } from '@/lib/devLogger';
 import { generateAIPrediction, getSymbolicData, getRemedies } from './api'
 import { getAstroData } from './api'
 import { getUserProfile } from './firebase'
@@ -153,7 +154,7 @@ export class PredictionEngine {
     const startTime = Date.now()
     
     try {
-      console.log('🔮 PredictionEngine: Starting unified prediction...')
+      devLog.debug('🔮 PredictionEngine: Starting unified prediction...')
       
       // Get user profile and astro data
       const userProfile = request.userProfile || await getUserProfile(request.userId)
@@ -197,7 +198,7 @@ export class PredictionEngine {
       }
       
     } catch (error) {
-      console.error('❌ PredictionEngine: Error generating prediction:', error)
+      devLog.error('❌ PredictionEngine: Error generating prediction:', error, 'prediction-engine')
       throw new Error(`Failed to generate prediction: ${(error as Error).message}`)
     }
   }
@@ -213,7 +214,7 @@ export class PredictionEngine {
         reasoning: aiResult.reasoning || []
       }
     } catch (error) {
-      console.warn('⚠️ AI prediction failed, using fallback:', error)
+      devLog.warn('⚠️ AI prediction failed, using fallback:', error, 'prediction-engine')
       return {
         answer: "I sense the energies around your question. The cosmic forces suggest a period of reflection and careful consideration.",
         confidence: 0.5,
@@ -275,7 +276,7 @@ export class PredictionEngine {
           advice: result.advice
         }
       } catch (error) {
-        console.warn(`⚠️ ${system.name} reading failed:`, error)
+        devLog.warn(`⚠️ ${system.name} reading failed:`, error, 'prediction-engine')
         return null
       }
     })
@@ -317,7 +318,7 @@ export class PredictionEngine {
         }
       }
     } catch (error) {
-      console.warn('⚠️ Advanced predictions failed:', error)
+      devLog.warn('⚠️ Advanced predictions failed:', error, 'prediction-engine')
       return {}
     }
   }
@@ -343,7 +344,7 @@ export class PredictionEngine {
         practical: remedyList.filter(r => (r as { category?: string }).category === 'practical').map(r => (r as { title?: string }).title ?? '') || []
       }
     } catch (error) {
-      console.warn('⚠️ Remedy generation failed:', error)
+      devLog.warn('⚠️ Remedy generation failed:', error, 'prediction-engine')
       return {
         immediate: ["Take a moment to breathe deeply and center yourself"],
         shortTerm: ["Practice mindfulness and stay present"],

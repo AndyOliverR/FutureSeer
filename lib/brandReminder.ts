@@ -4,6 +4,8 @@
  * Runs before any code changes to enforce brand guidelines
  */
 
+import { devLog } from '@/lib/devLogger';
+
 export class BrandReminder {
   private static instance: BrandReminder
   private reminders: string[] = []
@@ -98,12 +100,12 @@ export class BrandReminder {
    * Display brand reminder before code changes
    */
   displayBrandReminder(): void {
-    console.log('\n🎨 FUTURESEER BRAND REMINDER:')
-    console.log('✅ Primary Color: #1e40af (Darkest Blue)')
-    console.log('✅ Secondary Color: #fbbf24 (Golden Yellow)')
-    console.log('❌ FORBIDDEN: orange, #ff6b6b, #4ecdc4, slate, gray')
-    console.log('💡 Remember: FutureSeer uses glossy, shiny dark blue and gold colors!')
-    console.log('')
+    devLog.debug('\n🎨 FUTURESEER BRAND REMINDER:')
+    devLog.debug('✅ Primary Color: #1e40af (Darkest Blue)')
+    devLog.debug('✅ Secondary Color: #fbbf24 (Golden Yellow)')
+    devLog.debug('❌ FORBIDDEN: orange, #ff6b6b, #4ecdc4, slate, gray')
+    devLog.debug('💡 Remember: FutureSeer uses glossy, shiny dark blue and gold colors!')
+    devLog.debug('')
   }
 
   /**
@@ -115,15 +117,15 @@ export class BrandReminder {
     const compliance = this.checkBrandCompliance(code)
     
     if (!compliance.compliant) {
-      console.error(`\n🚨 BRAND VIOLATIONS DETECTED in ${fileName}:`)
+      devLog.error(`\n🚨 BRAND VIOLATIONS DETECTED in ${fileName}:`, undefined, 'brandReminder')
       compliance.violations.forEach(violation => {
-        console.error(`   ${violation}`)
+        devLog.error(`   ${violation}`, undefined, 'brandReminder')
       })
-      console.error('\n💡 Please fix brand violations before proceeding!')
+      devLog.error('\n💡 Please fix brand violations before proceeding!', undefined, 'brandReminder')
       return false
     }
     
-    console.log(`✅ Brand compliance verified for ${fileName}`)
+    devLog.debug(`✅ Brand compliance verified for ${fileName}`)
     return true
   }
 }

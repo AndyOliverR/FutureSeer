@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { devLog } from '@/lib/devLogger';
 import { useIChingData } from '@/hooks/use-iching'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -40,7 +41,7 @@ export function IChingTool() {
     try {
       await consultIChing(question, method)
     } catch (error) {
-      console.error('Error consulting I Ching:', error)
+      devLog.error('Error consulting I Ching:', error, 'IChingTool')
     } finally {
       setIsConsulting(false)
     }

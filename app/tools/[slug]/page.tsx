@@ -69,7 +69,7 @@ export default function ToolPage() {
         />
 
         {/* Tool Content */}
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
           <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 border-amber-500/50 backdrop-blur-md rounded-2xl p-1 mb-6">
             <TabsTrigger 
               value="introduction" 
