@@ -1,6 +1,8 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useMemo, useState, useEffect } from "react"
+import { devLog } from '@/lib/devLogger';
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import dynamic from "next/dynamic"
 import { DashboardEmptyState } from "@/components/dashboard/DashboardEmptyState"
@@ -13,6 +15,7 @@ import { ToolSnippetCard } from "@/components/dashboard/ToolSnippetCard"
 import { extractToolSnippets } from "@/lib/dashboardDataExtractor"
 import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
 import { updateUserProfile } from "@/lib/firebase"
+import { RETURNING_USER_WITH_REPORTS_DESTINATION, hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting"
 
 const HeroWelcome = dynamic(() => import("@/components/dashboard/HeroWelcome").then(mod => ({ default: mod.HeroWelcome })), {
   loading: () => <div className="w-full h-32 rounded-2xl backdrop-blur-md bg-[var(--m3-surface-container-lowest)] border border-[var(--m3-outline-variant)] animate-pulse" />
@@ -20,9 +23,24 @@ const HeroWelcome = dynamic(() => import("@/components/dashboard/HeroWelcome").t
 
 export default function DashboardPage() {
   const { user, userProfile, loading: authLoading, refreshProfile, isAdmin, isSuperadmin } = useAuth()
+  const router = useRouter()
   const [paymentGateDismissed, setPaymentGateDismissed] = useState(false)
   const { profile, loading: profileLoading, hasProfile } = useComprehensiveMysticalProfile()
   const mergedProfile = useDashboardProfile(user?.uid ?? undefined, profile)
+
+  // Redirect unauthenticated users to sign-in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/signin")
+    }
+  }, [authLoading, user, router])
+
+  // Redirect to profile-setup until required fields (birthDate, birthPlace) are complete
+  useEffect(() => {
+    if (!authLoading && user && !hasRequiredProfileSetup(userProfile)) {
+      router.replace(PROFILE_SETUP_PATH)
+    }
+  }, [authLoading, user, userProfile, router])
 
   // Get user's first name for personalized experience
   const getFirstName = (fullName: string) => {
@@ -125,6 +143,16 @@ export default function DashboardPage() {
     )
   }
 
+  // Guard: redirect when auth is resolved and user is missing
+  if (!user) {
+    return null
+  }
+
+  // Guard: do not render dashboard until profile setup is complete (effect above redirects)
+  if (!hasRequiredProfileSetup(userProfile)) {
+    return null
+  }
+
   // RBI: First-signin payment capture — show blocking overlay if user has no payment method (skip admins)
   const needPaymentCapture =
     user &&
@@ -157,14 +185,20 @@ export default function DashboardPage() {
                 await refreshProfile()
                 setPaymentGateDismissed(true)
               } catch (e) {
-                console.error('Failed to save payment to profile:', e)
+                devLog.error('Failed to save payment to profile:', e, 'page')
               }
             }}
-            onError={(msg) => console.error('Payment capture error:', msg)}
+            onError={(msg) => devLog.error('Payment capture error:', msg, 'page')}
           />
         </div>
       </div>
     )
+  }
+
+  // Returning user with reports: redirect to canonical default (Ask the Seer)
+  if (userProfile?.mysticalProfileGenerated === true) {
+    router.replace(RETURNING_USER_WITH_REPORTS_DESTINATION)
+    return null
   }
 
   // Empty state - no profile generated yet
@@ -174,7 +208,7 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-6">
           {/* Free-floating Avatar */}
           <motion.div 
-            className="absolute top-20 right-4 z-[100]"
+            className="absolute top-20 left-4 z-[100]"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ease: [0, 0, 0.2, 1], duration: 0.5, delay: 0.1 }}
@@ -213,7 +247,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-6">
         {/* Free-floating Avatar above everything */}
         <motion.div 
-          className="absolute top-20 right-4 z-[100]"
+          className="absolute top-20 left-4 z-[100]"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ ease: [0, 0, 0.2, 1], duration: 0.5, delay: 0.1 }}
@@ -262,6 +296,7 @@ export default function DashboardPage() {
                   href={snippet.href}
                   colorScheme={snippet.colorScheme}
                   priority={index}
+                  iconClassName={snippet.iconClassName}
                 />
               ))}
             </div>
