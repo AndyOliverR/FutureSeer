@@ -1,4 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
+import { devLog } from '@/lib/devLogger';
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -69,7 +70,7 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       try {
         // Check if admin config is available
         if (!adminConfig.projectId || !adminConfig.clientEmail || !adminConfig.privateKey) {
-          console.warn('⚠️ Firebase Admin SDK config incomplete. Using client SDK fallback.');
+          devLog.warn('⚠️ Firebase Admin SDK config incomplete. Using client SDK fallback.', undefined, 'firebase');
           // Fallback to client SDK for server-side (less secure but functional)
           if (!app) {
             app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -105,20 +106,20 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
         } catch (error) {
           // Settings already applied, ignore error
           if (!_adminInitLogged) {
-            console.warn('Firestore settings already applied');
+            devLog.warn('Firestore settings already applied', undefined, 'firebase');
             _adminInitLogged = true;
           }
         }
         
         if (!_adminInitLogged) {
-          console.log('✅ Firebase Admin SDK initialized for server-side');
+          devLog.debug('✅ Firebase Admin SDK initialized for server-side');
           _adminInitLogged = true;
         }
         return { app: adminApp, auth: null, db: adminDB };
         
       } catch (adminError) {
-        console.error('❌ Firebase Admin SDK initialization failed:', adminError);
-        console.warn('⚠️ Falling back to client SDK for server-side operations');
+        devLog.error('❌ Firebase Admin SDK initialization failed:', adminError, 'firebase');
+        devLog.warn('⚠️ Falling back to client SDK for server-side operations', undefined, 'firebase');
         
         // Fallback to client SDK
         if (!app) {
@@ -145,14 +146,14 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       if (!firebaseConfig.appId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_APP_ID');
 
       if (missingConfigs.length > 0) {
-        console.error('❌ Firebase configuration incomplete. Missing:', missingConfigs);
-        console.warn('⚠️ Firebase configuration incomplete. Some features may not work.');
+        devLog.error('❌ Firebase configuration incomplete. Missing:', missingConfigs, 'firebase');
+        devLog.warn('⚠️ Firebase configuration incomplete. Some features may not work.', undefined, 'firebase');
         console.info('💡 Please check your environment variables in Vercel dashboard.');
         return { app: null, auth: null, db: null };
       }
 
       // Log Firebase config status (without exposing actual values)
-      console.log('✅ Firebase configuration status:', {
+      devLog.debug('✅ Firebase configuration status:', {
         apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
         authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
         projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
@@ -174,45 +175,45 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
         
         // Use standard default connection first
         firebaseDB = getFirestore(app);
-        console.log('✅ Connected to default Firestore database');
+        devLog.debug('✅ Connected to default Firestore database');
         
         // Enable network connectivity with error handling
         try {
           enableNetwork(firebaseDB);
-          console.log('✅ Firestore network enabled');
+          devLog.debug('✅ Firestore network enabled');
           isFirestoreConnected = true;
         } catch (networkError) {
-          console.warn('⚠️ Network enable failed, continuing without network monitoring:', networkError);
+          devLog.warn('⚠️ Network enable failed, continuing without network monitoring:', networkError, 'firebase');
           isFirestoreConnected = true; // Still connected, just without network monitoring
         }
         
         // Simple connection test without creating documents
-        console.log('✅ Firestore connection test completed');
+        devLog.debug('✅ Firestore connection test completed');
         
       } catch (dbError) {
-        console.warn('⚠️ Failed to connect to default database, trying "default" connection:', dbError);
+        devLog.warn('⚠️ Failed to connect to default database, trying "default" connection:', dbError, 'firebase');
         try {
           // Fallback to "default" database connection
           firebaseDB = getFirestore(app, 'default');
-          console.log('✅ Connected to "default" Firestore database');
+          devLog.debug('✅ Connected to "default" Firestore database');
           
           // Enable network for fallback connection
           try {
             enableNetwork(firebaseDB);
-            console.log('✅ Firestore network enabled (fallback)');
+            devLog.debug('✅ Firestore network enabled (fallback)');
             isFirestoreConnected = true;
           } catch (networkError) {
-            console.warn('⚠️ Network enable failed (fallback), continuing without network monitoring:', networkError);
+            devLog.warn('Network enable failed (fallback), continuing without network monitoring', networkError, 'firebase');
             isFirestoreConnected = true;
           }
         } catch (fallbackError) {
-          console.error('❌ Failed to connect to Firestore:', fallbackError);
-          console.warn('⚠️ Firestore features will not work. Check your Firebase project settings.');
+          devLog.error('❌ Failed to connect to Firestore:', fallbackError, 'firebase');
+          devLog.warn('⚠️ Firestore features will not work. Check your Firebase project settings.', undefined, 'firebase');
           return { app, auth: firebaseAuth, db: null };
         }
       }
     } catch (error) {
-      console.error('❌ Firebase initialization failed:', error);
+      devLog.error('❌ Firebase initialization failed:', error, 'firebase');
       return { app: null, auth: null, db: null };
     }
   }
@@ -240,12 +241,12 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
       for (const db of databases) {
         if (db.name?.includes('firestore')) {
           indexedDB.deleteDatabase(db.name);
-          console.log('🗑️ Cleared Firestore cache:', db.name);
+          devLog.debug('🗑️ Cleared Firestore cache:', db.name);
         }
       }
     } catch (error) {
       // IndexedDB.databases() might not be supported in all browsers
-      console.warn('⚠️ Could not clear Firestore cache:', error);
+      devLog.warn('⚠️ Could not clear Firestore cache:', error, 'firebase');
     }
   };
   
@@ -271,18 +272,18 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     if (isCriticalCorruption) {
       if (!firestoreCorruptionDetected) {
         firestoreCorruptionDetected = true;
-        console.warn('🔄 Critical Firestore corruption detected. Clearing cache and reloading...');
+        devLog.warn('🔄 Critical Firestore corruption detected. Clearing cache and reloading...', undefined, 'firebase');
         
         // Clear Firestore IndexedDB immediately
         indexedDB.databases().then(databases => {
           databases.forEach(db => {
             if (db.name?.includes('firestore')) {
               indexedDB.deleteDatabase(db.name);
-              console.log('🗑️ Deleted corrupted Firestore DB:', db.name);
+              devLog.debug('🗑️ Deleted corrupted Firestore DB:', db.name);
             }
           });
         }).catch(() => {
-          console.warn('Could not clear IndexedDB');
+          devLog.warn('Could not clear IndexedDB', undefined, 'firebase');
         });
         
         // Force full page reload after clearing cache
@@ -315,7 +316,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     
     // If user has been inactive for 30+ seconds and page is loading, likely stuck
     if (timeSinceActivity > 30000 && document.body.innerText.includes('Loading your mystical journey')) {
-      console.warn('🔄 App appears stuck. Reloading page...');
+      devLog.warn('🔄 App appears stuck. Reloading page...', undefined, 'firebase');
       window.location.reload();
     }
   }, 10000);
@@ -329,7 +330,7 @@ export const getFirebaseStorage = (): any => {
         const { getStorage: getAdminStorage } = require('firebase-admin/storage');
         return getAdminStorage(adminApp);
       } catch (error) {
-        console.warn('⚠️ Firebase Admin Storage not available, using client SDK');
+        devLog.warn('⚠️ Firebase Admin Storage not available, using client SDK', 'firebase');
       }
     }
   }
@@ -345,27 +346,27 @@ export const ensureFirestoreConnection = async (): Promise<boolean> => {
   try {
     const { db } = initializeFirebase();
     if (!db) {
-      console.error('❌ Firestore not initialized');
+      devLog.error('❌ Firestore not initialized', undefined, 'firebase');
       return false;
     }
 
     // Check if we need to reconnect
     if (!isFirestoreConnected && connectionRetryCount < MAX_RETRY_ATTEMPTS) {
-      console.log(`🔄 Attempting Firestore reconnection (attempt ${connectionRetryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
+      devLog.debug(`🔄 Attempting Firestore reconnection (attempt ${connectionRetryCount + 1}/${MAX_RETRY_ATTEMPTS})`);
       
       try {
         // Try to enable network again
         enableNetwork(db);
         isFirestoreConnected = true;
         connectionRetryCount = 0;
-        console.log('✅ Firestore reconnection successful');
+        devLog.debug('✅ Firestore reconnection successful');
         return true;
       } catch (reconnectError) {
         connectionRetryCount++;
-        console.warn(`⚠️ Firestore reconnection attempt ${connectionRetryCount} failed:`, reconnectError);
+        devLog.warn(`⚠️ Firestore reconnection attempt ${connectionRetryCount} failed:`, reconnectError, 'firebase');
         
         if (connectionRetryCount >= MAX_RETRY_ATTEMPTS) {
-          console.error('❌ Max Firestore reconnection attempts reached');
+          devLog.error('❌ Max Firestore reconnection attempts reached', undefined, 'firebase');
           return false;
         }
         
@@ -377,7 +378,7 @@ export const ensureFirestoreConnection = async (): Promise<boolean> => {
 
     return isFirestoreConnected;
   } catch (error) {
-    console.error('❌ Error ensuring Firestore connection:', error);
+    devLog.error('❌ Error ensuring Firestore connection:', error, 'firebase');
     return false;
   }
 };
@@ -386,7 +387,7 @@ export const ensureFirestoreConnection = async (): Promise<boolean> => {
 export const resetFirestoreConnection = (): void => {
   isFirestoreConnected = false;
   connectionRetryCount = 0;
-  console.log('🔄 Firestore connection state reset');
+  devLog.debug('🔄 Firestore connection state reset');
 };
 
 // Auth providers with simplified configuration
@@ -446,7 +447,8 @@ export interface UserProfile {
   mysticalProfileGenerated?: boolean; // Whether mystical profile has been generated
   mysticalProfileGeneratedAt?: number; // Timestamp when profile was generated
   profileDataHash?: string; // Hash of profile data to detect changes
-  
+  profileStatus?: 'incomplete' | 'completed'; // Explicit status: completed when setup + generation done
+
   // Personal context (helps AI provide relevant answers)
   relationshipStatus?: 'single' | 'in-relationship' | 'married' | 'divorced' | 'widowed' | 'prefer-not-to-say';
   hasChildren?: boolean;
@@ -524,6 +526,15 @@ const cacheUserProfile = (uid: string, profile: UserProfile | null): void => {
   if (!isBrowserEnvironment() || !profile) return;
   profileCache.set(uid, { data: profile, timestamp: Date.now() });
 };
+
+/**
+ * Clear the in-memory user profile cache for a user (e.g. after profile edit).
+ * No-op when not in browser.
+ */
+export function clearUserProfileCache(uid: string): void {
+  if (!isBrowserEnvironment()) return;
+  profileCache.delete(uid);
+}
 
 const isInternalFirestoreError = (error: any): boolean => {
   const message = error?.message || '';
@@ -611,7 +622,7 @@ export const getAuthErrorMessage = (error: AuthError | { code?: string; message?
       return 'A temporary error occurred. Please try again in a moment.';
     default:
       if (code || error?.message) {
-        console.warn('[Auth] Unhandled error:', code || 'no-code', error?.message);
+        devLog.warn('[Auth] Unhandled error', { code: code || 'no-code', message: error?.message }, 'firebase');
       }
       return 'An error occurred during authentication. Please try again.';
   }
@@ -654,10 +665,16 @@ async function detectUserCountry(): Promise<string> {
   }
 }
 
+export function isReturningUser(user: User): boolean {
+  const ct = user.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : 0;
+  const lst = user.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).getTime() : 0;
+  return lst - ct > 60000; // more than 60 seconds gap => returning user
+}
+
 export const signInWithGoogle = async (): Promise<User> => {
   // Prevent multiple simultaneous sign-in attempts
   if (isSigningIn && signInPromise) {
-    console.log('⚠️ Sign-in already in progress, returning existing promise');
+    devLog.debug('⚠️ Sign-in already in progress, returning existing promise');
     return signInPromise;
   }
 
@@ -672,12 +689,12 @@ export const signInWithGoogle = async (): Promise<User> => {
       
       // Simplified popup approach - let Firebase handle the popup creation
       try {
-        console.log('🔄 Attempting Google sign-in with popup...');
+        devLog.debug('🔄 Attempting Google sign-in with popup...');
         
         result = await signInWithPopup(auth, googleProvider);
-        console.log('✅ Popup authentication successful');
+        devLog.debug('✅ Popup authentication successful');
       } catch (popupError: any) {
-        console.log('⚠️ Popup authentication failed:', popupError.code, popupError.message);
+        devLog.debug('⚠️ Popup authentication failed:', popupError.code, popupError.message);
         
         // Handle "Target ID already exists" error - popup is already open
         // This can happen when multiple sign-in attempts occur simultaneously
@@ -686,19 +703,19 @@ export const signInWithGoogle = async (): Promise<User> => {
                                 popupError.code === 'auth/popup-blocked';
         
         if (isTargetIdError) {
-          console.log('⚠️ Popup already exists or blocked, waiting and checking auth state...');
+          devLog.debug('⚠️ Popup already exists or blocked, waiting and checking auth state...');
           
           // Wait a bit and check if user is already signed in
           await new Promise(resolve => setTimeout(resolve, 1000));
           
           const currentUser = auth.currentUser;
           if (currentUser) {
-            console.log('✅ User already signed in');
+            devLog.debug('✅ User already signed in');
             return currentUser;
           }
           
           // If still not signed in, try redirect method
-          console.log('🔄 Trying redirect method as fallback...');
+          devLog.debug('🔄 Trying redirect method as fallback...');
           const { signInWithRedirect } = await import('firebase/auth');
           await signInWithRedirect(auth, googleProvider);
           throw new Error('Redirect initiated - check auth state for result');
@@ -708,7 +725,7 @@ export const signInWithGoogle = async (): Promise<User> => {
         if (popupError.code === 'auth/popup-closed-by-user' || 
             popupError.code === 'auth/cancelled-popup-request') {
           
-          console.log('🔄 Popup closed by user, trying redirect method...');
+          devLog.debug('🔄 Popup closed by user, trying redirect method...');
           
           // Import redirect method dynamically to avoid SSR issues
           const { signInWithRedirect } = await import('firebase/auth');
@@ -730,14 +747,14 @@ export const signInWithGoogle = async (): Promise<User> => {
       // Check if user exists in Firestore
       const db = getFirebaseDB();
       if (!db) {
-        console.warn('Firestore not initialized, skipping profile creation');
+        devLog.warn('Firestore not initialized, skipping profile creation', 'firebase');
         return user;
       }
 
       // Check network status before attempting Firestore operations
       const isOnline = await checkNetworkStatus();
       if (!isOnline) {
-        console.warn('⚠️ Network offline, skipping Firestore operations');
+        devLog.warn('⚠️ Network offline, skipping Firestore operations', 'firebase');
         return user;
       }
 
@@ -746,11 +763,11 @@ export const signInWithGoogle = async (): Promise<User> => {
         userDoc = await getDoc(doc(db, 'users', user.uid));
       } catch (docError: any) {
         if (docError.message && docError.message.includes('offline')) {
-          console.warn('⚠️ Offline detected during user profile check, skipping Firestore operations');
+          devLog.warn('⚠️ Offline detected during user profile check, skipping Firestore operations', 'firebase');
           return user;
         }
         // For other doc errors, log but don't throw - authentication succeeded
-        console.warn('⚠️ Error checking user profile in Firestore (non-critical):', docError.message);
+        devLog.warn('Error checking user profile in Firestore (non-critical)', docError.message, 'firebase');
         return user;
       }
       
@@ -779,16 +796,16 @@ export const signInWithGoogle = async (): Promise<User> => {
         
         try {
           await setDoc(doc(db, 'users', user.uid), userProfile);
-          console.log('Successfully created user profile for:', user.uid);
+          devLog.debug('Successfully created user profile for:', user.uid);
           saveUserActivity(user.uid, 'sign_in').catch(() => {});
         } catch (profileError: any) {
           // Non-critical: profile creation failed but authentication succeeded
-          console.warn('⚠️ Error creating user profile (non-critical, authentication succeeded):', {
+          devLog.warn('Error creating user profile (non-critical, authentication succeeded)', {
             error: profileError.message,
             code: profileError.code,
             uid: user.uid,
             email: user.email
-          });
+          }, 'firebase');
           // Profile will be created on next auth state change or when user accesses profile
         }
       } else {
@@ -806,7 +823,7 @@ export const signInWithGoogle = async (): Promise<User> => {
               displayName: userDoc.data().displayName || user.displayName,
               photoURL: user.photoURL || userDoc.data().photoURL,
             });
-            console.log('Updated last login for user:', user.uid);
+            devLog.debug('Updated last login for user:', user.uid);
             saveUserActivity(user.uid, 'sign_in').catch(() => {});
             break; // Success, exit retry loop
           } catch (updateError: any) {
@@ -843,11 +860,11 @@ export const signInWithGoogle = async (): Promise<User> => {
               // Log error based on type, but don't throw - authentication succeeded
               if (isWriteChannelError) {
                 // Suppress write channel errors - they're non-critical and often transient
-                console.warn('⚠️ Firestore write channel error during last login update (non-critical, authentication succeeded)');
+                devLog.warn('Firestore write channel error during last login update (non-critical)', undefined, 'firebase');
               } else {
                 // Log other errors as warnings since authentication succeeded
                 const errorMessage = errorDetails.message || String(errorDetails);
-                console.warn('⚠️ Error updating last login (non-critical, authentication succeeded):', errorMessage);
+                devLog.warn('Error updating last login (non-critical)', errorMessage, 'firebase');
               }
               break; // Exit retry loop - don't throw, authentication succeeded
             }
@@ -857,13 +874,13 @@ export const signInWithGoogle = async (): Promise<User> => {
     } catch (firestoreError: any) {
       // Catch any unexpected Firestore errors that weren't handled above
       // Don't throw - authentication succeeded, Firestore errors are non-critical
-      console.warn('⚠️ Non-critical Firestore error after successful authentication:', firestoreError.message);
+      devLog.warn('⚠️ Non-critical Firestore error after successful authentication:', firestoreError.message, 'firebase');
     }
       
     // Always return the authenticated user, even if Firestore operations failed
     return user;
     } catch (error: any) {
-      console.error('Error signing in with Google:', error);
+      devLog.error('Error signing in with Google:', error, 'firebase');
       throwAuthError(error);
     } finally {
       isSigningIn = false;
@@ -898,7 +915,7 @@ export const signInWithEmail = async (email: string, password: string): Promise<
 
     return user;
   } catch (error: any) {
-    console.error('Error signing in with email:', error);
+    devLog.error('Error signing in with email:', error, 'firebase');
     throwAuthError(error);
   }
 };
@@ -975,9 +992,9 @@ export const signUpWithEmail = async (
       if (referralCode) {
         try {
           await trackReferralSignup(user.uid, referralCode, db);
-          console.log('✅ Referral tracked successfully');
+          devLog.debug('✅ Referral tracked successfully');
         } catch (error) {
-          console.error('⚠️ Error tracking referral:', error);
+          devLog.error('⚠️ Error tracking referral:', error, 'firebase');
           // Don't fail signup if referral tracking fails
         }
       }
@@ -985,7 +1002,7 @@ export const signUpWithEmail = async (
     
     return user;
   } catch (error: any) {
-    console.error('Error signing up with email:', error);
+    devLog.error('Error signing up with email:', error, 'firebase');
     throwAuthError(error);
   }
 };
@@ -998,7 +1015,7 @@ export const resetPassword = async (email: string): Promise<void> => {
 
     await sendPasswordResetEmail(auth, email);
   } catch (error: any) {
-    console.error('Error sending password reset email:', error);
+    devLog.error('Error sending password reset email:', error, 'firebase');
     throwAuthError(error);
   }
 };
@@ -1007,28 +1024,35 @@ export const signOutUser = async (): Promise<void> => {
   try {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase not initialized');
-    
+
+    const uid = auth.currentUser?.uid ?? null;
+
     // Sign out from Firebase
     await signOut(auth);
-    
+
     // Clear all local data
     if (typeof window !== 'undefined') {
       const { clearLocalData } = await import('./localStorage');
       clearLocalData();
       profileCache.clear();
       clearAstroDataCache('all');
-      
+
+      if (uid) {
+        const { clearPersistentProfileCache } = await import('./comprehensiveProfileCache');
+        clearPersistentProfileCache(uid);
+      }
+
       // Clear session flags
       sessionStorage.removeItem('signing_out');
       sessionStorage.removeItem('force_reauth');
-      
-      console.log('✅ Signed out successfully and cleared all data');
-      
+
+      devLog.debug('✅ Signed out successfully and cleared all data');
+
       // Simple page reload to home
       window.location.href = '/';
     }
   } catch (error) {
-    console.error('Error signing out:', error);
+    devLog.error('Error signing out:', error, 'firebase');
     throw error;
   }
 };
@@ -1067,13 +1091,13 @@ export const checkNetworkStatus = async (): Promise<boolean> => {
       // If wait fails, still return true - we tried to enable network
       // This prevents blocking the app if there are transient connection issues
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Connection wait timeout, proceeding anyway');
+        devLog.warn('Connection wait timeout, proceeding anyway', 'firebase');
       }
     }
     
     return true;
   } catch (error) {
-    console.warn('Network check failed:', error);
+    devLog.warn('Network check failed:', error, 'firebase');
     return false;
   }
 };
@@ -1141,7 +1165,7 @@ export const getProfileCompletionStatus = (profile: UserProfile | null): {
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   // Early validation: return null if uid is invalid or empty
   if (!uid || typeof uid !== 'string' || uid.trim().length === 0) {
-    console.warn('⚠️ Invalid user ID provided to getUserProfile');
+    devLog.warn('⚠️ Invalid user ID provided to getUserProfile', undefined, 'firebase');
     return null;
   }
 
@@ -1158,7 +1182,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       if (!db) {
         // Only use localStorage on client-side
         if (typeof window !== 'undefined') {
-          console.warn('⚠️ Firestore not initialized, using local storage for user profile');
+          devLog.warn('⚠️ Firestore not initialized, using local storage for user profile', 'firebase');
           const localProfile = getLocalUserProfile();
           if (localProfile && localProfile.birthTime) {
             localProfile.birthTime = cleanupCorruptedBirthTime(localProfile.birthTime);
@@ -1172,7 +1196,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       if (typeof window !== 'undefined') {
         const isOnline = await checkNetworkStatus();
         if (!isOnline) {
-          console.warn('⚠️ Network offline, using local storage for user profile');
+          devLog.warn('⚠️ Network offline, using local storage for user profile', 'firebase');
           const localProfile = getLocalUserProfile();
           if (localProfile && localProfile.birthTime) {
             localProfile.birthTime = cleanupCorruptedBirthTime(localProfile.birthTime);
@@ -1189,7 +1213,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
         // Check if we're using Admin SDK (has .collection method) or Client SDK
         if (typeof db.collection === 'function') {
           // Server-side: Firebase Admin SDK
-          console.log('🔧 Using Firebase Admin SDK to fetch profile');
+          devLog.debug('🔧 Using Firebase Admin SDK to fetch profile');
           const docRef = db.collection('users').doc(uid);
           const snapshot = await docRef.get();
           
@@ -1198,7 +1222,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
           }
         } else {
           // Client-side: Firebase Client SDK with retry logic for offline errors
-          console.log('🔧 Using Firebase Client SDK to fetch profile');
+          devLog.debug('🔧 Using Firebase Client SDK to fetch profile');
           const { doc, getDoc } = await import('firebase/firestore');
           const PROFILE_FETCH_TIMEOUT_MS = 5000;
 
@@ -1224,7 +1248,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
                 profileFetchTimedOut = true;
                 userDoc = undefined;
                 if (process.env.NODE_ENV === 'development') {
-                  console.warn('⚠️ Profile fetch timed out; using fallback.');
+                  devLog.warn('⚠️ Profile fetch timed out; using fallback.', undefined, 'firebase');
                 }
                 break;
               }
@@ -1235,7 +1259,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
                 retries++;
                 const delay = retryDelays[retries - 1] || 400;
                 if (process.env.NODE_ENV === 'development') {
-                  console.log(`🔄 Retrying profile fetch after ${delay}ms (attempt ${retries}/${maxRetries})`);
+                  devLog.debug(`🔄 Retrying profile fetch after ${delay}ms (attempt ${retries}/${maxRetries})`);
                 }
                 await new Promise(resolve => setTimeout(resolve, delay));
                 continue;
@@ -1265,14 +1289,14 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
             profileData.birthTime = cleanupCorruptedBirthTime(profileData.birthTime);
           }
           
-          console.log('✅ Successfully fetched user profile for:', uid);
+          devLog.debug('✅ Successfully fetched user profile for:', uid);
           return respondWithCache(profileData);
         }
         return null;
       } catch (docError: any) {
         // Suppress Firestore internal assertion errors
         if (isInternalFirestoreError(docError)) {
-          console.warn('⚠️ Firestore internal error suppressed in getUserProfile:', docError.message);
+          devLog.warn('⚠️ Firestore internal error suppressed in getUserProfile:', docError.message, 'firebase');
           // Try to return local profile as fallback
           if (typeof window !== 'undefined') {
             const localProfile = getLocalUserProfile();
@@ -1305,7 +1329,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     } catch (error: any) {
       // Suppress Firestore internal assertion errors
       if (isInternalFirestoreError(error)) {
-        console.warn('⚠️ Firestore internal error suppressed in getUserProfile:', error.message);
+        devLog.warn('⚠️ Firestore internal error suppressed in getUserProfile:', error.message, 'firebase');
         // Try to return local profile as fallback
         if (typeof window !== 'undefined') {
           const localProfile = getLocalUserProfile();
@@ -1324,7 +1348,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       }
 
       // Log other errors
-      console.error('Error getting user profile:', error);
+      devLog.error('Error getting user profile:', error, 'firebase');
       
       // Only try localStorage on client-side
       if (isOfflineError(error) && typeof window !== 'undefined') {
@@ -1366,13 +1390,13 @@ export const saveAskHistory = async (askData: Omit<AskHistory, 'id'> & { uid: st
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.log('Firebase not available, using local storage');
+      devLog.debug('Firebase not available, using local storage');
       return saveLocalAskHistory(askData);
     }
 
     // Validate data before saving
     if (!askData.uid || !askData.question || !askData.aiSummary) {
-      console.warn('Invalid ask data, skipping save');
+      devLog.warn('Invalid ask data, skipping save', 'firebase');
       return 'validation-failed';
     }
 
@@ -1385,14 +1409,14 @@ export const saveAskHistory = async (askData: Omit<AskHistory, 'id'> & { uid: st
     
     try {
       const docRef = await Promise.race([firebasePromise, timeoutPromise]);
-      console.log('Successfully saved ask history to Firebase:', docRef.id);
+      devLog.debug('Successfully saved ask history to Firebase:', docRef.id);
       return docRef.id;
     } catch (firebaseError) {
-      console.warn('Firebase save failed, using local storage:', firebaseError);
+      devLog.warn('Firebase save failed, using local storage:', firebaseError, 'firebase');
       return saveLocalAskHistory(askData);
     }
   } catch (error: any) {
-    console.warn('Error in saveAskHistory, using local storage:', error.message);
+    devLog.warn('Error in saveAskHistory, using local storage:', error.message, 'firebase');
     return saveLocalAskHistory(askData);
   }
 };
@@ -1401,7 +1425,7 @@ export const getAskHistory = async (uid: string): Promise<AskHistory[]> => {
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('Firebase not initialized, using local storage');
+      devLog.warn('Firebase not initialized, using local storage', 'firebase');
       return getLocalAskHistory().filter((h) => h.uid === uid);
     }
 
@@ -1416,13 +1440,13 @@ export const getAskHistory = async (uid: string): Promise<AskHistory[]> => {
       ...doc.data()
     })) as AskHistory[];
   } catch (error: any) {
-    console.error('Error getting ask history:', error);
+    devLog.error('Error getting ask history:', error, 'firebase');
     
     // Special handling for index errors
     if (error?.code === 'failed-precondition' || error?.message?.includes('query requires an index')) {
-      console.warn('Firebase index still building. Falling back to local storage temporarily.');
+      devLog.warn('Firebase index still building. Falling back to local storage temporarily.', undefined, 'firebase');
     } else {
-      console.warn('Firebase error. Falling back to local storage:', error.message);
+      devLog.warn('Firebase error. Falling back to local storage:', error.message, 'firebase');
     }
     
     // Fall back to local storage
@@ -1462,8 +1486,10 @@ export const saveUserActivity = async (
             const data = await res.json();
             return data.id;
           }
+          // Do not fall back to client write on 401 (token invalid/expired); avoid duplicate console errors
+          if (res.status === 401) return;
         } catch (_) {
-          // Fall through to client write
+          // Fall through to client write only on network/other errors
         }
       }
     }
@@ -1479,7 +1505,7 @@ export const saveUserActivity = async (
     return docRef.id;
   } catch (err: unknown) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('saveUserActivity failed (non-blocking):', err);
+      devLog.warn('saveUserActivity failed (non-blocking)', err, 'firebase');
     }
   }
 };
@@ -1504,7 +1530,7 @@ export const getUserActivity = async (
     })) as UserActivityItem[];
   } catch (err: unknown) {
     if (process.env.NODE_ENV === 'development') {
-      console.warn('getUserActivity failed:', err);
+      devLog.warn('getUserActivity failed:', err, 'firebase');
     }
     return [];
   }
@@ -1514,12 +1540,12 @@ export const saveNote = async (noteData: Omit<Note, 'id'>): Promise<string> => {
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('Firebase not initialized, using local storage');
+      devLog.warn('Firebase not initialized, using local storage', 'firebase');
       return saveLocalNote(noteData);
     }
 
     // Log the data being saved for debugging
-    console.log('Saving note:', {
+    devLog.debug('Saving note:', {
       uid: noteData.uid,
       titleLength: noteData.title?.length || 0,
       contentLength: noteData.content?.length || 0,
@@ -1531,19 +1557,19 @@ export const saveNote = async (noteData: Omit<Note, 'id'>): Promise<string> => {
 
     // Validate data before saving
     if (!noteData.uid || !noteData.title || !noteData.content) {
-      console.warn('Invalid note data, skipping save:', {
+      devLog.warn('Invalid note data, skipping save:', {
         hasUid: !!noteData.uid,
         hasTitle: !!noteData.title,
         hasContent: !!noteData.content
-      });
+      }, 'firebase');
       return 'validation-failed';
     }
 
     const docRef = await addDoc(collection(db, 'notes'), noteData);
-    console.log('Successfully saved note with ID:', docRef.id);
+    devLog.debug('Successfully saved note with ID:', docRef.id);
     return docRef.id;
   } catch (error: any) {
-    console.error('Error saving note:', {
+    devLog.error('Error saving note:', {
       error: error.message,
       code: error.code,
       details: error.details || 'No additional details',
@@ -1552,10 +1578,10 @@ export const saveNote = async (noteData: Omit<Note, 'id'>): Promise<string> => {
         titleLength: noteData.title?.length || 0,
         contentLength: noteData.content?.length || 0
       }
-    });
+    }, 'firebase');
     
     // Fall back to local storage
-    console.log('Falling back to local storage for note');
+    devLog.debug('Falling back to local storage for note');
     return saveLocalNote(noteData);
   }
 };
@@ -1564,7 +1590,7 @@ export const getNotes = async (uid: string): Promise<Note[]> => {
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('Firebase not initialized, using local storage');
+      devLog.warn('Firebase not initialized, using local storage', 'firebase');
       return getLocalNotes();
     }
 
@@ -1579,9 +1605,9 @@ export const getNotes = async (uid: string): Promise<Note[]> => {
       ...doc.data()
     })) as Note[];
   } catch (error) {
-    console.error('Error getting notes:', error);
+    devLog.error('Error getting notes:', error, 'firebase');
     // Fall back to local storage
-    console.log('Falling back to local storage for notes');
+    devLog.debug('Falling back to local storage for notes');
     return getLocalNotes();
   }
 };
@@ -1596,7 +1622,7 @@ export const updateSubscriptionStatus = async (uid: string, isSubscribed: boolea
       updatedAt: Date.now(),
     });
   } catch (error) {
-    console.error('Error updating subscription status:', error);
+    devLog.error('Error updating subscription status:', error, 'firebase');
     throw error;
   }
 };
@@ -1611,7 +1637,7 @@ export const updateTipStatus = async (uid: string, isTipped: boolean): Promise<v
       updatedAt: Date.now(),
     });
   } catch (error) {
-    console.error('Error updating tip status:', error);
+    devLog.error('Error updating tip status:', error, 'firebase');
     throw error;
   }
 };
@@ -1643,7 +1669,7 @@ const sanitizeProfileUpdate = (updateData: Partial<UserProfile>): Record<string,
     } else if (typeof value === 'object') {
       validatedData[key] = value;
     } else {
-      console.warn(`⚠️ Skipping invalid data for key ${key}:`, value);
+      devLog.warn(`⚠️ Skipping invalid data for key ${key}:`, value, 'firebase');
     }
   });
 
@@ -1671,13 +1697,13 @@ const flushQueuedProfileUpdates = async (uid: string): Promise<void> => {
 
     const isConnected = await ensureFirestoreConnection();
     if (!isConnected) {
-      console.warn('⚠️ Firestore connection unstable, postponing profile sync');
+      devLog.warn('⚠️ Firestore connection unstable, postponing profile sync', 'firebase');
       return;
     }
 
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('⚠️ Firestore not initialized, postponing profile sync');
+      devLog.warn('⚠️ Firestore not initialized, postponing profile sync', 'firebase');
       return;
     }
 
@@ -1693,26 +1719,26 @@ const flushQueuedProfileUpdates = async (uid: string): Promise<void> => {
       try {
         await updateDoc(doc(db, 'users', uid), payload);
         if (payload.birthDate || payload.birthPlace || payload.birthTime) {
-          console.log('Birth details updated, clearing astro data cache for user:', uid);
+          devLog.debug('Birth details updated, clearing astro data cache for user:', uid);
           clearAstroDataCache(uid);
         }
-        console.log('✅ Successfully synced user profile to Firebase for:', uid);
+        devLog.debug('✅ Successfully synced user profile to Firebase for:', uid);
       } catch (firebaseError: any) {
         if (isInternalFirestoreError(firebaseError)) {
-          console.warn('⚠️ Firestore internal error suppressed in updateUserProfile:', firebaseError.message);
+          devLog.warn('⚠️ Firestore internal error suppressed in updateUserProfile:', firebaseError.message, 'firebase');
           resetFirestoreConnection();
         } else {
-          console.warn('⚠️ Firebase sync failed (data saved locally):', {
+          devLog.warn('Firebase sync failed (data saved locally)', {
             error: firebaseError.message,
             code: firebaseError.code,
             uid,
             payload
-          });
+          }, 'firebase');
           if (firebaseError.message && firebaseError.message.includes('permissions')) {
-            console.info('ℹ️ Firebase permissions issue detected. Please deploy security rules.');
+            devLog.warn('Firebase permissions issue detected. Please deploy security rules.', undefined, 'firebase');
           }
           if (firebaseError.code === 'bad-request' || firebaseError.message?.includes('400')) {
-            console.error('❌ Firebase 400 Bad Request - Check data format:', payload);
+            devLog.error('❌ Firebase 400 Bad Request - Check data format:', payload, 'firebase');
           }
         }
 
@@ -1733,7 +1759,7 @@ const flushQueuedProfileUpdates = async (uid: string): Promise<void> => {
 
 export const updateUserProfile = async (uid: string, profileData: Partial<UserProfile>): Promise<void> => {
   try {
-    console.log('🔄 Updating user profile for:', uid, 'with data:', profileData);
+    devLog.debug('Updating user profile', { uid, profileData }, 'firebase');
     
     // Always save to localStorage first for immediate availability
     const existingProfile = getLocalUserProfile();
@@ -1744,20 +1770,20 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
       updatedAt: Date.now(),
     };
     saveLocalUserProfile(updatedProfile);
-    console.log('✅ Profile saved to local storage for:', uid);
+    devLog.debug('✅ Profile saved to local storage for:', uid);
     cacheUserProfile(uid, updatedProfile as UserProfile);
 
     // Ensure Firestore connection is stable before proceeding
     const isConnected = await ensureFirestoreConnection();
     if (!isConnected) {
-      console.warn('⚠️ Firestore connection unstable, using local storage only');
+      devLog.warn('⚠️ Firestore connection unstable, using local storage only', 'firebase');
       return;
     }
 
     // Try Firebase as secondary storage (don't block on failure)
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('⚠️ Firestore not initialized, using local storage only');
+      devLog.warn('⚠️ Firestore not initialized, using local storage only', 'firebase');
       return;
     }
 
@@ -1770,7 +1796,7 @@ export const updateUserProfile = async (uid: string, profileData: Partial<UserPr
       await flushQueuedProfileUpdates(uid);
     }
   } catch (error) {
-    console.error('Error in updateUserProfile:', error);
+    devLog.error('Error in updateUserProfile:', error, 'firebase');
     // Don't throw error since we saved to localStorage
   }
 };
@@ -1780,7 +1806,7 @@ export const cleanupCorruptedBirthTime = (birthTime: any): string => {
   // If birthTime is a number (timestamp) or looks like a timestamp string
   if (typeof birthTime === 'number' || 
       (typeof birthTime === 'string' && /^\d{13,}$/.test(birthTime))) {
-    console.warn('⚠️ Detected corrupted birth time (timestamp):', birthTime);
+    devLog.warn('Detected corrupted birth time (timestamp)', birthTime, 'firebase');
     return ''; // Return empty string to force re-entry
   }
   
@@ -1798,13 +1824,13 @@ export const syncLocalStorageWithFirebase = async (uid: string): Promise<void> =
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('⚠️ Firestore not initialized, cannot sync');
+      devLog.warn('⚠️ Firestore not initialized, cannot sync', 'firebase');
       return;
     }
 
     const localProfile = getLocalUserProfile();
     if (!localProfile) {
-      console.log('ℹ️ No local profile to sync');
+      devLog.debug('ℹ️ No local profile to sync');
       return;
     }
 
@@ -1815,15 +1841,15 @@ export const syncLocalStorageWithFirebase = async (uid: string): Promise<void> =
         updatedAt: Date.now(),
       });
       if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Successfully synced local profile to Firebase');
+        devLog.debug('✅ Successfully synced local profile to Firebase');
       }
     } catch (syncError: any) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('⚠️ Failed to sync local profile to Firebase:', syncError.message);
+        devLog.warn('⚠️ Failed to sync local profile to Firebase:', syncError.message, 'firebase');
       }
     }
   } catch (error) {
-    console.error('Error syncing localStorage with Firebase:', error);
+    devLog.error('Error syncing localStorage with Firebase:', error, 'firebase');
   }
 };
 
@@ -1864,7 +1890,7 @@ export const setupFirestoreErrorHandler = (): void => {
           const timeSinceReload = now - lastReload;
           
           if (timeSinceReload > 10000) {
-            console.warn('🔄 Critical Firestore corruption detected. Reloading page to recover...');
+            devLog.warn('🔄 Critical Firestore corruption detected. Reloading page to recover...', undefined, 'firebase');
             sessionStorage.setItem(lastReloadKey, now.toString());
             
             setTimeout(() => {
@@ -1881,18 +1907,18 @@ export const setupFirestoreErrorHandler = (): void => {
         isRecovering = true;
         lastRecoveryAttempt = now;
         
-        console.warn('🛡️ Firestore internal assertion error detected (suppressed). Attempting recovery...');
+        devLog.warn('Firestore internal assertion error detected (suppressed). Attempting recovery', undefined, 'firebase');
         
         setTimeout(async () => {
           try {
             if (!isFirestoreConnected) {
               const isConnected = await ensureFirestoreConnection();
               if (isConnected) {
-                console.log('✅ Firestore connection recovered');
+                devLog.debug('✅ Firestore connection recovered');
               }
             }
           } catch (recoveryError) {
-            console.warn('⚠️ Firestore recovery skipped to prevent loops');
+            devLog.warn('⚠️ Firestore recovery skipped to prevent loops', undefined, 'firebase');
           } finally {
             isRecovering = false;
           }
@@ -1909,7 +1935,7 @@ export const setupFirestoreErrorHandler = (): void => {
     // Check for Firestore write channel errors (400 Bad Request) in last login updates
     if (errorMessage.includes('Error updating last login') && 
         (errorMessage.includes('400') || errorMessage.includes('Bad Request') || errorMessage.includes('Write channel'))) {
-      console.warn('⚠️ FirestoreErrorSuppressor suppressed Firestore write channel error');
+      devLog.warn('⚠️ FirestoreErrorSuppressor suppressed Firestore write channel error', undefined, 'firebase');
       return; // Don't call original console.error
     }
     
@@ -2038,7 +2064,7 @@ export const getRedirectResult = async (): Promise<UserCredential | null> => {
     const { getRedirectResult } = await import('firebase/auth');
     return await getRedirectResult(auth);
   } catch (error) {
-    console.error('Error getting redirect result:', error);
+    devLog.error('Error getting redirect result:', error, 'firebase');
     return null;
   }
 };
@@ -2098,11 +2124,22 @@ export const hasProfileDataChanged = (profile: UserProfile, newData: Partial<Use
   return currentHash !== newHash;
 };
 
+/**
+ * True when reports (comprehensive mystical profile) must not be used: no user profile,
+ * no stored generation hash, or current input hash differs from hash at generation time.
+ */
+export const isReportsStale = (userProfile: UserProfile | null): boolean => {
+  if (!userProfile) return true;
+  const stored = userProfile.profileDataHash;
+  if (stored == null || stored === '') return true;
+  return calculateProfileDataHash(userProfile) !== stored;
+};
+
 export const markProfileAsGenerated = async (uid: string, profileData?: Partial<UserProfile>): Promise<void> => {
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('Firebase not initialized, cannot mark profile as generated');
+      devLog.warn('Firebase not initialized, cannot mark profile as generated', 'firebase');
       return;
     }
 
@@ -2116,9 +2153,9 @@ export const markProfileAsGenerated = async (uid: string, profileData?: Partial<
       updatedAt: Date.now()
     });
     
-    console.log('✅ Profile marked as generated for user:', uid);
+    devLog.debug('✅ Profile marked as generated for user:', uid);
   } catch (error) {
-    console.error('Error marking profile as generated:', error);
+    devLog.error('Error marking profile as generated:', error, 'firebase');
   }
 };
 
@@ -2126,7 +2163,7 @@ export const resetProfileGenerationStatus = async (uid: string): Promise<void> =
   try {
     const db = getFirebaseDB();
     if (!db) {
-      console.warn('Firebase not initialized, cannot reset profile generation status');
+      devLog.warn('Firebase not initialized, cannot reset profile generation status', 'firebase');
       return;
     }
 
@@ -2134,15 +2171,16 @@ export const resetProfileGenerationStatus = async (uid: string): Promise<void> =
     await updateDoc(userRef, {
       mysticalProfileGenerated: false,
       mysticalProfileGeneratedAt: null,
+      profileDataHash: null,
       updatedAt: Date.now()
     });
     
     // Clear astro data cache when profile is reset
     clearAstroDataCache(uid);
     
-    console.log('✅ Profile generation status reset for user:', uid);
+    devLog.debug('✅ Profile generation status reset for user:', uid);
   } catch (error) {
-    console.error('Error resetting profile generation status:', error);
+    devLog.error('Error resetting profile generation status:', error, 'firebase');
   }
 };
 
@@ -2187,7 +2225,7 @@ export const getTarotReadings = async (userId: string): Promise<UnifiedReading[]
       };
     });
   } catch (error) {
-    console.error('Error fetching tarot readings:', error);
+    devLog.error('Error fetching tarot readings:', error, 'firebase');
     return [];
   }
 };
@@ -2218,7 +2256,7 @@ export const getRuneReadings = async (userId: string): Promise<UnifiedReading[]>
       };
     });
   } catch (error) {
-    console.error('Error fetching rune readings:', error);
+    devLog.error('Error fetching rune readings:', error, 'firebase');
     return [];
   }
 };
@@ -2249,7 +2287,7 @@ export const getLenormandReadings = async (userId: string): Promise<UnifiedReadi
       };
     });
   } catch (error) {
-    console.error('Error fetching lenormand readings:', error);
+    devLog.error('Error fetching lenormand readings:', error, 'firebase');
     return [];
   }
 };
@@ -2291,11 +2329,11 @@ export const getScryingReadings = async (userId: string): Promise<UnifiedReading
         error?.message?.includes('Missing or insufficient permissions') ||
         error?.message?.includes('permission-denied')) {
       // Permission errors are expected and handled gracefully - use warn instead of error
-      console.warn('⚠️ Scrying readings access restricted (expected):', error?.code || 'permission-denied');
+      devLog.warn('Scrying readings access restricted (expected)', error?.code || 'permission-denied', 'firebase');
       return [];
     }
     // Only log unexpected errors as errors
-    console.error('Error fetching scrying readings:', error);
+    devLog.error('Error fetching scrying readings:', error, 'firebase');
     return [];
   }
 };
@@ -2319,23 +2357,23 @@ export const getAllReadings = async (userId: string): Promise<UnifiedReading[]> 
         remedies: item.remedies || [],
         rawData: item
       }))).catch(err => {
-        console.warn('Error fetching ask history:', err);
+        devLog.warn('Error fetching ask history:', err, 'firebase');
         return [];
       }),
       getTarotReadings(userId).catch(err => {
-        console.warn('Error fetching tarot readings:', err);
+        devLog.warn('Error fetching tarot readings:', err, 'firebase');
         return [];
       }),
       getRuneReadings(userId).catch(err => {
-        console.warn('Error fetching rune readings:', err);
+        devLog.warn('Error fetching rune readings:', err, 'firebase');
         return [];
       }),
       getLenormandReadings(userId).catch(err => {
-        console.warn('Error fetching lenormand readings:', err);
+        devLog.warn('Error fetching lenormand readings:', err, 'firebase');
         return [];
       }),
       getScryingReadings(userId).catch(err => {
-        console.warn('Error fetching scrying readings:', err);
+        devLog.warn('Error fetching scrying readings:', err, 'firebase');
         return [];
       })
     ]);
@@ -2358,7 +2396,7 @@ export const getAllReadings = async (userId: string): Promise<UnifiedReading[]> 
 
     return allReadings;
   } catch (error) {
-    console.error('Error fetching all readings:', error);
+    devLog.error('Error fetching all readings:', error, 'firebase');
     return [];
   }
 };
@@ -2377,7 +2415,7 @@ export const getSavedRemedies = async (userId: string): Promise<any[]> => {
     const userData = userDoc.data();
     return userData.savedRemedies || [];
   } catch (error) {
-    console.error('Error fetching saved remedies:', error);
+    devLog.error('Error fetching saved remedies:', error, 'firebase');
     return [];
   }
 };
