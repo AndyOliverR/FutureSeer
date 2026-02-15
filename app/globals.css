@@ -4,6 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Layout: Use Grid for 2D (card grids, columns); Flex for 1D (nav, stacks, chips). Breakpoints = Tailwind (sm:640, md:768, lg:1024, xl:1280, 2xl:1536). See docs/LAYOUT.md. */
+
 /* ===== MATERIAL 3 MOTION CURVES ===== */
 :root {
   /* Material 3 motion curves - from Material Design 3 specification */
@@ -54,22 +56,22 @@
   --m3-elevation-4: 0px 2px 3px 0px rgba(0, 0, 0, 0.3), 0px 6px 10px 4px rgba(0, 0, 0, 0.15);
   --m3-elevation-5: 0px 4px 4px 0px rgba(0, 0, 0, 0.3), 0px 8px 12px 6px rgba(0, 0, 0, 0.15);
   
-  /* Material 3 Typography Scale */
+  /* Material 3 Typography Scale - fluid with clamp() for responsive scaling */
   /* Display - Large hero text (Cinzel for headings) */
-  --m3-display-large: 3.5625rem; /* 57px */
-  --m3-display-large-line: 4rem; /* 64px */
-  --m3-display-medium: 2.8125rem; /* 45px */
-  --m3-display-medium-line: 3.25rem; /* 52px */
-  --m3-display-small: 2.25rem; /* 36px */
-  --m3-display-small-line: 2.75rem; /* 44px */
+  --m3-display-large: clamp(2rem, 5vw + 1.5rem, 3.5625rem);
+  --m3-display-large-line: clamp(2.5rem, 5vw + 2rem, 4rem);
+  --m3-display-medium: clamp(1.75rem, 4vw + 1.25rem, 2.8125rem);
+  --m3-display-medium-line: clamp(2.25rem, 4vw + 1.5rem, 3.25rem);
+  --m3-display-small: clamp(1.5rem, 4vw + 1rem, 2.25rem);
+  --m3-display-small-line: clamp(1.75rem, 4vw + 1.25rem, 2.75rem);
   
   /* Headline - Section titles (Cinzel for headings) */
-  --m3-headline-large: 2rem; /* 32px */
-  --m3-headline-large-line: 2.5rem; /* 40px */
-  --m3-headline-medium: 1.75rem; /* 28px */
-  --m3-headline-medium-line: 2.25rem; /* 36px */
-  --m3-headline-small: 1.5rem; /* 24px */
-  --m3-headline-small-line: 2rem; /* 32px */
+  --m3-headline-large: clamp(1.5rem, 3vw + 1rem, 2rem);
+  --m3-headline-large-line: clamp(1.75rem, 3vw + 1.25rem, 2.5rem);
+  --m3-headline-medium: clamp(1.25rem, 2.5vw + 0.75rem, 1.75rem);
+  --m3-headline-medium-line: clamp(1.5rem, 2.5vw + 1rem, 2.25rem);
+  --m3-headline-small: clamp(1.125rem, 2vw + 0.5rem, 1.5rem);
+  --m3-headline-small-line: clamp(1.5rem, 2vw + 0.75rem, 2rem);
   
   /* Title - Card titles (Cinzel for headings) */
   --m3-title-large: 1.375rem; /* 22px */
@@ -611,6 +613,7 @@ html {
   padding: 0;
   width: 100%;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -1287,7 +1290,7 @@ button[class*="focus-visible:outline"]:focus-visible {
   overflow: hidden;
 }
 
-/* Responsive starfield - all viewports use cover, no scaling needed */
+/* Responsive starfield - all viewports use cover, no scaling needed (768px = Tailwind md) */
 @media (max-width: 768px) {
   .starfield-ultra-sharp,
   .starfield-background,
@@ -1566,15 +1569,25 @@ footer {
 /* CRITICAL: This element MUST be positioned relative to viewport, not body or any parent */
 [data-feedback-widget="true"] {
   /* Positioning - fixed to viewport, stays visible while scrolling */
-  /* Using fixed positioning relative to initial containing block (viewport) */
+  /* Aligned with Tip Jar: same left 4px, 48px width, flex center for straight column */
   position: fixed !important;
   bottom: 80px !important;
   left: 4px !important;
   top: auto !important;
   right: auto !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  box-sizing: border-box !important;
   
   /* Stacking - above everything including footer - maximum z-index */
   z-index: 2147483647 !important; /* Maximum z-index value */
+  
+  /* Center icon in column so Tip Jar and Feedback align vertically */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   
   /* Isolation - create new stacking context, prevent footer interference */
   isolation: isolate !important;
@@ -1593,7 +1606,6 @@ footer {
   /* Visibility - ensure always visible */
   visibility: visible !important;
   opacity: 1 !important;
-  display: block !important;
   
   /* Interaction */
   pointer-events: auto !important;
@@ -1643,10 +1655,14 @@ html > body > [data-feedback-widget="true"],
   left: 4px !important;
   top: auto !important;
   right: auto !important;
+  width: 48px !important;
+  height: 48px !important;
   z-index: 2147483647 !important;
   visibility: visible !important;
   opacity: 1 !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   margin: 0 !important;
   padding: 0 !important;
   transform: translateZ(0) !important;
@@ -1659,10 +1675,14 @@ html > body > [data-feedback-widget="true"],
   left: 4px !important;
   top: auto !important;
   right: auto !important;
+  width: 48px !important;
+  height: 48px !important;
   z-index: 2147483647 !important;
   visibility: visible !important;
   opacity: 1 !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   margin: 0 !important;
   padding: 0 !important;
   transform: translateZ(0) !important;
@@ -1673,6 +1693,7 @@ html > body > [data-feedback-widget="true"],
 
 /* Maximum isolation - ensure button is never affected by footer */
 /* CRITICAL: Ensure fixed positioning is relative to viewport, not any parent */
+/* Same 48px column + flex center as Tip Jar for straight alignment */
 html [data-feedback-widget="true"],
 body [data-feedback-widget="true"],
 * [data-feedback-widget="true"] {
@@ -1680,6 +1701,11 @@ body [data-feedback-widget="true"],
   z-index: 2147483647 !important;
   isolation: isolate !important;
   contain: none !important;
+  width: 48px !important;
+  height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   /* Force viewport-relative positioning even if parent has transform */
   transform: translateZ(0) !important;
   /* Ensure it's positioned relative to initial containing block (viewport) */
@@ -1704,16 +1730,25 @@ footer * {
 /* Positioned bottom-left above feedback button (feedback is at bottom: 80px, tip jar at bottom: 144px) */
 [data-tip-jar-widget="true"] {
   /* Positioning - fixed to viewport, stays visible while scrolling */
-  /* Using fixed positioning relative to initial containing block (viewport) */
-  /* Positioned above feedback icon on the left side */
+  /* Aligned with feedback widget: same left, 48px width, flex center for straight column */
   position: fixed !important;
   bottom: 144px !important;
   left: 4px !important;
   top: auto !important;
   right: auto !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+  box-sizing: border-box !important;
   
   /* Stacking - above everything including footer, just below feedback widget */
   z-index: 2147483646 !important; /* Just below feedback widget (2147483647) */
+  
+  /* Center icon in column so Tip Jar and Feedback align vertically */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   
   /* Isolation - create new stacking context, prevent footer interference */
   isolation: isolate !important;
@@ -1732,7 +1767,6 @@ footer * {
   /* Visibility - ensure always visible */
   visibility: visible !important;
   opacity: 1 !important;
-  display: block !important;
   
   /* Interaction */
   pointer-events: auto !important;
@@ -1760,10 +1794,14 @@ html > body > [data-tip-jar-widget="true"],
   left: 4px !important;
   top: auto !important;
   right: auto !important;
+  width: 48px !important;
+  height: 48px !important;
   z-index: 2147483646 !important;
   visibility: visible !important;
   opacity: 1 !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   margin: 0 !important;
   padding: 0 !important;
   transform: translateZ(0) !important;
@@ -1776,10 +1814,14 @@ html > body > [data-tip-jar-widget="true"],
   left: 4px !important;
   top: auto !important;
   right: auto !important;
+  width: 48px !important;
+  height: 48px !important;
   z-index: 2147483646 !important;
   visibility: visible !important;
   opacity: 1 !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   margin: 0 !important;
   padding: 0 !important;
   transform: translateZ(0) !important;
@@ -1790,6 +1832,7 @@ html > body > [data-tip-jar-widget="true"],
 
 /* Maximum isolation - ensure Tip Jar button is never affected by footer */
 /* CRITICAL: Ensure fixed positioning is relative to viewport, not any parent */
+/* Same 48px column + flex center as feedback widget for straight alignment */
 html [data-tip-jar-widget="true"],
 body [data-tip-jar-widget="true"],
 * [data-tip-jar-widget="true"] {
@@ -1797,6 +1840,11 @@ body [data-tip-jar-widget="true"],
   z-index: 2147483646 !important;
   isolation: isolate !important;
   contain: none !important;
+  width: 48px !important;
+  height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   /* Force viewport-relative positioning even if parent has transform */
   transform: translateZ(0) !important;
   /* Ensure it's positioned relative to initial containing block (viewport) */
@@ -2341,14 +2389,6 @@ html, body {
 @media (max-width: 768px) {
   [class*="loading"] {
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-}
-
-/* Grid improvements for mobile */
-@media (max-width: 768px) {
-  .grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
   }
 }
 
