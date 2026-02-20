@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       'astrology', 'tarot', 'numerology', 'palmistry', 'dream-analysis', 
       'angel-numbers', 'vedic', 'western', 'kabbalah', 'iching', 'runes', 
       'lenormand', 'geomancy', 'horary', 'synastry', 'medical', 'financial', 
-      'mundane', 'bazi', 'kp', 'vaastu', 'face-reading', 'general'
+      'bazi', 'kp', 'vaastu', 'face-reading', 'general'
     ];
     if (!validCategories.includes(category)) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 });

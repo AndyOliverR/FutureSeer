@@ -11,7 +11,6 @@ import {
   Settings, 
   LogOut, 
   Crown, 
-  History, 
   HelpCircle, 
   Shield, 
   Bell,
@@ -238,18 +237,6 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
               <div>
                 <div className="m3-label-large text-[var(--m3-on-surface)]">Profile</div>
                 <div className="m3-body-small text-[var(--m3-on-surface-variant)]">Manage your account</div>
-              </div>
-            </Link>
-
-            <Link
-              href="/history"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] m3-transition-standard group rounded-lg"
-            >
-              <History className="w-5 h-5 text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard" />
-              <div>
-                <div className="m3-label-large text-[var(--m3-on-surface)]">Reading History</div>
-                <div className="m3-body-small text-[var(--m3-on-surface-variant)]">View past predictions</div>
               </div>
             </Link>
 

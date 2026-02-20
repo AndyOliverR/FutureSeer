@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Header } from "@/components/header";
 import { EnhancedFooter } from "@/components/enhanced-footer";
 import { PersonalNote } from "@/components/about/PersonalNote";
 import { AboutSectionSkeleton } from "@/components/about/AboutSectionSkeleton";
@@ -60,9 +59,6 @@ const AboutValueProposition = dynamic(() => import("@/components/about/AboutValu
 export default function AboutPage() {
   return (
     <div className="min-h-screen flex flex-col starfield-ultra-sharp">
-      {/* Header with navigation */}
-      <Header />
-      
       <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full">
         <div className="max-w-7xl mx-auto w-full">
           {/* Personal Note Section - Above the fold, no lazy loading */}
@@ -83,7 +79,7 @@ export default function AboutPage() {
           {/* CTA Section */}
           <section className="text-center py-12 px-3 sm:px-4 md:px-6">
             <Link href="/signup">
-              <Button variant="filled" className="bg-gradient-to-r from-[var(--m3-primary)] to-[var(--m3-tertiary)] text-[var(--m3-on-primary)] hover:from-[var(--m3-primary)]/90 hover:to-[var(--m3-tertiary)]/90 font-semibold px-8 py-4 m3-label-large rounded-xl m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition m3-transition-emphasized m3-gpu-accelerated hover:scale-105">
+              <Button variant="filled" className="bg-gradient-to-r from-[var(--m3-primary)] to-[var(--m3-tertiary)] text-[var(--m3-on-primary)] hover:from-[var(--m3-primary)]/90 hover:to-[var(--m3-tertiary)]/90 font-semibold px-8 py-4 m3-label-large rounded-xl m3-elevation-2 hover:m3-elevation-3 m3-elevation-transition m3-transition-emphasized m3-gpu-accelerated">
                 Join the Innovation Experiment
               </Button>
             </Link>

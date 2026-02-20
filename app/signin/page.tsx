@@ -52,7 +52,7 @@ function SignInContent() {
     try {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
-      const next = redirectTo ?? (returning ? "/dashboard" : "/profile-setup")
+      const next = redirectTo ?? (returning ? "/tools" : "/profile")
       router.push(next)
     } catch (error: any) {
       // Handle specific popup errors with better user feedback
@@ -111,7 +111,7 @@ function SignInContent() {
     
     try {
       await signInWithEmail(email, password)
-      const next = redirectTo ?? "/dashboard"
+      const next = redirectTo ?? "/tools"
       router.push(next)
     } catch (error: any) {
       const msg = error?.message;

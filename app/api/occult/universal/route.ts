@@ -258,17 +258,18 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       cusp: house.longitude
     }));
 
-    // Recalculate aspects to include Ascendant and MC
-    const allPlanetsWithAngles = [
-      ...Object.values(planets),
-      { longitude: ascendantLongitude, name: 'Ascendant' },
-      { longitude: mcLongitude, name: 'MC' }
-    ];
+    // Recalculate aspects to include Ascendant and MC.
+    // calculateTropicalAspects expects an object keyed by planet name so aspect.planet1/planet2 are names, not indices.
+    const planetsForAspects: Record<string, { longitude: number }> = {};
+    for (const [key, data] of Object.entries(planets)) {
+      planetsForAspects[capitalizeFirst(key)] = { longitude: (data as { longitude: number }).longitude };
+    }
+    planetsForAspects['Ascendant'] = { longitude: ascendantLongitude };
+    planetsForAspects['MC'] = { longitude: mcLongitude };
 
-    // Calculate aspects including angle points
-    const aspectsWithAngles = calculateTropicalAspects(allPlanetsWithAngles);
+    const aspectsWithAngles = calculateTropicalAspects(planetsForAspects);
 
-    // Format tropical aspects
+    // Format tropical aspects (planet1/planet2 are now names e.g. Sun, Mars, Saturn)
     const westernAspects = aspectsWithAngles.map((aspect: any) => ({
       planet1: aspect.planet1,
       planet2: aspect.planet2,
@@ -450,199 +451,6 @@ function calculateElectionalChart(birthData: BirthData, options: any = {}) {
       calculationTime: Date.now()
     }
   };
-}
-
-async function calculateMundaneChart(birthData: BirthData, options: any = {}) {
-  try {
-    // World events and predictions
-    // Prioritize currentLocation over birthPlace for mundane astrology
-    // Fallback chain: options.currentLocation → options.userProfile?.currentLocation → birthData.birthPlace → 'Unknown'
-    const locationForCalculation = options.currentLocation || options.userProfile?.currentLocation || birthData.birthPlace || 'Unknown';
-    
-    // Extract country from currentLocation first, then fall back to birthPlace
-    let country = options.country || 'India';
-    
-    // Helper function to extract country from location string
-    const extractCountryFromLocation = (location: string): string => {
-      if (!location || location === 'Unknown') return 'India';
-      const placeParts = location.split(',').map(p => p.trim());
-      if (placeParts.length > 0) {
-        const lastPart = placeParts[placeParts.length - 1];
-        // Map common country names
-        const countryMap: { [key: string]: string } = {
-          'India': 'India',
-          'USA': 'United States',
-          'US': 'United States',
-          'United States': 'United States',
-          'UK': 'United Kingdom',
-          'United Kingdom': 'United Kingdom',
-          'China': 'China',
-          'Russia': 'Russia',
-          'Germany': 'Germany',
-          'France': 'France',
-          'Japan': 'Japan',
-          'Brazil': 'Brazil',
-          'Canada': 'Canada',
-          'Australia': 'Australia'
-        };
-        return countryMap[lastPart] || lastPart || 'India';
-      }
-      return 'India';
-    };
-    
-    // Use currentLocation first, then birthPlace
-    if (!options.country) {
-      country = extractCountryFromLocation(locationForCalculation);
-    }
-    
-    const eventDate = options.eventDate || new Date();
-    
-    // Import mundane calculations and national charts
-    const { getNationalChart } = await import('@/lib/mundane/nationalCharts');
-  const {
-    calculateIngressCharts,
-    calculateEclipseCharts,
-    calculatePlanetaryCycles,
-    calculateNationalTransits,
-    generateSectorForecasts,
-    calculateGeopoliticalStress,
-    generateRiskTimelines,
-    generatePersonalProfile
-  } = await import('@/lib/mundane/mundaneCalculations');
-  
-  // Import intelligence engine
-  const { mundaneAstrologyIntelligence } = await import('@/lib/mundaneAstrologyIntelligence');
-  
-  // Import daily outlook generator
-  const { generateThreeDayOutlook } = await import('@/lib/mundane/dailyOutlook');
-  
-  // Load national chart
-  const nationalChart = getNationalChart(country);
-  
-  // Prepare analysis data for intelligence engine
-  const analysisData: any = {
-    analysisType: options.analysisType || 'global',
-    timePeriod: options.timePeriod || 'year',
-    geographicFocus: country
-  };
-  
-  // Generate comprehensive analysis from intelligence engine
-  const analysis = await mundaneAstrologyIntelligence.performMundaneAnalysis(analysisData);
-  
-  // Generate Daily National Outlook (3-day)
-  // Use currentLocation for local environment calculations
-  const userLocation = locationForCalculation;
-  let dailyOutlook: any[] = [];
-  try {
-    dailyOutlook = generateThreeDayOutlook(userLocation, country);
-    devLog.info('✅ Daily Outlook generated:', { days: dailyOutlook?.length || 0, location: userLocation }, 'occult');
-  } catch (error) {
-    devLog.error('❌ Error generating daily outlook:', error, 'route');
-    dailyOutlook = [];
-  }
-  
-  // Calculate real mundane data
-  let ingressCharts, eclipseCharts, planetaryCycles, sectorForecasts, riskTimelines;
-  try {
-    ingressCharts = calculateIngressCharts(eventDate);
-    eclipseCharts = calculateEclipseCharts(eventDate, nationalChart);
-    planetaryCycles = calculatePlanetaryCycles(eventDate);
-    sectorForecasts = generateSectorForecasts(nationalChart, eventDate);
-    riskTimelines = generateRiskTimelines(nationalChart, eventDate);
-    
-    devLog.info('✅ Mundane calculations complete:', {
-      ingressCharts: ingressCharts?.length || 0,
-      eclipseCharts: eclipseCharts?.length || 0,
-      planetaryCycles: planetaryCycles?.length || 0,
-      sectorForecasts: sectorForecasts?.length || 0,
-      riskTimelines: riskTimelines?.length || 0
-    }, 'occult');
-  } catch (error) {
-    devLog.error('❌ Error in mundane calculations:', error, 'route');
-    ingressCharts = [];
-    eclipseCharts = [];
-    planetaryCycles = [];
-    sectorForecasts = [];
-    riskTimelines = [];
-  }
-  
-  const mundaneData = {
-    country,
-    nationalChart,
-    eventDate: eventDate.toISOString(),
-    ingressCharts,
-    eclipseCharts,
-    planetaryCycles,
-    nationalTransits: nationalChart ? calculateNationalTransits(birthData, nationalChart) : null,
-    personalMundaneProfile: nationalChart ? generatePersonalProfile(birthData, nationalChart) : null,
-    sectorForecasts,
-    geopoliticalStress: calculateGeopoliticalStress(nationalChart, eventDate),
-    analysis: analysis, // From intelligence engine
-    riskTimelines,
-    dailyOutlook: dailyOutlook || [], // 3-day outlook
-    
-    // For backward compatibility with existing UI
-    globalEvents: analysis.events && analysis.events.length > 0 ? analysis.events.map((e: any) => ({
-      name: e.title,
-      description: e.description,
-      impact: e.impact,
-      date: e.timing
-    })) : [],
-    weatherPatterns: [],
-    politicalClimate: analysis.events && analysis.events.length > 0 ? analysis.events
-      .filter((e: any) => e.affectedAreas?.includes('Politics') || e.affectedAreas?.includes('Governance'))
-      .map((e: any, idx: number) => ({
-        region: e.affectedAreas?.[0] || 'Global',
-        description: e.description
-      })) : [],
-    economicIndicators: analysis.events && analysis.events.length > 0 ? analysis.events
-      .filter((e: any) => e.affectedAreas?.includes('Banking') || e.affectedAreas?.includes('Economy'))
-      .map((e: any) => ({
-        name: e.title,
-        description: e.description
-      })) : []
-  };
-  
-    return {
-      success: true,
-      data: mundaneData,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        source: 'FutureSeer Universal Occult API',
-        version: '2.0.0',
-        calculationTime: Date.now(),
-        dataQuality: 'professional',
-        chartSource: nationalChart?.chartSource || 'Global composite'
-      }
-    };
-  } catch (error) {
-    devLog.error('❌ Error calculating mundane chart:', error, 'route');
-    devLog.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace', 'route');
-    
-    // Return partial data even on error to ensure UI can display something
-    const today = new Date();
-    return {
-      success: false,
-      data: {
-        country: 'Unknown',
-        eventDate: today.toISOString(),
-        dailyOutlook: [],
-        sectorForecasts: [],
-        planetaryCycles: [],
-        eclipseCharts: [],
-        riskTimelines: [],
-        ingressCharts: [],
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      },
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        source: 'FutureSeer Universal Occult API',
-        version: '2.0.0',
-        calculationTime: Date.now()
-      }
-    };
-  }
 }
 
 async function calculateMedicalChart(birthData: BirthData, options: any = {}) {
@@ -1912,7 +1720,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'System parameter is required',
         supportedSystems: [
-          'vedic', 'western', 'horary', 'electional', 'mundane', 
+          'vedic', 'western', 'horary', 'electional',
           'medical', 'financial', 'synastry', 'lunar', 'fixed-star'
         ]
       }, { status: 400 });
@@ -1948,13 +1756,6 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Birth data is required for Electional astrology' }, { status: 400 });
         }
         result = calculateElectionalChart(birthData, options);
-        break;
-        
-      case 'mundane':
-        if (!birthData) {
-          return NextResponse.json({ error: 'Birth data is required for Mundane astrology' }, { status: 400 });
-        }
-        result = await calculateMundaneChart(birthData, options);
         break;
         
       case 'medical':
@@ -1996,7 +1797,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           error: 'Unsupported system',
           supportedSystems: [
-            'vedic', 'western', 'horary', 'electional', 'mundane', 
+            'vedic', 'western', 'horary', 'electional',
             'medical', 'financial', 'synastry', 'lunar', 'fixed-star'
           ]
         }, { status: 400 });
@@ -2063,11 +1864,6 @@ export async function GET(request: NextRequest) {
       {
         name: 'electional',
         description: 'Choosing auspicious times for events',
-        requires: ['birthData']
-      },
-      {
-        name: 'mundane',
-        description: 'World events and political astrology',
         requires: ['birthData']
       },
       {

@@ -82,8 +82,8 @@ export function AspectPatternDiagram({ chartData }: AspectPatternDiagramProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-slate-800 mb-2">Chart Patterns</h3>
-        <p className="text-slate-600 text-sm">
+        <h3 className="text-2xl font-bold text-slate-900 mb-2">Chart Patterns</h3>
+        <p className="text-slate-700 text-sm">
           Rare geometric configurations in your birth chart with special significance
         </p>
       </div>
@@ -114,13 +114,13 @@ export function AspectPatternDiagram({ chartData }: AspectPatternDiagramProps) {
                         <h4 className={`font-bold text-xl ${colors.text}`}>
                           {pattern.name}
                         </h4>
-                        <span className="text-2xl">{patternSymbol}</span>
+                        <span className="text-2xl text-slate-800">{patternSymbol}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className={colors.badge}>
+                        <Badge className={`${colors.badge} font-medium`}>
                           {pattern.influence.charAt(0).toUpperCase() + pattern.influence.slice(1)}
                         </Badge>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs bg-slate-200 text-slate-900 border border-slate-400">
                           {(pattern.strength * 100).toFixed(0)}% Strength
                         </Badge>
                       </div>
@@ -129,13 +129,13 @@ export function AspectPatternDiagram({ chartData }: AspectPatternDiagramProps) {
                   
                   {/* Planets Involved */}
                   <div className="mb-4">
-                    <div className="text-xs text-slate-600 mb-2 font-semibold">Planets Involved:</div>
+                    <div className="text-xs text-slate-700 mb-2 font-semibold">Planets Involved:</div>
                     <div className="flex flex-wrap gap-2">
                       {pattern.planets.map((planet, planetIndex) => (
                         <Badge 
                           key={planetIndex}
                           variant="outline"
-                          className="text-sm"
+                          className="text-sm border-slate-400 text-slate-800 bg-slate-50"
                         >
                           {planet}
                         </Badge>
@@ -143,7 +143,7 @@ export function AspectPatternDiagram({ chartData }: AspectPatternDiagramProps) {
                     </div>
                     {pattern.element && (
                       <div className="mt-2">
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs bg-slate-200 text-slate-900 border border-slate-400">
                           {pattern.element} Element
                         </Badge>
                       </div>

@@ -32,7 +32,7 @@ const STRUCTURAL_TOOLS = new Set(['vedic', 'western', 'geomancy', 'vastu', 'huma
 const SITUATIONAL_TOOLS = new Set(['tarot', 'lenormand', 'iching', 'geomancy']);
 
 /** Tools that are symbolic/process-oriented. */
-const SYMBOLIC_TOOLS = new Set(['tarot', 'iching', 'dreamSymbols', 'bibliomancy', 'ogham', 'trichakra']);
+const SYMBOLIC_TOOLS = new Set(['tarot', 'iching', 'dreamSymbols', 'ogham', 'trichakra']);
 
 /** Tools that are literal/outcome-oriented. */
 const LITERAL_TOOLS = new Set(['lenormand', 'pendulum', 'sortilege']);

@@ -177,6 +177,27 @@ graph TB
 
 5. **Community Page** (`app/community/page.tsx`)
    - Connect with certified mystics, astrologers, and spiritual guides
+
+6. **Ask the Seer Flow**
+   - **Sign-in (existing user)**: Dashboard → Ask the Seer → Tools → Community
+   - **Sign-up (new user)**: Profile Setup → Profile Page → Generate mystical profile → Ask the Seer → Tools → Community
+   - Returning users always go to Dashboard, not Profile Setup (`isReturningUser()` in `lib/firebase.ts`)
+
+7. **Profile Setup Styling**
+   - Uses M3 design system, gradient cards, amber accents
+   - Matches Profile and Dashboard styling
+
+8. **Navigation**
+   - Hamburger menu order: Home, Dashboard, Ask the Seer, Tools, Community, then rest
+   - Avatar on dashboard: top-left
+   - UserMenuDropdown: opens to the right (`left-0`)
+
+9. **Mobile & Capacitor**
+   - Viewport: `maximumScale: 1`, `userScalable: false` when `CAPACITOR_BUILD=1`
+   - Safe-area insets: `env(safe-area-inset-*)` on body
+   - Height units: `svh` (small viewport height) for modals and full-page layouts to avoid WebView address bar issues
+   - Modal positioning: `fixed inset-0` with flex/grid centering (MysticalFeedback, TipJarModal, ShareAppModal)
+   - Capacitor Keyboard plugin: `resize: "body"`, `resizeOnFullScreen: true`
    - Browse verified experts by specialty (Vedic Astrology, Tarot, Palmistry, etc.)
    - Search and filter experts by name, specialty, or description
    - View expert profiles: ratings, reviews, availability, hourly rates, certifications

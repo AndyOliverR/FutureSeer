@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Star, ExternalLink, Image, Crown, Loader2, ChevronLeft } from 'lucide-react';
-import { Header } from '@/components/header';
-
 function formatDate(ms?: number): string {
   if (ms == null) return '—';
   try {
@@ -92,7 +90,6 @@ export default function AdminFeedbackPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <Header />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-20">
         <Link
           href="/admin/dashboard"

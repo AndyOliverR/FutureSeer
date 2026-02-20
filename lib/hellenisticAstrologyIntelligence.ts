@@ -1125,40 +1125,47 @@ export async function getIntelligentHellenisticAstrologyData(
   latitude: number,
   longitude: number
 ): Promise<HellenisticAstrologyReading> {
-  const db = getFirebaseDB();
-  if (!db) {
-    throw new Error('Firestore not initialized');
+  // Skip Firestore on server (API route): client SDK doc/getDoc/setDoc are not compatible with Admin SDK db
+  const isServer = typeof window === 'undefined';
+  let db: any = null;
+  if (!isServer) {
+    try {
+      db = getFirebaseDB();
+    } catch {
+      db = null;
+    }
   }
-  
-  const docRef = doc(db, 'users', userId, 'hellenistic-astrology', 'current');
-  
-  try {
-    // Check if we have cached data
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const cachedData = docSnap.data() as HellenisticAstrologyReading;
-      const lastUpdated = cachedData.metadata.lastUpdated;
-      const lastUpdatedDate = lastUpdated && typeof (lastUpdated as { toDate?: () => Date }).toDate === 'function'
-        ? (lastUpdated as unknown as { toDate: () => Date }).toDate()
-        : lastUpdated instanceof Date ? lastUpdated : new Date(0);
-      const hoursSinceUpdate = (new Date().getTime() - lastUpdatedDate.getTime()) / (1000 * 60 * 60);
-      
-      // Return cached data if less than 24 hours old, birth data unchanged, and version matches
-      if (hoursSinceUpdate < 24 && 
-          cachedData.birthDate === birthDate && 
-          cachedData.birthTime === birthTime && 
-          cachedData.birthPlace === birthPlace &&
-          cachedData.metadata?.version === HELLENISTIC_ALGORITHM_VERSION) {
-        devLog.debug('Returning cached Hellenistic Astrology data for user:', userId);
-        return cachedData;
-      } else {
+  const useCache = !!db;
+
+  if (useCache) {
+    try {
+      const docRef = doc(db, 'users', userId, 'hellenistic-astrology', 'current');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const cachedData = docSnap.data() as HellenisticAstrologyReading;
+        const lastUpdated = cachedData.metadata?.lastUpdated;
+        const lastUpdatedDate = lastUpdated && typeof (lastUpdated as { toDate?: () => Date }).toDate === 'function'
+          ? (lastUpdated as unknown as { toDate: () => Date }).toDate()
+          : lastUpdated instanceof Date ? lastUpdated : new Date(0);
+        const hoursSinceUpdate = (new Date().getTime() - lastUpdatedDate.getTime()) / (1000 * 60 * 60);
+
+        if (hoursSinceUpdate < 24 &&
+            cachedData.birthDate === birthDate &&
+            cachedData.birthTime === birthTime &&
+            cachedData.birthPlace === birthPlace &&
+            cachedData.metadata?.version === HELLENISTIC_ALGORITHM_VERSION) {
+          devLog.debug('Returning cached Hellenistic Astrology data for user:', userId);
+          return cachedData;
+        }
         devLog.debug('Cache invalid - forcing recalculation (version mismatch or data changed) for user:', userId);
       }
+    } catch (error) {
+      devLog.warn('Error checking cached Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
     }
-  } catch (error) {
-    devLog.warn('Error checking cached Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
+  } else {
+    devLog.debug('Firestore not available, computing Hellenistic reading without cache');
   }
-  
+
   // Calculate new Hellenistic Astrology analysis
   devLog.debug('Calculating new Hellenistic Astrology analysis for user:', userId);
   
@@ -1325,14 +1332,17 @@ export async function getIntelligentHellenisticAstrologyData(
     }
   };
   
-  // Cache the data
-  try {
-    await setDoc(docRef, reading);
-    devLog.debug('Cached Hellenistic Astrology data for user:', userId);
-  } catch (error) {
-    devLog.warn('Error caching Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
+  // Cache the data only when Firestore is available (e.g. client or server with compatible SDK)
+  if (useCache && db) {
+    try {
+      const docRef = doc(db, 'users', userId, 'hellenistic-astrology', 'current');
+      await setDoc(docRef, reading);
+      devLog.debug('Cached Hellenistic Astrology data for user:', userId);
+    } catch (error) {
+      devLog.warn('Error caching Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
+    }
   }
-  
+
   return reading;
 }
 

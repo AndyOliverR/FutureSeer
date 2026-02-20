@@ -1,0 +1,38 @@
+{
+  "version": "Tanakh (Public Domain)",
+  "books": [
+    {
+      "id": "genesis",
+      "name": "Genesis",
+      "shortName": "Gen",
+      "chapters": [
+        {
+          "chapterNumber": 1,
+          "verses": [
+            { "verseNumber": 1, "text": "In the beginning God created the heaven and the earth." },
+            { "verseNumber": 27, "text": "So God created man in his own image, in the image of God created he him; male and female created he them." }
+          ]
+        },
+        {
+          "chapterNumber": 28,
+          "verses": [
+            { "verseNumber": 15, "text": "And, behold, I am with thee, and will keep thee in all places whither thou goest, and will bring thee again into this land; for I will not leave thee, until I have done that which I have spoken to thee of." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deuteronomy",
+      "name": "Deuteronomy",
+      "shortName": "Deut",
+      "chapters": [
+        {
+          "chapterNumber": 6,
+          "verses": [
+            { "verseNumber": 5, "text": "And thou shalt love the Lord thy God with all thine heart, and with all thy soul, and with all thy might." }
+          ]
+        }
+      ]
+    }
+  ]
+}

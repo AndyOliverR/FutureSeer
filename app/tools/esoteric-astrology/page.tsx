@@ -213,6 +213,20 @@ function EsotericAstrologyPageContent() {
                         </div>
                       </DashboardSection>
 
+                      {(report.executive_soul_profile as string) && (
+                        <DashboardSection
+                          title="Executive Soul Profile"
+                          icon={<FileText className="w-6 h-6" />}
+                          defaultExpanded
+                          colorScheme="purple"
+                          storageKey="esoteric-executive-soul-v2"
+                        >
+                          <p className="text-slate-700 leading-relaxed">
+                            {String(report.executive_soul_profile)}
+                          </p>
+                        </DashboardSection>
+                      )}
+
                       <DashboardSection
                         title="I — The Soul's Purpose (Ascendant)"
                         icon={<Heart className="w-6 h-6" />}
@@ -234,6 +248,37 @@ function EsotericAstrologyPageContent() {
                         </div>
                       </DashboardSection>
 
+                      {(report.ascendant_orthodox_ruler as string) || (report.sun_orthodox_ruler as string) || (report.esoteric_rulership_analysis as string) ? (
+                        <DashboardSection
+                          title="Esoteric Rulership Analysis"
+                          icon={<Compass className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="blue"
+                          storageKey="esoteric-rulership-v2"
+                        >
+                          <div className="text-slate-700 space-y-3 leading-relaxed">
+                            {(report.ascendant_orthodox_ruler as string) || (report.esoteric_ruler as string) ? (
+                              <div>
+                                <p className="font-medium text-slate-800">Ascendant</p>
+                                <p>Orthodox ruler: {String(report.ascendant_orthodox_ruler ?? '—')} · Esoteric ruler: {String(report.esoteric_ruler ?? '—')}</p>
+                                {(report.esoteric_ruler_sign as string) && (
+                                  <p className="text-sm">Path to the soul: esoteric ruler in {String(report.esoteric_ruler_sign)} (House {String(report.esoteric_ruler_house ?? '—')})</p>
+                                )}
+                              </div>
+                            ) : null}
+                            {(report.sun_orthodox_ruler as string) || (report.sun_esoteric_ruler as string) ? (
+                              <div>
+                                <p className="font-medium text-slate-800">Sun</p>
+                                <p>Orthodox ruler: {String(report.sun_orthodox_ruler ?? '—')} · Esoteric ruler: {String(report.sun_esoteric_ruler ?? '—')}</p>
+                              </div>
+                            ) : null}
+                            {(report.esoteric_rulership_analysis as string) && (
+                              <p className="pt-2">{String(report.esoteric_rulership_analysis)}</p>
+                            )}
+                          </div>
+                        </DashboardSection>
+                      ) : null}
+
                       <DashboardSection
                         title="II — The Instrument (Sun & Rays)"
                         icon={<Target className="w-6 h-6" />}
@@ -252,6 +297,23 @@ function EsotericAstrologyPageContent() {
                           )}
                         </div>
                       </DashboardSection>
+
+                      {((report.ray_soul as string) || (report.ray_personality as string) || (report.dominant_ray as string) || (report.ray_dominance_matrix as string)) && (
+                        <DashboardSection
+                          title="Ray Dominance Matrix"
+                          icon={<Sparkles className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="purple"
+                          storageKey="esoteric-ray-matrix-v2"
+                        >
+                          <div className="text-slate-700 space-y-3 leading-relaxed">
+                            {(report.ray_soul as string) && <p><strong>Soul Ray:</strong> {String(report.ray_soul)}</p>}
+                            {(report.ray_personality as string) && <p><strong>Personality Ray:</strong> {String(report.ray_personality)}</p>}
+                            {(report.dominant_ray as string) && <p><strong>Dominant Ray:</strong> {String(report.dominant_ray)}</p>}
+                            {(report.ray_dominance_matrix as string) && <p className="pt-2">{String(report.ray_dominance_matrix)}</p>}
+                          </div>
+                        </DashboardSection>
+                      )}
 
                       <DashboardSection
                         title="III — Prison of the Soul (Moon)"
@@ -280,12 +342,21 @@ function EsotericAstrologyPageContent() {
                         colorScheme="amber"
                         storageKey="esoteric-life-direction-v2"
                       >
-                        <p className="text-slate-700 leading-relaxed">
-                          {String(report.life_direction_sentence ?? report.life_direction_cross ?? '—')}
-                        </p>
+                        <div className="text-slate-700 space-y-3 leading-relaxed">
+                          {(report.cross_dominant as string) && (
+                            <p><strong>Dominant cross:</strong> {String(report.cross_dominant)} · <strong>Evolutionary stage:</strong> {String(report.evolutionary_stage ?? '—')}</p>
+                          )}
+                          {report.cross_planet_counts && typeof report.cross_planet_counts === 'object' ? (
+                            <p className="text-sm">Planets: Cardinal {String((report.cross_planet_counts as { Cardinal?: number }).Cardinal ?? 0)}, Fixed {String((report.cross_planet_counts as { Fixed?: number }).Fixed ?? 0)}, Mutable {String((report.cross_planet_counts as { Mutable?: number }).Mutable ?? 0)}</p>
+                          ) : null}
+                          <p>{String(report.life_direction_sentence ?? report.life_direction_cross ?? '—')}</p>
+                          {(report.cross_of_evolution_assessment as string) && (
+                            <p className="pt-2">{String(report.cross_of_evolution_assessment)}</p>
+                          )}
+                        </div>
                       </DashboardSection>
 
-                      {(report.major_energy_circuit as string) && (
+                      {((report.major_energy_circuit as string) || (Array.isArray(report.triangle_emphasis) && report.triangle_emphasis.length > 0)) && (
                         <DashboardSection
                           title="V — Spiritual Triangles"
                           icon={<Triangle className="w-6 h-6" />}
@@ -293,9 +364,18 @@ function EsotericAstrologyPageContent() {
                           colorScheme="purple"
                           storageKey="esoteric-triangles-v2"
                         >
-                          <p className="text-slate-700 leading-relaxed">
-                            {String(report.major_energy_circuit)}
-                          </p>
+                          <div className="text-slate-700 space-y-3 leading-relaxed">
+                            {Array.isArray(report.triangle_emphasis) && report.triangle_emphasis.length > 0 && (
+                              <ul className="list-disc list-inside space-y-1">
+                                {(report.triangle_emphasis as string[]).map((t, i) => (
+                                  <li key={i}>{t}</li>
+                                ))}
+                              </ul>
+                            )}
+                            {(report.major_energy_circuit as string) && (
+                              <p>{String(report.major_energy_circuit)}</p>
+                            )}
+                          </div>
                         </DashboardSection>
                       )}
 
@@ -384,6 +464,62 @@ function EsotericAstrologyPageContent() {
                         </p>
                       </DashboardSection>
 
+                      {(report.personality_vs_soul_conflict_zones as string) && (
+                        <DashboardSection
+                          title="Personality vs Soul Conflict Zones"
+                          icon={<Shield className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="orange"
+                          storageKey="esoteric-conflict-zones-v2"
+                        >
+                          <p className="text-slate-700 leading-relaxed">
+                            {String(report.personality_vs_soul_conflict_zones)}
+                          </p>
+                        </DashboardSection>
+                      )}
+
+                      {(report.spiritual_service_orientation as string) && (
+                        <DashboardSection
+                          title="Spiritual Service Orientation"
+                          icon={<Target className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="green"
+                          storageKey="esoteric-service-orientation-v2"
+                        >
+                          <p className="text-slate-700 leading-relaxed">
+                            {String(report.spiritual_service_orientation)}
+                          </p>
+                        </DashboardSection>
+                      )}
+
+                      {(report.group_karma_indicators as string) && (
+                        <DashboardSection
+                          title="Group Karma Indicators"
+                          icon={<Compass className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="blue"
+                          storageKey="esoteric-group-karma-v2"
+                        >
+                          <p className="text-slate-700 leading-relaxed">
+                            {String(report.group_karma_indicators)}
+                          </p>
+                        </DashboardSection>
+                      )}
+
+                      {(report.current_evolutionary_phase as string) && (
+                        <DashboardSection
+                          title="Current Evolutionary Phase"
+                          icon={<ArrowRight className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="purple"
+                          storageKey="esoteric-evolutionary-phase-v2"
+                        >
+                          <p className="text-slate-700 leading-relaxed">
+                            {String(report.current_evolutionary_phase)}
+                          </p>
+                        </DashboardSection>
+                      )}
+
                       {(Array.isArray(report.growth_strengths) && report.growth_strengths.length > 0) ||
                        (Array.isArray(report.growth_patterns_to_transcend) && report.growth_patterns_to_transcend.length > 0) ||
                        (Array.isArray(report.growth_habits) && report.growth_habits.length > 0) ||
@@ -439,6 +575,25 @@ function EsotericAstrologyPageContent() {
                           </div>
                         </DashboardSection>
                       ) : null}
+
+                      {((Array.isArray(report.veiled_by_sun) && report.veiled_by_sun.length > 0) || (Array.isArray(report.veiled_by_moon) && report.veiled_by_moon.length > 0)) && (
+                        <DashboardSection
+                          title="Veiled Planets"
+                          icon={<Moon className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="cyan"
+                          storageKey="esoteric-veiled-v2"
+                        >
+                          <div className="text-slate-700 space-y-2 leading-relaxed text-sm">
+                            {Array.isArray(report.veiled_by_sun) && report.veiled_by_sun.length > 0 && (
+                              <p><strong>Veiled by Sun:</strong> {(report.veiled_by_sun as string[]).join(', ')} (close conjunction; soul-level expression)</p>
+                            )}
+                            {Array.isArray(report.veiled_by_moon) && report.veiled_by_moon.length > 0 && (
+                              <p><strong>Veiled by Moon:</strong> {(report.veiled_by_moon as string[]).join(', ')} (personality/emotional layer)</p>
+                            )}
+                          </div>
+                        </DashboardSection>
+                      )}
 
                       {(report.core_soul_theme as string) ||
                        (report.primary_karmic_lesson as string) ||

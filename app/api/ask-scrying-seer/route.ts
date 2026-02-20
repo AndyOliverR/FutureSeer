@@ -1,170 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirebaseDB } from '@/lib/firebase';
-import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
-import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
-import {
-  buildScryingState,
-  classifyScryingQuestion,
-  getScryingSliceForQuestionType,
-  SCRYING_REFUSAL_DATA_PHRASE,
-  SCRYING_REFUSAL_SAFETY_PHRASE,
-  type ScryingQuestionType,
-} from '@/lib/scryingSeerState';
-import { buildScryingSeerSystemPrompt } from '@/lib/scryingSeerPrompts';
+import { createAIStream } from '@/lib/aiGateway';
 
-interface ScryingSeerRequest {
-  userId: string;
-  question: string;
-  userProfile: any;
-  scryingVision?: any;
-  scryingMethod?: 'crystal-ball' | 'mirror';
-  sessionId?: string;
-  /** Aggregator contract: pass comprehensiveProfile to derive scrying vision */
-  comprehensiveProfile?: any;
+const SCRYING_REFUSAL_DATA = 'Scrying report is required. Generate your mystical profile to unlock your Scrying report, then ask again.';
+
+function buildScryingContext(report: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (report.sessionOverview) parts.push(`Session: ${report.sessionOverview}`);
+  if (report.dominantSymbolThemes?.length) {
+    parts.push(`Dominant themes: ${(report.dominantSymbolThemes as string[]).join(', ')}`);
+  }
+  if (report.elementalBalanceSummary) parts.push(report.elementalBalanceSummary);
+  if (report.archetypalEnergyPattern) {
+    parts.push(`Archetypal pattern: ${report.archetypalEnergyPattern}`);
+  }
+  if (report.strategicGuidance) parts.push(`Guidance: ${report.strategicGuidance}`);
+  const session = report.scrying_session as Record<string, unknown> | undefined;
+  if (session?.interpretation?.summary) {
+    parts.push(`Interpretation: ${(session.interpretation as { summary?: string }).summary}`);
+  }
+  if (report.riskIndicators?.length) {
+    parts.push(`Risks: ${(report.riskIndicators as string[]).join(' ')}`);
+  }
+  if (report.opportunityIndicators?.length) {
+    parts.push(`Opportunities: ${(report.opportunityIndicators as string[]).join(' ')}`);
+  }
+  return parts.join('\n');
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      userId,
-      question,
-      userProfile,
-      scryingVision: bodyScryingVision,
-      scryingMethod: bodyScryingMethod,
-      sessionId,
-      comprehensiveProfile,
-    }: ScryingSeerRequest = body;
-    const scryingVision = bodyScryingVision ?? comprehensiveProfile?.scrying ?? comprehensiveProfile?.['Scrying'];
-    const scryingMethod = bodyScryingMethod ?? scryingVision?.method ?? 'crystal-ball';
-
-    if (!userId || !question || !userProfile) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Missing required parameters: userId, question, or userProfile',
-        },
-        { status: 400 }
-      );
+    const { question, userProfile, userId } = body;
+    let scryingReport = body.scryingReport ?? body.scrying;
+    if (!scryingReport && body.comprehensiveProfile) {
+      scryingReport = body.comprehensiveProfile.scrying ?? body.comprehensiveProfile.toolReports?.scrying?.data;
     }
 
-    devLog.info('🔮 Scrying Seer API: Processing question for user:', userId, 'ask-scrying-seer');
-
-    // Data requirement: need sufficient vision
-    let state;
-    try {
-      state = buildScryingState(scryingVision, scryingMethod);
-    } catch {
-      return NextResponse.json(
-        { success: false, error: SCRYING_REFUSAL_DATA_PHRASE },
-        { status: 400 }
-      );
+    if (!question?.trim()) {
+      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
     }
 
-    const questionType = classifyScryingQuestion(question.trim()) as ScryingQuestionType;
-
-    if (questionType === 'refusal') {
-      return new Response(
-        new ReadableStream({
-          start(controller) {
-            controller.enqueue(
-              new TextEncoder().encode(SCRYING_REFUSAL_SAFETY_PHRASE)
-            );
-            controller.close();
-          },
-        }),
-        {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          },
-        }
-      );
+    const reportData = scryingReport?.data ?? scryingReport;
+    if (!reportData || typeof reportData !== 'object') {
+      return NextResponse.json({ error: SCRYING_REFUSAL_DATA }, { status: 400 });
     }
 
-    const slice = getScryingSliceForQuestionType(questionType, state);
-    const systemPrompt = buildScryingSeerSystemPrompt(slice, questionType);
+    const context = buildScryingContext(reportData as Record<string, unknown>);
+    const systemPrompt = `You are the Scrying Seer — an expert in crystal, mirror, water, and fire divination and symbolic interpretation. You answer the user's questions using ONLY the following scrying report context. Stay grounded in the symbols, themes, and guidance below. Do not invent new symbols or predictions. Frame answers as symbolic introspection and inner-signal reflection, not deterministic prediction. Do not give medical, legal, or financial advice.
 
-    const memory = new ConversationalMemory(userId);
-    await memory.initializeAllMemory(true);
+Scrying report context:
+${context}
 
-    const workingMemory = memory.getWorkingMemory();
-    const conversationHistory = workingMemory.lastExchanges
-      .filter((msg: MemoryMessage) => msg.type === 'user' || msg.type === 'seer')
-      .map((msg: MemoryMessage, index: number, arr: MemoryMessage[]) => {
-        if (msg.type === 'user') {
-          const seerResponse = arr[index + 1];
-          return {
-            question: msg.content,
-            answer: seerResponse?.type === 'seer' ? seerResponse.content : '',
-          };
-        }
-        return null;
-      })
-      .filter((item: unknown): item is { question: string; answer: string } => item !== null)
-      .slice(-10);
+Answer the user's question in 2–4 short paragraphs, referencing the report where relevant. Keep a calm, reflective tone.`;
+
+    const stream = await createAIStream({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: question.trim() },
+      ],
+      temperature: 0.6,
+      maxTokens: 800,
+    });
 
     return new Response(
       new ReadableStream({
         async start(controller) {
           try {
-            const stream = await createAIStream({
-              model: 'llama-3.3-70b-versatile',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                ...conversationHistory.flatMap((h) => [
-                  { role: 'user' as const, content: h.question },
-                  {
-                    role: 'assistant' as const,
-                    content: h.answer.substring(0, 500) + '...',
-                  },
-                ]),
-                { role: 'user', content: question.trim() },
-              ],
-              temperature: 0.6,
-              maxTokens: 800,
-            });
-
-            let fullResponse = '';
             for await (const chunk of stream) {
               const content = chunk.choices?.[0]?.delta?.content ?? '';
-              if (content) {
-                fullResponse += content;
-                controller.enqueue(new TextEncoder().encode(content));
-              }
+              if (content) controller.enqueue(new TextEncoder().encode(content));
             }
-
-            const userMessage: MemoryMessage = {
-              id: `msg_${Date.now()}_user`,
-              timestamp: Date.now(),
-              type: 'user',
-              content: question.trim(),
-              questionType: String(questionType),
-              keywords: question.trim().split(' ').slice(0, 5),
-            };
-
-            const seerMessage: MemoryMessage = {
-              id: `msg_${Date.now()}_seer`,
-              timestamp: Date.now(),
-              type: 'seer',
-              content: fullResponse,
-              questionType: String(questionType),
-              confidence: 0.85,
-              sources: ['scrying'],
-            };
-
-            await memory.addExchange(userMessage);
-            await memory.addExchange(seerMessage);
-            memory.addRecentQuestion(question.trim());
-            await memory.saveAllMemory();
           } catch (error) {
-            devLog.error('Error during scrying seer streaming:', error);
+            devLog.error('Error during Scrying seer streaming:', error, 'route');
             controller.enqueue(
-              new TextEncoder().encode(
-                'I apologize, but I encountered an error. Please try again.'
-              )
+              new TextEncoder().encode('I encountered an error. Please try again.')
             );
           } finally {
             controller.close();
@@ -179,14 +90,10 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  } catch (error) {
-    devLog.error('Error in Scrying Seer API:', error);
+  } catch (error: unknown) {
+    devLog.error('Scrying Seer API error:', error, 'route');
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : 'Unknown error occurred',
-      },
+      { error: error instanceof Error ? error.message : 'Failed to generate response' },
       { status: 500 }
     );
   }

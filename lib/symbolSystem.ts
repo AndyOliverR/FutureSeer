@@ -458,8 +458,6 @@ export const TOOL_SYMBOL_MAP: Record<string, string> = {
   'horary': 'clock',
   'kabbalistic-numerology': 'keter',
   'medical-astrology': 'caduceus',
-  'financial-astrology': 'dollar',
-  'mundane-astrology': 'globe',
   'kp-astrology': 'star',
   'bazi': 'dragon',
   'angel-numbers': 'angel',

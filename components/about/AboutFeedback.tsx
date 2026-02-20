@@ -7,21 +7,14 @@ export function AboutFeedback() {
       subtitle="Your voice shapes our product in real-time"
     >
       <div className="max-w-4xl mx-auto space-y-8">
-        {/* Implementation Promise */}
-        <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-green-500/30 hover:border-green-500/50 rounded-2xl text-center transition-all duration-300 hover:scale-105">
-          <h3 className="text-2xl font-bold text-amber-400 mb-4">24-48 Hour Implementation</h3>
-          <p className="text-white/60 text-sm mb-6 font-light">
-            We believe in a one-to-one, face-to-face approach. FutureSeer might not be perfect yet, but every feedback 
-            from our users is considered and implemented almost instantly to make the tool better.
-          </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg">
-            <span className="text-green-400 text-sm font-semibold">Average implementation time: 24-48 hours</span>
+        <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-green-500/30 hover:border-green-500/50 rounded-2xl transition-colors duration-300">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <h3 className="text-xl font-bold text-amber-400">We implement your feedback fast</h3>
+            <span className="px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm font-medium">Typically 24–48 hours</span>
           </div>
-        </div>
 
         {/* Recent Improvements */}
-        <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl transition-all duration-300 hover:scale-105">
-          <h4 className="text-2xl font-bold text-amber-400 mb-6">Recent Improvements from User Feedback</h4>
+          <h4 className="text-lg font-semibold text-amber-400 mb-4">Recent improvements</h4>
           <div className="space-y-4">
             <div className="p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg">
               <div className="flex justify-between items-start mb-2">

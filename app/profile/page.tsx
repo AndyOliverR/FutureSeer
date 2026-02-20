@@ -17,18 +17,18 @@ import { TIME_PERIODS, type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
 import { getUserProfile, updateUserProfile, resetProfileGenerationStatus, hasProfileDataChanged, calculateProfileDataHash, cleanupCorruptedBirthTime, clearUserProfileCache, type UserProfile } from "@/lib/firebase"
-import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache } from "@/hooks/useComprehensiveMysticalProfile"
+import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache, useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
 import { ImageUploadSection } from "@/components/ImageUploadSection"
 import { geocodePlace } from "@/services/geocoding"
 import { SubscriptionStatus } from "@/components/SubscriptionStatus"
 import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
 import { ReferralCodeCard } from "@/components/ReferralCodeCard"
-import { Header } from "@/components/header"
 import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
 
 export default function ProfilePage() {
   const { t } = useTranslation('common')
   const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
+  const { refreshProfile: refreshComprehensiveProfile, applyGeneratedProfile } = useComprehensiveMysticalProfile()
   const { isPaid, isTrialActive, trialTimeLeft } = usePlan()
   const router = useRouter()
   
@@ -44,6 +44,7 @@ export default function ProfilePage() {
   const [profileFetching, setProfileFetching] = useState(false)
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
   const lastGenerateClickRef = useRef<number>(0)
+  const generateInProgressRef = useRef<boolean>(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -122,16 +123,24 @@ export default function ProfilePage() {
     }
   }, [userProfile?.birthPlace, userProfile?.birthLatitude, user?.uid]);
 
-  // Always refresh profile data on mount/navigation so the page has fresh data when opened
+  // Refresh profile in background on mount; never block the whole page on this (avoids infinite loading if Firestore hangs)
   useEffect(() => {
-    if (user && !authLoading) {
-      setProfileFetching(true);
-      refreshProfile()
-        .catch(err => {
-          devLog.error('Failed to refresh profile on mount:', err, 'page');
-        })
-        .finally(() => setProfileFetching(false));
-    }
+    if (!user?.uid || authLoading) return;
+    setProfileFetching(true);
+    const PROFILE_REFRESH_TIMEOUT_MS = 8000;
+    const timeoutId = setTimeout(() => {
+      setProfileFetching(false);
+      devLog.warn('Profile refresh timed out; showing page with existing data.', undefined, 'page');
+    }, PROFILE_REFRESH_TIMEOUT_MS);
+    refreshProfile()
+      .catch(err => {
+        devLog.error('Failed to refresh profile on mount:', err, 'page');
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setProfileFetching(false);
+      });
+    return () => clearTimeout(timeoutId);
   }, [user?.uid, authLoading]); // Remove refreshProfile from deps to prevent loops
 
   // Load user data when component mounts or when userProfile changes (but not when editing)
@@ -447,7 +456,7 @@ export default function ProfilePage() {
           // Clear localStorage for all tools when profile changes
           const allTools = [
             'vedicAstrology', 'westernAstrology', 'kpAstrology',
-            'medicalAstrology', 'financialAstrology', 'mundaneAstrology', 'horaryAstrology',
+            'medicalAstrology', 'horaryAstrology',
             'synastry', 'numerology', 'kabbalisticNumerology', 'angelNumbers',
             'tarot', 'lenormand', 'runes', 'iching', 'pendulum', 'geomancy',
             'palmistry', 'faceReading', 'nameAnalysis', 'dreamSymbols',
@@ -605,15 +614,23 @@ export default function ProfilePage() {
       return
     }
 
+    // Block duplicate submissions (request in progress)
+    if (generateInProgressRef.current) {
+      return
+    }
+    generateInProgressRef.current = true
+
     // Check if profile is already generated and data hasn't changed
     if (userProfile.mysticalProfileGenerated && !profileDataChanged) {
       setError("Your mystical profile has already been generated. Edit your profile details to regenerate.")
+      generateInProgressRef.current = false
       return
     }
 
-    // Block duplicate clicks within 3 seconds
+    // Block duplicate clicks within 5 seconds
     const now = Date.now()
-    if (now - lastGenerateClickRef.current < 3000) {
+    if (now - lastGenerateClickRef.current < 5000) {
+      generateInProgressRef.current = false
       return
     }
     lastGenerateClickRef.current = now
@@ -646,7 +663,9 @@ export default function ProfilePage() {
       if (data.alreadyGenerated) {
         setProfileGenerationStatus(null)
         setSuccess("Profile already up to date. No regeneration needed.")
+        window.dispatchEvent(new CustomEvent('futureSeer:profileRegenerated'))
         await refreshProfile()
+        generateInProgressRef.current = false
         return
       }
 
@@ -655,16 +674,43 @@ export default function ProfilePage() {
         devLog.warn('Some tools failed:', data.failedTools, 'page')
       }
 
-      window.dispatchEvent(new CustomEvent('futureSeer:profileRegenerated'))
+      const hasApiProfile = !!data.comprehensiveProfile && typeof data.comprehensiveProfile === 'object'
+      if (process.env.NODE_ENV === 'development') {
+        const bazi = hasApiProfile ? (data.comprehensiveProfile as Record<string, unknown>).bazi : undefined
+        console.log('[generate-mystical] API returned comprehensiveProfile:', hasApiProfile, 'bazi:', !!bazi, 'baziPlaceholder:', (bazi as Record<string, unknown>)?.placeholder)
+      }
+
+      // Refresh user doc so profileDataHash is current
+      await refreshProfile()
+
+      if (hasApiProfile) {
+        // Apply profile from API only; do NOT call refreshComprehensiveProfile() so we never overwrite with stale cache.
+        if (user?.uid) {
+          clearComprehensiveMysticalProfileCache(user.uid)
+          clearPersistentProfileCache(user.uid)
+        }
+        if (typeof applyGeneratedProfile === 'function') {
+          applyGeneratedProfile(data.comprehensiveProfile)
+        }
+      } else {
+        if (user?.uid) {
+          clearComprehensiveMysticalProfileCache(user.uid)
+          clearPersistentProfileCache(user.uid)
+          await refreshComprehensiveProfile()
+        }
+      }
+
+      window.dispatchEvent(
+        new CustomEvent('futureSeer:profileRegenerated', {
+          detail: hasApiProfile ? { comprehensiveProfile: data.comprehensiveProfile } : undefined
+        })
+      )
 
       setProfileGenerationStatus("✅ Mystical profile generated successfully!")
       setSuccess(
         "Your mystical profile has been generated with insights from all tools. " +
         "Each tool page will show its report when you visit. Ask the Seer has comprehensive data."
       )
-
-      // Refresh profile so UI shows mysticalProfileGenerated
-      await refreshProfile()
 
       setTimeout(() => router.push(RETURNING_USER_WITH_REPORTS_DESTINATION), 2000)
     } catch (error: any) {
@@ -673,6 +719,7 @@ export default function ProfilePage() {
       setProfileGenerationStatus(null)
     } finally {
       setIsGeneratingProfile(false)
+      generateInProgressRef.current = false
     }
   }
 
@@ -730,22 +777,10 @@ export default function ProfilePage() {
     return null // Will redirect to signin
   }
 
-  if (profileFetching) {
-    return (
-      <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp">
-        <div className="relative z-10 flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--m3-primary)] mx-auto mb-4"></div>
-            <p className="text-[var(--m3-primary)] m3-body-large">Loading your profile...</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
+  // Do not block the whole page on profileFetching: auth already loaded userProfile (with timeout).
+  // Show profile UI immediately; background refresh updates data when it completes.
   return (
     <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp">
-      <Header />
       <div className="relative z-10 px-3 sm:px-4 md:px-6 py-4 max-w-6xl mx-auto">
         {/* Enhanced Header */}
         <motion.div
@@ -755,7 +790,7 @@ export default function ProfilePage() {
           className="mb-12"
         >
           <Link 
-            href="/dashboard"
+            href="/ask-the-seer"
             className="inline-flex items-center gap-3 text-amber-400 hover:text-amber-400/80 m3-transition-standard mb-8 group"
           >
             <div className="p-2 rounded-full bg-[var(--m3-primary-container)] border border-[var(--m3-primary)]/20 group-hover:bg-[var(--m3-primary-container)]/80 group-hover:border-[var(--m3-primary)]/40 m3-transition-standard">
@@ -775,10 +810,16 @@ export default function ProfilePage() {
               <p className="text-white/80 m3-body-medium ml-12">
                 {t('profile.mysticalJourney')}
               </p>
+              {profileFetching && (
+                <p className="text-amber-400/80 m3-body-small ml-12 flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Updating profile…
+                </p>
+              )}
             </div>
             <button
               onClick={handleSignOut}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105"
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               <div className="relative flex items-center gap-3 px-6 py-3">
@@ -833,7 +874,7 @@ export default function ProfilePage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <Card elevation={2} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl">
+            <Card elevation={2} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300 rounded-2xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="space-y-2">
@@ -862,7 +903,7 @@ export default function ProfilePage() {
                           }
                         }}
                         variant="outline"
-                        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 group rounded-xl"
+                        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300 text-amber-400 group rounded-xl"
                         disabled={isLoading}
                       >
                         <div className="flex items-center gap-3">
@@ -875,7 +916,7 @@ export default function ProfilePage() {
                       <Button
                         onClick={() => setIsEditing(true)}
                         variant="outline"
-                        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 group rounded-xl"
+                        className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300 text-amber-400 group rounded-xl"
                       >
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-full bg-slate-800/50 border border-amber-500/30 group-hover:border-amber-500/50 transition-all duration-300">
@@ -897,7 +938,7 @@ export default function ProfilePage() {
                         <button
                           onClick={handleSave}
                           disabled={isLoading || !hasUnsavedChanges}
-                          className="group relative overflow-hidden px-6 py-3 rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 m3-label-large font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="group relative overflow-hidden px-6 py-3 rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300 text-amber-400 m3-label-large font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                           <div className="relative flex items-center justify-center gap-2">
@@ -911,7 +952,7 @@ export default function ProfilePage() {
                         </button>
                         <button
                           onClick={handleCancel}
-                          className="group relative overflow-hidden px-6 py-3 rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 m3-label-large font-semibold"
+                          className="group relative overflow-hidden px-6 py-3 rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300 text-amber-400 m3-label-large font-semibold"
                         >
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                           <div className="relative flex items-center justify-center gap-2">
@@ -1311,7 +1352,7 @@ export default function ProfilePage() {
                         !userProfile?.birthPlace ||
                         (userProfile?.mysticalProfileGenerated && !profileDataChanged)
                       }
-                      className="w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 m3-label-large font-semibold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300 text-amber-400 m3-label-large font-semibold py-4 px-6 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <div className="flex items-center justify-center gap-3">
                         {isGeneratingProfile ? (

@@ -5,7 +5,6 @@ import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { useNotes } from "@/hooks/useNotes"
 import { Note } from "@/lib/firebase"
-import { Header } from "@/components/header"
 
 export default function NotesPage() {
   const { notes, loading, error, createNote, updateNote, deleteNote } = useNotes()
@@ -120,7 +119,6 @@ export default function NotesPage() {
 
   return (
     <div className="min-h-screen overflow-hidden starfield-ultra-sharp relative">
-      <Header />
       <div className="relative z-10 p-4 max-w-4xl mx-auto">
         {/* Header */}
         <motion.div

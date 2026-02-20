@@ -191,6 +191,9 @@ export function getIconPathWithFallback(category: IconCategory, value: string): 
  * Get zodiac sign icon path
  */
 export function getZodiacIconPath(signName: string): string {
+  if (!signName || signName.toLowerCase() === 'unknown') {
+    return ZODIAC_ICONS.aries || '/icons/astrology/western/zodiac/aries.svg'
+  }
   const normalized = signName.toLowerCase()
   return ZODIAC_ICONS[normalized] || `/icons/astrology/western/zodiac/${normalized}.svg`
 }

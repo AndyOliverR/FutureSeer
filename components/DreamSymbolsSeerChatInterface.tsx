@@ -281,8 +281,10 @@ export default function DreamSymbolsSeerChatInterface({
       >
         <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
           <div className="whitespace-pre-wrap leading-relaxed">
-            {isStreaming ? displayContent : (
-              <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+            {isStreaming ? (
+              <SlowRevealText content={displayContent} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+            ) : (
+              displayContent
             )}
           </div>
           {!isStreaming && isLong && (

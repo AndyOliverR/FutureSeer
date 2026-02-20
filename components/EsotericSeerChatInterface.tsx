@@ -194,15 +194,9 @@ export default function EsotericSeerChatInterface({
         <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-violet-50 to-indigo-50 border-2 border-violet-200 text-slate-700">
           <div className="whitespace-pre-wrap leading-relaxed">
             {isStreaming ? (
-              displayContent
+              <SlowRevealText content={displayContent} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Reflecting on your soul path..." className="text-slate-700" />
             ) : (
-              <SlowRevealText
-                content={showPreview ? displayContent : message.content}
-                minThinkingMs={2000}
-                delayPerWord={85}
-                thinkingLabel="Reflecting on your soul path..."
-                className="text-slate-700"
-              />
+              displayContent
             )}
           </div>
           {!isStreaming && isLong && (

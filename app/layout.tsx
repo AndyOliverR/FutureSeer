@@ -1,23 +1,23 @@
 import type { Metadata, Viewport } from "next"
 import { devLog } from '@/lib/devLogger';
-import { Inter } from "next/font/google"
 import "./globals.css"
 // Suppress source map warnings from node_modules (must be imported early)
 import "@/lib/suppressSourceMapWarnings"
 import { Toaster } from "@/components/ui/toaster"
-import { AnalyticsInitializer } from "@/components/AnalyticsInitializer"
 import ClientProviders from "@/components/ClientProviders"
 import { I18nProvider } from "@/components/I18nProvider"
 import ErrorBoundary from "@/components/ErrorBoundary"
-import { FirestoreErrorSuppressor } from "@/components/FirestoreErrorSuppressor"
-import { MysticalFeedback } from "@/components/MysticalFeedback"
-import { FloatingTipJar } from "@/components/FloatingTipJar"
 import { FeedbackProvider } from "@/components/FeedbackContext"
 import { SchemaMarkup } from "@/components/schema-markup"
-import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration"
-import { ViewportHeightSync } from "@/components/ViewportHeightSync"
-
-const inter = Inter({ subsets: ["latin"] })
+import { Header } from "@/components/header"
+import {
+  DeferredAnalyticsInitializer,
+  DeferredFirestoreErrorSuppressor,
+  DeferredFloatingTipJar,
+  DeferredMysticalFeedback,
+  DeferredServiceWorkerRegistration,
+  DeferredViewportHeightSync,
+} from "@/components/DeferredLayoutComponents"
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -157,9 +157,9 @@ export default function RootLayout({
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className={`${inter.className} starfield-ultra-sharp min-h-screen overflow-x-hidden`}>
-        <ServiceWorkerRegistration />
-        <ViewportHeightSync />
+      <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans">
+        <DeferredServiceWorkerRegistration />
+        <DeferredViewportHeightSync />
         <SchemaMarkup />
         <script
           dangerouslySetInnerHTML={{
@@ -271,23 +271,24 @@ export default function RootLayout({
             `,
           }}
         />
-        <FirestoreErrorSuppressor />
+        <DeferredFirestoreErrorSuppressor />
         <main role="main" id="main-content">
-          <FeedbackProvider>
-            <ClientProviders>
-              <MysticalFeedback />
-              <FloatingTipJar />
-            </ClientProviders>
-            <ErrorBoundary>
-              <ClientProviders>
+          <ClientProviders>
+            <div className="sticky top-0 z-[200] flex-shrink-0 w-full min-h-[52px] bg-[var(--m3-surface)]">
+              <Header />
+            </div>
+            <FeedbackProvider>
+              <DeferredMysticalFeedback />
+              <DeferredFloatingTipJar />
+              <ErrorBoundary>
                 <I18nProvider>
-                  <AnalyticsInitializer />
+                  <DeferredAnalyticsInitializer />
                   {children}
                   <Toaster />
                 </I18nProvider>
-              </ClientProviders>
-            </ErrorBoundary>
-          </FeedbackProvider>
+              </ErrorBoundary>
+            </FeedbackProvider>
+          </ClientProviders>
         </main>
       </body>
     </html>

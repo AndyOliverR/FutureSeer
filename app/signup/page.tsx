@@ -67,7 +67,7 @@ function SignUpPageContent() {
     try {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
-      router.push(returning ? "/dashboard" : "/profile-setup")
+      router.push(returning ? "/tools" : "/profile")
     } catch (error: any) {
       // Handle specific popup errors with better user feedback
       if (error.message && error.message.includes('Redirect initiated')) {
@@ -174,7 +174,7 @@ function SignUpPageContent() {
         subscriptionId,
         referralCode || undefined
       )
-      router.push("/profile-setup")
+      router.push("/profile")
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -200,22 +200,11 @@ function SignUpPageContent() {
             <span>Back to <span className="text-amber-400 font-semibold">FutureSeer</span></span>
           </Link>
 
-          <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300">
             <CardHeader className="text-center">
-              <motion.div 
-                role="img" 
-                aria-label="Star icon"
-                className="text-4xl mb-4 m3-gpu-accelerated"
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ 
-                  duration: 0.5, 
-                  delay: 0.2,
-                  ease: [0, 0, 0.2, 1]
-                }}
-              >
+              <div role="img" aria-label="Star icon" className="text-4xl mb-4">
                 🌟
-              </motion.div>
+              </div>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}

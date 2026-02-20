@@ -26,7 +26,7 @@ export function useActivityLogger() {
         saveUserActivity(user.uid, 'tool_open', { toolSlug }).catch(() => {})
       }
     } else if (
-      ['/', '/dashboard', '/history', '/ask-the-seer', '/seer', '/profile', '/settings', '/tools', '/pricing'].includes(path)
+      ['/', '/ask-the-seer', '/seer', '/profile', '/settings', '/tools', '/pricing'].includes(path)
     ) {
       saveUserActivity(user.uid, 'page_view', { path }).catch(() => {})
     }

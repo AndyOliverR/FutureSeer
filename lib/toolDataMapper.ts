@@ -165,25 +165,6 @@ export const FUTURESEER_TOOLS: ToolDataMapping[] = [
   },
 
   {
-    toolName: 'Mundane Astrology',
-    category: 'Astrology',
-    dataSource: 'astroapp',
-    requiredData: ['world_events', 'political_indicators', 'natural_disasters'],
-    astroAppMapping: {
-      endpoint: 'getVedicChartStyle',
-      zodiacID: 100, // Lahiri
-      houseSystemID: 1, // Placidus
-      styleID: 7
-    },
-    dataTransform: (data, profile) => ({
-      world_events: analyzeWorldEvents(data.objects),
-      political_indicators: identifyPoliticalIndicators(data.objects),
-      natural_disasters: predictNaturalDisasters(data.objects),
-      timing: calculateMundaneTiming(data.objects)
-    })
-  },
-
-  {
     toolName: 'Synastry',
     category: 'Astrology',
     dataSource: 'astroapp',
@@ -700,10 +681,6 @@ function analyzeWealthIndicators(objects: any[], houseCusps: number[]): any[] { 
 function calculateInvestmentTiming(objects: any[]): any { return {}; }
 function identifyMarketCycles(objects: any[]): any[] { return []; }
 function generateFinancialRemedies(objects: any[]): any[] { return []; }
-function analyzeWorldEvents(objects: any[]): any[] { return []; }
-function identifyPoliticalIndicators(objects: any[]): any[] { return []; }
-function predictNaturalDisasters(objects: any[]): any[] { return []; }
-function calculateMundaneTiming(objects: any[]): any { return {}; }
 function analyzeCompatibility(objects: any[], partnerData: any): any { return {}; }
 function calculateSynastryAspects(objects: any[], partnerData: any): any[] { return []; }
 function generateCompositeChart(objects: any[], partnerData: any): any { return {}; }

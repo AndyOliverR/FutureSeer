@@ -132,8 +132,10 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   const karana = calculateKaranaFromTithi(tithi);
   const vara = calculateVaraFromDate(birthData.birthDate);
   
-  // Validate metadata has coordinates
-  if (!metadata || typeof metadata.latitude !== 'number' || typeof metadata.longitude !== 'number') {
+  // Validate metadata has coordinates (allow numeric strings from cached/JSON data)
+  const lat = metadata?.latitude != null ? Number(metadata.latitude) : NaN;
+  const lon = metadata?.longitude != null ? Number(metadata.longitude) : NaN;
+  if (!metadata || !Number.isFinite(lat) || !Number.isFinite(lon)) {
     devLog.error('❌ Missing or invalid coordinates in metadata:', {
       hasMetadata: !!metadata,
       latitude: metadata?.latitude,
@@ -143,8 +145,8 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   }
   
   devLog.debug('✅ Valid metadata coordinates:', {
-    latitude: metadata.latitude,
-    longitude: metadata.longitude
+    latitude: lat,
+    longitude: lon
   });
   
   // Get accurate sunrise/sunset from astronomia-vedic
@@ -159,8 +161,8 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
 
   const { sunrise, sunset } = getAccurateSunriseSunset(
     birthData.birthDate,
-    metadata.latitude,
-    metadata.longitude
+    lat,
+    lon
   );
 
   devLog.debug('🔍 Raw sunrise/sunset from getAccurateSunriseSunset:', {

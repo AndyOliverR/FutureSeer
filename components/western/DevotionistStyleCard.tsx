@@ -209,16 +209,17 @@ export function DevotionistStyleCard({
     )
   }
 
-  // Default variant
+  // Default variant - pass className e.g. h-full so cards in a grid align height
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
+      className={className}
     >
-      <Card className={`border-2 ${colors.border} ${colors.bg} ${colors.hoverBorder} transition-all duration-300 rounded-xl shadow-sm ${className}`}>
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3 mb-3">
+      <Card className={`border-2 ${colors.border} ${colors.bg} ${colors.hoverBorder} transition-all duration-300 rounded-xl shadow-sm flex flex-col ${className ?? ''}`}>
+        <CardContent className="p-4 flex flex-col flex-1 min-h-0">
+          <div className="flex items-start gap-3 mb-3 flex-shrink-0">
             <div className={`${colors.iconBg} rounded-lg p-2 flex-shrink-0`}>
               <div className={colors.iconColor}>
                 {icon}
@@ -233,7 +234,7 @@ export function DevotionistStyleCard({
           </div>
           
           {summary && (
-            <p className="text-slate-700 text-sm leading-relaxed mb-3">{summary}</p>
+            <p className="text-slate-700 text-sm leading-relaxed mb-3 flex-1 min-h-0">{summary}</p>
           )}
           
           {items && items.length > 0 && (

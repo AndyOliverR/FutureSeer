@@ -613,141 +613,6 @@ export class SortilegeIntegration {
 }
 
 // ============================================================================
-// BIBLIOMANCY INTEGRATION (Divination using Books)
-// ============================================================================
-
-export interface BibliomancyData {
-  book: {
-    title: string;
-    author: string;
-    genre: string;
-  };
-  passage: {
-    text: string;
-    page: number;
-    chapter?: string;
-  };
-  interpretation: {
-    meaning: string;
-    advice: string[];
-    symbolism: string[];
-  };
-}
-
-export class BibliomancyIntegration {
-  private books = [
-    {
-      title: 'The Tao Te Ching',
-      author: 'Lao Tzu',
-      genre: 'Philosophy',
-      passages: [
-        'The Tao that can be told is not the eternal Tao.',
-        'When you realize there is nothing lacking, the whole world belongs to you.',
-        'The journey of a thousand miles begins with one step.'
-      ]
-    },
-    {
-      title: 'The Bhagavad Gita',
-      author: 'Vyasa',
-      genre: 'Spiritual',
-      passages: [
-        'You have the right to work, but never to the fruit of work.',
-        'The mind is restless and difficult to restrain, but it is subdued by practice.',
-        'Better is one\'s own dharma, though imperfectly performed, than the dharma of another well performed.'
-      ]
-    },
-    {
-      title: 'The Art of War',
-      author: 'Sun Tzu',
-      genre: 'Strategy',
-      passages: [
-        'Know your enemy and know yourself, and you can fight a hundred battles without disaster.',
-        'The supreme art of war is to subdue the enemy without fighting.',
-        'Victory belongs to the side that scores most in the temple calculations before battle.'
-      ]
-    }
-  ];
-  
-  async generateBibliomancyReading(
-    userId: string,
-    question: string,
-    preferredGenre?: string
-  ): Promise<BibliomancyData> {
-    try {
-      let selectedBooks = this.books;
-      
-      if (preferredGenre) {
-        selectedBooks = this.books.filter(book => 
-          book.genre.toLowerCase().includes(preferredGenre.toLowerCase())
-        );
-      }
-      
-      if (selectedBooks.length === 0) {
-        selectedBooks = this.books;
-      }
-      
-      const randomBook = selectedBooks[Math.floor(Math.random() * selectedBooks.length)];
-      const randomPassage = randomBook.passages[Math.floor(Math.random() * randomBook.passages.length)];
-      
-      const interpretation = await this.generateInterpretation(randomPassage, question);
-      
-      const result: BibliomancyData = {
-        book: {
-          title: randomBook.title,
-          author: randomBook.author,
-          genre: randomBook.genre
-        },
-        passage: {
-          text: randomPassage,
-          page: Math.floor(Math.random() * 300) + 1,
-          chapter: `Chapter ${Math.floor(Math.random() * 20) + 1}`
-        },
-        interpretation
-      };
-      
-      // Store in Firebase
-      const db = getFirebaseDB();
-      if (db) {
-        await setDoc(doc(db, 'users', userId, 'readings', 'bibliomancy'), {
-          ...result,
-          timestamp: Date.now(),
-          source: 'bibliomancy'
-        });
-      }
-      
-      return result;
-      
-    } catch (error) {
-      devLog.error('Bibliomancy integration error:', error, 'enhancedToolIntegration');
-      throw error;
-    }
-  }
-  
-  private async generateInterpretation(passage: string, question: string): Promise<any> {
-    // Simple interpretation based on passage content
-    const interpretations = [
-      {
-        meaning: 'This passage speaks to the wisdom of patience and timing.',
-        advice: ['Be patient', 'Trust the process', 'Wait for the right moment'],
-        symbolism: ['Time', 'Patience', 'Wisdom']
-      },
-      {
-        meaning: 'The text reveals the importance of inner strength and self-knowledge.',
-        advice: ['Know yourself', 'Trust your instincts', 'Develop inner strength'],
-        symbolism: ['Self-knowledge', 'Inner strength', 'Wisdom']
-      },
-      {
-        meaning: 'This passage emphasizes the power of action and determination.',
-        advice: ['Take action', 'Be determined', 'Move forward with confidence'],
-        symbolism: ['Action', 'Determination', 'Progress']
-      }
-    ];
-    
-    return interpretations[Math.floor(Math.random() * interpretations.length)];
-  }
-}
-
-// ============================================================================
 // ENHANCED UNIVERSAL INTERPRETATION ENGINE
 // ============================================================================
 
@@ -756,14 +621,12 @@ export class EnhancedUniversalInterpretationEngine {
   private kerykeion: KerykeionIntegration;
   private iztro: IztroIntegration;
   private sortilege: SortilegeIntegration;
-  private bibliomancy: BibliomancyIntegration;
   
   constructor() {
     this.vedAstro = new VedAstroIntegration(process.env.VEDASTRO_API_KEY || '');
     this.kerykeion = new KerykeionIntegration();
     this.iztro = new IztroIntegration();
     this.sortilege = new SortilegeIntegration();
-    this.bibliomancy = new BibliomancyIntegration();
   }
   
   async generateComprehensiveReading(
@@ -792,13 +655,6 @@ export class EnhancedUniversalInterpretationEngine {
             systemData.method, 
             systemData.question,
             userProfile
-          );
-          break;
-        case 'bibliomancy':
-          result = await this.bibliomancy.generateBibliomancyReading(
-            userId, 
-            systemData.question, 
-            systemData.preferredGenre
           );
           break;
         default:

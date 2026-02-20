@@ -11,8 +11,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertTriangle, CheckCircle, Clock, TrendingUp, Users, MessageCircle, Star, Zap, Filter, Search, Flag, Archive, Pin, Crown, Loader2, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { Header } from '@/components/header';
-
 interface DiscussionThread {
   id: string;
   title: string;
@@ -23,7 +21,7 @@ interface DiscussionThread {
   upvotes: number;
   downvotes: number;
   comments: number;
-  category: 'astrology' | 'tarot' | 'numerology' | 'palmistry' | 'dream-analysis' | 'angel-numbers' | 'vedic' | 'western' | 'kabbalah' | 'iching' | 'runes' | 'lenormand' | 'geomancy' | 'horary' | 'synastry' | 'medical' | 'financial' | 'mundane' | 'bazi' | 'kp' | 'vaastu' | 'face-reading' | 'general';
+  category: 'astrology' | 'tarot' | 'numerology' | 'palmistry' | 'dream-analysis' | 'angel-numbers' | 'vedic' | 'western' | 'kabbalah' | 'iching' | 'runes' | 'lenormand' | 'geomancy' | 'horary' | 'synastry' | 'medical' | 'financial' | 'bazi' | 'kp' | 'vaastu' | 'face-reading' | 'general';
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'active' | 'resolved' | 'archived';
   isHot: boolean;
@@ -250,7 +248,6 @@ export default function CommunityManagementPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <Header />
       <div className="max-w-7xl mx-auto px-4 pt-20 pb-8">
         <Link
           href="/admin/dashboard"

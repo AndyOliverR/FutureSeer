@@ -51,8 +51,6 @@ export interface SeerSessionState {
   geomancySituation?: string;
   /** After Energy & Healing scope clarification: physical vitality, emotional balance, or spiritual energy. */
   energyHealingClarification?: 'physical_vitality' | 'emotional_balance' | 'spiritual_energy';
-  /** After Scrying clarification: focus/situation for "About which situation?". */
-  scryingSituation?: string;
   /** After Mundane context clarification: global, political, or economic. */
   mundaneClarification?: 'global' | 'political' | 'economic';
   /** After Akashic area clarification: area of life (e.g. relationship, career, purpose, health, family). */

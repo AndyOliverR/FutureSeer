@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { getFirebaseDB, isReportsStale } from '@/lib/firebase'
-import { doc, getDoc, onSnapshot } from 'firebase/firestore'
+import { doc, getDoc, getDocFromServer, onSnapshot } from 'firebase/firestore'
 import {
   getPersistentProfile,
   setPersistentProfile,
@@ -94,6 +94,8 @@ export interface MysticalProfileContextValue {
   hasProfile: boolean
   isReportsStale: boolean
   refreshProfile: () => Promise<void>
+  /** Apply comprehensive profile from generate-mystical API response so UI shows new data without relying on a follow-up Firestore read (which may fail and fall back to stale cache). */
+  applyGeneratedProfile: (data: ComprehensiveMysticalProfile) => void
 }
 
 const MysticalProfileContext = createContext<MysticalProfileContextValue | null>(null)
@@ -110,6 +112,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
   const { user, userProfile } = useAuth()
   const userProfileRef = useRef(userProfile)
   userProfileRef.current = userProfile
+  const lastAppliedGeneratedAtRef = useRef<string | null>(null)
 
   const [profile, setProfile] = useState<ComprehensiveMysticalProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -118,13 +121,13 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
   const stale = isReportsStale(userProfile)
 
   const applyFirestoreProfile = useCallback((userId: string, data: ComprehensiveMysticalProfile | null) => {
-    if (isReportsStale(userProfileRef.current)) {
-      setProfile(null)
-      profileCache.delete(userId)
-      clearPersistentProfileCache(userId)
-      return
-    }
+    // Always apply incoming server data so that real-time updates (e.g. after generate-mystical)
+    // are shown immediately. isReportsStale is used for cache and UI only; do not discard
+    // server-written data here, or the client may clear the profile before the user doc
+    // (profileDataHash) has refreshed and the report would never appear.
     if (data) {
+      const at = data.metadata?.generatedAt
+      if (at) lastAppliedGeneratedAtRef.current = at
       const version = computeComprehensiveProfileVersionHash(data)
       setProfile(data)
       profileCache.set(userId, { data, timestamp: Date.now() })
@@ -149,7 +152,11 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             profileCache.delete(userId)
             clearPersistentProfileCache(userId)
           } else {
-            setProfile(cached.data)
+            const incomingAt = cached.data.metadata?.generatedAt
+            const lastAt = lastAppliedGeneratedAtRef.current
+            if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
+              setProfile(cached.data)
+            }
           }
           if (!background) setLoading(false)
           return
@@ -162,23 +169,37 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       }
 
       const profileRef = doc(db, 'comprehensiveMysticalProfiles', userId)
-      const profileSnap = await getDoc(profileRef)
+      let profileSnap
+      if (useCache) {
+        profileSnap = await getDoc(profileRef)
+      } else {
+        try {
+          profileSnap = await getDocFromServer(profileRef)
+        } catch (serverErr) {
+          // Server read failed (e.g. offline or doc only in cache); use cache so report still shows
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ Server read failed, using cache:', serverErr)
+          }
+          profileSnap = await getDoc(profileRef)
+        }
+      }
 
       if (profileSnap.exists()) {
         const data = profileSnap.data() as ComprehensiveMysticalProfile
-        if (isReportsStale(userProfileRef.current)) {
-          setProfile(null)
-          profileCache.delete(userId)
-          clearPersistentProfileCache(userId)
-        } else {
-          applyFirestoreProfile(userId, data)
-          if (process.env.NODE_ENV === 'development') {
-            console.debug('✅ Comprehensive mystical profile loaded', {
-              systems: data.metadata?.systemsUsed?.length || 0,
-              hasInterpretations: !!data.interpretations,
-              generatedAt: data.metadata?.generatedAt
-            })
-          }
+        const incomingAt = data.metadata?.generatedAt
+        const lastAt = lastAppliedGeneratedAtRef.current
+        if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+          if (!background) setLoading(false)
+          return
+        }
+        applyFirestoreProfile(userId, data)
+        setError(null)
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('✅ Comprehensive mystical profile loaded', {
+            systems: data.metadata?.systemsUsed?.length || 0,
+            hasInterpretations: !!data.interpretations,
+            generatedAt: data.metadata?.generatedAt
+          })
         }
       } else {
         setProfile(null)
@@ -189,9 +210,50 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load profile'
-      setError(errorMessage)
-      if (process.env.NODE_ENV === 'development') {
-        console.error('❌ Error fetching comprehensive mystical profile:', err)
+      const isBenignFirestoreError =
+        errorMessage.includes('Target ID already exists') ||
+        errorMessage.includes('Failed to get document from server')
+      if (isBenignFirestoreError && process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Profile fetch hit known Firestore quirk, will use cache/listener:', errorMessage)
+      } else {
+        setError(errorMessage)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('❌ Error fetching comprehensive mystical profile:', err)
+        }
+      }
+      // If we have cached data (or benign error), try cache so the report still shows. Retry getDoc
+      // a few times when Firestore throws "Target ID already exists" so the report can load.
+      try {
+        const db = getFirebaseDB()
+        if (db) {
+          const profileRef = doc(db, 'comprehensiveMysticalProfiles', userId)
+          const delays = [0, 300, 600]
+          let cacheSnap = null
+          for (const delay of delays) {
+            if (delay > 0) await new Promise((r) => setTimeout(r, delay))
+            try {
+              cacheSnap = await getDoc(profileRef)
+              break
+            } catch (e) {
+              if (delay === delays[delays.length - 1]) throw e
+            }
+          }
+          if (cacheSnap?.exists()) {
+            const data = cacheSnap.data() as ComprehensiveMysticalProfile
+            const incomingAt = data.metadata?.generatedAt
+            const lastAt = lastAppliedGeneratedAtRef.current
+            if (!(incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime())) {
+              applyFirestoreProfile(userId, data)
+            }
+            setError(null)
+          } else if (isBenignFirestoreError) {
+            setError(null)
+          }
+        } else if (isBenignFirestoreError) {
+          setError(null)
+        }
+      } catch {
+        // ignore
       }
     } finally {
       if (!background) setLoading(false)
@@ -203,6 +265,15 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       await fetchProfile(user.uid, false, false)
     }
   }, [user?.uid, fetchProfile])
+
+  const applyGeneratedProfile = useCallback(
+    (data: ComprehensiveMysticalProfile) => {
+      if (user?.uid) {
+        applyFirestoreProfile(user.uid, data)
+      }
+    },
+    [user?.uid, applyFirestoreProfile]
+  )
 
   useEffect(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('signing_out') === 'true') {
@@ -217,12 +288,10 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     }
 
     const uid = user.uid
+    // When stale, only clear in-memory cache so we refetch; keep persistent cache so the last
+    // generated report still shows if the refetch fails (e.g. Firestore "Target ID already exists").
     if (stale) {
-      setProfile(null)
       profileCache.delete(uid)
-      clearPersistentProfileCache(uid)
-      setLoading(false)
-      return
     }
 
     const persistent = getPersistentProfile(uid)
@@ -232,7 +301,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       setLoading(false)
     }
 
-    fetchProfile(uid, true, hadPersistentCache)
+    fetchProfile(uid, !stale, hadPersistentCache)
 
     const db = getFirebaseDB()
     if (!db) return
@@ -247,14 +316,13 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           if (typeof window !== 'undefined' && sessionStorage.getItem('signing_out') === 'true') {
             return
           }
-          if (isReportsStale(userProfileRef.current)) {
-            setProfile(null)
-            profileCache.delete(uid)
-            clearPersistentProfileCache(uid)
-            return
-          }
           if (snapshot.exists()) {
             const data = snapshot.data() as ComprehensiveMysticalProfile
+            const incomingAt = data.metadata?.generatedAt
+            const lastAt = lastAppliedGeneratedAtRef.current
+            if (incomingAt && lastAt && new Date(incomingAt).getTime() <= new Date(lastAt).getTime()) {
+              return
+            }
             applyFirestoreProfile(uid, data)
             if (process.env.NODE_ENV === 'development') {
               console.debug('🔄 Comprehensive mystical profile updated via real-time listener')
@@ -292,10 +360,35 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (typeof window === 'undefined' || !user?.uid) return
-    const handler = () => refreshProfile()
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ comprehensiveProfile?: ComprehensiveMysticalProfile }>).detail
+      const uid = user.uid
+      // When generate-mystical returns the new profile, apply it and skip refresh so we don't overwrite with stale cache.
+      if (detail?.comprehensiveProfile) {
+        applyFirestoreProfile(uid, detail.comprehensiveProfile)
+        return
+      }
+      clearComprehensiveMysticalProfileCache(uid)
+      clearPersistentProfileCache(uid)
+      refreshProfile()
+    }
     window.addEventListener('futureSeer:profileRegenerated', handler)
     return () => window.removeEventListener('futureSeer:profileRegenerated', handler)
-  }, [user?.uid, refreshProfile])
+  }, [user?.uid, refreshProfile, applyFirestoreProfile])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const handler = (e: Event) => {
+      const { toolSlug, data } = (e as CustomEvent<{ toolSlug: string; data: unknown }>).detail || {}
+      if (!toolSlug || data === undefined) return
+      setProfile((prev) => {
+        const next = { ...(prev || ({} as ComprehensiveMysticalProfile)), [toolSlug]: data }
+        return next as ComprehensiveMysticalProfile
+      })
+    }
+    window.addEventListener('futureSeer:toolReportSaved', handler)
+    return () => window.removeEventListener('futureSeer:toolReportSaved', handler)
+  }, [])
 
   const value: MysticalProfileContextValue = {
     profile,
@@ -303,7 +396,8 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     error,
     hasProfile: !!profile && !!profile.vedic && !!profile.interpretations,
     isReportsStale: stale,
-    refreshProfile
+    refreshProfile,
+    applyGeneratedProfile
   }
 
   return (

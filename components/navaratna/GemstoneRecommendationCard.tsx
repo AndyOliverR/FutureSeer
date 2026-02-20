@@ -248,11 +248,16 @@ export function GemstoneRecommendationCard({
           </div>
         )}
 
-        {/* Affiliate link - certified sellers only */}
-        <div className="pt-2 space-y-1">
-          <AffiliateLink href={getGemstoneAffiliateUrl(recommendation.gemstone.english)} label="Shop certified gems" className="text-amber-600" />
-          <p className="text-xs text-slate-500">GIA, IGI, or GRS certified only. Avoid uncertified sources.</p>
-        </div>
+        {/* Affiliate link - certified sellers only (hidden when no partner URL) */}
+        {(() => {
+          const url = getGemstoneAffiliateUrl(recommendation.gemstone.english)
+          return url ? (
+            <div className="pt-2 space-y-1">
+              <AffiliateLink href={url} label="Shop certified gems" className="text-amber-600" />
+              <p className="text-xs text-slate-500">GIA, IGI, or GRS certified only. Avoid uncertified sources.</p>
+            </div>
+          ) : null
+        })()}
 
         {/* Expandable Details */}
         <Button

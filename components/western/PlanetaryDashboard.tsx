@@ -75,8 +75,8 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
     <div className="space-y-4">
       {/* Dashboard Header */}
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-slate-800 mb-2">Planetary Positions</h3>
-        <p className="text-slate-600 text-sm">
+        <h3 className="text-2xl font-bold text-slate-900 mb-2">Planetary Positions</h3>
+        <p className="text-slate-700 text-sm">
           Detailed analysis of each planet's placement in your birth chart
         </p>
       </div>
@@ -143,14 +143,14 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
                           {dignity}
                         </Badge>
                       ) : (
-                        <span className="text-slate-400 text-sm">—</span>
+                        <span className="text-slate-500 text-sm">—</span>
                       )}
                     </div>
                     
                     {/* Key Traits Summary */}
                     <div className="flex-1 min-w-[200px]">
-                      <p className="text-sm text-slate-600 line-clamp-1">
-                        {analysis ? extractKeyTraits(analysis.analysis) : 'Core planetary energy'}
+                      <p className="text-sm text-slate-700 line-clamp-1">
+                        {analysis ? extractKeyTraits(analysis.analysis) : 'Analysis will appear once your full report is ready.'}
                       </p>
                     </div>
                   </div>
@@ -159,9 +159,9 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
                   {analysis && (
                     <div className="ml-4">
                       {isExpanded ? (
-                        <ChevronUp className="w-5 h-5 text-slate-600" />
+                        <ChevronUp className="w-5 h-5 text-slate-700" />
                       ) : (
-                        <ChevronDown className="w-5 h-5 text-slate-600" />
+                        <ChevronDown className="w-5 h-5 text-slate-700" />
                       )}
                     </div>
                   )}
@@ -198,25 +198,25 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-white/60 rounded-lg">
               <div className="text-2xl font-bold text-blue-900">{planets.length}</div>
-              <div className="text-xs text-slate-600 mt-1">Total Planets</div>
+              <div className="text-xs text-slate-700 mt-1">Total Planets</div>
             </div>
             <div className="text-center p-3 bg-white/60 rounded-lg">
               <div className="text-2xl font-bold text-red-700">
                 {planets.filter(p => p.isRetrograde).length}
               </div>
-              <div className="text-xs text-slate-600 mt-1">Retrograde</div>
+              <div className="text-xs text-slate-700 mt-1">Retrograde</div>
             </div>
             <div className="text-center p-3 bg-white/60 rounded-lg">
               <div className="text-2xl font-bold text-purple-700">
                 {planets.filter(p => getPlanetDignity(p)).length}
               </div>
-              <div className="text-xs text-slate-600 mt-1">In Dignity</div>
+              <div className="text-xs text-slate-700 mt-1">In Dignity</div>
             </div>
             <div className="text-center p-3 bg-white/60 rounded-lg">
               <div className="text-2xl font-bold text-green-700">
                 {planets.filter(p => (p.house || 0) <= 3).length}
               </div>
-              <div className="text-xs text-slate-600 mt-1">Angular</div>
+              <div className="text-xs text-slate-700 mt-1">Angular</div>
             </div>
           </div>
         </CardContent>

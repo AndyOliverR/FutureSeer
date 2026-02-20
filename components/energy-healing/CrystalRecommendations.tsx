@@ -54,8 +54,9 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendation.crystals.map((crystal, index) => {
-              const crystalData = CRYSTAL_DATABASE[crystal.name] || {
+            {(Array.isArray(recommendation.crystals) ? recommendation.crystals : []).map((crystal, index) => {
+              const crystalName = crystal?.name ?? `Crystal ${index + 1}`;
+              const crystalData = CRYSTAL_DATABASE[crystalName] || {
                 color: 'Clear',
                 chakraAssociation: [],
                 properties: [],
@@ -64,7 +65,7 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
 
               return (
                 <motion.div
-                  key={crystal.name}
+                  key={crystalName}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -77,12 +78,12 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-amber-900 font-semibold">{crystal.name}</h3>
+                            <h3 className="text-amber-900 font-semibold">{crystalName}</h3>
                             <Badge variant="outline" className="border-amber-500 text-amber-900 bg-amber-50 text-xs">
-                              {crystal.priority.toUpperCase()}
+                              {(typeof crystal?.priority === 'string' ? crystal.priority : '—').toUpperCase()}
                             </Badge>
                           </div>
-                          <p className="text-amber-800 text-sm">{crystal.reason}</p>
+                          <p className="text-amber-800 text-sm">{crystal?.reason ?? '—'}</p>
                         </div>
                       </div>
 
@@ -120,7 +121,7 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
                         </div>
                       )}
 
-                      {crystal.usage && crystal.usage.length > 0 && (
+                      {Array.isArray(crystal?.usage) && crystal.usage.length > 0 && (
                         <div className="mt-3 pt-3 border-t border-amber-300">
                           <p className="text-amber-800 text-xs mb-2">How to Use:</p>
                           <ul className="space-y-1">
@@ -134,7 +135,7 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
                         </div>
                       )}
                       <div className="mt-3 pt-2">
-                        <AffiliateLink href={getCrystalAffiliateUrl(crystal.name)} label="Buy here" className="text-amber-600" />
+                        <AffiliateLink href={getCrystalAffiliateUrl(crystalName)} label="Buy here" className="text-amber-600" />
                       </div>
                     </CardContent>
                   </Card>
@@ -146,7 +147,7 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
       </Card>
 
       {/* Crystal Grid Suggestion */}
-      {recommendation.crystalGrid && recommendation.crystalGrid.length > 0 && (
+      {Array.isArray(recommendation.crystalGrid) && recommendation.crystalGrid.length > 0 && (
         <Card className="bg-slate-900/50 border-amber-500/30">
           <CardHeader>
             <CardTitle className="text-white gold-glow flex items-center gap-2">
@@ -183,7 +184,7 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
       )}
 
       {/* General Recommendations */}
-      {recommendation.recommendations && recommendation.recommendations.length > 0 && (
+      {Array.isArray(recommendation.recommendations) && recommendation.recommendations.length > 0 && (
         <Card className="bg-gradient-to-r from-blue-900/50 to-amber-900/50 border-amber-500/30">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">

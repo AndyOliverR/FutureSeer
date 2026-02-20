@@ -45,6 +45,12 @@ import {
 } from 'lucide-react'
 import { AffiliateLink } from '@/components/AffiliateLink'
 import { getTarotDeckAffiliateUrl } from '@/lib/affiliateConfig'
+import {
+  calculateLifePathNumber,
+  calculateDestinyNumber,
+  calculateSoulNumber,
+  calculatePersonalityNumber,
+} from '@/lib/numerologyCalculations'
 
 function TarotPage() {
   const router = useRouter()
@@ -70,13 +76,53 @@ function TarotPage() {
   
   const [profileCardsError, setProfileCardsError] = useState<string | null>(null)
   const { report: pipelineReport, loading: isLoadingCombinedSystem, error: profileError } = useToolReport('tarot')
+  const { report: westernReport } = useToolReport('western')
   const combinedSystemData = useMemo((): CombinedSystemData | null => {
     if (!pipelineReport || typeof pipelineReport !== 'object') return null
     const r = pipelineReport as Record<string, unknown>
     if (r.placeholder === true) return null
-    const data = (r.data ?? r) as CombinedSystemData | undefined
-    return data && typeof data === 'object' && ((data as unknown as Record<string, unknown>).profileCards ?? (data as unknown as Record<string, unknown>).combinedAnalysis) ? data : null
-  }, [pipelineReport])
+    const data = (r.data ?? r) as Record<string, unknown> | undefined
+    if (!data || typeof data !== 'object') return null
+    const hasProfileCards = data.profileCards ?? data.combinedAnalysis
+    if (hasProfileCards && typeof hasProfileCards === 'object') return data as unknown as CombinedSystemData
+    const storedProfile = data.profile ?? (r as Record<string, unknown>).profile
+    if (storedProfile && typeof storedProfile === 'object' && 'birthCard' in (storedProfile as object)) {
+      const tarotProfile = storedProfile as CombinedSystemData['tarotProfile']
+      const fullName = userProfile?.fullName || userProfile?.displayName || ''
+      const hasName = fullName.trim().length > 0
+      const birthDate = userProfile?.birthDate
+      const numerology =
+        birthDate && hasName
+          ? {
+              lifePathNumber: calculateLifePathNumber(birthDate),
+              destinyNumber: calculateDestinyNumber(fullName),
+              soulNumber: calculateSoulNumber(fullName),
+              personalityNumber: calculatePersonalityNumber(fullName),
+            }
+          : { lifePathNumber: 0, destinyNumber: 0, soulNumber: 0, personalityNumber: 0 }
+      const rawWestern = westernReport as Record<string, unknown> | undefined
+      const chart = (rawWestern?.chart ?? rawWestern?.data?.chart) as { planets?: Array<{ name?: string; sign?: string | { signName?: string } }> } | undefined
+      const planets = chart?.planets
+      const getSign = (name: string): string | undefined => {
+        const p = planets?.find((pl) => pl?.name === name)
+        if (!p?.sign) return undefined
+        return typeof p.sign === 'string' ? p.sign : (p.sign as { signName?: string }).signName
+      }
+      const sunSign = getSign('Sun')
+      const moonSign = getSign('Moon')
+      const risingSign = getSign('Ascendant')
+      const westernAstrology =
+        sunSign || moonSign || risingSign
+          ? { sunSign, moonSign, risingSign }
+          : undefined
+      return {
+        tarotProfile,
+        numerology,
+        westernAstrology,
+      } as CombinedSystemData
+    }
+    return null
+  }, [pipelineReport, userProfile?.birthDate, userProfile?.fullName, userProfile?.displayName, westernReport])
 
   useEffect(() => {
     const spreads = tarotIntelligence.getAvailableSpreads()
@@ -1384,7 +1430,7 @@ function TarotPage() {
                 ) : (
                   <div className="text-center py-8">
                     <Info className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-                    <p className="text-slate-700 mb-4">Generate your mystical profile to unlock the Combined Divination System (Tarot, Astrology & Numerology).</p>
+                    <p className="text-slate-700 mb-4">Generate your mystical profile once from your Profile page to see the Combined Divination System (Tarot, Astrology & Numerology) here.</p>
                     <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
                       <Link href="/profile">
                         <Sparkles className="w-4 h-4 mr-2" />

@@ -168,9 +168,7 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
                         </span>
                       </div>
                       <p className={`text-sm whitespace-pre-line ${message.role === 'user' ? 'text-slate-800' : 'text-slate-700'}`}>
-                        {message.role === 'user' ? message.content : (
-                          <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
-                        )}
+                        {message.content}
                       </p>
                     </div>
                   </motion.div>

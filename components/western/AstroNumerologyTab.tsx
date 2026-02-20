@@ -248,22 +248,6 @@ export default function AstroNumerologyTab({
     fetchComprehensiveAnalysis()
   }, [userId, birthDate, fullName, actualSunSign, cachedReport, isLoadingReport, comprehensiveAnalysis])
 
-  if (!birthDate || !fullName) {
-    return (
-      <div className="text-center py-12">
-        <Card className="glass-card border-white/10 max-w-md mx-auto text-white">
-          <CardContent className="p-8 text-white">
-            <Star className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Profile Information Needed</h3>
-            <p className="text-slate-200">
-              Please complete your profile with birth date and full name to unlock your Astro-Numerology reading.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   const isMasterNumber = (num: number) => MASTER_NUMBERS.includes(num)
 
   return (
@@ -328,15 +312,17 @@ export default function AstroNumerologyTab({
               </div>
               <div className="text-slate-700 text-sm mb-2">Life Path Number</div>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <NumberIcon 
-                  number={lifePathNumber!} 
-                  size={24} 
-                  className="text-blue-600"
-                  isMaster={isMasterNumber(lifePathNumber!)}
-                />
+                {lifePathNumber != null && (
+                  <NumberIcon 
+                    number={lifePathNumber} 
+                    size={24} 
+                    className="text-blue-600"
+                    isMaster={isMasterNumber(lifePathNumber)}
+                  />
+                )}
                 <div className="text-2xl font-bold text-blue-800">
-                  {lifePathNumber}
-                  {isMasterNumber(lifePathNumber!) && <span className="text-base ml-1">⭐</span>}
+                  {lifePathNumber != null ? lifePathNumber : '—'}
+                  {lifePathNumber != null && isMasterNumber(lifePathNumber) && <span className="text-base ml-1">⭐</span>}
                 </div>
               </div>
               <div className="text-xs text-slate-600">From Birth Date</div>
@@ -357,15 +343,17 @@ export default function AstroNumerologyTab({
               </div>
               <div className="text-slate-700 text-sm mb-2">Name Number</div>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <NumberIcon 
-                  number={nameNumber!} 
-                  size={24} 
-                  className="text-pink-600"
-                  isMaster={isMasterNumber(nameNumber!)}
-                />
+                {nameNumber != null && (
+                  <NumberIcon 
+                    number={nameNumber} 
+                    size={24} 
+                    className="text-pink-600"
+                    isMaster={isMasterNumber(nameNumber)}
+                  />
+                )}
                 <div className="text-2xl font-bold text-pink-800">
-                  {nameNumber}
-                  {isMasterNumber(nameNumber!) && <span className="text-base ml-1">⭐</span>}
+                  {nameNumber != null ? nameNumber : '—'}
+                  {nameNumber != null && isMasterNumber(nameNumber) && <span className="text-base ml-1">⭐</span>}
                 </div>
               </div>
               <div className="text-xs text-slate-600">From Full Name</div>
@@ -443,7 +431,7 @@ export default function AstroNumerologyTab({
                     <DevotionistStyleCard
                       icon={<Sparkles className="w-6 h-6" />}
                       title="Your Unique Personality Blend"
-                      subtitle={`${actualSunSign} Sun + Life Path ${lifePathNumber} + Name Number ${nameNumber}`}
+                      subtitle={`${actualSunSign} Sun + Life Path ${lifePathNumber ?? '—'} + Name Number ${nameNumber ?? '—'}`}
                       summary={comprehensiveAnalysis.personalitySynthesis?.substring(0, 250) || comprehensiveAnalysis.personalitySynthesis || 'Personality analysis will be available soon.'}
                       items={extractKeyInsights(comprehensiveAnalysis.personalitySynthesis || '').slice(0, 4).map(insight => ({
                         text: insight.description,
@@ -638,13 +626,14 @@ export default function AstroNumerologyTab({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
               <DevotionistStyleCard
                 icon={<Briefcase className="w-6 h-6" />}
                 title="Career Guidance"
                 summary="Align your career choices with your sun sign's strengths and your life path number's purpose."
                 variant="default"
                 colorScheme="blue"
+                className="h-full"
               />
               <DevotionistStyleCard
                 icon={<Heart className="w-6 h-6" />}
@@ -652,6 +641,7 @@ export default function AstroNumerologyTab({
                 summary="Understand relationship dynamics through both astrological compatibility and numerological harmony."
                 variant="default"
                 colorScheme="pink"
+                className="h-full"
               />
               <DevotionistStyleCard
                 icon={<TrendingUp className="w-6 h-6" />}
@@ -659,6 +649,7 @@ export default function AstroNumerologyTab({
                 summary="Use insights from both systems to navigate challenges and maximize your potential in this lifetime."
                 variant="default"
                 colorScheme="amber"
+                className="h-full"
               />
             </div>
           </CardContent>

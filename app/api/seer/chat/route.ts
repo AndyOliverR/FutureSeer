@@ -27,9 +27,9 @@ Shamanic Astrology,
 Palmistry, Face Reading,
 Angel Numbers, Numerology, Kabbalistic Numerology,
 Vastu, Feng Shui, Geomancy,
-Pendulum, Scrying, Bibliomancy, Sortilege,
+Pendulum, Bibliomancy, Sortilege,
 Akashic Records, Energy & Healing,
-Human Design, Mundane Astrology,
+Human Design,
 Horary Astrology, Daily Decisions, Trichakra Method,
 Navaratna & Planetary Stones.
 

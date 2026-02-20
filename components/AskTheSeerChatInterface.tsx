@@ -96,7 +96,6 @@ interface AskTheSeerContextData {
   dreamSymbolsAnalysis?: unknown;
   humanDesignChart?: unknown;
   oghamReport?: unknown;
-  bibliomancyReading?: unknown;
   fengShuiAnalysis?: unknown;
   [key: string]: unknown;
 }
@@ -186,17 +185,6 @@ const OGHAM_QUESTIONS = [
   "How can I apply Celtic tree wisdom in daily life?"
 ];
 
-const BIBLIOMANCY_QUESTIONS = [
-  "What does my Bibliomancy reading mean?",
-  "How should I interpret my selected passages?",
-  "What guidance do the sacred texts offer me?",
-  "How can I apply the divine message in my life?",
-  "What do my life area passages reveal?",
-  "How can I work with Bibliomancy for guidance?",
-  "What is the meaning of my question reading?",
-  "How can I use sacred texts for daily wisdom?"
-];
-
 const QUESTION_TEMPLATES = {
   purpose: "What is my purpose in this lifetime?",
   marriage: "When will I get married and what kind of partner suits me?",
@@ -232,7 +220,6 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
   const isFengShui = contextType === 'feng-shui';
   const isHumanDesign = contextType === 'human-design';
   const isOgham = contextType === 'ogham';
-  const isBibliomancy = contextType === 'bibliomancy';
   
   // Profile validation
   const profileStatus = getProfileCompletionStatus(userProfile ?? null);
@@ -299,12 +286,10 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
         ? '/api/ask-human-design-seer'
         : isOgham
         ? '/api/ask-ogham-seer'
-        : isBibliomancy
-        ? '/api/ask-bibliomancy-seer'
         : '/api/ask-the-seer';
       
       // Handle streaming response for specialized seers (similar to tarot seer)
-      if (isFaceReading || isDreamSymbols || isFengShui || isHumanDesign || isOgham || isBibliomancy) {
+      if (isFaceReading || isDreamSymbols || isFengShui || isHumanDesign || isOgham) {
         const response = await fetch(apiEndpoint, {
           method: 'POST',
           headers: {
@@ -319,7 +304,6 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
             ...(isFengShui && { fengShuiAnalysis: contextData }),
             ...(isHumanDesign && { humanDesignChart: contextData?.humanDesignChart }),
             ...(isOgham && { oghamReport: contextData?.oghamReport }),
-            ...(isBibliomancy && { bibliomancyReading: contextData?.bibliomancyReading })
           }),
         });
 
@@ -567,7 +551,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
           <MessageCircle className={`w-6 h-6 ${isDevotionist ? 'text-amber-700' : 'text-amber-400'}`} />
           Ask the Seer
           <Badge variant="outline" className={isDevotionist ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-amber-500/20 text-amber-200 border-amber-500/30'}>
-            {isFaceReading ? 'Face Reading Expert' : isDreamSymbols ? 'Dream Symbols Expert' : isFengShui ? 'Feng Shui Expert' : isHumanDesign ? 'Human Design Expert' : isOgham ? 'Ogham Expert' : isBibliomancy ? 'Bibliomancy Expert' : 'Universal Expert'}
+            {isFaceReading ? 'Face Reading Expert' : isDreamSymbols ? 'Dream Symbols Expert' : isFengShui ? 'Feng Shui Expert' : isHumanDesign ? 'Human Design Expert' : isOgham ? 'Ogham Expert' : 'Universal Expert'}
           </Badge>
         </CardTitle>
         <p className={isDevotionist ? 'text-slate-700 text-sm' : 'text-slate-400 text-sm'}>
@@ -581,8 +565,6 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
             ? 'Expert guidance in Human Design, BodyGraph, and energy types. Ask me about your type, strategy, authority, profile, centers, gates, and incarnation cross.'
             : isOgham
             ? 'Expert guidance in Ogham, Celtic tree alphabet, and Ogham script. Ask me about your birth tree, Ogham letters, name meaning, and Celtic wisdom.'
-            : isBibliomancy
-            ? 'Expert guidance in Bibliomancy and sacred text divination. Ask me about your Bibliomancy reading, sacred passages, divine messages, and passage interpretation.'
             : 'Ask any question about your life, purpose, relationships, career, health, spirituality, or future. I\'ll analyze your chart using 50+ systems including Vedic astrology, numerology, tarot, and more.'}
         </p>
         {messages.length > 0 && (
@@ -619,8 +601,6 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
                   ? 'Ask about your Human Design—or pick a question below.'
                   : isOgham
                   ? 'Ask about your Ogham letters and Celtic wisdom—or pick a question below.'
-                  : isBibliomancy
-                  ? 'Ask about your Bibliomancy reading—or pick a question below.'
                   : 'Ask about life, purpose, relationships, or pick one below.'}
               </p>
               
@@ -663,8 +643,6 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
                     ? HUMAN_DESIGN_QUESTIONS.slice(0, 2)
                     : isOgham
                     ? OGHAM_QUESTIONS.slice(0, 2)
-                    : isBibliomancy
-                    ? BIBLIOMANCY_QUESTIONS.slice(0, 2)
                     : MAIN_STARTER_QUESTIONS).map((q, index) => (
                     <Button
                       key={index}
@@ -1036,8 +1014,6 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
                 ? "Ask me anything about Human Design, your type, strategy, or authority..."
                 : isOgham
                 ? "Ask me anything about Ogham, your birth tree, or Celtic wisdom..."
-                : isBibliomancy
-                ? "Ask me anything about Bibliomancy, your sacred passages, or divine guidance..."
                 : "Ask me anything about your life, purpose, relationships, career, health, or future...") :
               "Complete your profile first to ask questions..."
             }

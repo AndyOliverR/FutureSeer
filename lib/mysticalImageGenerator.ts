@@ -82,8 +82,6 @@ const TOOL_THEMES = {
   'horary': 'time symbols, clock imagery, moment of truth',
   'kabbalistic-numerology': 'Tree of Life, Hebrew letters, mystical numerology',
   'medical-astrology': 'healing symbols, medical astrology, wellness patterns',
-  'financial-astrology': 'prosperity symbols, abundance energy, wealth patterns',
-  'mundane-astrology': 'world events, global patterns, collective consciousness',
   'kp-astrology': 'KP astrology symbols, sub-lord logic, precision astrology',
   'bazi': 'Chinese astrology, four pillars, destiny patterns',
   'angel-numbers': 'angelic symbols, divine messages, spiritual guidance',
@@ -95,8 +93,7 @@ const TOOL_THEMES = {
   'kerykeion': 'data-driven astrology, Swiss Ephemeris, SVG charts',
   'astrochart': 'astrological charts, planetary positions, celestial data',
   'iztro': 'Purple Star Astrology, Chinese symbols, imperial wisdom',
-  'sortilege': 'multiple divination tools, mystical symbols, ancient wisdom',
-  'bibliomancy': 'sacred texts, ancient books, divine wisdom'
+  'sortilege': 'multiple divination tools, mystical symbols, ancient wisdom'
 }
 
 // Generate mystical image using Stability AI

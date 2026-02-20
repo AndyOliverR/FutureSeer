@@ -177,30 +177,6 @@ export function isVagueGeomancyQuery(query: string): boolean {
   return looksLikeGeomancy && !hasSituation;
 }
 
-/** Scrying-only: "what do you see", "what is forming", "what is hidden", "what energy surrounds". Exclude purpose, chakra, gemstones, timing, vastu, explicit tarot/geomancy/lenormand. */
-export function isScryingOnlyQuestion(query: string): boolean {
-  const lower = (query || '').trim().toLowerCase();
-  if (
-    /\b(life purpose|chakra|gemstones?|vastu|when will|figures?|geomantic|geomancy|lenormand|(the )?cards (say|mean)|tarot)\b/i.test(lower)
-  ) {
-    return false;
-  }
-  return (
-    /\b(what do you see (about|in)?|what (do you )?see (about|in)|what is forming|show me what lies ahead|what (is )?hidden|what energy surrounds (this)?|what lies ahead|what (is )?emerging)\b/i.test(lower)
-  );
-}
-
-/** True when query is scrying-like but has no focus (e.g. "What do you see?" without "about this job/relationship"). */
-export function isVagueScryingQuery(query: string): boolean {
-  const lower = (query || '').trim().toLowerCase();
-  const looksLikeScrying =
-    /\b(what do you see|what (do you )?see|what is forming|show me what lies ahead|what (is )?hidden|what energy surrounds|what lies ahead|what (is )?emerging)\b/i.test(lower);
-  const hasFocus =
-    /\b(about (this|the|my|our)|regarding|re:)\s+\w+/i.test(lower) ||
-    /\b(this (job|deal|relationship|offer|situation|opportunity|contract)|the (job|deal|offer|opportunity|contract)|my (job|deal|relationship))\b/i.test(lower);
-  return looksLikeScrying && !hasFocus;
-}
-
 /** Energy & Healing only: chakra, aura, reiki, crystal, balance, grounding. Exclude timing, destiny, karma, financial, yes/no, medical/diagnosis/cure. */
 export function isEnergyHealingOnlyQuestion(query: string): boolean {
   const lower = (query || '').trim().toLowerCase();
@@ -223,29 +199,6 @@ export function isVagueEnergyQuery(query: string): boolean {
     /\b(how is my energy|my energy|energy level)\b/i.test(lower) &&
     !/\b(chakra|aura|grounding|physical vitality|emotional balance|spiritual energy)\b/i.test(lower);
   return looksLikeEnergy;
-}
-
-/** Mundane-only: collective/world (elections, political, market cycles, global). Exclude personal (when will I, my purpose, should I move, my marriage, my career, my chart, my dasha). */
-export function isMundaneOnlyQuestion(query: string): boolean {
-  const lower = (query || '').trim().toLowerCase();
-  if (
-    /\b(when will i|my life purpose|my purpose|should i move|my marriage|my career|my chart|my dasha|my remedies|my wealth)\b/i.test(lower)
-  ) {
-    return false;
-  }
-  return (
-    /\b(elections?|election\b|political (shifts?|climate|pressure)|market cycles?|(the )?market(s)?\b|war\b|conflict\b|global (instability|trends?|events?|climate)|national (chart|mood|trend)|economic (forecast|cycle|outlook)|collective (trend|cycle)|planetary climate|next election|\d{4} election|countr(y|ies)|government pressure|volatility (in|of) (the )?market)\b/i.test(lower)
-  );
-}
-
-/** True when query is mundane-like but has no context (e.g. "What's going to happen next year?" without global/political/economic). */
-export function isVagueMundaneQuery(query: string): boolean {
-  const lower = (query || '').trim().toLowerCase();
-  const looksLikeMundane =
-    /\b(what('s| is) going to happen|what will happen|what does (next year|this year) look like|what (does|about) next year)\b/i.test(lower);
-  const hasContext =
-    /\b(global(ly)?|politically|economically|election|market|country|government|political|economic)\b/i.test(lower);
-  return looksLikeMundane && !hasContext;
 }
 
 /** Akashic-only: soul lesson, pattern repeat, deeper meaning, Records say, soul theme. Exclude timing, yes/no, remedy-only, mundane. */
@@ -281,19 +234,6 @@ export function isOghamOnlyQuestion(query: string): boolean {
   }
   return (
     /\b((what does )?the ogham say|ogham (tree|script|symbol)?|celtic tree (alphabet)?|(what )?natural force (is )?influencing|(what )?stage of (growth|life)|(what )?quality (should i )?cultivate|(what is )?blocking my growth|(what )?energy supports (me )?(right )?now|(how can i )?move forward wisely|(what does )?this situation (teach|teaching) me|tree (alphabet|symbolism))\b/i.test(lower)
-  );
-}
-
-/** Bibliomancy-only: sacred text guidance, message/wisdom/virtue, passage/verse. Exclude timing, yes/no, prediction, doctrine/rulings. */
-export function isBibliomancyOnlyQuestion(query: string): boolean {
-  const lower = (query || '').trim().toLowerCase();
-  if (
-    /\b(when will|yes or no|predict|(religious )?ruling|doctrine|theological)\b/i.test(lower)
-  ) {
-    return false;
-  }
-  return (
-    /\b((what )?guidance (does )?(sacred )?text (offer|say)?|(what )?message (do i )?need (to hear)?|(what )?wisdom (applies|for)|(what )?virtue (should i )?(focus on|cultivate)?|(what does )?(the )?(Bhagavad )?Gita|Bible|Quran|Tao Te Ching|sacred (text|words) (say|suggest)?|(what )?perspective (should i )?consider|(what )?lesson (is )?present|passage|verse|bibliomancy)\b/i.test(lower)
   );
 }
 
@@ -369,26 +309,17 @@ export function decomposeQuery(query: string): DecomposedQuery {
   } else if (isHumanDesignOnlyQuestion(trimmed)) {
     domains_required = ['humanDesign'];
     intent = 'identity';
-  } else if (isScryingOnlyQuestion(trimmed)) {
-    domains_required = ['scrying'];
-    intent = 'decision';
   } else if (isGeomancyOnlyQuestion(trimmed)) {
     domains_required = ['geomancy'];
     intent = 'decision';
   } else if (isEnergyHealingOnlyQuestion(trimmed)) {
     domains_required = ['energyHealing'];
     intent = 'health';
-  } else if (isMundaneOnlyQuestion(trimmed)) {
-    domains_required = ['mundaneAstrology'];
-    intent = 'world_events';
   } else if (isAkashicOnlyQuestion(trimmed)) {
     domains_required = ['akashicRecords'];
     intent = 'identity';
   } else if (isOghamOnlyQuestion(trimmed)) {
     domains_required = ['ogham'];
-    intent = 'symbolic';
-  } else if (isBibliomancyOnlyQuestion(trimmed)) {
-    domains_required = ['bibliomancy'];
     intent = 'symbolic';
   } else if (isSortilegeOnlyQuestion(trimmed)) {
     domains_required = ['sortilege'];

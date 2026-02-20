@@ -12,8 +12,6 @@ import { AttributionLeaderboard } from '@/components/AttributionLeaderboard'
 import { FeedbackImprovement } from '@/components/FeedbackImprovement'
 import { ContextualHelp } from '@/components/ContextualHelp'
 import { TipJarCard } from '@/components/TipJarCard'
-import { Header } from '@/components/header'
-
 export default function PricingPage() {
   const { userProfile } = useAuth()
   const [isMounted, setIsMounted] = useState(false)
@@ -37,7 +35,6 @@ export default function PricingPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen py-12 px-3 sm:px-4 md:px-6 overflow-hidden relative">
-      <Header />
       {/* Logo - Top Left */}
       <Link href="/" className="futureseer-logo text-2xl font-semibold tracking-wide hover:scale-105 transition-transform text-amber-400 absolute top-4 left-4 z-50">
         FutureSeer

@@ -124,9 +124,9 @@ export function DailyDecisionsSeerChatInterface({
 
       if (!response.ok) {
         setStreamingMessageId(null);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = ((errorData?.error ?? '') as string) || 'Daily Decisions Seer is unavailable. Please try again.';
         if (response.status === 400) {
-          const errorData = await response.json().catch(() => ({}));
-          const errorMessage = (errorData?.error ?? '') as string;
           if (
             errorMessage.toLowerCase().includes('recommendations') ||
             errorMessage.toLowerCase().includes('generate')
@@ -144,10 +144,7 @@ export function DailyDecisionsSeerChatInterface({
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === aiMessageId
-              ? {
-                  ...msg,
-                  content: 'Daily Decisions Seer is unavailable. Please try again.',
-                }
+              ? { ...msg, content: errorMessage }
               : msg
           )
         );
@@ -234,9 +231,7 @@ export function DailyDecisionsSeerChatInterface({
       >
         <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
           <div className="whitespace-pre-wrap leading-relaxed">
-            {isStreaming ? displayContent : (
-              <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
-            )}
+            {displayContent}
           </div>
           {!isStreaming && isLong && (
             <Button
