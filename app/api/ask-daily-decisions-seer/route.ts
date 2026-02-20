@@ -115,13 +115,27 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: unknown) {
     devLog.error('Daily Decisions Seer API error:', error, 'route');
+    const message = error instanceof Error ? error.message : '';
+    const isRateLimit =
+      (error as { status?: number })?.status === 429 ||
+      message.includes('429') ||
+      message.includes('rate limit') ||
+      message.includes('Rate limit');
+    if (isRateLimit) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Our AI service is temporarily rate-limited. Please try again in about 15 minutes, or upgrade your API tier for higher limits.',
+        },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       {
         success: false,
         error:
-          error instanceof Error
-            ? error.message
-            : 'Failed to get response from Daily Decisions Seer',
+          message || 'Failed to get response from Daily Decisions Seer',
       },
       { status: 500 }
     );

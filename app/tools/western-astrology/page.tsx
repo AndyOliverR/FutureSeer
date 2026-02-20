@@ -39,7 +39,7 @@ import {
 } from 'lucide-react'
 
 function WesternAstrologyPageContent() {
-  const { user, userProfile } = useAuth()
+  const { user, userProfile, loading: authLoading } = useAuth()
   const searchParams = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'introduction' | 'compatibility' | 'western-astrology' | 'advanced' | 'astro-numerology' | 'ask-the-seer'>('introduction')
@@ -51,11 +51,17 @@ function WesternAstrologyPageContent() {
     }
   }, [searchParams])
 
-  const { report: westernPipelineReport, loading: isLoading, error: profileError, hasReport } = useToolReport('western')
+  const { report: westernPipelineReport, loading: isLoading, error: profileError, hasReport, refreshProfile } = useToolReport('western')
   const analysis = useMemo(() => {
     const raw = (westernPipelineReport as Record<string, unknown> | undefined)?.chart
     if (!raw) return null
-    return convertObjectToWestern(raw)
+    const converted = convertObjectToWestern(raw)
+    // Pipeline stores chart as { planets, houses, aspects, transits, ... }; page expects analysis.data
+    const hasDataShape = converted && typeof converted === 'object' && ('planets' in converted || 'houses' in converted)
+    if (hasDataShape && !('data' in converted && converted.data)) {
+      return { data: converted }
+    }
+    return converted
   }, [westernPipelineReport])
   const comprehensiveWesternReport = useMemo(() => {
     const raw = westernPipelineReport as Record<string, unknown> | undefined
@@ -66,10 +72,152 @@ function WesternAstrologyPageContent() {
       predictiveInsights?: unknown
     } | null
   }, [westernPipelineReport])
+  const [fetchedComprehensiveAnalysis, setFetchedComprehensiveAnalysis] = useState<typeof comprehensiveWesternReport>(null)
+  const [isLoadingComprehensiveAnalysis, setIsLoadingComprehensiveAnalysis] = useState(false)
+  const effectiveComprehensiveReport = comprehensiveWesternReport || fetchedComprehensiveAnalysis
+
+  const [fetchedTransits, setFetchedTransits] = useState<unknown[] | null>(null)
+  const [isLoadingTransits, setIsLoadingTransits] = useState(false)
+  const effectiveTransits = useMemo(() => {
+    const fromAnalysis = (analysis?.data as { transits?: unknown[] } | undefined)?.transits
+    if (fromAnalysis && Array.isArray(fromAnalysis) && fromAnalysis.length > 0) return fromAnalysis
+    return fetchedTransits ?? []
+  }, [analysis?.data, fetchedTransits])
+
+  // When we have chart data but no comprehensive analysis from profile, fetch once and persist so returning visits load from cache
+  useEffect(() => {
+    if (!user?.uid || !analysis?.data || comprehensiveWesternReport?.chartOverview) return
+    const chartData = analysis.data as { planets?: unknown[]; houses?: unknown[]; aspects?: unknown[]; transits?: unknown[] }
+    if (!chartData.planets?.length) return
+
+    let cancelled = false
+    setIsLoadingComprehensiveAnalysis(true)
+    fetch('/api/western-astrology/comprehensive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.uid, chartData })
+    })
+      .then((res) => res.json())
+      .then(async (json) => {
+        if (cancelled || !json?.success) return
+        const comp = (json.data?.comprehensiveAnalysis ?? json.data) as typeof comprehensiveWesternReport
+        if (comp) {
+          setFetchedComprehensiveAnalysis(comp)
+          try {
+            const token = await user.getIdToken()
+            const saveRes = await fetch('/api/profile/save-tool-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({
+                toolSlug: 'western',
+                data: { chart: chartData, comprehensiveAnalysis: comp },
+              }),
+            })
+            if (saveRes.ok) await refreshProfile()
+          } catch {
+            // Non-blocking: UI already updated; next visit may refetch once
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsLoadingComprehensiveAnalysis(false)
+      })
+    return () => { cancelled = true }
+  }, [user?.uid, user, analysis?.data, comprehensiveWesternReport?.chartOverview, refreshProfile])
+
+  // When we have chart but no transits (e.g. profile generated before transits were requested), fetch transits on demand
+  useEffect(() => {
+    const chartData = analysis?.data as { transits?: unknown[]; planets?: unknown[] } | undefined
+    if (!user?.uid || !userProfile?.birthDate || !chartData?.planets?.length) return
+    if (chartData.transits && Array.isArray(chartData.transits) && chartData.transits.length > 0) return
+
+    let cancelled = false
+    setIsLoadingTransits(true)
+    const birthData = {
+      birthDate: userProfile.birthDate,
+      birthTime: userProfile.birthTime || '12:00:00',
+      birthPlace: userProfile.birthPlace || '',
+      latitude: Number(userProfile.birthLatitude) ?? 0,
+      longitude: Number(userProfile.birthLongitude) ?? 0
+    }
+    fetch('/api/occult/universal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: 'western', birthData, options: { includeTransits: true } })
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled || !json?.success || !json?.data?.transits) return
+        setFetchedTransits(Array.isArray(json.data.transits) ? json.data.transits : [])
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsLoadingTransits(false)
+      })
+    return () => { cancelled = true }
+  }, [user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.birthLatitude, userProfile?.birthLongitude, analysis?.data])
+
   const [comprehensiveAstroNumerologyReport, setComprehensiveAstroNumerologyReport] = useState<any>(null)
   const [isLoadingAstroNumerologyReport, setIsLoadingAstroNumerologyReport] = useState(false)
+  const [westernNoReportGraceEnded, setWesternNoReportGraceEnded] = useState(false)
+  const [isGeneratingWestern, setIsGeneratingWestern] = useState(false)
 
-  const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
+  // On-demand Western report when user has birth data but no saved report
+  const canGenerateWesternOnDemand =
+    !!userProfile?.birthDate &&
+    !!userProfile?.birthPlace &&
+    !!user?.uid &&
+    !analysis?.data
+  const generateWesternReport = async () => {
+    if (!user?.uid || !userProfile?.birthDate || !userProfile?.birthPlace || isGeneratingWestern) return
+    setIsGeneratingWestern(true)
+    try {
+      const birthData = {
+        birthDate: userProfile.birthDate,
+        birthTime: userProfile.birthTime || '12:00:00',
+        birthPlace: userProfile.birthPlace || '',
+        latitude: Number(userProfile.birthLatitude) ?? 0,
+        longitude: Number(userProfile.birthLongitude) ?? 0,
+      }
+      const res = await fetch('/api/occult/universal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ system: 'western', birthData, options: { includeTransits: true } }),
+      })
+      const json = await res.json()
+      const chartData = json?.data ?? json
+      if (!chartData?.planets?.length) throw new Error('Chart could not be generated')
+      const token = await user.getIdToken()
+      const saveRes = await fetch('/api/profile/save-tool-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ toolSlug: 'western', data: { chart: chartData } }),
+      })
+      if (!saveRes.ok) throw new Error('Failed to save report')
+      window.dispatchEvent(
+        new CustomEvent('futureSeer:toolReportSaved', { detail: { toolSlug: 'western', data: { chart: chartData } } })
+      )
+      await refreshProfile()
+    } catch {
+      // Non-blocking; user can retry or use Profile page
+    } finally {
+      setIsGeneratingWestern(false)
+    }
+  }
+
+  // No full-page "Profile Incomplete" gate: show tool UI (tabs, Introduction, Compare, etc.) as soon as auth is ready. Western tab handles its own loading/empty state so report can appear later (e.g. from listener or refresh).
+  const profileLoaded = !authLoading && user != null
+
+  // Give the Western report a few seconds to appear before showing "No report" (avoids flash when profile loads late)
+  useEffect(() => {
+    if (analysis?.data || profileError || isLoading) {
+      setWesternNoReportGraceEnded(false)
+      return
+    }
+    const t = setTimeout(() => setWesternNoReportGraceEnded(true), 6000)
+    return () => clearTimeout(t)
+  }, [analysis?.data, profileError, isLoading])
 
   // Check for reduced motion preference
   const prefersReducedMotion = useMemo(() => {
@@ -93,30 +241,12 @@ function WesternAstrologyPageContent() {
     { value: 'ask-the-seer', label: 'Ask the Seer' }
   ], [])
 
-  if (!hasCompleteDetails) {
+  if (!user) return null
+
+  if (!profileLoaded) {
     return (
-      <div className="relative min-h-screen starfield-ultra-sharp">
-        <div className="relative z-10 flex items-center justify-center min-h-screen">
-          <Card className="w-full max-w-md glass-card border-white/10 rounded-xl text-white">
-            <CardContent className="p-6 text-center text-white">
-              <Star className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-white mb-2">Profile Incomplete</h2>
-              <p className="text-slate-200 mb-4">Complete your profile to unlock your Western astrology chart</p>
-              <motion.div
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <Button 
-                  onClick={() => window.location.href = '/profile-setup'}
-                  className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent"
-                >
-                  <span className="relative z-10">Complete Profile</span>
-                </Button>
-              </motion.div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="relative min-h-screen starfield-ultra-sharp flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-amber-400 border-t-transparent" />
       </div>
     )
   }
@@ -201,8 +331,9 @@ function WesternAstrologyPageContent() {
                 animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
+                className="bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]"
               >
-                <TabsContent value="western-astrology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="western-astrology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 border-0 bg-transparent">
             {isLoading ? (
               <motion.div 
                 className="text-center py-8"
@@ -284,13 +415,13 @@ function WesternAstrologyPageContent() {
                     colorScheme="amber"
                     storageKey="chart-overview"
                   >
-                    {comprehensiveWesternReport?.chartOverview ? (
+                    {effectiveComprehensiveReport?.chartOverview ? (
                       <div className="prose prose-slate max-w-none">
-                        <p className="text-slate-700 leading-relaxed whitespace-pre-line">
-                          {comprehensiveWesternReport.chartOverview}
+                        <p className="text-slate-800 leading-relaxed whitespace-pre-line">
+                          {effectiveComprehensiveReport.chartOverview}
                         </p>
                       </div>
-                    ) : isLoading ? (
+                    ) : isLoading || isLoadingComprehensiveAnalysis ? (
                       <motion.div 
                         className="text-center py-8"
                         initial={{ opacity: 0 }}
@@ -330,7 +461,7 @@ function WesternAstrologyPageContent() {
                           </svg>
                         </motion.div>
                         <motion.p 
-                          className="text-slate-600 text-sm"
+                          className="text-slate-700 text-sm font-medium"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.2 }}
@@ -340,8 +471,8 @@ function WesternAstrologyPageContent() {
                       </motion.div>
                     ) : (
                       <div className="text-center py-8">
-                        <Info className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                        <p className="text-slate-600 text-sm">Chart overview will appear once analysis is complete.</p>
+                        <Info className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+                        <p className="text-slate-700 text-sm">Chart overview will appear once analysis is complete.</p>
                       </div>
                     )}
                   </DashboardSection>
@@ -381,7 +512,7 @@ function WesternAstrologyPageContent() {
                   >
                     <PlanetaryDashboard 
                       planets={analysis.data.planets || []}
-                      planetaryAnalysis={comprehensiveWesternReport?.planetaryAnalysis}
+                      planetaryAnalysis={effectiveComprehensiveReport?.planetaryAnalysis}
                     />
                   </DashboardSection>
 
@@ -396,7 +527,7 @@ function WesternAstrologyPageContent() {
                   >
                     <HouseDashboard 
                       houses={analysis.data.houses || []}
-                      houseAnalysis={comprehensiveWesternReport?.houseAnalysis}
+                      houseAnalysis={effectiveComprehensiveReport?.houseAnalysis}
                     />
                   </DashboardSection>
 
@@ -404,15 +535,19 @@ function WesternAstrologyPageContent() {
                   <DashboardSection 
                     title="Current Transits" 
                     icon={<TrendingUp className="w-6 h-6" />}
-                    badge="Active Now"
+                    badge={isLoadingTransits ? 'Loading…' : (effectiveTransits.length > 0 ? `${effectiveTransits.length} Active` : 'Active Now')}
                     defaultExpanded={false}
                     colorScheme="orange"
                     storageKey="transits"
                   >
-                    <TransitTimeline 
-                      transits={analysis.data.transits || []}
-                      natalPlanets={analysis.data.planets || []}
-                    />
+                    {isLoadingTransits ? (
+                      <div className="py-8 text-center text-slate-600">Loading current transits…</div>
+                    ) : (
+                      <TransitTimeline 
+                        transits={effectiveTransits}
+                        natalPlanets={analysis.data.planets || []}
+                      />
+                    )}
                   </DashboardSection>
 
                   {/* Section 7: Life Journey Map */}
@@ -439,10 +574,10 @@ function WesternAstrologyPageContent() {
                     colorScheme="purple"
                     storageKey="predictive"
                   >
-                    {comprehensiveWesternReport?.predictiveInsights ? (
+                    {effectiveComprehensiveReport?.predictiveInsights ? (
                       <div className="space-y-4">
                         {(() => {
-                          const insights = comprehensiveWesternReport.predictiveInsights
+                          const insights = effectiveComprehensiveReport.predictiveInsights
                           if (typeof insights === 'object' && insights !== null && !Array.isArray(insights) && 'todaysQuickWin' in insights) {
                             const structuredInsights = insights as {
                               todaysQuickWin: string
@@ -524,7 +659,7 @@ function WesternAstrologyPageContent() {
                           )
                         })()}
                       </div>
-                    ) : isLoading ? (
+                    ) : isLoading || isLoadingComprehensiveAnalysis ? (
                       <motion.div 
                         className="text-center py-8"
                         initial={{ opacity: 0 }}
@@ -564,7 +699,7 @@ function WesternAstrologyPageContent() {
                           </svg>
                         </motion.div>
                         <motion.p 
-                          className="text-slate-600 text-sm"
+                          className="text-slate-700 text-sm font-medium"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.2 }}
@@ -574,27 +709,54 @@ function WesternAstrologyPageContent() {
                       </motion.div>
                     ) : (
                       <div className="text-center py-8">
-                        <Eye className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                        <p className="text-slate-600 text-sm">Predictive insights will appear once analysis is complete.</p>
+                        <Eye className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+                        <p className="text-slate-700 text-sm">Predictive insights will appear once analysis is complete.</p>
                       </div>
                     )}
                   </DashboardSection>
 
                 </div>
               </>
+            ) : !westernNoReportGraceEnded ? (
+              <motion.div
+                className="text-center py-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="relative w-12 h-12 mx-auto mb-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-2 border-amber-400 border-t-transparent" />
+                </div>
+                <p className="text-slate-200">Loading your Western report…</p>
+              </motion.div>
             ) : (
               <div className="text-center py-8">
                 <Info className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-200 mb-4">No Western astrology data available. Please complete your profile.</p>
-                <motion.div
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
-                  whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                  transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
-                >
+                <p className="text-slate-200 mb-4">No Western astrology report loaded. Generate your mystical profile once from your Profile page to see your report here.</p>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center">
                   <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent">
                     <Link href="/profile">Generate your mystical profile</Link>
                   </Button>
-                </motion.div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="border-amber-500/50 text-amber-200 hover:bg-amber-500/10"
+                    onClick={() => refreshProfile()}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Refreshing…' : 'Refresh profile'}
+                  </Button>
+                  {canGenerateWesternOnDemand && (
+                    <Button
+                      type="button"
+                      className="bg-amber-600/80 hover:bg-amber-600 text-white border border-amber-500/50"
+                      onClick={generateWesternReport}
+                      disabled={isGeneratingWestern}
+                    >
+                      {isGeneratingWestern ? 'Generating…' : 'Generate Western report'}
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
                 </TabsContent>
@@ -614,7 +776,7 @@ function WesternAstrologyPageContent() {
                   <AstroNumerologyTab
                     userId={user?.uid}
                     birthDate={userProfile?.birthDate}
-                    fullName={userProfile?.displayName || userProfile?.fullName || user?.displayName || ''}
+                    fullName={userProfile?.displayName || userProfile?.fullName || user?.displayName || user?.email || (user ? 'You' : '')}
                     sunSign={analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName || analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign}
                     analysis={analysis}
                     cachedReport={comprehensiveAstroNumerologyReport}

@@ -86,13 +86,13 @@ export function BodyZodiacProjection({ userChart, onSegmentClick, gender = 'fema
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      <div className="relative rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 p-8 shadow-lg">
+      <div className="relative rounded-2xl border border-cyan-200/70 bg-white/80 p-8 shadow-sm">
         {/* Title */}
         <div className="mb-6 text-center">
-          <p className="text-amber-900 font-medium text-lg">
+          <p className="text-cyan-900 font-medium text-lg">
             Interactive Zodiac Health Wheel
           </p>
-          <p className="text-slate-700 text-sm mt-2">
+          <p className="text-slate-800 text-sm mt-2">
             Click a zodiac segment to explore body part correlations
           </p>
         </div>
@@ -211,7 +211,7 @@ export function BodyZodiacProjection({ userChart, onSegmentClick, gender = 'fema
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-6 rounded-xl border-2 border-amber-300 bg-amber-50/80 h-fit sticky top-8"
+              className="p-6 rounded-xl border border-cyan-200 bg-cyan-50/80 h-fit sticky top-8"
             >
             {(() => {
               const segment = selectedSegment || hoveredSegment
@@ -221,18 +221,18 @@ export function BodyZodiacProjection({ userChart, onSegmentClick, gender = 'fema
                   <div className="flex items-center gap-4">
                     <div className="text-5xl">{segment!.symbol}</div>
                     <div>
-                      <h3 className="text-2xl font-bold text-amber-900">{segment!.name}</h3>
-                      <p className="text-slate-700">Ruling Planet: {segment!.rulingPlanet}</p>
+                      <h3 className="text-2xl font-bold text-cyan-900">{segment!.name}</h3>
+                      <p className="text-slate-800">Ruling Planet: {segment!.rulingPlanet}</p>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-semibold text-amber-900 mb-2">Body Parts Governed:</h4>
+                    <h4 className="text-sm font-semibold text-cyan-900 mb-2">Body Parts Governed:</h4>
                     <div className="flex flex-wrap gap-2">
                       {segment!.bodyParts.map((part, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 bg-amber-200/80 text-amber-900 rounded-lg text-sm border border-amber-300"
+                          className="px-3 py-1 bg-cyan-200/80 text-cyan-900 rounded-lg text-sm border border-cyan-300"
                         >
                           {part}
                         </span>
@@ -241,15 +241,15 @@ export function BodyZodiacProjection({ userChart, onSegmentClick, gender = 'fema
                   </div>
 
                   {userChart?.planets && (
-                    <div className="mt-4 pt-4 border-t border-amber-200">
-                      <p className="text-sm text-slate-700 font-medium mb-2">Planetary Influences:</p>
+                    <div className="mt-4 pt-4 border-t border-cyan-200">
+                      <p className="text-sm text-slate-800 font-medium mb-2">Planetary Influences:</p>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(userChart.planets)
                           .filter(([_, position]) => position.sign === segment!.name)
                           .map(([planet, position]) => (
                             <span
                               key={planet}
-                              className="px-3 py-1 bg-amber-200/80 text-amber-900 rounded-lg text-sm border border-amber-300"
+                              className="px-3 py-1 bg-cyan-200/80 text-cyan-900 rounded-lg text-sm border border-cyan-300"
                             >
                               {planet} in {position.house}H
                             </span>
@@ -262,8 +262,8 @@ export function BodyZodiacProjection({ userChart, onSegmentClick, gender = 'fema
             })()}
             </motion.div>
           ) : (
-            <div className="p-6 rounded-xl border-2 border-amber-300 bg-amber-50/80 h-fit sticky top-8 flex items-center justify-center">
-              <p className="text-slate-700 text-center">
+            <div className="p-6 rounded-xl border border-cyan-200 bg-cyan-50/80 h-fit sticky top-8 flex items-center justify-center">
+              <p className="text-slate-800 text-center">
                 Click or hover over a zodiac segment to see detailed body part correlations
               </p>
             </div>
@@ -276,10 +276,10 @@ export function BodyZodiacProjection({ userChart, onSegmentClick, gender = 'fema
             <button
               key={segment.id}
               onClick={() => handleSegmentClick(segment)}
-              className={`p-3 rounded-xl transition-all text-center border-2 ${
+              className={`p-3 rounded-xl transition-all text-center border ${
                 selectedSegment?.id === segment.id
-                  ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 border-amber-400 shadow-md'
-                  : 'bg-amber-50/80 text-slate-700 border-amber-200 hover:border-amber-300 hover:bg-amber-100/80'
+                  ? 'bg-gradient-to-br from-cyan-100 to-blue-100 text-cyan-900 border-cyan-400 shadow-md'
+                  : 'bg-white/90 text-slate-800 border-cyan-200 hover:border-cyan-300 hover:bg-cyan-50/80'
               }`}
             >
               <div className="text-2xl mb-1">{segment.symbol}</div>

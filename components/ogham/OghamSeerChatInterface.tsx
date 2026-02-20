@@ -196,9 +196,7 @@ export function OghamSeerChatInterface({
                         }`}
                       >
                         <p className="text-sm whitespace-pre-wrap">
-                          {message.role === 'user' ? message.content : (
-                            <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-800" />
-                          )}
+                          {message.content}
                         </p>
                         <p className="text-xs text-slate-600 mt-1">
                           {message.timestamp.toLocaleTimeString([], {

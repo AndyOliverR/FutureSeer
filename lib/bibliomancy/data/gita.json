@@ -1,0 +1,20 @@
+{
+  "version": "Bhagavad Gita (Public Domain)",
+  "chapters": [
+    {
+      "chapterNumber": 2,
+      "name": "Sankhya Yoga",
+      "verses": [
+        { "verseNumber": 47, "text": "You have the right to work only, but never to the fruit of work. Let not the fruit of action be your motive, nor let your attachment be to inaction.", "sanskrit": "Karmany evadhikaras te ma phalesu kadacana" },
+        { "verseNumber": 14, "text": "The contact of the senses with their objects, which gives heat and cold, pleasure and pain, are transient; they come and go. Bear them patiently, O Bharata." }
+      ]
+    },
+    {
+      "chapterNumber": 18,
+      "name": "Moksha Sannyasa Yoga",
+      "verses": [
+        { "verseNumber": 66, "text": "Abandon all dharmas and take refuge in Me alone. I shall liberate you from all sins; do not grieve.", "sanskrit": "Sarvadharman parityajya mam ekam saranam vraja" }
+      ]
+    }
+  ]
+}

@@ -59,22 +59,22 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
               <div className="flex items-center gap-2">
                 <div
                   className="w-8 h-8 rounded-full border-2 border-amber-500 shadow-lg"
-                  style={{ backgroundColor: getAuraColorHex(reading.dominantColor) }}
+                  style={{ backgroundColor: getAuraColorHex(reading.dominantColor ?? '') }}
                 />
-                <span className="text-amber-900 font-semibold capitalize">{reading.dominantColor}</span>
+                <span className="text-amber-900 font-semibold capitalize">{reading.dominantColor ?? '—'}</span>
               </div>
             </div>
             
             <div className="space-y-2">
-              <p className="text-amber-800">{reading.colorInterpretation}</p>
+              <p className="text-amber-800">{reading.colorInterpretation ?? '—'}</p>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-amber-300">
               <span className="text-amber-900">Overall Health</span>
               <div className="flex items-center gap-2">
-                {getHealthIcon(reading.overallHealth)}
+                {getHealthIcon(reading.overallHealth ?? '')}
                 <Badge variant="outline" className="border-amber-500 text-amber-900 bg-amber-50">
-                  {reading.overallHealth.replace('_', ' ').toUpperCase()}
+                  {(typeof reading.overallHealth === 'string' ? reading.overallHealth : '—').replace(/_/g, ' ').toUpperCase()}
                 </Badge>
               </div>
             </div>
@@ -100,17 +100,17 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
                 </div>
               
               {/* Aura layers */}
-              {reading.layers.map((layer, index) => {
+              {(Array.isArray(reading.layers) ? reading.layers : []).map((layer, index) => {
                 const layerSize = 60 + (index * 30);
                 // Adjust opacity based on clarity: vibrant = higher, cloudy = lower
-                const baseOpacity = layer.clarity === 'vibrant' ? 0.7 : layer.clarity === 'cloudy' ? 0.3 : 0.5;
+                const baseOpacity = (layer?.clarity === 'vibrant') ? 0.7 : (layer?.clarity === 'cloudy') ? 0.3 : 0.5;
                 const opacity = baseOpacity - (index * 0.05);
-                const layerColor = getAuraColorHex(layer.color);
-                const isVibrant = layer.clarity === 'vibrant';
+                const layerColor = getAuraColorHex(layer?.color ?? '');
+                const isVibrant = layer?.clarity === 'vibrant';
                 
                 return (
                   <motion.div
-                    key={layer.name}
+                    key={layer?.name ?? index}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: index * 0.2 }}
@@ -129,9 +129,9 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
             </div>
 
             {/* Layer Details */}
-            {reading.layers.map((layer, index) => (
+            {(Array.isArray(reading.layers) ? reading.layers : []).map((layer, index) => (
               <motion.div
-                key={layer.name}
+                key={layer?.name ?? index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -141,18 +141,18 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
                   <div className="flex items-center gap-3">
                     <div
                       className="w-6 h-6 rounded-full border-2 border-amber-500 shadow-md"
-                      style={{ backgroundColor: getAuraColorHex(layer.color) }}
+                      style={{ backgroundColor: getAuraColorHex(layer?.color ?? '') }}
                     />
                     <div>
-                      <h3 className="text-amber-900 font-semibold">{layer.name}</h3>
+                      <h3 className="text-amber-900 font-semibold">{layer?.name ?? '—'}</h3>
                       <p className="text-sm text-amber-800">
-                        {layer.clarity.toUpperCase()} • {layer.thickness.toUpperCase()}
+                        {(layer?.clarity ?? '').toUpperCase()} • {(layer?.thickness ?? '').toUpperCase()}
                       </p>
                     </div>
                   </div>
                 </div>
                 
-                <p className="text-amber-800 text-sm mt-2">{layer.interpretation}</p>
+                <p className="text-amber-800 text-sm mt-2">{layer?.interpretation ?? '—'}</p>
               </motion.div>
             ))}
           </div>

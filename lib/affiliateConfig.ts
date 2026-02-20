@@ -10,8 +10,7 @@ const AMAZON_TAG = process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_TAG || ''
 const AMAZON_DOMAIN = process.env.NEXT_PUBLIC_AMAZON_DOMAIN || 'amazon.com'
 const ASTRO_CHARTS_URL = process.env.NEXT_PUBLIC_ASTRO_CHARTS_URL || 'https://astro-charts.com'
 const CERTIFIED_GEMSTONE_URL =
-  process.env.NEXT_PUBLIC_CERTIFIED_GEMSTONE_SELLER_URL ||
-  'https://www.navratan.com/categories/gia-certified-gemstones'
+  process.env.NEXT_PUBLIC_CERTIFIED_GEMSTONE_SELLER_URL?.trim() || ''
 
 function encodeQuery(s: string): string {
   return encodeURIComponent(s.trim()).replace(/%20/g, '+')
@@ -40,6 +39,7 @@ export function getCrystalAffiliateUrl(crystalName: string): string {
  */
 export function getCertifiedGemstoneUrl(gemstoneName: string): string {
   const base = CERTIFIED_GEMSTONE_URL.replace(/\/$/, '')
+  if (!base) return ''
   if (base.includes('navratan.com')) {
     return `${base}?q=${encodeURIComponent(gemstoneName.trim())}`
   }

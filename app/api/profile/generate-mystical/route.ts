@@ -15,6 +15,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { getDocument, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
 import { generateAllReports } from '@/lib/reportGenerationService';
+import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
+import type { UserProfile } from '@/lib/firebase';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import { calculateProfileDataHash } from '@/lib/firebase';
 import { devLog } from '@/lib/devLogger';
@@ -44,8 +46,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User profile not found' }, { status: 404 });
     }
 
-    const userProfile = userDoc as any;
-    if (!userProfile.birthDate || !userProfile.birthPlace) {
+    const userProfile = userDoc as Record<string, unknown>;
+    const birthDate = (userProfile.birthDate ?? userProfile.birth_date) as string | undefined;
+    const birthPlace = (userProfile.birthPlace ?? userProfile.birth_place) as string | undefined;
+    if (!birthDate || !String(birthDate).trim() || !birthPlace || !String(birthPlace).trim()) {
       return NextResponse.json(
         { error: 'Please complete your profile (birth date and place required)' },
         { status: 400 }
@@ -53,24 +57,46 @@ export async function POST(request: NextRequest) {
     }
 
     // Idempotent guard: already generated with same data — do not re-run tools
-    if (
+    // Unless stored comprehensive profile is missing any tool report (e.g. new tool added after first run)
+    const hashMatches =
       userProfile.mysticalProfileGenerated === true &&
       userProfile.profileDataHash != null &&
       userProfile.profileDataHash !== '' &&
-      userProfile.profileDataHash === calculateProfileDataHash(userProfile)
-    ) {
-      return NextResponse.json({
-        success: true,
-        message: 'Profile already generated.',
-        alreadyGenerated: true,
+      userProfile.profileDataHash === calculateProfileDataHash(userProfile);
+
+    if (hashMatches) {
+      const stored = await getDocument('comprehensiveMysticalProfiles', uid);
+      const storedProfile = (stored || {}) as Record<string, unknown>;
+      const missingSlugs = ALL_TOOL_SLUGS.filter((slug) => {
+        const value = storedProfile[slug];
+        // Consider missing if key absent or placeholder (no real report)
+        if (value == null) return true;
+        if (typeof value === 'object' && (value as { placeholder?: boolean }).placeholder === true) return true;
+        return false;
       });
+      if (missingSlugs.length === 0) {
+        return NextResponse.json({
+          success: true,
+          message: 'Profile already generated.',
+          alreadyGenerated: true,
+        });
+      }
+      devLog.info(
+        `[generate-mystical] Re-running pipeline to backfill missing tools: ${missingSlugs.join(', ')}`,
+        'generate-mystical'
+      );
     }
 
-    // Ensure profile has uid for orchestrator
-    const profileWithUid = { ...userProfile, uid };
+    // Ensure profile has uid and camelCase birth fields for orchestrator
+    const profileWithUid = {
+      ...userProfile,
+      uid,
+      birthDate: birthDate ?? userProfile.birthDate,
+      birthPlace: birthPlace ?? userProfile.birthPlace,
+    };
 
     // Full-only regeneration: no partial runs. Edited-profile flow requires full pipeline only.
-    const result = await generateAllReports(uid, profileWithUid);
+    const result = await generateAllReports(uid, profileWithUid as UserProfile);
 
     if (!result.success && result.systemsUsed.length === 0) {
       return NextResponse.json(
@@ -98,6 +124,28 @@ export async function POST(request: NextRequest) {
     };
 
     const toStore = cleanData(result.comprehensiveProfile);
+    // Omit duplicate toolReports so we stay under Firestore 1 MiB limit; each tool is already at top-level (vedic, western, scrying, etc.)
+    delete (toStore as Record<string, unknown>).toolReports;
+
+    // Preserve existing real tool reports when this run produced a placeholder (e.g. BaZi API failed on re-run)
+    const storedBeforeWrite = await getDocument('comprehensiveMysticalProfiles', uid);
+    const storedProfile = (storedBeforeWrite || {}) as Record<string, unknown>;
+    for (const slug of ALL_TOOL_SLUGS) {
+      const newVal = (toStore as Record<string, unknown>)[slug];
+      const existingVal = storedProfile[slug];
+      const newIsPlaceholder =
+        newVal != null &&
+        typeof newVal === 'object' &&
+        (newVal as { placeholder?: boolean }).placeholder === true;
+      const existingIsRealReport =
+        existingVal != null &&
+        typeof existingVal === 'object' &&
+        (existingVal as { placeholder?: boolean }).placeholder !== true;
+      if (newIsPlaceholder && existingIsRealReport) {
+        (toStore as Record<string, unknown>)[slug] = existingVal;
+        devLog.info(`[generate-mystical] Preserved existing real report for tool: ${slug}`, 'generate-mystical');
+      }
+    }
 
     await setDocument('comprehensiveMysticalProfiles', uid, toStore);
 
@@ -127,6 +175,7 @@ export async function POST(request: NextRequest) {
       systemsUsed: result.systemsUsed,
       failedTools: result.failedTools,
       message: 'Mystical profile generated successfully. All tools have run.',
+      comprehensiveProfile: toStore,
     });
   } catch (err) {
     devLog.error('Profile generate-mystical API error', err, 'generate-mystical');

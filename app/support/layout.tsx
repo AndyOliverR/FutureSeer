@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { TopNavBar } from "@/components/TopNavBar";
 
 export const metadata: Metadata = {
   title: "Support - FutureSeer",
@@ -9,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function SupportLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <TopNavBar />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }

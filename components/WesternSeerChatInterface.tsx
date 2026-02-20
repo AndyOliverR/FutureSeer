@@ -135,7 +135,11 @@ export default function WesternSeerChatInterface({
         })
       });
       
-      if (!response.ok) throw new Error('Failed to get response');
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}))
+        const message = (errBody as { error?: string })?.error || `Request failed (${response.status})`
+        throw new Error(message)
+      }
       
       // Read streaming response
       const reader = response.body?.getReader();
@@ -162,9 +166,10 @@ export default function WesternSeerChatInterface({
     } catch (error) {
       devLog.error('Western Seer error', error, 'WesternSeerChatInterface');
       setStreamingMessageId(null);
+      const userMessage = error instanceof Error ? error.message : 'I apologize, but I encountered an error. Please try again.';
       setMessages(prev => prev.map(msg => 
         msg.id === aiMessageId 
-          ? { ...msg, content: 'I apologize, but I encountered an error. Please try again.' }
+          ? { ...msg, content: userMessage }
           : msg
       ));
     } finally {
@@ -218,8 +223,10 @@ export default function WesternSeerChatInterface({
       >
         <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
           <div className="whitespace-pre-wrap leading-relaxed">
-            {isStreaming ? displayContent : (
-              <SlowRevealText content={showPreview ? displayContent : message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+            {isStreaming ? (
+              <SlowRevealText content={displayContent} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+            ) : (
+              displayContent
             )}
           </div>
           {!isStreaming && isLong && (

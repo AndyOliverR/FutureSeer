@@ -8,6 +8,10 @@ export interface ToolReportGuardProps {
   loading: boolean
   error: string | null
   toolLabel?: string
+  /** Custom CTA label when error is shown (default: "Generate your mystical profile") */
+  errorCtaLabel?: string
+  /** Custom CTA href when error is shown (default: "/profile") */
+  errorCtaHref?: string
   children: React.ReactNode
 }
 
@@ -15,7 +19,7 @@ export interface ToolReportGuardProps {
  * Defensive guard: do not render tool content until profile/report loading is settled.
  * States: loading (full-page only) -> error (full-page only) -> ready (children).
  */
-export function ToolReportGuard({ loading, error, toolLabel, children }: ToolReportGuardProps) {
+export function ToolReportGuard({ loading, error, toolLabel, errorCtaLabel = 'Generate your mystical profile', errorCtaHref = '/profile', children }: ToolReportGuardProps) {
   if (loading) {
     return (
       <div className="relative min-h-screen starfield-ultra-sharp">
@@ -44,7 +48,7 @@ export function ToolReportGuard({ loading, error, toolLabel, children }: ToolRep
             </h3>
             <p className="text-red-400/90 mb-4">{error}</p>
             <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-              <Link href="/profile">Generate your mystical profile</Link>
+              <Link href={errorCtaHref}>{errorCtaLabel}</Link>
             </Button>
           </div>
         </div>

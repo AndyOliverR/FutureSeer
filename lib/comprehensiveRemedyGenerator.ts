@@ -20,8 +20,6 @@ export interface UserSystemData {
   westernAstrology?: any
   kpAstrology?: any
   medicalAstrology?: any
-  financialAstrology?: any
-  mundaneAstrology?: any
   horaryAstrology?: any
   synastry?: any
   
@@ -72,10 +70,6 @@ export function generateHolisticRemedies(
   
   if (userData.medicalAstrology) {
     remedies.push(...generateMedicalAstrologyRemedies(userData.medicalAstrology, question))
-  }
-  
-  if (userData.financialAstrology) {
-    remedies.push(...generateFinancialAstrologyRemedies(userData.financialAstrology, question))
   }
   
   // 2. NUMEROLOGY REMEDIES (All Systems)
@@ -768,11 +762,6 @@ function generatePersonalizedCombinationRemedies(userData: UserSystemData, quest
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
-function generateFinancialAstrologyRemedies(financialData: any, question: string): ComprehensiveRemedy[] {
-  // Implementation for financial astrology remedies
-  return []
-}
 
 function generateKabbalisticRemedies(kabbalisticData: any, question: string): ComprehensiveRemedy[] {
   // Implementation for kabbalistic remedies

@@ -28,7 +28,6 @@ import {
   MANTRA_DATABASE, 
   MUDRA_DATABASE 
 } from '@/lib/remedyDatabase'
-import { Header } from '@/components/header'
 import { AffiliateLink } from '@/components/AffiliateLink'
 import { getGemstoneAffiliateUrl } from '@/lib/affiliateConfig'
 
@@ -122,7 +121,10 @@ export default function RemediesPage() {
                     <Badge variant="outline" className="text-xs text-gray-300 border-gray-600">
                       {gemstone.planetaryRuler}
                     </Badge>
-                    <AffiliateLink href={getGemstoneAffiliateUrl(gemstone.name)} label="See options" className="ml-auto text-amber-400" />
+                    {(() => {
+                      const gemUrl = getGemstoneAffiliateUrl(gemstone.name)
+                      return gemUrl ? <AffiliateLink href={gemUrl} label="See options" className="ml-auto text-amber-400" /> : null
+                    })()}
                   </div>
                 </CardContent>
               </Card>
@@ -349,7 +351,6 @@ export default function RemediesPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen py-12 px-4 overflow-hidden">
-      <Header />
       <div className="max-w-7xl mx-auto pt-20">
         {/* Header */}
         <div className="text-center mb-12">

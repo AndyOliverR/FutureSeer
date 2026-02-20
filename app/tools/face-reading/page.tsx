@@ -1,24 +1,41 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { FaceReadingCoachInterface } from "@/components/FaceReadingCoachInterface"
 import { useFaceReading } from "@/hooks/use-face-reading"
+import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import type { FaceReadingAnalysis } from "@/lib/faceReadingIntelligence"
 
 export default function FaceReadingPage() {
   const { userProfile } = useAuth()
+  const { report: pipelineReport, loading: pipelineLoading, error: profileError, hasReport: hasStoredReport } = useToolReport('faceReading')
   const {
     faceData,
-    analysis,
-    isLoading,
-    error,
+    analysis: liveAnalysis,
+    isLoading: isLiveLoading,
+    error: liveError,
     setFaceData,
     performFaceReading,
     resetData
   } = useFaceReading()
+
+  // Prefer stored report from mystical profile when available and not a placeholder
+  const storedAnalysis = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object' || (pipelineReport as { placeholder?: boolean }).placeholder) return null
+    const raw = (pipelineReport as { analysis?: FaceReadingAnalysis; faceReadingContext?: FaceReadingAnalysis }).analysis
+      ?? (pipelineReport as { analysis?: FaceReadingAnalysis; faceReadingContext?: FaceReadingAnalysis }).faceReadingContext
+    return raw && typeof raw === 'object' && 'faceShape' in raw ? (raw as FaceReadingAnalysis) : null
+  }, [pipelineReport])
+
+  const effectiveAnalysis = storedAnalysis ?? liveAnalysis
+  const isLoading = pipelineLoading || isLiveLoading
+  const error = liveError ?? null
 
   const [activeTab, setActiveTab] = useState("overview")
   const [readingMethod, setReadingMethod] = useState<'modern' | 'chinese'>('modern')
@@ -98,7 +115,7 @@ export default function FaceReadingPage() {
                   <p className="text-sm text-slate-600">
                     Analyzing from your profile photo
                   </p>
-                  {analysis && (
+                  {effectiveAnalysis && (
                     <p className="text-xs text-green-600 mt-1">
                       ✓ Analysis complete
                     </p>
@@ -311,7 +328,7 @@ export default function FaceReadingPage() {
                     <p className="text-red-600 text-lg mb-2">Reading Error</p>
                     <p className="text-slate-700">{error}</p>
                   </motion.div>
-                ) : analysis ? (
+                ) : effectiveAnalysis ? (
                   <motion.div
                     key="results"
                     initial={{ opacity: 0 }}
@@ -319,11 +336,24 @@ export default function FaceReadingPage() {
                     exit={{ opacity: 0 }}
                   >
                     <FaceReadingCoachInterface 
-                      analysis={analysis}
+                      analysis={effectiveAnalysis}
                       activeTab={activeTab}
                       faceData={faceData}
                       readingMethod={readingMethod}
                     />
+                  </motion.div>
+                ) : profileError && !hasStoredReport ? (
+                  <motion.div
+                    key="profile-cta"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="text-center py-16"
+                  >
+                    <p className="text-slate-700 mb-4">Generate your mystical profile to see your face reading here.</p>
+                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                      <Link href="/profile">Generate my mystical profile</Link>
+                    </Button>
                   </motion.div>
                 ) : (
                   <motion.div
@@ -336,8 +366,7 @@ export default function FaceReadingPage() {
                     <div className="text-6xl mb-6">👁️</div>
                     <h3 className="text-2xl text-blue-900 font-semibold mb-4">Ready to Read Your Face?</h3>
                     <p className="text-slate-700 leading-relaxed">
-                      Enter your facial features above to discover the character and destiny 
-                      written in the wisdom of physiognomy.
+                      Upload a face photo in your profile and generate your mystical profile, or enter your facial features above to discover the character and destiny written in the wisdom of physiognomy.
                     </p>
                   </motion.div>
                 )}

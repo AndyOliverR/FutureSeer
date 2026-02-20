@@ -30,22 +30,39 @@ function getInfluenceColor(influence: string) {
       bg: 'bg-green-100',
       border: 'border-green-300',
       text: 'text-green-800',
-      badge: 'bg-green-200 text-green-900'
+      badge: 'bg-green-300 text-green-900 border border-green-500 font-bold'
     },
     challenging: {
       bg: 'bg-orange-100',
       border: 'border-orange-300',
       text: 'text-orange-800',
-      badge: 'bg-orange-200 text-orange-900'
+      badge: 'bg-orange-300 text-orange-900 border border-orange-500 font-bold'
     },
     neutral: {
       bg: 'bg-blue-100',
       border: 'border-blue-300',
       text: 'text-blue-800',
-      badge: 'bg-blue-200 text-blue-900'
+      badge: 'bg-blue-300 text-blue-900 border border-blue-500 font-bold'
     }
   }
   return colors[influence] || colors.neutral
+}
+
+// Planet glyph text colour (dark, visible on light influence circles)
+function getPlanetGlyphColor(planetName: string): string {
+  const colors: Record<string, string> = {
+    Sun: 'text-amber-800',
+    Moon: 'text-slate-700',
+    Mercury: 'text-cyan-800',
+    Venus: 'text-pink-800',
+    Mars: 'text-orange-800',
+    Jupiter: 'text-purple-800',
+    Saturn: 'text-slate-800',
+    Uranus: 'text-cyan-800',
+    Neptune: 'text-blue-800',
+    Pluto: 'text-violet-800'
+  }
+  return colors[planetName] || 'text-slate-800'
 }
 
 export function TransitTimeline({ transits, natalPlanets }: TransitTimelineProps) {
@@ -63,10 +80,10 @@ export function TransitTimeline({ transits, natalPlanets }: TransitTimelineProps
     return (
       <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-slate-200 shadow-lg rounded-3xl">
         <CardContent className="p-8 text-center">
-          <Calendar className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-          <h4 className="text-lg font-semibold text-slate-700 mb-2">No Active Transits</h4>
-          <p className="text-slate-600 text-sm">
-            Transit data is being calculated. Please check back shortly.
+          <Calendar className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+          <h4 className="text-lg font-semibold text-slate-800 mb-2">No Active Transits</h4>
+          <p className="text-slate-700 text-sm">
+            Current transits will appear here when available. Your predictive insights above include transit timing.
           </p>
         </CardContent>
       </Card>
@@ -102,9 +119,11 @@ export function TransitTimeline({ transits, natalPlanets }: TransitTimelineProps
                 transition={{ delay: index * 0.1, duration: 0.4 }}
                 className="relative pl-16"
               >
-                {/* Timeline marker */}
+                {/* Timeline marker - glyph and % use dark colours for contrast on light bg */}
                 <div className={`absolute left-0 top-2 w-12 h-12 ${colors.bg} border-2 ${colors.border} rounded-full flex items-center justify-center shadow-lg z-10`}>
-                  <span className="text-2xl">{transit.planetGlyph}</span>
+                  <span className={`text-2xl font-medium ${getPlanetGlyphColor(transit.planetName)}`}>
+                    {transit.planetGlyph}
+                  </span>
                 </div>
                 
                 {/* Transit card */}
@@ -125,9 +144,9 @@ export function TransitTimeline({ transits, natalPlanets }: TransitTimelineProps
                         </div>
                       </div>
                       
-                      <Badge className={colors.badge}>
+                      <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold shrink-0 ${colors.badge}`}>
                         {(transit.strength * 100).toFixed(0)}%
-                      </Badge>
+                      </span>
                     </div>
                     
                     {/* Description */}
@@ -142,7 +161,7 @@ export function TransitTimeline({ transits, natalPlanets }: TransitTimelineProps
                           <Badge 
                             key={areaIndex}
                             variant="secondary"
-                            className="text-xs"
+                            className="text-xs bg-slate-200/90 text-slate-900 border border-slate-400 font-medium"
                           >
                             <Zap className="w-3 h-3 mr-1" />
                             {area}

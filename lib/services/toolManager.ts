@@ -6,7 +6,7 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
   'vedic-astrology': {
     slug: 'vedic-astrology',
     name: 'Vedic Astrology',
-    category: 'Astrology',
+    category: 'Indian',
     isPremium: true,
     isComingSoon: false,
     requiredFields: ['fullName', 'dateOfBirth', 'timeOfBirth', 'placeOfBirth'],
@@ -54,7 +54,7 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
   'kp-astrology': {
     slug: 'kp-astrology',
     name: 'KP Astrology',
-    category: 'Astrology',
+    category: 'Indian',
     isPremium: false,
     isComingSoon: false,
     requiredFields: ['fullName', 'dateOfBirth', 'timeOfBirth', 'placeOfBirth'],
@@ -159,27 +159,27 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
     optionalFields: ['faceImage'],
     supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
     maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 35,
-    apiEndpoint: '/api/tools/financial-astrology/analysis',
-    description: 'Investment and wealth astrological guidance',
-    icon: '💰',
-    popularityScore: 27 // Tier 4
+    analysisTime: 45,
+    apiEndpoint: '/api/financial-astrology/comprehensive',
+    description: 'Natal wealth analysis and market cycle timing — personalized financial temperament and alignment',
+    icon: '📈',
+    popularityScore: 50
   },
   'mundane-astrology': {
     slug: 'mundane-astrology',
     name: 'Mundane Astrology',
     category: 'Astrology',
-    isPremium: true,
+    isPremium: false,
     isComingSoon: false,
     requiredFields: ['fullName', 'dateOfBirth', 'timeOfBirth', 'placeOfBirth'],
     optionalFields: ['faceImage'],
     supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
     maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 45,
-    apiEndpoint: '/api/tools/mundane-astrology/analysis',
-    description: 'World events and political astrology',
-    icon: '🌐',
-    popularityScore: 13 // Tier 5
+    analysisTime: 50,
+    apiEndpoint: '/api/mundane-astrology/comprehensive',
+    description: 'Political and national astrology — ingress charts, national foundation, economic and political risk indices',
+    icon: '🌍',
+    popularityScore: 45
   },
   'synastry': {
     slug: 'synastry',
@@ -382,21 +382,33 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
   },
 
   // Chinese Systems
-  'bazi': {
-    slug: 'bazi',
-    name: 'BaZi',
+  'ziwei-dou-shu': {
+    slug: 'ziwei-dou-shu',
+    name: 'Zi Wei Dou Shu',
     category: 'Chinese',
-    isPremium: true,
+    isPremium: false,
     isComingSoon: false,
     requiredFields: ['fullName', 'dateOfBirth', 'timeOfBirth', 'placeOfBirth'],
     optionalFields: ['faceImage'],
     supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
     maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 40,
-    apiEndpoint: '/api/tools/bazi/analysis',
-    description: 'Chinese Four Pillars of Destiny',
+    analysisTime: 45,
+    apiEndpoint: '/api/tools/ziwei-dou-shu/generate-report',
+    description: 'Purple Star Astrology (紫微斗數) – 12 palaces, 14 major stars, Four Transformations',
     icon: '🏮',
-    popularityScore: 57 // Tier 2 (as part of Chinese Astrology)
+    popularityScore: 55 // Tier 2
+  },
+  'bazi': {
+    slug: 'bazi',
+    name: 'BaZi (Four Pillars)',
+    category: 'Chinese',
+    isPremium: false,
+    isComingSoon: false,
+    requiredFields: ['fullName', 'dateOfBirth', 'timeOfBirth', 'placeOfBirth'],
+    apiEndpoint: '/api/tools/bazi/analysis',
+    description: 'Four Pillars of Destiny (八字) – Heavenly Stems, Earthly Branches, Day Master, Luck Pillars',
+    icon: '🏮',
+    popularityScore: 52 // Tier 2
   },
   'vastu': {
     slug: 'vastu',
@@ -885,39 +897,6 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
     redirectTo: 'energy-healing'
   },
 
-  // Advanced Divination (New)
-  'scrying': {
-    slug: 'scrying',
-    name: 'Scrying',
-    category: 'Divination',
-    isPremium: true,
-    isComingSoon: false,
-    requiredFields: ['fullName', 'question'],
-    optionalFields: ['faceImage'],
-    supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
-    maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 30,
-    apiEndpoint: '/api/tools/scrying/reading',
-    description: 'Crystal ball and mirror scrying',
-    icon: '🪞',
-    popularityScore: 17 // Tier 5
-  },
-  'crystal-ball': {
-    slug: 'crystal-ball',
-    name: 'Crystal Ball',
-    category: 'Divination',
-    isPremium: true,
-    isComingSoon: false,
-    requiredFields: ['fullName', 'question'],
-    optionalFields: ['faceImage'],
-    supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
-    maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 25,
-    apiEndpoint: '/api/tools/scrying/reading',
-    description: 'Crystal ball divination (Part of Scrying)',
-    icon: '🪞',
-    redirectTo: 'scrying'
-  },
   'tea-leaf-reading': {
     slug: 'tea-leaf-reading',
     name: 'Tea Leaf Reading',
@@ -1003,40 +982,6 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
     hideFromMainList: true, // Hidden - calculation tool, not a divination method
     popularityScore: 0 // Backend tool
   },
-  'iztro': {
-    slug: 'iztro',
-    name: 'Zi Wei Dou Shu (紫微斗数)',
-    category: 'Chinese',
-    isPremium: true,
-    isComingSoon: false,
-    requiredFields: ['fullName', 'dateOfBirth', 'timeOfBirth'],
-    optionalFields: ['faceImage'],
-    supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
-    maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 50,
-    apiEndpoint: '/api/tools/chinese-astrology/analysis', // Redirects to consolidated page
-    description: 'Ancient Chinese Purple Star Astrology - The Emperor\'s Astrology (Merged with Chinese Astrology)',
-    icon: '👑',
-    redirectTo: 'chinese-astrology', // Indicates this tool redirects to another
-    hideFromMainList: true, // Hidden - merged into Chinese Astrology
-    popularityScore: 57 // Tier 2 (same as Chinese Astrology)
-  },
-  'chinese-astrology': {
-    slug: 'chinese-astrology',
-    name: 'Chinese Astrology (Zi Wei Dou Shu)',
-    category: 'Astrology',
-    isPremium: false,
-    isComingSoon: false,
-    requiredFields: ['dateOfBirth', 'timeOfBirth', 'placeOfBirth', 'gender'],
-    optionalFields: ['faceImage'],
-    supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
-    maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 45,
-    apiEndpoint: '/api/tools/chinese-astrology/analysis',
-    description: '紫微斗数 - Traditional Chinese Purple Star Astrology with 12 palaces and fortune cycles',
-    icon: '👑',
-    popularityScore: 57 // Tier 2
-  },
   'sortilege': {
     slug: 'sortilege',
     name: 'Sortilege Divination',
@@ -1072,7 +1017,7 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
   'daily-decisions': {
     slug: 'daily-decisions',
     name: 'Daily Decisions',
-    category: 'Astrology',
+    category: 'Indian',
     isPremium: false,
     isComingSoon: false,
     requiredFields: ['fullName', 'dateOfBirth', 'timeOfBirth', 'placeOfBirth'],
@@ -1085,23 +1030,74 @@ export const TOOL_CONFIGS: Record<string, ToolConfig> = {
     icon: '📅',
     popularityScore: 60 // Tier 2
   },
+  'scrying': {
+    slug: 'scrying',
+    name: 'Scrying',
+    category: 'Divination',
+    isPremium: false,
+    isComingSoon: false,
+    requiredFields: ['fullName', 'dateOfBirth'],
+    optionalFields: ['faceImage'],
+    supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    maxImageSize: 5 * 1024 * 1024,
+    analysisTime: 25,
+    apiEndpoint: '/api/tools/scrying/generate-report',
+    description: 'Crystal, mirror, water, and fire divination — symbolic introspection and archetype-based guidance',
+    icon: '🔮',
+    popularityScore: 50 // Tier 3
+  },
   'bibliomancy': {
     slug: 'bibliomancy',
     name: 'Bibliomancy',
     category: 'Divination',
-    isPremium: true,
+    isPremium: false,
     isComingSoon: false,
-    requiredFields: ['fullName', 'question'],
+    requiredFields: ['fullName', 'dateOfBirth'],
     optionalFields: ['faceImage'],
     supportedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
     maxImageSize: 5 * 1024 * 1024,
-    analysisTime: 30,
-    apiEndpoint: '/api/tools/bibliomancy/reading',
-    description: 'Sacred Text Divination - Guidance through Bible, Quran, Bhagavad Gita, and more',
+    analysisTime: 25,
+    apiEndpoint: '/api/tools/bibliomancy/generate-report',
+    description: 'Sacred text divination — Bible, Quran, Bhagavad Gita, Torah, and Hafez for symbolic reflection',
     icon: '📖',
-    popularityScore: 12 // Tier 5
+    popularityScore: 48 // Tier 3
   }
 };
+
+/** Slugs of all tools in the Astrology category (for "Back to Astrology" navigation). */
+export const ASTROLOGY_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Astrology')
+  .map(([slug]) => slug);
+
+/** Slugs of all tools in the Divination category (for "Back to Divination" navigation). */
+export const DIVINATION_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Divination')
+  .map(([slug]) => slug);
+
+/** Slugs of all tools in the Numerology category (for "Back to Numbers" navigation). */
+export const NUMEROLOGY_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Numerology')
+  .map(([slug]) => slug);
+
+/** Slugs of all tools in the Reading category (for "Back to Reading" navigation). */
+export const READING_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Reading')
+  .map(([slug]) => slug);
+
+/** Slugs of all tools in the Chinese category (for "Back to Chinese" navigation). */
+export const CHINESE_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Chinese')
+  .map(([slug]) => slug);
+
+/** Slugs of all tools in the Remedies category (for "Back to Remedies" navigation). */
+export const REMEDIES_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Remedies')
+  .map(([slug]) => slug);
+
+/** Slugs of all tools in the Indian category (for "Back to Indian" navigation). */
+export const INDIAN_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Indian')
+  .map(([slug]) => slug);
 
 export class ToolManager {
   private static instance: ToolManager;

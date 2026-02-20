@@ -6,7 +6,7 @@ import { devLog } from '@/lib/devLogger'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId } = body
+    const { userId, userProfile: providedProfile } = body
 
     if (!userId) {
       return NextResponse.json(
@@ -17,21 +17,24 @@ export async function POST(request: NextRequest) {
 
     devLog.info('📚 Generating Akashic Records reading for user:', userId, 'akashic')
 
-    // Fetch user profile
-    let userProfile = null
-    try {
-      userProfile = await getUserProfile(userId)
-      if (userProfile) {
-        devLog.debug('👤 User profile loaded:', {
-          displayName: userProfile.displayName,
-          hasBirthDate: !!userProfile.birthDate,
-          hasBirthTime: !!userProfile.birthTime,
-          hasBirthPlace: !!userProfile.birthPlace
-        }, 'akashic')
+    // Use profile from pipeline when provided (reliable); otherwise fetch
+    let userProfile = providedProfile ?? null
+    if (!userProfile) {
+      try {
+        userProfile = await getUserProfile(userId)
+        if (userProfile) {
+          devLog.debug('👤 User profile loaded:', {
+            displayName: userProfile.displayName,
+            hasBirthDate: !!userProfile.birthDate,
+            hasBirthTime: !!userProfile.birthTime,
+            hasBirthPlace: !!userProfile.birthPlace
+          }, 'akashic')
+        }
+      } catch (profileError) {
+        devLog.warn('⚠️ Failed to fetch user profile (continuing with basic reading):', profileError, 'akashic')
       }
-    } catch (profileError) {
-      devLog.warn('⚠️ Failed to fetch user profile (continuing with basic reading):', profileError, 'akashic')
-      // Continue - will generate basic reading
+    } else {
+      devLog.debug('👤 Using profile from request (pipeline)', undefined, 'akashic')
     }
 
     // Check profile completeness

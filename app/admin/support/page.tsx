@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/use-auth'
-import { Header } from '@/components/header'
 import { Button } from '@/components/ui/button'
 import { MessageSquare, Crown, Loader2, Send, Star, Image, ExternalLink, ChevronLeft, Sparkles } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -158,7 +157,6 @@ export default function AdminSupportPage() {
   if (!isAdmin && !isSuperadmin) {
     return (
       <div className="min-h-screen flex flex-col starfield-ultra-sharp items-center justify-center">
-        <Header />
         <Card className="w-96 bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
           <CardContent className="p-6 text-center">
             <Crown className="w-12 h-12 text-amber-400 mx-auto mb-4" />
@@ -174,7 +172,6 @@ export default function AdminSupportPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <Header />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-20">
         <Link
           href="/admin/dashboard"

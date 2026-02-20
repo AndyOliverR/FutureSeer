@@ -311,209 +311,138 @@ export function NakshatraAnalysis({ nakshatraAnalysis, chartData, className = ""
         {/* Insights Tab */}
         <TabsContent value="insights" className="space-y-6">
           {/* Dominant Patterns */}
-          <Card className="bg-slate-900/50 border-white/10 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-transparent flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Dominant Patterns
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <p className="text-slate-400 text-xs mb-2">Dominant Element</p>
-                  <Badge className={`bg-gradient-to-r ${ELEMENT_COLORS[analysis.nakshatraInsights?.dominantElement] || 'from-gray-500 to-slate-500'} text-white`}>
-                    {analysis.nakshatraInsights?.dominantElement || 'Unknown'}
-                  </Badge>
-                </div>
-                <div className="text-center">
-                  <p className="text-slate-400 text-xs mb-2">Dominant Quality</p>
-                  <Badge className={`bg-gradient-to-r ${QUALITY_COLORS[analysis.nakshatraInsights?.dominantQuality] || 'from-gray-500 to-slate-500'} text-white`}>
-                    {analysis.nakshatraInsights?.dominantQuality?.split(' ')[0] || 'Unknown'}
-                  </Badge>
-                </div>
-                <div className="text-center">
-                  <p className="text-slate-400 text-xs mb-2">Dominant Caste</p>
-                  <Badge variant="outline" className="text-white border-amber-400">
-                    {analysis.nakshatraInsights?.dominantCaste || 'Unknown'}
-                  </Badge>
-                </div>
-                <div className="text-center">
-                  <p className="text-slate-400 text-xs mb-2">Dominant Nature</p>
-                  <Badge variant="outline" className="text-white border-amber-400">
-                    {analysis.nakshatraInsights?.dominantNature || 'Unknown'}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <DevotionistStyleCard
+            icon={<TrendingUp className="w-5 h-5" />}
+            title="Dominant Patterns"
+            summary="Your chart's nakshatra emphasis by element, quality, caste, and nature"
+            items={[
+              { text: `Element: ${analysis.nakshatraInsights?.dominantElement || '—'}`, highlight: true },
+              { text: `Quality: ${analysis.nakshatraInsights?.dominantQuality?.split(' ')[0] || '—'}` },
+              { text: `Caste: ${analysis.nakshatraInsights?.dominantCaste || '—'}` },
+              { text: `Nature: ${analysis.nakshatraInsights?.dominantNature || '—'}` }
+            ]}
+            colorScheme="amber"
+            variant="callout"
+          />
 
           {/* Nakshatra Distribution */}
-          <Card className="bg-slate-900/50 border-white/10 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-transparent flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Nakshatra Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {Object.entries(analysis.nakshatraSummary?.nakshatraDistribution || {}).map(([nakshatra, count]) => (
-                  <div key={nakshatra} className="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
-                    <span className="text-white text-sm font-medium">{nakshatra}</span>
-                    <Badge variant="outline" className="text-amber-400 border-amber-400">
-                      {count}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <DevotionistStyleCard
+            icon={<BarChart3 className="w-5 h-5" />}
+            title="Nakshatra Distribution"
+            summary="Planets per lunar mansion"
+            colorScheme="blue"
+            variant="callout"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(analysis.nakshatraSummary?.nakshatraDistribution || {}).map(([nakshatra, count]) => (
+              <DevotionistStyleCard
+                key={nakshatra}
+                icon={<Star className="w-4 h-4" />}
+                title={nakshatra}
+                summary={`${count} planet${count !== 1 ? 's' : ''}`}
+                colorScheme="blue"
+                variant="default"
+              />
+            ))}
+          </div>
 
           {/* Nakshatra Summary */}
-          <Card className="bg-slate-900/50 border-white/10 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold bg-gradient-to-r from-amber-400 to-yellow-500 bg-clip-text text-transparent flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Nakshatra Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                  <div className="text-2xl font-bold text-amber-400">{analysis.nakshatraSummary?.totalNakshatras || 0}</div>
-                  <div className="text-sm text-slate-400">Total Planets</div>
-                </div>
-                <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-400">{analysis.nakshatraSummary?.uniqueNakshatras || 0}</div>
-                  <div className="text-sm text-slate-400">Unique Nakshatras</div>
-                </div>
-                <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                  <div className="text-lg font-bold text-green-400">{analysis.nakshatraSummary?.mostFrequentNakshatra || 'None'}</div>
-                  <div className="text-sm text-slate-400">Most Frequent</div>
-                </div>
-                <div className="text-center p-4 bg-slate-800/50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-400">{Object.keys(analysis.nakshatraSummary?.nakshatraDistribution || {}).length}</div>
-                  <div className="text-sm text-slate-400">Nakshatra Types</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <DevotionistStyleCard
+            icon={<Activity className="w-5 h-5" />}
+            title="Nakshatra Summary"
+            summary="Overview of your lunar mansion placements"
+            items={[
+              { text: `Total planets: ${analysis.nakshatraSummary?.totalNakshatras ?? 0}`, highlight: true },
+              { text: `Unique nakshatras: ${analysis.nakshatraSummary?.uniqueNakshatras ?? 0}` },
+              { text: `Most frequent: ${analysis.nakshatraSummary?.mostFrequentNakshatra || '—'}` },
+              { text: `Nakshatra types: ${Object.keys(analysis.nakshatraSummary?.nakshatraDistribution || {}).length}` }
+            ]}
+            colorScheme="purple"
+            variant="callout"
+          />
 
-          {/* Detailed Life Path Insights for Moon Nakshatra */}
-          <Card className="bg-slate-900/50 border-white/10 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <Moon className="w-5 h-5" />
-                Moon in {analysis.moonNakshatra?.nakshatra?.englishName} - Life Path Insights
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {moonNakshatraData && (
-                <>
-                  <div>
-                    <h4 className="text-amber-200 font-semibold mb-2">Career & Profession</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {moonNakshatraData.career.map((item, idx) => (
-                        <Badge key={idx} className="bg-blue-900/50 text-blue-200 border-blue-500/30">
-                          {item}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-amber-200 font-semibold mb-2">Health & Wellness</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {moonNakshatraData.health.map((item, idx) => (
-                        <Badge key={idx} className="bg-green-900/50 text-green-200 border-green-500/30">
-                          {item}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-amber-200 font-semibold mb-2">Strengths</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {moonNakshatraData.strengths.map((item, idx) => (
-                        <Badge key={idx} className="bg-emerald-900/50 text-emerald-200 border-emerald-500/30">
-                          {item}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-amber-200 font-semibold mb-2">Relationships</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {moonNakshatraData.relationships.map((item, idx) => (
-                        <Badge key={idx} className="bg-pink-900/50 text-pink-200 border-pink-500/30">
-                          {item}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {/* Moon Nakshatra - Life Path Insights */}
+          <DevotionistStyleCard
+            icon={<Moon className="w-5 h-5" />}
+            title={`Moon in ${analysis.moonNakshatra?.nakshatra?.englishName || '—'} — Life Path Insights`}
+            summary="Emotional nature and life direction from your birth nakshatra"
+            colorScheme="purple"
+            variant="callout"
+          />
+          {moonNakshatraData && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DevotionistStyleCard
+                icon={<Target className="w-4 h-4" />}
+                title="Career & Profession"
+                items={moonNakshatraData.career.map((text) => ({ text, type: 'neutral' as const }))}
+                colorScheme="blue"
+                variant="default"
+              />
+              <DevotionistStyleCard
+                icon={<Activity className="w-4 h-4" />}
+                title="Health & Wellness"
+                items={moonNakshatraData.health.map((text) => ({ text, type: 'neutral' as const }))}
+                colorScheme="green"
+                variant="default"
+              />
+              <DevotionistStyleCard
+                icon={<Shield className="w-4 h-4" />}
+                title="Strengths"
+                items={moonNakshatraData.strengths.map((text) => ({ text, type: 'positive' as const }))}
+                colorScheme="green"
+                variant="default"
+              />
+              <DevotionistStyleCard
+                icon={<Users className="w-4 h-4" />}
+                title="Relationships"
+                items={moonNakshatraData.relationships.map((text) => ({ text, type: 'neutral' as const }))}
+                colorScheme="pink"
+                variant="default"
+              />
+            </div>
+          )}
 
-          {/* Detailed Core Identity Insights for Sun Nakshatra if different */}
+          {/* Sun Nakshatra - Core Identity Insights (when different from Moon) */}
           {analysis.sunNakshatra?.nakshatra?.englishName !== analysis.moonNakshatra?.nakshatra?.englishName && sunNakshatraData && (
-            <Card className="bg-slate-900/50 border-white/10 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Sun className="w-5 h-5" />
-                  Sun in {analysis.sunNakshatra?.nakshatra?.englishName} - Core Identity Insights
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h4 className="text-amber-200 font-semibold mb-2">Career & Profession</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {sunNakshatraData.career.map((item, idx) => (
-                      <Badge key={idx} className="bg-blue-900/50 text-blue-200 border-blue-500/30">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-amber-200 font-semibold mb-2">Health & Wellness</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {sunNakshatraData.health.map((item, idx) => (
-                      <Badge key={idx} className="bg-green-900/50 text-green-200 border-green-500/30">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-amber-200 font-semibold mb-2">Strengths</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {sunNakshatraData.strengths.map((item, idx) => (
-                      <Badge key={idx} className="bg-emerald-900/50 text-emerald-200 border-emerald-500/30">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-amber-200 font-semibold mb-2">Relationships</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {sunNakshatraData.relationships.map((item, idx) => (
-                      <Badge key={idx} className="bg-pink-900/50 text-pink-200 border-pink-500/30">
-                        {item}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <>
+              <DevotionistStyleCard
+                icon={<Sun className="w-5 h-5" />}
+                title={`Sun in ${analysis.sunNakshatra?.nakshatra?.englishName} — Core Identity Insights`}
+                summary="Core identity and life purpose from your Sun's nakshatra"
+                colorScheme="amber"
+                variant="callout"
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <DevotionistStyleCard
+                  icon={<Target className="w-4 h-4" />}
+                  title="Career & Profession"
+                  items={sunNakshatraData.career.map((text) => ({ text, type: 'neutral' as const }))}
+                  colorScheme="blue"
+                  variant="default"
+                />
+                <DevotionistStyleCard
+                  icon={<Activity className="w-4 h-4" />}
+                  title="Health & Wellness"
+                  items={sunNakshatraData.health.map((text) => ({ text, type: 'neutral' as const }))}
+                  colorScheme="green"
+                  variant="default"
+                />
+                <DevotionistStyleCard
+                  icon={<Shield className="w-4 h-4" />}
+                  title="Strengths"
+                  items={sunNakshatraData.strengths.map((text) => ({ text, type: 'positive' as const }))}
+                  colorScheme="green"
+                  variant="default"
+                />
+                <DevotionistStyleCard
+                  icon={<Users className="w-4 h-4" />}
+                  title="Relationships"
+                  items={sunNakshatraData.relationships.map((text) => ({ text, type: 'neutral' as const }))}
+                  colorScheme="pink"
+                  variant="default"
+                />
+              </div>
+            </>
           )}
         </TabsContent>
       </Tabs>

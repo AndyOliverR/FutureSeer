@@ -27,9 +27,9 @@ import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
-import { updateUserProfile } from '@/lib/firebase'
-import { Header } from '@/components/header'
+import { updateUserProfile, getFirebaseStorage } from '@/lib/firebase'
 import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 interface ProfileData {
   // Step 1: Basic Info
@@ -210,8 +210,7 @@ export default function ProfileSetupPage() {
     setIsLoading(true)
     
     try {
-      // Save profile data to Firebase
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         displayName: profileData.displayName || profileData.fullName,
         fullName: profileData.fullName,
         birthDate: profileData.birthDate,
@@ -219,12 +218,38 @@ export default function ProfileSetupPage() {
         birthPlace: profileData.birthPlace,
       }
       
-      // Only add gender if it's selected
       if (profileData.gender) {
         updateData.gender = profileData.gender as 'male' | 'female' | 'non-binary'
       }
+
+      // Upload face and palm photos to Firebase Storage so generate-mystical can use them
+      const storage = getFirebaseStorage()
+      if (storage && profileData.facePhoto) {
+        try {
+          const faceExt = profileData.facePhoto.name.split('.').pop()?.toLowerCase() || 'jpg'
+          const facePath = `users/${user.uid}/profile/face_${Date.now()}.${faceExt}`
+          const faceRef = ref(storage, facePath)
+          await uploadBytes(faceRef, profileData.facePhoto, { contentType: profileData.facePhoto.type })
+          const faceUrl = await getDownloadURL(faceRef)
+          updateData.facePhotoUrl = faceUrl
+        } catch (uploadErr) {
+          devLog.warn('Face photo upload failed, profile will save without it:', uploadErr, 'page')
+        }
+      }
+      if (storage && profileData.palmPhoto) {
+        try {
+          const palmExt = profileData.palmPhoto.name.split('.').pop()?.toLowerCase() || 'jpg'
+          const palmPath = `users/${user.uid}/profile/palm_${Date.now()}.${palmExt}`
+          const palmRef = ref(storage, palmPath)
+          await uploadBytes(palmRef, profileData.palmPhoto, { contentType: profileData.palmPhoto.type })
+          const palmUrl = await getDownloadURL(palmRef)
+          updateData.palmPhotoUrl = palmUrl
+        } catch (uploadErr) {
+          devLog.warn('Palm photo upload failed, profile will save without it:', uploadErr, 'page')
+        }
+      }
       
-      await updateUserProfile(user.uid, updateData)
+      await updateUserProfile(user.uid, updateData as Parameters<typeof updateUserProfile>[1])
       
       // Generate comprehensive astrological profile with single AstroApp API call
       devLog.debug('🌟 Generating comprehensive astrological profile...')
@@ -639,18 +664,17 @@ export default function ProfileSetupPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp pt-16" data-onboarding="profile">
-      <Header />
       <div className="relative z-10 px-3 sm:px-4 md:px-6 py-4 max-w-4xl mx-auto">
         {/* Back Navigation */}
         <div className="mb-8">
           <Link
-            href="/dashboard"
+            href="/ask-the-seer"
             className="inline-flex items-center gap-3 text-amber-400 hover:text-amber-400/80 m3-transition-standard group"
           >
             <div className="p-2 rounded-full bg-[var(--m3-primary-container)] border border-[var(--m3-primary)]/20 group-hover:bg-[var(--m3-primary-container)]/80 group-hover:border-[var(--m3-primary)]/40 m3-transition-standard">
               <ArrowLeft className="w-4 h-4 text-[var(--m3-primary)] group-hover:-translate-x-1 m3-transition-standard" />
             </div>
-            <span className="m3-label-large">Back to Dashboard</span>
+            <span className="m3-label-large">Back</span>
           </Link>
         </div>
         {/* Progress Bar */}

@@ -4,6 +4,10 @@ const nextConfig = {
   // Use webpack instead of Turbopack (project has custom webpack config)
   turbopack: {},
   webpack: (config, { dev, isServer }) => {
+    // In CI/sandbox, disable filesystem cache to avoid EPERM on rename
+    if (process.env.CI === 'true' || process.env.DISABLE_WEBPACK_CACHE === '1') {
+      config.cache = false;
+    }
     // Suppress source map warnings for Firebase Admin SDK
     config.ignoreWarnings = [
       ...(config.ignoreWarnings || []),
@@ -90,6 +94,12 @@ const nextConfig = {
   onDemandEntries: {
     maxInactiveAge: 60 * 1000, // Keep pages in memory longer (60 seconds)
     pagesBufferLength: 5, // Increase buffer to reduce recompilations
+  },
+  // I Ching: canonical URL is /tools/iching; redirect /tools/i-ching so both work (no duplicate page)
+  async redirects() {
+    return [
+      { source: '/tools/i-ching', destination: '/tools/iching', permanent: true },
+    ];
   },
   // Add security headers to fix Cross-Origin-Opener-Policy warnings
   async headers() {

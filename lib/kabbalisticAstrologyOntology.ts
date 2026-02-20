@@ -46,7 +46,7 @@ export function getSignIndex(signName: string): number {
 }
 
 // ─── Planet → Sefirah ──────────────────────────────────────────────────────
-/** Classical planet-to-Sefirah mapping (Tree of Life). */
+/** Classical planet-to-Sefirah mapping (Tree of Life). Extended with outer planets and Ascendant/Earth. */
 export const PLANET_SEFIROT: Record<string, { sefirah: string; pillar: string; archetype: string }> = {
   Sun: { sefirah: 'Tiferet', pillar: 'Middle', archetype: 'Harmonized Self' },
   Moon: { sefirah: 'Yesod', pillar: 'Middle', archetype: 'Foundation' },
@@ -55,9 +55,66 @@ export const PLANET_SEFIROT: Record<string, { sefirah: string; pillar: string; a
   Mars: { sefirah: 'Gevurah', pillar: 'Left', archetype: 'Severity' },
   Jupiter: { sefirah: 'Chesed', pillar: 'Right', archetype: 'Mercy' },
   Saturn: { sefirah: 'Binah', pillar: 'Left', archetype: 'Understanding' },
+  Uranus: { sefirah: 'Chokmah', pillar: 'Right', archetype: 'Wisdom' },
+  Neptune: { sefirah: 'Keter', pillar: 'Middle', archetype: 'Crown' },
+  Ascendant: { sefirah: 'Malkuth', pillar: 'Middle', archetype: 'Kingdom' },
+  Earth: { sefirah: 'Malkuth', pillar: 'Middle', archetype: 'Kingdom' },
 };
 
-// ─── Decan → Angel (36 decans, 72 Names tradition) ─────────────────────────
+// ─── Sign / Planet → Hebrew Letter (Sefer Yetzirah / Mazal DNA) ─────────────
+/** Zodiac sign → Hebrew letter (Sefer Yetzirah tradition). */
+export const SIGN_HEBREW_LETTER: Record<string, string> = {
+  Aries: 'Hei', Taurus: 'Vav', Gemini: 'Zayin', Cancer: 'Chet', Leo: 'Tet', Virgo: 'Yod',
+  Libra: 'Lamed', Scorpio: 'Nun', Sagittarius: 'Samech', Capricorn: 'Ayin', Aquarius: 'Tzadi', Pisces: 'Kuf'
+};
+
+/** Classical ruler of sign → Hebrew letter (letter of planet for Mazal). */
+export const PLANET_RULER_LETTER: Record<string, string> = {
+  Mars: 'Bet', Venus: 'Dalet', Mercury: 'Resh', Moon: 'Gimel', Sun: 'Tet',
+  Jupiter: 'Kaf', Saturn: 'Tav', Uranus: 'Tzadi', Neptune: 'Kuf'
+};
+
+/** Get letter of the sign (zodiac constellation). */
+export function getLetterOfSign(signName: string): string {
+  return SIGN_HEBREW_LETTER[signName || ''] || 'Unknown';
+}
+
+/** Get letter of the planet (ruler of Sun sign). Sun sign's ruler → letter. */
+export function getLetterOfPlanetForSign(signName: string): string {
+  const ruler: Record<string, string> = {
+    Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon', Leo: 'Sun',
+    Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars', Sagittarius: 'Jupiter',
+    Capricorn: 'Saturn', Aquarius: 'Uranus', Pisces: 'Neptune'
+  };
+  const p = ruler[signName || ''];
+  return p ? (PLANET_RULER_LETTER[p] || 'Unknown') : 'Unknown';
+}
+
+// ─── 72 Names of God (Shem HaMephorash) ────────────────────────────────────
+/** 72 Names of God: 5° per segment (0°–5° = 1, 5°–10° = 2, …). Standard list from Exodus 14:19–21. */
+export const NAMES_72: readonly string[] = [
+  'Vehuiah', 'Jeliel', 'Sitael', 'Elemiah', 'Mahasiah', 'Lelahel',
+  'Achaiah', 'Cahethel', 'Haziel', 'Aladiah', 'Lauviah', 'Hahaiah',
+  'Iezalel', 'Mebahel', 'Hariel', 'Hekamiah', 'Asaliah', 'Caliel',
+  'Leuviah', 'Pahaliah', 'Nelchael', 'Yeiayel', 'Melahel', 'Haheuiah',
+  'Nith-Haiah', 'Haaiah', 'Yeratel', 'Seheiah', 'Reiyel', 'Omael',
+  'Lecabel', 'Vasariah', 'Yehuiah', 'Lehahiah', 'Chavakiah', 'Menadel',
+  'Aniel', 'Haamiah', 'Rehael', 'Ieiazel', 'Hahahel', 'Mikael',
+  'Veualiah', 'Yelaiah', 'Sealiah', 'Ariel', 'Ashael', 'Mihael',
+  'Vehuel', 'Daniel', 'Hahasiah', 'Imamiah', 'Nanael', 'Nithael',
+  'Mebahiah', 'Poyel', 'Nemamiah', 'Yeialel', 'Harahel', 'Mitzrael',
+  'Umabel', 'Iahhel', 'Anauel', 'Mehiel', 'Damabiah', 'Manakel',
+  'Eiael', 'Habuiah', 'Rochel', 'Ibamiah', 'Haiaiel', 'Mumiah'
+];
+
+/** Get 72 Name of God by ecliptic longitude (0–360). Index 1-based for display, 0-based internally. */
+export function get72NameFromLongitude(longitude: number): { index: number; name: string } {
+  const lon = ((Number(longitude) ?? 0) % 360 + 360) % 360;
+  const idx = Math.min(71, Math.floor(lon / 5));
+  return { index: idx + 1, name: NAMES_72[idx] ?? 'Unknown' };
+}
+
+// ─── Decan → Angel (36 decans) ─────────────────────────────────────────────
 /** Primary angel for each decan (36 decans = 12 signs × 3). Based on 72 Names / Shem HaMephorash. */
 const DECAN_ANGELS: string[] = [
   'Vehuiah', 'Jeliel', 'Sitael', 'Elemiah', 'Mahasiah', 'Lelahel',
@@ -137,4 +194,36 @@ export function getDeficientElement(dist: ElementDistribution): string {
   const entries = Object.entries(dist) as [keyof ElementDistribution, number][];
   const min = entries.reduce((a, b) => (a[1] <= b[1] ? a : b), entries[0]);
   return min ? min[0].charAt(0).toUpperCase() + min[0].slice(1) : 'Unknown';
+}
+
+// ─── Sephirotic activation (for report context) ───────────────────────────
+export interface SephiroticActivation {
+  counts: Record<string, number>;
+  dominant: string[];
+  underdeveloped: string[];
+}
+
+const ALL_SEFIROT = ['Keter', 'Chokmah', 'Binah', 'Chesed', 'Gevurah', 'Tiferet', 'Netzach', 'Hod', 'Yesod', 'Malkuth'];
+
+/** Given planets (with name and optional house), return per-Sefirah counts and dominant/underdeveloped. */
+export function computeSephiroticActivation(
+  planets: Array<{ name?: string; house?: number }>
+): SephiroticActivation {
+  const counts: Record<string, number> = {};
+  for (const s of ALL_SEFIROT) counts[s] = 0;
+
+  for (const p of planets || []) {
+    const name = (p.name || '').trim();
+    if (!name) continue;
+    const mapping = PLANET_SEFIROT[name];
+    if (mapping?.sefirah) counts[mapping.sefirah] = (counts[mapping.sefirah] ?? 0) + 1;
+  }
+
+  const entries = Object.entries(counts).filter(([, n]) => n >= 0);
+  const maxCount = Math.max(0, ...entries.map(([, n]) => n));
+  const minCount = Math.min(...entries.map(([, n]) => n), 10);
+  const dominant = entries.filter(([, n]) => n === maxCount && n > 0).map(([s]) => s);
+  const underdeveloped = entries.filter(([, n]) => n === minCount).map(([s]) => s);
+
+  return { counts, dominant, underdeveloped };
 }

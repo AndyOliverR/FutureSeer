@@ -35,6 +35,7 @@ import { KPAnalysis as KPIntelligenceAnalysis } from "@/lib/kpAstrologyIntellige
 import { useAuth } from "@/hooks/use-auth"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { ToolReportGuard } from '@/components/ToolReportGuard'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
 
 const CHART_CANVAS_W = 450
@@ -275,7 +276,7 @@ const transformKPPlanetsForChart = (planetaryPositions: any[]): Array<{ name: st
 }
 
 interface KPAnalysis {
-  basicInfo: {
+  basicInfo?: {
     name: string;
     dateOfBirth: string;
     timeOfBirth: string;
@@ -312,9 +313,73 @@ interface KPAnalysis {
   };
   isRealData?: boolean;
   rawAstroAppData?: any;
-  ascendant?: string;
+  ascendant?: string | { sign: string; degree: number; subLord: string; starLord: string; nakshatra: string; nakshatraLord: string };
   moonSign?: string;
   sunSign?: string;
+  // Native KP pipeline shape (from kpAstrologyIntelligence.analyzeChart)
+  cusps?: Array<{ house: number; sign: string; degree: number; subLord: string; starLord: string; nakshatra: string; nakshatraLord: string }>;
+  planets?: Array<{ name: string; sign: string; degree: number; subLord: string; starLord: string; house: number; nakshatra: string; nakshatraLord: string }>;
+  timingAnalysis?: { dasha: string; antardasha: string; pratyantardasha: string; currentPeriod: string; nextPeriod: string };
+  subLords?: Array<{ planet: string; subLords: string[]; significations: string[] }>;
+  significations?: { career: string[]; relationships: string[]; health: string[]; wealth: string[]; education: string[]; travel: string[] };
+  predictions?: { shortTerm: string; mediumTerm: string; longTerm: string; remedies: Array<{ type: string; planet: string; name: string; description: string; instructions: string[]; benefits: string[]; frequency?: string; explanation: string; priority: string }> };
+}
+
+/** Map native KP analysis (from pipeline) to rawAstroAppData shape expected by chart tabs and transform. */
+function nativeKPAnalysisToRawAstroAppData(native: KPIntelligenceAnalysis): Record<string, unknown> {
+  return {
+    ascendant: native.ascendant,
+    planetary_positions: (native.planets || []).map((p) => ({
+      planet: p.name,
+      sign: p.sign,
+      degree: p.degree,
+      house: p.house,
+      nakshatra: p.nakshatra,
+      sublord: p.subLord,
+      nakshatraLord: p.nakshatraLord,
+      starLord: p.starLord,
+    })),
+    house_analysis: (native.cusps || []).map((c) => ({
+      house: c.house,
+      sign: c.sign,
+      degree: c.degree,
+      sublord: c.subLord,
+      starLord: c.starLord,
+      nakshatra: c.nakshatra,
+      nakshatraLord: c.nakshatraLord,
+    })),
+    sublord_analysis: {
+      sublords: (native.subLords || []).map((sl) => ({
+        planet: sl.planet,
+        sublord: sl.subLords?.[0] ?? sl.planet,
+        influence: (sl.significations || []).join(', '),
+      })),
+    },
+    dasha_forecast: [
+      {
+        planet: native.timingAnalysis?.dasha ?? 'Moon',
+        antardasha: native.timingAnalysis?.antardasha ?? 'Sun',
+        pratyantardasha: native.timingAnalysis?.pratyantardasha ?? 'Mars',
+        description: native.timingAnalysis?.currentPeriod ?? 'Current dasha period',
+        nextPeriod: native.timingAnalysis?.nextPeriod ?? 'Next dasha period',
+      },
+    ],
+    significations: native.significations || {},
+    predictions: native.predictions
+      ? { shortTerm: native.predictions.shortTerm, mediumTerm: native.predictions.mediumTerm, longTerm: native.predictions.longTerm }
+      : {},
+    remedies: (native.predictions?.remedies || []).map((r) => ({
+      type: r.type,
+      planet: r.planet,
+      name: r.name,
+      description: r.description,
+      instructions: r.instructions,
+      benefits: r.benefits,
+      frequency: r.frequency,
+      explanation: r.explanation,
+      priority: r.priority,
+    })),
+  }
 }
 
 export default function KPAstrologyPage() {
@@ -327,11 +392,25 @@ export default function KPAstrologyPage() {
     const data = (r.data ?? r) as KPAnalysis | undefined
     if (!data || typeof data !== 'object') return null
     if (data.basicInfo ?? data.rawAstroAppData ?? data.interpretations) return data
+    if (Array.isArray(data.cusps) && data.cusps.length > 0 && data.timingAnalysis) return data
     return null
   }, [pipelineReport])
   const [analysis, setAnalysis] = useState<KPAnalysis | null>(null)
   useEffect(() => {
-    if (analysisFromPipeline) setAnalysis(analysisFromPipeline)
+    if (!analysisFromPipeline) return
+    const hasNativeShape =
+      Array.isArray(analysisFromPipeline.cusps) &&
+      analysisFromPipeline.cusps.length > 0 &&
+      analysisFromPipeline.timingAnalysis
+    const hasRaw = analysisFromPipeline.rawAstroAppData
+    if (hasNativeShape && !hasRaw) {
+      setAnalysis({
+        ...analysisFromPipeline,
+        rawAstroAppData: nativeKPAnalysisToRawAstroAppData(analysisFromPipeline as KPIntelligenceAnalysis),
+      })
+    } else {
+      setAnalysis(analysisFromPipeline)
+    }
   }, [analysisFromPipeline])
   const [currentTransits, setCurrentTransits] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -349,6 +428,27 @@ export default function KPAstrologyPage() {
   const [isLoadingTransits, setIsLoadingTransits] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'chart_images' | 'planetary_positions' | 'sublord_analysis' | 'dasha_forecast' | 'remedies' | 'current_transits' | 'kp_astrology_expert'>('chart_images')
+
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }, [])
+  const motionConfig = useMemo(() => {
+    if (prefersReducedMotion) return { duration: 0 }
+    return { duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }
+  }, [prefersReducedMotion])
+  const tabsConfig = useMemo(
+    () => [
+      { value: 'chart_images', label: 'Chart Images' },
+      { value: 'planetary_positions', label: 'Planetary Positions' },
+      { value: 'sublord_analysis', label: 'Sublord Analysis' },
+      { value: 'dasha_forecast', label: 'Dasha Forecast' },
+      { value: 'remedies', label: 'Remedies' },
+      { value: 'current_transits', label: 'Current Transits' },
+      { value: 'kp_astrology_expert', label: 'Ask the Seer' },
+    ],
+    []
+  )
 
   // Check if user has complete profile
   const hasCompleteProfile = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
@@ -862,48 +962,33 @@ export default function KPAstrologyPage() {
           transition={{ duration: 0.6 }}
           className="space-y-8"
         >
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
-              <div className="flex flex-wrap gap-2 mb-6 items-center justify-center">
-              {[
-                { id: 'chart_images', label: 'Chart Images', icon: Star, description: 'KP Rasi chart with sublord positions' },
-                { id: 'planetary_positions', label: 'Planetary Positions', icon: Zap, description: 'All planets with signs, houses, and sublords' },
-                { id: 'sublord_analysis', label: 'Sublord Analysis', icon: Target, description: 'Detailed sublord breakdown and influences' },
-                { id: 'dasha_forecast', label: 'Dasha Forecast', icon: Clock, description: 'Timing periods and predictions' },
-                { id: 'remedies', label: 'Remedies', icon: Shield, description: 'KP-specific remedies and recommendations' },
-                  { id: 'current_transits', label: 'Current Transits', icon: RefreshCw, description: 'Real-time planetary influences and timing' },
-                  { id: 'kp_astrology_expert', label: 'Ask the Seer', icon: Brain, description: 'Ask questions about your KP chart analysis' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl font-medium transition-all duration-300 text-sm whitespace-nowrap flex-shrink-0 ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
-                      : 'bg-white/60 text-slate-700 hover:bg-white/80 hover:text-slate-900'
-                  }`}
-                >
-                    <tab.icon className="w-4 h-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{tab.label}</span>
-                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-                </button>
-              ))}
-            </div>
-            
-            {/* Tab Description */}
-            <div className="text-center">
-                <p className="text-slate-700 text-sm">
-                {[
-                  { id: 'chart_images', desc: 'Visual representation of your KP birth chart' },
-                  { id: 'planetary_positions', desc: 'Detailed planetary positions with sublord influences' },
-                  { id: 'sublord_analysis', desc: 'In-depth analysis of sublord energies and timing' },
-                  { id: 'dasha_forecast', desc: 'Current and upcoming planetary periods' },
-                  { id: 'remedies', desc: 'Personalized remedies for optimal life outcomes' },
-                    { id: 'current_transits', desc: 'Real-time planetary influences affecting your life' },
-                    { id: 'kp_astrology_expert', desc: 'Get personalized answers to your KP astrology questions' }
-                ].find(tab => tab.id === activeTab)?.desc}
-              </p>
-            </div>
-          </div>
+          <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full min-w-0">
+              <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+                {tabsConfig.map((tab) => (
+                  <motion.div
+                    key={tab.value}
+                    whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                    whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
+                    transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }}
+                    className="relative shrink-0"
+                  >
+                    <TabsTrigger
+                      value={tab.value}
+                      className="w-full sm:w-auto shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center relative overflow-hidden border border-transparent data-[state=inactive]:border-slate-600/50"
+                    >
+                      {tab.label}
+                      {activeTab === tab.value && (
+                        <motion.div
+                          layoutId="activeTab"
+                          className="absolute inset-0 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-t-lg rounded-b-none -z-10"
+                          transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 300, damping: 30 }}
+                        />
+                      )}
+                    </TabsTrigger>
+                  </motion.div>
+                ))}
+              </TabsList>
 
             {/* Tab Content - Show empty states when no analysis */}
             <AnimatePresence mode="wait">
@@ -1807,11 +1892,14 @@ export default function KPAstrologyPage() {
                                 )}
                               </div>
                             )}
-                            {remedy.type === 'gemstone' && (
-                              <div className="mt-3">
-                                <AffiliateLink href={getGemstoneAffiliateUrl(remedy.name || 'gemstone')} label="Buy here" className="text-amber-600" />
-                              </div>
-                            )}
+                            {remedy.type === 'gemstone' && (() => {
+                              const url = getGemstoneAffiliateUrl(remedy.name || 'gemstone')
+                              return url ? (
+                                <div className="mt-3">
+                                  <AffiliateLink href={url} label="Buy here" className="text-amber-600" />
+                                </div>
+                              ) : null
+                            })()}
                           </motion.div>
                         )
                       }).filter(Boolean)}
@@ -1970,6 +2058,8 @@ export default function KPAstrologyPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+            </Tabs>
+          </div>
         </motion.div>
         )}
       </div>

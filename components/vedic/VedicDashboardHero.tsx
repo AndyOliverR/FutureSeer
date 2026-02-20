@@ -23,6 +23,8 @@ export interface VedicDashboardHeroProps {
   userProfile: any
   chartStyle?: 'north-indian' | 'south-indian' | 'east-indian'
   vedicReading?: any
+  /** Birth or current panchanga for Tithi display */
+  panchanga?: { tithi?: { name?: string; number?: number; paksha?: string } } | null
 }
 
 // Helper to convert sign names to numbers (1-12)
@@ -46,32 +48,43 @@ function getLagnaLord(ascendantSign: string): string {
     Libra: 'Venus', Scorpio: 'Mars', Sagittarius: 'Jupiter',
     Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
   }
-  return rulers[ascendantSign] || 'Unknown'
+  return rulers[ascendantSign] || '—'
 }
 
 // Helper to format nakshatra display
 function formatNakshatra(nakshatra: string, pada?: number): string {
-  if (!nakshatra) return 'Unknown'
+  if (!nakshatra || nakshatra === 'Unknown') return '—'
   return pada ? `${nakshatra} (${pada})` : nakshatra
 }
 
-// Helper to get current Maha Dasha
-function getCurrentDasha(vedicReading: any): { planet: string; endDate: string } {
-  const dasha = vedicReading?.dasha?.currentMahaDasha
-  if (dasha) {
+// Helper to get current Maha Dasha from chart (calculated) or vedicReading
+function getCurrentDasha(chartData: any, vedicReading: any): { planet: string; endDate: string; hasData: boolean } {
+  const fromChart = chartData?.currentDasha
+  if (fromChart?.planet) {
+    const endYear = fromChart.endDate ? new Date(fromChart.endDate).getFullYear().toString() : ''
     return {
-      planet: dasha.planet || 'Unknown',
-      endDate: dasha.endDate ? new Date(dasha.endDate).getFullYear().toString() : 'Unknown'
+      planet: fromChart.planet,
+      endDate: endYear || '—',
+      hasData: true
     }
   }
-  return { planet: 'Unknown', endDate: 'Unknown' }
+  const dasha = vedicReading?.dasha?.currentMahaDasha
+  if (dasha?.planet) {
+    return {
+      planet: dasha.planet,
+      endDate: dasha.endDate ? new Date(dasha.endDate).getFullYear().toString() : '—',
+      hasData: true
+    }
+  }
+  return { planet: '—', endDate: '—', hasData: false }
 }
 
 export function VedicDashboardHero({ 
   chartData, 
   userProfile, 
   chartStyle = 'north-indian',
-  vedicReading 
+  vedicReading,
+  panchanga 
 }: VedicDashboardHeroProps) {
   const planets = chartData?.planets || []
   
@@ -79,7 +92,7 @@ export function VedicDashboardHero({
   const ascendantSignName = chartData?.ascendant?.sign || chartData?.ascendant?.signName || chartData?.lagna?.sign || 'Aries'
   const ascendantSignNumber = getSignNumber(ascendantSignName)
   const ascendantDegree = chartData?.ascendant?.degree || chartData?.ascendant?.degreeInSign || chartData?.lagna?.degree || 0
-  const ayanamsha = chartData?.ayanamsha || chartData?.metadata?.ayanamsha || 'Lahiri'
+  const ayanamsha = chartData?.ayanamsha ?? chartData?.metadata?.ayanamsha ?? 'Lahiri'
   
   // Transform planets to ensure they have numeric sign property for chart components
   const transformedPlanets = planets.map((p: any) => ({
@@ -93,17 +106,18 @@ export function VedicDashboardHero({
   const sun = planets.find((p: any) => p.name?.toLowerCase() === 'sun' || p.name?.toLowerCase() === 'surya')
   const moon = planets.find((p: any) => p.name?.toLowerCase() === 'moon' || p.name?.toLowerCase() === 'chandra')
   
-  const sunSign = sun?.signName || sun?.sign || 'Unknown'
-  const sunNakshatra = sun?.nakshatra || 'Unknown'
-  const moonSign = moon?.signName || moon?.sign || 'Unknown'
-  const moonNakshatra = moon?.nakshatra || 'Unknown'
+  const sunSign = sun?.signName || sun?.sign || '—'
+  const sunNakshatra = sun?.nakshatra || '—'
+  const moonSign = moon?.signName || moon?.sign || '—'
+  const moonNakshatra = moon?.nakshatra || '—'
   const moonPada = moon?.pada
   
   const lagnaLord = getLagnaLord(ascendantSignName)
-  const currentDasha = getCurrentDasha(vedicReading)
+  const currentDasha = getCurrentDasha(chartData, vedicReading)
   
-  // Get tithi from chart data or vedicReading
-  const tithi = chartData?.tithi || vedicReading?.panchanga?.tithi || 'Unknown'
+  // Tithi from panchanga (birth or current), then chart/vedicReading
+  const tithiRaw = panchanga?.tithi?.name ?? chartData?.tithi ?? (vedicReading?.panchanga?.tithi as string) ?? ''
+  const tithi = tithiRaw && tithiRaw !== 'Unknown' ? tithiRaw : (panchanga?.tithi?.number ? `Tithi ${panchanga.tithi.number}` : '—')
   
   return (
     <div className="space-y-6">
@@ -113,21 +127,21 @@ export function VedicDashboardHero({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="glass-card border-white/10 rounded-2xl text-white overflow-hidden">
-          <CardContent className="p-6 text-white">
+        <Card className="rounded-2xl overflow-hidden border-2 border-amber-200/80 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg">
+          <CardContent className="p-6">
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-2">
+              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-700 mb-2">
                 Your Vedic Birth Chart
               </h2>
-              <p className="text-slate-300 text-sm">
+              <p className="text-slate-600 text-sm">
                 {userProfile?.birthPlace && `Born in ${userProfile.birthPlace}`}
                 {userProfile?.birthDate && ` • ${new Date(userProfile.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
               </p>
-              <p className="text-slate-400 text-xs mt-1">
+              <p className="text-slate-500 text-xs mt-1">
                 Sidereal Zodiac • {ayanamsha} Ayanamsha
               </p>
               <p className="text-slate-500 text-xs mt-2">
-                <AffiliateLink href={getBirthChartUrl()} label="Calculate your free natal chart at Astro-Charts" className="text-amber-500/80 hover:text-amber-400" />
+                <AffiliateLink href={getBirthChartUrl()} label="Calculate your free natal chart at Astro-Charts" className="text-amber-600 hover:text-amber-700" />
               </p>
             </div>
             
@@ -135,7 +149,7 @@ export function VedicDashboardHero({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Birth Chart (D1) */}
                 <div className="flex flex-col items-center">
-                  <p className="text-amber-300 text-sm font-semibold mb-3">Birth Chart (D1)</p>
+                  <p className="text-amber-700 text-sm font-semibold mb-3">Birth Chart (D1)</p>
                   {chartStyle === 'north-indian' ? (
                     <NorthIndianVedicChart
                       planets={transformedPlanets}
@@ -156,7 +170,7 @@ export function VedicDashboardHero({
                 {/* Navamsa Chart (D9) - if available */}
                 {chartData?.navamsa && chartData.navamsa.planets && (
                   <div className="flex flex-col items-center">
-                    <p className="text-purple-300 text-sm font-semibold mb-3">Navamsa Chart (D9)</p>
+                    <p className="text-purple-700 text-sm font-semibold mb-3">Navamsa Chart (D9)</p>
                     {(() => {
                       const navamsaAscSign = getSignNumber(chartData.navamsa.ascendant?.sign || chartData.navamsa.ascendant?.signName || ascendantSignName)
                       const navamsaPlanets = chartData.navamsa.planets.map((p: any) => ({
@@ -186,9 +200,9 @@ export function VedicDashboardHero({
                 )}
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-300">
+              <div className="text-center py-12 text-slate-600">
                 <p>Loading chart visualization...</p>
-                <p className="text-xs text-slate-400 mt-2">
+                <p className="text-xs text-slate-500 mt-2">
                   {planets.length === 0 && 'Waiting for planetary data...'}
                   {planets.length > 0 && ascendantSignNumber === 0 && 'Calculating ascendant position...'}
                 </p>
@@ -245,15 +259,17 @@ export function VedicDashboardHero({
             size="small"
           />
 
-          {/* Current Dasha */}
-          <CosmicMetricCard
-            icon={<Clock className="w-8 h-8" />}
-            label="Maha Dasha"
-            value={currentDasha.planet}
-            subtitle={`Until ${currentDasha.endDate}`}
-            colorScheme="orange"
-            size="small"
-          />
+          {/* Current Dasha - only when we have calculated dasha data */}
+          {currentDasha.hasData && (
+            <CosmicMetricCard
+              icon={<Clock className="w-8 h-8" />}
+              label="Maha Dasha"
+              value={currentDasha.planet}
+              subtitle={`Until ${currentDasha.endDate}`}
+              colorScheme="orange"
+              size="small"
+            />
+          )}
 
           {/* Ayanamsha */}
           <CosmicMetricCard
@@ -293,9 +309,11 @@ export function VedicDashboardHero({
                 Tithi: {tithi}
               </Badge>
               
-              <Badge variant="secondary" className="bg-purple-200/50 text-purple-900">
-                {currentDasha.planet} Dasha
-              </Badge>
+              {currentDasha.hasData && (
+                <Badge variant="secondary" className="bg-purple-200/50 text-purple-900">
+                  {currentDasha.planet} Dasha
+                </Badge>
+              )}
               
               {vedicReading?.yogas && vedicReading.yogas.length > 0 && (
                 <Badge variant="secondary" className="bg-pink-200/50 text-pink-900">

@@ -43,7 +43,7 @@ export function clearToolData(userId: string, toolName: string): void {
 export function clearAllToolData(userId: string): void {
   const allTools = [
     'vedicAstrology', 'westernAstrology', 'kpAstrology',
-    'medicalAstrology', 'financialAstrology', 'mundaneAstrology', 'horaryAstrology',
+    'medicalAstrology', 'horaryAstrology',
     'synastry', 'numerology', 'kabbalisticNumerology', 'angelNumbers',
     'tarot', 'lenormand', 'runes', 'iching', 'pendulum', 'geomancy',
     'palmistry', 'faceReading', 'nameAnalysis', 'dreamSymbols',

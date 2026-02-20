@@ -53,19 +53,19 @@ export const devLog = {
   warn: (msg: string, data?: any, source?: string) => {
     if (isDevelopment) {
       const prefix = source ? `[${source.toUpperCase()}]` : '';
-      devLog.warn(`${prefix} ${msg}`, data !== undefined ? data : '', 'devLogger');
+      console.warn(`${prefix} ${msg}`, data !== undefined ? data : '');
     }
   },
   debug: (msg: string, data?: any, source?: string) => {
     if (isDevelopment) {
       const prefix = source ? `[${source.toUpperCase()}]` : '';
-      devLog.debug(`${prefix} ${msg}`, data !== undefined ? data : '');
+      console.debug(`${prefix} ${msg}`, data !== undefined ? data : '');
     }
   },
   error: (msg: string, data?: any, source?: string) => {
     // Always log errors, even in production
     const prefix = source ? `[${source.toUpperCase()}]` : '';
-    devLog.error(`${prefix} ${msg}`, data !== undefined ? data : '', 'devLogger');
+    console.error(`${prefix} ${msg}`, data !== undefined ? data : '');
   },
   trace: (msg: string, data?: any, source?: string) => {
     if (isDevelopment) {

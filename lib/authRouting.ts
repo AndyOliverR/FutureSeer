@@ -3,7 +3,7 @@
  * and have reports in cache/DB (mysticalProfileGenerated === true).
  * Single constant so switching between Ask the Seer and Tools is one change.
  */
-export const RETURNING_USER_WITH_REPORTS_DESTINATION = '/ask-the-seer'
+export const RETURNING_USER_WITH_REPORTS_DESTINATION = '/tools'
 
 /**
  * Returns the route to use when a user has completed profile and reports exist.

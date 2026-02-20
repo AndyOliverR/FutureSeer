@@ -229,7 +229,7 @@ export default function NumerologySeerChatInterface({
             ) : isLong && !isExpanded ? (
               truncatedPreview
             ) : (
-              <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
+              displayContent
             )}
           </div>
           {!isStreaming && isLong && (

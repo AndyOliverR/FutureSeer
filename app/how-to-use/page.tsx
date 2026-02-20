@@ -4,13 +4,11 @@ import React from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Card, CardContent } from "@/components/ui/card"
-import { Header } from "@/components/header"
 import { EnhancedFooter } from "@/components/enhanced-footer"
 
 export default function HowToUsePage() {
   return (
     <div className="min-h-screen flex flex-col starfield-ultra-sharp">
-      <Header />
       <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full">
         <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-20 pb-20">
           <motion.div

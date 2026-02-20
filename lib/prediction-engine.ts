@@ -28,8 +28,6 @@ import * as vastuModule from './vastuIntelligence'
 import * as synastryModule from './synastryIntelligence'
 import * as nameAnalysisModule from './nameAnalysisIntelligence'
 import * as medicalModule from './medicalAstrologyIntelligence'
-import * as mundaneModule from './mundaneAstrologyIntelligence'
-import * as financialModule from './financialAstrologyIntelligence'
 import * as horaryModule from './horaryAstrologyIntelligence'
 import * as thirteenSignsModule from './thirteenSignsZodiacIntelligence'
 
@@ -55,8 +53,6 @@ const getVastuReading = (vastuModule as { getVastuReading?: (q: string, a?: any,
 const getSynastryReading = (synastryModule as { getSynastryReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getSynastryReading ?? fallbackReading
 const getNameAnalysisReading = (nameAnalysisModule as { getNameAnalysisReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getNameAnalysisReading ?? fallbackReading
 const getMedicalAstrologyReading = (medicalModule as { getMedicalAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getMedicalAstrologyReading ?? fallbackReading
-const getMundaneAstrologyReading = (mundaneModule as { getMundaneAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getMundaneAstrologyReading ?? fallbackReading
-const getFinancialAstrologyReading = (financialModule as { getFinancialAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getFinancialAstrologyReading ?? fallbackReading
 const getHoraryAstrologyReading = (horaryModule as { getHoraryAstrologyReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getHoraryAstrologyReading ?? fallbackReading
 const getThirteenSignsReading = (thirteenSignsModule as { getThirteenSignsReading?: (q: string, a?: any, p?: any) => Promise<ReadingResult> }).getThirteenSignsReading ?? fallbackReading
 
@@ -243,8 +239,6 @@ export class PredictionEngine {
       { name: 'Synastry', fn: getSynastryReading },
       { name: 'Name Analysis', fn: getNameAnalysisReading },
       { name: 'Medical Astrology', fn: getMedicalAstrologyReading },
-      { name: 'Mundane Astrology', fn: getMundaneAstrologyReading },
-      { name: 'Financial Astrology', fn: getFinancialAstrologyReading },
       { name: 'Horary Astrology', fn: getHoraryAstrologyReading },
       { name: 'Thirteen Signs', fn: getThirteenSignsReading }
     ]

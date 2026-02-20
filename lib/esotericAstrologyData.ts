@@ -37,6 +37,38 @@ export const ESOTERIC_RULER_BY_SIGN: Record<ZodiacSign, string> = {
   Pisces: 'Pluto',
 };
 
+/** Exoteric (orthodox) ruler of each sign. */
+export const EXOTERIC_RULER_BY_SIGN: Record<ZodiacSign, string> = {
+  Aries: 'Mars',
+  Taurus: 'Venus',
+  Gemini: 'Mercury',
+  Cancer: 'Moon',
+  Leo: 'Sun',
+  Virgo: 'Mercury',
+  Libra: 'Venus',
+  Scorpio: 'Pluto',
+  Sagittarius: 'Jupiter',
+  Capricorn: 'Saturn',
+  Aquarius: 'Uranus',
+  Pisces: 'Neptune',
+};
+
+/** Hierarchical ruler of each sign (Alice Bailey, advanced). */
+export const HIERARCHICAL_RULER_BY_SIGN: Record<ZodiacSign, string> = {
+  Aries: 'Mercury',
+  Taurus: 'Vulcan',
+  Gemini: 'Venus',
+  Cancer: 'Neptune',
+  Leo: 'Sun',
+  Virgo: 'Moon',
+  Libra: 'Uranus',
+  Scorpio: 'Mars',
+  Sagittarius: 'Earth',
+  Capricorn: 'Saturn',
+  Aquarius: 'Jupiter',
+  Pisces: 'Pluto',
+};
+
 /** Soul Keynote / Key Mantra per sign (Alice Bailey). */
 export const SOUL_KEYNOTE_BY_SIGN: Record<ZodiacSign, string> = {
   Aries: 'I come forth and from the plane of mind I rule.',
@@ -85,6 +117,13 @@ export const LIFE_DIRECTION_BY_CROSS: Record<CrossLabel, { focus: string; tests:
   },
 };
 
+/** Evolutionary stage by Cross (Alice Bailey: Mutable = Experience, Fixed = Discipleship, Cardinal = Initiation). */
+export const EVOLUTIONARY_STAGE_BY_CROSS: Record<CrossLabel, string> = {
+  Cardinal: 'Initiation',
+  Fixed: 'Discipleship',
+  Mutable: 'Experience',
+};
+
 const SIGN_NAMES: ZodiacSign[] = [
   'Aries',
   'Taurus',
@@ -108,10 +147,22 @@ export function normalizeSign(sign: string | undefined | null): ZodiacSign | nul
   return found ?? null;
 }
 
-/** Get esoteric ruler for a sign (e.g. Ascendant). */
+/** Get esoteric ruler for a sign (e.g. Ascendant or Sun). */
 export function getEsotericRuler(sign: string | undefined | null): string {
   const s = normalizeSign(sign);
   return s ? ESOTERIC_RULER_BY_SIGN[s] : 'Unknown';
+}
+
+/** Get exoteric (orthodox) ruler for a sign. */
+export function getExotericRuler(sign: string | undefined | null): string {
+  const s = normalizeSign(sign);
+  return s ? EXOTERIC_RULER_BY_SIGN[s] : 'Unknown';
+}
+
+/** Get hierarchical ruler for a sign (Alice Bailey). */
+export function getHierarchicalRuler(sign: string | undefined | null): string {
+  const s = normalizeSign(sign);
+  return s ? HIERARCHICAL_RULER_BY_SIGN[s] : 'Unknown';
 }
 
 /** Get soul keynote / key mantra for a sign. */

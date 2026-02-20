@@ -8,7 +8,6 @@ import { useTools } from "@/hooks/useTools"
 import { useRouter } from 'next/navigation'
 import { ContextualHelp } from '@/components/ContextualHelp'
 import { navigateToTool } from '@/lib/utils/toolRouting'
-import { Header } from "@/components/header"
 import { ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting"
@@ -16,6 +15,14 @@ import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting"
 // Fixed category order for consistent section ordering (matches dropdown)
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 const VALID_CATEGORIES = new Set<string>(CATEGORY_ORDER);
+
+// Display names for category cards (internal category id -> label shown to user)
+const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  Numerology: 'Numbers',
+};
+function getCategoryDisplayName(category: string): string {
+  return CATEGORY_DISPLAY_NAMES[category] ?? category;
+}
 
 function ToolsPageContent() {
   const router = useRouter();
@@ -25,14 +32,10 @@ function ToolsPageContent() {
   const { user, userProfile, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && user && !hasRequiredProfileSetup(userProfile)) {
+    if (!authLoading && user && userProfile != null && !hasRequiredProfileSetup(userProfile)) {
       router.replace(PROFILE_SETUP_PATH);
     }
   }, [authLoading, user, userProfile, router]);
-
-  if (user && !hasRequiredProfileSetup(userProfile)) {
-    return null;
-  }
 
   const {
     tools,
@@ -43,7 +46,7 @@ function ToolsPageContent() {
     searchTerm,
     setSearchTerm,
     getCategoryIcon,
-  } = useTools()
+  } = useTools();
 
   // Category cards: categories that have at least one tool, with tool count
   const categoryCardsData = useMemo(() => {
@@ -77,9 +80,12 @@ function ToolsPageContent() {
     navigateToTool(toolId, router);
   }, [router]);
 
+  if (user && userProfile != null && !hasRequiredProfileSetup(userProfile)) {
+    return null;
+  }
+
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <Header />
       <div className="p-4 sm:p-6 md:p-8">
         <div className="max-w-7xl mx-auto">
           {/* Enhanced Header with Cosmic Elements */}
@@ -276,7 +282,7 @@ function CategoryCard({
             <div className="text-5xl mb-4 m3-transition-standard group-hover:scale-110" aria-hidden>
               {icon}
             </div>
-            <h3 className="text-amber-400 font-bold m3-title-large mb-2">{category}</h3>
+            <h3 className="text-amber-400 font-bold m3-title-large mb-2">{getCategoryDisplayName(category)}</h3>
             <p className="text-white/70 m3-body-small mb-4">
               {toolCount} {toolCount === 1 ? "tool" : "tools"}
             </p>

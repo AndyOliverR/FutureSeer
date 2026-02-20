@@ -12,8 +12,6 @@ import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Eye, EyeOf
 import { DiscussionCard } from '@/components/community/DiscussionCard';
 import { DiscussionForm } from '@/components/community/DiscussionForm';
 import { useToast } from '@/components/ui/use-toast';
-import { TopNavBar } from '@/components/TopNavBar';
-
 interface UserContribution {
   id: string;
   type: 'feedback' | 'suggestion' | 'bug-report' | 'feature-request';
@@ -63,7 +61,7 @@ export interface DiscussionThread {
   upvotes: number;
   downvotes: number;
   comments: number;
-  category: 'astrology' | 'tarot' | 'numerology' | 'palmistry' | 'dream-analysis' | 'angel-numbers' | 'vedic' | 'western' | 'kabbalah' | 'iching' | 'runes' | 'lenormand' | 'geomancy' | 'horary' | 'synastry' | 'medical' | 'financial' | 'mundane' | 'bazi' | 'kp' | 'vaastu' | 'face-reading' | 'general';
+  category: 'astrology' | 'tarot' | 'numerology' | 'palmistry' | 'dream-analysis' | 'angel-numbers' | 'vedic' | 'western' | 'kabbalah' | 'iching' | 'runes' | 'lenormand' | 'geomancy' | 'horary' | 'synastry' | 'medical' | 'financial' | 'bazi' | 'kp' | 'vaastu' | 'face-reading' | 'general';
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'active' | 'resolved' | 'archived';
   isHot: boolean;
@@ -113,182 +111,159 @@ export default function CommunityAttributionPage() {
     loadCommunityData();
   }, [user]);
 
+  const LOAD_TIMEOUT_MS = 10000; // Don't block the page forever if a request hangs
+
   const loadCommunityData = async () => {
+    if (!user?.uid) return;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     try {
       setLoading(true);
+      timeoutId = setTimeout(() => {
+        setLoading(false);
+        devLog.warn('Community data load timed out; showing partial data.', undefined, 'page');
+      }, LOAD_TIMEOUT_MS);
 
-      // Auto-join user to community if signed in
-      if (user?.uid && user?.displayName) {
-        try {
-          await fetch('/api/community/members/auto-join', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user.uid,
-              userName: user.displayName || user.email || 'Anonymous',
-              email: user.email || null,
-              photoURL: user.photoURL || null,
-              joinDate: user.metadata?.creationTime || new Date().toISOString(),
-            }),
-          });
-        } catch (error) {
-          devLog.error('Error auto-joining community:', error, 'page');
-          // Continue even if auto-join fails
-        }
+      const uid = user.uid;
+      const displayName = user.displayName || user.email || 'Anonymous';
+
+      // Run auto-join, members, discussions, and attribution in parallel (wait for slowest, not sum)
+      const autoJoinPromise = fetch('/api/community/members/auto-join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: uid,
+          userName: displayName,
+          email: user.email || null,
+          photoURL: user.photoURL || null,
+          joinDate: user.metadata?.creationTime || new Date().toISOString(),
+        }),
+      }).catch((err) => {
+        devLog.error('Error auto-joining community:', err, 'page');
+        return null;
+      });
+
+      const membersPromise = fetch('/api/community/members?limit=50').then(async (r) => {
+        if (!r.ok) return null;
+        const data = await r.json();
+        return data.success ? data.members : null;
+      }).catch(() => null);
+
+      const discussionsPromise = fetch('/api/community/discussions?status=active&limit=20').then(async (r) => {
+        if (!r.ok) return null;
+        const data = await r.json();
+        return data.success ? data.discussions : null;
+      }).catch(() => null);
+
+      const attributionPromise = fetch(`/api/community/attribution/${uid}`).then(async (r) => {
+        if (!r.ok) return null;
+        const data = await r.json();
+        return data.success && data.attribution ? data.attribution : null;
+      }).catch((err) => {
+        devLog.error('Error loading user attribution:', err, 'page');
+        return null;
+      });
+
+      const [_, membersData, discussionsData, attributionData] = await Promise.all([
+        autoJoinPromise,
+        membersPromise,
+        discussionsPromise,
+        attributionPromise,
+      ]);
+
+      if (membersData?.length) {
+        setCommunityMembers(membersData.map((m: any) => ({
+          id: m.userId || m.id,
+          name: m.name,
+          contributions: m.contributions || 0,
+          impact: m.karma || 0,
+          joinDate: m.joinDate,
+          lastActive: m.lastActive,
+          interests: m.interests || [],
+          isOnline: m.isOnline || false,
+          karma: m.karma || 0,
+          flair: m.flair || '',
+          badges: m.badges || [],
+          level: m.level || 'Novice',
+          streak: m.streak || 0,
+          reputation: m.reputation || 'Respected',
+          hideStats: m.hideStats === true,
+        })));
       }
 
-      // Load community members
-      const membersResponse = await fetch('/api/community/members?limit=50');
-      if (membersResponse.ok) {
-        const membersData = await membersResponse.json();
-        if (membersData.success) {
-          setCommunityMembers(membersData.members.map((m: any) => ({
-            id: m.userId || m.id,
-            name: m.name,
-            contributions: m.contributions || 0,
-            impact: m.karma || 0, // Using karma as impact score
-            joinDate: m.joinDate,
-            lastActive: m.lastActive,
-            interests: m.interests || [],
-            isOnline: m.isOnline || false,
-            karma: m.karma || 0,
-            flair: m.flair || '',
-            badges: m.badges || [],
-            level: m.level || 'Novice',
-            streak: m.streak || 0,
-            reputation: m.reputation || 'Respected',
-            hideStats: m.hideStats === true,
-          })));
-        }
-      }
+      if (discussionsData?.length) {
+        setDiscussionThreads(discussionsData.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          content: d.content,
+          author: d.authorName,
+          authorId: d.authorId,
+          date: d.createdAt,
+          upvotes: d.upvotes || 0,
+          downvotes: d.downvotes || 0,
+          comments: d.commentCount || 0,
+          category: d.category,
+          priority: d.priority || 'medium',
+          status: d.status,
+          isHot: d.isHot || false,
+          isSticky: d.isSticky || false,
+        })));
 
-      // Load discussions
-      const discussionsResponse = await fetch('/api/community/discussions?status=active&limit=20');
-      if (discussionsResponse.ok) {
-        const discussionsData = await discussionsResponse.json();
-        if (discussionsData.success) {
-          setDiscussionThreads(discussionsData.discussions.map((d: any) => ({
-            id: d.id,
-            title: d.title,
-            content: d.content,
-            author: d.authorName,
-            authorId: d.authorId,
-            date: d.createdAt,
-            upvotes: d.upvotes || 0,
-            downvotes: d.downvotes || 0,
-            comments: d.commentCount || 0,
-            category: d.category,
-            priority: d.priority || 'medium',
-            status: d.status,
-            isHot: d.isHot || false,
-            isSticky: d.isSticky || false,
-          })));
-
-          // Load user votes for discussions
-          if (user?.uid) {
-            const votePromises = discussionsData.discussions.map(async (d: any) => {
-              const voteResponse = await fetch(
-                `/api/community/votes?userId=${user.uid}&discussionId=${d.id}`
-              );
-              if (voteResponse.ok) {
-                const voteData = await voteResponse.json();
-                if (voteData.success && voteData.hasVoted) {
-                  return { discussionId: d.id, voteType: voteData.voteType };
-                }
-              }
-              return null;
-            });
-
-            const votes = await Promise.all(votePromises);
-            const votesMap: Record<string, 'up' | 'down'> = {};
-            votes.forEach((vote) => {
-              if (vote) {
-                votesMap[vote.discussionId] = vote.voteType;
-              }
-            });
-            setUserVotes(votesMap);
-          }
-        }
-      }
-
-      // Load user attribution (contributions and referral stats)
-      if (user?.uid) {
-        try {
-          const attributionResponse = await fetch(`/api/community/attribution/${user.uid}`);
-          if (attributionResponse.ok) {
-            const attributionData = await attributionResponse.json();
-            if (attributionData.success && attributionData.attribution) {
-              setAttribution({
-                contributions: attributionData.attribution.contributions || [],
-                referralStats: attributionData.attribution.referralStats || {
-                  totalInvites: 0,
-                  successfulSignups: 0,
-                  pendingInvites: 0,
-                },
-                totalImpact: attributionData.attribution.totalImpact || 0,
-                thankYouMessages: attributionData.attribution.thankYouMessages || [
-                  "Thank you for helping make FutureSeer better! ✨",
-                  "Your feedback directly improved the user experience 🌟",
-                  "You're part of our mystical community's growth 🔮"
-                ]
-              });
-            } else {
-              // Fallback to empty data if API returns no data
-              setAttribution({
-                contributions: [],
-                referralStats: {
-                  totalInvites: 0,
-                  successfulSignups: 0,
-                  pendingInvites: 0,
-                },
-                totalImpact: 0,
-                thankYouMessages: [
-                  "Welcome to the FutureSeer community! 🌟",
-                  "Your contributions make a difference ✨",
-                  "Together we build the future of mystical insights 🔮"
-                ]
-              });
+        // Load user votes in background so we don't block first paint
+        const votePromises = discussionsData.map(async (d: any) => {
+          try {
+            const voteResponse = await fetch(`/api/community/votes?userId=${uid}&discussionId=${d.id}`);
+            if (!voteResponse.ok) return null;
+            const voteData = await voteResponse.json();
+            if (voteData.success && voteData.hasVoted) {
+              return { discussionId: d.id, voteType: voteData.voteType };
             }
-          } else {
-            // Fallback if API fails
-            setAttribution({
-              contributions: [],
-              referralStats: {
-                totalInvites: 0,
-                successfulSignups: 0,
-                pendingInvites: 0,
-              },
-              totalImpact: 0,
-              thankYouMessages: [
-                "Welcome to the FutureSeer community! 🌟",
-                "Your contributions make a difference ✨",
-                "Together we build the future of mystical insights 🔮"
-              ]
-            });
+          } catch {
+            return null;
           }
-        } catch (error) {
-          devLog.error('Error loading user attribution:', error, 'page');
-          // Fallback to empty data on error
-          setAttribution({
-            contributions: [],
-            referralStats: {
-              totalInvites: 0,
-              successfulSignups: 0,
-              pendingInvites: 0,
-            },
-            totalImpact: 0,
-            thankYouMessages: [
-              "Welcome to the FutureSeer community! 🌟",
-              "Your contributions make a difference ✨",
-              "Together we build the future of mystical insights 🔮"
-            ]
+          return null;
+        });
+        Promise.all(votePromises).then((votes) => {
+          const votesMap: Record<string, 'up' | 'down'> = {};
+          votes.forEach((vote) => {
+            if (vote) votesMap[vote.discussionId] = vote.voteType;
           });
-        }
+          setUserVotes(votesMap);
+        });
       }
 
+      if (attributionData) {
+        setAttribution({
+          contributions: attributionData.contributions || [],
+          referralStats: attributionData.referralStats || {
+            totalInvites: 0,
+            successfulSignups: 0,
+            pendingInvites: 0,
+          },
+          totalImpact: attributionData.totalImpact || 0,
+          thankYouMessages: attributionData.thankYouMessages || [
+            "Thank you for helping make FutureSeer better! ✨",
+            "Your feedback directly improved the user experience 🌟",
+            "You're part of our mystical community's growth 🔮"
+          ]
+        });
+      } else {
+        setAttribution({
+          contributions: [],
+          referralStats: { totalInvites: 0, successfulSignups: 0, pendingInvites: 0 },
+          totalImpact: 0,
+          thankYouMessages: [
+            "Welcome to the FutureSeer community! 🌟",
+            "Your contributions make a difference ✨",
+            "Together we build the future of mystical insights 🔮"
+          ]
+        });
+      }
+
+      if (timeoutId) clearTimeout(timeoutId);
       setLoading(false);
     } catch (error) {
       devLog.error('Error loading community data:', error, 'page');
+      if (timeoutId) clearTimeout(timeoutId);
       toast({
         title: "Error",
         description: "Failed to load community data",
@@ -557,7 +532,6 @@ export default function CommunityAttributionPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <TopNavBar />
       <div className="max-w-6xl mx-auto px-4 pt-20 pb-8">
         {/* Header */}
         <div className="text-center mb-8 pt-4">

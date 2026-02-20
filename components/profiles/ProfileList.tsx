@@ -183,16 +183,16 @@ export function ProfileList({ userId, onSelectProfile, selectedProfileId, toolSl
         {uniqueProfiles.map((profile) => (
           <Card
             key={profile.id}
-            className={`bg-slate-900/50 border-amber-500/50 backdrop-blur-sm rounded-xl cursor-pointer transition-all hover:border-amber-500/80 ${
-              selectedProfileId === profile.id ? 'ring-2 ring-amber-500/50' : ''
+            className={`border-2 border-amber-300 bg-amber-50/80 hover:border-amber-400 rounded-xl shadow-sm cursor-pointer transition-all duration-300 ${
+              selectedProfileId === profile.id ? 'ring-2 ring-amber-400' : ''
             }`}
             onClick={() => onSelectProfile(profile)}
           >
             <CardContent className="p-4">
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-amber-200 mb-1">{profile.name}</h4>
-                  <Badge variant="outline" className="border-amber-400/40 text-amber-300 text-xs mb-2">
+                  <h4 className="text-lg font-semibold text-amber-900 mb-1">{profile.name}</h4>
+                  <Badge variant="outline" className="border-amber-400 text-amber-700 bg-amber-200/60 text-xs mb-2">
                     {RELATIONSHIP_LABELS[profile.relationshipType] || profile.relationshipType}
                   </Badge>
                 </div>
@@ -204,7 +204,7 @@ export function ProfileList({ userId, onSelectProfile, selectedProfileId, toolSl
                       e.stopPropagation()
                       handleEdit(profile)
                     }}
-                    className="h-8 w-8 p-0 text-slate-400 hover:text-amber-400"
+                    className="h-8 w-8 p-0 text-amber-700 hover:text-amber-900 hover:bg-amber-200/60"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -216,7 +216,7 @@ export function ProfileList({ userId, onSelectProfile, selectedProfileId, toolSl
                       handleDelete(profile.id)
                     }}
                     disabled={deletingProfileId === profile.id}
-                    className="h-8 w-8 p-0 text-slate-400 hover:text-red-400"
+                    className="h-8 w-8 p-0 text-slate-600 hover:text-red-600 hover:bg-red-50"
                   >
                     {deletingProfileId === profile.id ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -227,7 +227,7 @@ export function ProfileList({ userId, onSelectProfile, selectedProfileId, toolSl
                 </div>
               </div>
 
-              <div className="space-y-1 text-sm text-slate-400">
+              <div className="space-y-1 text-sm text-slate-700">
                 <p>Born: {new Date(profile.dateOfBirth).toLocaleDateString()}</p>
                 {profile.timeOfBirth && <p>Time: {profile.timeOfBirth}</p>}
                 {profile.birthPlace && <p>Place: {profile.birthPlace}</p>}

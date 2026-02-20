@@ -43,7 +43,6 @@ const categories = [
   { value: 'synastry', label: 'Synastry' },
   { value: 'medical', label: 'Medical Astrology' },
   { value: 'financial', label: 'Financial Astrology' },
-  { value: 'mundane', label: 'Mundane Astrology' },
   { value: 'bazi', label: 'BaZi' },
   { value: 'kp', label: 'KP Astrology' },
   { value: 'vaastu', label: 'Vaastu' },

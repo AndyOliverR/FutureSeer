@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
-import { Header } from "@/components/header"
 import { EnhancedFooter } from "@/components/enhanced-footer"
 import { MessageSquare, Loader2, FileText } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -87,7 +86,6 @@ export default function MyTicketsPage() {
 
   return (
     <div className="min-h-screen flex flex-col starfield-ultra-sharp">
-      <Header />
       <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full">
         <div className="max-w-4xl mx-auto w-full px-4 sm:px-6 pt-20 pb-20">
           <div className="text-center mb-10">

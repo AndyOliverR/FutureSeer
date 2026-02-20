@@ -7,7 +7,7 @@ import type { BaziReading } from '@/lib/baziIntelligence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { devLog } from '@/lib/devLogger';
 
 interface BaZiMessage {
@@ -190,6 +190,13 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
     }
   };
 
+  const clearChat = () => {
+    setMessages([]);
+    setStreamingMessageId(null);
+    setStreamingDisplayLength(0);
+    streamingLengthRef.current = 0;
+  };
+
   const formatMessage = (message: BaZiMessage) => {
     if (message.type === 'user') {
       return (
@@ -283,13 +290,29 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
   return (
     <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg min-h-[50vh] max-h-[85vh] overflow-hidden">
       <CardHeader className="border-b border-amber-200 bg-white/80 shrink-0">
-        <CardTitle className="flex items-center gap-2 text-amber-900">
-          <MessageCircle className="w-5 h-5 text-amber-700" />
-          Ask the Seer — BaZi
-        </CardTitle>
-        <p className="text-sm text-amber-800 mt-1">
-          Destiny structure and life cycles, not daily advice.
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-amber-900">
+              <MessageCircle className="w-5 h-5 text-amber-700" />
+              Ask the Seer — BaZi
+            </CardTitle>
+            <p className="text-sm text-amber-800 mt-1">
+              Destiny structure and life cycles, not daily advice.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={clearChat}
+            disabled={isLoading}
+            className="shrink-0 text-amber-700 hover:text-amber-900 hover:bg-amber-100"
+            title="Clear chat"
+          >
+            <Trash2 className="w-4 h-4 mr-1" />
+            Clear chat
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">

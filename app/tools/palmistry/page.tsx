@@ -1,10 +1,13 @@
 "use client"
 
 import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { usePalmistry } from "@/hooks/use-palmistry"
+import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { useAuth } from "@/hooks/use-auth"
 import { ToolIntroductionTab } from "@/components/ToolIntroductionTab"
+import { Button } from "@/components/ui/button"
 import { PalmistryRemedies } from "@/components/palmistry/PalmistryRemedies"
 import { PalmistryDashboardHero } from "@/components/palmistry/PalmistryDashboardHero"
 import { LineAnalysisCard } from "@/components/palmistry/LineAnalysisCard"
@@ -18,10 +21,11 @@ import { Activity, Star, Hand, Brain, Heart, Clock, Sparkles } from "lucide-reac
 
 export default function PalmistryPage() {
   const { user, userProfile } = useAuth()
+  const { report: pipelineReport, loading: pipelineLoading, error: profileError, hasReport: hasStoredReport } = useToolReport('palmistry')
   const {
-    analysis,
-    isLoading,
-    error
+    analysis: liveAnalysis,
+    isLoading: isLiveLoading,
+    error: liveError
   } = usePalmistry()
 
   const [activeTab, setActiveTab] = useState<'introduction' | 'palmistry-analysis' | 'timing-guidance' | 'remedies' | 'ask-the-seer'>('introduction')
@@ -34,8 +38,19 @@ export default function PalmistryPage() {
     setActiveTab(tab as typeof activeTab)
   }, [])
 
-  // Memoize analysis data to prevent unnecessary re-renders
-  const analysisData = useMemo(() => analysis, [analysis])
+  // Prefer stored report from mystical profile when available and not a placeholder
+  const storedAnalysis = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object' || (pipelineReport as { placeholder?: boolean }).placeholder) return null
+    const raw = (pipelineReport as { analysis?: unknown; palmistryContext?: unknown }).analysis
+      ?? (pipelineReport as { analysis?: unknown; palmistryContext?: unknown }).palmistryContext
+    return raw && typeof raw === 'object' && ('lines' in (raw as object) || 'mounts' in (raw as object)) ? raw : null
+  }, [pipelineReport])
+
+  const effectiveAnalysis = storedAnalysis ?? liveAnalysis
+  const isLoading = pipelineLoading || isLiveLoading
+  const error = liveError ?? null
+
+  const analysisData = useMemo(() => effectiveAnalysis, [effectiveAnalysis])
 
   // Animation variants
   const pageVariants = {
@@ -146,6 +161,18 @@ export default function PalmistryPage() {
                 >
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
                   <p className="text-slate-200">Analyzing your palm...</p>
+                </motion.div>
+              ) : !analysisData && profileError && !hasStoredReport ? (
+                <motion.div
+                  variants={cardVariants}
+                  initial="initial"
+                  animate="animate"
+                  className="text-center py-8"
+                >
+                  <p className="text-slate-200 mb-4">Generate your mystical profile to see your palm reading here.</p>
+                  <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                    <Link href="/profile">Generate my mystical profile</Link>
+                  </Button>
                 </motion.div>
               ) : error ? (
                 <motion.div

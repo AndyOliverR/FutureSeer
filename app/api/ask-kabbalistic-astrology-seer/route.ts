@@ -15,10 +15,22 @@ interface AskKabbalisticAstrologySeerRequest {
 function formatKabbalisticReportContext(report: Record<string, unknown> | undefined): string {
   if (!report || typeof report !== 'object') return '';
   const lines: string[] = [];
+  if (report.executive_summary) lines.push(`Executive summary: ${report.executive_summary}`);
   if (report.hebrew_sign) lines.push(`Hebrew sign: ${report.hebrew_sign}`);
+  if (report.hebrew_birthday) lines.push(`Hebrew birthday: ${report.hebrew_birthday}`);
+  if (report.name_72) lines.push(`72 Names (Shem HaMephorash): ${report.name_72}`);
+  if (report.letter_of_sign) lines.push(`Letter of sign: ${report.letter_of_sign}`);
+  if (report.letter_of_planet) lines.push(`Letter of planet: ${report.letter_of_planet}`);
+  if (report.sefirotic_mapping) lines.push(`Sefirotic mapping: ${report.sefirotic_mapping}`);
   if (report.tikkun_theme) lines.push(`Tikkun theme: ${report.tikkun_theme}`);
+  if (report.tikkun_axis) lines.push(`Tikkun axis: ${report.tikkun_axis}`);
   if (report.past_life_residue) lines.push(`Past-life residue: ${report.past_life_residue}`);
   if (report.core_correction) lines.push(`Core correction: ${report.core_correction}`);
+  if (report.recommended_spiritual_discipline) lines.push(`Recommended spiritual discipline: ${report.recommended_spiritual_discipline}`);
+  if (report.career_malkuth) lines.push(`Career / Malkuth: ${report.career_malkuth}`);
+  if (report.relationship_emotional_correction) lines.push(`Relationship & emotional correction: ${report.relationship_emotional_correction}`);
+  if (report.long_term_rectification_cycles) lines.push(`Long-term rectification cycles: ${report.long_term_rectification_cycles}`);
+  if (report.current_spiritual_test) lines.push(`Current spiritual test: ${report.current_spiritual_test}`);
   if (report.spiritual_strength) lines.push(`Spiritual strength: ${report.spiritual_strength}`);
   if (report.growth_path) lines.push(`Growth path: ${report.growth_path}`);
   if (report.integration_guidance) lines.push(`Integration guidance: ${report.integration_guidance}`);

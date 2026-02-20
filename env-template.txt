@@ -93,6 +93,5 @@ NEXT_PUBLIC_ASTRO_CHARTS_URL=https://astro-charts.com
 # Affiliate - region-specific Amazon domain (amazon.in for India, amazon.com, amazon.co.uk)
 NEXT_PUBLIC_AMAZON_DOMAIN=amazon.in
 
-# Certified gemstone seller - GIA/IGI/GRS certified only (NOT Amazon)
-# Options: https://www.navratan.com/categories/gia-certified-gemstones | https://www.gemsny.com/gems/ | https://www.gempundit.com/gemstones/gia-certified
-NEXT_PUBLIC_CERTIFIED_GEMSTONE_SELLER_URL=https://www.navratan.com/categories/gia-certified-gemstones
+# Certified gemstone seller - leave empty if no partner (GIA/IGI/GRS certified only, NOT Amazon)
+NEXT_PUBLIC_CERTIFIED_GEMSTONE_SELLER_URL=

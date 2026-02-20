@@ -341,59 +341,65 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
     ],
     whyItMatters: 'Angel Numbers provide gentle, accessible guidance that helps you stay aligned with your spiritual path. They offer reassurance during uncertain times, confirmation when making decisions, and reminders to stay present and aware. By learning to recognize and interpret these numbers, you open yourself to receiving guidance and support from the spiritual realm, enhancing your intuition and connection to higher wisdom.'
   },
+  'ziwei-dou-shu': {
+    slug: 'ziwei-dou-shu',
+    name: 'Zi Wei Dou Shu',
+    icon: '🏮',
+    description: 'Purple Star Astrology (紫微斗數)',
+    overview: 'Zi Wei Dou Shu (Purple Star Astrology) is an ancient Chinese astrological system that uses your birth date, time, and gender to place 14 major stars and auxiliary stars across 12 life palaces. Each palace governs an area of life (self, siblings, spouse, children, wealth, health, travel, friends, career, property, mental/karma, parents). The Four Transformations (祿權科忌), temple strength (廟旺平陷), 10-year luck cycles (大限), and annual flow (流年) provide both structural destiny analysis and predictive timing.',
+    howItWorks: 'Your chart is built from lunar or solar birth data. The system determines the Five Elements Bureau (五行局), positions the 12 palaces with Heavenly Stems and Earthly Branches, places Zi Wei (Purple Star) and 13 other major stars, adds auxiliary stars, and applies the Four Transformations. The Life Palace (命宮) and Body Palace (身宮) anchor the reading; the Three Directions and Four Positions (三方四正) show how career, wealth, and migration interact with your core. Luck cycles overlay time onto the natal structure for forecasting.',
+    keyConcepts: [
+      '12 Palaces (宮): Life, Siblings, Spouse, Children, Wealth, Health, Travel, Friends, Career, Property, Mental/Karma, Parents',
+      '14 Major Stars: Zi Wei, Tian Ji, Tai Yang, Wu Qu, Tian Tong, Lian Zhen, Tian Fu, Tai Yin, Tan Lang, Ju Men, Tian Xiang, Tian Liang, Qi Sha, Po Jun',
+      'Four Transformations (四化): Hua Lu (Prosperity), Hua Quan (Authority), Hua Ke (Fame), Hua Ji (Obstacle)',
+      'Temple Status: 廟 (strong), 旺 (prosperous), 平 (neutral), 陷 (weak)',
+      '10-Year Luck (大限): Each palace rules a decade; age ranges show when each life area is activated',
+      'Annual Flow (流年): Yearly overlay for current-year predictions',
+      'Body Palace (身宮): Second anchor point, often in a different palace from Life'
+    ],
+    useCases: [
+      'Understanding core personality and life direction',
+      'Career and authority timing',
+      'Wealth and income stability analysis',
+      'Relationship and marriage dynamics',
+      'Health and risk periods',
+      '10-year and annual outlook planning',
+      'Identifying favorable and challenging life phases'
+    ],
+    whyItMatters: 'Zi Wei Dou Shu offers a structured, formula-based approach to destiny and timing. Unlike vague horoscopes, it provides a full chart with star placements, strength grades, and dynamic layers (decade and annual flows). When the computational core is correct—solar/lunar conversion, star placement, Four Transformations, and luck cycles—the report becomes a reliable tool for life planning and self-understanding.'
+  },
   'bazi': {
     slug: 'bazi',
-    name: 'BaZi',
+    name: 'BaZi (Four Pillars)',
     icon: '🏮',
-    description: 'Chinese Four Pillars of Destiny',
-    overview: 'BaZi, also known as Four Pillars of Destiny or Eight Characters, is a Chinese astrological system that analyzes your birth date and time to reveal your destiny, personality, and life patterns. Based on the interaction of five elements (Metal, Water, Wood, Fire, Earth) and Yin-Yang principles, BaZi provides precise predictions about career, relationships, wealth, health, and life timing. It\'s one of the most respected and accurate systems in Chinese metaphysics.',
-    howItWorks: 'BaZi extracts four pairs of characters (Eight Characters total) from your birth date and time: Year Pillar, Month Pillar, Day Pillar (Day Master), and Hour Pillar. Each pillar consists of a Heavenly Stem (outer element) and Earthly Branch (inner element). The system analyzes the Day Master (your core essence), the five elements\' strength and balance, the Ten Gods (relationships between elements), and the interactions between pillars to determine personality traits, life patterns, favorable periods, and challenges.',
+    description: 'Four Pillars of Destiny (八字) — Heavenly Stems, Earthly Branches, Day Master, Luck Pillars',
+    overview: 'BaZi, or Four Pillars of Destiny (八字), is a traditional Chinese system that uses your birth date and time to build a chart of four pillars: Year, Month, Day, and Hour. Each pillar combines a Heavenly Stem (天干) and an Earthly Branch (地支), revealing your elemental balance, Day Master (the stem of your Day Pillar representing your core self), and Luck Pillars that show life phases and opportunities. The system integrates the Five Elements (Wood, Fire, Earth, Metal, Water), their interactions (producing, controlling, exhausting), and applies them to life domains such as career, wealth, relationships, and health.',
+    howItWorks: 'Your chart is calculated from your exact birth date and time in the solar calendar. The Year Pillar comes from the lunar year (Chinese New Year boundary); the Month Pillar from solar terms (節氣); the Day Pillar from a fixed cycle of 60 stem-branch combinations; and the Hour Pillar from the two-hour segment of your birth time. From these four pillars we derive your Day Master, elemental distribution, favorable and unfavorable elements, and a Luck Pillar timeline (十年大運) that shows which elements influence each decade of your life. The report summarizes strengths, challenges, and guidance for key life areas.',
     keyConcepts: [
-      'Four Pillars: Year, Month, Day, Hour - representing different life aspects',
-      'Day Master: The core element representing your essential nature',
-      'Five Elements: Metal, Water, Wood, Fire, Earth - fundamental energies',
-      'Yin and Yang: Dual nature of each element, creating balance',
-      'Ten Gods: Relationships between elements (director, wealth, resource, output, friend)',
-      'Element Strength: Balance and harmony of elements determining fortune',
-      'Favorable Periods: Years and months when elements align favorably'
+      'Four Pillars: Year, Month, Day, Hour — each with a Heavenly Stem and Earthly Branch',
+      'Heavenly Stems (天干): 10 symbols (Jia, Yi, Bing, Ding, Wu, Ji, Geng, Xin, Ren, Gui) linked to Yin/Yang and the Five Elements',
+      'Earthly Branches (地支): 12 animals (Rat, Ox, Tiger, Rabbit, Dragon, Snake, Horse, Goat, Monkey, Rooster, Dog, Pig) with elemental associations',
+      'Day Master: The Heavenly Stem of your Day Pillar — represents your core nature and how you interact with the world',
+      'Five Elements: Wood, Fire, Earth, Metal, Water — producing, controlling, and exhausting cycles',
+      'Luck Pillars (大運): Decade-long phases showing which elements are strong in each life period',
+      'Favorable and Unfavorable Elements: Based on your Day Master, guiding career, timing, and remedies'
     ],
     useCases: [
-      'Career and wealth prediction',
-      'Relationship compatibility analysis',
-      'Health and longevity assessment',
-      'Timing important decisions and ventures',
-      'Understanding personality and character',
-      'Identifying favorable and challenging periods',
-      'Career and business planning'
+      'Understanding your core nature and elemental balance',
+      'Career and wealth timing and direction',
+      'Relationship and compatibility insights',
+      'Health tendencies and elemental harmony',
+      'Life phase planning using Luck Pillars',
+      'Identifying favorable years and elements for major decisions',
+      'Personal growth aligned with your chart strengths'
     ],
-    whyItMatters: 'BaZi provides exceptional accuracy in predicting life events and understanding your true nature. Its precise timing system helps you identify the best periods for career moves, relationships, investments, and major decisions. By understanding your element balance and Day Master, you can leverage your strengths, address weaknesses, and align your actions with favorable cosmic timing for optimal success.'
-  },
-  'chinese-astrology': {
-    slug: 'chinese-astrology',
-    name: 'Chinese Astrology (Zi Wei Dou Shu)',
-    icon: '👑',
-    description: '紫微斗数 - Traditional Chinese Purple Star Astrology with 12 palaces and fortune cycles',
-    overview: 'Zi Wei Dou Shu (Purple Star Astrology) is an advanced Chinese astrological system that creates a detailed chart using 12 palaces (life areas) and over 100 stars. Unlike BaZi\'s element-based system, Zi Wei Dou Shu focuses on star placements and their interactions to reveal personality, relationships, career, wealth, health, and life fortune. It\'s considered the "Emperor\'s Astrology" due to its precision and comprehensive analysis.',
-    howItWorks: 'Zi Wei Dou Shu calculates star positions based on birth date and time, placing them in 12 palaces: Life, Siblings, Spouse, Children, Wealth, Health, Travel, Servants, Career, Property, Fortune, Parents. The system uses the Purple Star (Zi Wei) as the primary star, along with other major stars (Tian Ji, Tai Yang, Wu Qu, Tian Tong, Lian Zhen, etc.) and minor stars. The interactions between stars, their brightness, and palace positions reveal detailed insights about each life area and fortune cycles.',
-    keyConcepts: [
-      '12 Palaces: Different life areas analyzed in the chart (Life, Career, Wealth, Spouse, etc.)',
-      'Major Stars: Primary stars like Zi Wei (Purple Star), Tian Ji (Heavenly Machine), Tai Yang (Sun)',
-      'Minor Stars: Supporting stars providing additional details',
-      'Star Brightness: Stars can be bright, beneficial, or dim, affecting their influence',
-      'Four Transformations: Changes in fortune through life cycles',
-      'Palace Interactions: How palaces and stars influence each other',
-      'Fortune Cycles: 10-year, annual, and monthly fortune periods'
-    ],
-    useCases: [
-      'Comprehensive life analysis and fortune prediction',
-      'Career and wealth forecasting',
-      'Relationship and marriage compatibility',
-      'Health and longevity assessment',
-      'Timing major life decisions',
-      'Understanding personality and character traits',
-      'Identifying favorable periods for various endeavors'
-    ],
-    whyItMatters: 'Zi Wei Dou Shu offers unparalleled depth and precision in Chinese astrology. Its detailed palace system provides comprehensive insights into every aspect of life, while its star-based analysis reveals subtle personality traits and fortune patterns. Whether you\'re planning career moves, understanding relationships, or seeking to optimize life timing, Zi Wei Dou Shu provides the detailed guidance needed for informed decision-making.'
+    whyItMatters: 'BaZi offers a structured, time-tested framework for self-understanding and life planning. By revealing your Day Master and elemental profile, it helps you recognize strengths, work with favorable elements, and navigate challenging phases. Whether you are exploring career shifts, relationships, or health, BaZi provides a clear lens grounded in birth time and the Five Elements.',
+    exampleQuestions: [
+      'What is my Day Master and what does it mean for my personality?',
+      'Which elements are favorable for me in career and wealth?',
+      'What do my Luck Pillars say about my current decade?',
+      'How can I balance my chart for better health and relationships?'
+    ]
   },
   'synastry': {
     slug: 'synastry',
@@ -638,33 +644,6 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
     ],
     whyItMatters: 'Medical Astrology provides insights into your constitutional health patterns, helping you understand your body\'s strengths and vulnerabilities. It offers timing awareness for health events and supports preventive wellness practices. While not a replacement for medical care, it serves as a valuable complementary tool for understanding health patterns and supporting overall well-being.'
   },
-  'financial-astrology': {
-    slug: 'financial-astrology',
-    name: 'Financial Astrology',
-    icon: '💰',
-    description: 'Investment and wealth astrological guidance',
-    overview: 'Financial Astrology applies astrological principles to financial markets, investments, and wealth creation. By analyzing planetary cycles, aspects, and transits, financial astrology identifies favorable periods for investments, market trends, and wealth-building opportunities. It\'s used to time financial decisions, understand market cycles, and optimize wealth creation strategies.',
-    howItWorks: 'Financial Astrology analyzes planetary cycles (especially Jupiter and Saturn cycles), planetary aspects affecting markets, and transits to financial houses (2nd house for personal wealth, 8th house for shared resources). The system identifies favorable periods for investments, business ventures, and financial decisions. It considers planetary rulerships of commodities, currencies, and market sectors, and uses timing techniques to optimize financial activities.',
-    keyConcepts: [
-      '2nd House: Personal wealth and resources',
-      '8th House: Shared resources, investments, inheritance',
-      'Planetary Cycles: Jupiter (expansion), Saturn (restriction) cycles affecting markets',
-      'Market Timing: Favorable periods for investments and financial decisions',
-      'Commodity Rulerships: Planets ruling gold, silver, oil, etc.',
-      'Business Cycles: Astrological patterns in economic cycles',
-      'Wealth Patterns: Astrological indicators of wealth potential'
-    ],
-    useCases: [
-      'Timing investments',
-      'Market trend analysis',
-      'Business venture timing',
-      'Wealth-building strategies',
-      'Financial decision timing',
-      'Understanding market cycles',
-      'Optimizing financial opportunities'
-    ],
-    whyItMatters: 'Financial Astrology helps you time financial decisions for optimal outcomes, understand market cycles, and identify favorable periods for wealth-building activities. By aligning your financial actions with favorable astrological timing, you can enhance your chances of success and make more informed investment and business decisions.'
-  },
   'pendulum': {
     slug: 'pendulum',
     name: 'Pendulum',
@@ -881,59 +860,65 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
     ],
     whyItMatters: 'Energy healing recognizes that health and well-being extend beyond the physical body to include energy systems. By working with these subtle energies, you can address imbalances at their source, promote healing, and maintain optimal health. Whether you\'re dealing with physical issues, emotional challenges, or spiritual growth, energy healing offers holistic approaches to well-being.'
   },
-  'scrying': {
-    slug: 'scrying',
-    name: 'Scrying',
-    icon: '🪞',
-    description: 'Crystal ball and mirror scrying',
-    overview: 'Scrying is the ancient art of divination by gazing into reflective or translucent surfaces to receive visions, insights, and guidance. Traditional methods include crystal ball gazing, mirror scrying (using black mirrors), water scrying, and fire scrying. The practice involves entering a meditative state and allowing images, symbols, or impressions to appear in the scrying surface, accessing intuitive and spiritual guidance.',
-    howItWorks: 'Scrying begins with preparing a scrying surface (crystal ball, black mirror, water, etc.) and entering a meditative, relaxed state. The practitioner gazes into the surface without focusing the eyes, allowing the mind to enter a receptive state. Images, symbols, colors, or impressions may appear in the surface, which are then interpreted for guidance. The practice combines relaxation, intuition, and symbolic interpretation to access subconscious wisdom and spiritual guidance.',
+  'financial-astrology': {
+    slug: 'financial-astrology',
+    name: 'Financial Astrology',
+    icon: '📈',
+    description: 'Natal wealth analysis and market cycle timing — personalized financial temperament',
+    overview: 'Financial Astrology combines natal wealth analysis with market cycle modeling. It evaluates your wealth houses (2nd, 5th, 8th, 10th, 11th), wealth planets (Venus, Jupiter, Saturn, Mercury, Mars, Pluto), and computes financial temperament scores. The system overlays your natal profile with planetary cycles—Jupiter-Saturn, Mercury retrograde, Mars-Uranus—to produce a composite alignment score and action bias. This is for educational and cyclical modeling only; not financial advice.',
+    howItWorks: 'Your Western natal chart is analyzed for wealth houses (income, speculation, shared wealth, career income, gains) and wealth planet placements. The engine computes income stability, speculative risk, long-term accumulation, and liquidity stress. A separate market cycle engine detects expansion/contraction phases, volatility windows, and Mercury retrograde periods. The integration layer combines natal readiness with market conditions to produce an alignment score and strategic recommendations. All calculations use local Swiss Ephemeris; no external price or market APIs.',
     keyConcepts: [
-      'Scrying Surfaces: Crystal balls, black mirrors, water, fire, etc.',
-      'Meditative State: Relaxed, receptive consciousness for visions',
-      'Vision Interpretation: Understanding symbols and images',
-      'Intuitive Access: Tapping into subconscious and spiritual wisdom',
-      'Historical Tradition: Ancient practice across cultures',
-      'Symbolic Language: Images and symbols conveying messages',
-      'Spiritual Connection: Accessing guidance from higher sources'
+      'Wealth Houses: 2nd (income), 5th (speculation), 8th (shared wealth), 10th (career), 11th (gains)',
+      'Wealth Planets: Venus, Jupiter, Saturn, Mercury, Mars, Pluto—each with financial roles',
+      'Natal Temperament: Income stability, speculative risk index, accumulation score, liquidity stress',
+      'Market Cycle: Jupiter-Saturn cycles, Mercury retrograde, eclipse clusters, Mars-Uranus stress',
+      'Alignment Score: Composite of natal readiness × market opportunity',
+      'Action Bias: Accumulate / Hold / Reduce Exposure / Caution'
     ],
     useCases: [
-      'Receiving spiritual guidance',
-      'Accessing intuitive insights',
-      'Divination and prophecy',
-      'Meditation and contemplation',
-      'Spiritual development',
-      'Answering questions',
-      'Exploring the subconscious'
+      'Understanding your financial temperament and risk appetite',
+      'Identifying favorable and unfavorable timing windows',
+      'Aligning decisions with natal profile and market cycles',
+      'Volatility awareness and risk management',
+      'Long-term wealth-building strategy (educational)',
+      'Cyclical modeling—not price prediction'
     ],
-    whyItMatters: 'Scrying offers a direct method for accessing intuitive wisdom and spiritual guidance through visual meditation. It connects you with deeper levels of consciousness and provides insights that complement rational thinking. Whether you\'re seeking guidance, exploring your intuition, or developing spiritual abilities, scrying offers a powerful tool for accessing inner and outer wisdom.'
+    exampleQuestions: [
+      'What does my chart say about my financial temperament?',
+      'When should I be cautious with investments?',
+      'How does my natal profile align with current market cycles?'
+    ],
+    whyItMatters: 'Financial Astrology offers a personalized lens for wealth timing and temperament. By combining natal analysis with cyclical modeling, it helps you understand alignment between your chart and market conditions. It is educational and probability-framed—never financial advice, price targets, or deterministic prediction.'
   },
   'mundane-astrology': {
     slug: 'mundane-astrology',
     name: 'Mundane Astrology',
-    icon: '🌐',
-    description: 'World events and political astrology',
-    overview: 'Mundane Astrology applies astrological principles to world events, politics, economics, weather, and collective human experiences. Rather than focusing on individual charts, mundane astrology analyzes charts for nations, cities, events, and global phenomena. It predicts and explains world events, political changes, economic cycles, natural disasters, and cultural trends through astrological analysis.',
-    howItWorks: 'Mundane Astrology uses charts for significant events (like presidential inaugurations, natural disasters, economic events), ingress charts (when planets enter signs), eclipses, and national charts. The system analyzes planetary positions, aspects, and transits affecting nations, regions, and global events. It interprets how planetary cycles influence political changes, economic trends, weather patterns, and collective human experiences on a large scale.',
+    icon: '🌍',
+    description: 'Political and national astrology — ingress charts, economic and political risk indices',
+    overview: 'Mundane Astrology analyzes collective entities: nations, economies, and geopolitical cycles. It uses national foundation charts, Aries Ingress (and cardinal ingresses), eclipse and lunation context, and outer-planet transits to produce risk bands and cyclical outlooks. The report covers government stability, economic pressure, foreign relations and conflict risk, social unrest indicators, legislative health, a 12-month forecast window, and a 5-year structural shift outlook. Framed as cyclical geopolitical modeling—not deterministic prediction.',
+    howItWorks: 'Your country of interest is derived from your birth place. The engine computes the Aries Ingress chart for that capital (Sun 0° Aries), optionally uses a curated national foundation chart (independence/constitution), and evaluates houses in mundane context (1st=identity, 2nd=economy, 7th=foreign relations, 10th=government, etc.). Risk scoring produces an Economic Stress Index, Political Stability Index, Conflict Risk Model, and Geopolitical Volatility Score. All calculations use local Swiss Ephemeris; no external APIs.',
     keyConcepts: [
-      'Ingress Charts: Charts for planets entering signs (especially Aries ingress)',
-      'Eclipses: Solar and lunar eclipses affecting world events',
-      'National Charts: Birth charts for nations and countries',
-      'Event Charts: Charts for significant world events',
-      'Planetary Cycles: Long-term cycles affecting global trends',
-      'Political Astrology: Astrological analysis of political events',
-      'Economic Cycles: Astrological patterns in economics'
+      'National Foundation Chart: Independence or constitution chart for a country',
+      'Aries Ingress: Chart for Sun entering Aries (~March 20/21), cast for capital city',
+      'Houses in Mundane Context: 1st=identity, 2nd=economy, 7th=foreign relations, 10th=government, 11th=parliament, 12th=hidden enemies',
+      'Economic Stress Index: 2nd/8th house, Saturn/Pluto/Jupiter; inflation, debt, liquidity bands',
+      'Political Stability Index: 10th house, Saturn/Uranus aspects, eclipse on angles',
+      'Conflict Risk Model: Mars–Uranus/Pluto, eclipses on 1/7 axis; probabilistic',
+      'Geopolitical Volatility Score: Outer planet hard aspects × angular activation × eclipse proximity'
     ],
     useCases: [
-      'Understanding world events',
-      'Predicting political changes',
-      'Economic trend analysis',
-      'Weather and natural disaster prediction',
-      'Cultural trend understanding',
-      'Global cycle awareness',
-      'Historical event analysis'
+      'Understanding cyclical national and economic climate',
+      'Government stability and institutional health outlook',
+      'Foreign relations and conflict risk awareness',
+      '12-month and 5-year structural shift context',
+      'Reflection and cyclical modeling—not prediction'
     ],
-    whyItMatters: 'Mundane Astrology provides insights into world events and global patterns, helping you understand the larger forces shaping our world. It reveals the astrological influences behind political changes, economic cycles, and cultural trends. Whether you\'re studying world events, understanding global patterns, or seeking awareness of collective influences, mundane astrology offers valuable perspective.'
+    exampleQuestions: [
+      'What does the Aries Ingress say about my country this year?',
+      'What are the main risk bands for the national climate?',
+      'When do key outer planet cycles shift?'
+    ],
+    whyItMatters: 'Mundane Astrology provides a structured, risk-band framework for understanding geopolitical and economic cycles. It differentiates by quantifying economic stress, political stability, and conflict risk, and by offering multi-year structural outlooks—all for reflection and cyclical context only.'
   },
   'akashic-records': {
     slug: 'akashic-records',
@@ -1012,35 +997,6 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
     ],
     whyItMatters: 'Ogham offers a unique connection to Celtic wisdom and natural forces through tree symbolism. It provides guidance while connecting you with ancient traditions and the natural world. Whether you\'re exploring Celtic culture, connecting with nature, or seeking guidance through tree wisdom, Ogham offers a distinctive divination system.'
   },
-  'bibliomancy': {
-    slug: 'bibliomancy',
-    name: 'Bibliomancy',
-    icon: '📖',
-    description: 'Sacred Text Divination - Guidance through Bible, Quran, Bhagavad Gita, and more',
-    overview: 'Bibliomancy (Sacred Text Divination) is the ancient practice of seeking divine guidance by randomly selecting passages from sacred texts. This timeless method has been used across cultures and faiths for centuries. Choose from multiple sacred texts including the Bible, Quran, Bhagavad Gita, Torah, and Divan of Hafez. Each selected passage is interpreted as personalized guidance for your question or life situation, offering wisdom, comfort, and spiritual direction from the world\'s most sacred writings.',
-    howItWorks: 'Bibliomancy begins with selecting your sacred text - choose from the Bible, Quran, Bhagavad Gita, Torah, or Divan of Hafez. Then, either ask a specific question or seek comprehensive guidance. The system randomly selects passages from your chosen text, which are then interpreted as guidance for your question or life situation. The interpretation considers the literal meaning, symbolic significance, and how it relates to your situation, providing personalized insights across all areas of life.',
-    keyConcepts: [
-      'Multiple Sacred Texts: Choose from Bible, Quran, Bhagavad Gita, Torah, or Divan of Hafez',
-      'Random Selection: Chance-based passage selection from your chosen text',
-      'Text Interpretation: Finding meaning in selected passages specific to each tradition',
-      'Spiritual Intention: Combining chance with prayer or intention',
-      'Historical Practice: Ancient method used across cultures and faiths',
-      'Symbolic Meaning: Interpreting passages symbolically within each tradition',
-      'Guidance Reception: Receiving answers through written wisdom from multiple faith traditions',
-      'Inclusive Practice: Honoring diverse spiritual paths and sacred texts'
-    ],
-    useCases: [
-      'Receiving spiritual guidance from your chosen sacred text',
-      'Answering questions through divine wisdom',
-      'Seeking wisdom from multiple faith traditions',
-      'Spiritual practice across different religions',
-      'Decision-making support from sacred texts',
-      'Meditation and reflection on sacred passages',
-      'Connecting with sacred wisdom from various traditions',
-      'Exploring guidance from different spiritual perspectives'
-    ],
-    whyItMatters: 'Bibliomancy provides a simple, accessible method for receiving guidance through sacred texts from multiple faith traditions. Whether you connect with the Bible, Quran, Bhagavad Gita, Torah, Divan of Hafez, or other revered scriptures, this practice combines the wisdom of written works with spiritual intention, offering insights and answers when you need guidance. It\'s an inclusive practice that honors diverse spiritual paths while providing personalized divine guidance for your questions and life journey.'
-  },
   'sortilege': {
     slug: 'sortilege',
     name: 'Sortilege Divination',
@@ -1068,6 +1024,64 @@ export const TOOL_INTRODUCTIONS: Record<string, ToolIntroduction> = {
       'Understanding synchronicity and meaningful coincidences'
     ],
     whyItMatters: 'Sortilege offers a comprehensive and flexible approach to divination, combining multiple ancient methods to provide guidance. By casting lots through various objects, you access different perspectives and can find the method that resonates most with your question. The practice recognizes that chance and synchronicity play a role in selecting the right guidance at the right time. With profile-based personalization, sortilege provides both traditional interpretations and modern AI-powered insights tailored to your unique astrological and personal context.'
+  },
+  'scrying': {
+    slug: 'scrying',
+    name: 'Scrying',
+    icon: '🔮',
+    description: 'Crystal, mirror, water, and fire divination — symbolic introspection and archetype-based guidance',
+    overview: 'Scrying is the ancient practice of gazing into a reflective or luminous medium—such as a crystal ball, black mirror, bowl of water (hydromancy), or flame (pyromancy)—to receive symbolic visions and intuitive insights. Unlike deterministic systems, scrying surfaces subconscious patterns and archetypal themes. Your report is generated from a structured symbol ontology (elemental, archetypal, color, and motion) and contextual interpretation across life domains. It is positioned as a symbolic introspection and inner-signal validator, not a predictive certainty engine.',
+    howItWorks: 'When you generate your mystical profile, a comprehensive scrying report is created from your profile data. The system uses an in-house symbol taxonomy (elemental, archetypal, objects, motion, color) and a context engine that maps symbols to life domains: relationship, career, financial, spiritual, and health. Moon phase at generation time is included. The report includes session overview, dominant symbol themes, elemental balance, archetypal energy pattern, risk and opportunity indicators, timeline orientation, and strategic guidance. No live scrying session is required—the report is a personalized symbolic reading aligned to your current life phase.',
+    keyConcepts: [
+      'Medium: Crystal ball, black mirror, hydromancy (water), or pyromancy (flame)',
+      'Symbol Ontology: Elemental (fire, water, wind, earth), archetypal figures, objects, motion, color',
+      'Context Domains: Relationship, career, financial, spiritual, health',
+      'Elemental Balance: Dominance of fire/water/air/earth in the symbolic field',
+      'Archetype Patterns: Transition, protection, revelation, conflict, nurturing, transformation',
+      'Risk and Opportunity: Shadow symbols vs. light/rising symbols',
+      'Timeline: Rising imagery (future), central (present), fading (past)',
+      'Symbolic Introspection: Not deterministic prediction; inner signal validator'
+    ],
+    useCases: [
+      'Reflecting on subconscious themes and archetypal patterns',
+      'Complementing astrology with intuitive symbolic insight',
+      'Exploring elemental and archetypal balance in your life',
+      'Awareness of risk and opportunity from a symbolic lens',
+      'Strategic guidance aligned with symbolic themes',
+      'Personal growth through structured symbol interpretation'
+    ],
+    whyItMatters: 'Scrying adds an experiential, symbolic layer to your divination toolkit. It does not replace structured systems (astrology, numerology) but acts as an inner signal validator—surfacing intuitive patterns and thematic clusters that can deepen self-awareness and decision alignment. The report is designed with consistent symbol classification and risk/opportunity weighting so it feels structured and semi-analytic rather than purely poetic. Always use it as symbolic introspection only; it is not diagnostic, financial, or legal advice.'
+  },
+  'bibliomancy': {
+    slug: 'bibliomancy',
+    name: 'Bibliomancy',
+    icon: '📖',
+    description: 'Sacred text divination — Bible, Quran, Bhagavad Gita, Torah, and Hafez for symbolic reflection',
+    overview: 'Bibliomancy is divination by book—a form of sortilege (casting lots) in which a passage is selected by chance and interpreted for symbolic guidance. Different traditions use different texts and rituals: the Bible and Torah (Goral, Sortes Sanctorum), the Quran (Istikhara for guidance; Fal for random opening), the Bhagavad Gita (reflection on duty and action), and the Divan of Hafez (Fal-e Hafez, the poet as Tongue of the Unseen). Your report includes selected passages from each tradition, thematic interpretation, and life-domain guidance. It is offered as symbolic reflection only, not prophecy or theological authority.',
+    howItWorks: 'When you generate your mystical profile, a comprehensive bibliomancy report is created. The system uses version-locked, local sacred texts (no runtime scraping). A reproducible random selection (seeded by your profile and generation time) picks one passage per text. Each passage is tagged with themes, archetypes, and tone, and mapped to a life domain (finance, relationship, career, spiritual, health). The report includes definitions (bibliomancy vs. sortilege, the "agent" in each tradition), text-specific rituals (how each tradition practices), and interpretative frameworks (e.g., Hafez\'s ambiguity; direct command vs. metaphor). You can then ask the Bibliomancy Seer questions based on your report and faith.',
+    keyConcepts: [
+      'Bibliomancy vs. Sortilege: Divination by book is a specific form of casting lots.',
+      'Agent: Who provides the answer—Divine Providence (Bible/Torah), Hafez as Tongue of the Unseen, the Gita as teaching, etc.',
+      'Quran: Istikhara (prayer for guidance) vs. Fal (random opening); traditional Fal method (seven pages, first line).',
+      'Hafez: Fal-e Hafez—Niyyat, oath by Shakh-e Nabat, first ghazal on right page = answer; next couplet = Shahed.',
+      'Bible/Torah: Goral, Sortes Sanctorum; finger-on-verse method.',
+      'Interpretative frameworks: Hafez is intentionally ambiguous; Bible/Quran often direct; Gita philosophical/duty-oriented.',
+      'Report structure: Selected passage, literal meaning, symbolic theme, life domain interpretation, directive, polarity.'
+    ],
+    useCases: [
+      'Reflecting on a question through the lens of sacred text',
+      'Comparing themes across traditions (Bible, Quran, Gita, Torah, Hafez)',
+      'Understanding how each tradition practices bibliomancy',
+      'Personalizing interpretation by life domain (career, relationship, spiritual, etc.)',
+      'Asking the Bibliomancy Seer follow-up questions based on your report'
+    ],
+    whyItMatters: 'Bibliomancy offers a structured, multi-tradition approach to symbolic reflection. By using version-locked texts and a reproducible selection process, the report remains build-safe and respectful of each tradition. The combination of definitions, rituals, and interpretative frameworks helps you understand not only the passage but the context in which it is traditionally used. Always use it as symbolic reflection only; it is not prophecy, theological authority, or substitute for religious guidance.',
+    exampleQuestions: [
+      'What does my selected Bible passage suggest for my current situation?',
+      'How does the Hafez verse relate to the theme of surrender?',
+      'Can you explain the difference between Istikhara and Fal in the Quran?',
+      'What does the Gita passage say about duty and action?'
+    ]
   },
   'navaratna-planetary-stones': {
     slug: 'navaratna-planetary-stones',

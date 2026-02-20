@@ -11,7 +11,6 @@ import { UserProfile } from './firebase';
 import { devLog } from '@/lib/devLogger';
 import { getServerBaseUrl } from './serverBaseUrl';
 import { calculateVedicNumerologyProfile } from './vedicNumerologyCalculations';
-
 export interface ToolReportEntry {
   status: 'success' | 'failed';
   data?: Record<string, unknown>;
@@ -48,8 +47,8 @@ export interface GenerationResult {
   systemsUsed: string[];
 }
 
-/** List of all tools to run at profile generation time. No lazy loading. */
-const ALL_TOOLS = [
+/** List of all tools to run at profile generation time. No lazy loading. Exported so API can check for missing reports. */
+export const ALL_TOOL_SLUGS = [
   'vedic',
   'western',
   'astrocartography',
@@ -87,7 +86,7 @@ const ALL_TOOLS = [
   'mundaneAstrology',
   'synastry',
   'bazi',
-  'chineseAstrology',
+  'ziweiDouShu',
   'humanDesign',
   'akashicRecords',
   'scrying',
@@ -137,6 +136,7 @@ async function runTool(
               latitude: profile.birthLatitude ?? 0,
               longitude: profile.birthLongitude ?? 0,
             },
+            options: { includeTransits: true },
           }),
         });
         if (!res.ok) throw new Error(`Western API: ${res.status}`);
@@ -277,6 +277,37 @@ async function runTool(
         return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt };
       }
 
+      case 'hellenistic': {
+        const res = await fetch(`${baseUrl}/api/hellenistic/comprehensive`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            userProfile: {
+              birthDate: profile.birthDate,
+              birthTime: profile.birthTime || '12:00:00',
+              birthPlace: profile.birthPlace,
+              birthLatitude: profile.birthLatitude ?? 0,
+              birthLongitude: profile.birthLongitude ?? 0,
+            },
+          }),
+        });
+        if (!res.ok) throw new Error(`Hellenistic API: ${res.status}`);
+        const json = await res.json();
+        const data = json.data ?? json;
+        if (!data || (data as Record<string, unknown>).placeholder === true) {
+          return {
+            status: 'success',
+            data: {
+              placeholder: true,
+              reason: json.error ?? 'Hellenistic reading unavailable',
+            },
+            generatedAt,
+          };
+        }
+        return { status: 'success', data, generatedAt };
+      }
+
       case 'numerology': {
         const { computeChaldeanProfile } = await import('./numerology/chaldean');
         const { calcPersonalYear } = await import('./numerology/personalYear');
@@ -328,6 +359,7 @@ async function runTool(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            userId,
             birthData: {
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
@@ -354,6 +386,48 @@ async function runTool(
           data: { hexagram },
           generatedAt,
         };
+      }
+
+      case 'faceReading': {
+        if (!profile.facePhotoUrl) {
+          return {
+            status: 'success',
+            data: {
+              placeholder: true,
+              reason: 'Upload a face photo to generate a face reading.',
+            },
+            generatedAt,
+          };
+        }
+        try {
+          const { faceReadingIntelligence } = await import('./faceReadingIntelligence');
+          const age = profile.birthDate
+            ? Math.floor(
+                (Date.now() - new Date(profile.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+              )
+            : 30;
+          const gender = (profile.gender === 'non-binary' ? 'other' : profile.gender) || 'other';
+          const analysis = await faceReadingIntelligence.analyzeFace(
+            age,
+            gender as 'male' | 'female' | 'other',
+            profile.facePhotoUrl
+          );
+          return {
+            status: 'success',
+            data: { analysis, faceReadingContext: analysis },
+            generatedAt,
+          };
+        } catch (err) {
+          devLog.warn('[ProfileOrchestrator] Face reading analysis failed:', err, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: {
+              placeholder: true,
+              reason: 'Face reading failed. Try re-uploading a clearer image.',
+            },
+            generatedAt,
+          };
+        }
       }
 
       case 'palmistry': {
@@ -415,7 +489,469 @@ async function runTool(
         }
       }
 
-      default:
+      case 'dailyDecisions': {
+        const today = new Date().toISOString().split('T')[0];
+        const res = await fetch(`${baseUrl}/api/tools/daily-decisions/analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            userProfile: profile,
+            date: today,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Daily Decisions API: ${res.status}`);
+        }
+        const json = await res.json();
+        const data = json.data ?? json;
+        if (!data || (data as Record<string, unknown>).placeholder === true) {
+          return {
+            status: 'success',
+            data: {
+              reading: 'Daily decisions analysis is not available for this profile.',
+              placeholder: true,
+            },
+            generatedAt,
+          };
+        }
+        return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+      }
+
+      case 'medicalAstrology': {
+        const res = await fetch(`${baseUrl}/api/occult/universal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system: 'medical',
+            birthData: {
+              birthDate: profile.birthDate,
+              birthTime: profile.birthTime || '12:00:00',
+              birthPlace: profile.birthPlace,
+              latitude: profile.birthLatitude ?? 0,
+              longitude: profile.birthLongitude ?? 0,
+            },
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Medical Astrology API: ${res.status}`);
+        }
+        const json = await res.json();
+        const responseData = json.data ?? json;
+        if (!responseData || (responseData as Record<string, unknown>).placeholder === true) {
+          return {
+            status: 'success',
+            data: {
+              placeholder: true,
+              reason: (json as { error?: string })?.error ?? 'Medical astrology reading unavailable',
+            },
+            generatedAt,
+          };
+        }
+        return {
+          status: 'success',
+          data: { data: responseData, metadata: json.metadata ?? { generatedAt: new Date().toISOString() } },
+          generatedAt,
+        };
+      }
+
+      case 'financialAstrology': {
+        const res = await fetch(`${baseUrl}/api/financial-astrology/comprehensive`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            userProfile: profile,
+            birthData: {
+              birthDate: profile.birthDate,
+              birthTime: profile.birthTime || '12:00:00',
+              birthPlace: profile.birthPlace,
+              latitude: profile.birthLatitude ?? 0,
+              longitude: profile.birthLongitude ?? 0,
+            },
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Financial Astrology API: ${res.status}`);
+        }
+        const json = await res.json();
+        const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data ?? json;
+        return {
+          status: 'success',
+          data: report ? { comprehensiveAnalysis: report } : { comprehensiveAnalysis: json },
+          generatedAt,
+        };
+      }
+
+      case 'mundaneAstrology': {
+        const res = await fetch(`${baseUrl}/api/mundane-astrology/comprehensive`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            userProfile: profile,
+            birthData: {
+              birthDate: profile.birthDate,
+              birthTime: profile.birthTime || '12:00:00',
+              birthPlace: profile.birthPlace,
+              latitude: profile.birthLatitude ?? 0,
+              longitude: profile.birthLongitude ?? 0,
+            },
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Mundane Astrology API: ${res.status}`);
+        }
+        const json = await res.json();
+        const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data ?? json;
+        return {
+          status: 'success',
+          data: report ? { comprehensiveAnalysis: report } : { comprehensiveAnalysis: json },
+          generatedAt,
+        };
+      }
+
+      case 'ziweiDouShu': {
+        const res = await fetch(`${baseUrl}/api/tools/ziwei-dou-shu/generate-report`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            userProfile: profile,
+            birthDate: profile.birthDate,
+            birthTime: profile.birthTime || '12:00:00',
+            birthPlace: profile.birthPlace,
+            gender: profile.gender || 'other',
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Zi Wei Dou Shu API: ${res.status}`);
+        }
+        const json = await res.json();
+        const responseData = json.data ?? json;
+        if (responseData && (responseData as Record<string, unknown>).placeholder === true) {
+          return {
+            status: 'success',
+            data: responseData as Record<string, unknown>,
+            generatedAt,
+          };
+        }
+        return {
+          status: 'success',
+          data: (responseData as Record<string, unknown>) ?? { placeholder: true, reason: 'Zi Wei report unavailable' },
+          generatedAt,
+        };
+      }
+
+      case 'scrying': {
+        try {
+          // Generate in-process to avoid self-fetch timeouts/deadlocks in dev
+          const { generateScryingReport } = await import('@/lib/scrying/scryingReportGenerator');
+          const profileForScrying = {
+            fullName: profile.fullName ?? (profile as Record<string, unknown>).displayName ?? '',
+            birthDate: profile.birthDate ?? '',
+            birthTime: profile.birthTime ?? '',
+            birthPlace: profile.birthPlace ?? '',
+            gender: profile.gender ?? '',
+          };
+          const report = generateScryingReport(profileForScrying, new Date(generatedAt));
+          return {
+            status: 'success',
+            data: report as unknown as Record<string, unknown>,
+            generatedAt,
+          };
+        } catch (scryingErr) {
+          const msg = scryingErr instanceof Error ? scryingErr.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] scrying failed:', msg, 'profileGenerationOrchestrator');
+          return { status: 'failed', error: msg, generatedAt };
+        }
+      }
+
+      case 'bibliomancy': {
+        try {
+          const { generateBibliomancyReport } = await import('@/lib/bibliomancy/bibliomancyReportGenerator');
+          const profileForBibliomancy = {
+            fullName: profile.fullName ?? (profile as Record<string, unknown>).displayName ?? '',
+            birthDate: profile.birthDate ?? '',
+            birthTime: profile.birthTime ?? '',
+            birthPlace: profile.birthPlace ?? '',
+            userId,
+          };
+          const report = generateBibliomancyReport(profileForBibliomancy, new Date(generatedAt));
+          return {
+            status: 'success',
+            data: report as unknown as Record<string, unknown>,
+            generatedAt,
+          };
+        } catch (bibliomancyErr) {
+          const msg = bibliomancyErr instanceof Error ? bibliomancyErr.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] bibliomancy failed:', msg, 'profileGenerationOrchestrator');
+          return { status: 'failed', error: msg, generatedAt };
+        }
+      }
+
+      case 'ogham': {
+        try {
+          const res = await fetch(`${baseUrl}/api/tools/ogham/generate-report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, userProfile: profile }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { error?: string })?.error ?? `Ogham API: ${res.status}`);
+          }
+          const json = await res.json();
+          const data = json.data ?? json;
+          return { status: 'success', data: (data as Record<string, unknown>) ?? {}, generatedAt };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Ogham failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
+      }
+
+      case 'bazi': {
+        devLog.info('[ProfileOrchestrator] Calling BaZi API', { baseUrl, userId: profile?.uid || userId }, 'profileGenerationOrchestrator');
+        try {
+          const res = await fetch(`${baseUrl}/api/tools/bazi/analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, userProfile: profile }),
+          });
+          const json = await res.json().catch(() => ({}));
+          const data = json.data ?? json;
+          const isPlaceholder = !data || (data as Record<string, unknown>).placeholder === true;
+          if (!res.ok) {
+            const errMsg = (json as { error?: string })?.error ?? `BaZi API: ${res.status}`;
+            devLog.warn('[ProfileOrchestrator] BaZi API non-ok', { status: res.status, error: errMsg }, 'profileGenerationOrchestrator');
+            throw new Error(errMsg);
+          }
+          if (isPlaceholder) {
+            devLog.warn('[ProfileOrchestrator] BaZi returned placeholder or empty data', 'profileGenerationOrchestrator');
+            return {
+              status: 'success',
+              data: { placeholder: true, reason: 'BaZi reading unavailable for this profile.' },
+              generatedAt,
+            };
+          }
+          devLog.info('[ProfileOrchestrator] BaZi report generated successfully', 'profileGenerationOrchestrator');
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] BaZi failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
+      }
+
+      case 'humanDesign': {
+        try {
+          const res = await fetch(`${baseUrl}/api/tools/human-design/generate-report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              userProfile: profile,
+              birthData: {
+                birthDate: profile.birthDate,
+                birthTime: profile.birthTime || '12:00:00',
+                birthPlace: profile.birthPlace,
+                latitude: profile.birthLatitude ?? 0,
+                longitude: profile.birthLongitude ?? 0,
+              },
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { error?: string })?.error ?? `Human Design API: ${res.status}`);
+          }
+          const json = await res.json();
+          const data = json.data ?? json;
+          if (!data || (data as Record<string, unknown>).placeholder === true) {
+            return {
+              status: 'success',
+              data: { placeholder: true, reason: 'Human Design report unavailable.' },
+              generatedAt,
+            };
+          }
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Human Design failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
+      }
+
+      case 'navaratna': {
+        try {
+          const res = await fetch(`${baseUrl}/api/tools/navaratna-planetary-stones/analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, userProfile: profile }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { error?: string })?.error ?? `Navaratna API: ${res.status}`);
+          }
+          const json = await res.json();
+          const data = json.data ?? json;
+          if (!data || (data as Record<string, unknown>).placeholder === true) {
+            return {
+              status: 'success',
+              data: { placeholder: true, reason: 'Navaratna analysis unavailable.' },
+              generatedAt,
+            };
+          }
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Navaratna failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
+      }
+
+      case 'trichakra': {
+        try {
+          const res = await fetch(`${baseUrl}/api/tools/trichakra-method/analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, userProfile: profile }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { error?: string })?.error ?? `Trichakra API: ${res.status}`);
+          }
+          const json = await res.json();
+          const data = json.data ?? json;
+          if (!data || (data as Record<string, unknown>).placeholder === true) {
+            return {
+              status: 'success',
+              data: { placeholder: true, reason: 'Trichakra analysis unavailable.' },
+              generatedAt,
+            };
+          }
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Trichakra failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
+      }
+
+      case 'energyHealing': {
+        const methods = ['chakra', 'aura', 'reiki', 'crystal', 'energy'] as const;
+        const combined: Record<string, unknown> = {};
+        let hasAny = false;
+        for (const method of methods) {
+          try {
+            const res = await fetch(`${baseUrl}/api/tools/energy-healing/analysis`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ method, userProfile: profile }),
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              devLog.warn(`[ProfileOrchestrator] Energy Healing ${method} failed:`, (err as { error?: string })?.error ?? res.status, 'profileGenerationOrchestrator');
+              continue;
+            }
+            const json = await res.json();
+            const data = json.data ?? json;
+            if (data && typeof data === 'object' && (data as Record<string, unknown>).placeholder !== true) {
+              combined[method] = data;
+              hasAny = true;
+            }
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            devLog.warn(`[ProfileOrchestrator] Energy Healing ${method} failed:`, msg, 'profileGenerationOrchestrator');
+          }
+        }
+        if (!hasAny) {
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: 'Energy healing analysis unavailable.' },
+            generatedAt,
+          };
+        }
+        return { status: 'success', data: combined as Record<string, unknown>, generatedAt };
+      }
+
+      case 'akashicRecords': {
+        try {
+          const res = await fetch(`${baseUrl}/api/tools/akashic-records/reading`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, userProfile: profile }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { error?: string })?.error ?? `Akashic Records API: ${res.status}`);
+          }
+          const json = await res.json();
+          const data = json.data ?? json;
+          if (!data || (data as Record<string, unknown>).placeholder === true) {
+            return {
+              status: 'success',
+              data: { placeholder: true, reason: 'Akashic Records reading unavailable.' },
+              generatedAt,
+            };
+          }
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Akashic Records failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
+      }
+
+      default: {
+        // Scrying must never get the generic placeholder - run in-process if we landed here
+        if (toolSlug === 'scrying') {
+          try {
+            const { generateScryingReport } = await import('@/lib/scrying/scryingReportGenerator');
+            const profileForScrying = {
+              fullName: profile.fullName ?? (profile as Record<string, unknown>).displayName ?? '',
+              birthDate: profile.birthDate ?? '',
+              birthTime: profile.birthTime ?? '',
+              birthPlace: profile.birthPlace ?? '',
+              gender: profile.gender ?? '',
+            };
+            const report = generateScryingReport(profileForScrying, new Date(generatedAt));
+            return { status: 'success', data: report as unknown as Record<string, unknown>, generatedAt };
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : 'Unknown error';
+            devLog.warn('[ProfileOrchestrator] scrying fallback failed:', msg, 'profileGenerationOrchestrator');
+            return { status: 'failed', error: msg, generatedAt };
+          }
+        }
         // Placeholder for tools not yet wired - store minimal report so we don't block
         return {
           status: 'success',
@@ -425,6 +961,7 @@ async function runTool(
           },
           generatedAt,
         };
+      }
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -586,7 +1123,7 @@ export async function runProfileGeneration(
   }
 
   // 3. Run ALL other tools in parallel (excluding vedic, already done)
-  const otherTools = ALL_TOOLS.filter((t) => t !== 'vedic');
+  const otherTools = ALL_TOOL_SLUGS.filter((t) => t !== 'vedic');
   const results = await Promise.allSettled(
     otherTools.map(async (slug) => {
       const entry = await runTool(slug, userId, userProfile, baseUrl);
@@ -646,10 +1183,17 @@ export async function runProfileGeneration(
   };
 
   // 5. Merge successful tool reports into comprehensiveProfile (top-level keys for Seer route)
+  const placeholders: string[] = [];
   for (const [slug, entry] of Object.entries(toolReports)) {
     if (entry.status === 'success' && entry.data && typeof entry.data === 'object') {
       comprehensiveProfile[slug] = entry.data;
+      if ((entry.data as Record<string, unknown>).placeholder === true) {
+        placeholders.push(slug);
+      }
     }
+  }
+  if (placeholders.length > 0) {
+    devLog.info('[ProfileOrchestrator] Tools that returned placeholder (no real report)', placeholders, 'profileGenerationOrchestrator');
   }
 
   // 6. Build Seer Master (normalized insight for Ask the Seer)

@@ -71,10 +71,6 @@ class UniversalOccultService {
     return this.makeRequest('electional', { birthData, options });
   }
 
-  async calculateMundaneChart(birthData: BirthData, options: any = {}): Promise<OccultResponse> {
-    return this.makeRequest('mundane', { birthData, options });
-  }
-
   async calculateMedicalChart(birthData: BirthData, options: any = {}): Promise<OccultResponse> {
     return this.makeRequest('medical', { birthData, options });
   }
@@ -296,13 +292,6 @@ class UniversalOccultService {
       {
         name: 'electional',
         description: 'Choosing auspicious times for events',
-        requires: ['birthData'],
-        category: 'Astrology',
-        isPremium: true
-      },
-      {
-        name: 'mundane',
-        description: 'World events and political astrology',
         requires: ['birthData'],
         category: 'Astrology',
         isPremium: true

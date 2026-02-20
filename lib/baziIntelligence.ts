@@ -444,8 +444,9 @@ class BaziIntelligence {
     const birthYear = birthDate.getFullYear()
     const birthMonth = birthDate.getMonth() + 1
     const birthDay = birthDate.getDate()
-    
-    const [hour, minute] = data.birthTime.split(':').map(Number)
+    const parts = (data.birthTime || '12:00').split(':').map((p) => parseInt(p, 10))
+    const hour = Number.isFinite(parts[0]) ? Math.min(23, Math.max(0, parts[0])) : 12
+    const minute = Number.isFinite(parts[1]) ? Math.min(59, Math.max(0, parts[1])) : 0
     const julianDay = this.dateToJulianDay(birthDate)
     
     // Year Pillar
@@ -1217,9 +1218,17 @@ class BaziIntelligence {
       throw new Error('Complete birth information required for BaZi analysis')
     }
 
-    // Get coordinates
-    const coords = await getCoordinatesWithFallback(userProfile.birthPlace)
-    
+    // Use provided coordinates when available (e.g. from API route); otherwise resolve via geocoding
+    const hasCoords =
+      typeof (userProfile as { birthLatitude?: number }).birthLatitude === 'number' &&
+      typeof (userProfile as { birthLongitude?: number }).birthLongitude === 'number'
+    const coords = hasCoords
+      ? {
+          latitude: (userProfile as { birthLatitude: number }).birthLatitude,
+          longitude: (userProfile as { birthLongitude: number }).birthLongitude
+        }
+      : await getCoordinatesWithFallback(userProfile.birthPlace)
+
     const baziData: BaziData = {
       birthDate: userProfile.birthDate,
       birthTime: userProfile.birthTime,
@@ -1229,7 +1238,12 @@ class BaziIntelligence {
       gender: userProfile.gender
     }
 
-    // Check Firebase cache
+    // On the server (e.g. API route / orchestrator), skip Firebase client SDK cache to avoid "client function from server" errors
+    if (typeof window === 'undefined') {
+      return await this.analyzeBazi(baziData)
+    }
+
+    // Client: use Firebase cache when available
     try {
       const db = getFirebaseDB()
       if (db) {
@@ -1243,7 +1257,6 @@ class BaziIntelligence {
           const cachedBirthKey = cachedData.metadata?.lastUpdated ? 
             `${userProfile.birthDate}_${userProfile.birthTime}_${userProfile.birthPlace}` : null
           
-          // Check if cache is valid (same birth data and < 24 hours old)
           if (cachedBirthKey === birthDataKey) {
             const lastUpdated = cachedData.metadata?.lastUpdated
             if (lastUpdated) {
@@ -1256,16 +1269,12 @@ class BaziIntelligence {
           }
         }
         
-        // Generate new reading
         const reading = await this.analyzeBazi(baziData)
-        
-        // Cache in Firebase
         await setDoc(cacheDocRef, {
           ...reading,
           birthDataKey,
           lastUpdated: new Date()
         })
-        
         devLog.info('Cached BaZi reading for user:', userId, 'bazi')
         return reading
       }
@@ -1273,7 +1282,6 @@ class BaziIntelligence {
       devWarn('Error with Firebase cache, using in-memory:', error)
     }
 
-    // Fallback to in-memory calculation
     return await this.analyzeBazi(baziData)
   }
 

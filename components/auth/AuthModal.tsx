@@ -55,7 +55,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: returning ? "Your mystical journey continues." : "Your mystical journey begins now.",
       });
       onClose();
-      router.push(returning ? '/dashboard' : '/profile-setup');
+      router.push(returning ? '/tools' : '/profile');
     } catch (error: any) {
       // Handle "Target ID already exists" error gracefully
       if (error.message?.includes('Target ID already exists') || 
@@ -98,7 +98,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: "Your mystical journey continues.",
       });
       onClose();
-      router.push('/dashboard');
+      router.push('/tools');
     } catch (error: any) {
       setError(error.message);
       toast({
@@ -138,7 +138,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: "Your mystical journey begins now.",
       });
       onClose();
-      router.push('/profile-setup');
+      router.push('/profile');
     } catch (error: any) {
       setError(error.message);
       toast({

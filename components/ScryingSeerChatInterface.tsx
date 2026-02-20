@@ -1,18 +1,13 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Send, Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  MessageCircle, 
-  Send, 
-  Loader2,
-  Trash2
-} from "lucide-react";
-import { SlowRevealText } from "@/components/chat/SlowRevealText";
 
 interface Message {
   id: string;
@@ -22,172 +17,266 @@ interface Message {
 }
 
 const SCRYING_HINT_QUESTIONS = [
-  'What theme is emerging?',
-  'What pattern wants attention?',
-  'What am I not consciously noticing?',
-  'What energy surrounds this matter?',
+  'What do my dominant symbols suggest right now?',
+  'How can I use the strategic guidance in my situation?',
+  'What do the risk and opportunity indicators mean for me?',
+  'How does the archetypal pattern apply to my path?',
 ];
 
+const SEE_MORE_THRESHOLD = 320;
+const PREVIEW_LENGTH = 320;
+
 interface ScryingSeerChatInterfaceProps {
-  userId: string;
-  userProfile?: any;
-  scryingVision?: any;
-  scryingMethod?: 'crystal-ball' | 'mirror';
+  report: Record<string, unknown>;
+  userProfile?: Record<string, unknown>;
+  userId?: string;
 }
 
-export default function ScryingSeerChatInterface({ 
-  userId, 
-  userProfile, 
-  scryingVision,
-  scryingMethod 
+export function ScryingSeerChatInterface({
+  report,
+  userProfile,
+  userId,
 }: ScryingSeerChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(new Set());
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [streamingDisplayLength, setStreamingDisplayLength] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-  };
+  const streamingLengthRef = useRef(0);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+    if (!streamingMessageId) return;
+    const interval = setInterval(() => {
+      setStreamingDisplayLength((prev) =>
+        Math.min(prev + 1, streamingLengthRef.current)
+      );
+    }, 90);
+    return () => clearInterval(interval);
+  }, [streamingMessageId]);
 
-  const sendMessage = async (question: string) => {
-    if (!question.trim() || isLoading) return;
+  const toggleExpanded = (id: string) => {
+    setExpandedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const sendMessage = async (questionText?: string) => {
+    const messageToSend = questionText || question.trim();
+    if (!messageToSend || isLoading || !report) return;
 
     const userMessage: Message = {
-      id: `msg_${Date.now()}_user`,
+      id: `user_${Date.now()}`,
       type: 'user',
-      content: question,
-      timestamp: Date.now()
+      content: messageToSend,
+      timestamp: Date.now(),
     };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
 
-    try {
-      if (question.length > 500) {
-        throw new Error('Question is too long. Please keep it under 500 characters.');
-      }
+    const aiMessageId = `seer_${Date.now()}`;
+    const aiMessage: Message = {
+      id: aiMessageId,
+      type: 'seer',
+      content: '',
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    setStreamingMessageId(aiMessageId);
+    setStreamingDisplayLength(0);
+    streamingLengthRef.current = 0;
 
+    try {
       const response = await fetch('/api/ask-scrying-seer', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: userId,
-          question: question,
-          userProfile: userProfile,
-          scryingVision: scryingVision,
-          scryingMethod: scryingMethod
+          question: messageToSend,
+          scryingReport: report,
+          userProfile,
+          userId,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        const errorText = (errorData?.error ?? 'Failed to get response') as string;
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId ? { ...msg, content: errorText } : msg
+          )
+        );
+        setStreamingMessageId(null);
+        return;
       }
 
-      // Handle streaming response
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      let fullResponse = '';
+      let accumulatedContent = '';
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
           const chunk = decoder.decode(value, { stream: true });
-          fullResponse += chunk;
-
-          // Update message with streaming content
-          setMessages(prev => {
-            const lastMessage = prev[prev.length - 1];
-            if (lastMessage && lastMessage.type === 'seer') {
-              return prev.map(msg => 
-                msg.id === lastMessage.id 
-                  ? { ...msg, content: fullResponse }
-                  : msg
-              );
-            } else {
-              return [...prev, {
-                id: `msg_${Date.now()}_seer`,
-                type: 'seer',
-                content: fullResponse,
-                timestamp: Date.now()
-              }];
-            }
-          });
+          accumulatedContent += chunk;
+          streamingLengthRef.current = accumulatedContent.length;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+            )
+          );
         }
       }
-
+      setStreamingMessageId(null);
     } catch (error) {
-      devLog.error('Error sending message:', error, 'ScryingSeerChatInterface');
-      
-      let errorMessage = 'I apologize, but I encountered an error. Please try again.';
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      const errorMsg: Message = {
-        id: `msg_${Date.now()}_error`,
-        type: 'seer',
-        content: errorMessage,
-        timestamp: Date.now()
-      };
-
-      setMessages(prev => [...prev, errorMsg]);
+      devLog.error('Scrying Seer error', error, 'ScryingSeerChatInterface');
+      setStreamingMessageId(null);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? { ...msg, content: 'I apologize, but I encountered an error. Please try again.' }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
+      if (!questionText) setQuestion('');
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      sendMessage(inputValue.trim());
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
     }
+  };
+
+  const formatMessage = (message: Message) => {
+    if (message.type === 'user') {
+      return (
+        <motion.div
+          key={message.id}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex justify-end"
+        >
+          <div className="max-w-[80%] rounded-xl p-4 bg-purple-50 border-2 border-purple-200 text-slate-800">
+            <div className="whitespace-pre-wrap">{message.content}</div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    const isStreaming = message.id === streamingMessageId;
+    const contentToShow = isStreaming
+      ? message.content.slice(0, streamingDisplayLength)
+      : message.content;
+    const isLong = message.content.length > SEE_MORE_THRESHOLD;
+    const isExpanded = expandedMessageIds.has(message.id);
+    const showPreview = !isStreaming && isLong && !isExpanded;
+    const displayContent = showPreview
+      ? message.content.slice(0, PREVIEW_LENGTH) +
+        (message.content.length > PREVIEW_LENGTH ? '…' : '')
+      : contentToShow;
+
+    return (
+      <motion.div
+        key={message.id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex justify-start"
+      >
+        <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 text-slate-700">
+          <div className="whitespace-pre-wrap leading-relaxed">
+            {isStreaming ? (
+              <SlowRevealText
+                content={displayContent}
+                minThinkingMs={2000}
+                delayPerWord={85}
+                thinkingLabel="Reflecting on your symbols…"
+                className="text-slate-700"
+              />
+            ) : (
+              displayContent
+            )}
+          </div>
+          {!isStreaming && isLong && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-2 text-purple-700 hover:text-purple-900 hover:bg-purple-100 p-0 h-auto font-normal flex items-center gap-1"
+              onClick={() => toggleExpanded(message.id)}
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  See less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  See more
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </motion.div>
+    );
   };
 
   return (
-    <div className="flex flex-col h-[600px]">
-      {messages.length > 0 && (
-        <div className="flex justify-end px-4 py-2 border-b border-amber-200">
+    <Card className="flex flex-col h-full bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
+      <CardHeader className="border-b border-purple-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
+        <CardTitle className="text-purple-900 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-purple-700" />
+          Ask the Seer — Scrying
+        </CardTitle>
+        {messages.length > 0 && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="text-slate-600 hover:text-amber-900 hover:bg-amber-100"
-            onClick={clearChat}
+            className="text-slate-600 hover:text-purple-900 hover:bg-purple-100 shrink-0"
+            onClick={() => setMessages([])}
           >
             <Trash2 className="w-4 h-4 mr-1" />
             Clear chat
           </Button>
-        </div>
-      )}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.length === 0 && !isLoading && (
+        )}
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
+          {messages.length === 0 && !isLoading ? (
             <div className="text-center py-8">
-              <MessageCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-              <p className="text-amber-900 font-medium mb-2">
-                Ask about emerging themes, patterns, or what wants attention…
+              <Sparkles className="w-12 h-12 mx-auto mb-4 text-purple-700" />
+              <p className="text-purple-900 font-medium mb-2">
+                Ask me anything about your scrying report and symbols…
               </p>
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I&apos;ll interpret your dominant themes, elemental balance, archetypal pattern, and strategic guidance
+                based on your generated report. Symbolic introspection only; not predictive certainty.
+              </p>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Dominant symbols and themes</li>
+                <li>Risk and opportunity indicators</li>
+                <li>Archetypal pattern and life phase</li>
+                <li>Strategic guidance and timing</li>
+              </ul>
               <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {SCRYING_HINT_QUESTIONS.map((q, i) => (
                   <Button
@@ -196,71 +285,65 @@ export default function ScryingSeerChatInterface({
                     size="sm"
                     onClick={() => sendMessage(q)}
                     disabled={isLoading}
-                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
+                    className="text-xs text-purple-800 border-purple-200 hover:bg-purple-100"
                   >
                     {q}
                   </Button>
                 ))}
               </div>
             </div>
-          )}
-          
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.type === 'user'
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-white border-2 border-amber-200 text-slate-700'
-                }`}
-              >
-                <p className="whitespace-pre-wrap break-words">
-                  {message.type === 'user' ? message.content : (
-                    <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
-                  )}
-                </p>
-              </div>
-            </div>
-          ))}
-          
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white border-2 border-amber-200 rounded-2xl px-4 py-3">
-                <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
-              </div>
+          ) : (
+            <div className="space-y-4">
+              <AnimatePresence>
+                {messages.map((message) => (
+                  <div key={message.id}>{formatMessage(message)}</div>
+                ))}
+              </AnimatePresence>
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 text-slate-700">
+                      <Loader2 className="w-4 h-4 animate-spin text-purple-700" />
+                      Reflecting on your symbols…
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
             </div>
           )}
-          
-          <div ref={messagesEndRef} />
         </div>
-      </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="border-t-2 border-amber-200 p-4">
-        <div className="flex gap-2">
-          <Input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask about emerging themes, patterns, or perception…"
-            className="flex-1 border-2 border-amber-200 rounded-xl focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
-            disabled={isLoading}
-          />
-          <Button
-            type="submit"
-            disabled={isLoading || !inputValue.trim()}
-            className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl"
+        <div className="shrink-0 border-t border-purple-200 bg-white/80 p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendMessage();
+            }}
+            className="flex gap-2"
           >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
+            <Input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Ask about your symbols, themes, or guidance…"
+              disabled={isLoading}
+              className="flex-1 bg-white border-purple-200 text-slate-800 placeholder-slate-500 focus:border-purple-400 focus:ring-purple-200 transition-all duration-300"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading || !question.trim()}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </Button>
+          </form>
         </div>
-      </form>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -21,6 +21,20 @@ export interface KabbalisticPrecomputedContext {
   dominantElement?: string;
   deficientElement?: string;
   challengingAspects?: string[];
+  hebrewBirthday?: string;
+  hebrewMonthDay?: string;
+  isLeapMonthAdar?: boolean;
+  letterOfSign?: string;
+  letterOfPlanet?: string;
+  name72?: { index: number; name: string };
+  twelfthHousePlanets?: string[];
+  saturnHouse?: number;
+  currentSaturnCycleYear?: number;
+  nodalCyclePhase?: string;
+  jupiterCyclePhase?: string;
+  sephiroticDominant?: string[];
+  sephiroticUnderdeveloped?: string[];
+  planetSefirot?: Array<{ planet: string; sefirah: string }>;
 }
 
 /** Schema for comprehensive Kabbalistic Astrology analysis (mandatory output shape). */
@@ -28,6 +42,10 @@ export interface KabbalisticAstrologyAnalysisSchema {
   executive_summary?: string;
   natal_overview?: string;
   hebrew_sign: string;
+  hebrew_birthday?: string;
+  name_72?: string;
+  letter_of_sign?: string;
+  letter_of_planet?: string;
   sun_through_tree_of_life?: string;
   moon_emotional_root?: string;
   ascendant_path?: string;
@@ -36,6 +54,7 @@ export interface KabbalisticAstrologyAnalysisSchema {
   tikkun_axis?: string;
   past_life_residue: string;
   core_correction: string;
+  recommended_spiritual_discipline?: string;
   elemental_modal_balance?: string;
   challenging_aspects?: string;
   angelic_correspondence?: string;
@@ -43,6 +62,10 @@ export interface KabbalisticAstrologyAnalysisSchema {
   spiritual_strength: string;
   growth_path: string;
   integration_guidance: string;
+  career_malkuth?: string;
+  relationship_emotional_correction?: string;
+  long_term_rectification_cycles?: string;
+  current_spiritual_test?: string;
 }
 
 export interface BuildKabbalisticReportOptions {
@@ -75,7 +98,14 @@ export function buildKabbalisticAstrologyReportSystemPrompt(
 - North Node: ${precomputedContext.northNodeSign ?? 'Unknown'} in House ${precomputedContext.northNodeHouse ?? 'N/A'}
 - South Node: ${precomputedContext.southNodeSign ?? 'Unknown'} in House ${precomputedContext.southNodeHouse ?? 'N/A'}
 - Hebrew Month: ${precomputedContext.hebrewMonth ?? 'Unknown'}
+- Hebrew Birthday (Jewish day from sundown): ${precomputedContext.hebrewBirthday ?? 'Unknown'}${precomputedContext.isLeapMonthAdar ? ' (Adar I or Adar II — leap month)' : ''}
+- Letter of Sign (Mazal): ${precomputedContext.letterOfSign ?? 'Unknown'}, Letter of Planet: ${precomputedContext.letterOfPlanet ?? 'Unknown'}
+- 72 Names of God (by Sun degree): #${precomputedContext.name72?.index ?? '?'} ${precomputedContext.name72?.name ?? 'Unknown'}
 - Birth Decan Angel: ${precomputedContext.birthDecanAngel ?? 'Unknown'}
+- Planets in 12th House (karmic residue): ${precomputedContext.twelfthHousePlanets?.length ? precomputedContext.twelfthHousePlanets.join(', ') : 'None'}
+- Saturn House: ${precomputedContext.saturnHouse ?? 'N/A'}
+- Saturn cycle (current year in ~29y cycle): ${precomputedContext.currentSaturnCycleYear ?? 'N/A'}, Nodal phase: ${precomputedContext.nodalCyclePhase ?? 'N/A'}, Jupiter phase: ${precomputedContext.jupiterCyclePhase ?? 'N/A'}
+- Sefirotic dominant: ${precomputedContext.sephiroticDominant?.length ? precomputedContext.sephiroticDominant.join(', ') : 'N/A'}; underdeveloped: ${precomputedContext.sephiroticUnderdeveloped?.length ? precomputedContext.sephiroticUnderdeveloped.join(', ') : 'N/A'}
 - Element Distribution: Fire ${precomputedContext.elementDistribution?.fire ?? 0}, Earth ${precomputedContext.elementDistribution?.earth ?? 0}, Air ${precomputedContext.elementDistribution?.air ?? 0}, Water ${precomputedContext.elementDistribution?.water ?? 0}
 - Mode Distribution: Cardinal ${precomputedContext.modeDistribution?.cardinal ?? 0}, Fixed ${precomputedContext.modeDistribution?.fixed ?? 0}, Mutable ${precomputedContext.modeDistribution?.mutable ?? 0}
 - Dominant Element: ${precomputedContext.dominantElement ?? 'Unknown'}, Deficient Element: ${precomputedContext.deficientElement ?? 'Unknown'}
@@ -110,21 +140,30 @@ Respond with a single JSON object only, no markdown or extra text. Use this exac
   "executive_summary": "One-page synthesis: core sefirotic center, primary tikkun theme, dominant imbalance, growth discipline. 2-4 sentences.",
   "natal_overview": "Birth chart as blueprint of soul tendencies; energetic imprint at incarnation. Mention zodiac system (tropical) and house system (Placidus). 2-3 sentences.",
   "hebrew_sign": "Mazal — e.g. Scorpio (Cheshvan). Interpret birth sign as filter of cosmic energy, not fixed fate.",
+  "hebrew_birthday": "Hebrew calendar date of birth (Jewish day from sundown). Use precomputed value if provided; otherwise derive from Sun sign/Hebrew month.",
+  "name_72": "The 72 Names of God (Shem HaMephorash) segment by Sun degree: name and brief meditation/frequency note. Use precomputed name.",
+  "letter_of_sign": "Hebrew letter of the zodiac sign (Mazal). Use precomputed value.",
+  "letter_of_planet": "Hebrew letter of the planet ruling the Sun sign. Use precomputed value.",
   "sun_through_tree_of_life": "Sun as core soul essence; Tiferet resonance. Include: elevated expression, imbalanced expression, correction pathway. 2-4 sentences.",
   "moon_emotional_root": "Moon as emotional vessel (Kli); reactive tendencies; family karmic themes. Link to Yesod. 2-3 sentences.",
   "ascendant_path": "Ascendant as entry gate of consciousness; path of embodiment; interaction with material world. 2-3 sentences.",
-  "sefirotic_mapping": "Dominant sefirotic influences, underdeveloped sefirot, balancing path. Reference planet-to-sefirah correspondences. 2-4 sentences.",
+  "sefirotic_mapping": "Dominant and underdeveloped sefirot (use precomputed data), balancing path. Reference planet-to-sefirah. 2-4 sentences.",
   "tikkun_theme": "short phrase e.g. transforming intensity into constructive power",
   "tikkun_axis": "North Node growth vector, South Node overdeveloped pattern, core corrective trajectory. 2-3 sentences.",
-  "past_life_residue": "short phrase e.g. control and emotional extremes",
+  "past_life_residue": "short phrase; include 12th house and Saturn if highlighted in precomputed data.",
   "core_correction": "short phrase e.g. balance and trust",
+  "recommended_spiritual_discipline": "Concrete discipline: study, charity, restraint, meditation, or other practice aligned with Tikkun. 1-2 sentences.",
   "elemental_modal_balance": "Dominant/deficient element and mode; correction strategy. 2-3 sentences.",
-  "challenging_aspects": "2-4 key squares/oppositions as spiritual friction; refinement tasks. One sentence per aspect or combined.",
-  "angelic_correspondence": "Interpretation of the birth decan angel (provided in precomputed data) for this individual. 1-2 sentences.",
+  "challenging_aspects": "2-4 key squares/oppositions as spiritual friction; use the exact planet names from precomputed data (e.g. Mars square Saturn, Sun opposition Moon). One sentence per aspect or combined.",
+  "angelic_correspondence": "Interpretation of the birth decan angel and/or 72 Name for this individual. 1-2 sentences.",
   "lunar_influence": "Birth month in Hebrew calendar; Moon cycle influence on behavior. 1-2 sentences.",
   "spiritual_strength": "short phrase e.g. resilience and depth",
   "growth_path": "short phrase e.g. discipline and emotional refinement",
-  "integration_guidance": "one sentence e.g. respond with awareness rather than reaction"
+  "integration_guidance": "one sentence e.g. respond with awareness rather than reaction",
+  "career_malkuth": "Career and material manifestation (Malkuth layer): how soul correction manifests in work and physical world. 2-3 sentences. Analytical, not predictive.",
+  "relationship_emotional_correction": "Relationship and emotional correction: patterns to refine in partnership and emotion. 2-3 sentences.",
+  "long_term_rectification_cycles": "Saturn (~29y), Nodal (~18.6y), Jupiter (~12y) cycles as spiritual rectification windows. Use precomputed cycle phase. 2-4 sentences.",
+  "current_spiritual_test": "Optional: if transits are known, one sentence on current test; otherwise omit or say 'Interpret by current life themes.'"
 }`;
 }
 

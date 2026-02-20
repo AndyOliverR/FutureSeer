@@ -12,7 +12,10 @@ export interface VedicDerived {
   enhancedTransits: string
   enhancedRemedies: Record<string, string>
   enhancedPanchanga: string
-  vedicReading: { interpretations: Record<string, unknown>; remedies: { practice: string }[] } | null
+  vedicReading: {
+    interpretations: Record<string, unknown>
+    remedies: Array<{ name?: string; type?: string; description?: string; practice?: string; instructions?: string; timing?: string }>
+  } | null
   vedicAstroNumerologyReport: unknown
   hasLoadedInterpretations: boolean
   interpretationSource: 'fallback' | 'cache' | 'api'
@@ -88,10 +91,19 @@ export function useVedicProfile(profile: ComprehensiveMysticalProfile | null, ha
 
     let vedicReading: VedicDerived['vedicReading'] = null
     if (interp) {
-      const remediesArr = (interp.remedies as Record<string, unknown>)?.practices as string[] | undefined
+      const remediesObj = interp.remedies as Record<string, unknown> | undefined
+      const practices = (remediesObj?.practices as string[] | undefined)
+      const mantras = (remediesObj?.mantras as string[] | undefined)
+      const gemstones = (remediesObj?.gemstones as string[] | undefined)
+      const overview = typeof remediesObj?.overview === 'string' ? remediesObj.overview : undefined
+      const remedyItems: { name?: string; type?: string; description?: string; practice?: string; instructions?: string; timing?: string }[] = []
+      if (overview) remedyItems.push({ name: 'Remedies overview', type: 'Guidance', description: overview, practice: overview })
+      if (Array.isArray(mantras) && mantras.length) mantras.forEach((m) => remedyItems.push({ name: 'Mantra', type: 'Mantra', description: m, practice: m }))
+      if (Array.isArray(gemstones) && gemstones.length) gemstones.forEach((g) => remedyItems.push({ name: 'Gemstone', type: 'Gemstone', description: g, practice: g }))
+      if (Array.isArray(practices) && practices.length) practices.forEach((p) => remedyItems.push({ name: 'Practice', type: 'Practice', description: p, practice: p }))
       vedicReading = {
         interpretations: interp,
-        remedies: Array.isArray(remediesArr) ? remediesArr.map((p: string) => ({ practice: p })) : []
+        remedies: remedyItems
       }
     }
 

@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, Star, Zap, Users, Crown, Sparkles, TrendingUp, Shield, BookOpen, Heart, LogIn } from "lucide-react";
-import { Header } from "@/components/header";
-
 const PLAN_DISPLAY_NAME: Record<string, string> = {
   'power-user-trial': 'Trial',
   'buy-coffee': 'Coffee',
@@ -74,7 +72,6 @@ export default function SubscribePage() {
 
   return (
     <div className="min-h-screen py-12 px-4 starfield-ultra-sharp">
-      <Header />
       <div className="max-w-7xl mx-auto">
         {/* Sign-in CTA for guests */}
         {!user && (

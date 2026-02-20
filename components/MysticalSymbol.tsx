@@ -135,8 +135,6 @@ export function ToolSymbol({
     'horary': 'clock',
     'kabbalistic-numerology': 'keter',
     'medical-astrology': 'caduceus',
-    'financial-astrology': 'dollar',
-    'mundane-astrology': 'globe',
     'kp-astrology': 'star',
     'bazi': 'dragon',
     'angel-numbers': 'angel',

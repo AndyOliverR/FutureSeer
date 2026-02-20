@@ -9,7 +9,7 @@ interface Coordinates {
   displayName?: string
 }
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 /**
  * Server-side geocoding with fallback to common Indian cities
