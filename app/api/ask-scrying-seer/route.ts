@@ -7,10 +7,10 @@ const SCRYING_REFUSAL_DATA = 'Scrying report is required. Generate your mystical
 function buildScryingContext(report: Record<string, unknown>): string {
   const parts: string[] = [];
   if (report.sessionOverview) parts.push(`Session: ${report.sessionOverview}`);
-  if (report.dominantSymbolThemes?.length) {
-    parts.push(`Dominant themes: ${(report.dominantSymbolThemes as string[]).join(', ')}`);
+  if (Array.isArray(report.dominantSymbolThemes) && report.dominantSymbolThemes.length) {
+    parts.push(`Dominant themes: ${report.dominantSymbolThemes.join(', ')}`);
   }
-  if (report.elementalBalanceSummary) parts.push(report.elementalBalanceSummary);
+  if (report.elementalBalanceSummary) parts.push(String(report.elementalBalanceSummary));
   if (report.archetypalEnergyPattern) {
     parts.push(`Archetypal pattern: ${report.archetypalEnergyPattern}`);
   }
@@ -19,11 +19,11 @@ function buildScryingContext(report: Record<string, unknown>): string {
   if (session?.interpretation?.summary) {
     parts.push(`Interpretation: ${(session.interpretation as { summary?: string }).summary}`);
   }
-  if (report.riskIndicators?.length) {
-    parts.push(`Risks: ${(report.riskIndicators as string[]).join(' ')}`);
+  if (Array.isArray(report.riskIndicators) && report.riskIndicators.length) {
+    parts.push(`Risks: ${report.riskIndicators.join(' ')}`);
   }
-  if (report.opportunityIndicators?.length) {
-    parts.push(`Opportunities: ${(report.opportunityIndicators as string[]).join(' ')}`);
+  if (Array.isArray(report.opportunityIndicators) && report.opportunityIndicators.length) {
+    parts.push(`Opportunities: ${report.opportunityIndicators.join(' ')}`);
   }
   return parts.join('\n');
 }
