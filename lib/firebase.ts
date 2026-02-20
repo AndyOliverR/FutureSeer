@@ -541,6 +541,12 @@ const isInternalFirestoreError = (error: any): boolean => {
   return message.includes('INTERNAL ASSERTION FAILED') || message.includes('Unexpected state (ID');
 };
 
+/** Treat like internal error: use cached profile so Astro-Numerology and Compare still get userProfile. */
+const isBenignFirestoreProfileError = (error: any): boolean => {
+  const message = error?.message || '';
+  return message.includes('Target ID already exists') || message.includes('Failed to get document from server');
+};
+
 export interface Note {
   id?: string;
   uid: string;
@@ -1294,10 +1300,10 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
         }
         return null;
       } catch (docError: any) {
-        // Suppress Firestore internal assertion errors
-        if (isInternalFirestoreError(docError)) {
+        // Suppress Firestore internal assertion errors and benign quirks (Target ID already exists, etc.)
+        if (isInternalFirestoreError(docError) || isBenignFirestoreProfileError(docError)) {
           devLog.warn('⚠️ Firestore internal error suppressed in getUserProfile:', docError.message, 'firebase');
-          // Try to return local profile as fallback
+          // Try to return local profile as fallback so Astro-Numerology and Compare still get userProfile
           if (typeof window !== 'undefined') {
             const localProfile = getLocalUserProfile();
             if (localProfile && localProfile.birthTime) {
@@ -1327,10 +1333,10 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
         throw docError;
       }
     } catch (error: any) {
-      // Suppress Firestore internal assertion errors
-      if (isInternalFirestoreError(error)) {
+      // Suppress Firestore internal assertion errors and benign quirks (Target ID already exists, etc.)
+      if (isInternalFirestoreError(error) || isBenignFirestoreProfileError(error)) {
         devLog.warn('⚠️ Firestore internal error suppressed in getUserProfile:', error.message, 'firebase');
-        // Try to return local profile as fallback
+        // Try to return local profile as fallback so Astro-Numerology and Compare still get userProfile
         if (typeof window !== 'undefined') {
           const localProfile = getLocalUserProfile();
           if (localProfile && localProfile.birthTime) {
@@ -2127,11 +2133,16 @@ export const hasProfileDataChanged = (profile: UserProfile, newData: Partial<Use
 /**
  * True when reports (comprehensive mystical profile) must not be used: no user profile,
  * no stored generation hash, or current input hash differs from hash at generation time.
+ * Legacy: if profile was generated before profileDataHash existed, treat as not stale so reports still load.
  */
 export const isReportsStale = (userProfile: UserProfile | null): boolean => {
   if (!userProfile) return true;
   const stored = userProfile.profileDataHash;
-  if (stored == null || stored === '') return true;
+  if (stored == null || stored === '') {
+    // Legacy users who generated before we stored profileDataHash: still show reports
+    if (userProfile.mysticalProfileGenerated === true) return false;
+    return true;
+  }
   return calculateProfileDataHash(userProfile) !== stored;
 };
 
@@ -2190,7 +2201,7 @@ export const resetProfileGenerationStatus = async (uid: string): Promise<void> =
 
 export interface UnifiedReading {
   id: string;
-  type: 'ask' | 'tarot' | 'runes' | 'lenormand' | 'scrying';
+  type: 'ask' | 'tarot' | 'runes' | 'lenormand';
   question: string;
   timestamp: number;
   confidence?: number;
@@ -2293,52 +2304,6 @@ export const getLenormandReadings = async (userId: string): Promise<UnifiedReadi
 };
 
 /**
- * Fetch all scrying readings for a user
- */
-export const getScryingReadings = async (userId: string): Promise<UnifiedReading[]> => {
-  try {
-    const db = getFirebaseDB();
-    if (!db) return [];
-
-    const scryingRef = collection(db, 'scryingReadings');
-    const q = query(
-      scryingRef,
-      where('userId', '==', userId),
-      orderBy('timestamp', 'desc')
-    );
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        type: 'scrying' as const,
-        question: data.question || '',
-        timestamp: data.timestamp?.toMillis?.() || new Date(data.timestamp).getTime() || Date.now(),
-        confidence: data.confidenceLevel || data.confidence || 75,
-        symbolicData: data.symbolicData || { elementalInfluence: 'Water' },
-        remedies: data.remedies || [],
-        rawData: data
-      };
-    });
-  } catch (error: any) {
-    // Handle permission errors gracefully - these are expected when user doesn't have access
-    // or when Firestore rules restrict access (which is normal security behavior)
-    if (error?.code === 'permission-denied' || 
-        error?.code === 'permissions' ||
-        error?.message?.includes('Missing or insufficient permissions') ||
-        error?.message?.includes('permission-denied')) {
-      // Permission errors are expected and handled gracefully - use warn instead of error
-      devLog.warn('Scrying readings access restricted (expected)', error?.code || 'permission-denied', 'firebase');
-      return [];
-    }
-    // Only log unexpected errors as errors
-    devLog.error('Error fetching scrying readings:', error, 'firebase');
-    return [];
-  }
-};
-
-/**
  * Fetch all readings from all sources for a user
  * Gracefully handles errors - if one reading type fails, others still load
  */
@@ -2371,10 +2336,6 @@ export const getAllReadings = async (userId: string): Promise<UnifiedReading[]> 
       getLenormandReadings(userId).catch(err => {
         devLog.warn('Error fetching lenormand readings:', err, 'firebase');
         return [];
-      }),
-      getScryingReadings(userId).catch(err => {
-        devLog.warn('Error fetching scrying readings:', err, 'firebase');
-        return [];
       })
     ]);
 
@@ -2383,15 +2344,13 @@ export const getAllReadings = async (userId: string): Promise<UnifiedReading[]> 
     const tarotReadings = results[1].status === 'fulfilled' ? results[1].value : [];
     const runeReadings = results[2].status === 'fulfilled' ? results[2].value : [];
     const lenormandReadings = results[3].status === 'fulfilled' ? results[3].value : [];
-    const scryingReadings = results[4].status === 'fulfilled' ? results[4].value : [];
 
     // Combine and sort by timestamp
     const allReadings = [
       ...askHistory,
       ...tarotReadings,
       ...runeReadings,
-      ...lenormandReadings,
-      ...scryingReadings
+      ...lenormandReadings
     ].sort((a, b) => b.timestamp - a.timestamp);
 
     return allReadings;

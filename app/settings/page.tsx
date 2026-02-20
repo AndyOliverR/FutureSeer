@@ -16,8 +16,6 @@ import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { User, LogOut, Trash2, CheckCircle, XCircle, Moon, Sun, Bell, Globe, Mic, Mail, Heart, Users, Sparkles } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { Header } from "@/components/header"
-
 export default function SettingsPage() {
   const { t } = useTranslation('common')
   const { user, refreshProfile, signOut } = useAuth()
@@ -67,7 +65,6 @@ export default function SettingsPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <Header />
       <div className="pt-20 px-4 pb-4 max-w-3xl mx-auto">
         {/* Header */}
         <motion.div

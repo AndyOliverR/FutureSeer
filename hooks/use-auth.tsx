@@ -83,13 +83,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // Ensure Firestore connection is stable before proceeding
-      try {
-        await ensureFirestoreConnection();
-      } catch (connectionError) {
+      // Ensure Firestore connection in the background so auth state is not blocked
+      void ensureFirestoreConnection().catch((connectionError) => {
         console.warn('⚠️ Firestore connection check failed during auth initialization:', connectionError);
-      }
-      
+      });
+
       // Check for redirect result first
       try {
         const redirectResult = await getRedirectResult();
@@ -99,8 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (redirectError) {
         console.log('ℹ️ No redirect result or redirect error:', redirectError);
       }
-      
-      // Regular Firebase authentication
+
+      // Regular Firebase authentication (no longer blocked on Firestore)
       const auth = getFirebaseAuth();
       if (!auth) {
         setLoading(false);

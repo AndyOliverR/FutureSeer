@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { TopNavBar } from "@/components/TopNavBar";
 
 export const metadata: Metadata = {
   title: "Notes - FutureSeer",
@@ -9,10 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function NotesLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <TopNavBar />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }

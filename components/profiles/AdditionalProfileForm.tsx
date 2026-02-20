@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AdditionalProfile, RelationshipType } from '@/lib/types/profileTypes'
 import { profileManager } from '@/lib/services/profileManager'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, UserPlus, Save, Sparkles } from 'lucide-react'
+import { Loader2, UserPlus, Save, Sparkles, Calendar, Clock } from 'lucide-react'
 
 interface AdditionalProfileFormProps {
   isOpen: boolean
@@ -149,9 +149,19 @@ export function AdditionalProfileForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-slate-900/95 border-amber-500/50 backdrop-blur-md">
-        <DialogHeader>
-          <DialogTitle className="text-amber-200 flex items-center gap-2">
+      <DialogContent
+        className="max-w-2xl w-full flex flex-col overflow-hidden p-0 gap-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-2xl shadow-xl [&>:last-child]:text-amber-200 [&>:last-child]:hover:text-white [&>:last-child]:opacity-90"
+        style={{
+          position: 'fixed',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          maxHeight: 'calc(100vh - 2rem)',
+          height: 'calc(100vh - 2rem)',
+        }}
+      >
+        <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
+          <DialogTitle className="text-amber-400 flex items-center gap-2">
             {editingProfile ? (
               <>
                 <UserPlus className="w-5 h-5" />
@@ -164,15 +174,16 @@ export function AdditionalProfileForm({
               </>
             )}
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-amber-400/80">
             Add information about someone you want to compare compatibility with.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-slate-300">Name *</Label>
+              <Label htmlFor="name" className="text-amber-400">Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -184,34 +195,40 @@ export function AdditionalProfileForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dateOfBirth" className="text-slate-300">Date of Birth *</Label>
-              <Input
-                id="dateOfBirth"
-                type="date"
-                value={formData.dateOfBirth}
-                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                className="bg-slate-800/50 border-amber-500/30 text-white"
-                required
-              />
+              <Label htmlFor="dateOfBirth" className="text-amber-400">Date of Birth *</Label>
+              <div className="relative">
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                  className="bg-slate-800/50 border-amber-500/30 text-white pr-10 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  required
+                />
+                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-200 pointer-events-none" aria-hidden />
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="timeOfBirth" className="text-slate-300">Time of Birth</Label>
-              <Input
-                id="timeOfBirth"
-                type="time"
-                value={formData.timeOfBirth}
-                onChange={(e) => setFormData({ ...formData, timeOfBirth: e.target.value })}
-                className="bg-slate-800/50 border-amber-500/30 text-white"
-                placeholder="HH:mm"
-              />
-              <p className="text-xs text-slate-500">Optional - Required for some astrological tools</p>
+              <Label htmlFor="timeOfBirth" className="text-amber-400">Time of Birth</Label>
+              <div className="relative">
+                <Input
+                  id="timeOfBirth"
+                  type="time"
+                  value={formData.timeOfBirth}
+                  onChange={(e) => setFormData({ ...formData, timeOfBirth: e.target.value })}
+                  className="bg-slate-800/50 border-amber-500/30 text-white pr-10 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  placeholder="HH:MM"
+                />
+                <Clock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-200 pointer-events-none" aria-hidden />
+              </div>
+              <p className="text-xs text-slate-500">Optional - Required for some astrological tools. Use 24-hour (e.g. 14:30) or enter 2:30 PM as 14:30.</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="relationshipType" className="text-slate-300">Relationship Type</Label>
+              <Label htmlFor="relationshipType" className="text-amber-400">Relationship Type</Label>
               <Select
                 value={formData.relationshipType}
                 onValueChange={(value) => setFormData({ ...formData, relationshipType: value as RelationshipType })}
@@ -231,7 +248,7 @@ export function AdditionalProfileForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="birthPlace" className="text-slate-300">Birth Place</Label>
+            <Label htmlFor="birthPlace" className="text-amber-400">Birth Place</Label>
             <Input
               id="birthPlace"
               value={formData.birthPlace}
@@ -242,7 +259,7 @@ export function AdditionalProfileForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="currentLocation" className="text-slate-300">Current Location</Label>
+            <Label htmlFor="currentLocation" className="text-amber-400">Current Location</Label>
             <Input
               id="currentLocation"
               value={formData.currentLocation}
@@ -253,7 +270,7 @@ export function AdditionalProfileForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="relationshipNotes" className="text-slate-300">Relationship Notes</Label>
+            <Label htmlFor="relationshipNotes" className="text-amber-400">Relationship Notes</Label>
             <Textarea
               id="relationshipNotes"
               value={formData.relationshipNotes}
@@ -264,7 +281,7 @@ export function AdditionalProfileForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-slate-300">Notes</Label>
+            <Label htmlFor="notes" className="text-amber-400">Notes</Label>
             <Textarea
               id="notes"
               value={formData.notes}
@@ -273,8 +290,9 @@ export function AdditionalProfileForm({
               className="bg-slate-800/50 border-amber-500/30 text-white min-h-[80px]"
             />
           </div>
+          </div>
 
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-slate-700/50 bg-slate-900/50 rounded-b-lg">
             <Button
               type="button"
               variant="outline"

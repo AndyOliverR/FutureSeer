@@ -201,7 +201,7 @@ export default function KabbalisticNumerologyPage() {
                 <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 rounded-2xl shadow-lg p-6 overflow-hidden">
                   <h3 className="m3-headline-small text-purple-900 mb-4">Kabbalistic Overview</h3>
                   <p className="m3-body-large text-slate-700 leading-relaxed mb-0">
-                    {analysis.overview || "Your Kabbalistic Numerology analysis is being prepared. Please wait a moment or click Regenerate to refresh."}
+                    {analysis.overview || "Generate your mystical profile from your Profile page to see your Kabbalistic Numerology analysis here."}
                   </p>
                 </Card>
 

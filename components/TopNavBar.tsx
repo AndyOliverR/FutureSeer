@@ -16,18 +16,13 @@ import {
 import { ShareAppModal } from "@/components/ShareAppModal";
 
 const navLinks = [
-  // Top 5 (priority)
   { name: "Home", href: "/", icon: "🏠" },
-  { name: "Dashboard", href: "/dashboard", icon: "📊" },
-  { name: "Ask the Seer", href: "/ask-the-seer", icon: "🔮" },
+  { name: "Profile", href: "/profile", icon: "👤" },
   { name: "Tools", href: "/tools", icon: "🧰" },
+  { name: "Ask the Seer", href: "/ask-the-seer", icon: "🔮" },
   { name: "Community", href: "/community", icon: "🏆" },
-  // Right below Community
   { name: "Remedies", href: "/remedies", icon: "💎" },
   { name: "Tip Jar", href: "/tip-jar", icon: "💝", isModal: true },
-  // Rest
-  { name: "History", href: "/history", icon: "📜" },
-  { name: "Profile", href: "/profile", icon: "👤" },
   { name: "Settings", href: "/settings", icon: "⚙️" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
   { name: "About", href: "/about", icon: "ℹ️" },

@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { TopNavBar } from "@/components/TopNavBar";
 import { useAuth } from "@/hooks/use-auth";
 import MainSeerChatInterface from "@/components/MainSeerChatInterface";
 import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting";
@@ -12,12 +11,15 @@ export default function AskTheSeerPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!authLoading && user && !hasRequiredProfileSetup(userProfile)) {
+    if (!authLoading && user && userProfile != null && !hasRequiredProfileSetup(userProfile)) {
       router.replace(PROFILE_SETUP_PATH);
     }
   }, [authLoading, user, userProfile, router]);
 
-  if (authLoading || !user || !hasRequiredProfileSetup(userProfile)) {
+  if (authLoading || !user) {
+    return null;
+  }
+  if (userProfile != null && !hasRequiredProfileSetup(userProfile)) {
     return null;
   }
 
@@ -29,7 +31,6 @@ export default function AskTheSeerPage() {
           background: "radial-gradient(circle at 50% 30%, rgba(90, 60, 160, 0.25), transparent 60%)",
         }}
       />
-      <TopNavBar />
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative">
         <div className="w-full max-w-2xl h-[85vh] min-h-[50vh]">
           <MainSeerChatInterface

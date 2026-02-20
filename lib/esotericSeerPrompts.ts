@@ -17,6 +17,28 @@ export interface EsotericPrecomputedContext {
   moon_house?: number;
   north_node_sign?: string;
   south_node_sign?: string;
+  /** Orthodox (exoteric) ruler of Ascendant */
+  ascendant_orthodox_ruler?: string;
+  /** Esoteric ruler of Sun sign */
+  sun_esoteric_ruler?: string;
+  /** Orthodox ruler of Sun sign */
+  sun_orthodox_ruler?: string;
+  /** Esoteric ruler of Ascendant: its sign and house in chart (path to the soul) */
+  esoteric_ruler_sign?: string;
+  esoteric_ruler_house?: number;
+  /** Seven Rays (computed) */
+  ray_soul?: string;
+  ray_personality?: string;
+  ray_dominant?: string;
+  /** Three Crosses: dominant cross from planetary count */
+  cross_dominant?: string;
+  cross_planet_counts?: { Cardinal: number; Fixed: number; Mutable: number };
+  evolutionary_stage?: string;
+  /** Veiled planets */
+  veiled_by_sun?: string[];
+  veiled_by_moon?: string[];
+  /** Triangle emphasis (e.g. "Aries–Leo–Capricorn: 3 planets") */
+  triangle_emphasis?: string[];
 }
 
 /** Schema for comprehensive esoteric analysis (mandatory + extended output shape). */
@@ -45,6 +67,15 @@ export interface EsotericAnalysisSchema {
   primary_karmic_lesson?: string;
   key_life_arena?: string;
   growth_strategy?: string;
+  /** New sections (Alice Bailey comprehensive report) */
+  executive_soul_profile?: string;
+  cross_of_evolution_assessment?: string;
+  ray_dominance_matrix?: string;
+  esoteric_rulership_analysis?: string;
+  personality_vs_soul_conflict_zones?: string;
+  spiritual_service_orientation?: string;
+  group_karma_indicators?: string;
+  current_evolutionary_phase?: string;
 }
 
 /** Build system prompt for generating the structured esoteric report (comprehensive API). */
@@ -55,11 +86,14 @@ export function buildEsotericReportSystemPrompt(
   const preblock = precomputed
     ? `
 ## Precomputed (use these; do not contradict)
-- Ascendant: ${precomputed.ascendant_sign ?? 'Unknown'}
-- Esoteric Ruler of Ascendant: ${precomputed.esoteric_ruler ?? 'Unknown'}
+- Ascendant: ${precomputed.ascendant_sign ?? 'Unknown'} | Orthodox ruler: ${precomputed.ascendant_orthodox_ruler ?? '—'} | Esoteric ruler: ${precomputed.esoteric_ruler ?? 'Unknown'} (path to soul: sign ${precomputed.esoteric_ruler_sign ?? '—'}, house ${precomputed.esoteric_ruler_house ?? '?'})
+- Sun: ${precomputed.sun_sign ?? 'Unknown'} (House ${precomputed.sun_house ?? '?'}) | Orthodox ruler: ${precomputed.sun_orthodox_ruler ?? '—'} | Esoteric ruler: ${precomputed.sun_esoteric_ruler ?? '—'}
 - Soul Keynote / Key Mantra: ${precomputed.key_mantra ?? '—'}
 - Life Direction Cross: ${precomputed.life_direction_cross ?? 'Unknown'} (focus: ${precomputed.life_direction_focus ?? '—'}, tests: ${precomputed.life_direction_tests ?? '—'})
-- Sun: ${precomputed.sun_sign ?? 'Unknown'} (House ${precomputed.sun_house ?? '?'})
+- Cross of Evolution: dominant cross ${precomputed.cross_dominant ?? '—'} (planets: Cardinal ${precomputed.cross_planet_counts?.Cardinal ?? 0}, Fixed ${precomputed.cross_planet_counts?.Fixed ?? 0}, Mutable ${precomputed.cross_planet_counts?.Mutable ?? 0}); evolutionary stage: ${precomputed.evolutionary_stage ?? '—'}
+- Seven Rays: Soul Ray ${precomputed.ray_soul ?? '—'}, Personality Ray ${precomputed.ray_personality ?? '—'}, Dominant Ray ${precomputed.ray_dominant ?? '—'}
+- Veiled planets: by Sun ${(precomputed.veiled_by_sun?.length ? precomputed.veiled_by_sun.join(', ') : 'none')}; by Moon ${(precomputed.veiled_by_moon?.length ? precomputed.veiled_by_moon.join(', ') : 'none')}
+- Triangle emphasis: ${(precomputed.triangle_emphasis?.length ? precomputed.triangle_emphasis.join('; ') : '—')}
 - Moon: ${precomputed.moon_sign ?? 'Unknown'} (House ${precomputed.moon_house ?? '?'})
 - North Node: ${precomputed.north_node_sign ?? 'Unknown'}, South Node: ${precomputed.south_node_sign ?? 'Unknown'}
 `
@@ -109,7 +143,15 @@ Respond with a single JSON object only, no markdown or extra text. Use this exac
   "core_soul_theme": "one line",
   "primary_karmic_lesson": "one line",
   "key_life_arena": "one line",
-  "growth_strategy": "one line"
+  "growth_strategy": "one line",
+  "executive_soul_profile": "2-3 sentences: soul purpose + personality equipment + Moon obstacles (Executive Soul Profile)",
+  "cross_of_evolution_assessment": "2-3 sentences: dominant cross, planet counts, evolutionary stage (Experience/Discipleship/Initiation)",
+  "ray_dominance_matrix": "2-3 sentences: Soul Ray, Personality Ray, dominant Ray and how they integrate or conflict",
+  "esoteric_rulership_analysis": "2-3 sentences: Ascendant and Sun orthodox vs esoteric ruler; path to the soul via esoteric ruler placement",
+  "personality_vs_soul_conflict_zones": "1-2 sentences: where personality and soul purpose may conflict",
+  "spiritual_service_orientation": "1-2 sentences: orientation toward group service and contribution",
+  "group_karma_indicators": "1-2 sentences: indicators of group karma and collective service",
+  "current_evolutionary_phase": "1 sentence: current evolutionary phase from Cross + Ray"
 }`;
 }
 

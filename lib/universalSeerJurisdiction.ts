@@ -59,13 +59,10 @@ export const DOMAIN_JURISDICTION_MATRIX: ToolJurisdiction[] = [
   { tool: 'vastu', answersWhat: ['spatial', 'directional', 'structural', 'general'] },
   { tool: 'humanDesign', answersWhat: ['identity', 'structural', 'alignment', 'general'] },
   { tool: 'ogham', answersWhat: ['identity', 'symbolic', 'guidance', 'general'] },
-  { tool: 'bibliomancy', answersWhat: ['guidance', 'symbolic', 'general'] },
   { tool: 'trichakra', answersWhat: ['identity', 'symbolic', 'guidance', 'general'] },
   { tool: 'sortilege', answersWhat: ['confirmation', 'alignment', 'directional', 'general'] },
   { tool: 'pendulum', answersWhat: ['confirmation', 'alignment', 'general'] },
   { tool: 'energyHealing', answersWhat: ['health', 'guidance', 'general'] },
-  { tool: 'scrying', answersWhat: ['situational', 'symbolic', 'guidance', 'general'] },
-  { tool: 'mundaneAstrology', answersWhat: ['collective', 'guidance', 'general'] },
   { tool: 'akashicRecords', answersWhat: ['soul-lesson', 'identity', 'guidance', 'general'] },
   { tool: 'astrocartography', answersWhat: ['spatial', 'relocation', 'alignment', 'general'] },
 ];

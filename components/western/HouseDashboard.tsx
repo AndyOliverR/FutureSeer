@@ -41,32 +41,36 @@ const HOUSE_DATA = [
   { number: 12, name: 'Spirituality & Solitude', icon: Waves, theme: 'Hidden matters, karma, retreat', element: 'Water' }
 ]
 
-// Get element color
+// Get element color (and badge style for Fire/Earth/Air/Water labels)
 function getElementColor(element: string) {
   const colors: Record<string, any> = {
     Fire: {
       bg: 'from-orange-50 to-red-50',
       border: 'border-orange-200',
       iconBg: 'bg-orange-200/60',
-      iconColor: 'text-orange-700'
+      iconColor: 'text-orange-700',
+      badgeClass: 'bg-orange-200/90 text-orange-900 border-orange-500 font-semibold'
     },
     Earth: {
       bg: 'from-green-50 to-emerald-50',
       border: 'border-green-200',
       iconBg: 'bg-green-200/60',
-      iconColor: 'text-green-700'
+      iconColor: 'text-green-700',
+      badgeClass: 'bg-emerald-200/90 text-emerald-900 border-emerald-500 font-semibold'
     },
     Air: {
       bg: 'from-cyan-50 to-blue-50',
       border: 'border-cyan-200',
       iconBg: 'bg-cyan-200/60',
-      iconColor: 'text-cyan-700'
+      iconColor: 'text-cyan-700',
+      badgeClass: 'bg-sky-200/90 text-sky-900 border-sky-500 font-semibold'
     },
     Water: {
       bg: 'from-blue-50 to-indigo-50',
       border: 'border-blue-200',
       iconBg: 'bg-blue-200/60',
-      iconColor: 'text-blue-700'
+      iconColor: 'text-blue-700',
+      badgeClass: 'bg-blue-200/90 text-blue-900 border-blue-500 font-semibold'
     }
   }
   return colors[element] || colors.Fire
@@ -79,8 +83,8 @@ export function HouseDashboard({ houses, houseAnalysis }: HouseDashboardProps) {
     <div className="space-y-6">
       {/* Dashboard Header */}
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-slate-800 mb-2">The Twelve Houses</h3>
-        <p className="text-slate-600 text-sm">
+        <h3 className="text-2xl font-bold text-slate-900 mb-2">The Twelve Houses</h3>
+        <p className="text-slate-700 text-sm">
           Life areas and themes represented in your birth chart
         </p>
       </div>
@@ -130,21 +134,21 @@ export function HouseDashboard({ houses, houseAnalysis }: HouseDashboardProps) {
                   
                   {/* Sign */}
                   {house && (
-                    <div className="text-xs text-slate-600 mb-2">
+                    <div className="text-xs text-slate-700 mb-2">
                       {house.sign?.signName || house.sign}
                       {house.degree && ` ${house.degree.toFixed(1)}°`}
                     </div>
                   )}
                   
                   {/* Theme */}
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-slate-700 leading-relaxed">
                     {houseData.theme}
                   </p>
                   
-                  {/* Element Badge */}
+                  {/* Element Badge - colours match element (Fire/Earth/Air/Water) */}
                   <Badge 
                     variant="outline" 
-                    className="mt-3 text-xs"
+                    className={`mt-3 text-xs border ${colors.badgeClass}`}
                   >
                     {houseData.element}
                   </Badge>
@@ -191,7 +195,7 @@ export function HouseDashboard({ houses, houseAnalysis }: HouseDashboardProps) {
                             {houseData?.name}
                           </h4>
                           {house && (
-                            <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <div className="flex items-center gap-2 text-sm text-slate-700">
                               <ZodiacIcon sign={house.sign?.signName || house.sign} size={20} />
                               <span className="font-semibold">
                                 {house.sign?.signName || house.sign}
@@ -218,7 +222,7 @@ export function HouseDashboard({ houses, houseAnalysis }: HouseDashboardProps) {
                           <p className="text-slate-700 leading-relaxed">
                             <strong>Theme:</strong> {houseData?.theme}
                           </p>
-                          <p className="text-slate-600 text-sm mt-2">
+                          <p className="text-slate-700 text-sm mt-2">
                             Full analysis will be available once the comprehensive report is generated.
                           </p>
                         </div>

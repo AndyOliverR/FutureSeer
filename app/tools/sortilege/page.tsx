@@ -194,7 +194,7 @@ export default function SortilegePage() {
   }, [activeTab, activeReportTab, reading, isLoading, isAnimating, error, question])
 
   return (
-    <ToolReportGuard loading={profileLoading} error={profileError ?? null} toolLabel="Sortilege">
+    <ToolReportGuard loading={profileLoading} error={null} toolLabel="Sortilege">
       {isLoading && !displayReading ? (
       <div className="relative min-h-screen">
         <div className="fixed inset-0 -z-10 starfield-ultra-sharp" />
@@ -403,12 +403,35 @@ export default function SortilegePage() {
                           Be specific and clear. The more focused your question, the clearer the guidance.
                         </p>
                       </div>
-                      <Button asChild className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-semibold">
-                        <Link href="/profile">
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Generate your mystical profile
-                        </Link>
+                      {error && (
+                        <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                          {error}
+                        </p>
+                      )}
+                      <Button
+                        onClick={() => loadSortilegeReading()}
+                        disabled={isLoading || !question.trim()}
+                        className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-semibold"
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Casting…
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="h-4 w-4 mr-2" />
+                            Cast & get my reading
+                          </>
+                        )}
                       </Button>
+                      <p className="text-slate-500 text-xs text-center mt-2">
+                        For personalized insights across all tools,{' '}
+                        <Link href="/profile" className="text-amber-600 hover:text-amber-500 underline">
+                          generate your mystical profile
+                        </Link>
+                        .
+                      </p>
                     </CardContent>
                   </Card>
                 </motion.div>

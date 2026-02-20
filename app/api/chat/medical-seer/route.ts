@@ -35,9 +35,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Payload normalization: derive MedicalAstrologyChartPayload from analysis, chartData, or comprehensiveProfile
+    // Medical page sends analysis = { chart, healthIndicators, ... } (data object); API also accepts analysis.data.chart (nested).
     let payload: MedicalAstrologyChartPayload
     if (analysis?.data?.chart) {
       payload = { data: analysis.data }
+    } else if (analysis?.chart) {
+      const data = { ...analysis }
+      let chart = data.chart && typeof data.chart === 'object' ? { ...data.chart } : data.chart
+      if (chart && Array.isArray(chart.planets)) {
+        const byName: Record<string, { sign?: string; house?: number }> = {}
+        chart.planets.forEach((p: { name?: string; sign?: string; house?: number }) => {
+          const name = p?.name
+          if (name) byName[name] = { sign: p.sign, house: p.house }
+        })
+        chart = { ...chart, planets: byName }
+      }
+      data.chart = chart
+      payload = { data }
     } else if (chartData) {
       payload = { data: { chart: chartData } }
     } else if (comprehensiveProfile?.medicalAstrology || comprehensiveProfile?.['Medical Astrology']) {

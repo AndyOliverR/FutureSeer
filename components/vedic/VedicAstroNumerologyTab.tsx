@@ -364,101 +364,101 @@ export default function VedicAstroNumerologyTab({
             colorScheme="amber"
             variant="callout"
           />
-          <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-6">
-              <Accordion type="single" collapsible className="w-full space-y-2">
+          <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-6 mt-6">
+              <Accordion type="single" collapsible className="w-full flex flex-col gap-4">
                 {/* Personality Synthesis */}
-                <AccordionItem value="personality" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="personality" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Moon className="w-5 h-5" />
                       <span className="font-semibold">Personality Synthesis</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.personalitySynthesis || 'Analysis available soon.'}
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Karmic Insights */}
-                <AccordionItem value="karma" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="karma" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Target className="w-5 h-5" />
                       <span className="font-semibold">Karmic Insights & Dasha Connections</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.karmicInsights || 'Karmic analysis available soon.'}
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Remedial Measures */}
-                <AccordionItem value="remedies" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="remedies" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Gem className="w-5 h-5" />
                       <span className="font-semibold">Remedial Measures</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.remedies || 'Remedial guidance available soon.'}
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Career Guidance */}
-                <AccordionItem value="career" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="career" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-5 h-5" />
                       <span className="font-semibold">Career & Life Path Guidance</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.careerGuidance || 'Career guidance available soon.'}
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Relationship Insights */}
-                <AccordionItem value="relationships" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="relationships" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Heart className="w-5 h-5" />
                       <span className="font-semibold">Relationship Dynamics</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.relationshipInsights || 'Relationship insights available soon.'}
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Life Purpose */}
-                <AccordionItem value="purpose" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="purpose" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Target className="w-5 h-5" />
                       <span className="font-semibold">Life Purpose & Dharma</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.lifePurpose || 'Life purpose analysis available soon.'}
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Personal Growth */}
-                <AccordionItem value="growth" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="growth" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-5 h-5" />
                       <span className="font-semibold">Personal Growth Roadmap</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.personalGrowth || 'Personal growth guidance available soon.'}
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Challenges & Opportunities */}
-                <AccordionItem value="challenges" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="challenges" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Zap className="w-5 h-5" />
@@ -468,25 +468,25 @@ export default function VedicAstroNumerologyTab({
                   <AccordionContent className="pt-4 pb-4 space-y-4">
                     <div>
                       <h4 className="text-amber-300 font-semibold mb-2">Challenges:</h4>
-                      <ul className="text-slate-300 space-y-2 list-disc list-inside">
+                      <ul className="text-amber-200 space-y-2 list-disc list-inside">
                         {(comprehensiveAnalysis.challenges && Array.isArray(comprehensiveAnalysis.challenges) && comprehensiveAnalysis.challenges.length > 0) ? (
                           comprehensiveAnalysis.challenges.map((challenge: string, index: number) => (
                             <li key={index}>{challenge}</li>
                           ))
                         ) : (
-                          <li className="text-slate-400 italic">Challenges analysis available soon.</li>
+                          <li className="text-amber-300 italic">Challenges analysis available soon.</li>
                         )}
                       </ul>
                     </div>
                     <div>
-                      <h4 className="text-green-300 font-semibold mb-2">Opportunities:</h4>
-                      <ul className="text-slate-300 space-y-2 list-disc list-inside">
+                      <h4 className="text-emerald-300 font-semibold mb-2">Opportunities:</h4>
+                      <ul className="text-emerald-200 space-y-2 list-disc list-inside">
                         {(comprehensiveAnalysis.opportunities && Array.isArray(comprehensiveAnalysis.opportunities) && comprehensiveAnalysis.opportunities.length > 0) ? (
                           comprehensiveAnalysis.opportunities.map((opportunity: string, index: number) => (
                             <li key={index}>{opportunity}</li>
                           ))
                         ) : (
-                          <li className="text-slate-400 italic">Opportunities analysis available soon.</li>
+                          <li className="text-emerald-300 italic">Opportunities analysis available soon.</li>
                         )}
                       </ul>
                     </div>
@@ -494,14 +494,14 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Yearly Forecast */}
-                <AccordionItem value="forecast" className="border-b border-amber-500/20 bg-slate-800/30 rounded-lg px-4">
+                <AccordionItem value="forecast" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-5 h-5" />
                       <span className="font-semibold">Yearly Forecast</span>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-slate-300 pt-4 pb-4 leading-relaxed">
+                  <AccordionContent className="text-amber-200 pt-4 pb-4 leading-relaxed">
                     {comprehensiveAnalysis.yearlyForecast || 'Yearly forecast available soon.'}
                   </AccordionContent>
                 </AccordionItem>

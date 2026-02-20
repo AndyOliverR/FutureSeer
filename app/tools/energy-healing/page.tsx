@@ -4,11 +4,10 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
-import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
+import { useToolReport, useComprehensiveMysticalProfile } from '@/hooks/useComprehensiveMysticalProfile'
 import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   AlertTriangle,
@@ -16,15 +15,15 @@ import {
   Eye,
   Heart,
   Gem,
-  Activity,
-  Loader2
+  Activity
 } from 'lucide-react'
 import {
   ChakraAnalysis,
   AuraReading,
   ReikiAnalysis,
   CrystalRecommendation,
-  EnergyBalanceAnalysis
+  EnergyBalanceAnalysis,
+  energyHealingImageAnalyzer
 } from '@/lib/energyHealing/energyHealingImageAnalyzer'
 import { ChakraVisualization } from '@/components/energy-healing/ChakraVisualization'
 import { AuraVisualization } from '@/components/energy-healing/AuraVisualization'
@@ -40,22 +39,196 @@ interface AllAnalyses {
   energy: EnergyBalanceAnalysis | null
 }
 
+function getOverallBalance(raw: Record<string, unknown>): number | undefined {
+  const ob = raw.overallBalance ?? raw.overall_balance
+  if (typeof ob === 'number') return ob
+  const over = raw.OVERALL
+  if (typeof over === 'number') return over
+  if (over && typeof over === 'object' && !Array.isArray(over)) return (over as Record<string, unknown>).overallBalance as number | undefined
+  return undefined
+}
+
+/** Normalize raw crystal API response so formatter gets crystals array and expected keys. */
+function normalizeCrystalRaw(raw: Record<string, unknown>): Record<string, unknown> {
+  const crystals = raw.crystals ?? raw.CRYSTALS ?? raw.crystal_list
+  return {
+    ...raw,
+    crystals: Array.isArray(crystals) ? crystals : (raw.crystals && typeof raw.crystals === 'object' ? [raw.crystals] : []),
+    interpretation: raw.interpretation ?? raw.analysis,
+    recommendations: raw.recommendations ?? raw.RECOMMENDATIONS ?? raw.recommendation
+  }
+}
+
+/** Normalize raw energy API response so formatter gets camelCase keys. */
+function normalizeEnergyRaw(raw: Record<string, unknown>): Record<string, unknown> {
+  return {
+    overallBalance: raw.overallBalance ?? raw.overall_balance ?? raw.OVERALL,
+    chakraBalance: raw.chakraBalance ?? raw.chakra_balance ?? raw.chakra_balance_score,
+    auraHealth: raw.auraHealth ?? raw.aura_health ?? raw.aura_health_score,
+    energyFlow: raw.energyFlow ?? raw.energy_flow ?? raw.flow,
+    blockages: raw.blockages ?? raw.BLOCKAGES ?? raw.blockage ?? [],
+    recommendations: raw.recommendations ?? raw.RECOMMENDATIONS ?? [],
+    techniques: raw.techniques ?? raw.TECHNIQUES ?? raw.practices ?? []
+  }
+}
+
+/** True if raw looks like a chakra-only response (orchestrator stores this at top level). Used for hasRealReport. */
+function looksLikeChakraData(raw: Record<string, unknown>): boolean {
+  if (getOverallBalance(raw) !== undefined) return true
+  if (Array.isArray(raw.chakras) && raw.chakras.length > 0) return true
+  if (raw.chakras && typeof raw.chakras === 'object' && !Array.isArray(raw.chakras)) return true
+  if (Array.isArray(raw.CHAKRAS) && raw.CHAKRAS.length > 0) return true
+  if (Array.isArray(raw.chakra_analysis) && raw.chakra_analysis.length > 0) return true
+  return false
+}
+
+/** True if raw can be used as ChakraAnalysis (ChakraVisualization expects chakras array and overallBalance). */
+function isChakraShape(raw: Record<string, unknown>): boolean {
+  return Array.isArray(raw.chakras) && raw.chakras.length > 0 && getOverallBalance(raw) !== undefined
+}
+
+const CHAKRA_NAMES = ['Root Chakra', 'Sacral Chakra', 'Solar Plexus Chakra', 'Heart Chakra', 'Throat Chakra', 'Third Eye Chakra', 'Crown Chakra']
+
+/** Build ChakraAnalysis from raw API-style response (array chakras or object chakras). */
+function normalizeToChakraAnalysis(raw: Record<string, unknown>): ChakraAnalysis | null {
+  const ob = getOverallBalance(raw)
+  const arr = (raw.chakras ?? raw.CHAKRAS ?? raw.chakra_analysis) as Array<{ name?: string; balance?: number; status?: string; interpretation?: string; color?: string }> | Record<string, unknown> | undefined
+  if (Array.isArray(arr) && arr.length > 0) {
+    const chakras = arr.slice(0, 7).map((c, i) => ({
+      name: (c && typeof c === 'object' && (c as { name?: string }).name) ?? CHAKRA_NAMES[i] ?? `Chakra ${i + 1}`,
+      balance: typeof (c as { balance?: number }).balance === 'number' ? (c as { balance: number }).balance : 50,
+      status: ((c as { status?: string }).status as ChakraAnalysis['chakras'][0]['status']) ?? 'balanced',
+      color: (c as { color?: string }).color ?? '#888',
+      interpretation: (c as { interpretation?: string }).interpretation ?? '',
+      recommendations: [] as string[]
+    }))
+    const overallBalance = typeof ob === 'number' ? ob : Math.round(chakras.reduce((s, c) => s + c.balance, 0) / chakras.length)
+    return {
+      chakras,
+      overallBalance,
+      primaryIssues: chakras.filter(c => c.status !== 'balanced').map(c => c.name),
+      recommendations: Array.isArray(raw.recommendations) ? (raw.recommendations as string[]) : []
+    }
+  }
+  if (arr && typeof arr === 'object' && !Array.isArray(arr)) {
+    try {
+      return energyHealingImageAnalyzer.formatChakraAnalysis(raw as { chakras?: Record<string, { balance?: number; status?: string; interpretation?: string }>; overallBalance?: number; recommendations?: string[] })
+    } catch {
+      return null
+    }
+  }
+  if (typeof ob === 'number') {
+    const balance = Math.max(0, Math.min(100, ob))
+    return {
+      chakras: CHAKRA_NAMES.map((name, i) => ({
+        name,
+        balance,
+        status: 'balanced' as const,
+        color: '#888',
+        interpretation: '',
+        recommendations: [] as string[]
+      })),
+      overallBalance: ob,
+      primaryIssues: [],
+      recommendations: Array.isArray(raw.recommendations) ? (raw.recommendations as string[]) : []
+    }
+  }
+  return null
+}
+
 export default function EnergyHealingPage() {
   const { user, userProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<'introduction' | 'chakra' | 'aura' | 'reiki' | 'crystal' | 'energy' | 'ask-the-seer'>('introduction')
-  const { report: pipelineReport, loading, error, hasReport } = useToolReport('energyHealing')
+  const { report: pipelineReport, loading, error } = useToolReport('energyHealing')
+  const { profile } = useComprehensiveMysticalProfile()
+  const reportFromProfile = useMemo(() => {
+    const p = profile as Record<string, unknown> | null
+    if (!p || typeof p !== 'object') return undefined
+    const r = p.energyHealing ?? p['Energy & Healing']
+    return r != null ? r : undefined
+  }, [profile])
+
+  const effectiveReport = pipelineReport ?? reportFromProfile
+
+  const hasRealReport = useMemo(() => {
+    if (!effectiveReport || typeof effectiveReport !== 'object') return false
+    const raw = effectiveReport as Record<string, unknown>
+    if (raw.placeholder === true) return false
+    const hasChakra = !!(raw.chakra || (looksLikeChakraData(raw) && raw))
+    const hasAura = !!raw.aura
+    const hasReiki = !!raw.reiki
+    const hasCrystal = !!raw.crystal
+    const hasEnergy = !!raw.energy
+    if (hasChakra || hasAura || hasReiki || hasCrystal || hasEnergy) return true
+    const keys = Object.keys(raw).filter((k) => k !== 'placeholder' && k !== 'reason')
+    return keys.length > 0
+  }, [effectiveReport])
+
   const allAnalyses = useMemo((): AllAnalyses => {
-    const raw = pipelineReport as Record<string, unknown> | undefined
+    let raw = effectiveReport as Record<string, unknown> | undefined
     if (!raw || typeof raw !== 'object') return { chakra: null, aura: null, reiki: null, crystal: null, energy: null }
-    return {
-      chakra: (raw.chakra as ChakraAnalysis) ?? null,
-      aura: (raw.aura as AuraReading) ?? null,
-      reiki: (raw.reiki as ReikiAnalysis) ?? null,
-      crystal: (raw.crystal as CrystalRecommendation) ?? null,
-      energy: (raw.energy as EnergyBalanceAnalysis) ?? null
+    if (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+      raw = raw.data as Record<string, unknown>
     }
-  }, [pipelineReport])
-  const loadingStates = { chakra: false, aura: false, reiki: false, crystal: false, energy: false }
+    let chakra: ChakraAnalysis | null = null
+    // Prefer normalizing from raw.chakra (orchestrator stores { chakra, aura, ... } from API)
+    if (raw.chakra && typeof raw.chakra === 'object') {
+      chakra = normalizeToChakraAnalysis(raw.chakra as Record<string, unknown>) ?? null
+    }
+    if (!chakra && looksLikeChakraData(raw)) {
+      chakra = normalizeToChakraAnalysis(raw) ?? null
+    }
+    if (!chakra && isChakraShape(raw)) {
+      chakra = raw as unknown as ChakraAnalysis
+    }
+    if (!chakra && raw.chakra && typeof raw.chakra === 'object' && isChakraShape(raw.chakra as Record<string, unknown>)) {
+      chakra = raw.chakra as ChakraAnalysis
+    }
+    let aura: AuraReading | null = (raw.aura as AuraReading) ?? null
+    if (!aura && raw.aura && typeof raw.aura === 'object') {
+      try {
+        aura = energyHealingImageAnalyzer.formatAuraReading(raw.aura as Parameters<typeof energyHealingImageAnalyzer.formatAuraReading>[0])
+      } catch {
+        aura = null
+      }
+    }
+    let reiki: ReikiAnalysis | null = (raw.reiki as ReikiAnalysis) ?? null
+    if (!reiki && raw.reiki && typeof raw.reiki === 'object') {
+      try {
+        reiki = energyHealingImageAnalyzer.formatReikiAnalysis(raw.reiki as Parameters<typeof energyHealingImageAnalyzer.formatReikiAnalysis>[0])
+      } catch {
+        reiki = null
+      }
+    }
+    let crystal: CrystalRecommendation | null = null
+    if (raw.crystal && typeof raw.crystal === 'object') {
+      const crystalRaw = normalizeCrystalRaw(raw.crystal as Record<string, unknown>)
+      try {
+        crystal = energyHealingImageAnalyzer.formatCrystalAnalysis(crystalRaw as Parameters<typeof energyHealingImageAnalyzer.formatCrystalAnalysis>[0])
+      } catch {
+        if (Array.isArray((raw.crystal as Record<string, unknown>).crystals)) {
+          crystal = raw.crystal as CrystalRecommendation
+        }
+      }
+    }
+    let energy: EnergyBalanceAnalysis | null = null
+    if (raw.energy && typeof raw.energy === 'object') {
+      const energyRaw = normalizeEnergyRaw(raw.energy as Record<string, unknown>)
+      try {
+        energy = energyHealingImageAnalyzer.formatEnergyBalance(energyRaw as Parameters<typeof energyHealingImageAnalyzer.formatEnergyBalance>[0])
+      } catch {
+        energy = null
+      }
+      if (!energy) energy = (raw.energy as EnergyBalanceAnalysis) ?? null
+    }
+    return {
+      chakra: chakra ?? null,
+      aura: aura ?? null,
+      reiki: reiki ?? null,
+      crystal: crystal ?? null,
+      energy: energy ?? null
+    }
+  }, [effectiveReport])
 
   const healingMethods = [
     { 
@@ -124,19 +297,21 @@ export default function EnergyHealingPage() {
             </Card>
           )}
 
-          {/* CTA when no report */}
-          {!hasReport && !loading && (
+          {/* When no report from mystical profile: only message and link to Profile page */}
+          {!hasRealReport && !loading && (
             <Card className="bg-amber-500/10 border-amber-500/30 rounded-2xl shadow-md mb-8">
               <CardContent className="p-6 text-center">
-                <p className="text-slate-300 mb-4">Generate your mystical profile to unlock Energy & Healing analyses.</p>
-                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                  <Link href="/profile">Generate your mystical profile</Link>
-                </Button>
+                <p className="text-slate-300 mb-2">Your Energy & Healing report is generated from your mystical profile.</p>
+                <p className="text-slate-400 text-sm">
+                  <Link href="/profile" className="text-amber-400 hover:text-amber-300 underline">Go to Profile</Link>
+                  {' '}and click &quot;Generate my mystical profile&quot; to create your report; then return here to view it.
+                </p>
               </CardContent>
             </Card>
           )}
 
-          {/* Results - Tabs always visible */}
+          {/* Report from mystical profile: show tabs only when we have a real report */}
+          {hasRealReport && (
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full min-w-0">
               <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -170,20 +345,13 @@ export default function EnergyHealingPage() {
 
               {/* Chakra Analysis Tab */}
               <TabsContent value="chakra" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                {loadingStates.chakra ? (
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
-                    <CardContent className="p-8 text-center">
-                      <Loader2 className="w-12 h-12 text-amber-600 mx-auto mb-4 animate-spin" />
-                      <p className="text-amber-900">Generating your chakra analysis...</p>
-                    </CardContent>
-                  </Card>
-                ) : allAnalyses.chakra ? (
+                {allAnalyses.chakra ? (
                   <ChakraVisualization analysis={allAnalyses.chakra} />
                 ) : (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Zap className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">Chakra analysis will be available shortly</p>
+                      <p className="text-amber-900">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -191,20 +359,13 @@ export default function EnergyHealingPage() {
 
               {/* Aura Reading Tab */}
               <TabsContent value="aura" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                {loadingStates.aura ? (
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
-                    <CardContent className="p-8 text-center">
-                      <Loader2 className="w-12 h-12 text-amber-600 mx-auto mb-4 animate-spin" />
-                      <p className="text-amber-900">Generating your aura reading...</p>
-                    </CardContent>
-                  </Card>
-                ) : allAnalyses.aura ? (
+                {allAnalyses.aura ? (
                   <AuraVisualization reading={allAnalyses.aura} />
                 ) : (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Eye className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">Aura reading will be available shortly</p>
+                      <p className="text-amber-900">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -212,14 +373,7 @@ export default function EnergyHealingPage() {
 
               {/* Reiki Tab */}
               <TabsContent value="reiki" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                {loadingStates.reiki ? (
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
-                    <CardContent className="p-8 text-center">
-                      <Loader2 className="w-12 h-12 text-amber-600 mx-auto mb-4 animate-spin" />
-                      <p className="text-amber-900">Generating your Reiki analysis...</p>
-                    </CardContent>
-                  </Card>
-                ) : allAnalyses.reiki ? (
+                {allAnalyses.reiki ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
                     <CardHeader>
                       <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
@@ -281,7 +435,7 @@ export default function EnergyHealingPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Heart className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">Reiki analysis will be available shortly</p>
+                      <p className="text-amber-900">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -289,20 +443,13 @@ export default function EnergyHealingPage() {
 
               {/* Crystal Healing Tab */}
               <TabsContent value="crystal" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                {loadingStates.crystal ? (
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
-                    <CardContent className="p-8 text-center">
-                      <Loader2 className="w-12 h-12 text-amber-600 mx-auto mb-4 animate-spin" />
-                      <p className="text-amber-900">Generating your crystal recommendations...</p>
-                    </CardContent>
-                  </Card>
-                ) : allAnalyses.crystal ? (
+                {allAnalyses.crystal ? (
                   <CrystalRecommendations recommendation={allAnalyses.crystal} />
                 ) : (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Gem className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">Crystal recommendations will be available shortly</p>
+                      <p className="text-amber-900">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -310,14 +457,7 @@ export default function EnergyHealingPage() {
 
               {/* Energy Balance Tab */}
               <TabsContent value="energy" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                {loadingStates.energy ? (
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
-                    <CardContent className="p-8 text-center">
-                      <Loader2 className="w-12 h-12 text-amber-600 mx-auto mb-4 animate-spin" />
-                      <p className="text-amber-900">Generating your energy balance analysis...</p>
-                    </CardContent>
-                  </Card>
-                ) : allAnalyses.energy ? (
+                {allAnalyses.energy ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
                     <CardHeader>
                       <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
@@ -329,21 +469,21 @@ export default function EnergyHealingPage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
                           <p className="text-amber-800 text-sm mb-1">Overall Balance</p>
-                          <p className="text-2xl font-bold text-amber-900">{allAnalyses.energy.overallBalance}%</p>
+                          <p className="text-2xl font-bold text-amber-900">{typeof allAnalyses.energy.overallBalance === 'number' ? allAnalyses.energy.overallBalance : '—'}%</p>
                         </div>
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
                           <p className="text-amber-800 text-sm mb-1">Chakra Balance</p>
-                          <p className="text-2xl font-bold text-amber-900">{allAnalyses.energy.chakraBalance}%</p>
+                          <p className="text-2xl font-bold text-amber-900">{typeof allAnalyses.energy.chakraBalance === 'number' ? allAnalyses.energy.chakraBalance : '—'}%</p>
                         </div>
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
                           <p className="text-amber-800 text-sm mb-1">Aura Health</p>
-                          <p className="text-2xl font-bold text-amber-900">{allAnalyses.energy.auraHealth}%</p>
+                          <p className="text-2xl font-bold text-amber-900">{typeof allAnalyses.energy.auraHealth === 'number' ? allAnalyses.energy.auraHealth : '—'}%</p>
                         </div>
                       </div>
                       <div>
                         <h3 className="text-amber-900 font-semibold mb-2">Energy Flow</h3>
                         <Badge variant="outline" className="border-amber-500 text-amber-900 bg-amber-50 capitalize">
-                          {allAnalyses.energy.energyFlow.replace('_', ' ')}
+                          {(typeof allAnalyses.energy.energyFlow === 'string' ? allAnalyses.energy.energyFlow : '—').replace(/_/g, ' ')}
                         </Badge>
                       </div>
                       {allAnalyses.energy.blockages && allAnalyses.energy.blockages.length > 0 && (
@@ -390,7 +530,7 @@ export default function EnergyHealingPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Activity className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">Energy balance analysis will be available shortly</p>
+                      <p className="text-amber-900">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -414,6 +554,7 @@ export default function EnergyHealingPage() {
               </TabsContent>
             </Tabs>
             </div>
+          )}
         </div>
       </div>
     </div>

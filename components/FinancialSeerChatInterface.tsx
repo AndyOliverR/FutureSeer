@@ -4,16 +4,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, TrendingUp, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Send, TrendingUp, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 
 interface FinancialSeerChatInterfaceProps {
   userId: string;
   userProfile: any;
-  financialChartData?: any;
-  natalChart?: any;
+  westernChartData?: any;
+  financialReport?: Record<string, unknown> | { comprehensiveAnalysis?: Record<string, unknown> };
   sessionId?: string;
 }
 
@@ -25,47 +25,78 @@ interface Message {
 }
 
 const FINANCIAL_STARTER_QUESTIONS = [
-  'What does my chart say about my financial potential?',
-  'Is this a favorable period for improving income?',
-  'Do I benefit more from business or stable work?',
-  'When should I be cautious financially?',
+  'What does my chart say about my financial temperament?',
+  'When should I be cautious with investments?',
+  'How does my natal profile align with current market cycles?',
+  'What are my wealth-building strengths?',
 ];
 
-export default function FinancialSeerChatInterface({ 
-  userId, 
-  userProfile, 
-  financialChartData,
-  natalChart,
-  sessionId 
+const SEE_MORE_THRESHOLD = 320;
+const PREVIEW_LENGTH = 320;
+
+export default function FinancialSeerChatInterface({
+  userId,
+  userProfile,
+  westernChartData,
+  financialReport,
+  sessionId,
 }: FinancialSeerChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
+  const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(new Set());
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+  const [streamingDisplayLength, setStreamingDisplayLength] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamingLengthRef = useRef(0);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  useEffect(() => {
+    if (!streamingMessageId) return;
+    const interval = setInterval(() => {
+      setStreamingDisplayLength((prev) =>
+        Math.min(prev + 1, streamingLengthRef.current)
+      );
+    }, 90);
+    return () => clearInterval(interval);
+  }, [streamingMessageId]);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedMessageIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
-  const handleSend = async (messageText?: string) => {
-    const text = (messageText ?? question).trim();
-    if (!text || isLoading) return;
+  const sendMessage = async (questionText?: string) => {
+    const messageToSend = questionText || question.trim();
+    if (!messageToSend || isLoading) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user_${Date.now()}`,
       type: 'user',
-      content: text,
-      timestamp: Date.now()
+      content: messageToSend,
+      timestamp: Date.now(),
     };
-
-    setMessages(prev => [...prev, userMessage]);
-    setQuestion('');
+    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+
+    const aiMessageId = `seer_${Date.now()}`;
+    const aiMessage: Message = {
+      id: aiMessageId,
+      type: 'seer',
+      content: '',
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    setStreamingMessageId(aiMessageId);
+    setStreamingDisplayLength(0);
+    streamingLengthRef.current = 0;
 
     try {
       const response = await fetch('/api/ask-financial-seer', {
@@ -73,67 +104,140 @@ export default function FinancialSeerChatInterface({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          question: text,
+          question: messageToSend,
           userProfile,
-          financialChartData,
-          natalChart,
-          sessionId: currentSessionId
-        })
+          westernChartData: westernChartData || undefined,
+          financialReport: financialReport || undefined,
+          sessionId,
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to get response');
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      let fullResponse = '';
 
       if (reader) {
+        let accumulatedContent = '';
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-
           const chunk = decoder.decode(value);
-          fullResponse += chunk;
-
-          // Update message with streaming content
-          setMessages(prev => {
-            const lastMessage = prev[prev.length - 1];
-            if (lastMessage?.type === 'seer') {
-              return [...prev.slice(0, -1), { ...lastMessage, content: fullResponse }];
-            }
-            return [...prev, {
-              id: Date.now().toString(),
-              type: 'seer',
-              content: fullResponse,
-              timestamp: Date.now()
-            }];
-          });
+          accumulatedContent += chunk;
+          streamingLengthRef.current = accumulatedContent.length;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+            )
+          );
         }
       }
+      setStreamingMessageId(null);
     } catch (error) {
       devLog.error('Financial Seer error', error, 'FinancialSeerChatInterface');
-      const errorMessage: Message = {
-        id: Date.now().toString(),
-        type: 'seer',
-        content: 'I apologize, but I encountered an error. Please try again.',
-        timestamp: Date.now()
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      setStreamingMessageId(null);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? { ...msg, content: 'I apologize, but I encountered an error. Please try again.' }
+            : msg
+        )
+      );
     } finally {
       setIsLoading(false);
+      if (!questionText) setQuestion('');
     }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const formatMessage = (message: Message) => {
+    if (message.type === 'user') {
+      return (
+        <motion.div
+          key={message.id}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex justify-end"
+        >
+          <div className="max-w-[80%] rounded-xl p-4 bg-amber-50 border-2 border-amber-200 text-slate-800">
+            <div className="whitespace-pre-wrap">{message.content}</div>
+          </div>
+        </motion.div>
+      );
+    }
+
+    const isStreaming = message.id === streamingMessageId;
+    const contentToShow = isStreaming
+      ? message.content.slice(0, streamingDisplayLength)
+      : message.content;
+    const isLong = message.content.length > SEE_MORE_THRESHOLD;
+    const isExpanded = expandedMessageIds.has(message.id);
+    const showPreview = !isStreaming && isLong && !isExpanded;
+    const displayContent = showPreview
+      ? message.content.slice(0, PREVIEW_LENGTH) +
+        (message.content.length > PREVIEW_LENGTH ? '…' : '')
+      : contentToShow;
+
+    return (
+      <motion.div
+        key={message.id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex justify-start"
+      >
+        <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700">
+          <div className="whitespace-pre-wrap leading-relaxed">
+            {isStreaming ? (
+              <SlowRevealText
+                content={displayContent}
+                minThinkingMs={2000}
+                delayPerWord={85}
+                thinkingLabel="Analyzing your financial profile..."
+                className="text-slate-700"
+              />
+            ) : (
+              displayContent
+            )}
+          </div>
+          {!isStreaming && isLong && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-2 text-amber-800 hover:text-amber-900 hover:bg-amber-100 p-0 h-auto font-normal flex items-center gap-1"
+              onClick={() => toggleExpanded(message.id)}
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4" />
+                  See less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-4 h-4" />
+                  See more
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      </motion.div>
+    );
   };
 
   return (
     <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
       <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
-        <div>
-          <CardTitle className="text-amber-900 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-amber-700" />
-            Ask the Seer — Financial Astrology
-          </CardTitle>
-          <p className="text-slate-700 text-sm mt-1">I&apos;ll analyze your chart to reveal earning patterns, financial strengths, risk tendencies, and supportive periods.</p>
-        </div>
+        <CardTitle className="text-amber-900 flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-amber-700" />
+          Financial Astrology — Ask the Seer
+        </CardTitle>
         {messages.length > 0 && (
           <Button
             type="button"
@@ -151,27 +255,31 @@ export default function FinancialSeerChatInterface({
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
           {messages.length === 0 && !isLoading ? (
-            <div className="text-center py-8 max-w-lg mx-auto">
+            <div className="text-center py-8">
               <TrendingUp className="w-12 h-12 mx-auto mb-4 text-amber-700" />
               <p className="text-amber-900 font-medium mb-2">
-                Ask me anything about wealth, income, and financial timing…
+                Ask me about your financial temperament and market cycle alignment…
               </p>
-              <p className="text-slate-700 text-sm mb-4">
-                I&apos;ll analyze your chart to reveal earning patterns, financial strengths, risk tendencies, and supportive periods.
+              <p className="text-slate-700 text-sm mt-1 mb-2">
+                I&apos;ll interpret your natal wealth profile and current market cycles. This is for
+                educational and cyclical modeling only, not financial advice.
               </p>
-              <p className="text-slate-600 text-sm font-medium mb-2 text-left">You can ask about:</p>
-              <ul className="text-slate-700 text-sm mb-4 text-left list-disc pl-5 space-y-1">
-                <li>Wealth and income patterns (how you earn best, stable vs fluctuating income, business vs employment strengths)</li>
-                <li>Timing and cycles (favorable periods for growth, periods requiring caution, consolidation vs expansion)</li>
-                <li>Risk and decision awareness (tendency toward risk or safety, speculation vs long-term accumulation, financial stress triggers)</li>
+              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">
+                You can ask about:
+              </p>
+              <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
+                <li>Income stability and risk appetite</li>
+                <li>Volatility windows and timing</li>
+                <li>Wealth-building strengths</li>
+                <li>Market cycle alignment</li>
               </ul>
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-2 justify-center mt-4">
                 {FINANCIAL_STARTER_QUESTIONS.map((q, i) => (
                   <Button
                     key={i}
                     variant="outline"
                     size="sm"
-                    onClick={() => handleSend(q)}
+                    onClick={() => sendMessage(q)}
                     disabled={isLoading}
                     className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
                   >
@@ -180,48 +288,26 @@ export default function FinancialSeerChatInterface({
                 ))}
               </div>
               <p className="text-slate-600 text-xs mt-4">
-                Best for: patterns and timing awareness; not investment advice or guarantees.
-              </p>
-              <p className="text-slate-600 text-xs mt-1">
-                Astrology doesn&apos;t replace financial advice. For investments, consult a qualified financial professional.
+                Educational and cyclical modeling only. Not financial advice.
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-xl p-4 ${
-                      message.type === 'user'
-                        ? 'bg-blue-50 border-2 border-blue-200 text-slate-800'
-                        : 'bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 text-slate-700'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">
-                      {message.type === 'user' ? message.content : (
-                        <SlowRevealText content={message.content} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Consulting the stars..." className="text-slate-700" />
-                      )}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-
+              <AnimatePresence>
+                {messages.map((message) => (
+                  <div key={message.id}>{formatMessage(message)}</div>
+                ))}
+              </AnimatePresence>
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-700">
                       <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
-                      Consulting the chart…
+                      Analyzing your financial profile...
                     </div>
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -231,17 +317,17 @@ export default function FinancialSeerChatInterface({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              handleSend();
+              sendMessage();
             }}
             className="flex gap-2"
           >
             <Input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="e.g. What does my chart say about my financial potential?"
+              onKeyDown={handleKeyPress}
+              placeholder="Ask about wealth timing, market cycles, or financial temperament..."
               disabled={isLoading}
-              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+              className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200"
             />
             <Button
               type="submit"
@@ -255,13 +341,8 @@ export default function FinancialSeerChatInterface({
               )}
             </Button>
           </form>
-          <p className="text-slate-600 text-xs mt-2 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            Astrological insights only - not financial advice
-          </p>
         </div>
       </CardContent>
     </Card>
   );
 }
-

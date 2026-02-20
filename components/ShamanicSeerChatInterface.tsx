@@ -195,15 +195,9 @@ export default function ShamanicSeerChatInterface({
         <div className="max-w-[80%] rounded-xl p-4 bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 text-slate-700">
           <div className="whitespace-pre-wrap leading-relaxed">
             {isStreaming ? (
-              displayContent
+              <SlowRevealText content={displayContent} minThinkingMs={2000} delayPerWord={85} thinkingLabel="Reflecting on your initiatory journey..." className="text-slate-700" />
             ) : (
-              <SlowRevealText
-                content={showPreview ? displayContent : message.content}
-                minThinkingMs={2000}
-                delayPerWord={85}
-                thinkingLabel="Reflecting on your initiatory journey..."
-                className="text-slate-700"
-              />
+              displayContent
             )}
           </div>
           {!isStreaming && isLong && (

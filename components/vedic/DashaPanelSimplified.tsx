@@ -158,17 +158,38 @@ export function DashaPanelSimplified({ chartData, birthData }: DashaPanelSimplif
         )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - match main Vedic tab styling (devotionist) */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-        <TabsList className="grid w-full grid-cols-3 bg-slate-800/50">
-          <TabsTrigger value="current" className="text-slate-300">Current Period</TabsTrigger>
-          <TabsTrigger value="timeline" className="text-slate-300">Full Timeline</TabsTrigger>
-          <TabsTrigger value="insights" className="text-slate-300">Insights</TabsTrigger>
+        <TabsList className="flex w-full flex-nowrap gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-t-lg h-auto min-h-0 justify-start">
+          <TabsTrigger
+            value="current"
+            className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:shadow transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+          >
+            Current Period
+          </TabsTrigger>
+          <TabsTrigger
+            value="timeline"
+            className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:shadow transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+          >
+            Full Timeline
+          </TabsTrigger>
+          <TabsTrigger
+            value="insights"
+            className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:shadow transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+          >
+            Insights
+          </TabsTrigger>
         </TabsList>
 
         {/* Current Period Tab - Antardashas */}
-        <TabsContent value="current" className="space-y-4">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">Antardashas (Sub-Periods)</h3>
+        <TabsContent value="current" className="space-y-4 pt-4">
+          <DevotionistStyleCard
+            icon={<Calendar className="h-5 w-5" />}
+            title="Antardashas (Sub-Periods)"
+            summary="Sub-periods within your current Mahadasha — each planet's influence for a segment of the main period."
+            colorScheme="amber"
+            variant="callout"
+          />
           {chartData.currentDasha.antardashas?.map((antardasha, idx) => (
             <div key={idx}>
               <DevotionistStyleCard

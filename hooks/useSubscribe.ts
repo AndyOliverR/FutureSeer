@@ -177,7 +177,7 @@ export function useSubscribe() {
     setError(null);
 
     if (planId === 'power-user-trial') {
-      router.push('/dashboard');
+      router.push('/tools');
       return;
     }
 
@@ -276,7 +276,7 @@ export function useSubscribe() {
               isSubscribed: true,
               subscriptionStatus: 'active',
             });
-            router.push('/dashboard');
+            router.push('/tools');
           } catch (err) {
             console.error('Subscribe verify error:', err);
             setError(err instanceof Error ? err.message : 'Verification failed');

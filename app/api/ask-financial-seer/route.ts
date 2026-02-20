@@ -1,203 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirebaseDB } from '@/lib/firebase';
-import { doc, setDoc } from 'firebase/firestore';
-import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
-import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
-import {
-  buildFinancialAstrologyState,
-  classifyFinancialAstrologyQuestion,
-  getFinancialAstrologySliceForQuestionType,
-  FINANCIAL_DISCLAIMER,
-  type FinancialAstrologyChartPayload,
-} from '@/lib/financialAstrologySeerState';
-import { buildFinancialAstrologySeerSystemPrompt } from '@/lib/financialAstrologySeerPrompts';
+import { createAIStream } from '@/lib/aiGateway';
+import { buildFinancialSeerSystemPrompt } from '@/lib/financialAstrology/financialAstrologyPrompts';
 
-const REFUSAL_PHRASE = "Astrology can't provide investment advice or guarantees. Please consult a qualified financial professional.";
+interface AskFinancialSeerRequest {
+  userId: string;
+  question: string;
+  userProfile: any;
+  westernChartData?: any;
+  financialReport?: Record<string, unknown>;
+  sessionId?: string;
+}
 
-/** Normalize natal chart from western/vedic/comprehensiveProfile format to FinancialAstrologyChartPayload. */
-function normalizeToFinancialPayload(
-  natalChart: any,
-  comprehensiveProfile?: any
-): FinancialAstrologyChartPayload {
-  if (!natalChart && comprehensiveProfile) {
-    const vedic = comprehensiveProfile.vedic ?? comprehensiveProfile['Vedic Astrology'];
-    const western = comprehensiveProfile.western ?? comprehensiveProfile['Western Astrology'];
-    const chart = vedic?.vedicCharts?.D1 ?? vedic?.chart ?? western?.chart ?? western?.data;
-    if (!chart) throw new Error('No natal chart available');
-    return normalizeToFinancialPayload(chart, comprehensiveProfile);
+function formatFinancialReportContext(report: Record<string, unknown> | undefined): string {
+  if (!report || typeof report !== 'object') return '';
+  const lines: string[] = [];
+  const temp = report.financialTemperamentProfile as Record<string, unknown> | undefined;
+  if (temp) {
+    lines.push(
+      `Income Stability: ${temp.incomeStabilityScore ?? '—'}/100 | Speculative Risk: ${temp.speculativeRiskIndex ?? '—'}/100 | Long-Term Accumulation: ${temp.longTermAccumulationScore ?? '—'}/100`
+    );
+    if (temp.temperamentSummary) lines.push(`Temperament: ${temp.temperamentSummary}`);
   }
-  if (!natalChart) throw new Error('No natal chart available');
-
-  const planets = natalChart.planets;
-  const houses = natalChart.houses ?? [];
-  const ascendant = natalChart.ascendant ?? natalChart.rising_sign;
-
-  if (!planets) throw new Error('Chart must have planets');
-
-  let planetsRecord: Record<string, { sign?: string; house?: number }>;
-  if (Array.isArray(planets)) {
-    planetsRecord = {};
-    planets.forEach((p: { name?: string; sign?: string; house?: number }) => {
-      const name = p.name ?? '';
-      if (name && name !== 'Ascendant' && name !== 'MC') {
-        planetsRecord[name] = { sign: p.sign, house: p.house };
-      }
-    });
-  } else {
-    planetsRecord = planets as Record<string, { sign?: string; house?: number }>;
+  const align = report.alignmentScore as Record<string, unknown> | undefined;
+  if (align) {
+    lines.push(
+      `Composite Score: ${align.compositeScore ?? '—'}/100 | Action Bias: ${align.actionBias ?? '—'} | Risk Band: ${align.riskBand ?? '—'}`
+    );
+    if (align.rationale) lines.push(`Rationale: ${align.rationale}`);
   }
-
-  let housesArr: Array<{ house?: number; sign?: string }>;
-  if (houses.some((h: any) => h.house != null)) {
-    housesArr = houses;
-  } else {
-    housesArr = houses.map((h: { number?: number; house?: number; sign?: string }) => ({
-      house: h.number ?? h.house,
-      sign: h.sign,
-    }));
+  if (report.currentMarketPhase) lines.push(`Current Market Phase: ${report.currentMarketPhase}`);
+  const volatility = report.volatilityWindows as Array<{ name: string; description?: string }> | undefined;
+  if (Array.isArray(volatility) && volatility.length) {
+    lines.push(
+      'Volatility Windows: ' + volatility.map((w) => `${w.name}: ${w.description ?? ''}`).join('; ')
+    );
   }
+  const strategic = report.strategicRecommendations as Record<string, unknown> | undefined;
+  if (strategic && Array.isArray(strategic.strategic_recommendations)) {
+    lines.push('Recommendations: ' + (strategic.strategic_recommendations as string[]).slice(0, 3).join('; '));
+  }
+  return lines.join('\n');
+}
 
-  const ascendantSign =
-    ascendant ??
-    (housesArr.find((h: any) => (h.house ?? h.number) === 1) as { sign?: string })?.sign ??
-    'Unknown';
-
-  const timing = comprehensiveProfile?.vedic
-    ? {
-        currentDasha:
-          comprehensiveProfile.vedic.currentDasha?.planet ??
-          comprehensiveProfile.vedic.currentDasha ??
-          (Array.isArray(comprehensiveProfile.vedic.dasha)
-            ? (comprehensiveProfile.vedic.dasha.find((d: any) => d.isCurrent)?.planet ??
-               comprehensiveProfile.vedic.dasha[0]?.planet)
-            : undefined),
-      }
-    : undefined;
-
-  return {
-    data: {
-      chart: {
-        ascendant: ascendantSign,
-        planets: planetsRecord,
-        houses: housesArr,
-      },
-      timing,
-    },
-  };
+function formatChartSummary(chartData: any): string {
+  if (!chartData?.planets?.length) return '';
+  const sun = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'sun');
+  const moon = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'moon');
+  const venus = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'venus');
+  const jupiter = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'jupiter');
+  const saturn = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'saturn');
+  const rising = chartData.houses?.[0] || chartData.houses?.find((h: any) => (h.number || 1) === 1);
+  const parts: string[] = [];
+  if (sun) parts.push(`Sun: ${sun.sign?.signName || sun.sign} in House ${sun.house}`);
+  if (moon) parts.push(`Moon: ${moon.sign?.signName || moon.sign} in House ${moon.house}`);
+  if (venus) parts.push(`Venus: ${venus.sign?.signName || venus.sign} in House ${venus.house}`);
+  if (jupiter) parts.push(`Jupiter: ${jupiter?.sign?.signName || jupiter?.sign} in House ${jupiter?.house}`);
+  if (saturn) parts.push(`Saturn: ${saturn?.sign?.signName || saturn?.sign} in House ${saturn?.house}`);
+  if (rising) parts.push(`Rising: ${rising.sign?.signName || rising.sign}`);
+  return parts.join('; ');
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const {
-      userId,
-      question,
-      userProfile,
-      financialChartData,
-      natalChart,
-      comprehensiveProfile,
-      sessionId,
-    } = body;
+    const body: AskFinancialSeerRequest = await request.json();
+    const { userId, question, userProfile, westernChartData, financialReport } = body;
 
-    if (!userId || !question || !userProfile) {
-      return NextResponse.json({
-        success: false,
-        error: 'Missing required parameters: userId, question, or userProfile',
-      }, { status: 400 });
-    }
-
-    devLog.info('💰 Financial Seer API: Processing question for user:', userId, 'ask-financial-seer');
-
-    const questionType = classifyFinancialAstrologyQuestion(question);
-    if (questionType === 'refusal') {
-      return new Response(
-        new ReadableStream({
-          start(controller) {
-            controller.enqueue(new TextEncoder().encode(REFUSAL_PHRASE));
-            controller.close();
-          },
-        }),
+    if (!userId || !question?.trim() || !userProfile) {
+      return NextResponse.json(
         {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            Connection: 'keep-alive',
-          },
-        }
+          success: false,
+          error: 'Missing required parameters: userId, question, or userProfile',
+        },
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    let payload: FinancialAstrologyChartPayload;
-    try {
-      if (natalChart) {
-        payload = normalizeToFinancialPayload(natalChart, comprehensiveProfile);
-      } else if (comprehensiveProfile) {
-        payload = normalizeToFinancialPayload(null, comprehensiveProfile);
-      } else if (financialChartData?.planets || financialChartData?.chart?.planets) {
-        const chart = financialChartData.chart ?? financialChartData;
-        payload = normalizeToFinancialPayload(chart, undefined);
-      } else {
-        return NextResponse.json({
-          success: false,
-          error:
-            'Financial Astrology requires natal chart data. Generate your chart first to use Ask the Seer.',
-        }, { status: 400 });
-      }
-    } catch (err) {
-      return NextResponse.json({
-        success: false,
-        error:
-          err instanceof Error ? err.message : 'Financial Astrology requires natal chart data.',
-      }, { status: 400 });
-    }
-
-    let state;
-    try {
-      state = buildFinancialAstrologyState(payload);
-    } catch {
-      return NextResponse.json({
-        success: false,
-        error:
-          'Financial Astrology requires natal chart data. Generate your chart first to use Ask the Seer.',
-      }, { status: 400 });
-    }
-
-    const slice = getFinancialAstrologySliceForQuestionType(questionType, state);
-    const displayName = (userProfile?.displayName ?? '').trim();
-    const systemPrompt = buildFinancialAstrologySeerSystemPrompt(slice, questionType, {
-      displayName: displayName || undefined,
-    });
-
-    const memory = new ConversationalMemory(userId);
-    await memory.initializeAllMemory(true);
-    const workingMemory = memory.getWorkingMemory();
-    const conversationHistory = workingMemory.lastExchanges
-      .filter((msg: MemoryMessage) => msg.type === 'user' || msg.type === 'seer')
-      .map((msg: MemoryMessage, index: number, arr: MemoryMessage[]) => {
-        if (msg.type === 'user') {
-          const seerResponse = arr[index + 1];
-          return {
-            question: msg.content,
-            answer: seerResponse?.type === 'seer' ? seerResponse.content : '',
-          };
-        }
-        return null;
-      })
-      .filter((item: any) => item !== null)
-      .slice(-10);
+    const reportData =
+      financialReport &&
+      typeof financialReport === 'object' &&
+      'comprehensiveAnalysis' in financialReport
+        ? (financialReport as { comprehensiveAnalysis?: Record<string, unknown> })
+            .comprehensiveAnalysis
+        : financialReport;
+    const reportContext = formatFinancialReportContext(
+      (reportData as Record<string, unknown>) ?? undefined
+    );
+    const chartSummary = formatChartSummary(westernChartData);
+    const systemPrompt = buildFinancialSeerSystemPrompt(reportContext, chartSummary);
 
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
-        ...conversationHistory.flatMap((h: { question: string; answer: string } | null) =>
-          h ? [
-            { role: 'user' as const, content: h.question },
-            { role: 'assistant' as const, content: h.answer },
-          ] : []
-        ),
-        { role: 'user', content: question },
+        { role: 'user', content: question.trim() },
       ],
       temperature: 0.6,
       maxTokens: 800,
@@ -206,67 +102,17 @@ export async function POST(request: NextRequest) {
     return new Response(
       new ReadableStream({
         async start(controller) {
-          let fullResponse = '';
           try {
             for await (const chunk of stream) {
-              const content = chunk.choices?.[0]?.delta?.content || '';
+              const content = chunk.choices?.[0]?.delta?.content ?? '';
               if (content) {
-                fullResponse += content;
                 controller.enqueue(new TextEncoder().encode(content));
               }
             }
-            if (!fullResponse.includes(FINANCIAL_DISCLAIMER)) {
-              controller.enqueue(
-                new TextEncoder().encode(`\n\n${FINANCIAL_DISCLAIMER}`)
-              );
-              fullResponse += `\n\n${FINANCIAL_DISCLAIMER}`;
-            }
-            const userMessage: MemoryMessage = {
-              id: `msg_${Date.now()}_user`,
-              timestamp: Date.now(),
-              type: 'user',
-              content: question,
-              questionType: questionType,
-              keywords: question.split(' ').slice(0, 5),
-            };
-            const seerMessage: MemoryMessage = {
-              id: `msg_${Date.now()}_seer`,
-              timestamp: Date.now(),
-              type: 'seer',
-              content: fullResponse,
-              questionType: questionType,
-              confidence: 0.85,
-              sources: ['financial-astrology'],
-            };
-            await memory.addExchange(userMessage);
-            await memory.addExchange(seerMessage);
-            memory.addRecentQuestion(question);
-            await memory.saveAllMemory();
-            try {
-              const db = getFirebaseDB();
-              if (db) {
-                const session = sessionId || `session_${Date.now()}`;
-                await setDoc(
-                  doc(db, 'financialSeerConversations', userId, 'sessions', session, 'messages', `msg_${Date.now()}`),
-                  {
-                    question,
-                    answer: fullResponse,
-                    timestamp: Date.now(),
-                    confidence: 0.85,
-                    chartReferences: {},
-                    followUpQuestions: [],
-                  }
-                );
-              }
-            } catch {
-              /* non-fatal */
-            }
           } catch (error) {
-            devLog.error('Error during streaming:', error);
+            devLog.error('Financial Seer stream error:', error, 'route');
             controller.enqueue(
-              new TextEncoder().encode(
-                'I apologize, but I encountered an error. Please try again.'
-              )
+              new TextEncoder().encode('I encountered an error. Please try again.')
             );
           } finally {
             controller.close();
@@ -282,10 +128,13 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    devLog.error('Error in Financial Seer API:', error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-    }, { status: 500 });
+    devLog.error('Ask Financial Seer API error:', error, 'route');
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to process question',
+      },
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 }

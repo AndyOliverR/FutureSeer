@@ -37,8 +37,6 @@ export const STANDARDS_CONFIG: StandardsConfig = {
         'kp-astrology',
         'horary-astrology',
         'medical-astrology',
-        'financial-astrology',
-        'mundane-astrology',
         'synastry',
         'uranian-astrology',
         'cosmobiology',
@@ -58,7 +56,6 @@ export const STANDARDS_CONFIG: StandardsConfig = {
         'tibetan-astrology',
         'mayan-astrology',
         'celtic-astrology',
-        'chinese-astrology',
         'thirteen-signs-zodiac',
         'quantum-astrology',
         'kerykeion'
@@ -87,11 +84,8 @@ export const STANDARDS_CONFIG: StandardsConfig = {
         'pendulum',
         'geomancy',
         'i-ching',
-        'scrying',
-        'crystal-ball',
         'ogham',
         'sortilege',
-        'bibliomancy',
         'tea-leaf-reading',
         'bone-throwing'
       ]
@@ -113,9 +107,8 @@ export const STANDARDS_CONFIG: StandardsConfig = {
       traditionalRef: 'BaZi (Four Pillars of Destiny), Feng Shui (Classical Compass School), Zi Wei Dou Shu (Purple Star Astrology - Imperial methods)',
       tools: [
         'bazi',
+        'ziwei-dou-shu',
         'feng-shui',
-        'iztro',
-        'chinese-astrology'
       ]
     },
     'Indian': {

@@ -193,10 +193,10 @@ function KabbalisticAstrologyPageContent() {
                   ) : report ? (
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-300 text-sm">Your spiritual blueprint</span>
+                        <span className="text-slate-300 text-sm">Your spiritual blueprint — Traditional Jewish mystical + classical astrology</span>
                       </div>
                       <DashboardSection
-                        title="Executive Summary"
+                        title="Executive Soul Profile"
                         icon={<FileText className="w-6 h-6" />}
                         defaultExpanded
                         colorScheme="amber"
@@ -215,6 +215,17 @@ function KabbalisticAstrologyPageContent() {
                       >
                         <p className="text-slate-700 leading-relaxed">
                           {String(report.natal_overview || '—')}
+                        </p>
+                      </DashboardSection>
+                      <DashboardSection
+                        title="Tree of Life — Sefirotic Mapping"
+                        icon={<Layers className="w-6 h-6" />}
+                        defaultExpanded
+                        colorScheme="purple"
+                        storageKey="kabbalistic-sefirotic-mapping"
+                      >
+                        <p className="text-slate-700 leading-relaxed">
+                          {String(report.sefirotic_mapping || '—')}
                         </p>
                       </DashboardSection>
                       <DashboardSection
@@ -251,25 +262,31 @@ function KabbalisticAstrologyPageContent() {
                         </p>
                       </DashboardSection>
                       <DashboardSection
-                        title="Hebrew Sign (Mazal)"
+                        title="Mazal & Hebrew Letter Analysis"
                         icon={<BookOpen className="w-6 h-6" />}
                         defaultExpanded
                         colorScheme="amber"
                         storageKey="kabbalistic-hebrew-sign"
                       >
-                        <p className="text-slate-700 leading-relaxed">
-                          {String(report.hebrew_sign ?? '—')}
-                        </p>
+                        <div className="text-slate-700 leading-relaxed space-y-2">
+                          <p><strong>Hebrew Sign (Mazal):</strong> {String(report.hebrew_sign ?? '—')}</p>
+                          {(report.hebrew_birthday as string) && (
+                            <p><strong>Hebrew Birthday:</strong> {String(report.hebrew_birthday)}</p>
+                          )}
+                          {(report.letter_of_sign as string) && (report.letter_of_planet as string) && (
+                            <p><strong>Letter of Sign / Letter of Planet:</strong> {String(report.letter_of_sign)} / {String(report.letter_of_planet)}</p>
+                          )}
+                        </div>
                       </DashboardSection>
                       <DashboardSection
-                        title="Sefirotic Mapping"
-                        icon={<Layers className="w-6 h-6" />}
+                        title="72 Names of God (Shem HaMephorash)"
+                        icon={<Shield className="w-6 h-6" />}
                         defaultExpanded={false}
                         colorScheme="purple"
-                        storageKey="kabbalistic-sefirotic-mapping"
+                        storageKey="kabbalistic-name-72"
                       >
                         <p className="text-slate-700 leading-relaxed">
-                          {String(report.sefirotic_mapping || '—')}
+                          {String(report.name_72 || '—')}
                         </p>
                       </DashboardSection>
                       <DashboardSection
@@ -314,6 +331,39 @@ function KabbalisticAstrologyPageContent() {
                       >
                         <p className="text-slate-700 leading-relaxed">
                           {String(report.core_correction ?? '—')}
+                        </p>
+                      </DashboardSection>
+                      <DashboardSection
+                        title="Recommended Spiritual Discipline"
+                        icon={<Compass className="w-6 h-6" />}
+                        defaultExpanded={false}
+                        colorScheme="cyan"
+                        storageKey="kabbalistic-recommended-discipline"
+                      >
+                        <p className="text-slate-700 leading-relaxed">
+                          {String(report.recommended_spiritual_discipline ?? '—')}
+                        </p>
+                      </DashboardSection>
+                      <DashboardSection
+                        title="Career and Material Manifestation (Malkuth)"
+                        icon={<Map className="w-6 h-6" />}
+                        defaultExpanded={false}
+                        colorScheme="green"
+                        storageKey="kabbalistic-career-malkuth"
+                      >
+                        <p className="text-slate-700 leading-relaxed">
+                          {String(report.career_malkuth ?? '—')}
+                        </p>
+                      </DashboardSection>
+                      <DashboardSection
+                        title="Relationship & Emotional Correction"
+                        icon={<Heart className="w-6 h-6" />}
+                        defaultExpanded={false}
+                        colorScheme="pink"
+                        storageKey="kabbalistic-relationship-emotional"
+                      >
+                        <p className="text-slate-700 leading-relaxed">
+                          {String(report.relationship_emotional_correction ?? '—')}
                         </p>
                       </DashboardSection>
                       <DashboardSection
@@ -391,6 +441,30 @@ function KabbalisticAstrologyPageContent() {
                       >
                         <p className="text-slate-700 leading-relaxed">
                           {String(report.integration_guidance ?? '—')}
+                        </p>
+                      </DashboardSection>
+                      {(report.current_spiritual_test as string) && (
+                        <DashboardSection
+                          title="Current Spiritual Test"
+                          icon={<Target className="w-6 h-6" />}
+                          defaultExpanded={false}
+                          colorScheme="amber"
+                          storageKey="kabbalistic-current-spiritual-test"
+                        >
+                          <p className="text-slate-700 leading-relaxed">
+                            {String(report.current_spiritual_test)}
+                          </p>
+                        </DashboardSection>
+                      )}
+                      <DashboardSection
+                        title="Long-Term Rectification Cycles"
+                        icon={<Calendar className="w-6 h-6" />}
+                        defaultExpanded={false}
+                        colorScheme="blue"
+                        storageKey="kabbalistic-rectification-cycles"
+                      >
+                        <p className="text-slate-700 leading-relaxed">
+                          {String(report.long_term_rectification_cycles ?? '—')}
                         </p>
                       </DashboardSection>
                     </div>

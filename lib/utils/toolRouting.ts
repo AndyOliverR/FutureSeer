@@ -23,7 +23,8 @@ export function getToolRoute(toolSlug: string): string {
   }
   
   // Default: construct route from slug
-  // Handle special cases where slug doesn't match route exactly
+  // Handle special cases where slug doesn't match route exactly.
+  // I Ching: config slug is "i-ching"; canonical URL is /tools/iching (both spellings unified there).
   const routeMap: Record<string, string> = {
     'vedic-astrology': '/tools/vedic',
     'thirteen-signs-zodiac': '/tools/13-signs-zodiac',

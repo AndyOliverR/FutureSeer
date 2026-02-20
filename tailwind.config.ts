@@ -74,7 +74,7 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "sans-serif"],
         poppins: ["Poppins", "sans-serif"],
         serif: ["var(--font-cormorant)", "Times New Roman", "serif"],
         heading: ["Cinzel", "serif"],

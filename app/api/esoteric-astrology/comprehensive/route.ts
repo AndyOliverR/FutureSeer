@@ -4,10 +4,23 @@ import { createAICompletion } from '@/lib/aiGateway';
 import { buildEsotericReportSystemPrompt, type EsotericPrecomputedContext } from '@/lib/esotericSeerPrompts';
 import {
   getEsotericRuler,
+  getExotericRuler,
   getSoulKeynote,
   getModality,
   getLifeDirection,
 } from '@/lib/esotericAstrologyData';
+import {
+  computeSoulRay,
+  computePersonalityRay,
+  computeRayWeights,
+} from '@/lib/esotericRays';
+import {
+  computeCrossDominant,
+  computeVeiledPlanets,
+  addVulcanToPlanets,
+  computeTriangleEmphasis,
+  type PlanetPosition,
+} from '@/lib/esotericEngines';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
 import { adminDb } from '@/lib/firebase-admin';
 
@@ -39,12 +52,30 @@ interface EsotericComprehensiveRequest {
   };
 }
 
+const SIGN_TO_LONGITUDE: Record<string, number> = {
+  Aries: 0, Taurus: 30, Gemini: 60, Cancer: 90, Leo: 120, Virgo: 150,
+  Libra: 180, Scorpio: 210, Sagittarius: 240, Capricorn: 270, Aquarius: 300, Pisces: 330,
+};
+
 function getSign(obj: { sign?: { signName?: string } | string }): string {
   const s = obj?.sign;
-  return (s && (typeof s === 'string' ? s : s.signName)) || '';
+  return (s && (typeof s === 'string' ? s : (s as { signName?: string }).signName)) || '';
+}
+
+function toPlanetPosition(p: any): PlanetPosition {
+  const signName = getSign(p);
+  const lon = typeof p.longitude === 'number' ? p.longitude : (SIGN_TO_LONGITUDE[signName] ?? 0) + (Number(p.degree) || 0);
+  return {
+    name: p.name,
+    longitude: lon,
+    sign: p.sign,
+  };
 }
 
 function buildPrecomputedContext(planets: any[], houses: any[]): EsotericPrecomputedContext {
+  let planetList = (planets || []).map(toPlanetPosition);
+  planetList = addVulcanToPlanets(planetList);
+
   const ascPlanet = planets.find((p: any) => p.name === 'Ascendant');
   const house1 = houses?.[0];
   const ascendantSign = getSign(ascPlanet || {}) || getSign(house1 || {});
@@ -69,6 +100,27 @@ function buildPrecomputedContext(planets: any[], houses: any[]): EsotericPrecomp
   const crossLabel = modality || getModality(sunSign);
   const lifeDir = crossLabel ? getLifeDirection(crossLabel) : null;
 
+  const ascendantOrthodox = getExotericRuler(ascendantSign);
+  const sunOrthodox = getExotericRuler(sunSign);
+  const sunEsoteric = getEsotericRuler(sunSign);
+  const esotericRulerName = getEsotericRuler(ascendantSign);
+  const esotericRulerPlanet = planets.find(
+    (p: any) => p.name === esotericRulerName || (p.name && p.name.toLowerCase() === esotericRulerName?.toLowerCase())
+  );
+  const esotericRulerSign = esotericRulerPlanet ? getSign(esotericRulerPlanet) : undefined;
+  const esotericRulerHouse = esotericRulerPlanet?.house != null ? Number(esotericRulerPlanet.house) : undefined;
+
+  const soulRay = computeSoulRay(sunSign);
+  const personalityRay = computePersonalityRay(ascendantSign);
+  const rayWeights = computeRayWeights({ sunSign, ascendantSign, moonSign });
+
+  const cross = computeCrossDominant(planetList);
+  const veiled = computeVeiledPlanets(planetList);
+  const triangles = computeTriangleEmphasis(planetList);
+  const triangleEmphasis = triangles
+    .filter((t) => t.count > 0)
+    .map((t) => `${t.name}: ${t.count} planet(s)`);
+
   return {
     ascendant_sign: ascendantSign || undefined,
     esoteric_ruler: getEsotericRuler(ascendantSign),
@@ -82,6 +134,20 @@ function buildPrecomputedContext(planets: any[], houses: any[]): EsotericPrecomp
     moon_house: moonPlanet?.house != null ? Number(moonPlanet.house) : undefined,
     north_node_sign: northNodeSign || undefined,
     south_node_sign: southNodeSign || undefined,
+    ascendant_orthodox_ruler: ascendantOrthodox !== 'Unknown' ? ascendantOrthodox : undefined,
+    sun_esoteric_ruler: sunEsoteric !== 'Unknown' ? sunEsoteric : undefined,
+    sun_orthodox_ruler: sunOrthodox !== 'Unknown' ? sunOrthodox : undefined,
+    esoteric_ruler_sign: esotericRulerSign || undefined,
+    esoteric_ruler_house: esotericRulerHouse,
+    ray_soul: soulRay.label,
+    ray_personality: personalityRay.label,
+    ray_dominant: rayWeights.label,
+    cross_dominant: cross.dominant,
+    cross_planet_counts: cross.counts,
+    evolutionary_stage: cross.evolutionaryStage,
+    veiled_by_sun: veiled.veiledBySun.length ? veiled.veiledBySun : undefined,
+    veiled_by_moon: veiled.veiledByMoon.length ? veiled.veiledByMoon : undefined,
+    triangle_emphasis: triangleEmphasis.length ? triangleEmphasis : undefined,
   };
 }
 
@@ -145,7 +211,7 @@ function normalizeAnalysis(
   return {
     soul_ruler: typeof parsed.soul_ruler === 'string' ? parsed.soul_ruler : (precomputed?.esoteric_ruler ?? 'Unknown'),
     personality_ruler: typeof parsed.personality_ruler === 'string' ? parsed.personality_ruler : 'Unknown',
-    dominant_ray: typeof parsed.dominant_ray === 'string' ? parsed.dominant_ray : 'Unknown',
+    dominant_ray: typeof parsed.dominant_ray === 'string' ? parsed.dominant_ray : (precomputed?.ray_dominant ?? 'Unknown'),
     evolutionary_theme: str(parsed.evolutionary_theme),
     spiritual_challenges: strList(parsed.spiritual_challenges),
     soul_growth_focus: str(parsed.soul_growth_focus),
@@ -170,6 +236,27 @@ function normalizeAnalysis(
     primary_karmic_lesson: str(parsed.primary_karmic_lesson),
     key_life_arena: str(parsed.key_life_arena),
     growth_strategy: str(parsed.growth_strategy),
+    executive_soul_profile: str(parsed.executive_soul_profile),
+    cross_of_evolution_assessment: str(parsed.cross_of_evolution_assessment),
+    ray_dominance_matrix: str(parsed.ray_dominance_matrix),
+    esoteric_rulership_analysis: str(parsed.esoteric_rulership_analysis),
+    personality_vs_soul_conflict_zones: str(parsed.personality_vs_soul_conflict_zones),
+    spiritual_service_orientation: str(parsed.spiritual_service_orientation),
+    group_karma_indicators: str(parsed.group_karma_indicators),
+    current_evolutionary_phase: str(parsed.current_evolutionary_phase),
+    ray_soul: precomputed?.ray_soul,
+    ray_personality: precomputed?.ray_personality,
+    cross_dominant: precomputed?.cross_dominant,
+    cross_planet_counts: precomputed?.cross_planet_counts,
+    evolutionary_stage: precomputed?.evolutionary_stage,
+    veiled_by_sun: precomputed?.veiled_by_sun,
+    veiled_by_moon: precomputed?.veiled_by_moon,
+    triangle_emphasis: precomputed?.triangle_emphasis,
+    sun_esoteric_ruler: precomputed?.sun_esoteric_ruler,
+    sun_orthodox_ruler: precomputed?.sun_orthodox_ruler,
+    ascendant_orthodox_ruler: precomputed?.ascendant_orthodox_ruler,
+    esoteric_ruler_sign: precomputed?.esoteric_ruler_sign,
+    esoteric_ruler_house: precomputed?.esoteric_ruler_house,
   };
 }
 
@@ -262,7 +349,7 @@ export async function POST(request: NextRequest) {
       comprehensiveAnalysis = {
         soul_ruler: precomputed.esoteric_ruler ?? 'Unknown',
         personality_ruler: 'Unknown',
-        dominant_ray: 'Unknown',
+        dominant_ray: precomputed.ray_dominant ?? 'Unknown',
         evolutionary_theme: `Soul growth and integration (Sun in ${sunSign})`,
         spiritual_challenges: ['Generalizing cautiously—full chart analysis unavailable'],
         soul_growth_focus: 'Align action with higher intention and service.',
@@ -289,6 +376,31 @@ export async function POST(request: NextRequest) {
         primary_karmic_lesson: '',
         key_life_arena: '',
         growth_strategy: '',
+        executive_soul_profile: '',
+        cross_of_evolution_assessment: precomputed.cross_dominant
+          ? `Dominant cross: ${precomputed.cross_dominant}; evolutionary stage: ${precomputed.evolutionary_stage ?? '—'}.`
+          : '',
+        ray_dominance_matrix: [precomputed.ray_soul, precomputed.ray_personality, precomputed.ray_dominant]
+          .filter(Boolean)
+          .join(' | ') || '',
+        esoteric_rulership_analysis: '',
+        personality_vs_soul_conflict_zones: '',
+        spiritual_service_orientation: '',
+        group_karma_indicators: '',
+        current_evolutionary_phase: precomputed.evolutionary_stage ?? '',
+        ray_soul: precomputed.ray_soul,
+        ray_personality: precomputed.ray_personality,
+        cross_dominant: precomputed.cross_dominant,
+        cross_planet_counts: precomputed.cross_planet_counts,
+        evolutionary_stage: precomputed.evolutionary_stage,
+        veiled_by_sun: precomputed.veiled_by_sun,
+        veiled_by_moon: precomputed.veiled_by_moon,
+        triangle_emphasis: precomputed.triangle_emphasis,
+        sun_esoteric_ruler: precomputed.sun_esoteric_ruler,
+        sun_orthodox_ruler: precomputed.sun_orthodox_ruler,
+        ascendant_orthodox_ruler: precomputed.ascendant_orthodox_ruler,
+        esoteric_ruler_sign: precomputed.esoteric_ruler_sign,
+        esoteric_ruler_house: precomputed.esoteric_ruler_house,
       };
     }
 

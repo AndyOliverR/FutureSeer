@@ -6,8 +6,6 @@ import { SecurityDashboard } from '@/components/admin/SecurityDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle, CheckCircle, ChevronLeft } from 'lucide-react';
-import { Header } from '@/components/header';
-
 const adminCardClass = "rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01]";
 
 export default function AdminSecurityPage() {
@@ -40,7 +38,6 @@ export default function AdminSecurityPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-20 space-y-6">
         <Link
           href="/admin/dashboard"

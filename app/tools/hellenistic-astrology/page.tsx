@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
@@ -23,7 +23,7 @@ import {
   History,
   Briefcase
 } from 'lucide-react'
-import { getIntelligentHellenisticAstrologyData, HellenisticAstrologyReading } from '@/lib/hellenisticAstrologyIntelligence'
+import type { HellenisticAstrologyReading } from '@/lib/hellenisticAstrologyIntelligence'
 import HellenisticChartWheel from '@/components/hellenistic/HellenisticChartWheel'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import HellenisticSeerChatInterface from '@/components/hellenistic/HellenisticSeerChatInterface'
@@ -51,7 +51,7 @@ const MATERIAL_3_EASING = [0.4, 0, 0.2, 1] as const;
 export default function HellenisticAstrologyPage() {
   const { user, userProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<'introduction' | 'chart' | 'planets' | 'houses' | 'lots' | 'sect' | 'profections' | 'interpretations' | 'ask-the-seer'>('introduction')
-  const { report: pipelineReport, loading: isLoading, error } = useToolReport('hellenistic')
+  const { report: pipelineReport, loading: isLoading, error, refreshProfile } = useToolReport('hellenistic')
   const reading = useMemo((): HellenisticAstrologyReading | null => {
     if (!pipelineReport || typeof pipelineReport !== 'object') return null
     const r = pipelineReport as Record<string, unknown>
@@ -60,10 +60,91 @@ export default function HellenisticAstrologyPage() {
     return data && typeof data === 'object' ? data : null
   }, [pipelineReport])
 
+  const [onDemandReading, setOnDemandReading] = useState<HellenisticAstrologyReading | null>(null)
+  const [onDemandLoading, setOnDemandLoading] = useState(false)
+  const [onDemandError, setOnDemandError] = useState<string | null>(null)
+
   const hasCompleteDetails = useMemo(() => 
     !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace),
     [userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace]
   )
+
+  const refreshProfileRef = useRef(refreshProfile)
+  refreshProfileRef.current = refreshProfile
+  const onDemandReadingRef = useRef<HellenisticAstrologyReading | null>(null)
+
+  // When pipeline has no real report (missing or placeholder), fetch once and persist so returning visits load from profile
+  useEffect(() => {
+    if (!user?.uid || !userProfile || !hasCompleteDetails || reading || isLoading) return
+    // Restore from ref if we already fetched (e.g. after Strict Mode remount) so content shows immediately
+    if (onDemandReadingRef.current) {
+      setOnDemandReading(onDemandReadingRef.current)
+      setOnDemandLoading(false)
+      return
+    }
+    if (onDemandLoading) return
+    let cancelled = false
+    const uid = user.uid
+    const profile = userProfile
+    const currentUser = user
+    setOnDemandError(null)
+    setOnDemandLoading(true)
+    fetch('/api/hellenistic/comprehensive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: uid,
+        userProfile: {
+          birthDate: profile.birthDate,
+          birthTime: profile.birthTime || '12:00:00',
+          birthPlace: profile.birthPlace,
+          birthLatitude: profile.birthLatitude ?? 0,
+          birthLongitude: profile.birthLongitude ?? 0,
+        },
+      }),
+    })
+      .then((res) => res.json())
+      .then(async (json) => {
+        const raw = json?.data
+        const hasValidShape = raw && typeof raw === 'object' && !(raw as Record<string, unknown>).placeholder &&
+          Array.isArray((raw as Record<string, unknown>).planets) &&
+          Array.isArray((raw as Record<string, unknown>).houses)
+        if (hasValidShape) {
+          const reportData = raw as HellenisticAstrologyReading
+          onDemandReadingRef.current = reportData
+          setOnDemandReading(reportData)
+          setOnDemandError(null)
+          try {
+            const token = await currentUser.getIdToken()
+            const saveRes = await fetch('/api/profile/save-tool-report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ toolSlug: 'hellenistic', data: reportData }),
+            })
+            if (saveRes.ok) refreshProfileRef.current?.()
+          } catch {
+            // Non-blocking
+          }
+        } else {
+          setOnDemandError((json?.error as string) ?? 'Hellenistic report unavailable')
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) setOnDemandError(err instanceof Error ? err.message : 'Failed to load Hellenistic report')
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setOnDemandLoading(false)
+        }
+      })
+    return () => { cancelled = true }
+  }, [user?.uid, userProfile, hasCompleteDetails, reading, isLoading, onDemandLoading])
+
+  // Use ref so we show content even after Strict Mode remount (ref survives, state may reset)
+  const effectiveReading = reading ?? onDemandReading ?? onDemandReadingRef.current
+  // Don't show loading once we have a reading (e.g. after on-demand fetch or refreshProfile)
+  const effectiveLoading = !effectiveReading && (isLoading || (!!hasCompleteDetails && !reading && onDemandLoading))
+  const effectiveError = error ?? (!!hasCompleteDetails && !reading && !onDemandLoading ? onDemandError : null)
 
   if (!hasCompleteDetails) {
     return (
@@ -84,25 +165,24 @@ export default function HellenisticAstrologyPage() {
     )
   }
 
+  // Full-page loading only when profile is loading and we have no reading yet
   return (
-    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Hellenistic chart">
+    <ToolReportGuard loading={isLoading && !effectiveReading} error={effectiveError ?? null} toolLabel="Hellenistic chart">
     <div className="starfield-ultra-sharp min-h-screen p-4 pt-4 overflow-hidden">
       {/* Softening overlay to integrate content with starfield */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/10 via-slate-900/30 to-slate-900/40 pointer-events-none"></div>
       
       <div className="relative z-10 max-w-7xl mx-auto py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-serif font-semibold mb-6">
+        <div className="text-center mb-8 pt-4">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-yellow-400">🏛️</span>{' '}
-            <span className="bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent">Hellenistic Astrology</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Hellenistic Astrology</span>
           </h1>
-          <p className="text-slate-200 leading-relaxed text-xl font-light">
-            Ancient Greco-Roman astrology system (1st century BCE - 7th century CE)
-          </p>
+          <p className="text-slate-200 leading-relaxed text-xl font-light">Ancient Greco-Roman astrology system (1st century BCE – 7th century CE)</p>
         </div>
 
         {/* Tabs */}
-        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <div className="rounded-2xl border border-amber-500/25 border-t-stone-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs 
           value={activeTab} 
           onValueChange={(value) => setActiveTab(value as any)} 
@@ -110,62 +190,62 @@ export default function HellenisticAstrologyPage() {
           aria-label="Hellenistic Astrology navigation tabs"
         >
           <TabsList 
-            className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30"
+            className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 border-b-stone-600/30 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30"
             role="tablist"
             aria-label="Hellenistic Astrology sections"
           >
             <TabsTrigger 
               value="introduction" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-amber shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
               aria-label="Introduction to Hellenistic Astrology"
             >
               Introduction
             </TabsTrigger>
             <TabsTrigger 
               value="chart" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-stone shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Chart
             </TabsTrigger>
             <TabsTrigger 
               value="planets" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-rose shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Planets
             </TabsTrigger>
             <TabsTrigger 
               value="houses" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-amber shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Houses
             </TabsTrigger>
             <TabsTrigger 
               value="lots" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-stone shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Lots
             </TabsTrigger>
             <TabsTrigger 
               value="sect" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-rose shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Sect
             </TabsTrigger>
             <TabsTrigger 
               value="profections" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-amber shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Profections
             </TabsTrigger>
             <TabsTrigger 
               value="interpretations" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-stone shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Interpretations
             </TabsTrigger>
             <TabsTrigger 
               value="ask-the-seer" 
-              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="hellenistic-tab hellenistic-tab-rose shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Ask the Seer
             </TabsTrigger>
@@ -189,7 +269,7 @@ export default function HellenisticAstrologyPage() {
           {/* Chart Tab */}
           <AnimatePresence mode="wait">
             <TabsContent value="chart" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {isLoading ? (
+              {effectiveLoading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -197,14 +277,14 @@ export default function HellenisticAstrologyPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-lg">
+                  <Card className="bg-gradient-to-br from-amber-50 to-stone-50 border-2 border-amber-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                      <p className="text-amber-900">Calculating your Hellenistic chart...</p>
+                      <p className="font-sacred-body text-amber-900 text-lg">Calculating your Hellenistic chart...</p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : error ? (
+              ) : effectiveError ? (
                 <motion.div
                   key="error"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -215,14 +295,14 @@ export default function HellenisticAstrologyPage() {
                   <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
                       <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-                      <p className="text-red-700 mb-4">{error}</p>
+                      <p className="text-red-700 mb-4">{effectiveError}</p>
                       <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg">
                         <Link href="/profile">Generate your mystical profile</Link>
                       </Button>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : reading ? (
+              ) : effectiveReading ? (
                 <motion.div
                   key="chart"
                   initial={{ opacity: 0, y: 20 }}
@@ -240,10 +320,10 @@ export default function HellenisticAstrologyPage() {
                     <div className="space-y-6">
                       <div className="flex justify-center">
                       <HellenisticChartWheel
-                        planets={reading.planets}
-                        houses={reading.houses}
-                        lots={[reading.lots.partOfFortune, reading.lots.partOfSpirit]}
-                        ascendant={reading.ascendant}
+                        planets={effectiveReading.planets}
+                        houses={effectiveReading.houses}
+                        lots={[effectiveReading.lots.partOfFortune, effectiveReading.lots.partOfSpirit]}
+                        ascendant={effectiveReading.ascendant}
                         width={CHART_WHEEL_SIZE}
                         height={CHART_WHEEL_SIZE}
                       />
@@ -256,9 +336,9 @@ export default function HellenisticAstrologyPage() {
                         >
                           <Card className="bg-gradient-to-br from-amber-100 to-yellow-100 border-2 border-amber-300 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                             <CardContent className="p-4">
-                              <p className="text-amber-900 font-semibold mb-2">Ascendant</p>
+                              <p className="font-heading text-amber-900 font-semibold mb-2 text-sm uppercase tracking-wide">Ascendant</p>
                               <p className="text-slate-700 text-lg font-medium">
-                                {reading.ascendant.sign} {reading.ascendant.degree.toFixed(1)}°
+                                {effectiveReading.ascendant.sign} {effectiveReading.ascendant.degree.toFixed(1)}°
                               </p>
                             </CardContent>
                           </Card>
@@ -268,10 +348,10 @@ export default function HellenisticAstrologyPage() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.2, duration: 0.3 }}
                         >
-                          <Card className="bg-gradient-to-br from-amber-100 to-yellow-100 border-2 border-amber-300 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
+                          <Card className="bg-gradient-to-br from-stone-100 to-amber-50 border-2 border-stone-300 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                             <CardContent className="p-4">
-                              <p className="text-amber-900 font-semibold mb-2">Chart Type</p>
-                              <p className="text-slate-700 text-lg font-medium capitalize">{reading.sect.type} Chart</p>
+                              <p className="font-heading text-stone-800 font-semibold mb-2 text-sm uppercase tracking-wide">Chart Type</p>
+                              <p className="text-slate-700 text-lg font-medium capitalize">{effectiveReading.sect.type} Chart</p>
                             </CardContent>
                           </Card>
                         </motion.div>
@@ -286,7 +366,7 @@ export default function HellenisticAstrologyPage() {
           {/* Planets Tab */}
           <AnimatePresence mode="wait">
             <TabsContent value="planets" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {isLoading ? (
+              {effectiveLoading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -294,14 +374,14 @@ export default function HellenisticAstrologyPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-lg">
+                  <Card className="bg-gradient-to-br from-stone-50 to-amber-50 border-2 border-stone-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                      <p className="text-amber-900">Loading planetary data...</p>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-stone-500 mx-auto mb-4"></div>
+                      <p className="font-sacred-body text-stone-800 text-lg">Loading planetary data...</p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : reading ? (
+              ) : effectiveReading ? (
                 <motion.div
                   key="planets"
                   initial={{ opacity: 0, y: 20 }}
@@ -312,14 +392,14 @@ export default function HellenisticAstrologyPage() {
                   <DashboardSection 
                     title="Planetary Positions & Dignities" 
                     icon={<Star className="w-6 h-6" />}
-                    badge={`${reading.planets.length} Planets`}
+                    badge={`${effectiveReading.planets.length} Planets`}
                     colorScheme="amber"
                     defaultExpanded={true}
                     storageKey="planets"
                   >
                     <div className="space-y-4">
-                      {reading.planets.map(planet => {
-                        const dignity = reading.dignities[planet.name];
+                      {effectiveReading.planets.map(planet => {
+                        const dignity = effectiveReading.dignities[planet.name];
                         return (
                           <motion.div
                             key={planet.name}
@@ -379,7 +459,7 @@ export default function HellenisticAstrologyPage() {
           {/* Houses Tab */}
           <AnimatePresence mode="wait">
             <TabsContent value="houses" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {isLoading ? (
+              {effectiveLoading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -390,11 +470,11 @@ export default function HellenisticAstrologyPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                      <p className="text-amber-900">Loading house data...</p>
+                      <p className="font-sacred-body text-amber-900 text-lg">Loading house data...</p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : reading ? (
+              ) : effectiveReading ? (
                 <motion.div
                   key="houses"
                   initial={{ opacity: 0, y: 20 }}
@@ -411,7 +491,7 @@ export default function HellenisticAstrologyPage() {
                     storageKey="houses"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {reading.houses.map((house, index) => (
+                      {effectiveReading.houses.map((house, index) => (
                         <motion.div
                           key={house.number}
                           initial={{ opacity: 0, y: 10 }}
@@ -455,7 +535,7 @@ export default function HellenisticAstrologyPage() {
           {/* Lots Tab */}
           <AnimatePresence mode="wait">
             <TabsContent value="lots" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {isLoading ? (
+              {effectiveLoading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -463,14 +543,14 @@ export default function HellenisticAstrologyPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-lg">
+                  <Card className="bg-gradient-to-br from-stone-50 to-amber-50 border-2 border-stone-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                      <p className="text-amber-900">Calculating Lots...</p>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-stone-500 mx-auto mb-4"></div>
+                      <p className="font-sacred-body text-stone-800 text-lg">Calculating Lots...</p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : reading ? (
+              ) : effectiveReading ? (
                 <motion.div
                   key="lots"
                   initial={{ opacity: 0, y: 20 }}
@@ -495,34 +575,34 @@ export default function HellenisticAstrologyPage() {
                         <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                           <CardContent className="p-6">
                             <h3 className="text-amber-900 font-semibold text-lg mb-4">
-                              {reading.lots.partOfFortune.name}
+                              {effectiveReading.lots.partOfFortune.name}
                             </h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">Sign</p>
-                          <p className="text-slate-800 font-medium">{reading.lots.partOfFortune.sign}</p>
+                          <p className="text-slate-800 font-medium">{effectiveReading.lots.partOfFortune.sign}</p>
                         </div>
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">Degree</p>
-                          <p className="text-slate-800 font-medium">{reading.lots.partOfFortune.degree.toFixed(1)}°</p>
+                          <p className="text-slate-800 font-medium">{effectiveReading.lots.partOfFortune.degree.toFixed(1)}°</p>
                         </div>
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">House</p>
-                          <p className="text-slate-800 font-medium">House {reading.lots.partOfFortune.house}</p>
+                          <p className="text-slate-800 font-medium">House {effectiveReading.lots.partOfFortune.house}</p>
                         </div>
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">Lord</p>
                           <p className="text-slate-800 font-medium">
-                            {reading.houses.find(h => h.number === reading.lots.partOfFortune.house)?.sign ? 
+                            {effectiveReading.houses.find(h => h.number === effectiveReading.lots.partOfFortune.house)?.sign ? 
                               (Object.entries({
                                 'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
                                 'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
                                 'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
-                              }).find(([sign]) => sign === reading.houses.find(h => h.number === reading.lots.partOfFortune.house)?.sign)?.[1] || 'Unknown') : 'Unknown'}
+                              }).find(([sign]) => sign === effectiveReading.houses.find(h => h.number === effectiveReading.lots.partOfFortune.house)?.sign)?.[1] || 'Unknown') : 'Unknown'}
                           </p>
                         </div>
                       </div>
-                            <p className="text-slate-700 text-sm leading-relaxed">{reading.lots.partOfFortune.interpretation}</p>
+                            <p className="text-slate-700 text-sm leading-relaxed">{effectiveReading.lots.partOfFortune.interpretation}</p>
                           </CardContent>
                         </Card>
                       </motion.div>
@@ -535,34 +615,34 @@ export default function HellenisticAstrologyPage() {
                         <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                           <CardContent className="p-6">
                             <h3 className="text-amber-900 font-semibold text-lg mb-4">
-                              {reading.lots.partOfSpirit.name}
+                              {effectiveReading.lots.partOfSpirit.name}
                             </h3>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">Sign</p>
-                          <p className="text-slate-800 font-medium">{reading.lots.partOfSpirit.sign}</p>
+                          <p className="text-slate-800 font-medium">{effectiveReading.lots.partOfSpirit.sign}</p>
                         </div>
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">Degree</p>
-                          <p className="text-slate-800 font-medium">{reading.lots.partOfSpirit.degree.toFixed(1)}°</p>
+                          <p className="text-slate-800 font-medium">{effectiveReading.lots.partOfSpirit.degree.toFixed(1)}°</p>
                         </div>
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">House</p>
-                          <p className="text-slate-800 font-medium">House {reading.lots.partOfSpirit.house}</p>
+                          <p className="text-slate-800 font-medium">House {effectiveReading.lots.partOfSpirit.house}</p>
                         </div>
                         <div className="bg-white/60 p-3 rounded-lg">
                           <p className="text-slate-600 text-xs mb-1">Lord</p>
                           <p className="text-slate-800 font-medium">
-                            {reading.houses.find(h => h.number === reading.lots.partOfSpirit.house)?.sign ? 
+                            {effectiveReading.houses.find(h => h.number === effectiveReading.lots.partOfSpirit.house)?.sign ? 
                               (Object.entries({
                                 'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
                                 'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
                                 'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
-                              }).find(([sign]) => sign === reading.houses.find(h => h.number === reading.lots.partOfSpirit.house)?.sign)?.[1] || 'Unknown') : 'Unknown'}
+                              }).find(([sign]) => sign === effectiveReading.houses.find(h => h.number === effectiveReading.lots.partOfSpirit.house)?.sign)?.[1] || 'Unknown') : 'Unknown'}
                           </p>
                         </div>
                       </div>
-                            <p className="text-slate-700 text-sm leading-relaxed">{reading.lots.partOfSpirit.interpretation}</p>
+                            <p className="text-slate-700 text-sm leading-relaxed">{effectiveReading.lots.partOfSpirit.interpretation}</p>
                           </CardContent>
                         </Card>
                       </motion.div>
@@ -576,7 +656,7 @@ export default function HellenisticAstrologyPage() {
           {/* Sect Tab */}
           <AnimatePresence mode="wait">
             <TabsContent value="sect" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {isLoading ? (
+              {effectiveLoading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -584,14 +664,14 @@ export default function HellenisticAstrologyPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-lg">
+                  <Card className="bg-gradient-to-br from-rose-50 to-amber-50 border-2 border-rose-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                      <p className="text-amber-900">Determining sect...</p>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-4"></div>
+                      <p className="font-sacred-body text-rose-900 text-lg">Determining sect...</p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : reading ? (
+              ) : effectiveReading ? (
                 <motion.div
                   key="sect"
                   initial={{ opacity: 0, y: 20 }}
@@ -601,8 +681,8 @@ export default function HellenisticAstrologyPage() {
                 >
                   <DashboardSection 
                     title="Planetary Sect" 
-                    icon={reading.sect.type === 'day' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
-                    badge={reading.sect.type === 'day' ? 'Day Chart' : 'Night Chart'}
+                    icon={effectiveReading.sect.type === 'day' ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+                    badge={effectiveReading.sect.type === 'day' ? 'Day Chart' : 'Night Chart'}
                     colorScheme="amber"
                     defaultExpanded={true}
                     storageKey="sect"
@@ -610,29 +690,29 @@ export default function HellenisticAstrologyPage() {
                     <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                       <CardContent className="p-6">
                         <div className="flex items-center gap-4 mb-6">
-                          <Badge className={reading.sect.type === 'day' ? 'bg-amber-500' : 'bg-amber-600'} variant="default">
-                            {reading.sect.type.toUpperCase()} Chart
+                          <Badge className={effectiveReading.sect.type === 'day' ? 'bg-amber-500' : 'bg-amber-600'} variant="default">
+                            {effectiveReading.sect.type.toUpperCase()} Chart
                           </Badge>
                           <p className="text-slate-700">
-                            Sect Light: <span className="text-amber-900 font-semibold">{reading.sect.sectLeader}</span>
+                            Sect Light: <span className="text-amber-900 font-semibold">{effectiveReading.sect.sectLeader}</span>
                           </p>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="bg-gradient-to-br from-amber-100 to-yellow-100 border border-amber-300 p-4 rounded-xl">
                             <p className="text-slate-600 text-sm mb-2">Sect Benefic</p>
-                            <p className="text-amber-900 font-semibold text-lg">{reading.sect.benefic}</p>
+                            <p className="text-amber-900 font-semibold text-lg">{effectiveReading.sect.benefic}</p>
                             <p className="text-slate-600 text-xs mt-1">Works more beneficially in this chart</p>
                           </div>
                           <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-300 p-4 rounded-xl">
                             <p className="text-slate-600 text-sm mb-2">Sect Malefic</p>
-                            <p className="text-amber-800 font-semibold text-lg">{reading.sect.malefic}</p>
+                            <p className="text-amber-800 font-semibold text-lg">{effectiveReading.sect.malefic}</p>
                             <p className="text-slate-600 text-xs mt-1">More challenging in this chart</p>
                           </div>
                         </div>
                         <div className="mt-4 p-4 bg-white/60 rounded-lg border border-amber-200">
                           <p className="text-slate-700 text-sm leading-relaxed">
-                            In a {reading.sect.type} chart, the {reading.sect.sectLeader} is the primary light and guide. 
-                            The {reading.sect.benefic} works more beneficially, while the {reading.sect.malefic} may present 
+                            In a {effectiveReading.sect.type} chart, the {effectiveReading.sect.sectLeader} is the primary light and guide. 
+                            The {effectiveReading.sect.benefic} works more beneficially, while the {effectiveReading.sect.malefic} may present 
                             more challenges. Understanding your sect helps you work with your chart's natural energies.
                           </p>
                         </div>
@@ -647,7 +727,7 @@ export default function HellenisticAstrologyPage() {
           {/* Profections Tab */}
           <AnimatePresence mode="wait">
             <TabsContent value="profections" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {isLoading ? (
+              {effectiveLoading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -655,14 +735,14 @@ export default function HellenisticAstrologyPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-lg">
+                  <Card className="bg-gradient-to-br from-amber-50 to-stone-50 border-2 border-amber-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
                       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                      <p className="text-amber-900">Calculating profections...</p>
+                      <p className="font-sacred-body text-amber-900 text-lg">Calculating profections...</p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : reading ? (
+              ) : effectiveReading ? (
                 <motion.div
                   key="profections"
                   initial={{ opacity: 0, y: 20 }}
@@ -673,7 +753,7 @@ export default function HellenisticAstrologyPage() {
                   <DashboardSection 
                     title="Annual Profections" 
                     icon={<History className="w-6 h-6" />}
-                    badge={`Year ${reading.profections.currentYear}`}
+                    badge={`Year ${effectiveReading.profections.currentYear}`}
                     colorScheme="amber"
                     defaultExpanded={true}
                     storageKey="profections"
@@ -687,22 +767,22 @@ export default function HellenisticAstrologyPage() {
                         <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
                           <CardContent className="p-6">
                             <div className="flex items-center gap-4 mb-4">
-                              <Badge className="bg-amber-600 text-white">Year {reading.profections.currentYear}</Badge>
+                              <Badge className="bg-amber-600 text-white">Year {effectiveReading.profections.currentYear}</Badge>
                               <p className="text-amber-900 font-semibold">
-                                {reading.profections.currentSign} - Ruled by {reading.profections.lord}
+                                {effectiveReading.profections.currentSign} - Ruled by {effectiveReading.profections.lord}
                               </p>
                             </div>
                             <div className="mb-4">
                               <p className="text-slate-600 text-sm mb-2">Activated Houses</p>
                               <div className="flex flex-wrap gap-2">
-                                {reading.profections.activatedHouses.map(house => (
+                                {effectiveReading.profections.activatedHouses.map(house => (
                                   <Badge key={house} variant="outline" className="text-amber-700 border-amber-400 bg-amber-50">
                                     House {house}
                                   </Badge>
                                 ))}
                               </div>
                             </div>
-                            <p className="text-slate-700 text-sm leading-relaxed">{reading.profections.timing}</p>
+                            <p className="text-slate-700 text-sm leading-relaxed">{effectiveReading.profections.timing}</p>
                           </CardContent>
                         </Card>
                       </motion.div>
@@ -731,7 +811,7 @@ export default function HellenisticAstrologyPage() {
           {/* Interpretations Tab */}
           <AnimatePresence mode="wait">
             <TabsContent value="interpretations" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {isLoading ? (
+              {effectiveLoading ? (
                 <motion.div
                   key="loading"
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -739,14 +819,14 @@ export default function HellenisticAstrologyPage() {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-lg">
+                  <Card className="bg-gradient-to-br from-stone-50 to-rose-50 border-2 border-stone-200 rounded-3xl shadow-lg">
                     <CardContent className="p-8 text-center">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-                      <p className="text-amber-900">Generating interpretations...</p>
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-stone-500 mx-auto mb-4"></div>
+                      <p className="font-sacred-body text-stone-800 text-lg">Generating interpretations...</p>
                     </CardContent>
                   </Card>
                 </motion.div>
-              ) : reading ? (
+              ) : effectiveReading ? (
                 <motion.div
                   key="interpretations"
                   initial={{ opacity: 0, y: 20 }}
@@ -761,19 +841,19 @@ export default function HellenisticAstrologyPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.3, ease: MATERIAL_3_EASING }}
                   >
-                    <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                      <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
-                        <CardTitle className="text-amber-900 flex items-center gap-2 text-xl">
+                    <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                      <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100 rounded-t-3xl">
+                        <CardTitle className="font-heading text-amber-900 flex items-center gap-2 text-xl tracking-tight">
                           <User className="w-6 h-6" />
                           Personality
                         </CardTitle>
                       </CardHeader>
                   <CardContent className="p-6 space-y-4">
-                    <p className="text-slate-700 leading-relaxed">{reading.interpretations.personality.overview}</p>
+                    <p className="text-slate-700 leading-relaxed">{effectiveReading.interpretations.personality.overview}</p>
                       <div className="bg-white/60 p-4 rounded-xl">
                         <p className="text-amber-900 font-semibold mb-2">Strengths</p>
                         <ul className="list-disc list-inside space-y-1 text-slate-700">
-                          {reading.interpretations.personality.strengths.map((strength, i) => (
+                          {effectiveReading.interpretations.personality.strengths.map((strength, i) => (
                             <li key={i}>{strength}</li>
                           ))}
                         </ul>
@@ -781,14 +861,14 @@ export default function HellenisticAstrologyPage() {
                       <div className="bg-white/60 p-4 rounded-xl">
                         <p className="text-amber-900 font-semibold mb-2">Challenges</p>
                         <ul className="list-disc list-inside space-y-1 text-slate-700">
-                          {reading.interpretations.personality.challenges.map((challenge, i) => (
+                          {effectiveReading.interpretations.personality.challenges.map((challenge, i) => (
                             <li key={i}>{challenge}</li>
                           ))}
                         </ul>
                       </div>
                       <div className="bg-white/60 p-4 rounded-xl">
                         <p className="text-amber-900 font-semibold mb-2">Life Purpose</p>
-                        <p className="text-slate-700 leading-relaxed">{reading.interpretations.personality.lifePurpose}</p>
+                        <p className="text-slate-700 leading-relaxed">{effectiveReading.interpretations.personality.lifePurpose}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -800,26 +880,26 @@ export default function HellenisticAstrologyPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2, duration: 0.3, ease: MATERIAL_3_EASING }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
-                      <CardTitle className="text-amber-900 flex items-center gap-2 text-xl">
+                  <Card className="bg-gradient-to-br from-stone-50 to-amber-50 border-2 border-stone-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                    <CardHeader className="bg-gradient-to-r from-stone-100 to-amber-100 rounded-t-3xl">
+                      <CardTitle className="font-heading text-stone-800 flex items-center gap-2 text-xl tracking-tight">
                         <Briefcase className="w-6 h-6" />
                         Career
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 space-y-4">
                       <div>
-                        <p className="text-amber-900 font-semibold mb-3">Suitable Professions</p>
+                        <p className="text-stone-800 font-semibold mb-3">Suitable Professions</p>
                         <div className="flex flex-wrap gap-2">
-                          {reading.interpretations.career.suitableProfessions.map((prof, i) => (
-                            <Badge key={i} className="bg-amber-600 text-white">
+                          {effectiveReading.interpretations.career.suitableProfessions.map((prof, i) => (
+                            <Badge key={i} className="bg-stone-600 text-white">
                               {prof}
                             </Badge>
                           ))}
                         </div>
                       </div>
                       <div className="bg-white/60 p-4 rounded-xl">
-                        <p className="text-slate-700 leading-relaxed">{reading.interpretations.career.careerTiming}</p>
+                        <p className="text-slate-700 leading-relaxed">{effectiveReading.interpretations.career.careerTiming}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -831,17 +911,17 @@ export default function HellenisticAstrologyPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.3, ease: MATERIAL_3_EASING }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
-                      <CardTitle className="text-amber-900 flex items-center gap-2 text-xl">
+                  <Card className="bg-gradient-to-br from-rose-50 to-amber-50 border-2 border-rose-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                    <CardHeader className="bg-gradient-to-r from-rose-100 to-amber-100 rounded-t-3xl">
+                      <CardTitle className="font-heading text-rose-900 flex items-center gap-2 text-xl tracking-tight">
                         <Heart className="w-6 h-6" />
                         Relationships
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 space-y-4">
                       <div className="bg-white/60 p-4 rounded-xl">
-                        <p className="text-slate-700 leading-relaxed mb-3">{reading.interpretations.relationships.compatibility}</p>
-                        <p className="text-slate-700 leading-relaxed">{reading.interpretations.relationships.relationshipAdvice}</p>
+                        <p className="text-slate-700 leading-relaxed mb-3">{effectiveReading.interpretations.relationships.compatibility}</p>
+                        <p className="text-slate-700 leading-relaxed">{effectiveReading.interpretations.relationships.relationshipAdvice}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -853,9 +933,9 @@ export default function HellenisticAstrologyPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.3, ease: MATERIAL_3_EASING }}
                 >
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300">
-                    <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
-                      <CardTitle className="text-amber-900 flex items-center gap-2 text-xl">
+                  <Card className="bg-gradient-to-br from-amber-50 to-stone-50 border-2 border-amber-200 rounded-3xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                    <CardHeader className="bg-gradient-to-r from-amber-100 to-stone-100 rounded-t-3xl">
+                      <CardTitle className="font-heading text-amber-900 flex items-center gap-2 text-xl tracking-tight">
                         <Sparkles className="w-6 h-6" />
                         Remedies & Guidance
                       </CardTitle>
@@ -863,7 +943,7 @@ export default function HellenisticAstrologyPage() {
                     <CardContent className="p-6 space-y-4">
                       <div>
                         <p className="text-amber-900 font-semibold mb-3">Planetary Remedies</p>
-                        {reading.remedies.planetary.map((remedy, i) => (
+                        {effectiveReading.remedies.planetary.map((remedy, i) => (
                           <div key={i} className="bg-white/60 p-4 rounded-xl mb-3">
                             <p className="text-amber-900 font-semibold">{remedy.planet}</p>
                             <p className="text-slate-700 text-sm mt-1">{remedy.remedy}</p>
@@ -874,7 +954,7 @@ export default function HellenisticAstrologyPage() {
                       <div>
                         <p className="text-amber-900 font-semibold mb-3">General Guidance</p>
                         <ul className="list-disc list-inside space-y-2 text-slate-700">
-                          {reading.remedies.general.map((guidance, i) => (
+                          {effectiveReading.remedies.general.map((guidance, i) => (
                             <li key={i}>{guidance}</li>
                           ))}
                         </ul>
@@ -902,7 +982,7 @@ export default function HellenisticAstrologyPage() {
                     <HellenisticSeerChatInterface 
                       userId={user?.uid || ''}
                       userProfile={userProfile}
-                      hellenisticReading={reading || undefined}
+                      hellenisticReading={effectiveReading || undefined}
                     />
                   </div>
                 </Card>

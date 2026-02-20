@@ -42,7 +42,6 @@ const PROFILE_KEY_TO_TOOL: Record<string, string> = {
   kp: 'kp', 'KP Astrology': 'kp',
   palmistry: 'palmistry', 'Palmistry': 'palmistry',
   geomancy: 'geomancy', 'Geomancy': 'geomancy',
-  financialAstrology: 'financial', 'Financial Astrology': 'financial',
   medicalAstrology: 'medical', 'Medical Astrology': 'medical',
   navaratna: 'navaratna', navaratnaPlanetaryStones: 'navaratna', 'Navaratna': 'navaratna',
   dreamSymbols: 'dreamSymbols', 'Dream Symbols': 'dreamSymbols',
@@ -51,17 +50,18 @@ const PROFILE_KEY_TO_TOOL: Record<string, string> = {
   vastu: 'vastu', 'Vastu': 'vastu',
   humanDesign: 'humanDesign', 'Human Design': 'humanDesign',
   ogham: 'ogham', 'Ogham': 'ogham',
-  bibliomancy: 'bibliomancy', 'Bibliomancy': 'bibliomancy',
   trichakraMethod: 'trichakra', trichakra: 'trichakra', 'Trichakra': 'trichakra',
   sortilege: 'sortilege', 'Sortilege': 'sortilege',
   pendulum: 'pendulum', 'Pendulum Divination': 'pendulum',
   energyHealing: 'energyHealing', 'Energy & Healing': 'energyHealing',
-  scrying: 'scrying', 'Scrying': 'scrying',
-  mundaneAstrology: 'mundaneAstrology', 'Mundane Astrology': 'mundaneAstrology',
+  financialAstrology: 'financial', 'Financial Astrology': 'financial',
+  mundaneAstrology: 'mundane', 'Mundane Astrology': 'mundane',
   akashicRecords: 'akashicRecords', 'Akashic Records': 'akashicRecords',
+  scrying: 'scrying', 'Scrying': 'scrying',
+  bibliomancy: 'bibliomancy', 'Bibliomancy': 'bibliomancy',
 };
 
-const SKIP_PROFILE_KEYS = new Set(['userId', 'lastUpdated', 'userProfile', 'generatedAt', 'dataQuality', 'source', 'cacheExpiry', 'interpretations']);
+const SKIP_PROFILE_KEYS = new Set(['userId', 'lastUpdated', 'userProfile', 'generatedAt', 'dataQuality', 'source', 'cacheExpiry', 'interpretations', 'toolReports', 'metadata', 'birthDate', 'birthPlace', 'birthTime']);
 
 export class SeerAggregator {
   private baseUrl: string;
@@ -79,6 +79,17 @@ export class SeerAggregator {
       const tool = PROFILE_KEY_TO_TOOL[k];
       if (tool) toolKeys.add(tool);
       else if (!SKIP_PROFILE_KEYS.has(k)) toolKeys.add(k); // use key as-is if not in map (e.g. vedic)
+    }
+    // Include tools that exist only under toolReports (e.g. scrying when merge key missing)
+    const toolReports = comprehensiveProfile?.toolReports;
+    if (toolReports && typeof toolReports === 'object') {
+      for (const slug of Object.keys(toolReports)) {
+        const entry = toolReports[slug];
+        if (entry?.status === 'success' && entry?.data) {
+          const tool = PROFILE_KEY_TO_TOOL[slug] ?? slug;
+          toolKeys.add(tool);
+        }
+      }
     }
     return [...toolKeys];
   }
@@ -190,24 +201,6 @@ export class SeerAggregator {
       }
     }
 
-    // Scrying – what do you see, what is forming, what is hidden, what energy surrounds
-    if (
-      /\b(what do you see|what (do you )?see (about|in)|what is forming|show me what lies ahead|what (is )?hidden|what energy surrounds|what lies ahead|what (is )?emerging)\b/i.test(lowerQuestion)
-    ) {
-      if (availableTools.includes('scrying')) {
-        relevantTools.push('scrying');
-      }
-    }
-
-    // Mundane Astrology – elections, political, market cycles, global, national, economic (collective)
-    if (
-      /\b(elections?|election\b|political|market cycles?|(the )?market(s)?\b|war\b|conflict\b|global (instability|trends?|events?|climate)|national (chart|mood|trend)|economic (forecast|cycle|outlook)|collective (trend|cycle)|planetary climate|next election|government pressure|volatility (in|of) (the )?market)\b/i.test(lowerQuestion)
-    ) {
-      if (availableTools.includes('mundaneAstrology')) {
-        relevantTools.push('mundaneAstrology');
-      }
-    }
-
     // Akashic Records: soul lesson, pattern repeat, deeper meaning, Records say, soul theme. Reflective only; no prediction/destiny blending.
     if (
       /\b(soul lesson|(why does )?this pattern (keep )?(repeating|repeat)|deeper meaning|what am i here to learn|(what )?karmic theme|(what do )?the Records say|akashic( records?)?|(what )?soul theme|why does this keep happening)\b/i.test(lowerQuestion)
@@ -299,13 +292,6 @@ export class SeerAggregator {
       }
     }
 
-    // Bibliomancy
-    if (/\b(bibliomancy|passage|verse|sacred text|bible|quran|gita|torah|hafez)\b/i.test(lowerQuestion)) {
-      if (availableTools.includes('bibliomancy')) {
-        relevantTools.push('bibliomancy');
-      }
-    }
-
     // Trichakra
     if (/\b(trichakra|body mind soul|three chakra)\b/i.test(lowerQuestion)) {
       if (availableTools.includes('trichakra')) {
@@ -317,6 +303,16 @@ export class SeerAggregator {
     if (/\b(sortilege|casting|drawing lots)\b/i.test(lowerQuestion)) {
       if (availableTools.includes('sortilege')) {
         relevantTools.push('sortilege');
+      }
+    }
+    if (/\b(scrying|crystal ball|black mirror|hydromancy|pyromancy|symbolic vision)\b/i.test(lowerQuestion)) {
+      if (availableTools.includes('scrying')) {
+        relevantTools.push('scrying');
+      }
+    }
+    if (/\b(bibliomancy|sacred text|bible|quran|gita|torah|hafez|fal-e hafez|istikhara|sortes|goral|divination by book)\b/i.test(lowerQuestion)) {
+      if (availableTools.includes('bibliomancy')) {
+        relevantTools.push('bibliomancy');
       }
     }
 
@@ -348,7 +344,7 @@ export class SeerAggregator {
 
     // Limit to max 5 tools to avoid performance issues
     if (relevantTools.length > 5) {
-      const priority = ['vedic', 'western', 'tarot', 'numerology', 'kabbalistic', 'nameAnalysis', 'lenormand', 'vastu', 'financial', 'medical', 'iching', 'geomancy', 'scrying', 'mundaneAstrology', 'akashicRecords', 'navaratna', 'dreamSymbols', 'faceReading', 'fengShui', 'humanDesign', 'ogham', 'bibliomancy', 'trichakra', 'energyHealing', 'sortilege', 'pendulum'];
+      const priority = ['vedic', 'western', 'tarot', 'numerology', 'kabbalistic', 'nameAnalysis', 'lenormand', 'vastu', 'financial', 'medical', 'iching', 'geomancy', 'akashicRecords', 'navaratna', 'dreamSymbols', 'faceReading', 'fengShui', 'humanDesign', 'ogham', 'trichakra', 'energyHealing', 'sortilege', 'scrying', 'bibliomancy', 'pendulum'];
       relevantTools.sort((a, b) => {
         const aIndex = priority.indexOf(a);
         const bIndex = priority.indexOf(b);
@@ -392,13 +388,12 @@ export class SeerAggregator {
       'fengShui': 'Feng Shui',
       'humanDesign': 'Human Design',
       'ogham': 'Ogham',
-      'bibliomancy': 'Bibliomancy',
       'trichakra': 'Trichakra',
       'energyHealing': 'Energy & Healing',
-      'scrying': 'Scrying',
-      'mundaneAstrology': 'Mundane Astrology',
       'akashicRecords': 'Akashic Records',
       'sortilege': 'Sortilege',
+      'scrying': 'Scrying',
+      'bibliomancy': 'Bibliomancy',
       'pendulum': 'Pendulum Divination',
       'astrocartography': 'Astrocartography',
     };
@@ -570,44 +565,6 @@ export class SeerAggregator {
           break;
         }
 
-        // Scrying: image-based, symbolic, present–future. Do not blend with Tarot/Geomancy/astrology; stands alone.
-        case 'scrying': {
-          apiPath = '/api/ask-scrying-seer';
-          const scryingVision = comprehensiveProfile?.scrying ?? comprehensiveProfile?.['Scrying'];
-          const hasPrimary = !!scryingVision?.primaryVision?.trim();
-          const symbols = scryingVision?.symbols || [];
-          const shapes = scryingVision?.shapes || [];
-          const images = scryingVision?.images || [];
-          const hasPatterns = (symbols.length > 0 && symbols.some((s: any) => s?.value)) || shapes.length > 0 || images.length > 0;
-          if (!hasPrimary && !hasPatterns) {
-            devLog.warn(`⚠️ Missing or insufficient Scrying vision (need primaryVision or symbols/shapes/images), skipping ${toolName} Seer`, undefined, 'seer-aggregator');
-            return null;
-          }
-          requestBody.scryingVision = scryingVision;
-          requestBody.scryingMethod = scryingVision?.method || 'crystal-ball';
-          break;
-        }
-
-        // Mundane Astrology: collective only. Do not blend with personal chart, dashas, karma, or remedies.
-        case 'mundaneAstrology': {
-          apiPath = '/api/chat/mundane-seer';
-          const mundaneData = comprehensiveProfile?.mundaneAstrology ?? comprehensiveProfile?.['Mundane Astrology'];
-          const data = mundaneData?.data ?? mundaneData;
-          const ingressCharts = data?.ingressCharts || [];
-          const planetaryCycles = data?.planetaryCycles || [];
-          const analysisCycles = data?.analysis?.cycles || [];
-          const hasIngress = Array.isArray(ingressCharts) && ingressCharts.length > 0;
-          const hasCycles =
-            (Array.isArray(planetaryCycles) && planetaryCycles.length > 0) ||
-            (Array.isArray(analysisCycles) && analysisCycles.length > 0);
-          if (!hasIngress && !hasCycles) {
-            devLog.warn(`⚠️ Missing or insufficient Mundane Astrology data (need ingressCharts or planetaryCycles/analysis.cycles), skipping ${toolName} Seer`, undefined, 'seer-aggregator');
-            return null;
-          }
-          requestBody.analysis = mundaneData;
-          break;
-        }
-
         // Akashic Records: reflective/pattern-only. No prediction, no destiny claims, no blending with astrology/tarot.
         case 'akashicRecords': {
           apiPath = '/api/ask-akashic-seer';
@@ -628,21 +585,15 @@ export class SeerAggregator {
 
         case 'financial': {
           apiPath = '/api/ask-financial-seer';
-          const financialData = comprehensiveProfile?.financialAstrology || comprehensiveProfile?.['Financial Astrology'];
-          const vedic = comprehensiveProfile?.vedic ?? comprehensiveProfile?.['Vedic Astrology'];
-          const western = comprehensiveProfile?.western ?? comprehensiveProfile?.['Western Astrology'];
-          const natalChart =
-            vedic?.vedicCharts?.D1 ?? vedic?.chart ?? western?.chart ?? western?.data ?? financialData?.chart;
-          const hasPlanets =
-            natalChart?.planets &&
-            (Array.isArray(natalChart.planets) ? natalChart.planets.length > 0 : Object.keys(natalChart.planets).length > 0);
-          if (!hasPlanets) {
-            devLog.warn(`⚠️ Missing natal chart for Financial Astrology, skipping ${toolName} Seer`, undefined, 'seer-aggregator');
+          const financialData = comprehensiveProfile?.financialAstrology ?? comprehensiveProfile?.['Financial Astrology'];
+          const hasReport = financialData?.comprehensiveAnalysis ?? financialData;
+          if (!hasReport) {
+            devLog.warn(`⚠️ Missing Financial Astrology data, skipping ${toolName} Seer`, undefined, 'seer-aggregator');
             return null;
           }
-          requestBody.natalChart = natalChart;
-          requestBody.comprehensiveProfile = comprehensiveProfile;
-          requestBody.financialChartData = financialData?.chart;
+          requestBody.financialReport = financialData;
+          const westernData = comprehensiveProfile?.western || comprehensiveProfile?.['Western Astrology'];
+          if (westernData?.chart) requestBody.westernChartData = westernData.chart;
           break;
         }
 
@@ -727,20 +678,6 @@ export class SeerAggregator {
           break;
         }
 
-        // Bibliomancy: reflective guidance only; not doctrine or prediction. Skip when reading has no usable passage.
-        case 'bibliomancy': {
-          apiPath = '/api/ask-bibliomancy-seer';
-          const bibliomancyData = comprehensiveProfile?.bibliomancy || comprehensiveProfile?.['Bibliomancy'];
-          const reading = bibliomancyData?.data ?? bibliomancyData;
-          const hasPassage = reading?.selectedPassages?.[0] ?? reading?.questionReading?.passage;
-          if (!hasPassage) {
-            devLog.warn(`⚠️ Missing or insufficient Bibliomancy data (need selectedPassages or questionReading.passage), skipping ${toolName} Seer`, undefined, 'seer-aggregator');
-            return null;
-          }
-          requestBody.bibliomancyReading = bibliomancyData;
-          break;
-        }
-
         case 'trichakra': {
           apiPath = '/api/ask-trichakra-seer';
           const trichakraData = comprehensiveProfile?.trichakraMethod || comprehensiveProfile?.trichakra || comprehensiveProfile?.['Trichakra'];
@@ -777,6 +714,30 @@ export class SeerAggregator {
             requestBody.pendulumAnalysis = pendulumData.reading;
           }
           break;
+
+        case 'scrying': {
+          apiPath = '/api/ask-scrying-seer';
+          const scryingData = comprehensiveProfile?.scrying ?? comprehensiveProfile?.toolReports?.scrying?.data;
+          const scryingReport = scryingData?.data ?? scryingData;
+          if (!scryingReport || typeof scryingReport !== 'object') {
+            devLog.warn('Missing Scrying report, skipping Scrying Seer', undefined, 'seer-aggregator');
+            return null;
+          }
+          requestBody.scryingReport = scryingReport;
+          break;
+        }
+
+        case 'bibliomancy': {
+          apiPath = '/api/ask-bibliomancy-seer';
+          const bibliomancyData = comprehensiveProfile?.bibliomancy ?? comprehensiveProfile?.toolReports?.bibliomancy?.data;
+          const bibliomancyReport = bibliomancyData?.data ?? bibliomancyData;
+          if (!bibliomancyReport || typeof bibliomancyReport !== 'object') {
+            devLog.warn('Missing Bibliomancy report, skipping Bibliomancy Seer', undefined, 'seer-aggregator');
+            return null;
+          }
+          requestBody.bibliomancyReport = bibliomancyReport;
+          break;
+        }
 
         case 'astrocartography': {
           apiPath = '/api/ask-astrocartography-seer';

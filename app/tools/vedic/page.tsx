@@ -236,18 +236,38 @@ function getHouseTheme(houseNum: number): string {
   return themes[houseNum] || "life experiences";
 }
 
-// Helper function to convert sign indices to names
+// Helper function to convert sign indices (0- or 1-based) to names
 function getSignName(signIndexOrName: number | string): string {
   const SIGN_NAMES = [
     'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
   ];
-  
   if (typeof signIndexOrName === 'number') {
-    return SIGN_NAMES[signIndexOrName % 12] || 'Unknown';
+    const n = signIndexOrName % 12;
+    return SIGN_NAMES[n] ?? SIGN_NAMES[0];
   }
-  return signIndexOrName;
+  if (typeof signIndexOrName === 'string' && /^\d+$/.test(signIndexOrName)) {
+    const idx = parseInt(signIndexOrName, 10) % 12;
+    return SIGN_NAMES[idx] ?? SIGN_NAMES[0];
+  }
+  return String(signIndexOrName);
 }
+
+// Varied second-line phrasings for house insights (no repeated "influencing how you experience and express this life area")
+const HOUSE_INSIGHT_SECOND_LINE: Record<number, string> = {
+  1: "The sign on the cusp shapes your approach to identity and vitality.",
+  2: "This sign's influence affects how you build security and use your voice.",
+  3: "The placement here colors your communication style and relationship with siblings.",
+  4: "Your roots and emotional foundation are reflected through this sign's energy.",
+  5: "Creativity and learning are expressed in ways suggested by the sign.",
+  6: "Health and day-to-day routines are influenced by this house's sign.",
+  7: "Partnerships and one-to-one bonds carry the flavor of this sign.",
+  8: "Transformation and shared resources are filtered through this sign's qualities.",
+  9: "Higher learning and luck are colored by the sign on this cusp.",
+  10: "Career and public image are expressed through this sign's lens.",
+  11: "Gains and wishes take shape according to this sign's nature.",
+  12: "Spirituality and solitude are influenced by the sign ruling this house."
+};
 
 function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
@@ -276,7 +296,6 @@ function VedicAstrologyPageContent() {
     });
   }, []);
   const [currentPanchangaData, setCurrentPanchangaData] = useState<any>(null);
-  const [yogas, setYogas] = useState<any[]>([]);
   const [isLoadingInterpretations, setIsLoadingInterpretations] = useState(false);
   const [newChartData, setNewChartData] = useState<any>(null);
 
@@ -328,7 +347,7 @@ function VedicAstrologyPageContent() {
       // Add detection for "Unknown" Mahadasha/Antardasha
       'unknown mahadasha', 'unknown antardasha', 'unknown dasha',
       // Add detection for error messages
-      'unable to generate', 'please refresh the page', 'try again'
+      'unable to generate', 'try again'
     ];
     
     return !invalidPhrases.some(phrase => text.toLowerCase().includes(phrase));
@@ -529,12 +548,13 @@ function VedicAstrologyPageContent() {
       }
       
       // Geocode coordinates automatically
-      const coordinates = await getCoordinatesWithFallback(
+      const coords = await getCoordinatesWithFallback(
         userProfile.birthPlace || birthProfile.placeName || 'Mumbai, India'
       );
+      setCoordinates(coords);
       
       // Resolve birth time (exact or approximated)
-      const resolvedTime = await resolveBirthTime(userProfile, coordinates);
+      const resolvedTime = await resolveBirthTime(userProfile, coords);
       
       // Show disclaimer if using approximate time
       if (resolvedTime.disclaimer) {
@@ -572,8 +592,8 @@ function VedicAstrologyPageContent() {
     
     devLog.debug('Chart time params', { time: resolvedTime.time, istHours, istMinutes, utcHours, utcMinutes, utcIso: birthDateTime.toISOString() }, 'vedic');
       
-      const latitude = coordinates.latitude;
-      const longitude = coordinates.longitude;
+      const latitude = coords.latitude;
+      const longitude = coords.longitude;
       
       const actualNodeMode = targetNodeMode || currentNodeMode;
       devLog.debug('Chart parameters', { date: birthDateTime, time: resolvedTime.time, latitude, longitude, actualNodeMode }, 'vedic');
@@ -847,6 +867,52 @@ function VedicAstrologyPageContent() {
     return calculateNakshatraAnalysis(planetaryPositions, newChartData?.metadata?.ayanamshaValue || 23.85);
   }, [unifiedChartData, newChartData]);
 
+  // Derive yogas from chart data for Planetary Combinations (Yogas) tab
+  const yogas = useMemo(() => {
+    if (!newChartData?.ascendant || !newChartData?.planets || typeof newChartData.planets !== 'object' || !newChartData?.houses?.length) {
+      return [];
+    }
+    const asc = newChartData.ascendant;
+    const ascSign = typeof asc.sign === 'number' ? asc.sign : (typeof asc.lonSidereal === 'number' ? Math.floor(asc.lonSidereal / 30) : 0);
+    const planetsArray = Object.entries(newChartData.planets).map(([key, p]: [string, any]) => {
+      const sign = typeof p.sign === 'number' ? p.sign : (typeof p.lonSidereal === 'number' ? Math.floor(p.lonSidereal / 30) : 0);
+      let house = p.house;
+      if (house == null && typeof p.lonSidereal === 'number' && Array.isArray(newChartData.houses)) {
+        const lon = p.lonSidereal;
+        const idx = newChartData.houses.findIndex((h: { cuspLonSid?: number; bhavaMadhya?: number }) => {
+          const cusp = h.cuspLonSid ?? h.bhavaMadhya ?? 0;
+          return lon >= cusp - 15 && lon < cusp + 15;
+        });
+        house = idx >= 0 ? idx + 1 : ((sign - ascSign + 12) % 12) + 1;
+      }
+      if (house == null) house = ((sign - ascSign + 12) % 12) + 1;
+      return {
+        name: key.charAt(0).toUpperCase() + key.slice(1),
+        sign,
+        house: Math.max(1, Math.min(12, house)),
+        degree: typeof p.degreeInSign === 'number' ? p.degreeInSign : 0,
+        isRetrograde: (typeof p.speed === 'number' && p.speed < 0) || false,
+        isDebilitated: !!p.dignity?.debilitated,
+        isExalted: !!p.dignity?.exalted
+      };
+    });
+    const houses = newChartData.houses.map((h: { house?: number; number?: number; sign?: number; lord?: string }) => ({
+      number: h.house ?? h.number ?? 0,
+      sign: typeof h.sign === 'number' ? h.sign : 0,
+      lord: h.lord ?? ''
+    }));
+    try {
+      return detectYogas({
+        ascendant: { sign: ascSign, degree: typeof asc.degreeInSign === 'number' ? asc.degreeInSign : 0 },
+        planets: planetsArray,
+        houses
+      });
+    } catch (err) {
+      devLog.error('Yoga detection failed', err, 'vedic');
+      return [];
+    }
+  }, [newChartData]);
+
   // Calculate transit data
   const transitData = useMemo(() => {
     if (!unifiedChartData || !userProfile) return null;
@@ -904,36 +970,73 @@ function VedicAstrologyPageContent() {
 
   // Calculate Panchanga when chart data is available
   useEffect(() => {
-    if (!newChartData || !userProfile || !coordinates) return;
+    if (!newChartData || !userProfile) return;
+    const lat = coordinates?.latitude ?? newChartData.metadata?.latitude;
+    const lon = coordinates?.longitude ?? newChartData.metadata?.longitude;
+    if (lat == null || lon == null) return;
     
+    devLog.debug('Calculating enhanced Panchanga data', undefined, 'vedic');
+    
+    // Birth Panchanga from newChartData (may be null if chart shape doesn't match)
     try {
-      devLog.debug('Calculating enhanced Panchanga data', undefined, 'vedic');
-      
-      // Calculate birth Panchanga from newChartData
       const birthPanchanga = calculateAccuratePanchanga(newChartData, {
         birthDate: userProfile.birthDate,
         birthTime: userProfile.birthTime,
         birthPlace: userProfile.birthPlace
       });
-      setPanchangaData(birthPanchanga);
-      
-      // Calculate current Panchanga for today
+      setPanchangaData(birthPanchanga ?? null);
+    } catch (e) {
+      devLog.error('Birth Panchanga calculation failed', e, 'vedic');
+      setPanchangaData(null);
+    }
+    
+    // Current Panchanga for today (always run when we have lat/lon so at least one section shows)
+    try {
       const currentPanchanga = calculateCurrentPanchanga(
         userProfile.birthPlace ?? '',
-        coordinates.latitude,
-        coordinates.longitude
+        Number(lat),
+        Number(lon)
       );
       setCurrentPanchangaData(currentPanchanga);
-      
-      devLog.debug('Enhanced Panchanga calculated', { hasBirth: !!birthPanchanga, hasCurrent: !!currentPanchanga }, 'vedic');
     } catch (error) {
-      devLog.error('Error calculating enhanced Panchanga', error, 'vedic');
+      devLog.error('Current Panchanga calculation failed', error, 'vedic');
+      setCurrentPanchangaData(null);
     }
   }, [newChartData, userProfile, coordinates]);
 
+  // When user opens Panchanga tab and we have chart but no panchanga yet, compute once (handles timing/cache cases)
+  useEffect(() => {
+    if (activeTab !== 'panchanga' || !newChartData || !userProfile) return;
+    if (panchangaData != null || currentPanchangaData != null) return;
+    const lat = coordinates?.latitude ?? newChartData.metadata?.latitude;
+    const lon = coordinates?.longitude ?? newChartData.metadata?.longitude;
+    if (lat == null || lon == null) return;
+    devLog.debug('Panchanga tab opened with chart data; computing Panchanga', undefined, 'vedic');
+    try {
+      const birth = calculateAccuratePanchanga(newChartData, {
+        birthDate: userProfile.birthDate,
+        birthTime: userProfile.birthTime,
+        birthPlace: userProfile.birthPlace
+      });
+      setPanchangaData(birth ?? null);
+    } catch (_) {
+      setPanchangaData(null);
+    }
+    try {
+      setCurrentPanchangaData(calculateCurrentPanchanga(userProfile.birthPlace ?? '', Number(lat), Number(lon)));
+    } catch (_) {
+      setCurrentPanchangaData(null);
+    }
+  }, [activeTab, newChartData, userProfile, coordinates, panchangaData, currentPanchangaData]);
+
   // Pipeline-only: interpretations come from profile.interpretations (see derived state); no loadInterpretationsWithHybridFallback or /api/vedic-interpretations/* on mount
 
-  // Pipeline-only: divisional data from profile when available; no loadDivisionalInterpretations on mount
+  // Load D9/D10 interpretations when user opens the Divisional tab (fallback → cache → API)
+  useEffect(() => {
+    if (activeTab !== 'divisional' || !newChartData?.divisionalCharts || !user?.uid) return;
+    loadDivisionalInterpretations('D9');
+    loadDivisionalInterpretations('D10');
+  }, [activeTab, newChartData?.divisionalCharts, user?.uid, loadDivisionalInterpretations]);
 
   if (!user) {
     return (
@@ -1359,6 +1462,7 @@ function VedicAstrologyPageContent() {
                     userProfile={userProfile}
                     chartStyle={chartStyle === 'north' ? 'north-indian' : chartStyle === 'south' ? 'south-indian' : 'north-indian'}
                     vedicReading={vedicDerived.vedicReading}
+                    panchanga={panchangaData ?? currentPanchangaData}
                   />
                 )}
 
@@ -1965,11 +2069,12 @@ function VedicAstrologyPageContent() {
                         const houseNumber = index + 1;
                         const enhancedInterpretation = vedicDerived.enhancedHouses[houseNumber];
                         
+                        const signLabel = getDualSignName(getSignName(house.sign ?? house.signName ?? ''));
                         const houseItems = [
-                          { text: `${getDualSignName(house.sign || house.signName)} • Lord: ${getDualPlanetName(house.lord)}`, highlight: true },
+                          { text: `${signLabel} • Lord: ${getDualPlanetName(house.lord || '')}`, highlight: true },
                           ...(vedicDerived.isGeneratingInterpretations ? [{ text: 'Generating insights...' }] : enhancedInterpretation ? [{ text: enhancedInterpretation }] : [
-                            { text: `The ${getOrdinal(houseNumber)} house in ${getDualSignName(house.sign || house.signName)}, ruled by ${getDualPlanetName(house.lord)}, governs ${getHouseTheme(houseNumber)} in your life.` },
-                            { text: `This house's energy is colored by ${getDualSignName(house.sign || house.signName)}'s qualities, influencing how you experience and express this life area.`, type: 'neutral' as const }
+                            { text: `The ${getOrdinal(houseNumber)} house in ${signLabel}, ruled by ${getDualPlanetName(house.lord || '')}, governs ${getHouseTheme(houseNumber)} in your life.` },
+                            { text: HOUSE_INSIGHT_SECOND_LINE[houseNumber] || `This house's sign influences how ${getHouseTheme(houseNumber)} manifest for you.`, type: 'neutral' as const }
                           ])
                         ];
                         
@@ -1996,9 +2101,9 @@ function VedicAstrologyPageContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-white/80 border-2 border-blue-300 rounded-xl p-6">
                       {unifiedChartData.houses?.map((house: any, index: number) => {
                         const houseItems = [
-                          { text: `Sign: ${getDualSignName(house.sign || house.signName)}`, highlight: true },
-                          { text: `Lord: ${getDualPlanetName(house.lord)}` },
-                          ...(house.degree ? [{ text: `Degree: ${house.degree}°` }] : [])
+                          { text: `Sign: ${getDualSignName(getSignName(house.sign ?? house.signName ?? ''))}`, highlight: true },
+                          { text: `Lord: ${getDualPlanetName(house.lord || '')}` },
+                          ...(house.degree != null ? [{ text: `Degree: ${Number(house.degree).toFixed(1)}°` }] : [])
                         ];
                         return (
                           <DevotionistStyleCard
@@ -2220,25 +2325,30 @@ function VedicAstrologyPageContent() {
                       <div className="space-y-4">
                         <DevotionistStyleCard
                           icon={<Sparkles className="h-5 w-5" />}
-                          title="Vedic Remedies & Guidance"
+                          title="Phalita Vedic Remedies & Guidance"
                           summary="Personalized remedies and practices to enhance your spiritual and material well-being"
                           colorScheme="amber"
                         />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {vedicDerived.vedicReading.remedies.map((remedy: any, index: number) => (
-                            <DevotionistStyleCard
-                              key={index}
-                              icon={<Sparkles className="h-5 w-5" />}
-                              title={remedy.name}
-                              subtitle={remedy.type}
-                              summary={remedy.description}
-                              items={[
-                                { text: `Instructions: ${remedy.instructions}`, highlight: true },
-                                { text: `Timing: ${remedy.timing}`, highlight: true }
-                              ]}
-                              colorScheme="amber"
-                            />
-                          ))}
+                          {vedicDerived.vedicReading.remedies.map((remedy: any, index: number) => {
+                            const title = remedy.name ?? remedy.type ?? (typeof remedy.practice === 'string' ? 'Practice' : 'Remedy');
+                            const summary = remedy.description ?? remedy.practice ?? '';
+                            const items: { text: string; highlight?: boolean }[] = [];
+                            if (remedy.practice && typeof remedy.practice === 'string') items.push({ text: remedy.practice, highlight: true });
+                            if (remedy.instructions != null && String(remedy.instructions).trim()) items.push({ text: `Instructions: ${remedy.instructions}`, highlight: true });
+                            if (remedy.timing != null && String(remedy.timing).trim()) items.push({ text: `Timing: ${remedy.timing}`, highlight: true });
+                            return (
+                              <DevotionistStyleCard
+                                key={index}
+                                icon={<Sparkles className="h-5 w-5" />}
+                                title={title}
+                                subtitle={remedy.type && remedy.type !== title ? remedy.type : undefined}
+                                summary={summary}
+                                items={items.length > 0 ? items : (summary ? [{ text: summary, highlight: true }] : [])}
+                                colorScheme="amber"
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -2259,7 +2369,7 @@ function VedicAstrologyPageContent() {
 
               {/* Panchanga Tab */}
               <TabsContent value="panchanga" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                {panchangaData && currentPanchangaData ? (
+                {(panchangaData != null || currentPanchangaData != null) ? (
                   <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <PanchangaPanel 
                       birthPanchanga={panchangaData}
@@ -2372,15 +2482,6 @@ function VedicAstrologyPageContent() {
               <TabsContent value="divisional" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 {newChartData && newChartData.divisionalCharts ? (
                   <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                    {!d9Interpretations && !d10Interpretations && (
-                      <Alert className="bg-slate-800/50 border-amber-500/30">
-                        <Info className="h-4 w-4" />
-                        <AlertDescription>
-                          Divisional chart interpretations are available from your mystical profile.{' '}
-                          <Link href="/profile" className="text-amber-400 hover:underline">Generate your mystical profile</Link>
-                        </AlertDescription>
-                      </Alert>
-                    )}
                     {/* D9 - Navamsa Chart */}
                     <DevotionistStyleCard
                       icon={<Heart className="w-5 h-5" />}
@@ -2442,34 +2543,35 @@ function VedicAstrologyPageContent() {
                     </div>
 
                     {/* D10 - Dasamsa Chart */}
-                    <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-xl">
-                      <CardHeader>
-                        <CardTitle className="text-2xl text-amber-200 flex items-center gap-2">
-                          💼 D10 - Dasamsa Chart (Career & Profession)
-                        </CardTitle>
-                        <p className="text-sm text-slate-400">This chart reveals your career path, professional success, and social status</p>
-                      </CardHeader>
-                      <CardContent>
+                    <DevotionistStyleCard
+                      icon={<Briefcase className="w-6 h-6" />}
+                      title="D10 - Dasamsa Chart (Career & Profession)"
+                      summary="This chart reveals your career path, professional success, and social status"
+                      colorScheme="amber"
+                      variant="callout"
+                    />
+                    <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50/95 to-slate-50/95 p-6 shadow-lg">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                           <div>
-                            <h4 className="text-lg font-semibold text-white mb-3">Career Indicators</h4>
+                            <h4 className="text-lg font-semibold text-slate-800 mb-3">Career Indicators</h4>
                             <div className="space-y-3">
-                              {Object.entries(newChartData.divisionalCharts.D10 || {}).map(([planetName, data]: any) => (
-                                <div key={planetName} className="bg-slate-800/50 rounded-lg p-3 border border-slate-600">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="font-semibold text-white">{planetName.toUpperCase()}</span>
-                                    <Badge variant="outline" className="bg-amber-500/20 text-amber-200 border-amber-500/30">
-                                      {data.signName}
-                                    </Badge>
-                                  </div>
-                                  <div className="text-sm text-slate-300 space-y-1">
-                                    <div>Nakshatra: {data.nakshatra}</div>
-                                    {data.dignity?.strength && (
-                                      <div className="text-green-400">Strength: {data.dignity.strength}</div>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                              {Object.entries(newChartData.divisionalCharts.D10 || {}).map(([planetName, data]: any) => {
+                                const items = [
+                                  { text: `Sign: ${data.signName || '—'}`, highlight: true },
+                                  { text: `Nakshatra: ${data.nakshatra || '—'}` },
+                                  ...(data.dignity?.strength ? [{ text: `Strength: ${data.dignity.strength}`, type: 'positive' as const }] : [])
+                                ];
+                                return (
+                                  <DevotionistStyleCard
+                                    key={planetName}
+                                    icon={<Star className="w-4 h-4" />}
+                                    title={planetName.toUpperCase()}
+                                    items={items}
+                                    colorScheme={data.dignity?.exalted ? 'green' : data.dignity?.debilitated ? 'orange' : 'blue'}
+                                    variant="callout"
+                                  />
+                                );
+                              })}
                             </div>
                           </div>
                           <div>
@@ -2496,103 +2598,73 @@ function VedicAstrologyPageContent() {
                             </div>
                             
                             <div className="space-y-3">
-                              {/* 10th House Analysis */}
-                              <Card className="bg-green-900/30 border-green-700/50 h-auto overflow-visible">
-                                <CardHeader>
-                                  <CardTitle className="text-green-300 flex items-center gap-2">
-                                    <Briefcase className="w-4 h-4" />
-                                    10th House Analysis
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent className="overflow-visible h-auto">
-                                  <p className="text-slate-300 whitespace-pre-wrap break-words leading-relaxed text-sm">
-                                    {d10Interpretations?.tenthHouseAnalysis || 'Loading...'}
-                                  </p>
-                                </CardContent>
-                              </Card>
-                              
-                              {/* Success Timing */}
-                              <Card className="bg-blue-900/30 border-blue-700/50 h-auto overflow-visible">
-                                <CardHeader>
-                                  <CardTitle className="text-blue-300 flex items-center gap-2">
-                                    <TrendingUp className="w-4 h-4" />
-                                    Success Timing
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent className="overflow-visible h-auto">
-                                  <p className="text-slate-300 whitespace-pre-wrap break-words leading-relaxed text-sm">
-                                    {d10Interpretations?.successTiming || 'Loading...'}
-                                  </p>
-                                </CardContent>
-                              </Card>
-                              
-                              {/* Social Status */}
-                              <Card className="bg-purple-900/30 border-purple-700/50 h-auto overflow-visible">
-                                <CardHeader>
-                                  <CardTitle className="text-purple-300 flex items-center gap-2">
-                                    <Users className="w-4 h-4" />
-                                    Social Status
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent className="overflow-visible h-auto">
-                                  <p className="text-slate-300 whitespace-pre-wrap break-words leading-relaxed text-sm">
-                                    {d10Interpretations?.socialStatus || 'Loading...'}
-                                  </p>
-                                </CardContent>
-                              </Card>
+                              <DevotionistStyleCard
+                                icon={<Briefcase className="w-5 h-5" />}
+                                title="10th House Analysis"
+                                summary={d10Interpretations?.tenthHouseAnalysis || 'Loading...'}
+                                colorScheme="green"
+                                variant="callout"
+                              />
+                              <DevotionistStyleCard
+                                icon={<TrendingUp className="w-5 h-5" />}
+                                title="Success Timing"
+                                summary={d10Interpretations?.successTiming || 'Loading...'}
+                                colorScheme="blue"
+                                variant="callout"
+                              />
+                              <DevotionistStyleCard
+                                icon={<Users className="w-5 h-5" />}
+                                title="Social Status"
+                                summary={d10Interpretations?.socialStatus || 'Loading...'}
+                                colorScheme="purple"
+                                variant="callout"
+                              />
                             </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                    </div>
 
                     {/* D12 - Dwadasamsa Chart */}
-                    <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-xl">
-                      <CardHeader>
-                        <CardTitle className="text-2xl text-amber-200 flex items-center gap-2">
-                          👥 D12 - Dwadasamsa Chart
-                        </CardTitle>
-                        <p className="text-sm text-slate-400">Parents, Ancestors, Past Life</p>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                          {Object.entries(newChartData.divisionalCharts.D12 || {}).map(([planetName, data]: any) => (
-                            <Card key={planetName} className="bg-slate-800/50 border-slate-600 rounded-lg">
-                              <CardContent className="p-4">
-                                <div className="font-semibold text-white mb-2">{planetName.toUpperCase()}</div>
-                                <div className="text-sm text-slate-300">
-                                  <div>Sign: {data.signName}</div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <DevotionistStyleCard
+                      icon={<Users className="w-6 h-6" />}
+                      title="D12 - Dwadasamsa Chart"
+                      summary="Parents, Ancestors, Past Life"
+                      colorScheme="cyan"
+                      variant="callout"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {Object.entries(newChartData.divisionalCharts.D12 || {}).map(([planetName, data]: any) => (
+                        <DevotionistStyleCard
+                          key={planetName}
+                          icon={<Star className="w-4 h-4" />}
+                          title={planetName.toUpperCase()}
+                          summary={`Sign: ${data.signName || '—'}`}
+                          colorScheme="cyan"
+                          variant="default"
+                        />
+                      ))}
+                    </div>
 
                     {/* D30 - Trimsamsa Chart */}
-                    <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-xl">
-                      <CardHeader>
-                        <CardTitle className="text-2xl text-amber-200 flex items-center gap-2">
-                          🏥 D30 - Trimsamsa Chart
-                        </CardTitle>
-                        <p className="text-sm text-slate-400">Health, Diseases, Physical Constitution</p>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                          {Object.entries(newChartData.divisionalCharts.D30 || {}).map(([planetName, data]: any) => (
-                            <Card key={planetName} className="bg-slate-800/50 border-slate-600 rounded-lg">
-                              <CardContent className="p-4">
-                                <div className="font-semibold text-white mb-2">{planetName.toUpperCase()}</div>
-                                <div className="text-sm text-slate-300">
-                                  <div>Sign: {data.signName}</div>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <DevotionistStyleCard
+                      icon={<Activity className="w-6 h-6" />}
+                      title="D30 - Trimsamsa Chart"
+                      summary="Health, Diseases, Physical Constitution"
+                      colorScheme="green"
+                      variant="callout"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {Object.entries(newChartData.divisionalCharts.D30 || {}).map(([planetName, data]: any) => (
+                        <DevotionistStyleCard
+                          key={planetName}
+                          icon={<Star className="w-4 h-4" />}
+                          title={planetName.toUpperCase()}
+                          summary={`Sign: ${data.signName || '—'}`}
+                          colorScheme="green"
+                          variant="default"
+                        />
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm rounded-xl">
@@ -2734,14 +2806,17 @@ function VedicAstrologyPageContent() {
                       variant="callout"
                     />
                     <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-6">
-                        <div className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                        <div className="space-y-8 pt-6 px-4 sm:px-6 pb-6 mt-0">
                           
                           {/* Gemstone Recommendations */}
-                          <div>
-                            <h3 className="text-lg font-semibold text-amber-200 mb-3 flex items-center gap-2">
-                              <Shield className="w-5 h-5 text-amber-400" />
-                              Gemstone Recommendations
-                            </h3>
+                          <div className="space-y-6">
+                            <DevotionistStyleCard
+                              icon={<Shield className="w-5 h-5" />}
+                              title="Gemstone Recommendations"
+                              summary="Focus on strengthening these planetary influences for better results in life."
+                              colorScheme="amber"
+                              variant="callout"
+                            />
                             {(() => {
                               // Helper function for Ascendant-specific remedies
                               const getAscendantSpecificRemedies = (chartData: any, ascendantSign: string) => {
@@ -2776,11 +2851,15 @@ function VedicAstrologyPageContent() {
                                     reason = lord.role;
                                   }
                                   
-                                  // Adjust for dignity
+                                  // Adjust for dignity; Chart Ruler gets a special label (not "Neutral")
                                   const strength = (planetData as { dignity?: { strength?: string } }).dignity?.strength;
+                                  const isChartRuler = lord?.role?.includes('Chart Ruler') ?? false;
                                   if (strength === 'Weak' || strength === 'Debilitated') {
                                     score += 5; // Weak planets need remedies
                                     reason += ' (Weak - needs strengthening)';
+                                  } else if (isChartRuler) {
+                                    score += 2;
+                                    reason += ' (Chart Ruler - key planet to strengthen)';
                                   } else if (strength === 'Neutral') {
                                     score += 2;
                                     reason += ' (Neutral - can be enhanced)';
@@ -2827,22 +2906,29 @@ function VedicAstrologyPageContent() {
                               }
 
                               return (
-                                <>
-                                  <p className="text-slate-300 mb-4 text-sm">
-                                    Focus on strengthening these planetary influences for better results in life.
-                                  </p>
-                                  
+                                <div className="space-y-6">
                                   {/* Ascendant-Specific Explanation */}
-                                  <DevotionistStyleCard
-                                    icon={<Info className="w-5 h-5" />}
-                                    title={`For Your ${ascendantSign} Ascendant`}
-                                    summary={`Mercury is your chart ruler and most important planet. Venus and Jupiter are natural benefics ruling favorable houses. These remedies are prioritized based on their importance for your specific Ascendant and current planetary strength.`}
-                                    colorScheme="blue"
-                                  />
+                                  {(() => {
+                                    const chartRulerBySign: Record<string, string> = {
+                                      Aries: 'Mars', Taurus: 'Venus', Gemini: 'Mercury', Cancer: 'Moon',
+                                      Leo: 'Sun', Virgo: 'Mercury', Libra: 'Venus', Scorpio: 'Mars',
+                                      Sagittarius: 'Jupiter', Capricorn: 'Saturn', Aquarius: 'Saturn', Pisces: 'Jupiter'
+                                    };
+                                    const chartRuler = chartRulerBySign[ascendantSign] || 'your ascendant lord';
+                                    return (
+                                      <DevotionistStyleCard
+                                        icon={<Info className="w-5 h-5" />}
+                                        title={`For Your ${ascendantSign} Ascendant`}
+                                        summary={`${chartRuler} is your chart ruler and most important planet. Venus and Jupiter are natural benefics; their house lordship in your chart determines how favorable they are. These remedies are prioritized based on their importance for your Ascendant and current planetary strength.`}
+                                        colorScheme="blue"
+                                      />
+                                    );
+                                  })()}
                                   
                                   <DevotionistStyleCard
                                     icon={<Gem className="w-5 h-5" />}
                                     title="Gemstone Weight Guidelines"
+                                    className="mt-2"
                                     items={[
                                       { text: 'General Formula: 1 ratti per 10 kg of body weight (e.g., 70 kg = 7 ratti / 6.4 carats)', highlight: true },
                                       { text: 'Conversion: 1 ratti = 0.91 carats approximately' },
@@ -2851,7 +2937,7 @@ function VedicAstrologyPageContent() {
                                     colorScheme="amber"
                                   />
                                   
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {weakPlanets.map((planetItem: any) => {
                                       // Handle both old format [planetName, planetData] and new format {planetName, planetData, reason, score}
                                       const isNewFormat = planetItem.planetName !== undefined;
@@ -3183,32 +3269,32 @@ function VedicAstrologyPageContent() {
                                 );
                               })}
                                   </div>
-                                </>
+                                </div>
                               );
                             })()}
                           </div>
 
                           {/* Mantra Recommendations */}
-                          <div>
-                            <h3 className="text-lg font-semibold text-amber-200 mb-3 flex items-center gap-2">
-                              <Sun className="w-5 h-5 text-amber-400" />
-                              Recommended Mantras
-                            </h3>
-                            <p className="text-slate-300 mb-4 text-sm">
-                              These mantras will strengthen your weak planetary influences and enhance spiritual growth.
-                            </p>
-                            <div className="space-y-3">
+                          <div className="space-y-6 pt-2">
+                            <DevotionistStyleCard
+                              icon={<Sun className="w-5 h-5" />}
+                              title="Recommended Mantras"
+                              summary="These mantras will strengthen your weak planetary influences and enhance spiritual growth."
+                              colorScheme="purple"
+                              variant="callout"
+                            />
+                            <div className="space-y-4">
                               {/* Universal Mantra */}
-                              <Card className="bg-slate-800/50 border-slate-600 m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-lg">
+                              <Card className="bg-slate-800/60 border-slate-600 m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-lg">
                                 <CardContent className="p-4">
                                   <div className="flex items-center justify-between mb-2">
-                                    <span className="font-semibold text-amber-200">Gayatri Mantra</span>
-                                    <Badge variant="outline" className="text-xs bg-amber-500/20 text-amber-200 border-amber-500/30">Universal</Badge>
+                                    <span className="font-semibold text-amber-100">Gayatri Mantra</span>
+                                    <Badge variant="outline" className="text-xs bg-amber-500/30 text-amber-100 border-amber-400/50">Universal</Badge>
                                   </div>
-                                  <p className="text-sm text-slate-300 mb-2">
+                                  <p className="text-sm text-slate-200 mb-2 font-mono">
                                     Om Bhur Bhuvaḥ Swaḥ, Tat Savitur Vareṇyaṃ, Bhargo Devasya Dhīmahi, Dhiyo Yonaḥ Prachodayāt
                                   </p>
-                                  <p className="text-xs text-slate-400">
+                                  <p className="text-xs text-slate-300">
                                     Chant 108 times daily at sunrise for spiritual growth and wisdom
                                   </p>
                                 </CardContent>
@@ -3237,19 +3323,19 @@ function VedicAstrologyPageContent() {
                                   if (!mantraInfo) return null;
 
                                   return (
-                                    <Card key={planetName} className="bg-slate-800/50 border-slate-600 rounded-lg">
+                                    <Card key={planetName} className="bg-slate-800/60 border-slate-600 rounded-lg">
                                       <CardContent className="p-4">
                                         <div className="flex items-center justify-between mb-2">
-                                          <span className="font-semibold text-amber-200">{planetName} Mantra</span>
-                                          <Badge variant="outline" className="text-xs bg-red-500/20 text-red-200 border-red-500/30">Weak Planet</Badge>
+                                          <span className="font-semibold text-amber-100">{planetName} Mantra</span>
+                                          <Badge variant="outline" className="text-xs bg-red-500/30 text-red-100 border-red-400/50">Weak Planet</Badge>
                                         </div>
-                                        <p className="text-sm text-slate-300 mb-2 font-mono">
+                                        <p className="text-sm text-slate-200 mb-2 font-mono">
                                           {mantraInfo.mantra}
                                         </p>
-                                        <p className="text-xs text-slate-400 mb-1">
+                                        <p className="text-xs text-slate-300 mb-1">
                                           Meaning: {mantraInfo.meaning}
                                         </p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-slate-300">
                                           Best time: {mantraInfo.timing} | Chant 108 times
                                         </p>
                                       </CardContent>
@@ -3261,16 +3347,19 @@ function VedicAstrologyPageContent() {
                           </div>
 
                           {/* Charity & Fasting */}
-                          <div>
-                            <h3 className="text-lg font-semibold text-amber-200 mb-3 flex items-center gap-2">
-                              <Heart className="w-5 h-5 text-amber-400" />
-                              Charity & Fasting Recommendations
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <Card className="bg-slate-800/50 border-slate-600 m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-lg">
+                          <div className="space-y-6 pt-2">
+                            <DevotionistStyleCard
+                              icon={<Heart className="w-5 h-5" />}
+                              title="Charity & Fasting Recommendations"
+                              summary="Personalized charity and fasting by weekday to strengthen planetary influences."
+                              colorScheme="green"
+                              variant="callout"
+                            />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <Card className="bg-slate-800/60 border-slate-600 m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-lg">
                                 <CardContent className="p-4">
-                                  <h4 className="font-semibold text-amber-200 mb-2">Personalized Charity</h4>
-                                  <ul className="text-sm text-slate-300 space-y-2">
+                                  <h4 className="font-semibold text-amber-100 mb-2">Personalized Charity</h4>
+                                  <ul className="text-sm text-slate-200 space-y-2">
                                     {(() => {
                                       const weakPlanets = Object.entries(newChartData.planets || {})
                                         .filter(([_, planetData]: any) => planetData.dignity?.strength === 'Weak')
@@ -3298,7 +3387,7 @@ function VedicAstrologyPageContent() {
 
                                       return weakPlanets.map(([planetName, planetData]: any) => (
                                         <li key={planetName} className="flex items-start gap-2">
-                                          <span className="text-amber-200">•</span>
+                                          <span className="text-amber-100">•</span>
                                           <span>
                                             {charityMap[planetName as keyof typeof charityMap]} to strengthen {planetName.charAt(0).toUpperCase() + planetName.slice(1)}
                                           </span>
@@ -3308,10 +3397,10 @@ function VedicAstrologyPageContent() {
                                   </ul>
                                 </CardContent>
                               </Card>
-                              <Card className="bg-slate-800/50 border-slate-600 m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-lg">
+                              <Card className="bg-slate-800/60 border-slate-600 m3-elevation-1 hover:m3-elevation-2 m3-elevation-transition rounded-lg">
                                 <CardContent className="p-4">
-                                  <h4 className="font-semibold text-amber-200 mb-2">Recommended Fasting</h4>
-                                  <ul className="text-sm text-slate-300 space-y-2">
+                                  <h4 className="font-semibold text-amber-100 mb-2">Recommended Fasting</h4>
+                                  <ul className="text-sm text-slate-200 space-y-2">
                                     {(() => {
                                       const weakPlanets = Object.entries(newChartData.planets || {})
                                         .filter(([_, planetData]: any) => planetData.dignity?.strength === 'Weak')
@@ -3339,7 +3428,7 @@ function VedicAstrologyPageContent() {
 
                                       return weakPlanets.map(([planetName, planetData]: any) => (
                                         <li key={planetName} className="flex items-start gap-2">
-                                          <span className="text-amber-200">•</span>
+                                          <span className="text-amber-100">•</span>
                                           <span>
                                             {fastingMap[planetName as keyof typeof fastingMap]}
                                           </span>
@@ -3368,26 +3457,35 @@ function VedicAstrologyPageContent() {
                 )}
               </TabsContent>
 
-              {/* Vedic Astro-Numerology Tab (pipeline-only: from profile.vedicAstroNumerology or CTA) */}
+              {/* Vedic Astro-Numerology Tab: render when user has profile + chart so tab can show cached or auto-fetch. CTA only when profile incomplete; loading when chart pending. */}
               <TabsContent value="astro-numerology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                {!vedicDerived.vedicAstroNumerologyReport && !vedicDerived.isLoadingVedicAstroNumerology ? (
+                {user && userProfile?.birthDate && (userProfile?.displayName || (userProfile as any)?.fullName) ? (
+                  newChartData ? (
+                    <VedicAstroNumerologyTab
+                      userId={user.uid}
+                      birthDate={userProfile.birthDate}
+                      fullName={(userProfile.displayName || (userProfile as any)?.fullName) ?? ''}
+                      vedicChartData={newChartData}
+                      cachedReport={vedicDerived.vedicAstroNumerologyReport as React.ComponentProps<typeof VedicAstroNumerologyTab>['cachedReport']}
+                      isLoadingReport={vedicDerived.isLoadingVedicAstroNumerology}
+                    />
+                  ) : (
+                    <Card className="bg-slate-900/50 border-amber-500/50 rounded-xl">
+                      <CardContent className="p-6 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-amber-400 mx-auto mb-4" />
+                        <p className="text-slate-300">Loading your chart… Graha Anka will appear shortly.</p>
+                      </CardContent>
+                    </Card>
+                  )
+                ) : (
                   <Card className="bg-slate-900/50 border-amber-500/50 rounded-xl">
                     <CardContent className="p-6 text-center">
-                      <p className="text-slate-300 mb-4">Vedic Astro-Numerology is available from your mystical profile.</p>
+                      <p className="text-slate-300 mb-4">Vedic Astro-Numerology is available from your mystical profile. Complete your profile and generate your mystical profile to see your Graha Anka report.</p>
                       <Button asChild variant="outline" className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20">
-                        <Link href="/profile">Generate your mystical profile</Link>
+                        <Link href="/profile">Go to Profile</Link>
                       </Button>
                     </CardContent>
                   </Card>
-                ) : (
-                  <VedicAstroNumerologyTab
-                    userId={user?.uid || ''}
-                    birthDate={userProfile?.birthDate}
-                    fullName={userProfile?.displayName}
-                    vedicChartData={newChartData}
-                    cachedReport={vedicDerived.vedicAstroNumerologyReport as React.ComponentProps<typeof VedicAstroNumerologyTab>['cachedReport']}
-                    isLoadingReport={vedicDerived.isLoadingVedicAstroNumerology}
-                  />
                 )}
               </TabsContent>
 

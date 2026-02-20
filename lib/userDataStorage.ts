@@ -20,7 +20,7 @@ export interface UserVedicData {
 import { VedicReportSchema } from '@/types/vedicReport';
 
 export interface UserDivinationData {
-  type: 'tarot' | 'numerology' | 'palmistry' | 'runes' | 'iching' | 'lenormand' | 'pendulum' | 'face-reading' | 'dream-symbols' | 'angel-numbers' | 'bazi' | 'kabbalistic-numerology' | 'thirteen-signs-zodiac' | 'vastu' | 'geomancy' | 'horary-astrology' | 'kp-astrology' | 'medical-astrology' | 'mundane-astrology' | 'financial-astrology' | 'synastry' | 'western-astrology';
+  type: 'tarot' | 'numerology' | 'palmistry' | 'runes' | 'iching' | 'lenormand' | 'pendulum' | 'face-reading' | 'dream-symbols' | 'angel-numbers' | 'bazi' | 'kabbalistic-numerology' | 'thirteen-signs-zodiac' | 'vastu' | 'geomancy' | 'horary-astrology' | 'kp-astrology' | 'medical-astrology' | 'synastry' | 'western-astrology';
   data: any;
   createdAt: string;
   lastUpdated: string;

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { devLog } from '@/lib/devLogger';
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -10,19 +10,22 @@ import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { universalOccultService, BirthData } from '@/lib/universalOccultService'
 import { 
   AlertTriangle,
-  Info,
   Zap,
   Shield,
   Gem,
   BarChart3,
   Activity,
   Calendar,
-  Moon
+  Moon,
+  Target,
+  Leaf
 } from 'lucide-react'
 import { DevotionistStyleCard } from '@/components/western/DevotionistStyleCard'
+import { DashboardSection } from '@/components/western/DashboardSection'
 import { BodyZodiacProjection } from '@/components/medical/BodyZodiacProjection'
 import { RemedyTabs } from '@/components/medical/RemedyTabs'
 import { FertilityCalendar } from '@/components/medical/FertilityCalendar'
@@ -36,14 +39,123 @@ export default function MedicalAstrologyPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'health' | 'body-parts' | 'remedies' | 'timing' | 'ask-seer'>('overview')
   const [healthInsights, setHealthInsights] = useState<any>(null)
   const { report: pipelineReport, loading: isLoading, error } = useToolReport('medicalAstrology')
-  const analysis = useMemo(() => {
+  const [onDemandReport, setOnDemandReport] = useState<Record<string, unknown> | null>(null)
+  const [onDemandLoading, setOnDemandLoading] = useState(false)
+  const [onDemandError, setOnDemandError] = useState<string | null>(null)
+  const onDemandFetchedRef = useRef(false)
+
+  const effectivePipelineReport = useMemo(() => {
     if (!pipelineReport || typeof pipelineReport !== 'object') return null
     const r = pipelineReport as Record<string, unknown>
     if (r.placeholder === true) return null
-    return (r.data ?? r) as any
+    const inner = (r.data ?? r) as Record<string, unknown> | undefined
+    if (!inner || typeof inner !== 'object' || inner.chart == null) return null
+    return r
   }, [pipelineReport])
 
+  const reportToUse = useMemo(() => {
+    const fromOnDemand = onDemandReport && (onDemandReport as { data?: { chart?: unknown } })?.data?.chart
+    if (fromOnDemand) return onDemandReport
+    if (effectivePipelineReport && (effectivePipelineReport as { data?: { chart?: unknown } })?.data) return effectivePipelineReport
+    const r = effectivePipelineReport as Record<string, unknown> | undefined
+    if (r && typeof r === 'object' && (r.data ?? r) && ((r.data ?? r) as { chart?: unknown })?.chart) return effectivePipelineReport
+    return onDemandReport ?? effectivePipelineReport ?? null
+  }, [effectivePipelineReport, onDemandReport])
+
+  const analysis = useMemo(() => {
+    if (!reportToUse || typeof reportToUse !== 'object') return null
+    return (reportToUse.data ?? reportToUse) as any
+  }, [reportToUse])
+
+  // Normalize so we support both report.data.chart (orchestrator) and report.chart (API top-level)
+  const rawChart = analysis?.data?.chart ?? analysis?.chart ?? null
+  const chart = useMemo(() => {
+    if (!rawChart) return null
+    const planets = rawChart.planets
+    if (Array.isArray(planets)) {
+      const byName: Record<string, unknown> = {}
+      planets.forEach((p: { name?: string }) => {
+        const name = p?.name
+        if (name) byName[name] = p
+      })
+      return { ...rawChart, planets: byName }
+    }
+    return rawChart
+  }, [rawChart])
+  const data = useMemo(() => analysis?.data ?? (analysis?.chart ? analysis : null), [analysis])
+  const metadata = (reportToUse as Record<string, unknown>)?.metadata ?? analysis?.metadata
+
   const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
+
+  // When user has complete details but no chart data, fetch on demand once (or after retry).
+  // Depend only on hasCompleteDetails/chart/onDemand so profile listener updates don't cancel the request.
+  useEffect(() => {
+    if (!hasCompleteDetails || chart) return
+    if (onDemandReport && (onDemandReport as { data?: { chart?: unknown } })?.data?.chart) return
+    if (onDemandFetchedRef.current && onDemandLoading) return
+    if (onDemandLoading) return
+
+    const birthDate = userProfile?.birthDate
+    const birthTime = userProfile?.birthTime || '12:00:00'
+    const birthPlace = userProfile?.birthPlace
+    if (!birthDate || !birthPlace) return
+
+    onDemandFetchedRef.current = true
+    const birthData: BirthData = {
+      birthDate,
+      birthTime: birthTime.includes(':') ? birthTime : `${birthTime}:00:00`.slice(0, 8),
+      birthPlace,
+      latitude: Number(userProfile?.birthLatitude) ?? 0,
+      longitude: Number(userProfile?.birthLongitude) ?? 0,
+    }
+    let cancelled = false
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) {
+        setOnDemandError('Request timed out. Please try again.')
+        setOnDemandLoading(false)
+      }
+    }, 45000)
+    setOnDemandLoading(true)
+    setOnDemandError(null)
+    universalOccultService
+      .calculateMedicalChart(birthData)
+      .then((res) => {
+        const raw = res?.data
+        const payload =
+          raw && typeof raw === 'object' && (raw as { data?: unknown }).data !== undefined
+            ? (raw as { data: unknown }).data
+            : raw
+        if (!payload || typeof payload !== 'object' || (payload as Record<string, unknown>).placeholder === true) {
+          if (!cancelled) setOnDemandError('No chart data returned. Please try again.')
+          return
+        }
+        const withChart = payload as Record<string, unknown>
+        if (!withChart.chart) {
+          if (!cancelled) setOnDemandError('Chart data missing. Please try again.')
+          return
+        }
+        setOnDemandReport({
+          data: withChart,
+          metadata: (res as { metadata?: unknown })?.metadata ?? { generatedAt: new Date().toISOString() },
+        })
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          onDemandFetchedRef.current = false
+          setOnDemandError(err instanceof Error ? err.message : 'Failed to load medical astrology report')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          clearTimeout(timeoutId)
+          setOnDemandLoading(false)
+        }
+      })
+    return () => {
+      cancelled = true
+      clearTimeout(timeoutId)
+    }
+  }, [hasCompleteDetails, chart, onDemandReport, onDemandLoading])
 
   // Planetary strength calculator
   function calculatePlanetaryStrengths(chart: any) {
@@ -76,114 +188,100 @@ export default function MedicalAstrologyPage() {
     return strengths
   }
 
-  // Calculate health insights from medical databases
+  // Calculate health insights from medical databases (uses normalized chart)
   useEffect(() => {
-    if (analysis?.data?.chart) {
-      try {
-        // 1. Analyze 6th house (health), 8th house (chronic disease), 12th house (hospitalization)
-        const healthHouses = [6, 8, 12]
-        const afflictedPlanets: Array<{ planet: string; sign: string; house: number }> = []
-        
-        // 2. Check planetary afflictions
-        Object.entries(analysis.data.chart.planets || {}).forEach(([planet, data]: [string, any]) => {
-          if (healthHouses.includes(data.house)) {
-            afflictedPlanets.push({ planet, sign: data.sign, house: data.house })
-          }
-        })
-        
-        // 3. Apply medical astrology formulas (Zoller, Ptolemy)
-        const formulas = getFormulaRecommendations({
-          planets: Object.entries(analysis.data.chart.planets || {}).reduce((acc, [planet, data]: [string, any]) => {
-            acc[planet] = { sign: data.sign, house: data.house }
-            return acc
-          }, {} as any),
-          houses: [],
-          aspects: []
-        })
-        
-        // 4. Cross-reference with ICD10 database
-        const healthConcerns = afflictedPlanets.flatMap(({ planet, sign, house }) => {
-          return medicalDatabaseService.searchICD10({
-            planets: [planet],
-            zodiacSigns: [sign],
-            houses: [house]
-          })
-        })
-        
-        // 5. Get targeted remedies from all three databases (BROADER SEARCH)
-        const bodyPartsAffected = healthConcerns.map(c => c.bodyPart).filter(Boolean)
-        const zodiacSigns = healthConcerns.map(c => c.zodiacSign).filter(Boolean)
-        
-        // Get Sun sign for constitutional remedies
-        const sunSign = analysis.data.chart.planets?.Sun?.sign || analysis.data.chart.planets?.sun?.sign
-        const moonSign = analysis.data.chart.planets?.Moon?.sign || analysis.data.chart.planets?.moon?.sign
-        
-        // BROADER REMEDY SEARCH: 
-        // 1. Constitutional remedies (always show for Sun/Moon signs)
-        const constitutionalRemedies = {
-          homeopathic: medicalDatabaseService.searchHomeopathy({ 
-            planets: ['Sun', 'Moon'],
-            zodiacSigns: [sunSign, moonSign].filter(Boolean) as string[]
-          }),
-          herbal: medicalDatabaseService.searchHerbal({ 
-            zodiacSigns: [sunSign, moonSign].filter(Boolean) as string[]
-          }),
-          acupuncture: medicalDatabaseService.searchAcupuncture({ 
-            zodiacSigns: [sunSign, moonSign].filter(Boolean) as string[]
-          })
+    if (!chart) return
+    try {
+      // 1. Analyze 6th house (health), 8th house (chronic disease), 12th house (hospitalization)
+      const healthHouses = [6, 8, 12]
+      const afflictedPlanets: Array<{ planet: string; sign: string; house: number }> = []
+
+      // 2. Check planetary afflictions
+      Object.entries(chart.planets || {}).forEach(([planet, planetData]: [string, any]) => {
+        if (healthHouses.includes(planetData.house)) {
+          afflictedPlanets.push({ planet, sign: planetData.sign, house: planetData.house })
         }
-        
-        // 2. Affliction-based remedies (from planets in health houses OR weak positions)
-        const afflictionRemedies = {
-          homeopathic: medicalDatabaseService.searchHomeopathy({ 
-            bodyParts: bodyPartsAffected,
-            planets: afflictedPlanets.map(p => p.planet),
-            zodiacSigns: afflictedPlanets.map(p => p.sign)
-          }),
-          herbal: medicalDatabaseService.searchHerbal({ 
-            bodyParts: bodyPartsAffected,
-            zodiacSigns: afflictedPlanets.map(p => p.sign)
-          }),
-          acupuncture: medicalDatabaseService.searchAcupuncture({ 
-            zodiacSigns: afflictedPlanets.map(p => p.sign)
-          })
-        }
-        
-        // 3. Check ALL planets for any signs of weakness (detriment, fall, retrograde)
-        const weakPlanets: string[] = []
-        Object.entries(analysis.data.chart.planets || {}).forEach(([planet, data]: [string, any]) => {
-          // Check for weakness indicators
-          if (data.speed < 0) weakPlanets.push(planet) // retrograde
+      })
+
+      // 3. Apply medical astrology formulas (Zoller, Ptolemy)
+      const formulas = getFormulaRecommendations({
+        planets: Object.entries(chart.planets || {}).reduce((acc, [planet, planetData]: [string, any]) => {
+          acc[planet] = { sign: planetData.sign, house: planetData.house }
+          return acc
+        }, {} as any),
+        houses: [],
+        aspects: []
+      })
+
+      // 4. Cross-reference with ICD10 database
+      const healthConcerns = afflictedPlanets.flatMap(({ planet, sign, house }) => {
+        return medicalDatabaseService.searchICD10({
+          planets: [planet],
+          zodiacSigns: [sign],
+          houses: [house]
         })
-        
-        const weakRemedies = {
-          homeopathic: medicalDatabaseService.searchHomeopathy({ planets: weakPlanets }),
-          herbal: [],
-          acupuncture: []
-        }
-        
-        // 4. Combine all (deduplicate by keeping unique remedies)
-        const remedies = {
-          homeopathic: [...new Map([...constitutionalRemedies.homeopathic, ...afflictionRemedies.homeopathic, ...weakRemedies.homeopathic].map(r => [r.name, r])).values()].slice(0, 20),
-          herbal: [...new Map([...constitutionalRemedies.herbal, ...afflictionRemedies.herbal].map(r => [r.name, r])).values()].slice(0, 20),
-          acupuncture: [...new Map([...constitutionalRemedies.acupuncture, ...afflictionRemedies.acupuncture].map((r: any) => [r.name || r.formula || `${r}`, r])).values()].slice(0, 20)
-        }
-        
-        // 6. Calculate planetary strengths
-        const planetaryStrengths = calculatePlanetaryStrengths(analysis.data.chart)
-        
-        setHealthInsights({ 
-          formulas, 
-          healthConcerns, 
-          remedies,
-          afflictedPlanets,
-          planetaryStrengths
+      })
+
+      // 5. Get targeted remedies from all three databases (BROADER SEARCH)
+      const bodyPartsAffected = healthConcerns.map(c => c.bodyPart).filter(Boolean)
+
+      // Get Sun sign for constitutional remedies
+      const sunSign = chart.planets?.Sun?.sign || chart.planets?.sun?.sign
+      const moonSign = chart.planets?.Moon?.sign || chart.planets?.moon?.sign
+
+      // BROADER REMEDY SEARCH:
+      const constitutionalRemedies = {
+        homeopathic: medicalDatabaseService.searchHomeopathy({
+          planets: ['Sun', 'Moon'],
+          zodiacSigns: [sunSign, moonSign].filter(Boolean) as string[]
+        }),
+        herbal: medicalDatabaseService.searchHerbal({
+          zodiacSigns: [sunSign, moonSign].filter(Boolean) as string[]
+        }),
+        acupuncture: medicalDatabaseService.searchAcupuncture({
+          zodiacSigns: [sunSign, moonSign].filter(Boolean) as string[]
         })
-      } catch (error) {
-        devLog.error('Error calculating health insights:', error, 'page')
       }
+      const afflictionRemedies = {
+        homeopathic: medicalDatabaseService.searchHomeopathy({
+          bodyParts: bodyPartsAffected,
+          planets: afflictedPlanets.map(p => p.planet),
+          zodiacSigns: afflictedPlanets.map(p => p.sign)
+        }),
+        herbal: medicalDatabaseService.searchHerbal({
+          bodyParts: bodyPartsAffected,
+          zodiacSigns: afflictedPlanets.map(p => p.sign)
+        }),
+        acupuncture: medicalDatabaseService.searchAcupuncture({
+          zodiacSigns: afflictedPlanets.map(p => p.sign)
+        })
+      }
+      const weakPlanets: string[] = []
+      Object.entries(chart.planets || {}).forEach(([planet, planetData]: [string, any]) => {
+        if (planetData.speed < 0) weakPlanets.push(planet)
+      })
+      const weakRemedies = {
+        homeopathic: medicalDatabaseService.searchHomeopathy({ planets: weakPlanets }),
+        herbal: [],
+        acupuncture: []
+      }
+      const remedies = {
+        homeopathic: [...new Map([...constitutionalRemedies.homeopathic, ...afflictionRemedies.homeopathic, ...weakRemedies.homeopathic].map(r => [r.name, r])).values()].slice(0, 20),
+        herbal: [...new Map([...constitutionalRemedies.herbal, ...afflictionRemedies.herbal].map(r => [r.name, r])).values()].slice(0, 20),
+        acupuncture: [...new Map([...constitutionalRemedies.acupuncture, ...afflictionRemedies.acupuncture].map((r: any) => [r.name || r.formula || `${r}`, r])).values()].slice(0, 20)
+      }
+      const planetaryStrengths = calculatePlanetaryStrengths(chart)
+      setHealthInsights({
+        formulas,
+        healthConcerns,
+        remedies,
+        afflictedPlanets,
+        planetaryStrengths
+      })
+    } catch (error) {
+      devLog.error('Error calculating health insights:', error, 'page')
     }
-  }, [analysis])
+  }, [chart])
 
   if (!hasCompleteDetails) {
     return (
@@ -210,9 +308,12 @@ export default function MedicalAstrologyPage() {
     <div className="relative min-h-screen starfield-ultra-sharp">
       <div className="relative z-10 max-w-7xl mx-auto px-4 pt-4 pb-8">
         {/* Medical Disclaimer */}
-        <div className="mb-6 p-4 bg-amber-50/90 border-2 border-amber-300 rounded-xl">
+        <div className="mb-6 p-4 bg-amber-50/90 border-2 border-amber-300 rounded-xl space-y-3">
           <p className="text-sm text-slate-800 text-center">
-            <strong className="text-amber-900">Disclaimer:</strong> All FutureSeer medical astrology services, tools, and databases are provided for private study and entertainment only and are not intended to diagnose, treat, cure, or prevent any disease.
+            <strong className="text-amber-900">Disclaimer:</strong> Medical astrology is a metaphysical framework for educational and spiritual insight. It is not a substitute for professional medical diagnosis or treatment. Always consult a qualified healthcare professional for health concerns.
+          </p>
+          <p className="text-xs text-slate-600 text-center">
+            This report provides constitutional analysis, vulnerability mapping, and timing awareness as a <strong>preventive awareness framework</strong>—risk-indicator analysis only, not medical advice. It cannot diagnose disease, replace lab testing, or predict specific medical outcomes.
           </p>
         </div>
 
@@ -228,6 +329,22 @@ export default function MedicalAstrologyPage() {
             <p className="text-slate-300 text-lg">Health-focused astrological analysis and healing guidance</p>
           </motion.div>
         </div>
+
+        {/* Report framework summary */}
+        <Collapsible className="mb-6 rounded-xl border border-amber-500/20 bg-slate-800/40 overflow-hidden">
+          <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-200 hover:bg-slate-800/50 transition-colors">
+            <span>What&apos;s in this report</span>
+            <span className="text-slate-400 text-xs">Constitutional, vulnerability, timing</span>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-4 pb-4 pt-0 text-xs text-slate-400 space-y-2 border-t border-amber-500/10">
+              <p><strong className="text-amber-200/90">Constitutional:</strong> Lagna (Ascendant) and Sun vitality; Moon sign and placement; Ayurvedic dosha (Vata/Pitta/Kapha) from chart.</p>
+              <p><strong className="text-amber-200/90">Vulnerability:</strong> 6th house (acute illness), 8th (chronic/hereditary), 12th (hospitalization); planet–body mapping (Kaal Purusha); planetary significations (e.g. Saturn–bones, Mars–inflammation).</p>
+              <p><strong className="text-amber-200/90">Timing:</strong> Transits and lunar phases for healing windows; stress and recovery windows where applicable.</p>
+              <p className="text-slate-500">This is a preventive awareness framework only—not diagnosis or treatment. Built with established astrological mapping and Swiss Ephemeris–based calculations.</p>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Tabs */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
@@ -273,36 +390,45 @@ export default function MedicalAstrologyPage() {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-            {isLoading ? (
+            {isLoading || (hasCompleteDetails && !(data || healthInsights) && onDemandLoading) ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
-                <p className="text-slate-300">⚕️ FutureSeer is analyzing your medical astrology chart...</p>
-                </div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4" aria-hidden />
+                <p className="text-slate-300">FutureSeer is analyzing your medical astrology chart...</p>
+              </div>
             ) : error ? (
               <div className="text-center py-8">
                 <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
                 <p className="text-red-300 mb-4">{error}</p>
                 <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                  <Link href="/profile">
-                    Generate your mystical profile
-                  </Link>
+                  <Link href="/profile">Generate your mystical profile</Link>
                 </Button>
               </div>
-            ) : (analysis?.data || healthInsights) ? (
+            ) : onDemandError && !(data || healthInsights) ? (
+              <div className="text-center py-8">
+                <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+                <p className="text-slate-200 mb-4">Could not load your medical astrology report.</p>
+                <Button
+                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                  onClick={() => { onDemandFetchedRef.current = false; setOnDemandReport(null); setOnDemandError(null); }}
+                >
+                  Try again
+                </Button>
+              </div>
+            ) : (data || healthInsights) ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {/* Medical Crisis Indicators (Zoller formulas) */}
                 {healthInsights?.formulas && healthInsights.formulas.length > 0 && (
                   <DevotionistStyleCard
                     variant="callout"
-                    colorScheme="amber"
+                    colorScheme="orange"
                     icon={<AlertTriangle className="w-5 h-5" />}
                     title="Medical Crisis Indicators"
                   >
                     <div className="space-y-3">
                       {healthInsights.formulas.slice(0, 3).map((formula: any, index: number) => (
-                        <div key={index} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
-                          <div className="font-medium text-amber-900">{formula.name}</div>
-                          <div className="text-sm text-slate-700">{formula.medicalImplications}</div>
+                        <div key={index} className="p-3 bg-orange-50/80 border border-orange-200 rounded-lg">
+                          <div className="font-medium text-orange-900">{formula.name}</div>
+                          <div className="text-sm text-slate-800">{formula.medicalImplications}</div>
                           <div className="text-xs text-slate-600 mt-2">Tradition: {formula.tradition}</div>
                         </div>
                       ))}
@@ -314,19 +440,19 @@ export default function MedicalAstrologyPage() {
                 {healthInsights?.healthConcerns && healthInsights.healthConcerns.length > 0 && (
                   <DevotionistStyleCard
                     variant="callout"
-                    colorScheme="amber"
+                    colorScheme="pink"
                     icon={<Shield className="w-5 h-5" />}
                     title="Health Concerns"
                   >
                     <div className="space-y-3">
                       {healthInsights.healthConcerns.slice(0, 3).map((condition: any, index: number) => (
-                        <div key={index} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
+                        <div key={index} className="p-3 bg-pink-50/80 border border-pink-200 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
-                              <div className="font-medium text-amber-900">{condition.name}</div>
+                              <div className="font-medium text-pink-900">{condition.name}</div>
                               <div className="text-xs text-slate-600">Code: {condition.code}</div>
                             </div>
-                            <Badge className="text-xs bg-amber-200 text-amber-900 border border-amber-300">
+                            <Badge className="text-xs bg-pink-200 text-pink-900 border border-pink-300">
                               {condition.severity}
                             </Badge>
                           </div>
@@ -343,15 +469,15 @@ export default function MedicalAstrologyPage() {
                 {healthInsights?.afflictedPlanets && healthInsights.afflictedPlanets.length > 0 && (
                   <DevotionistStyleCard
                     variant="callout"
-                    colorScheme="amber"
+                    colorScheme="purple"
                     icon={<Zap className="w-5 h-5" />}
                     title="Planetary Health Influences"
                   >
                     <div className="space-y-3">
                       {healthInsights.afflictedPlanets.slice(0, 3).map((planet: any, index: number) => (
-                        <div key={index} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
-                          <div className="font-medium text-amber-900">{planet.planet}</div>
-                          <div className="text-sm text-slate-700">House {planet.house} • {planet.sign}</div>
+                        <div key={index} className="p-3 bg-purple-50/80 border border-purple-200 rounded-lg">
+                          <div className="font-medium text-purple-900">{planet.planet}</div>
+                          <div className="text-sm text-slate-800">House {planet.house} • {planet.sign}</div>
                           <div className="text-xs text-slate-600 mt-1">
                             {planet.house === 6 ? 'Health indicators' : planet.house === 8 ? 'Chronic disease' : 'Hospitalization'}
                           </div>
@@ -365,15 +491,15 @@ export default function MedicalAstrologyPage() {
                 {(healthInsights?.remedies?.homeopathic?.length > 0 || healthInsights?.remedies?.herbal?.length > 0 || healthInsights?.remedies?.acupuncture?.length > 0) && (
                   <DevotionistStyleCard
                     variant="callout"
-                    colorScheme="amber"
+                    colorScheme="green"
                     icon={<Gem className="w-5 h-5" />}
                     title="Immediate Remedies"
                   >
                     <div className="space-y-3">
                       {healthInsights.remedies.homeopathic?.slice(0, 1).map((remedy: any, index: number) => (
-                        <div key={`h-${index}`} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
-                          <div className="font-medium text-amber-900">{remedy.name} (Homeopathic)</div>
-                          <div className="text-sm text-slate-700">
+                        <div key={`h-${index}`} className="p-3 bg-green-50/80 border border-green-200 rounded-lg">
+                          <div className="font-medium text-green-900">{remedy.name} (Homeopathic)</div>
+                          <div className="text-sm text-slate-800">
                             {Array.isArray(remedy.keynotes) 
                               ? remedy.keynotes.slice(0, 2).join(', ').substring(0, 60) 
                               : (remedy.keynotes || '').substring(0, 60)}...
@@ -381,9 +507,9 @@ export default function MedicalAstrologyPage() {
                         </div>
                       ))}
                       {healthInsights.remedies.herbal?.slice(0, 1).map((remedy: any, index: number) => (
-                        <div key={`e-${index}`} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
-                          <div className="font-medium text-amber-900">{remedy.name} (Herbal)</div>
-                          <div className="text-sm text-slate-700">
+                        <div key={`e-${index}`} className="p-3 bg-green-50/80 border border-green-200 rounded-lg">
+                          <div className="font-medium text-green-900">{remedy.name} (Herbal)</div>
+                          <div className="text-sm text-slate-800">
                             {Array.isArray(remedy.virtues) 
                               ? remedy.virtues.slice(0, 2).join(', ').substring(0, 60) 
                               : (remedy.virtues || '').substring(0, 60)}...
@@ -391,9 +517,9 @@ export default function MedicalAstrologyPage() {
                         </div>
                       ))}
                       {healthInsights.remedies.acupuncture?.slice(0, 1).map((remedy: any, index: number) => (
-                        <div key={`a-${index}`} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
-                          <div className="font-medium text-amber-900">{remedy.formula || 'Formula'} (Acupuncture)</div>
-                          <div className="text-sm text-slate-700">Meridians: {remedy.meridians?.join(', ') || 'N/A'}</div>
+                        <div key={`a-${index}`} className="p-3 bg-green-50/80 border border-green-200 rounded-lg">
+                          <div className="font-medium text-green-900">{remedy.formula || 'Formula'} (Acupuncture)</div>
+                          <div className="text-sm text-slate-800">Meridians: {remedy.meridians?.join(', ') || 'N/A'}</div>
                         </div>
                       ))}
                     </div>
@@ -402,23 +528,23 @@ export default function MedicalAstrologyPage() {
 
                 {/* Planetary Strengths */}
                 {healthInsights?.planetaryStrengths && Object.keys(healthInsights.planetaryStrengths).length > 0 && (
-                  <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 p-4 shadow-lg m3-elevation-1 hover:border-amber-400 transition-all">
+                  <div className="rounded-2xl border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50 p-4 shadow-lg m3-elevation-1 hover:border-blue-400 transition-all">
                     <div className="flex items-center gap-2 mb-4">
-                      <div className="rounded-lg bg-amber-200/60 p-2">
-                        <BarChart3 className="w-5 h-5 text-amber-700" />
+                      <div className="rounded-lg bg-blue-200/60 p-2">
+                        <BarChart3 className="w-5 h-5 text-blue-700" />
                       </div>
-                      <h4 className="font-semibold text-lg text-amber-900">Planetary Strengths</h4>
+                      <h4 className="font-semibold text-lg text-blue-900">Planetary Strengths</h4>
                     </div>
                     <div className="space-y-2">
                       {Object.entries(healthInsights.planetaryStrengths).map(([planet, strength]: [string, any]) => (
                         <div key={planet} className="space-y-1">
                           <div className="flex justify-between text-sm">
-                            <span className="text-slate-700">{planet}</span>
+                            <span className="text-slate-800">{planet}</span>
                             <span className={`font-medium ${strength < 30 ? 'text-red-700' : strength < 50 ? 'text-amber-700' : 'text-green-700'}`}>
                               {strength}%
                             </span>
                           </div>
-                          <div className="w-full bg-amber-200/60 rounded-full h-1.5">
+                          <div className="w-full bg-blue-200/60 rounded-full h-1.5">
                             <div 
                               className={`h-1.5 rounded-full ${strength < 30 ? 'bg-red-500' : strength < 50 ? 'bg-amber-500' : 'bg-green-600'}`}
                               style={{ width: `${strength}%` }}
@@ -431,34 +557,34 @@ export default function MedicalAstrologyPage() {
                 )}
 
                 {/* Fallback: Show general health overview if no specific data */}
-                {(!healthInsights?.formulas || healthInsights.formulas.length === 0) && 
+                {(!healthInsights?.formulas || healthInsights.formulas.length === 0) &&
                  (!healthInsights?.healthConcerns || healthInsights.healthConcerns.length === 0) &&
                  (!healthInsights?.afflictedPlanets || healthInsights.afflictedPlanets.length === 0) &&
-                 analysis?.data && (
+                 data && (
                   <DevotionistStyleCard
                     variant="callout"
                     colorScheme="amber"
                     icon={<span className="text-2xl" aria-hidden>⚕️</span>}
                     title="General Health Overview"
                   >
-                    <p className="text-slate-700 mb-4">
+                    <p className="text-slate-800 mb-4">
                       Your chart shows balanced health indicators. Here&apos;s what your Medical Astrology analysis reveals:
                     </p>
                     <div className="space-y-2">
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-800">
                         ✓ Your planetary positions have been analyzed for health correlations
                       </p>
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-800">
                         ✓ Check the <strong className="text-amber-900">Health</strong> tab for detailed planetary influences
                       </p>
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-800">
                         ✓ Explore <strong className="text-amber-900">Body Parts</strong> tab for zodiacal correspondences
                       </p>
                     </div>
-                    {analysis?.metadata && (
+                    {metadata && (metadata as { generatedAt?: string }).generatedAt && (
                       <div className="mt-4 pt-4 border-t border-amber-300">
-                        <p className="text-xs text-slate-600">
-                          Analysis generated: {new Date(analysis.metadata.generatedAt).toLocaleString()}
+                        <p className="text-xs text-slate-700">
+                          Analysis generated: {new Date((metadata as { generatedAt: string }).generatedAt).toLocaleString()}
                         </p>
                       </div>
                     )}
@@ -467,13 +593,8 @@ export default function MedicalAstrologyPage() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <Info className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-200 mb-4">No medical astrology data available. Please complete your profile.</p>
-                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                  <Link href="/profile">
-                    Generate your mystical profile
-                  </Link>
-                </Button>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4" aria-hidden />
+                <p className="text-slate-300">Loading your medical astrology report...</p>
               </div>
             )}
           </TabsContent>
@@ -482,23 +603,23 @@ export default function MedicalAstrologyPage() {
           <TabsContent value="health" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Health Indicators */}
-              {analysis?.data?.healthIndicators && analysis.data.healthIndicators.length > 0 && (
+              {data?.healthIndicators && data.healthIndicators.length > 0 && (
                 <DevotionistStyleCard
                   variant="callout"
-                  colorScheme="amber"
+                  colorScheme="blue"
                   icon={<Activity className="w-5 h-5" />}
                   title="Health Indicators"
                 >
                   <div className="space-y-3">
-                    {analysis.data.healthIndicators.map((indicator: any, index: number) => (
-                      <div key={index} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
+                    {data.healthIndicators.map((indicator: any, index: number) => (
+                      <div key={index} className="p-3 bg-blue-50/80 border border-blue-200 rounded-lg">
                         <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-semibold text-amber-900">{indicator.name}</h4>
-                          <Badge className={`text-xs border ${indicator.status === 'strong' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-amber-200 text-amber-900 border-amber-300'}`}>
+                          <h4 className="font-semibold text-blue-900">{indicator.name}</h4>
+                          <Badge className={`text-xs border ${indicator.status === 'strong' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-blue-200 text-blue-900 border-blue-300'}`}>
                             {indicator.status || 'Moderate'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-slate-700 mb-2">{indicator.description}</p>
+                        <p className="text-sm text-slate-800 mb-2">{indicator.description}</p>
                         <div className="flex gap-4 text-xs text-slate-600">
                           {indicator.dignity && <span>Dignity: {indicator.dignity}</span>}
                           {indicator.essentialStrength && <span>Essential: {indicator.essentialStrength}</span>}
@@ -511,18 +632,18 @@ export default function MedicalAstrologyPage() {
               )}
 
               {/* Body Systems with Hybrid Vedic + Western */}
-              {analysis?.data?.bodySystems && analysis.data.bodySystems.length > 0 && (
+              {data?.bodySystems && data.bodySystems.length > 0 && (
                 <DevotionistStyleCard
                   variant="callout"
-                  colorScheme="amber"
+                  colorScheme="cyan"
                   icon={<Activity className="w-5 h-5" />}
                   title="Body Systems Analysis (Hybrid)"
                 >
                   <div className="space-y-2">
-                    {analysis.data.bodySystems.map((system: any, index: number) => (
-                      <div key={index} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
+                    {data.bodySystems.map((system: any, index: number) => (
+                      <div key={index} className="p-3 bg-cyan-50/80 border border-cyan-200 rounded-lg">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium text-slate-700">{system.system}</span>
+                          <span className="text-sm font-medium text-slate-800">{system.system}</span>
                           <Badge className={`text-xs border ${
                             system.riskLevel === 'high' ? 'bg-red-100 text-red-800 border-red-300' :
                             system.riskLevel === 'moderate' ? 'bg-amber-200 text-amber-900 border-amber-300' :
@@ -531,7 +652,7 @@ export default function MedicalAstrologyPage() {
                             {system.riskLevel}
                           </Badge>
                         </div>
-                        <div className="w-full bg-amber-200/60 rounded-full h-2 mb-2">
+                        <div className="w-full bg-cyan-200/60 rounded-full h-2 mb-2">
                           <div 
                             className={`h-2 rounded-full ${
                               system.strength < 30 ? 'bg-red-500' : system.strength < 50 ? 'bg-amber-500' : 'bg-green-600'
@@ -545,20 +666,20 @@ export default function MedicalAstrologyPage() {
                           {system.vedicAnalysis && (
                             <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg text-xs">
                               <p className="text-blue-800 font-medium mb-1">Vedic (Dosha)</p>
-                              <p className="text-slate-700">{system.vedicAnalysis.dosha} Constitution</p>
+                              <p className="text-slate-800">{system.vedicAnalysis.dosha} Constitution</p>
                               <p className="text-slate-600 mt-1">{system.vedicAnalysis.recommendation}</p>
                             </div>
                           )}
                           {system.westernAnalysis && (
                             <div className="p-2 bg-amber-50/80 border border-amber-200 rounded-lg text-xs">
                               <p className="text-amber-900 font-medium mb-1">Western (Transits)</p>
-                              <p className="text-slate-700">{system.westernAnalysis.currentTransit}</p>
+                              <p className="text-slate-800">{system.westernAnalysis.currentTransit}</p>
                               <p className="text-slate-600 mt-1">{system.westernAnalysis.impact}</p>
                             </div>
                           )}
                         </div>
                         
-                        <p className="text-xs text-slate-600 mt-2">{system.recommendation}</p>
+                        <p className="text-xs text-slate-700 mt-2">{system.recommendation}</p>
                       </div>
                     ))}
                   </div>
@@ -566,18 +687,18 @@ export default function MedicalAstrologyPage() {
               )}
 
               {/* Planetary Aspects */}
-              {analysis?.data?.planetaryAspects && analysis.data.planetaryAspects.length > 0 && (
+              {data?.planetaryAspects && data.planetaryAspects.length > 0 && (
                 <DevotionistStyleCard
                   variant="callout"
-                  colorScheme="amber"
+                  colorScheme="purple"
                   icon={<Zap className="w-5 h-5" />}
                   title="Health-Relevant Aspects"
                 >
                   <div className="space-y-2">
-                    {analysis.data.planetaryAspects.slice(0, 8).map((aspect: any, index: number) => (
-                      <div key={index} className="p-2 bg-amber-50/60 border border-amber-200 rounded-lg text-xs">
-                        <span className="text-amber-900 font-medium">{aspect.planets}</span> — {aspect.aspect} ({aspect.orb}°)
-                        <p className="text-slate-600 mt-1">{aspect.healthInfluence}</p>
+                    {data.planetaryAspects.slice(0, 8).map((aspect: any, index: number) => (
+                      <div key={index} className="p-2 bg-purple-50/80 border border-purple-200 rounded-lg text-xs">
+                        <span className="text-purple-900 font-medium">{aspect.planets}</span> — {aspect.aspect} ({aspect.orb}°)
+                        <p className="text-slate-700 mt-1">{aspect.healthInfluence}</p>
                       </div>
                     ))}
                   </div>
@@ -586,19 +707,19 @@ export default function MedicalAstrologyPage() {
 
               {/* Planetary Strengths Table */}
               {healthInsights?.planetaryStrengths && Object.keys(healthInsights.planetaryStrengths).length > 0 && (
-                <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 p-4 shadow-lg m3-elevation-1 hover:border-amber-400 transition-all">
+                <div className="rounded-2xl border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-cyan-50 p-4 shadow-lg m3-elevation-1 hover:border-blue-400 transition-all">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="rounded-lg bg-amber-200/60 p-2">
-                      <BarChart3 className="w-5 h-5 text-amber-700" />
+                    <div className="rounded-lg bg-blue-200/60 p-2">
+                      <BarChart3 className="w-5 h-5 text-blue-700" />
                     </div>
-                    <h4 className="font-semibold text-lg text-amber-900">Planetary Strengths (Health Context)</h4>
+                    <h4 className="font-semibold text-lg text-blue-900">Planetary Strengths (Health Context)</h4>
                   </div>
                   <div className="space-y-2">
                     {Object.entries(healthInsights.planetaryStrengths).map(([planet, strength]: [string, any]) => (
-                      <div key={planet} className="flex items-center justify-between p-2 bg-amber-50/60 border border-amber-200 rounded-lg">
-                        <span className="text-sm text-slate-700">{planet}</span>
+                      <div key={planet} className="flex items-center justify-between p-2 bg-blue-50/80 border border-blue-200 rounded-lg">
+                        <span className="text-sm text-slate-800">{planet}</span>
                         <div className="flex items-center gap-2">
-                          <div className="w-32 bg-amber-200/60 rounded-full h-1.5">
+                          <div className="w-32 bg-blue-200/60 rounded-full h-1.5">
                             <div 
                               className={`h-1.5 rounded-full ${
                                 strength < 30 ? 'bg-red-500' : strength < 50 ? 'bg-amber-500' : 'bg-green-600'
@@ -620,23 +741,23 @@ export default function MedicalAstrologyPage() {
             </div>
 
             {/* Fallback message if no data */}
-            {(!analysis?.data?.healthIndicators || analysis.data.healthIndicators.length === 0) &&
-             (!analysis?.data?.bodySystems || analysis.data.bodySystems.length === 0) &&
-             (!analysis?.data?.planetaryAspects || analysis.data.planetaryAspects.length === 0) && (
+            {(!data?.healthIndicators || data.healthIndicators.length === 0) &&
+             (!data?.bodySystems || data.bodySystems.length === 0) &&
+             (!data?.planetaryAspects || data.planetaryAspects.length === 0) && (
               <DevotionistStyleCard
                 variant="callout"
                 colorScheme="amber"
                 icon={<span className="text-2xl" aria-hidden>⚕️</span>}
                 title="Health Analysis"
               >
-                <p className="text-slate-700">
+                <p className="text-slate-800">
                   Your chart is being analyzed for health correlations. Planetary positions and aspects are being evaluated.
                 </p>
-                {analysis?.data?.chart && (
+                {chart && (
                   <div className="mt-4 pt-4 border-t border-amber-300">
-                    <p className="text-sm text-slate-600 mb-2">Chart calculated:</p>
+                    <p className="text-sm text-slate-700 mb-2">Chart calculated:</p>
                     <p className="text-xs text-slate-600">
-                      {analysis.metadata?.generatedAt ? new Date(analysis.metadata.generatedAt).toLocaleString() : 'Recently'}
+                      {metadata && (metadata as { generatedAt?: string }).generatedAt ? new Date((metadata as { generatedAt: string }).generatedAt).toLocaleString() : 'Recently'}
                     </p>
                   </div>
                 )}
@@ -646,20 +767,38 @@ export default function MedicalAstrologyPage() {
 
           {/* Body Parts Tab */}
           <TabsContent value="body-parts" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-            <BodyZodiacProjection 
-              userChart={analysis?.data?.chart} 
-              gender={userProfile?.gender === 'male' ? 'male' : 'female'} 
-            />
+            <DashboardSection
+              title="Body Parts"
+              icon={<Target className="w-6 h-6" />}
+              badge="Zodiac wheel"
+              defaultExpanded={true}
+              colorScheme="cyan"
+              storageKey="medical-body-parts"
+            >
+              <BodyZodiacProjection 
+                userChart={chart} 
+                gender={userProfile?.gender === 'male' ? 'male' : 'female'} 
+              />
+            </DashboardSection>
           </TabsContent>
 
           {/* Remedies Tab */}
           <TabsContent value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-            <RemedyTabs 
-              selectedCondition={analysis?.data?.healthIndicators?.[0]?.name}
-              bodyPart={analysis?.data?.bodyParts?.[0]?.bodyPart}
-              zodiacSign={analysis?.data?.chart?.planets?.Sun?.sign}
-              precomputedRemedies={healthInsights?.remedies}
-            />
+            <DashboardSection
+              title="Remedies"
+              icon={<Leaf className="w-6 h-6" />}
+              badge="Homeopathy • Herbal • Acupuncture"
+              defaultExpanded={true}
+              colorScheme="green"
+              storageKey="medical-remedies"
+            >
+              <RemedyTabs 
+                selectedCondition={data?.healthIndicators?.[0]?.name}
+                bodyPart={data?.bodyParts?.[0]?.bodyPart}
+                zodiacSign={chart?.planets?.Sun?.sign}
+                precomputedRemedies={healthInsights?.remedies}
+              />
+            </DashboardSection>
           </TabsContent>
 
           {/* Health Timing Tab */}
@@ -678,24 +817,24 @@ export default function MedicalAstrologyPage() {
                     <>
                       <DevotionistStyleCard
                         variant="callout"
-                        colorScheme="amber"
+                        colorScheme="cyan"
                         icon={<Moon className="w-5 h-5" />}
                         title="Current Lunar Phase"
                       >
                         <div className="space-y-4">
-                          <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-lg">
-                            <h3 className="text-lg font-semibold text-amber-900 mb-2">{currentPhase.name}</h3>
-                            <p className="text-slate-700 mb-3">{currentPhase.description}</p>
+                          <div className="p-4 bg-cyan-50/80 border border-cyan-200 rounded-lg">
+                            <h3 className="text-lg font-semibold text-cyan-900 mb-2">{currentPhase.name}</h3>
+                            <p className="text-slate-800 mb-3">{currentPhase.description}</p>
                             <div className="space-y-1">
-                              <p className="text-sm text-slate-700 font-medium">Optimal for:</p>
-                              <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
+                              <p className="text-sm text-slate-800 font-medium">Optimal for:</p>
+                              <ul className="list-disc list-inside text-sm text-slate-700 space-y-1">
                                 {currentPhase.optimalFor.map((activity, idx) => (
                                   <li key={idx}>{activity}</li>
                                 ))}
                               </ul>
                             </div>
                           </div>
-                          <div className="text-xs text-slate-600">
+                          <div className="text-xs text-slate-700">
                             Phase until: {currentPhase.endDate.toLocaleDateString()}
                           </div>
                         </div>
@@ -704,23 +843,23 @@ export default function MedicalAstrologyPage() {
                       {/* Upcoming Healing Phases */}
                       <DevotionistStyleCard
                         variant="callout"
-                        colorScheme="amber"
+                        colorScheme="green"
                         icon={<Calendar className="w-5 h-5" />}
                         title="Upcoming Optimal Healing Windows"
                       >
                         <div className="space-y-3">
                           {nextPhases.map((phase, idx) => (
-                            <div key={idx} className="p-3 bg-amber-50/60 border border-amber-200 rounded-lg">
+                            <div key={idx} className="p-3 bg-green-50/80 border border-green-200 rounded-lg">
                               <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-semibold text-amber-900">{phase.name}</h4>
+                                <h4 className="font-semibold text-green-900">{phase.name}</h4>
                                 <Badge className="text-xs bg-blue-100 text-blue-800 border border-blue-300">
                                   {phase.startDate.toLocaleDateString()}
                                 </Badge>
                               </div>
-                              <p className="text-sm text-slate-700 mb-2">{phase.description}</p>
+                              <p className="text-sm text-slate-800 mb-2">{phase.description}</p>
                               <div className="flex flex-wrap gap-1">
                                 {phase.optimalFor.map((item, i) => (
-                                  <span key={i} className="text-xs px-2 py-1 bg-amber-200/60 text-amber-900 rounded-lg">
+                                  <span key={i} className="text-xs px-2 py-1 bg-green-200/60 text-green-900 rounded-lg">
                                     {item}
                                   </span>
                                 ))}
@@ -739,15 +878,15 @@ export default function MedicalAstrologyPage() {
                             </div>
                             <h4 className="font-semibold text-lg text-red-900">Mercury Retrograde Warning</h4>
                           </div>
-                          <p className="text-sm text-slate-700">
+                          <p className="text-sm text-slate-800">
                             Mercury is currently retrograde. Consider avoiding:
                           </p>
-                          <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-slate-600">
+                          <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-slate-700">
                             <li>Elective surgeries when possible</li>
                             <li>Starting new major health treatments</li>
                             <li>Making irreversible health decisions</li>
                           </ul>
-                          <p className="text-xs text-slate-600 mt-3">
+                          <p className="text-xs text-slate-700 mt-3">
                             Minor procedures are fine, but major interventions should be carefully considered.
                           </p>
                         </div>

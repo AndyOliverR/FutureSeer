@@ -1,0 +1,30 @@
+{
+  "version": "Divan of Hafez (Public Domain)",
+  "sourceNote": "Persian text; English from public domain translations.",
+  "poems": [
+    {
+      "id": 1,
+      "couplets": [
+        { "lineNumber": 1, "persian": "اَلْیا اَیُّهَا السّاقی اَدِرْ کاسَةً وَ ناوِلْها", "english": "O cup-bearer, pass round the cup and hand it to me." },
+        { "lineNumber": 2, "persian": "که عشق آسان نمود اوّل ولی افتاد مشکلها", "english": "Love seemed easy at first, but then came hardships." }
+      ],
+      "themeHint": "surrender"
+    },
+    {
+      "id": 2,
+      "couplets": [
+        { "lineNumber": 1, "persian": "بنام خدای بخشاینده بخشایشگر", "english": "In the name of God the Compassionate the Merciful." },
+        { "lineNumber": 2, "persian": "صبا به لطف بگو آن غزال رعنا را", "english": "O morning breeze, tell that graceful gazelle with kindness." }
+      ],
+      "themeHint": "guidance"
+    },
+    {
+      "id": 3,
+      "couplets": [
+        { "lineNumber": 1, "persian": "اگر آن ترک شیرازی به دست آرد دل ما را", "english": "If that Turk of Shiraz would take my heart in hand." },
+        { "lineNumber": 2, "persian": "به خال هندویش بخشم سمرقند و بخارا را", "english": "For her Indian mole I would give Samarkand and Bukhara." }
+      ],
+      "themeHint": "devotion"
+    }
+  ]
+}

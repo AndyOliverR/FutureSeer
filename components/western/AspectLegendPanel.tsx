@@ -146,8 +146,8 @@ export function AspectLegendPanel({ aspects, onFilterAspect, activeFilter }: Asp
     <div className="space-y-6">
       {/* Legend Header */}
       <div className="text-center">
-        <h3 className="text-2xl font-bold text-slate-800 mb-2">Aspect Legend</h3>
-        <p className="text-slate-600 text-sm">
+        <h3 className="text-2xl font-bold text-slate-900 mb-2">Aspect Legend</h3>
+        <p className="text-slate-700 text-sm">
           Understanding the geometric relationships between planets in your chart
         </p>
       </div>
@@ -186,10 +186,12 @@ export function AspectLegendPanel({ aspects, onFilterAspect, activeFilter }: Asp
                           <h4 className={`font-bold text-base ${colors.text}`}>
                             {aspectType.name}
                           </h4>
-                          <span className="text-2xl">{aspectType.symbol}</span>
+                          <span className={`text-2xl font-medium ${colors.iconColor}`} aria-hidden="true">
+                            {aspectType.symbol}
+                          </span>
                         </div>
-                        <div className="text-xs text-slate-600">
-                          {aspectType.degree} <span className="text-slate-400">({aspectType.orb})</span>
+                        <div className="text-xs text-slate-700">
+                          {aspectType.degree} <span className="text-slate-500">({aspectType.orb})</span>
                         </div>
                       </div>
                     </div>
@@ -239,21 +241,21 @@ export function AspectLegendPanel({ aspects, onFilterAspect, activeFilter }: Asp
                   <div className="text-2xl font-bold text-purple-900">
                     {aspects.length}
                   </div>
-                  <div className="text-xs text-slate-600 mt-1">Total Aspects</div>
+                  <div className="text-xs text-slate-700 mt-1">Total Aspects</div>
                 </div>
                 
                 <div className="text-center p-3 bg-white/60 rounded-lg">
                   <div className="text-2xl font-bold text-green-700">
                     {(aspectCounts['Trine'] || 0) + (aspectCounts['Sextile'] || 0)}
                   </div>
-                  <div className="text-xs text-slate-600 mt-1">Harmonious</div>
+                  <div className="text-xs text-slate-700 mt-1">Harmonious</div>
                 </div>
                 
                 <div className="text-center p-3 bg-white/60 rounded-lg">
                   <div className="text-2xl font-bold text-orange-700">
                     {(aspectCounts['Square'] || 0) + (aspectCounts['Opposition'] || 0)}
                   </div>
-                  <div className="text-xs text-slate-600 mt-1">Challenging</div>
+                  <div className="text-xs text-slate-700 mt-1">Challenging</div>
                 </div>
               </div>
               

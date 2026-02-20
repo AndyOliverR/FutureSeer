@@ -43,15 +43,15 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-amber-900">Balance Score</span>
-              <span className="text-2xl font-bold text-amber-900">{analysis.overallBalance}%</span>
+              <span className="text-2xl font-bold text-amber-900">{typeof analysis.overallBalance === 'number' ? analysis.overallBalance : '—'}%</span>
             </div>
             <div className="w-full bg-amber-100 rounded-full h-3">
               <div 
                 className="bg-gradient-to-r from-blue-600 to-amber-600 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${analysis.overallBalance}%` }}
+                style={{ width: `${typeof analysis.overallBalance === 'number' ? Math.min(100, Math.max(0, analysis.overallBalance)) : 0}%` }}
               />
             </div>
-            {analysis.primaryIssues.length > 0 && (
+            {Array.isArray(analysis.primaryIssues) && analysis.primaryIssues.length > 0 && (
               <div className="mt-4">
                 <p className="text-amber-800 text-sm mb-2">Focus Areas:</p>
                 <div className="flex flex-wrap gap-2">
@@ -69,7 +69,7 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
 
       {/* Chakra List */}
       <div className="space-y-4">
-        {analysis.chakras.map((chakra, index) => {
+        {(Array.isArray(analysis.chakras) ? analysis.chakras : []).map((chakra, index) => {
           const chakraData = CHAKRA_DATA[chakra.name.toLowerCase().replace(/\s+/g, '').replace('chakra', '') as keyof typeof CHAKRA_DATA] || 
             Object.values(CHAKRA_DATA)[index];
           
@@ -133,7 +133,7 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
 
                   <div className="mt-3 pt-3 border-t border-amber-300">
                     <div className="flex flex-wrap gap-2 items-center">
-                      {chakraData?.associatedCrystals.slice(0, 3).map((crystal, crystalIndex) => (
+                      {(chakraData?.associatedCrystals ?? []).slice(0, 3).map((crystal, crystalIndex) => (
                         <Badge
                           key={crystalIndex}
                           variant="outline"

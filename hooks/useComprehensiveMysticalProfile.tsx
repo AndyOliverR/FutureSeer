@@ -12,7 +12,15 @@ export function useComprehensiveMysticalProfile() {
 
 export function useToolReport(toolSlug: string) {
   const { profile, loading, error, isReportsStale, refreshProfile } = useMysticalProfileContext()
-  const report = profile != null && toolSlug ? (profile as Record<string, unknown>)[toolSlug] : undefined
+  const p = profile as Record<string, unknown> | null
+  // Resolve from both shapes: top-level (e.g. profile.western) or toolReports[slug].data
+  const toolReports = p != null ? (p.toolReports as Record<string, { data?: unknown }> | undefined) : undefined
+  const report =
+    p != null && toolSlug
+      ? (p[toolSlug] ??
+         (toolSlug === 'energyHealing' ? p['Energy & Healing'] : undefined) ??
+         toolReports?.[toolSlug]?.data)
+      : undefined
   return {
     report: report ?? undefined,
     loading,
