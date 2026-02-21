@@ -92,8 +92,8 @@ function buildLiteralSummary(textId: SacredTextId, passage: string): string {
 
 function selectThemeForPassage(
   textId: SacredTextId,
-  themeHint?: string,
-  rand: () => number
+  rand: () => number,
+  themeHint?: string
 ): { primary: string; secondary?: string } {
   const themeList = THEMES as unknown as string[];
   if (themeHint && themeList.includes(themeHint))
@@ -119,8 +119,8 @@ function generatePassageReport(
   const result = pickPassage(textId, rand);
   const { primary: primaryTheme, secondary: secondaryTheme } = selectThemeForPassage(
     textId,
-    result.themeHint,
-    rand
+    rand,
+    result.themeHint
   );
   const domain = selectLifeDomain(rand);
   const directive = pickFrom(DIRECTIVES, rand);
