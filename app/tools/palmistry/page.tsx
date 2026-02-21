@@ -51,7 +51,7 @@ export default function PalmistryPage() {
   const isLoading = pipelineLoading || isLiveLoading
   const error = liveError ?? null
 
-  const analysisData = useMemo(() => effectiveAnalysis, [effectiveAnalysis])
+  const analysisData = useMemo((): PalmistryAnalysis | null => (effectiveAnalysis ? (effectiveAnalysis as unknown as PalmistryAnalysis) : null), [effectiveAnalysis])
 
   // Animation variants
   const pageVariants = {
@@ -208,7 +208,7 @@ export default function PalmistryPage() {
                 >
                   {/* Hero Section */}
                   <PalmistryDashboardHero 
-                    analysis={analysisData as unknown as PalmistryAnalysis}
+                    analysis={analysisData}
                     userProfile={userProfile}
                   />
 
