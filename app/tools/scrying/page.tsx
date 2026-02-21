@@ -297,21 +297,21 @@ function ScryingReportView({ report }: { report: Record<string, unknown> }) {
             <p className="text-slate-700 text-sm leading-relaxed">{sessionOverview}</p>
             {context && (
               <div className="mt-3 flex flex-wrap gap-2">
-                {context.moon_phase && (
+                {context.moon_phase != null && context.moon_phase !== '' ? (
                   <span className="inline-flex items-center rounded-full bg-purple-200/80 px-2.5 py-0.5 text-xs text-purple-800">
                     {String(context.moon_phase)}
                   </span>
-                )}
-                {context.tool && (
+                ) : null}
+                {context.tool != null && context.tool !== '' ? (
                   <span className="inline-flex items-center rounded-full bg-purple-200/80 px-2.5 py-0.5 text-xs text-purple-800">
                     {String(context.tool)}
                   </span>
-                )}
-                {context.emotional_state && (
+                ) : null}
+                {context.emotional_state != null && context.emotional_state !== '' ? (
                   <span className="inline-flex items-center rounded-full bg-purple-200/80 px-2.5 py-0.5 text-xs text-purple-800">
                     {String(context.emotional_state)}
                   </span>
-                )}
+                ) : null}
               </div>
             )}
           </CardContent>
