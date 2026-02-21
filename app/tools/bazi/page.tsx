@@ -54,7 +54,7 @@ function BaziPageContent() {
 
   const comprehensiveAnalysis = useMemo(() => {
     if (!baziReport) return null;
-    const comp = (baziReport as Record<string, unknown>).comprehensiveAnalysis as {
+    const comp = (baziReport as unknown as Record<string, unknown>).comprehensiveAnalysis as {
       chartOverview?: string;
       lifePathInsights?: string;
       elementHarmonization?: string;
