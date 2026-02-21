@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useAuth } from "@/hooks/use-auth"
-import { baziIntelligence, BaziReading } from "@/lib/baziIntelligence"
+import { baziIntelligence, type BaziProfileInput, BaziReading } from "@/lib/baziIntelligence"
 
 /**
  * Custom hook for BaZi (Four Pillars of Destiny) reading management
@@ -45,8 +45,15 @@ export function useBaZi() {
     setHasAutoLoaded(true)
 
     try {
-      // Store the promise to prevent duplicate requests
-      loadingRequestRef.current = baziIntelligence.getBaziReading(user.uid, userProfile)
+      const profileForBazi: BaziProfileInput = {
+        birthDate: userProfile.birthDate!,
+        birthTime: (userProfile.birthTime?.trim() || '12:00'),
+        birthPlace: userProfile.birthPlace!,
+        ...(userProfile.birthLatitude != null && { birthLatitude: userProfile.birthLatitude }),
+        ...(userProfile.birthLongitude != null && { birthLongitude: userProfile.birthLongitude }),
+        ...(userProfile.gender != null && { gender: userProfile.gender }),
+      }
+      loadingRequestRef.current = baziIntelligence.getBaziReading(user.uid, profileForBazi)
       const baziReading = await loadingRequestRef.current
       setReading(baziReading)
     } catch (err: unknown) {
@@ -64,18 +71,29 @@ export function useBaZi() {
   // Memoized regenerate function
   const regenerateReading = useCallback(async () => {
     if (!user?.uid || !userProfile) return
-    
+    if (!hasCompleteProfile) {
+      setError('Complete birth information (date, time, place) required for BaZi analysis')
+      return
+    }
+
     // Prevent duplicate requests
     if (loadingRequestRef.current) {
       return
     }
-    
+
     setIsLoading(true)
     setError(null)
 
     try {
-      // Force regeneration by clearing cache temporarily
-      loadingRequestRef.current = baziIntelligence.getBaziReading(user.uid, userProfile)
+      const profileForBazi: BaziProfileInput = {
+        birthDate: userProfile.birthDate!,
+        birthTime: (userProfile.birthTime?.trim() || '12:00'),
+        birthPlace: userProfile.birthPlace!,
+        ...(userProfile.birthLatitude != null && { birthLatitude: userProfile.birthLatitude }),
+        ...(userProfile.birthLongitude != null && { birthLongitude: userProfile.birthLongitude }),
+        ...(userProfile.gender != null && { gender: userProfile.gender }),
+      }
+      loadingRequestRef.current = baziIntelligence.getBaziReading(user.uid, profileForBazi)
       const baziReading = await loadingRequestRef.current
       setReading(baziReading)
     } catch (err: unknown) {
@@ -88,7 +106,7 @@ export function useBaZi() {
       setIsLoading(false)
       loadingRequestRef.current = null
     }
-  }, [user?.uid, userProfile])
+  }, [user?.uid, userProfile, hasCompleteProfile])
 
   // Auto-load BaZi reading on mount if profile is complete (optimized dependencies)
   useEffect(() => {
