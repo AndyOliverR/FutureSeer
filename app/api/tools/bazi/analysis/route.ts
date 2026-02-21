@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { baziIntelligence } from '@/lib/baziIntelligence'
+import { baziIntelligence, type BaziProfileInput } from '@/lib/baziIntelligence'
 import { getUserProfile } from '@/lib/firebase'
 import { devLog } from '@/lib/devLogger'
 import { normalizeTimeString } from '@/lib/timeUtils'
@@ -94,9 +94,13 @@ export async function POST(request: NextRequest) {
     }
 
     const birthTimeNormalized = normalizeBirthTimeToHHmm(userProfile.birthTime)
-    const profileForBazi = {
-      ...userProfile,
+    const profileForBazi: BaziProfileInput = {
+      birthDate: userProfile.birthDate,
       birthTime: birthTimeNormalized,
+      birthPlace: userProfile.birthPlace,
+      ...(userProfile.birthLatitude != null && { birthLatitude: userProfile.birthLatitude }),
+      ...(userProfile.birthLongitude != null && { birthLongitude: userProfile.birthLongitude }),
+      ...(userProfile.gender != null && userProfile.gender !== '' && { gender: userProfile.gender }),
     }
 
     const reading = await baziIntelligence.getBaziReading(userId, profileForBazi)
@@ -156,9 +160,13 @@ export async function GET(request: NextRequest) {
     }
 
     const birthTimeNormalized = normalizeBirthTimeToHHmm(userProfile.birthTime)
-    const profileForBazi = {
-      ...userProfile,
+    const profileForBazi: BaziProfileInput = {
+      birthDate: userProfile.birthDate,
       birthTime: birthTimeNormalized,
+      birthPlace: userProfile.birthPlace,
+      ...(userProfile.birthLatitude != null && { birthLatitude: userProfile.birthLatitude }),
+      ...(userProfile.birthLongitude != null && { birthLongitude: userProfile.birthLongitude }),
+      ...(userProfile.gender != null && userProfile.gender !== '' && { gender: userProfile.gender }),
     }
 
     const reading = await baziIntelligence.getBaziReading(userId, profileForBazi)
