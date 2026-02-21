@@ -94,14 +94,18 @@ function normalizeToChakraAnalysis(raw: Record<string, unknown>): ChakraAnalysis
   const ob = getOverallBalance(raw)
   const arr = (raw.chakras ?? raw.CHAKRAS ?? raw.chakra_analysis) as Array<{ name?: string; balance?: number; status?: string; interpretation?: string; color?: string }> | Record<string, unknown> | undefined
   if (Array.isArray(arr) && arr.length > 0) {
-    const chakras = arr.slice(0, 7).map((c, i) => ({
-      name: (c && typeof c === 'object' && (c as { name?: string }).name) ?? CHAKRA_NAMES[i] ?? `Chakra ${i + 1}`,
+    const chakras = arr.slice(0, 7).map((c, i) => {
+      const rawName = c && typeof c === 'object' ? (c as { name?: unknown }).name : undefined
+      const name = typeof rawName === 'string' ? rawName : (CHAKRA_NAMES[i] ?? `Chakra ${i + 1}`)
+      return {
+      name,
       balance: typeof (c as { balance?: number }).balance === 'number' ? (c as { balance: number }).balance : 50,
       status: ((c as { status?: string }).status as ChakraAnalysis['chakras'][0]['status']) ?? 'balanced',
       color: (c as { color?: string }).color ?? '#888',
       interpretation: (c as { interpretation?: string }).interpretation ?? '',
       recommendations: [] as string[]
-    }))
+    }
+    })
     const overallBalance = typeof ob === 'number' ? ob : Math.round(chakras.reduce((s, c) => s + c.balance, 0) / chakras.length)
     return {
       chakras,
