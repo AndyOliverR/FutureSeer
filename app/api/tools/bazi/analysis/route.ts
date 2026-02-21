@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
       birthPlace: userProfile.birthPlace,
       ...(userProfile.birthLatitude != null && { birthLatitude: userProfile.birthLatitude }),
       ...(userProfile.birthLongitude != null && { birthLongitude: userProfile.birthLongitude }),
-      ...(userProfile.gender != null && userProfile.gender !== '' && { gender: userProfile.gender }),
+      ...(userProfile.gender != null && { gender: userProfile.gender }),
     }
 
     const reading = await baziIntelligence.getBaziReading(userId, profileForBazi)
