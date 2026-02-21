@@ -653,7 +653,7 @@ async function runTool(
           // Generate in-process to avoid self-fetch timeouts/deadlocks in dev
           const { generateScryingReport } = await import('@/lib/scrying/scryingReportGenerator');
           const profileForScrying = {
-            fullName: profile.fullName ?? (profile as Record<string, unknown>).displayName ?? '',
+            fullName: profile.fullName ?? (profile as unknown as Record<string, unknown>).displayName ?? '',
             birthDate: profile.birthDate ?? '',
             birthTime: profile.birthTime ?? '',
             birthPlace: profile.birthPlace ?? '',
@@ -676,7 +676,7 @@ async function runTool(
         try {
           const { generateBibliomancyReport } = await import('@/lib/bibliomancy/bibliomancyReportGenerator');
           const profileForBibliomancy = {
-            fullName: profile.fullName ?? (profile as Record<string, unknown>).displayName ?? '',
+            fullName: profile.fullName ?? (profile as unknown as Record<string, unknown>).displayName ?? '',
             birthDate: profile.birthDate ?? '',
             birthTime: profile.birthTime ?? '',
             birthPlace: profile.birthPlace ?? '',
@@ -938,7 +938,7 @@ async function runTool(
           try {
             const { generateScryingReport } = await import('@/lib/scrying/scryingReportGenerator');
             const profileForScrying = {
-              fullName: profile.fullName ?? (profile as Record<string, unknown>).displayName ?? '',
+              fullName: profile.fullName ?? (profile as unknown as Record<string, unknown>).displayName ?? '',
               birthDate: profile.birthDate ?? '',
               birthTime: profile.birthTime ?? '',
               birthPlace: profile.birthPlace ?? '',
