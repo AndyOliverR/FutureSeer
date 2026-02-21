@@ -61,7 +61,7 @@ export default function AkashicRecordsPage() {
       data.soulJourney ?? data.pastLives ?? data.karmicPatterns ?? data.lifePurpose ?? data.guidance ?? data.personalMessage
     if (!hasReadingContent) return null
     if (r.placeholder === true && !data.soulJourney && !data.guidance && !data.personalMessage) return null
-    return data as AkashicReading
+    return data as unknown as AkashicReading
   }, [pipelineReport])
 
   useEffect(() => {
