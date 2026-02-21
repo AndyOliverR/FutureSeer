@@ -1233,8 +1233,8 @@ class BaziIntelligence {
       typeof userProfile.birthLongitude === 'number'
     const coords: { latitude: number; longitude: number } = hasCoords
       ? {
-          latitude: userProfile.birthLatitude,
-          longitude: userProfile.birthLongitude
+          latitude: userProfile.birthLatitude!,
+          longitude: userProfile.birthLongitude!
         }
       : await getCoordinatesWithFallback(userProfile.birthPlace)
 
