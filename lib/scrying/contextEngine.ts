@@ -180,7 +180,7 @@ export function getTimelineOrientation(symbolIds: string[]): {
 } {
   const motionIds = symbolIds
     .map((id) => getSymbolById(id))
-    .filter((s): s is SymbolEntry => s?.category === 'motion' ?? false);
+    .filter((s): s is SymbolEntry => s?.category === 'motion');
   const hasRising = motionIds.some((s) => s.id === 'rising');
   const hasFalling = motionIds.some((s) => s.id === 'falling');
   const hasCircular = motionIds.some((s) => s.id === 'circular');
