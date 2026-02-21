@@ -452,16 +452,16 @@ function ScryingReportView({ report }: { report: Record<string, unknown> }) {
         </Card>
       )}
 
-      {observations && (observations.visuals as string[] | undefined)?.length > 0 && (
+      {observations && ((observations.visuals as string[] | undefined)?.length ?? 0) > 0 ? (
         <Card className="bg-gradient-to-br from-pink-50 to-rose-50 border-2 border-pink-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
           <CardContent className="p-4 sm:p-6">
             <h3 className="font-semibold text-pink-900 mb-2">Visual Symbols</h3>
             <p className="text-slate-700 text-sm">
-              {(observations.visuals as string[]).join(', ')}
+              {Array.isArray(observations.visuals) ? (observations.visuals as string[]).join(', ') : ''}
             </p>
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 }
