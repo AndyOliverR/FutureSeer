@@ -236,7 +236,7 @@ function ScryingPageContent() {
                         <div className="h-[800px] min-h-0">
                           <ScryingSeerChatInterface
                             report={scryingReport}
-                            userProfile={userProfile as Record<string, unknown>}
+                            userProfile={userProfile as unknown as Record<string, unknown>}
                             userId={user?.uid}
                           />
                         </div>
