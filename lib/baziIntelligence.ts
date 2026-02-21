@@ -1231,7 +1231,7 @@ class BaziIntelligence {
     const hasCoords =
       typeof userProfile.birthLatitude === 'number' &&
       typeof userProfile.birthLongitude === 'number'
-    const coords = hasCoords
+    const coords: { latitude: number; longitude: number } = hasCoords
       ? {
           latitude: userProfile.birthLatitude,
           longitude: userProfile.birthLongitude
