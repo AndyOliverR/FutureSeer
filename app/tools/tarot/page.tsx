@@ -101,7 +101,8 @@ function TarotPage() {
             }
           : { lifePathNumber: 0, destinyNumber: 0, soulNumber: 0, personalityNumber: 0 }
       const rawWestern = westernReport as Record<string, unknown> | undefined
-      const chart = (rawWestern?.chart ?? rawWestern?.data?.chart) as { planets?: Array<{ name?: string; sign?: string | { signName?: string } }> } | undefined
+      const westernData = rawWestern?.data as Record<string, unknown> | undefined
+      const chart = (rawWestern?.chart ?? westernData?.chart) as { planets?: Array<{ name?: string; sign?: string | { signName?: string } }> } | undefined
       const planets = chart?.planets
       const getSign = (name: string): string | undefined => {
         const p = planets?.find((pl) => pl?.name === name)
