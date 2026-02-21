@@ -1,8 +1,17 @@
 import { getFirebaseDB } from './firebase'
 import { getCoordinatesWithFallback } from './geocoding'
-import { UserProfile } from './firebase'
 import { devLog, devWarn } from './devLogger'
 import { CACHE_TTL } from './cacheConstants'
+
+/** Minimal profile shape for BaZi reading (birth data only). Used by API routes that pass partial profile. */
+export interface BaziProfileInput {
+  birthDate: string
+  birthTime: string
+  birthPlace: string
+  birthLatitude?: number
+  birthLongitude?: number
+  gender?: string
+}
 
 export interface BaziData {
   birthDate: string
@@ -1213,19 +1222,19 @@ class BaziIntelligence {
   /**
    * Get BaZi reading for user (with Firebase caching)
    */
-  async getBaziReading(userId: string, userProfile: UserProfile): Promise<BaziReading> {
+  async getBaziReading(userId: string, userProfile: BaziProfileInput): Promise<BaziReading> {
     if (!userProfile.birthDate || !userProfile.birthTime || !userProfile.birthPlace) {
       throw new Error('Complete birth information required for BaZi analysis')
     }
 
     // Use provided coordinates when available (e.g. from API route); otherwise resolve via geocoding
     const hasCoords =
-      typeof (userProfile as { birthLatitude?: number }).birthLatitude === 'number' &&
-      typeof (userProfile as { birthLongitude?: number }).birthLongitude === 'number'
+      typeof userProfile.birthLatitude === 'number' &&
+      typeof userProfile.birthLongitude === 'number'
     const coords = hasCoords
       ? {
-          latitude: (userProfile as { birthLatitude: number }).birthLatitude,
-          longitude: (userProfile as { birthLongitude: number }).birthLongitude
+          latitude: userProfile.birthLatitude,
+          longitude: userProfile.birthLongitude
         }
       : await getCoordinatesWithFallback(userProfile.birthPlace)
 
