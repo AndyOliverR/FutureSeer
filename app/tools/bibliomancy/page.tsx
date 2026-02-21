@@ -221,7 +221,7 @@ function BibliomancyPageContent() {
                         <div className="h-[800px] min-h-0">
                           <BibliomancySeerChatInterface
                             report={bibliomancyReport}
-                            userProfile={userProfile as Record<string, unknown>}
+                            userProfile={userProfile as unknown as Record<string, unknown>}
                             userId={user?.uid}
                           />
                         </div>
