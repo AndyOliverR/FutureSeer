@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { usePalmistry } from "@/hooks/use-palmistry"
+import type { PalmistryAnalysis } from "@/lib/palmistryIntelligence"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { useAuth } from "@/hooks/use-auth"
 import { ToolIntroductionTab } from "@/components/ToolIntroductionTab"
@@ -207,7 +208,7 @@ export default function PalmistryPage() {
                 >
                   {/* Hero Section */}
                   <PalmistryDashboardHero 
-                    analysis={analysisData}
+                    analysis={analysisData as unknown as PalmistryAnalysis}
                     userProfile={userProfile}
                   />
 
