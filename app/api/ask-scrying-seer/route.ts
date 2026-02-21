@@ -16,8 +16,9 @@ function buildScryingContext(report: Record<string, unknown>): string {
   }
   if (report.strategicGuidance) parts.push(`Guidance: ${report.strategicGuidance}`);
   const session = report.scrying_session as Record<string, unknown> | undefined;
-  if (session?.interpretation?.summary) {
-    parts.push(`Interpretation: ${(session.interpretation as { summary?: string }).summary}`);
+  const interpretation = session?.interpretation as { summary?: string } | undefined;
+  if (interpretation?.summary) {
+    parts.push(`Interpretation: ${interpretation.summary}`);
   }
   if (Array.isArray(report.riskIndicators) && report.riskIndicators.length) {
     parts.push(`Risks: ${report.riskIndicators.join(' ')}`);
