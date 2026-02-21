@@ -1238,13 +1238,16 @@ class BaziIntelligence {
         }
       : await getCoordinatesWithFallback(userProfile.birthPlace)
 
+    const allowedGender = userProfile.gender === 'male' || userProfile.gender === 'female' || userProfile.gender === 'non-binary'
+      ? userProfile.gender
+      : undefined
     const baziData: BaziData = {
       birthDate: userProfile.birthDate,
       birthTime: userProfile.birthTime,
       birthPlace: userProfile.birthPlace,
       latitude: coords.latitude,
       longitude: coords.longitude,
-      gender: userProfile.gender
+      gender: allowedGender
     }
 
     // On the server (e.g. API route / orchestrator), skip Firebase client SDK cache to avoid "client function from server" errors
