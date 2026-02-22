@@ -5,29 +5,26 @@
 @tailwind utilities;
 
 :root {
-  /* Material 3 Motion */
-  --m3-standard: cubic-bezier(0.2, 0, 0, 1);
-  --m3-emphasized: cubic-bezier(0.2, 0, 1, 1);
+  /* Default Web Values (Original Look) */
+  --m3-surface: transparent;
+  --m3-surface-container-high: rgba(15, 23, 42, 0.8);
+  --m3-surface-container-low: rgba(15, 23, 42, 0.6);
+  --m3-outline-variant: rgba(251, 191, 36, 0.2);
+  --m3-primary: #fbbf24;
+}
 
-  /* Material 3 Colors */
-  --m3-primary: #F59E0B;
-  --m3-on-primary: #0F172A;
-  --m3-primary-container: rgba(245, 158, 11, 0.15);
-  --m3-on-primary-container: #FDE68A;
-  
+/* Material 3 Android Overrides (Only for the App) */
+.platform-android {
   --m3-surface: #0F172A;
   --m3-surface-dim: #020617;
   --m3-surface-container: #1E293B;
   --m3-surface-container-high: #334155;
+  --m3-surface-container-low: #1e293b;
   --m3-surface-container-highest: #475569;
-  
   --m3-on-surface: #FFFFFF;
   --m3-on-surface-variant: #CBD5E1;
-  --m3-outline-variant: rgba(51, 65, 85, 0.5);
-
-  --m3-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
-  --m3-elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
-  --m3-elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15);
+  --m3-outline-variant: rgba(251, 191, 36, 0.15);
+  --m3-primary: #F59E0B;
 }
 
 @layer base {
@@ -37,17 +34,22 @@
   }
   
   body {
-    @apply bg-[#0a0f1f] text-white antialiased selection:bg-amber-500/30;
+    @apply bg-[#0a0f1f] text-white antialiased;
     font-family: 'Inter', sans-serif;
   }
 
-  h1, h2, h3, h4 {
-    font-family: 'Cinzel', serif;
-    @apply tracking-wide;
+  /* Web-specific headline style */
+  .platform-web h1, .platform-web h2 {
+    @apply font-light tracking-widest;
+  }
+
+  /* Android-specific headline style (Bolder for mobile visibility) */
+  .platform-android h1, .platform-android h2 {
+    @apply font-bold tracking-tight;
   }
 }
 
-/* Starfield Background Layer */
+/* Starfield Background Layer - Visible on both */
 .starfield-ultra-sharp::before {
   content: '';
   position: fixed;
@@ -56,43 +58,19 @@
   background-image: url('/assets/bg/starfieldn-8k.png');
   background-size: cover;
   background-position: center;
-  filter: contrast(1.1) brightness(1.1);
   pointer-events: none;
 }
 
-/* Material 3 Card Enhancements */
-.m3-card {
-  @apply rounded-3xl border border-outline-variant transition-all duration-300;
-  background-color: rgba(30, 41, 59, 0.4); /* Equivalent to surface-container/40 */
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: var(--m3-elevation-1);
+/* Mobile Navigation Guard */
+.platform-web .bottom-nav-mobile {
+  display: none !important;
 }
 
-.m3-card:hover {
-  box-shadow: var(--m3-elevation-2);
-  @apply border-amber-500/30;
+.platform-android .bottom-nav-mobile {
+  display: flex !important;
 }
 
-/* Pulse Animations for Floating Icons */
-@keyframes m3-pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(245, 158, 11, 0); }
+/* Floating Icons visibility */
+.floating-icon-pulse {
+  @apply drop-shadow-[0_0_10px_rgba(251,191,36,0.3)];
 }
-
-@keyframes m3-pulse-red {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-}
-
-.pulse-gold { animation: m3-pulse-gold 2s infinite; }
-.pulse-red { animation: m3-pulse-red 2s infinite; }
-
-/* Custom Glows */
-.gold-glow {
-  text-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
-}
-
-/* Hide scrollbars for clean app feel */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
