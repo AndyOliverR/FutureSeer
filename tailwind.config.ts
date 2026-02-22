@@ -24,7 +24,6 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      /* Breakpoints: single source for responsive layout (see docs/LAYOUT.md) */
       screens: {
         sm: "640px",
         md: "768px",
@@ -33,64 +32,84 @@ const config: Config = {
         "2xl": "1536px",
       },
       colors: {
-        gold: "#fbbf24",
+        // Material 3 Color Mapping
+        primary: {
+          DEFAULT: "var(--m3-primary)",
+          foreground: "var(--m3-on-primary)",
+          container: "var(--m3-primary-container)",
+          "on-container": "var(--m3-on-primary-container)",
+        },
+        secondary: {
+          DEFAULT: "var(--m3-secondary)",
+          foreground: "var(--m3-on-secondary)",
+          container: "var(--m3-secondary-container)",
+          "on-container": "var(--m3-on-secondary-container)",
+        },
+        tertiary: {
+          DEFAULT: "var(--m3-tertiary)",
+          foreground: "var(--m3-on-tertiary)",
+          container: "var(--m3-tertiary-container)",
+          "on-container": "var(--m3-on-tertiary-container)",
+        },
+        surface: {
+          DEFAULT: "var(--m3-surface)",
+          bright: "var(--m3-surface-bright)",
+          dim: "var(--m3-surface-dim)",
+          container: {
+            lowest: "var(--m3-surface-container-lowest)",
+            low: "var(--m3-surface-container-low)",
+            DEFAULT: "var(--m3-surface-container)",
+            high: "var(--m3-surface-container-high)",
+            highest: "var(--m3-surface-container-highest)",
+          },
+          on: {
+            DEFAULT: "var(--m3-on-surface)",
+            variant: "var(--m3-on-surface-variant)",
+          }
+        },
+        outline: {
+          DEFAULT: "var(--m3-outline)",
+          variant: "var(--m3-outline-variant)",
+        },
+        // Maintain existing mappings for Shadcn compatibility
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "var(--m3-surface-container)",
+          foreground: "var(--m3-on-surface)",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "var(--m3-surface-container-high)",
+          foreground: "var(--m3-on-surface)",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "var(--m3-surface-container-low)",
+          foreground: "var(--m3-on-surface-variant)",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "var(--m3-primary-container)",
+          foreground: "var(--m3-on-primary-container)",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "var(--m3-secondary)",
+          foreground: "var(--m3-on-secondary)",
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        border: "var(--m3-outline-variant)",
+        input: "var(--m3-outline-variant)",
+        ring: "var(--m3-primary)",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "28px", // Material 3 Extra Large
+        "2xl": "32px",
       },
       fontFamily: {
-        sans: ["ui-sans-serif", "system-ui", "Segoe UI", "Roboto", "sans-serif"],
-        poppins: ["Poppins", "sans-serif"],
-        serif: ["var(--font-cormorant)", "Times New Roman", "serif"],
+        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
         heading: ["Cinzel", "serif"],
         'sacred-heading': ["Cinzel", "serif"],
         'sacred-body': ["Cormorant Garamond", "serif"],
-      },
-      spacing: {
-        "18": "4.5rem",
-        "88": "22rem",
-      },
-      minHeight: {
-        screen: "100vh",
-        svh: "100svh",
-      },
-      height: {
-        svh: "100svh",
       },
     },
   },

@@ -1,7 +1,6 @@
 "use client";
 import { Brain, Sparkles, Zap } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useIntersectionObserverMultiple } from "@/hooks/use-intersection-observer"
 import { motion } from "framer-motion"
 
 const features = [
@@ -23,41 +22,24 @@ const features = [
 ]
 
 export function FeatureBlocks() {
-  const [isTouchDevice, setIsTouchDevice] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
-  
-  // Use intersection observer with higher threshold for better performance
-  const [visibleCards] = useIntersectionObserverMultiple<HTMLDivElement>(
-    '[data-feature-card]',
-    { threshold: 0.1, rootMargin: '50px' }
-  )
-
-  // Ensure cards are visible on first render
-  const [initialVisible] = useState<number[]>([0, 1, 2])
-  // Merge initial visible with observer results
-  const effectiveVisibleCards = [...new Set([...initialVisible, ...visibleCards])]
 
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window || navigator.maxTouchPoints > 0)
-    // Delay animation initialization slightly for better perceived performance
-    const timer = setTimeout(() => setIsVisible(true), 100)
-    return () => clearTimeout(timer)
+    setIsVisible(true)
   }, [])
 
   return (
     <section className="py-8 sm:py-12 md:py-16 bg-transparent" aria-labelledby="features-heading">
       <h2 id="features-heading" className="sr-only">Features</h2>
-      <div className="max-w-6xl mx-auto bg-transparent">
+      <div className="max-w-6xl mx-auto px-4">
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8"
           initial="hidden"
-          animate={isVisible && effectiveVisibleCards.length > 0 ? "visible" : "hidden"}
+          animate={isVisible ? "visible" : "hidden"}
           variants={{
             visible: {
               transition: {
                 staggerChildren: 0.1,
-                delayChildren: 0.05,
-                ease: [0.2, 0, 0, 1], // Material 3 standard easing
               },
             },
           }}
@@ -65,67 +47,23 @@ export function FeatureBlocks() {
           {features.map((feature, index) => (
             <motion.div
               key={index}
-              data-feature-card
-              data-index={index}
               variants={{
-                hidden: {
-                  opacity: 0,
-                  y: 40,
-                  scale: 0.95,
-                },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  scale: 1,
-                  transition: {
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 30,
-                    duration: 0.4,
-                    ease: [0.2, 0, 0, 1], // Material 3 standard easing
-                  },
-                },
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 },
               }}
-              className={`group relative p-6 sm:p-8 rounded-2xl bg-[var(--m3-surface-container-low)]/95 border border-[var(--m3-outline-variant)] backdrop-blur-xl m3-transition-standard overflow-hidden m3-elevation-2 hover:m3-elevation-3 active:m3-elevation-1 m3-elevation-transition ${
-                isTouchDevice 
-                  ? 'active:scale-[0.98]' 
-                  : 'hover:border-[var(--m3-primary)]/50 hover:scale-[1.02] hover:-translate-y-1'
-              }`}
-              style={{
-                willChange: effectiveVisibleCards.includes(index) ? 'transform, opacity' : 'auto'
-              }}
+              className="group relative p-6 sm:p-8 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-md transition-all duration-500 hover:bg-white/10 hover:border-amber-500/40 hover:shadow-[0_0_40px_rgba(245,158,11,0.2)] hover:-translate-y-1 cursor-default"
             >
-              {/* Graceful glow effects - disabled on mobile for performance */}
-              {!isTouchDevice && (
-                <>
-                  {/* Outer glow ring */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-600/30 via-amber-500/20 to-amber-600/30 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-2xl -z-10" />
-                  {/* Inner glow border */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-500/20 to-yellow-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 border-2 border-transparent group-hover:border-amber-500/40" />
-                  {/* Subtle shine effect */}
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                </>
-              )}
+              {/* Internal glow effect on hover */}
+              <div className="absolute inset-0 rounded-3xl bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-              <div className="relative z-10 text-center space-y-3 sm:space-y-4">
-                {/* Icon with enhanced glow - optimized size for mobile */}
-                <div className={`inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[var(--m3-primary-container)] border border-[var(--m3-primary)]/30 transition-all duration-300 ${
-                  isTouchDevice 
-                    ? '' 
-                    : 'group-hover:border-[var(--m3-primary)]/50 group-hover:scale-110'
-                }`}>
-                  <feature.icon className={`w-7 h-7 sm:w-8 sm:h-8 text-[var(--m3-primary)] transition-all duration-300 group-hover:text-[var(--m3-primary)] ${
-                    !isTouchDevice ? 'group-hover:scale-110' : ''
-                  }`} />
+              <div className="relative z-10 text-center space-y-4">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 group-hover:border-amber-500/50 group-hover:scale-110 transition-all duration-500">
+                  <feature.icon className="w-8 h-8 text-amber-500 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.6)] transition-all" />
                 </div>
-
-                {/* Title - Material 3 Title Large */}
-                <h3 className="m3-title-large text-[var(--m3-on-surface)] transition-colors duration-300 font-normal">
+                <h3 className="text-xl font-heading text-white group-hover:text-amber-400 transition-colors duration-300">
                   {feature.title}
                 </h3>
-
-                {/* Description - Material 3 Body Medium */}
-                <p className="m3-body-medium text-[var(--m3-on-surface-variant)] leading-relaxed font-light">
+                <p className="text-sm text-slate-300 leading-relaxed font-light group-hover:text-white transition-colors duration-300">
                   {feature.description}
                 </p>
               </div>
@@ -133,35 +71,26 @@ export function FeatureBlocks() {
           ))}
         </motion.div>
 
-        {/* Why FutureSeer - marketing value proposition */}
+        {/* Why FutureSeer */}
         <motion.div
-          className="mt-12 sm:mt-16 md:mt-20 max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 24 }}
-          animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-          transition={{ duration: 0.5, delay: 0.3, ease: [0.2, 0, 0, 1] }}
+          className="mt-16 max-w-3xl mx-auto text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isVisible ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 0.4 }}
         >
-          <h3 className="m3-headline-small sm:m3-headline-medium text-amber-400 text-center mb-6 sm:mb-8">
+          <h3 className="text-2xl font-heading text-amber-400 mb-8 uppercase tracking-widest">
             Why FutureSeer
           </h3>
-          <ul className="space-y-4 sm:space-y-5 list-none">
+          <ul className="space-y-4 text-left">
             {[
-              "You're facing confusion from fragmented divination tools, conflicting interpretations, and scattered remedies across multiple sources.",
-              "FutureSeer unifies 40+ occult systems into one structured platform that generates tool-specific reports and a consolidated, deterministic answer.",
-              "What differentiates FutureSeer is its cross-disciplinary synthesis engine that correlates multiple divination outputs into a single coherent insight.",
-              "If you seek clarity, structured analysis, and reduced contradiction in occult guidance, this platform is built for you.",
-              "The promise is continuous refinement, methodological consistency, and a steadily improving system driven by user feedback and precision.",
+              "You're facing confusion from fragmented divination tools and conflicting interpretations.",
+              "FutureSeer unifies 40+ occult systems into one structured platform.",
+              "Our synthesis engine correlates multiple outputs into a single coherent insight.",
+              "Continuous refinement ensures methodological consistency and increasing precision.",
             ].map((text, i) => (
-              <li
-                key={i}
-                className="flex gap-3 sm:gap-4 items-start text-left"
-              >
-                <span
-                  className="shrink-0 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-[var(--m3-primary)] mt-2 sm:mt-2.5"
-                  aria-hidden
-                />
-                <span className="m3-body-large text-[var(--m3-on-surface-variant)] leading-relaxed">
-                  {text}
-                </span>
+              <li key={i} className="flex gap-3 items-start group/item">
+                <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 group-hover/item:scale-125 transition-transform" />
+                <span className="text-slate-300 text-sm leading-relaxed group-hover/item:text-white transition-colors">{text}</span>
               </li>
             ))}
           </ul>
@@ -169,4 +98,4 @@ export function FeatureBlocks() {
       </div>
     </section>
   )
-} 
+}

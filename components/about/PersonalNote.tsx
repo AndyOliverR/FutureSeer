@@ -9,90 +9,82 @@ import Link from "next/link";
 
 export function PersonalNote() {
   const [imageError, setImageError] = useState(false);
+
   return (
     <motion.section 
-      className="px-3 sm:px-4 md:px-6 pt-20 pb-20 m3-gpu-accelerated max-w-4xl mx-auto"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ ease: [0, 0, 0.2, 1], duration: 0.5 }}
+      className="px-4 pt-24 pb-12 max-w-4xl mx-auto"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ease: [0.2, 0, 0, 1], duration: 0.6 }}
     >
-      <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300">
-        <CardContent className="p-4 sm:p-6 md:p-8 lg:p-12">
-          {/* Profile Picture and Header */}
-          <motion.div 
-            className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-amber-400/50 shadow-lg flex-shrink-0">
+      <div className="bg-surface-container-high rounded-[32px] border border-outline-variant overflow-hidden shadow-xl">
+        <div className="p-6 sm:p-10">
+          {/* Founder Header */}
+          <div className="flex flex-col items-center text-center md:flex-row md:text-left gap-6 mb-10">
+            <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-amber-500/30 shadow-2xl flex-shrink-0">
               {imageError ? (
-                <div className="w-full h-full bg-gradient-to-br from-[var(--m3-primary-container)] to-[var(--m3-tertiary-container)] flex items-center justify-center">
-                  <span className="text-[var(--m3-on-primary-container)] m3-display-small">A</span>
+                <div className="w-full h-full bg-primary-container flex items-center justify-center">
+                  <span className="text-on-primary-container text-4xl font-heading">A</span>
                 </div>
               ) : (
                 <Image
                   src="/assets/images/andy-rozario.jpg"
-                  alt="AnDY"
+                  alt="Founder"
                   fill
-                  sizes="(max-width: 768px) 128px, 160px"
                   className="object-cover"
-                  priority
                   onError={() => setImageError(true)}
                 />
               )}
             </div>
-            <div className="flex-1 text-center md:text-left">
-              <h1 className="text-2xl font-bold text-amber-400 mb-2">
+            <div className="space-y-1">
+              <h1 className="text-3xl font-heading font-bold text-amber-400 tracking-tight">
                 A Note From Me
               </h1>
-              <p className="text-xl font-semibold text-white mb-1">
-                AnDY
-              </p>
-              <p className="text-white/60 text-sm font-light">
+              <p className="text-xl font-bold text-white tracking-wide">AnDY</p>
+              <p className="text-surface-on-variant text-sm font-medium uppercase tracking-widest opacity-70">
                 Founder, FutureSeer
               </p>
             </div>
-          </motion.div>
+          </div>
 
-          {/* Personal Note Content */}
-          <motion.div 
-            className="max-w-none space-y-6 text-white/80 leading-relaxed"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <p className="text-sm text-white/80">
-              I've always been fascinated by the occult—astrology, numerology, tarot, vastu, and the mysteries that have guided humanity for millennia. What struck me is how the wealthy and powerful have long used these practices in private, while most of us have had little access. As <Link href="https://www.instagram.com/reel/DTGwc16AjHZ/?igsh=MTE0cml2dWFyeWlpdQ==" target="_blank" rel="noopener noreferrer" className="text-amber-400 hover:underline transition-colors">others have noted</Link>, that knowledge has stayed locked away. I wanted to change that: combine AI precision with ancient wisdom and make it available to everyone. That's how FutureSeer was born.
+          {/* Content Body */}
+          <div className="space-y-8">
+            <p className="text-base text-surface-on leading-relaxed font-normal">
+              I've always been fascinated by the occult—astrology, numerology, tarot, vastu, and the mysteries that have guided humanity for millennia. What struck me is how the wealthy and powerful have long used these practices in private, while most of us have had little access.
             </p>
 
-            <div className="my-6 p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-xl transition-colors duration-300">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/20 border border-amber-500/30 mb-3">
-                <Sparkles className="w-6 h-6 text-amber-400" />
+            {/* M3 Feature Card inside About */}
+            <div className="p-6 bg-surface-container-lowest rounded-3xl border border-amber-500/20 shadow-inner">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                </div>
+                <h2 className="text-lg font-bold text-amber-400 uppercase tracking-wider">The Mission</h2>
               </div>
-              <h2 className="text-lg font-bold text-amber-400 mb-3">What Makes FutureSeer Different</h2>
-              <ul className="space-y-2 text-sm text-white/80">
-                <li className="flex items-start gap-2">
-                  <Brain className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <span><strong className="text-amber-400">AI + tradition:</strong> Unbiased, precise interpretations from validated methods.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Globe className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <span><strong className="text-amber-400">One platform:</strong> 60+ tools—Vedic & Western astrology, numerology, tarot, I Ching, vastu, and more.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Heart className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <span><strong className="text-amber-400">Inclusive:</strong> Clear plans from ₹99/month; first month free. No gatekeeping.</span>
-                </li>
+
+              <ul className="space-y-4">
+                {[
+                  { icon: Brain, title: "AI + Tradition", desc: "Unbiased, precise interpretations." },
+                  { icon: Globe, title: "One Platform", desc: "60+ ancient and modern tools." },
+                  { icon: Heart, title: "Inclusive Access", desc: "No gatekeeping. Wisdom for all." }
+                ].map((item, i) => (
+                  <li key={i} className="flex gap-4 items-start">
+                    <item.icon className="w-5 h-5 text-amber-500 mt-1 shrink-0" />
+                    <div>
+                      <span className="block font-bold text-white text-sm">{item.title}</span>
+                      <span className="text-sm text-surface-on-variant font-light leading-snug">{item.desc}</span>
+                    </div>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            <p className="text-sm text-white/80">
-              This is just the beginning. FutureSeer grows with every user—your feedback shapes what we build, and we implement suggestions quickly. The wisdom that has guided the world's most successful people should be available to anyone curious enough to explore. Thank you for being part of this mission.
+            <p className="text-base text-surface-on leading-relaxed font-normal">
+              FutureSeer grows with every user—your feedback shapes what we build. Wisdom that has guided the world's most successful people should be available to anyone curious enough to explore. Thank you for being part of this mission.
             </p>
-          </motion.div>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </motion.section>
   );
 }

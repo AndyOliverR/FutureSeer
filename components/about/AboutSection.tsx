@@ -12,56 +12,20 @@ interface AboutSectionProps {
 export function AboutSection({ title, subtitle, children, className = "" }: AboutSectionProps) {
   return (
     <motion.section 
-      className={`mb-20 px-3 sm:px-4 md:px-6 ${className} m3-gpu-accelerated`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ ease: [0, 0, 0.2, 1], duration: 0.4 }}
+      className={`mb-16 px-4 ${className}`}
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ ease: [0.2, 0, 0, 1], duration: 0.6 }}
     >
-      <motion.div 
-        className="text-center mb-12"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.1,
-            },
-          },
-        }}
-      >
-        <motion.h2 
-          className="m3-headline-large md:m3-headline-large font-serif text-transparent bg-clip-text bg-gradient-to-b from-[var(--m3-on-primary-container)] via-[var(--m3-tertiary)] to-[var(--m3-primary)] mb-4 font-semibold"
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: { 
-              opacity: 1, 
-              y: 0,
-              transition: {
-                ease: [0, 0, 0.2, 1],
-                duration: 0.4,
-              },
-            },
-          }}
-        >
+      <div className="text-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-heading font-bold text-amber-400 mb-2 uppercase tracking-tight">
           {title}
-        </motion.h2>
-        <motion.p 
-          className="m3-body-large md:m3-headline-small text-[var(--m3-on-surface-variant)] max-w-2xl mx-auto font-light m3-transition-decelerated"
-          variants={{
-            hidden: { opacity: 0, y: 20 },
-            visible: { 
-              opacity: 1, 
-              y: 0,
-              transition: {
-                ease: [0, 0, 0.2, 1],
-                duration: 0.4,
-              },
-            },
-          }}
-        >
+        </h2>
+        <p className="text-sm sm:text-base text-surface-on-variant max-w-2xl mx-auto font-normal leading-relaxed">
           {subtitle}
-        </motion.p>
-      </motion.div>
+        </p>
+      </div>
       {children}
     </motion.section>
   );

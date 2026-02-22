@@ -4,6 +4,7 @@ import { Coffee, Gift, Sparkles, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TipJarCard } from '@/components/TipJarCard';
 import { AboutSection } from './AboutSection';
+import { motion } from 'framer-motion';
 
 interface AboutPricingProps {
   countryCode?: string;
@@ -51,62 +52,62 @@ const pricingOptions = [
 export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
   return (
     <AboutSection 
-      title="Pricing & Support Options" 
+      title="Pricing & Support"
       subtitle="First month free for everyone. Choose your plan."
     >
-      {/* Signup Flow Explanation */}
-      <div className="mb-12 p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl text-center max-w-4xl mx-auto transition-colors duration-300">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/30 mb-4">
-          <Sparkles className="w-8 h-8 text-amber-400" />
-        </div>
-        <h3 className="text-2xl font-bold text-amber-400 mb-4">First Month FREE</h3>
-        <p className="text-white/60 text-sm mb-4 font-light">All Features Included</p>
-        <div className="text-white/80 font-light">
-          <p className="mb-2">↓</p>
-          <p className="text-sm text-amber-400">Choose Your Plan:</p>
-          <div className="flex justify-center gap-4 mt-4 flex-wrap">
-            <span className="px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-lg text-sm text-amber-400">Coffee (₹99/month)</span>
-            <span className="px-4 py-2 bg-purple-500/20 border border-purple-500/30 rounded-lg text-sm text-amber-400">Treat (₹199/quarter)</span>
-            <span className="px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg text-sm text-amber-400">Hamper (₹999/year)</span>
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Promo Card */}
+        <motion.div
+          className="p-6 sm:p-8 bg-primary-container rounded-[32px] border border-primary/20 text-center"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+        >
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-4">
+            <Sparkles className="w-8 h-8 text-on-primary-container" />
           </div>
-        </div>
-      </div>
+          <h3 className="text-2xl font-heading font-bold text-on-primary-container mb-2">First Month FREE</h3>
+          <p className="text-on-primary-container/80 text-sm font-medium uppercase tracking-widest">Experience the Full Potential</p>
+        </motion.div>
 
-      {/* Recurring Contributions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-7xl mx-auto">
-        {pricingOptions.map((option) => {
-          const Icon = option.icon;
-          return (
-            <Card 
-              key={option.id}
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300"
-            >
-              <CardContent className="p-6 text-center">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-500/20 border border-amber-500/30 mb-4">
-                  <Icon className="w-7 h-7 text-amber-400" />
+        {/* Pricing Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {pricingOptions.map((option, index) => {
+            const Icon = option.icon;
+            return (
+              <motion.div
+                key={option.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="p-6 rounded-3xl bg-surface-container border border-outline-variant hover:border-amber-500/30 transition-all flex flex-col items-center text-center"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
+                  <Icon className="w-7 h-7 text-amber-500" />
                 </div>
-                <h3 className="text-2xl font-bold text-amber-400 mb-2">{option.name}</h3>
-                <p className="text-amber-400 text-xl font-semibold mb-2">{option.price}</p>
-                <p className="text-white/60 text-sm mb-4 font-light">{option.description}</p>
-                <ul className="space-y-2 text-left text-sm text-white/80">
+                <h3 className="text-xl font-bold text-white mb-1">{option.name}</h3>
+                <p className="text-amber-400 text-lg font-bold mb-1">{option.price}</p>
+                <p className="text-surface-on-variant text-xs mb-6 font-medium uppercase tracking-wider">{option.description}</p>
+                <ul className="space-y-3 text-left w-full">
                   {option.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 font-light">
-                      <Check className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <li key={i} className="flex items-center gap-3 text-sm text-surface-on font-normal">
+                      <Check className="w-4 h-4 text-green-400 shrink-0" />
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+              </motion.div>
+            );
+          })}
+        </div>
 
-      {/* Tip Jar Section */}
-      <div className="mb-12 max-w-7xl mx-auto">
-        <h3 className="text-2xl font-serif text-amber-400 text-center mb-6 font-light">Show Your Appreciation</h3>
-        <div className="max-w-md mx-auto">
-          <TipJarCard countryCode={countryCode} />
+        {/* Tip Jar Section */}
+        <div className="pt-8">
+          <h3 className="text-xl font-heading font-bold text-amber-400 text-center mb-6 uppercase tracking-tight">Show Your Appreciation</h3>
+          <div className="max-w-md mx-auto">
+            <TipJarCard countryCode={countryCode} />
+          </div>
         </div>
       </div>
     </AboutSection>
