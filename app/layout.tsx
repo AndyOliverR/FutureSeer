@@ -20,10 +20,8 @@ import {
 } from "@/components/DeferredLayoutComponents"
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: "FutureSeer - AI-Powered Mystical Insights",
   description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
-  keywords: "astrology, numerology, tarot, mystical, AI, predictions, horoscope, spiritual",
   manifest: "/manifest.json",
 }
 
@@ -42,25 +40,39 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark">
       <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans">
+        {/* Platform Detection Script */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                if (isAndroid) {
+                  document.documentElement.classList.add('platform-android');
+                } else {
+                  document.documentElement.classList.add('platform-web');
+                }
+              })();
+            `,
+          }}
+        />
         <DeferredViewportHeightSync />
         <SchemaMarkup />
         <DeferredFirestoreErrorSuppressor />
-        <main role="main" id="main-content" className="pb-20 md:pb-0">
+        <main role="main" id="main-content">
           <ClientProviders>
             <div className="sticky top-0 z-[200] flex-shrink-0 w-full min-h-[52px] bg-surface">
               <Header />
             </div>
             <FeedbackProvider>
-              {/* Load critical floating UI immediately for mobile visibility */}
               <FloatingTipJar />
               <MysticalFeedback />
-
               <ErrorBoundary>
                 <I18nProvider>
                   <DeferredAnalyticsInitializer />
                   {children}
+                  {/* Bottom nav only renders via CSS media query/class on mobile/android */}
                   <BottomNavBar />
                   <Toaster />
                 </I18nProvider>
