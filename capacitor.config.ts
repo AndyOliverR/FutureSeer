@@ -5,9 +5,10 @@ const config: CapacitorConfig = {
   appName: 'FutureSeer',
   webDir: 'public',
   server: {
-    // We point to the production domain for authentication stability
-    url: 'https://futureseer.app',
-    androidScheme: 'https',
+    // Reverted to local host for development testing
+    url: 'http://10.0.2.2:3000',
+    cleartext: true,
+    androidScheme: 'http',
     allowNavigation: [
       '10.0.2.2:3000',
       'localhost:3000',
