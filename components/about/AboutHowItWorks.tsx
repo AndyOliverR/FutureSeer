@@ -33,42 +33,27 @@ export function AboutHowItWorks() {
       title="How It Works" 
       subtitle="Your journey begins in simple steps"
     >
-      <motion.div 
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto"
-        initial="hidden"
-        animate="visible"
-        variants={{
-          visible: {
-            transition: {
-              staggerChildren: 0.1,
-              delayChildren: 0.1,
-            },
-          },
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
         {steps.map((step, index) => {
           const Icon = step.icon;
           return (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ 
-                delay: index * 0.1,
-                ease: [0, 0, 0.2, 1],
-                duration: 0.35
-              }}
-              className="relative flex flex-col items-center text-center p-6 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-colors duration-300"
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1, ease: [0.2, 0, 0, 1] }}
+              className="p-6 rounded-3xl bg-surface-container border border-outline-variant hover:border-amber-500/30 transition-all flex flex-col items-center text-center"
             >
-              <div className="w-14 h-14 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-4">
-                <Icon className="w-7 h-7 text-amber-400" />
+              <div className="w-14 h-14 rounded-2xl bg-primary-container flex items-center justify-center mb-4">
+                <Icon className="w-7 h-7 text-on-primary-container" />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{step.title}</h3>
-              <p className="text-sm text-white/80 font-light">{step.description}</p>
+              <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
+              <p className="text-sm text-surface-on-variant leading-relaxed">{step.description}</p>
             </motion.div>
           );
         })}
-      </motion.div>
+      </div>
     </AboutSection>
   );
 }

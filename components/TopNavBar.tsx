@@ -26,10 +26,6 @@ const navLinks = [
   { name: "Settings", href: "/settings", icon: "⚙️" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
   { name: "About", href: "/about", icon: "ℹ️" },
-  { name: "Admin Dashboard", href: "/admin/dashboard", icon: "👑" },
-  { name: "Admin", href: "/admin/community-management", icon: "🛡️" },
-  { name: "Support Desk", href: "/admin/support", icon: "📋" },
-  { name: "Feedback", href: "/admin/feedback", icon: "💬" },
 ];
 
 export function TopNavBar() {
@@ -38,359 +34,96 @@ export function TopNavBar() {
   const { open: openFeedback } = useFeedback();
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [shareAnchorRect, setShareAnchorRect] = useState<DOMRect | null>(null);
-  const shareButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { registerModal } = useModalOpen();
 
   useEffect(() => {
-    if (showShareModal) {
-      return registerModal();
-    }
+    if (showShareModal) return registerModal();
   }, [showShareModal, registerModal]);
 
   const visibleNavLinks = navLinks.filter(
     (link) =>
-      (link.name !== "Admin Dashboard" && link.name !== "Admin" && link.name !== "Support Desk" && link.name !== "Feedback") ||
+      (link.name !== "Admin Dashboard" && link.name !== "Admin") ||
       isAdmin ||
       isSuperadmin
   );
 
-  const topNavLinks = visibleNavLinks.slice(0, 7);
-  const restNavLinks = visibleNavLinks.slice(7);
-
-  // Removed click outside handler - menu only closes on hamburger button click
-
-  // Keyboard support
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShowMenu(false);
-      }
-    };
-
-    if (showMenu) {
-      document.addEventListener("keydown", handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowMenu(false); };
+    if (showMenu) document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [showMenu]);
-
-  const toggleMenu = () => {
-    setShowMenu(!showMenu);
-  };
-
-  const closeMenu = () => {
-    setShowMenu(false);
-  };
 
   return (
     <>
     <TooltipProvider>
-      <nav className="w-full bg-[var(--m3-surface)] backdrop-blur-xl border-b border-[var(--m3-outline-variant)] py-2 px-4 pr-[max(1rem,calc(1rem+17px))] flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border" role="navigation" aria-label="Main navigation">
+      <nav className="w-full bg-[var(--m3-surface)]/95 backdrop-blur-xl border-b border-[var(--m3-outline-variant)] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border select-none" role="navigation">
         <Link 
           href="/" 
-          className="futureseer-logo text-2xl font-semibold tracking-wide hover:scale-105 transition-transform text-slate-800 dark:text-amber-400 relative z-[101] flex items-center h-10 flex-shrink-0 focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
+          className="futureseer-logo gold-glow text-xl font-bold tracking-tighter hover:scale-105 transition-transform text-amber-400 flex items-center h-14"
           aria-label="FutureSeer - Home"
         >
           FutureSeer
         </Link>
-        <div className="flex-1 min-w-2" aria-hidden="true" />
-        <div className="flex items-center gap-2 relative z-[101] flex-shrink-0">
-          {/* About Button with Tooltip */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                href="/about"
-                className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-slate-700 hover:text-slate-900 dark:text-amber-400 dark:hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
-                aria-label="Learn about FutureSeer"
-              >
-                <Info className="w-5 h-5 text-current" />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
-              <p>About FutureSeer</p>
-            </TooltipContent>
-          </Tooltip>
 
-          {/* Share Button with Tooltip */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                ref={shareButtonRef}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const rect = shareButtonRef.current?.getBoundingClientRect();
-                  setShareAnchorRect(rect ?? null);
-                  setShowShareModal(true);
-                }}
-                className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-slate-700 hover:text-slate-900 dark:text-amber-400 dark:hover:text-[var(--m3-primary)]/80 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
-                aria-label="Share FutureSeer with others"
-              >
-                <Share2 className="w-5 h-5 text-current" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
-              <p>Share FutureSeer</p>
-            </TooltipContent>
-          </Tooltip>
+        <div className="flex items-center gap-1">
+          {/* About Button - Increased to 48px for Android */}
+          <Link
+            href="/about"
+            className="flex items-center justify-center w-12 h-12 text-amber-400 active:scale-90 transition-transform"
+            aria-label="About"
+          >
+            <Info className="w-6 h-6" />
+          </Link>
+
+          {/* Share Button - Increased to 48px for Android */}
+          <button
+            type="button"
+            onClick={() => setShowShareModal(true)}
+            className="flex items-center justify-center w-12 h-12 text-amber-400 active:scale-90 transition-transform"
+            aria-label="Share"
+          >
+            <Share2 className="w-6 h-6" />
+          </button>
           
-          {/* Hamburger menu with Tooltip */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.button
-                className="hamburger-button flex flex-col justify-center items-center w-10 h-10 relative z-[102] focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded m3-ripple m3-button-bounce m3-transition-standard hover:m3-elevation-1 will-change-transform"
-                onClick={toggleMenu}
-                aria-label={showMenu ? "Close navigation menu" : "Open navigation menu"}
-                aria-expanded={showMenu}
-                aria-controls="main-navigation-menu"
-                style={{ opacity: 1, visibility: 'visible' }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-            <motion.span 
-              className={`block w-6 h-0.5 bg-slate-600 dark:bg-[var(--m3-primary)] m3-transition-standard ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1'}`}
-              style={{ height: '2px', width: '24px', opacity: 1, visibility: 'visible' }}
-              aria-hidden="true"
-              animate={showMenu ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-              transition={{ ease: [0.2, 0, 0, 1], duration: 0.3 }}
-            ></motion.span>
-            <motion.span 
-              className={`block w-6 h-0.5 bg-slate-600 dark:bg-[var(--m3-primary)] m3-transition-standard ${showMenu ? 'opacity-0' : 'mb-1'}`}
-              style={{ height: '2px', width: '24px' }}
-              aria-hidden="true"
-              animate={showMenu ? { opacity: 0 } : { opacity: 1 }}
-              transition={{ ease: [0.2, 0, 0, 1], duration: 0.3 }}
-            ></motion.span>
-            <motion.span 
-              className={`block w-6 h-0.5 bg-slate-600 dark:bg-[var(--m3-primary)] m3-transition-standard ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}
-              style={{ height: '2px', width: '24px', opacity: 1, visibility: 'visible' }}
-              aria-hidden="true"
-              animate={showMenu ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-              transition={{ ease: [0.2, 0, 0, 1], duration: 0.3 }}
-            ></motion.span>
-              </motion.button>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[var(--m3-surface-container-high)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)]">
-              <p>{showMenu ? "Close menu" : "Open menu"}</p>
-            </TooltipContent>
-          </Tooltip>
+          {/* Hamburger menu - Increased to 48px for Android */}
+          <motion.button
+            className="flex flex-col justify-center items-center w-12 h-12 relative z-[102]"
+            onClick={() => setShowMenu(!showMenu)}
+            aria-label="Menu"
+          >
+            <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1.5'}`}></span>
+            <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? 'opacity-0' : 'mb-1.5'}`}></span>
+            <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
+          </motion.button>
         
-        {/* Navigation Menu - Floating in space */}
         <AnimatePresence>
           {showMenu && (
             <motion.div
-              key={`menu-${showMenu}`}
               ref={menuRef}
-              id="main-navigation-menu"
-              role="menu"
-              className="hamburger-menu nav-menu-scroll absolute right-0 top-12 flex flex-col items-end z-[9999] bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] rounded-lg p-2 m3-elevation-3 hover:m3-elevation-4 m3-elevation-transition m3-gpu-accelerated min-w-[240px] max-h-[min(90vh,36rem)] overflow-y-auto overflow-x-hidden"
+              className="absolute right-4 top-14 flex flex-col items-end z-[9999] bg-surface-container-high border border-outline-variant rounded-2xl p-2 min-w-[220px] shadow-2xl"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 25, ease: [0, 0, 0.2, 1] }}
-              style={{ 
-                gap: '0.75rem', 
-                minWidth: '200px',
-                border: 'none',
-                outline: 'none',
-                boxShadow: 'none',
-                background: 'transparent',
-                padding: '0.5rem',
-                paddingRight: '0'
-              }}
             >
-              {topNavLinks.map((link, idx) => (
-                <motion.div
+              {visibleNavLinks.map((link) => (
+                <Link
                   key={link.href}
-                  initial={{ opacity: 0, y: -20, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.8 }}
-                  transition={{ 
-                    delay: (idx + 1) * 0.05,
-                    ease: [0, 0, 0.2, 1],
-                    duration: 0.3
-                  }}
+                  href={link.href}
+                  className="flex items-center gap-4 w-full text-left px-4 py-3 rounded-xl text-white active:bg-amber-500/20 transition-colors"
+                  onClick={() => setShowMenu(false)}
                 >
-                  {(link as { isModal?: boolean }).isModal && link.name === "Tip Jar" ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={(e) => {
-                        openTipJar((e.currentTarget as HTMLElement).getBoundingClientRect());
-                        closeMenu();
-                      }}
-                      className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
-                      tabIndex={0}
-                      aria-label="Open Tip Jar"
-                    >
-                      <span aria-hidden="true" className="text-xl">{link.icon}</span>
-                      <span className="m3-label-large">{link.name}</span>
-                    </button>
-                  ) : (
-                    <Link
-                      href={link.href}
-                      role="menuitem"
-                      className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
-                      onClick={closeMenu}
-                      tabIndex={0}
-                      aria-label={`Navigate to ${link.name}`}
-                    >
-                      <span aria-hidden="true" className="text-xl">{link.icon}</span>
-                      <span className="m3-label-large">{link.name}</span>
-                    </Link>
-                  )}
-                </motion.div>
-              ))}
-              {/* Share Feedback - opens feedback panel and closes menu */}
-              <motion.div
-                initial={{ opacity: 0, y: -20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ delay: 0.35, ease: [0, 0, 0.2, 1], duration: 0.3 }}
-              >
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openFeedback();
-                    // Delay menu close so feedback panel can mount and stay visible
-                    setTimeout(() => closeMenu(), 100);
-                  }}
-                  className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
-                  aria-label="Share Feedback"
-                >
-                  <span aria-hidden="true" className="text-xl">💬</span>
-                  <span className="m3-label-large">Share Feedback</span>
-                </button>
-              </motion.div>
-              {restNavLinks.map((link, idx) => (
-                <motion.div
-                  key={link.href}
-                  initial={{ opacity: 0, y: -20, scale: 0.8 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -20, scale: 0.8 }}
-                  transition={{
-                    delay: (idx + 8) * 0.05,
-                    ease: [0, 0, 0.2, 1],
-                    duration: 0.3
-                  }}
-                >
-                  {(link as { isModal?: boolean }).isModal && link.name === "Tip Jar" ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={(e) => {
-                        openTipJar((e.currentTarget as HTMLElement).getBoundingClientRect());
-                        closeMenu();
-                      }}
-                      className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
-                      tabIndex={0}
-                      aria-label="Open Tip Jar"
-                    >
-                      <span aria-hidden="true" className="text-xl">{link.icon}</span>
-                      <span className="m3-label-large">{link.name}</span>
-                    </button>
-                  ) : (
-                    <Link
-                      href={link.href}
-                      role="menuitem"
-                      className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-lg text-[var(--m3-on-surface)] hover:text-[var(--m3-primary)] hover:bg-[var(--m3-primary-container)] m3-transition-standard focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 will-change-transform m3-body-medium active:bg-[var(--m3-primary-container)]/80"
-                      onClick={closeMenu}
-                      tabIndex={0}
-                      aria-label={`Navigate to ${link.name}`}
-                    >
-                      <span aria-hidden="true" className="text-xl">{link.icon}</span>
-                      <span className="m3-label-large">{link.name}</span>
-                    </Link>
-                  )}
-                </motion.div>
+                  <span className="text-xl">{link.icon}</span>
+                  <span className="text-sm font-bold">{link.name}</span>
+                </Link>
               ))}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      
-      <style jsx>{`
-        /* Keep focus styles for accessibility - Use visible amber outline */
-        nav a:focus-visible,
-        nav button:focus-visible {
-          outline: 2px solid #fbbf24 !important;
-          outline-offset: 2px !important;
-          border-radius: 4px !important;
-        }
-        
-        /* Remove default focus ring but keep our custom one */
-        nav * {
-          --tw-ring-color: transparent !important;
-          --tw-ring-offset-color: transparent !important;
-          --tw-ring-offset-width: 0 !important;
-          --tw-ring-width: 0 !important;
-        }
-        
-        /* Button styling - Remove default borders but keep accessibility */
-        nav button:not(.hamburger-button) {
-          border: none !important;
-          background: transparent !important;
-          box-shadow: none !important;
-          padding: 0 !important;
-          margin: 0 !important;
-        }
-        
-        /* Specific styling for hamburger button - floating without background */
-        .hamburger-button {
-          border: none !important;
-          background: transparent !important;
-          box-shadow: none !important;
-          padding: 6px !important;
-          margin: 0 !important;
-          min-height: 40px !important;
-          min-width: 40px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          border-radius: 4px !important;
-          position: relative !important;
-          z-index: 1000 !important;
-        }
-         
-         /* Ensure hamburger lines are visible - Amber color for better contrast */
-         .hamburger-button span {
-           background-color: #fbbf24 !important; /* Amber for better visibility */
-           height: 2px !important; /* Changed from 3px to match Lucide icons */
-           width: 24px !important;
-           display: block !important;
-           margin: 2px 0 !important; /* Changed from 3px for tighter spacing */
-         }
-         
-         /* Hover state for better discoverability */
-         .hamburger-button:hover span {
-           background-color: #fcd34d !important; /* Lighter amber on hover */
-         }
-        
-        /* Menu styling */
-        nav div[ref] {
-          border: none !important;
-          box-shadow: none !important;
-        }
-
-        /* Hide scrollbar on nav menu but keep scroll (wheel, touch, keyboard) */
-        :global(.nav-menu-scroll) {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        :global(.nav-menu-scroll)::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
       </nav>
     </TooltipProvider>
-    <ShareAppModal isOpen={showShareModal} onClose={() => { setShowShareModal(false); setShareAnchorRect(null); }} anchorRect={shareAnchorRect} />
+    <ShareAppModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
     </>
   );
 }

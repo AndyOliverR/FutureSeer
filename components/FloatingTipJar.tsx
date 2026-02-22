@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { useTipJar } from '@/components/TipJarContext';
 import { useModalOpen } from '@/components/ModalOpenContext';
@@ -16,50 +16,35 @@ export function FloatingTipJar() {
     setMounted(true);
   }, []);
 
-  if (!mounted || typeof document === 'undefined') {
-    return null;
-  }
+  if (!mounted) return null;
 
-  const buttonContent = (
+  return (
     <div
-      className="z-[2147483646]"
       data-tip-jar-widget="true"
-      aria-hidden={isAnyModalOpen}
+      className="fixed z-[9999] pointer-events-none"
       style={{
-        position: 'fixed',
-        bottom: '144px',
-        left: 4,
-        top: 'auto',
-        right: 'auto',
-        zIndex: 2147483646,
-        pointerEvents: 'auto',
-        margin: 0,
-        padding: 0,
-        width: 48,
-        height: 48,
-        minWidth: 48,
-        minHeight: 48,
-        flexShrink: 0,
-        transform: 'translateZ(0)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxSizing: 'border-box',
+        bottom: '160px',
+        left: '16px',
+        width: '56px',
+        height: '56px',
       }}
     >
-      <button
+      <motion.button
         ref={buttonRef}
         onClick={() => open(buttonRef.current?.getBoundingClientRect())}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
         tabIndex={isAnyModalOpen ? -1 : 0}
-        className="flex-shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center bg-transparent border-none hover:scale-110 transition-all duration-200 cursor-pointer m3-ripple m3-button-bounce m3-transition-emphasized m3-gpu-accelerated will-change-transform"
-        style={{ width: 40, height: 40, minWidth: 40, minHeight: 40, flexShrink: 0 }}
-        title="Tip Jar - Show appreciation anytime"
+        className="pointer-events-auto w-14 h-14 bg-transparent border-none flex items-center justify-center relative"
         aria-label="Open Tip Jar"
       >
-        <Heart className="shrink-0 w-10 h-10 text-[#FF1744] stroke-1 fill-none" style={{ width: 40, height: 40, flexShrink: 0 }} aria-hidden />
-      </button>
+        <Heart
+          className="w-10 h-10 text-[#FF1744] relative z-10 drop-shadow-[0_0_8px_rgba(255,23,68,0.6)]"
+          fill="none"
+          strokeWidth={1.5}
+          aria-hidden
+        />
+      </motion.button>
     </div>
   );
-
-  return createPortal(buttonContent, document.body);
 }

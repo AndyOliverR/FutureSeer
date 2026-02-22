@@ -1,44 +1,42 @@
+"use client";
+
 import { AboutSection } from './AboutSection';
+import { motion } from 'framer-motion';
 
 export function AboutFeedback() {
   return (
     <AboutSection 
-      title="Feedback & Improvements" 
+      title="Feedback"
       subtitle="Your voice shapes our product in real-time"
     >
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="p-4 sm:p-6 md:p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-green-500/30 hover:border-green-500/50 rounded-2xl transition-colors duration-300">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-            <h3 className="text-xl font-bold text-amber-400">We implement your feedback fast</h3>
-            <span className="px-3 py-1.5 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm font-medium">Typically 24–48 hours</span>
+      <div className="max-w-4xl mx-auto space-y-4">
+        <motion.div
+          className="p-6 sm:p-8 bg-surface-container-high rounded-[32px] border border-outline-variant shadow-lg"
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <h3 className="text-xl font-bold text-white">Rapid Implementation</h3>
+            <span className="px-4 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-xs font-bold uppercase tracking-wider">Typically 24–48 hours</span>
           </div>
 
-        {/* Recent Improvements */}
-          <h4 className="text-lg font-semibold text-amber-400 mb-4">Recent improvements</h4>
-          <div className="space-y-4">
-            <div className="p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-white font-medium">Improved chart rendering</span>
-                <span className="text-xs text-amber-400">36 hours ago</span>
+          <div className="space-y-3">
+            {[
+              { title: "Improved chart rendering", time: "36 hours ago", desc: "Enhanced visualization accuracy and performance" },
+              { title: "Added dark mode toggle", time: "24 hours ago", desc: "User-requested feature for better viewing experience" },
+              { title: "Enhanced tool selection UI", time: "48 hours ago", desc: "Improved navigation and discoverability" }
+            ].map((item, i) => (
+              <div key={i} className="p-4 bg-surface-container-lowest rounded-2xl border border-outline-variant/30 flex flex-col gap-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-bold text-surface-on">{item.title}</span>
+                  <span className="text-[10px] font-bold text-amber-400 uppercase tracking-tight">{item.time}</span>
+                </div>
+                <p className="text-xs text-surface-on-variant font-normal leading-relaxed">{item.desc}</p>
               </div>
-              <p className="text-sm text-white/60 font-light">Enhanced visualization accuracy and performance</p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-white font-medium">Added dark mode toggle</span>
-                <span className="text-xs text-amber-400">24 hours ago</span>
-              </div>
-              <p className="text-sm text-white/60 font-light">User-requested feature for better viewing experience</p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-white font-medium">Enhanced tool selection UI</span>
-                <span className="text-xs text-amber-400">48 hours ago</span>
-              </div>
-              <p className="text-sm text-white/60 font-light">Improved navigation and discoverability</p>
-            </div>
+            ))}
           </div>
-        </div>
+        </motion.div>
       </div>
     </AboutSection>
   );
