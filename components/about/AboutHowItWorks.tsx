@@ -43,13 +43,13 @@ export function AboutHowItWorks() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, ease: [0.2, 0, 0, 1] }}
-              className="p-6 rounded-3xl bg-surface-container border border-outline-variant hover:border-amber-500/30 transition-all flex flex-col items-center text-center"
+              className="p-6 rounded-[32px] glass-effect hover:border-amber-500/40 transition-all flex flex-col items-center text-center shadow-xl"
             >
-              <div className="w-14 h-14 rounded-2xl bg-primary-container flex items-center justify-center mb-4">
-                <Icon className="w-7 h-7 text-on-primary-container" />
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-4">
+                <Icon className="w-7 h-7 text-amber-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
-              <p className="text-sm text-surface-on-variant leading-relaxed">{step.description}</p>
+              <h3 className="text-lg font-heading font-bold gold-glow mb-2 uppercase tracking-tight">{step.title}</h3>
+              <p className="text-sm text-surface-on leading-relaxed opacity-90">{step.description}</p>
             </motion.div>
           );
         })}
