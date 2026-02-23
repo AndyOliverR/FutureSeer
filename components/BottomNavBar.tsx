@@ -18,8 +18,8 @@ export function BottomNavBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-[var(--m3-surface-container-high)] border-t border-[var(--m3-outline-variant)] pb-[env(safe-area-inset-bottom)]">
-      <div className="flex justify-around items-center h-16 px-2">
+    <nav className="bottom-nav-mobile md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-[var(--m3-surface-container-high)] border-t border-[var(--m3-outline-variant)] pb-[env(safe-area-inset-bottom)]">
+      <div className="flex w-full items-center justify-between h-16 px-2">
         {mobileNavItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -28,14 +28,14 @@ export function BottomNavBar() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center justify-center flex-1 min-w-0"
+              className="flex flex-col items-center justify-center flex-1 min-w-0 h-full group"
             >
-              <div className="relative flex flex-col items-center justify-center w-full h-full">
+              <div className="relative flex flex-col items-center justify-center">
                 <AnimatePresence>
                   {isActive && (
                     <motion.div
                       layoutId="activePill"
-                      className="absolute top-0 w-14 h-8 bg-amber-500/20 rounded-full -z-10"
+                      className="absolute -top-1 w-12 h-8 bg-amber-500/20 rounded-full -z-10"
                       transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                     />
                   )}
@@ -44,13 +44,13 @@ export function BottomNavBar() {
                 <Icon
                   className={cn(
                     "w-6 h-6 transition-colors duration-200",
-                    isActive ? "text-amber-500" : "text-slate-400"
+                    isActive ? "text-amber-500" : "text-slate-400 group-hover:text-slate-200"
                   )}
                 />
                 <span
                   className={cn(
                     "text-[10px] font-medium mt-1 transition-colors duration-200 truncate w-full text-center",
-                    isActive ? "text-amber-500" : "text-slate-400"
+                    isActive ? "text-amber-500" : "text-slate-400 group-hover:text-slate-200"
                   )}
                 >
                   {item.name}

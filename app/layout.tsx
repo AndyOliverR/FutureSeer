@@ -40,19 +40,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans">
-        {/* Platform Detection Script */}
+        {/* Platform Detection Script - Executed immediately to avoid FOUC */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                if (isAndroid) {
-                  document.documentElement.classList.add('platform-android');
-                } else {
-                  document.documentElement.classList.add('platform-web');
-                }
+                try {
+                  const isAndroid = /Android/i.test(navigator.userAgent);
+                  if (isAndroid) {
+                    document.documentElement.classList.add('platform-android');
+                  } else {
+                    document.documentElement.classList.add('platform-web');
+                  }
+                } catch (e) {}
               })();
             `,
           }}
@@ -72,7 +74,6 @@ export default function RootLayout({
                 <I18nProvider>
                   <DeferredAnalyticsInitializer />
                   {children}
-                  {/* Bottom nav only renders via CSS media query/class on mobile/android */}
                   <BottomNavBar />
                   <Toaster />
                 </I18nProvider>
