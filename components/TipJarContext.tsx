@@ -15,18 +15,15 @@ const TipJarContext = createContext<TipJarContextValue | null>(null);
 
 export function TipJarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const { userProfile } = useAuth();
   const { registerModal } = useModalOpen();
   const countryCode = userProfile?.country ?? "IN";
 
-  const open = useCallback((anchorRect?: DOMRect) => {
-    setAnchorRect(anchorRect ?? null);
+  const open = useCallback((_anchorRect?: DOMRect) => {
     setIsOpen(true);
   }, []);
   const close = useCallback(() => {
     setIsOpen(false);
-    setAnchorRect(null);
   }, []);
 
   useEffect(() => {
@@ -38,7 +35,7 @@ export function TipJarProvider({ children }: { children: React.ReactNode }) {
   return (
     <TipJarContext.Provider value={{ isOpen, open, close }}>
       {children}
-      <TipJarModal isOpen={isOpen} onClose={close} countryCode={countryCode} anchorRect={anchorRect} />
+      <TipJarModal isOpen={isOpen} onClose={close} countryCode={countryCode} />
     </TipJarContext.Provider>
   );
 }
