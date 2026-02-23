@@ -5,22 +5,21 @@
 @tailwind utilities;
 
 :root {
-  /* UNIFIED CORE PALETTE - Deepest Space Blue & Polished Gold */
-  --bg-deep-space: #020617; /* Absolute dark navy, zero purple */
-  --bg-midnight: #030712;
+  /* THE SOPHISTICATED PALETTE - Pure Deep Navy & Glossy Gold */
+  --bg-space: #020617;
   --gold-primary: #fbbf24;
   --gold-glow: rgba(251, 191, 36, 0.5);
 
-  /* Unified Material 3 Variables */
-  --m3-surface: var(--bg-deep-space);
+  /* Overwriting M3 variables to remove all purple/slate tints */
+  --m3-surface: var(--bg-space);
   --m3-primary: var(--gold-primary);
   --m3-on-surface: #FFFFFF;
   --m3-on-surface-variant: #94a3b8;
-  --m3-outline-variant: rgba(251, 191, 36, 0.12);
+  --m3-outline-variant: rgba(251, 191, 36, 0.15);
 
-  /* Glossy Surface Containers (Consistent across all screens) */
-  --m3-surface-container-high: rgba(3, 7, 18, 0.8);
-  --m3-surface-container-low: rgba(2, 6, 23, 0.6);
+  /* Containers: Use pure dark blue with transparency, not slate */
+  --m3-surface-container-high: rgba(3, 7, 18, 0.85);
+  --m3-surface-container-low: rgba(5, 10, 25, 0.7);
   --m3-surface-container-highest: rgba(10, 15, 30, 0.9);
 }
 
@@ -31,25 +30,27 @@
   }
   
   body {
-    background-color: var(--bg-deep-space);
+    background-color: var(--bg-space);
     @apply text-white antialiased overflow-x-hidden;
     font-family: 'Inter', sans-serif;
   }
 
-  /* Consistent Sophisticated Headlines */
+  /* Sophisticated Headers: Consistent Light & Wide style */
   h1, h2, h3, h4 {
     font-family: 'Cinzel', serif;
     color: var(--gold-primary);
-    @apply uppercase tracking-[0.15em] transition-all;
-    text-shadow: 0 0 15px rgba(251, 191, 36, 0.25);
+    @apply uppercase tracking-[0.2em] font-light transition-all;
+    text-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
   }
 
-  /* Sophisticated Weight Branching */
-  .platform-web h1, .platform-web h2 { @apply font-light; }
-  .platform-android h1, .platform-android h2 { @apply font-medium tracking-[0.05em]; }
+  /* Mobile size adjustment while keeping the "Light & Wide" style */
+  @media (max-width: 768px) {
+    h1 { @apply tracking-[0.1em] font-normal text-4xl; }
+    h2 { @apply tracking-[0.1em] font-normal text-2xl; }
+  }
 }
 
-/* Starfield Background Layer - Vivid & Fixed */
+/* Starfield Layer - Maximum Clarity */
 .starfield-ultra-sharp::before {
   content: '';
   position: fixed;
@@ -63,16 +64,17 @@
   pointer-events: none;
 }
 
-/* Polished Glass Panels - Simplicity & Sophistication */
+/* Glossy Glass Cards - Shared by both platforms */
 .glass-effect {
-  background: rgba(2, 6, 23, 0.7);
+  background: rgba(2, 6, 23, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(251, 191, 36, 0.15);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Platform-Specific Layout Positioning (No color changes here) */
+/* Icons Positioning */
 .platform-web [data-tip-jar-widget="true"] { bottom: 100px !important; left: 32px !important; }
 .platform-web [data-feedback-widget="true"] { bottom: 32px !important; left: 32px !important; }
 
@@ -88,12 +90,7 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Unified Button Polish */
-.button-glow {
-  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.15);
-  @apply active:scale-95 transition-all;
-}
-
-/* Clean Scrollbars */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* Force consistency on Standard classes */
+.text-primary { color: #fbbf24 !important; }
+.bg-primary { background-color: #fbbf24 !important; }
+.border-primary { border-color: rgba(251, 191, 36, 0.3) !important; }

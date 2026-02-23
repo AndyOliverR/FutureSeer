@@ -24,25 +24,25 @@ export function AboutValueProposition() {
       title="Why FutureSeer"
       subtitle="From fragmentation to clarity—one platform, one synthesis"
     >
-      <div className="max-w-4xl mx-auto grid grid-cols-1 gap-4">
+      <div className="max-w-4xl mx-auto grid grid-cols-1 gap-6">
         {sections.map((item, index) => (
           <motion.article
             key={index}
-            className="p-6 rounded-3xl bg-surface-container border border-outline-variant hover:border-amber-500/30 transition-all duration-300"
+            className="p-6 sm:p-8 rounded-[32px] glass-effect hover:border-amber-500/40 transition-all duration-300 shadow-xl"
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ delay: index * 0.1, ease: [0.2, 0, 0, 1] }}
           >
-            <div className="flex gap-4 items-start">
-              <div className="shrink-0 w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-bold">
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
+              <div className="shrink-0 w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 font-bold text-xl">
                 {index + 1}
               </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-bold text-amber-400 uppercase tracking-wide">
+              <div className="space-y-3">
+                <h3 className="text-xl font-heading font-bold gold-glow uppercase tracking-tight">
                   {item.title}
                 </h3>
-                <p className="text-sm text-surface-on-variant leading-relaxed font-normal">
+                <p className="text-base text-surface-on leading-relaxed font-normal opacity-90">
                   {item.body}
                 </p>
               </div>
