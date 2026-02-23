@@ -10,59 +10,40 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, ArrowLeft, User, Calendar, Clock, MapPin, Mail, Edit3, Save, X, LogOut, Sparkles, Heart, Camera } from "lucide-react"
-import { Switch } from "@/components/ui/switch"
-import { TIME_PERIODS, type BirthTimePeriodId } from "@/lib/birthTimeResolver"
+import { Loader2, ArrowLeft, User, Clock, MapPin, Edit3, Save, X, LogOut, Sparkles, Heart, Camera, Calendar } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
-import { updateUserProfile, resetProfileGenerationStatus, hasProfileDataChanged, clearUserProfileCache, type UserProfile } from "@/lib/firebase"
+import { updateUserProfile, type UserProfile } from "@/lib/firebase"
 import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache, useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
-import { ImageUploadSection } from "@/components/ImageUploadSection"
-import { geocodePlace } from "@/services/geocoding"
+import { ReferralCodeCard } from "@/components/ReferralCodeCard"
 import { SubscriptionStatus } from "@/components/SubscriptionStatus"
 import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
-import { ReferralCodeCard } from "@/components/ReferralCodeCard"
 import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
+import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 
 export default function ProfilePage() {
-  const { t } = useTranslation('common')
   const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
-  const { refreshProfile: refreshComprehensiveProfile, applyGeneratedProfile } = useComprehensiveMysticalProfile()
+  const { applyGeneratedProfile } = useComprehensiveMysticalProfile()
   const router = useRouter()
-  
+  const { t } = useTranslation('common')
+
   const [isEditing, setIsEditing] = useState(false)
   const [isGeneratingProfile, setIsGeneratingProfile] = useState(false)
-  const [profileGenerationStatus, setProfileGenerationStatus] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [profileDataChanged, setProfileDataChanged] = useState(false)
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
-  const generateInProgressRef = useRef<boolean>(false)
 
   const [formData, setFormData] = useState({
     displayName: "", fullName: "", email: "",
-    gender: undefined as 'male' | 'female' | 'non-binary' | undefined,
+    gender: undefined as UserProfile['gender'],
     birthDate: "", birthTime: "", birthTimeAMPM: "AM",
-    birthTimeKnown: false, birthTimePeriod: undefined as BirthTimePeriodId | undefined,
+    birthTimeKnown: false,
+    birthTimePeriod: undefined as BirthTimePeriodId | undefined,
     birthTimeNote: "", birthPlace: "", currentLocation: "",
     facePhotoUrl: "", palmPhotoUrl: ""
   })
-
-  // Display value for birth time
-  const displayBirthTime = useMemo(() => {
-    const raw = userProfile?.birthTime
-    if (!raw || /^\d{13,}$/.test(String(raw))) return ""
-    let time = String(raw); let ampm = "AM"
-    const parts = time.split(":")
-    if (parts.length >= 2) {
-      const h = parseInt(parts[0], 10)
-      if (h >= 12) { ampm = "PM"; time = h > 12 ? `${h - 12}:${parts[1]}` : `12:${parts[1]}` }
-      else { time = h === 0 ? `12:${parts[1]}` : `${h}:${parts[1]}` }
-    }
-    return `${time} ${ampm}`
-  }, [userProfile?.birthTime])
 
   useEffect(() => {
     if (userProfile && !isEditing) {
@@ -71,7 +52,7 @@ export default function ProfilePage() {
         const p = bt.split(':')
         if (p.length >= 2) {
           const h = parseInt(p[0])
-          if (h >= 12) { btAMPM = "PM"; }
+          if (h >= 12) btAMPM = "PM"
         }
       }
       setFormData({
@@ -83,7 +64,7 @@ export default function ProfilePage() {
         birthTime: bt,
         birthTimeAMPM: btAMPM,
         birthTimeKnown: userProfile.birthTimeKnown || false,
-        birthTimePeriod: userProfile.birthTimePeriod,
+        birthTimePeriod: userProfile.birthTimePeriod as BirthTimePeriodId,
         birthTimeNote: userProfile.birthTimeNote || "",
         birthPlace: userProfile.birthPlace || "",
         currentLocation: userProfile.currentLocation || "",
@@ -107,7 +88,24 @@ export default function ProfilePage() {
           bt24 = `${h.toString().padStart(2, '0')}:${p[1]}`
         }
       }
-      await updateUserProfile(user.uid, { ...formData, birthTime: bt24 })
+
+      // Explicitly type the update data to match UserProfile definition
+      const updatePayload: Partial<UserProfile> = {
+        displayName: formData.displayName,
+        fullName: formData.fullName,
+        gender: formData.gender,
+        birthDate: formData.birthDate,
+        birthTime: bt24,
+        birthTimeKnown: formData.birthTimeKnown,
+        birthTimePeriod: formData.birthTimePeriod as UserProfile['birthTimePeriod'],
+        birthTimeNote: formData.birthTimeNote,
+        birthPlace: formData.birthPlace,
+        currentLocation: formData.currentLocation,
+        facePhotoUrl: formData.facePhotoUrl,
+        palmPhotoUrl: formData.palmPhotoUrl
+      }
+
+      await updateUserProfile(user.uid, updatePayload)
       setSuccess("Profile updated successfully!"); setIsEditing(false); setHasUnsavedChanges(false)
       setTimeout(() => refreshProfile(), 500)
     } catch (e) { setError("Failed to save profile.") }
@@ -118,7 +116,6 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
-      {/* App Bar */}
       <div className="flex items-center justify-between h-16 mb-6">
         <Link href="/tools" className="p-2 text-amber-400 active:scale-90 transition-transform"><ArrowLeft className="w-6 h-6" /></Link>
         <h1 className="text-xl font-heading font-bold text-amber-400 uppercase tracking-tight">Cosmic Profile</h1>
@@ -126,19 +123,15 @@ export default function ProfilePage() {
       </div>
 
       <div className="max-w-md mx-auto w-full space-y-6">
-        {/* Subscription & Referral (Native Tiles) */}
-        <div className="grid grid-cols-1 gap-4">
-          <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary-container rounded-xl"><Heart className="w-5 h-5 text-on-primary-container" /></div>
-              <h2 className="font-bold text-white uppercase text-sm tracking-widest">Plan & Referral</h2>
-            </div>
-            {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
-            {user && <div className="mt-4 border-t border-outline-variant pt-4"><ReferralCodeCard userId={user.uid} /></div>}
+        <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-primary-container rounded-xl"><Heart className="w-5 h-5 text-on-primary-container" /></div>
+            <h2 className="font-bold text-white uppercase text-sm tracking-widest">Plan & Referral</h2>
           </div>
+          {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
+          {user && <div className="mt-4 border-t border-outline-variant pt-4"><ReferralCodeCard userId={user.uid} /></div>}
         </div>
 
-        {/* Main Personal Info Card */}
         <div className="bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl space-y-8">
           <div className="flex items-center justify-between border-b border-outline-variant pb-4">
             <div className="flex items-center gap-3">
@@ -159,34 +152,30 @@ export default function ProfilePage() {
           {success && <Alert className="bg-green-500/10 border-green-500/20 text-green-400 rounded-2xl"><AlertDescription className="font-bold">{success}</AlertDescription></Alert>}
 
           <div className="space-y-6">
-            {/* Display Name */}
             <div className="space-y-2">
               <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Display Name</Label>
               {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
             </div>
 
-            {/* Birth Info Group */}
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Date</Label>
                 {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthDate || "Not set"}</p>}
               </div>
-
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Place</Label>
                 {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthPlace || "Not set"}</p>}
               </div>
             </div>
 
-            {/* Photos (Native Sized tiles) */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
                 <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
                   {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 opacity-20" />}
                 </div>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
                 <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
                   {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 opacity-20" />}
@@ -194,7 +183,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Generate Button (Floating Action Style) */}
             {!isEditing && (
               <div className="pt-6 border-t border-outline-variant/30">
                 <Button
@@ -202,7 +190,10 @@ export default function ProfilePage() {
                     setIsGeneratingProfile(true)
                     try {
                       const t = await user?.getIdToken()
-                      await fetch('/api/profile/generate-mystical', { method: 'POST', headers: { Authorization: `Bearer ${t}` } })
+                      const res = await fetch('/api/profile/generate-mystical', { method: 'POST', headers: { Authorization: `Bearer ${t}` } })
+                      if (!res.ok) throw new Error("API failed")
+                      const data = await res.json()
+                      applyGeneratedProfile(data.comprehensiveProfile)
                       setSuccess("Mystical Profile Generated!")
                       router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
                     } catch(e) { setError("Generation failed.") }
