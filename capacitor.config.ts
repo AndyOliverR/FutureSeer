@@ -1,14 +1,23 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
+// This logic ensures that for production builds, we don't point to a local server.
+// If CAPACITOR_BUILD is set (which we'll use for the final APK), it uses local files.
+const isDev = process.env.NODE_ENV === 'development';
+
 const config: CapacitorConfig = {
   appId: 'com.futureseer.app',
   appName: 'FutureSeer',
   webDir: 'public',
   server: {
-    // Reverted to local host for development testing
-    url: 'http://10.0.2.2:3000',
-    cleartext: true,
-    androidScheme: 'http',
+    // ONLY use the local server in development.
+    // For the final APK, remove these lines or use the bundled files.
+    ...(isDev ? {
+      url: 'http://10.0.2.2:3000',
+      cleartext: true
+    } : {
+      // In production, we use the local bundled assets for maximum speed and zero glitch.
+      androidScheme: 'https'
+    }),
     allowNavigation: [
       '10.0.2.2:3000',
       'localhost:3000',
@@ -22,13 +31,14 @@ const config: CapacitorConfig = {
     },
     SplashScreen: {
       launchShowDuration: 3000,
-      backgroundColor: "#0a001e",
+      backgroundColor: "#020617", // Matches your new deep blue
       showSpinner: true,
-      spinnerColor: "#f9c922"
+      spinnerColor: "#fbbf24", // Matches your glossy gold
+      androidScaleType: "CENTER_CROP"
     },
     StatusBar: {
       style: 'dark',
-      backgroundColor: '#0a001e'
+      backgroundColor: '#020617'
     }
   }
 };
