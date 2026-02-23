@@ -1,4 +1,7 @@
+"use client";
+
 import { AboutSection } from './AboutSection';
+import { motion } from 'framer-motion';
 
 export function AboutStandards() {
   return (
@@ -6,36 +9,44 @@ export function AboutStandards() {
       title="Standards & Accuracy" 
       subtitle="Ancient wisdom meets modern precision"
     >
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Main Badges */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-green-500/30 rounded-xl text-center">
-            <div className="text-4xl mb-3">🌟</div>
-            <h4 className="text-lg font-semibold text-amber-400 mb-2">Swiss Ephemeris</h4>
-            <p className="text-sm text-white/60 font-light">NASA JPL DE431</p>
-            <p className="text-xs text-green-400 mt-2">Precision: 0.001 arcseconds</p>
-          </div>
-          <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-blue-500/30 rounded-xl text-center">
-            <div className="text-4xl mb-3">🛰️</div>
-            <h4 className="text-lg font-semibold text-amber-400 mb-2">NASA Validated</h4>
-            <p className="text-sm text-white/60 font-light">Cross-validated with NASA Horizons system</p>
-          </div>
-          <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-xl text-center">
-            <div className="text-4xl mb-3">✨</div>
-            <h4 className="text-lg font-semibold text-amber-400 mb-2">60+ Tools</h4>
-            <p className="text-sm text-white/60 font-light">Time-tested traditional methods</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { emoji: "🌟", title: "Swiss Ephemeris", sub: "NASA JPL DE431", detail: "Precision: 0.001 arcseconds", color: "border-amber-500/30" },
+            { emoji: "🛰️", title: "NASA Validated", sub: "NASA Horizons system", detail: "Cross-validated data", color: "border-amber-500/30" },
+            { emoji: "✨", title: "60+ Tools", sub: "Traditional methods", detail: "Time-tested wisdom", color: "border-amber-500/30" }
+          ].map((item, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className={`p-6 rounded-[32px] glass-effect border ${item.color} text-center shadow-xl hover:scale-105 transition-all duration-300`}
+            >
+              <div className="text-4xl mb-4">{item.emoji}</div>
+              <h4 className="text-lg font-heading font-bold gold-glow mb-2">{item.title}</h4>
+              <p className="text-sm text-white/80 font-normal">{item.sub}</p>
+              <p className="text-[10px] text-amber-400/70 mt-2 uppercase font-bold tracking-widest">{item.detail}</p>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl transition-colors duration-300">
-          <h4 className="text-lg font-semibold text-amber-400 mb-3">60+ tools across categories</h4>
-          <p className="text-sm text-white/70 font-light mb-4">
-            Astrology (Swiss Ephemeris, NASA-validated), numerology, divination, tarot, I Ching, Chinese & Indian systems, energy practices, and more—all using validated traditional methods and modern astronomical data.
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="p-6 sm:p-8 rounded-[32px] glass-effect border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 shadow-xl"
+        >
+          <h4 className="text-xl font-heading font-bold gold-glow mb-4 uppercase tracking-tight">Validated Wisdom</h4>
+          <p className="text-base text-surface-on leading-relaxed font-normal opacity-90 mb-4">
+            Astrology, numerology, divination, tarot, I Ching, Chinese & Indian systems, energy practices—all using validated traditional methods and modern astronomical data.
           </p>
-          <p className="text-white/60 text-xs font-light">
+          <p className="text-amber-400/60 text-[10px] uppercase font-bold tracking-tighter">
             Results are for guidance and self-reflection only.
           </p>
-        </div>
+        </motion.div>
       </div>
     </AboutSection>
   );
