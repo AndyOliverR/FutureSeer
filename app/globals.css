@@ -5,26 +5,23 @@
 @tailwind utilities;
 
 :root {
-  /* Default Web Values (Original Look) */
-  --m3-surface: transparent;
-  --m3-surface-container-high: rgba(15, 23, 42, 0.8);
-  --m3-surface-container-low: rgba(15, 23, 42, 0.6);
-  --m3-outline-variant: rgba(251, 191, 36, 0.2);
-  --m3-primary: #fbbf24;
-}
+  /* UNIFIED CORE PALETTE - Deepest Space Blue & Polished Gold */
+  --bg-deep-space: #020617; /* Absolute dark navy, zero purple */
+  --bg-midnight: #030712;
+  --gold-primary: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.5);
 
-/* Material 3 Android Overrides (Only for the App) */
-.platform-android {
-  --m3-surface: #0F172A;
-  --m3-surface-dim: #020617;
-  --m3-surface-container: #1E293B;
-  --m3-surface-container-high: #334155;
-  --m3-surface-container-low: #1e293b;
-  --m3-surface-container-highest: #475569;
+  /* Unified Material 3 Variables */
+  --m3-surface: var(--bg-deep-space);
+  --m3-primary: var(--gold-primary);
   --m3-on-surface: #FFFFFF;
-  --m3-on-surface-variant: #CBD5E1;
-  --m3-outline-variant: rgba(251, 191, 36, 0.15);
-  --m3-primary: #F59E0B;
+  --m3-on-surface-variant: #94a3b8;
+  --m3-outline-variant: rgba(251, 191, 36, 0.12);
+
+  /* Glossy Surface Containers (Consistent across all screens) */
+  --m3-surface-container-high: rgba(3, 7, 18, 0.8);
+  --m3-surface-container-low: rgba(2, 6, 23, 0.6);
+  --m3-surface-container-highest: rgba(10, 15, 30, 0.9);
 }
 
 @layer base {
@@ -34,22 +31,25 @@
   }
   
   body {
-    @apply bg-[#0a0f1f] text-white antialiased;
+    background-color: var(--bg-deep-space);
+    @apply text-white antialiased overflow-x-hidden;
     font-family: 'Inter', sans-serif;
   }
 
-  /* Web-specific headline style */
-  .platform-web h1, .platform-web h2 {
-    @apply font-light tracking-widest;
+  /* Consistent Sophisticated Headlines */
+  h1, h2, h3, h4 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold-primary);
+    @apply uppercase tracking-[0.15em] transition-all;
+    text-shadow: 0 0 15px rgba(251, 191, 36, 0.25);
   }
 
-  /* Android-specific headline style (Bolder for mobile visibility) */
-  .platform-android h1, .platform-android h2 {
-    @apply font-bold tracking-tight;
-  }
+  /* Sophisticated Weight Branching */
+  .platform-web h1, .platform-web h2 { @apply font-light; }
+  .platform-android h1, .platform-android h2 { @apply font-medium tracking-[0.05em]; }
 }
 
-/* Starfield Background Layer - Visible on both */
+/* Starfield Background Layer - Vivid & Fixed */
 .starfield-ultra-sharp::before {
   content: '';
   position: fixed;
@@ -58,19 +58,42 @@
   background-image: url('/assets/bg/starfieldn-8k.png');
   background-size: cover;
   background-position: center;
+  background-repeat: no-repeat;
+  opacity: 1;
   pointer-events: none;
 }
 
-/* Mobile Navigation Guard */
-.platform-web .bottom-nav-mobile {
-  display: none !important;
+/* Polished Glass Panels - Simplicity & Sophistication */
+.glass-effect {
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(251, 191, 36, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
-.platform-android .bottom-nav-mobile {
-  display: flex !important;
+/* Platform-Specific Layout Positioning (No color changes here) */
+.platform-web [data-tip-jar-widget="true"] { bottom: 100px !important; left: 32px !important; }
+.platform-web [data-feedback-widget="true"] { bottom: 32px !important; left: 32px !important; }
+
+.platform-android [data-tip-jar-widget="true"] { bottom: 160px !important; left: 16px !important; }
+.platform-android [data-feedback-widget="true"] { bottom: 100px !important; left: 16px !important; }
+
+/* Metallic Gold Shimmer */
+.gold-glow {
+  color: var(--gold-primary);
+  text-shadow: 0 0 20px var(--gold-glow);
+  background: linear-gradient(135deg, #fef08a 0%, #fbbf24 50%, #b45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-/* Floating Icons visibility */
-.floating-icon-pulse {
-  @apply drop-shadow-[0_0_10px_rgba(251,191,36,0.3)];
+/* Unified Button Polish */
+.button-glow {
+  box-shadow: 0 4px 20px rgba(251, 191, 36, 0.15);
+  @apply active:scale-95 transition-all;
 }
+
+/* Clean Scrollbars */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
