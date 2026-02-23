@@ -1,7 +1,6 @@
 "use client";
 
-import { Coffee, Gift, Sparkles, Check } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Coffee, Gift, Sparkles, Check, Heart } from 'lucide-react';
 import { TipJarCard } from '@/components/TipJarCard';
 import { AboutSection } from './AboutSection';
 import { motion } from 'framer-motion';
@@ -56,22 +55,22 @@ export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
       subtitle="First month free for everyone. Choose your plan."
     >
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Promo Card */}
+        {/* Promo Card - High Visibility */}
         <motion.div
-          className="p-6 sm:p-8 bg-primary-container rounded-[32px] border border-primary/20 text-center"
+          className="p-8 rounded-[32px] glass-effect border-amber-500/40 text-center shadow-[0_0_30px_rgba(251,191,36,0.1)]"
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
         >
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-4">
-            <Sparkles className="w-8 h-8 text-on-primary-container" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-4">
+            <Sparkles className="w-8 h-8 text-amber-400" />
           </div>
-          <h3 className="text-2xl font-heading font-bold text-on-primary-container mb-2">First Month FREE</h3>
-          <p className="text-on-primary-container/80 text-sm font-medium uppercase tracking-widest">Experience the Full Potential</p>
+          <h3 className="text-3xl font-heading font-bold gold-glow mb-2 uppercase tracking-widest">First Month FREE</h3>
+          <p className="text-white/70 text-sm font-medium uppercase tracking-widest">Unrestricted Access to All Tools</p>
         </motion.div>
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {pricingOptions.map((option, index) => {
             const Icon = option.icon;
             return (
@@ -81,18 +80,18 @@ export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="p-6 rounded-3xl bg-surface-container border border-outline-variant hover:border-amber-500/30 transition-all flex flex-col items-center text-center"
+                className="p-8 rounded-[32px] glass-effect hover:border-amber-500/40 transition-all flex flex-col items-center text-center shadow-xl group"
               >
-                <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mb-4">
-                  <Icon className="w-7 h-7 text-amber-500" />
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                  <Icon className="w-8 h-8 text-amber-400" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-1">{option.name}</h3>
-                <p className="text-amber-400 text-lg font-bold mb-1">{option.price}</p>
-                <p className="text-surface-on-variant text-xs mb-6 font-medium uppercase tracking-wider">{option.description}</p>
-                <ul className="space-y-3 text-left w-full">
+                <h3 className="text-2xl font-heading font-bold text-white mb-1 uppercase tracking-tight">{option.name}</h3>
+                <p className="text-amber-400 text-xl font-bold mb-1">{option.price}</p>
+                <p className="text-white/50 text-[10px] mb-8 font-bold uppercase tracking-[0.2em]">{option.description}</p>
+                <ul className="space-y-4 text-left w-full">
                   {option.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-3 text-sm text-surface-on font-normal">
-                      <Check className="w-4 h-4 text-green-400 shrink-0" />
+                    <li key={i} className="flex items-center gap-3 text-sm text-white/80 font-normal">
+                      <Check className="w-4 h-4 text-amber-400 shrink-0" />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -103,8 +102,8 @@ export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
         </div>
 
         {/* Tip Jar Section */}
-        <div className="pt-8">
-          <h3 className="text-xl font-heading font-bold text-amber-400 text-center mb-6 uppercase tracking-tight">Show Your Appreciation</h3>
+        <div className="pt-12">
+          <h3 className="text-2xl font-heading font-bold gold-glow text-center mb-8 uppercase tracking-widest">Show Your Appreciation</h3>
           <div className="max-w-md mx-auto">
             <TipJarCard countryCode={countryCode} />
           </div>

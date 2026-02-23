@@ -36,18 +36,18 @@ export function AboutFAQ() {
       title="FAQ"
       subtitle="Everything you need to know"
     >
-      <div className="max-w-3xl mx-auto space-y-3">
+      <div className="max-w-3xl mx-auto space-y-4">
         {faqs.map((faq, index) => (
           <div
             key={index}
-            className="bg-surface-container rounded-2xl border border-outline-variant overflow-hidden"
+            className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-2xl transition-all duration-300 shadow-xl"
           >
             <button
               onClick={() => setOpenIndex(openIndex === index ? null : index)}
-              className="w-full px-5 py-4 flex items-center justify-between text-left active:bg-primary-container/10 transition-colors"
+              className="w-full px-6 py-5 flex items-center justify-between text-left transition-colors"
             >
-              <span className="text-surface-on text-sm font-bold pr-4">{faq.question}</span>
-              <ChevronDown className={`w-5 h-5 text-amber-500 transition-transform ${openIndex === index ? 'rotate-180' : ''}`} />
+              <span className="text-white font-bold pr-4">{faq.question}</span>
+              <ChevronDown className={`w-5 h-5 text-amber-500 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} />
             </button>
             <AnimatePresence>
               {openIndex === index && (
@@ -55,9 +55,9 @@ export function AboutFAQ() {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  className="px-5 pb-4"
+                  className="px-6 pb-6"
                 >
-                  <p className="text-sm text-surface-on-variant leading-relaxed font-normal">{faq.answer}</p>
+                  <p className="text-sm text-white/80 leading-relaxed font-light">{faq.answer}</p>
                 </motion.div>
               )}
             </AnimatePresence>
