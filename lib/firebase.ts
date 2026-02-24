@@ -615,6 +615,7 @@ export interface UserProfile {
     communityUpdates?: boolean;
     newFeatures?: boolean;
   };
+  timezone?: number;
 }
 
 export interface Note {
