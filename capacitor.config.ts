@@ -12,10 +12,17 @@ const config: CapacitorConfig = {
     allowNavigation: [
       '10.0.2.2:3000',
       'localhost:3000',
-      'futureseer.app'
+      'futureseer.app',
+      '*.firebaseapp.com',
+      '*.google.com',
+      'accounts.google.com'
     ]
   },
   plugins: {
+    FirebaseAuthentication: {
+      skipNativeAuth: false,
+      providers: ["google.com"],
+    },
     Keyboard: {
       resize: "body",
       resizeOnFullScreen: true
