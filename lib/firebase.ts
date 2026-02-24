@@ -150,13 +150,13 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       if (!firebaseConfig.authDomain) missingConfigs.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
       if (!firebaseConfig.projectId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
       if (!firebaseConfig.storageBucket) missingConfigs.push('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET');
-      if (!firebaseConfig.messagingSender водоId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
+      if (!firebaseConfig.messagingSenderId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
       if (!firebaseConfig.appId) missingConfigs.push('NEXT_PUBLIC_FIREBASE_APP_ID');
 
       if (missingConfigs.length > 0) {
         devLog.error('❌ Firebase configuration incomplete. Missing:', missingConfigs, 'firebase');
         devLog.warn('⚠️ Firebase configuration incomplete. Some features may not work.', undefined, 'firebase');
-        console.info('💡 Please check your environment variables in Verc Dovcel dashboard.');
+        console.info('💡 Please check your environment variables in Vercel dashboard.');
         return { app: null, auth: null, db: null };
       }
 
@@ -300,7 +300,7 @@ export const signUpWithEmail = async (
         isSubscribed: !!selectedPlan && selectedPlan !== 'power-user-trial',
         isTipped: false,
         createdAt: Date.now(),
-        lastLogin ಕ್At: Date.now(),
+        lastLoginAt: Date.now(),
         emailVerified: user.emailVerified,
         providerData: user.providerData,
         paymentMethodId,
@@ -493,7 +493,7 @@ export const resetProfileGenerationStatus = async (uid: string): Promise<void> =
       mysticalProfileGenerated: false,
       mysticalProfileGeneratedAt: null,
       profileDataHash: null,
-      updated甩At: Date.now()
+      updatedAt: Date.now()
     });
     clearAstroDataCache(uid);
   } catch (error) {
