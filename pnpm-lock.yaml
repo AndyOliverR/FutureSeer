@@ -14,6 +14,9 @@ importers:
       '@astrodraw/astrochart':
         specifier: ^3.0.2
         version: 3.0.2
+      '@capacitor-firebase/authentication':
+        specifier: ^7.0.0
+        version: 7.0.0(@capacitor/core@7.4.2)(firebase@12.1.0)
       '@capacitor/android':
         specifier: ^7.4.1
         version: 7.4.2(@capacitor/core@7.4.2)
@@ -523,6 +526,15 @@ packages:
 
   '@bcoe/v8-coverage@0.2.3':
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
+
+  '@capacitor-firebase/authentication@7.0.0':
+    resolution: {integrity: sha512-ytK/gxe9BzFXZc1/xkXiO90nw/25Rf2oxzHCwUWa4mMHMovoqMRwZWnthaYrBVS+TCb4gnZPXIeCEQuY1z2/zA==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+      firebase: ^11.2.0
+    peerDependenciesMeta:
+      firebase:
+        optional: true
 
   '@capacitor/android@7.4.2':
     resolution: {integrity: sha512-FZ7M9NwFkljR7EP5eXiE32mAIfZNcYw2CzRMCG3rQu0u0ZaIoeOeq5/oK4YcDnGpNmu8jpngKJqZ+9OiSQSwDg==}
@@ -6312,6 +6324,12 @@ snapshots:
       '@babel/helper-validator-identifier': 7.27.1
 
   '@bcoe/v8-coverage@0.2.3': {}
+
+  '@capacitor-firebase/authentication@7.0.0(@capacitor/core@7.4.2)(firebase@12.1.0)':
+    dependencies:
+      '@capacitor/core': 7.4.2
+    optionalDependencies:
+      firebase: 12.1.0
 
   '@capacitor/android@7.4.2(@capacitor/core@7.4.2)':
     dependencies:

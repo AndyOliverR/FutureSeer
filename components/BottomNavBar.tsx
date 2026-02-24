@@ -18,7 +18,7 @@ export function BottomNavBar() {
   const pathname = usePathname();
 
   return (
-    <nav className="bottom-nav-mobile md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-[var(--m3-surface-container-high)] border-t border-[var(--m3-outline-variant)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="bottom-nav-mobile md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-[var(--m3-surface-container-high)] border-t border-[var(--m3-outline-variant)] pb-[max(12px,env(safe-area-inset-bottom))]">
       <div className="flex w-full items-center justify-between h-16 px-2">
         {mobileNavItems.map((item) => {
           const isActive = pathname === item.href;

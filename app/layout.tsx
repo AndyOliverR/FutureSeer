@@ -12,6 +12,7 @@ import { Header } from "@/components/header"
 import { BottomNavBar } from "@/components/BottomNavBar"
 import { FloatingTipJar } from "@/components/FloatingTipJar"
 import { MysticalFeedback } from "@/components/MysticalFeedback"
+import Script from "next/script"
 import {
   DeferredAnalyticsInitializer,
   DeferredFirestoreErrorSuppressor,
@@ -41,24 +42,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans">
-        {/* Platform Detection Script - Executed immediately to avoid FOUC */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const isAndroid = /Android/i.test(navigator.userAgent);
-                  if (isAndroid) {
-                    document.documentElement.classList.add('platform-android');
-                  } else {
-                    document.documentElement.classList.add('platform-web');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
+      <head>
+        {/* reCAPTCHA Enterprise Script */}
+        <Script
+          src="https://www.google.com/recaptcha/enterprise.js?render=REDACTED_RECAPTCHA_SITE_KEY"
+          strategy="afterInteractive"
         />
+      </head>
+      <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans">
         <DeferredViewportHeightSync />
         <SchemaMarkup />
         <DeferredFirestoreErrorSuppressor />
@@ -74,6 +65,7 @@ export default function RootLayout({
                 <I18nProvider>
                   <DeferredAnalyticsInitializer />
                   {children}
+                  {/* BottomNavBar handles its own platform visibility internally */}
                   <BottomNavBar />
                   <Toaster />
                 </I18nProvider>

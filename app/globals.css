@@ -4,23 +4,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+   BASE DESIGN SYSTEM: "Simplicity is the ultimate Sophistication"
+   - Rooted in Deep Dark Blue and Golden Yellow.
+   - Defaults are set for the Web/Desktop experience.
+   - Platform overrides are strictly applied for Android.
+*/
+
 :root {
-  /* THE SOPHISTICATED PALETTE - Pure Deep Navy & Glossy Gold */
-  --bg-space: #020617;
+  /* GLOBAL CORE COLORS - Deep Cosmic Aesthetic */
+  --bg-deep-space: #020617;
   --gold-primary: #fbbf24;
   --gold-glow: rgba(251, 191, 36, 0.5);
 
-  /* Overwriting M3 variables to remove all purple/slate tints */
-  --m3-surface: var(--bg-space);
+  /* DEFAULT WEB VARIABLES (Desktop Look) */
+  --m3-surface: transparent;
   --m3-primary: var(--gold-primary);
   --m3-on-surface: #FFFFFF;
   --m3-on-surface-variant: #94a3b8;
   --m3-outline-variant: rgba(251, 191, 36, 0.15);
+  --m3-surface-container-high: rgba(15, 23, 42, 0.85);
+  --m3-surface-container-low: rgba(15, 23, 42, 0.65);
+}
 
-  /* Containers: Use pure dark blue with transparency, not slate */
-  --m3-surface-container-high: rgba(3, 7, 18, 0.85);
-  --m3-surface-container-low: rgba(5, 10, 25, 0.7);
-  --m3-surface-container-highest: rgba(10, 15, 30, 0.9);
+/* STRICT ANDROID OVERRIDES */
+.platform-android {
+  --m3-surface: #020617;
+  --m3-surface-dim: #010409;
+  --m3-surface-container: #0f172a;
+  --m3-surface-container-high: #1e293b;
+  --m3-surface-container-low: #0f172a;
+  --m3-surface-container-highest: #334155;
+  --m3-on-surface: #FFFFFF;
+  --m3-on-surface-variant: #94a3b8;
+  --m3-outline-variant: rgba(251, 191, 36, 0.15);
 }
 
 @layer base {
@@ -30,27 +47,31 @@
   }
   
   body {
-    background-color: var(--bg-space);
+    background-color: var(--bg-deep-space);
     @apply text-white antialiased overflow-x-hidden;
     font-family: 'Inter', sans-serif;
   }
 
-  /* Sophisticated Headers: Consistent Light & Wide style */
+  /* Headlines: Consistent Sophistication */
   h1, h2, h3, h4 {
     font-family: 'Cinzel', serif;
     color: var(--gold-primary);
-    @apply uppercase tracking-[0.2em] font-light transition-all;
-    text-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+    @apply uppercase tracking-[0.15em] transition-all;
+    text-shadow: 0 0 15px rgba(251, 191, 36, 0.25);
   }
 
-  /* Mobile size adjustment while keeping the "Light & Wide" style */
-  @media (max-width: 768px) {
-    h1 { @apply tracking-[0.1em] font-normal text-4xl; }
-    h2 { @apply tracking-[0.1em] font-normal text-2xl; }
+  /* Web headlines are light and airy */
+  .platform-web h1, .platform-web h2 {
+    @apply font-light tracking-[0.2em];
+  }
+
+  /* Android headlines are slightly bolder for mobile legibility */
+  .platform-android h1, .platform-android h2 {
+    @apply font-medium tracking-[0.05em];
   }
 }
 
-/* Starfield Layer - Maximum Clarity */
+/* Starfield Background Layer - Universal */
 .starfield-ultra-sharp::before {
   content: '';
   position: fixed;
@@ -64,24 +85,43 @@
   pointer-events: none;
 }
 
-/* Glossy Glass Cards - Shared by both platforms */
-.glass-effect {
-  background: rgba(2, 6, 23, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(251, 191, 36, 0.2);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+/* Ensure main content is always above background */
+main {
+  position: relative;
+  z-index: 1;
 }
 
-/* Icons Positioning */
-.platform-web [data-tip-jar-widget="true"] { bottom: 100px !important; left: 32px !important; }
-.platform-web [data-feedback-widget="true"] { bottom: 32px !important; left: 32px !important; }
+/* NAVIGATION GUARD - Strict separation */
+.bottom-nav-mobile {
+  display: none !important;
+}
 
+.platform-android .bottom-nav-mobile {
+  display: flex !important;
+}
+
+/* Mobile-only hide via media query as secondary guard */
+@media (min-width: 768px) {
+  .bottom-nav-mobile {
+    display: none !important;
+  }
+}
+
+/* FLOATING WIDGETS POSITIONING */
+/* Web Default */
+[data-tip-jar-widget="true"] { bottom: 96px !important; left: 32px !important; }
+[data-feedback-widget="true"] { bottom: 32px !important; left: 32px !important; }
+
+/* Android Overrides */
 .platform-android [data-tip-jar-widget="true"] { bottom: 160px !important; left: 16px !important; }
 .platform-android [data-feedback-widget="true"] { bottom: 100px !important; left: 16px !important; }
 
-/* Metallic Gold Shimmer */
+/* PULSE ANIMATIONS - Only if explicitly enabled */
+.floating-icon-pulse {
+  @apply drop-shadow-[0_0_10px_rgba(251,191,36,0.3)];
+}
+
+/* UTILITIES */
 .gold-glow {
   color: var(--gold-primary);
   text-shadow: 0 0 20px var(--gold-glow);
@@ -90,7 +130,5 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Force consistency on Standard classes */
-.text-primary { color: #fbbf24 !important; }
-.bg-primary { background-color: #fbbf24 !important; }
-.border-primary { border-color: rgba(251, 191, 36, 0.3) !important; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
