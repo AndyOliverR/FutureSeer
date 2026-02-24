@@ -17,9 +17,11 @@ import {
   indexedDBLocalPersistence,
   initializeAuth,
   browserPopupRedirectResolver,
-  browserSessionPersistence
+  browserSessionPersistence,
+  signInWithCredential,
+  getRedirectResult as firebaseGetRedirectResult
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, limit, getDocs, updateDoc, serverTimestamp, enableNetwork, disableNetwork, onSnapshot, connectFirestoreEmulator, waitForPendingWrites } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, limit, getDocs, updateDoc, serverTimestamp, enableNetwork, disableNetwork, onSnapshot, connectFirestoreEmulator, waitForPendingWrites, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   saveLocalAskHistory, 
@@ -33,6 +35,10 @@ import {
 } from './localStorage';
 import { clearAstroDataCache } from './astroDataService';
 import { generateReferralCode, trackReferralSignup } from './referralUtils';
+
+// Capacitor Native Firebase Auth
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { Capacitor } from '@capacitor/core';
 
 // Client-side Firebase config (only public keys)
 const firebaseConfig = {
@@ -86,7 +92,7 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
         // Initialize Firebase Admin SDK
         const { initializeApp: initializeAdminApp, getApps: getAdminApps } = require('firebase-admin/app');
         const { getFirestore: getAdminFirestore } = require('firebase-admin/firestore');
-        
+
         if (getAdminApps().length === 0) {
           adminApp = initializeAdminApp({
             credential: require('firebase-admin').credential.cert({
@@ -98,9 +104,9 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
         } else {
           adminApp = getAdminApps()[0];
         }
-        
+
         adminDB = getAdminFirestore(adminApp);
-        
+
         // Configure Firestore settings for server-side to prevent idle timeouts
         try {
           adminDB.settings({
@@ -114,17 +120,17 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
             _adminInitLogged = true;
           }
         }
-        
+
         if (!_adminInitLogged) {
           devLog.debug('✅ Firebase Admin SDK initialized for server-side');
           _adminInitLogged = true;
         }
         return { app: adminApp, auth: null, db: adminDB };
-        
+
       } catch (adminError) {
         devLog.error('❌ Firebase Admin SDK initialization failed:', adminError, 'firebase');
         devLog.warn('⚠️ Falling back to client SDK for server-side operations', undefined, 'firebase');
-        
+
         // Fallback to client SDK
         if (!app) {
           app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -133,7 +139,7 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
         return { app, auth: null, db: firebaseDB };
       }
     }
-    
+
     return { app: adminApp, auth: null, db: adminDB };
   }
 
@@ -167,7 +173,7 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       });
 
       firebaseStorage = getStorage(app);
-      
+
       // Connect to Firestore
       firebaseDB = getFirestore(app);
       enableNetwork(firebaseDB).catch(() => {});
@@ -191,6 +197,14 @@ export const getFirebaseDB = (): any => {
   const { db } = initializeFirebase();
   return db;
 };
+
+export const getFirebaseStorage = (): any => {
+  initializeFirebase();
+  return firebaseStorage;
+};
+
+// Export db as an alias for convenience
+export const db = getFirebaseDB();
 
 // Auth providers with optimized configuration for mobile
 export const googleProvider = new GoogleAuthProvider();
@@ -216,20 +230,33 @@ export const signInWithGoogle = async (): Promise<User> => {
       const auth = getFirebaseAuth();
       if (!auth) throw new Error('Firebase not initialized');
 
+      // NATIVE ANDROID/IOS FLOW
+      if (Capacitor.isNativePlatform()) {
+        devLog.debug('🔄 Attempting Native Google sign-in...');
+        const result = await FirebaseAuthentication.signInWithGoogle();
+
+        if (!result.credential) {
+          throw new Error('Native sign-in failed - no credentials returned');
+        }
+
+        // Convert the native credential to a Firebase User
+        const credential = GoogleAuthProvider.credential(result.credential.idToken);
+        const userCredential = await signInWithCredential(auth, credential);
+        return userCredential.user;
+      }
+
+      // WEB FLOW
       let result: UserCredential;
-      
       try {
-        devLog.debug('🔄 Attempting Google sign-in with internal popup...');
+        devLog.debug('🔄 Attempting Web Google sign-in...');
         result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-        devLog.debug('✅ Internal authentication successful');
+        return result.user;
       } catch (popupError: any) {
-        devLog.warn('⚠️ Internal popup blocked or failed, trying stable redirect...', popupError.code, 'firebase');
+        devLog.warn('⚠️ Web popup failed, trying stable redirect...', popupError.code, 'firebase');
         const { signInWithRedirect } = await import('firebase/auth');
         await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver);
         throw new Error('Redirect initiated');
       }
-
-      return result.user;
     } catch (error: any) {
       if (error.message !== 'Redirect initiated') {
         devLog.error('Error signing in with Google:', error, 'firebase');
@@ -307,6 +334,9 @@ export const signUpWithEmail = async (
 export const signOutUser = async (): Promise<void> => {
   try {
     const auth = getFirebaseAuth();
+    if (Capacitor.isNativePlatform()) {
+      await FirebaseAuthentication.signOut();
+    }
     if (auth) await signOut(auth);
     if (typeof window !== 'undefined') {
       sessionStorage.clear();
@@ -335,6 +365,60 @@ export const isReturningUser = (user: User): boolean => {
   const ct = user.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : 0;
   const lst = user.metadata?.lastSignInTime ? new Date(user.metadata.lastSignInTime).getTime() : 0;
   return lst - ct > 60000;
+};
+
+export const getRedirectResult = async (): Promise<any> => {
+  const auth = getFirebaseAuth();
+  if (!auth) return null;
+  return await firebaseGetRedirectResult(auth);
+};
+
+// Enhanced Firestore connection management
+export const ensureFirestoreConnection = async (): Promise<boolean> => {
+  try {
+    const { db } = initializeFirebase();
+    if (!db) return false;
+    try {
+      await enableNetwork(db);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  } catch (error) {
+    return false;
+  }
+};
+
+// Firestore user profile data
+export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return null;
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      return userSnap.data() as UserProfile;
+    }
+    return null;
+  } catch (error) {
+    devLog.error('Error getting user profile:', error, 'firebase');
+    return null;
+  }
+};
+
+export const updateUserProfile = async (uid: string, data: Partial<UserProfile>): Promise<void> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return;
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+      ...data,
+      updatedAt: Date.now()
+    });
+  } catch (error) {
+    devLog.error('Error updating user profile:', error, 'firebase');
+    throw error;
+  }
 };
 
 // Profile generation status utilities
@@ -376,6 +460,23 @@ export const isReportsStale = (userProfile: UserProfile | null): boolean => {
   return calculateProfileDataHash(userProfile) !== stored;
 };
 
+export const isProfileComplete = (profile: UserProfile | null): boolean => {
+  if (!profile) return false;
+  return !!(profile.birthDate && profile.birthPlace && (profile.birthTimeKnown === false || profile.birthTime));
+};
+
+export const getProfileCompletionStatus = (profile: UserProfile | null) => {
+  if (!profile) return { isComplete: false, missingFields: ['all'] };
+  const missingFields = [];
+  if (!profile.birthDate) missingFields.push('birthDate');
+  if (!profile.birthPlace) missingFields.push('birthPlace');
+  if (profile.birthTimeKnown !== false && !profile.birthTime) missingFields.push('birthTime');
+  return {
+    isComplete: missingFields.length === 0,
+    missingFields
+  };
+};
+
 export const markProfileAsGenerated = async (uid: string, profileData?: Partial<UserProfile>): Promise<void> => {
   try {
     const db = getFirebaseDB();
@@ -407,6 +508,52 @@ export const resetProfileGenerationStatus = async (uid: string): Promise<void> =
     clearAstroDataCache(uid);
   } catch (error) {
     devLog.error('Error resetting profile generation status:', error, 'firebase');
+  }
+};
+
+// Activity Logging
+export const saveUserActivity = async (uid: string, activity: any): Promise<void> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return;
+    const activityRef = collection(db, 'users', uid, 'activities');
+    await addDoc(activityRef, {
+      ...activity,
+      timestamp: serverTimestamp()
+    });
+  } catch (error) {
+    devLog.error('Error saving user activity:', error, 'firebase');
+  }
+};
+
+// Notes Management
+export const saveNote = async (uid: string, note: any): Promise<string | null> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return null;
+    const notesRef = collection(db, 'users', uid, 'notes');
+    const docRef = await addDoc(notesRef, {
+      ...note,
+      updatedAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    devLog.error('Error saving note:', error, 'firebase');
+    return null;
+  }
+};
+
+export const getNotes = async (uid: string): Promise<any[]> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return [];
+    const notesRef = collection(db, 'users', uid, 'notes');
+    const q = query(notesRef, orderBy('updatedAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    devLog.error('Error getting notes:', error, 'firebase');
+    return [];
   }
 };
 
