@@ -604,4 +604,15 @@ export interface UserProfile {
   freeMonthsRemaining?: number;
 }
 
+export interface Note {
+  id?: string;
+  title: string;
+  content: string;
+  color?: string;
+  tags?: string[];
+  createdAt: number;
+  updatedAt: number;
+  userId?: string;
+}
+
 export default app;
