@@ -36,8 +36,6 @@ import {
 import { clearAstroDataCache } from './astroDataService';
 import { generateReferralCode, trackReferralSignup } from './referralUtils';
 
-// Capacitor Native Firebase Auth
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { Capacitor } from '@capacitor/core';
 
 // Client-side Firebase config (only public keys)
@@ -232,17 +230,8 @@ export const signInWithGoogle = async (): Promise<User> => {
 
       // NATIVE ANDROID/IOS FLOW
       if (Capacitor.isNativePlatform()) {
-        devLog.debug('🔄 Attempting Native Google sign-in...');
-        const result = await FirebaseAuthentication.signInWithGoogle();
-
-        if (!result.credential) {
-          throw new Error('Native sign-in failed - no credentials returned');
-        }
-
-        // Convert the native credential to a Firebase User
-        const credential = GoogleAuthProvider.credential(result.credential.idToken);
-        const userCredential = await signInWithCredential(auth, credential);
-        return userCredential.user;
+        const { signInWithGoogleNative } = await import('./firebase-mobile');
+        return await signInWithGoogleNative();
       }
 
       // WEB FLOW
@@ -335,7 +324,8 @@ export const signOutUser = async (): Promise<void> => {
   try {
     const auth = getFirebaseAuth();
     if (Capacitor.isNativePlatform()) {
-      await FirebaseAuthentication.signOut();
+      const { signOutNative } = await import('./firebase-mobile');
+      await signOutNative();
     }
     if (auth) await signOut(auth);
     if (typeof window !== 'undefined') {

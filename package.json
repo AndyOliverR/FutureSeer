@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@astrodraw/astrochart": "^3.0.2",
+    "@capacitor-firebase/authentication": "^7.0.0",
     "@capacitor/android": "^7.4.1",
     "@capacitor/cli": "latest",
     "@capacitor/core": "^7.4.1",
