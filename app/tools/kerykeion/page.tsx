@@ -65,8 +65,8 @@ export default function KerykeionPage() {
         date: userProfile.birthDate,
         time: userProfile.birthTime,
         place: userProfile.birthPlace,
-        latitude: userProfile.latitude || 0,
-        longitude: userProfile.longitude || 0
+        latitude: userProfile.birthLatitude ?? 0,
+        longitude: userProfile.birthLongitude ?? 0
       }
 
       const result = await enhancedUniversalInterpretationEngine.generateComprehensiveReading(
