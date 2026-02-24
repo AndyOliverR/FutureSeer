@@ -63,8 +63,8 @@ export default function FixedStarAstrologyPage() {
         birthDate: userProfile?.birthDate || '',
         birthTime: userProfile?.birthTime || '',
         birthPlace: userProfile?.birthPlace || '',
-        latitude: userProfile?.latitude || 40.7128,
-        longitude: userProfile?.longitude || -74.0060
+        latitude: userProfile?.birthLatitude || 40.7128,
+        longitude: userProfile?.birthLongitude || -74.0060
       }
       
       // Load comprehensive analysis from Universal Occult API
