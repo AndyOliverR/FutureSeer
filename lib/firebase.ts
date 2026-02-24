@@ -456,14 +456,16 @@ export const isProfileComplete = (profile: UserProfile | null): boolean => {
 };
 
 export const getProfileCompletionStatus = (profile: UserProfile | null) => {
-  if (!profile) return { isComplete: false, missingFields: ['all'] };
+  if (!profile) return { isComplete: false, missingFields: ['all'], completionPercentage: 0 };
   const missingFields = [];
   if (!profile.birthDate) missingFields.push('birthDate');
   if (!profile.birthPlace) missingFields.push('birthPlace');
   if (profile.birthTimeKnown !== false && !profile.birthTime) missingFields.push('birthTime');
+  const completionPercentage = Math.round(((3 - missingFields.length) / 3) * 100);
   return {
     isComplete: missingFields.length === 0,
-    missingFields
+    missingFields,
+    completionPercentage
   };
 };
 
