@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { trichakraIntelligence, UserProfile } from '@/lib/trichakraIntelligence';
+import { trichakraIntelligence, UserProfile as TrichakraUserProfile } from '@/lib/trichakraIntelligence';
 import { getUserProfile } from '@/lib/firebase';
+import type { UserProfile } from '@/lib/firebase';
 import { devLog } from '@/lib/devLogger';
 
 export const dynamic = 'force-static'
@@ -10,20 +11,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, birthData, userProfile: customProfile } = body;
 
-    let userProfile: UserProfile | null = null;
+    let userProfile: TrichakraUserProfile | null = null;
 
     // If userId is provided, fetch from database
     if (userId) {
       try {
-        const profile = await getUserProfile(userId);
+        const profile: UserProfile | null = await getUserProfile(userId);
         if (profile) {
           userProfile = {
             fullName: profile.fullName,
             birthDate: profile.birthDate,
             birthTime: profile.birthTime,
             birthPlace: profile.birthPlace,
-            latitude: profile.latitude,
-            longitude: profile.longitude
+            latitude: profile.birthLatitude,
+            longitude: profile.birthLongitude
           };
         }
       } catch (profileError) {
@@ -102,7 +103,7 @@ export async function GET(request: NextRequest) {
     devLog.info('🕉️ Fetching Trichakra analysis for user:', userId, 'trichakra-method');
 
     // Fetch user profile
-    const profile = await getUserProfile(userId);
+    const profile: UserProfile | null = await getUserProfile(userId);
     
     if (!profile) {
       return NextResponse.json(
@@ -120,13 +121,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Prepare user profile
-    const userProfile: UserProfile = {
+    const userProfile: TrichakraUserProfile = {
       fullName: profile.fullName,
       birthDate: profile.birthDate,
       birthTime: profile.birthTime,
       birthPlace: profile.birthPlace,
-      latitude: profile.latitude,
-      longitude: profile.longitude
+      latitude: profile.birthLatitude,
+      longitude: profile.birthLongitude
     };
 
     // Generate Trichakra analysis (will use cache if available in future)
