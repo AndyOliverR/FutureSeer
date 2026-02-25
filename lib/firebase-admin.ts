@@ -57,6 +57,19 @@ export async function setDocument(collection: string, docId: string, data: any) 
   return false;
 }
 
+export async function batchSetDocuments(
+  writes: Array<{ collection: string; docId: string; data: any }>
+): Promise<boolean> {
+  if (!adminDb) return false;
+  const batch = adminDb.batch();
+  for (const w of writes) {
+    const docRef = adminDb.collection(w.collection).doc(w.docId);
+    batch.set(docRef, w.data, { merge: true });
+  }
+  await batch.commit();
+  return true;
+}
+
 export async function deleteDocument(collection: string, docId: string): Promise<boolean> {
   if (adminDb) {
     const docRef = adminDb.collection(collection).doc(docId);
