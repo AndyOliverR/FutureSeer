@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { getDocument, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
+import { getDocument, setDocument, batchSetDocuments, isAdminAvailable } from '@/lib/firebase-admin';
 import { generateAllReports } from '@/lib/reportGenerationService';
 import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
@@ -147,25 +147,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await setDocument('comprehensiveMysticalProfiles', uid, toStore);
-
-    // Mark profile as generated
     const newHash = calculateProfileDataHash(userProfile);
-    await setDocument('users', uid, {
-      mysticalProfileGenerated: true,
-      mysticalProfileGeneratedAt: Date.now(),
-      profileDataHash: newHash,
-      profileStatus: 'completed',
-      updatedAt: Date.now(),
-    });
+    const batchSuccess = await batchSetDocuments([
+      { collection: 'comprehensiveMysticalProfiles', docId: uid, data: toStore },
+      {
+        collection: 'users',
+        docId: uid,
+        data: {
+          mysticalProfileGenerated: true,
+          mysticalProfileGeneratedAt: Date.now(),
+          profileDataHash: newHash,
+          profileStatus: 'completed',
+          updatedAt: Date.now(),
+        },
+      },
+      {
+        collection: 'seerMaster',
+        docId: uid,
+        data: {
+          ...result.seerMaster,
+          userId: uid,
+          generatedAt: new Date().toISOString(),
+          systemsUsed: result.systemsUsed,
+        },
+      },
+    ]);
 
-    // Store seer_master for Main Ask the Seer
-    await setDocument('seerMaster', uid, {
-      ...result.seerMaster,
-      userId: uid,
-      generatedAt: new Date().toISOString(),
-      systemsUsed: result.systemsUsed,
-    });
+    if (!batchSuccess) {
+      return NextResponse.json({ error: 'Failed to save profile data. Please try again.' }, { status: 500 });
+    }
 
     // Invalidate divination cache
     clearCachedDivinationData(uid);

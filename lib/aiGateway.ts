@@ -122,6 +122,9 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
   // Keep meta-llama/ and other vendor prefixes intact
 
   if (provider === 'groq') {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
     });
@@ -140,7 +143,9 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
 
     return stream as AsyncIterable<{ choices: Array<{ delta: { content?: string } }> }>;
   } else {
-    // OpenAI
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -221,6 +226,9 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
   // Keep meta-llama/ and other vendor prefixes intact
 
   if (provider === 'groq') {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
     });
@@ -247,7 +255,9 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
       finishReason: completion.choices[0]?.finish_reason,
     };
   } else {
-    // OpenAI
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
