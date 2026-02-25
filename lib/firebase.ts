@@ -356,16 +356,6 @@ export const signOutUser = async (): Promise<void> => {
   }
 };
 
-export const resetPassword = async (email: string): Promise<void> => {
-  try {
-    const auth = getFirebaseAuth();
-    if (!auth) throw new Error('Firebase not initialized');
-    await sendPasswordResetEmail(auth, email);
-  } catch (error: any) {
-    throw error;
-  }
-};
-
 export const getAuthErrorMessage = (error: any): string => {
   const code = error?.code || '';
   switch (code) {
