@@ -601,6 +601,8 @@ export interface UserProfile {
   selectedPlan?: string;
   autoMandateAccepted?: boolean;
   subscriptionStatus?: string;
+  trialEndDate?: number;
+  nextBillingDate?: number;
   referralCode?: string;
   referralCount?: number;
   freeMonthsRemaining?: number;
