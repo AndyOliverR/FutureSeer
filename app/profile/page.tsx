@@ -86,8 +86,26 @@ export default function ProfilePage() {
     }
   }, [userProfile, isEditing, user])
 
+  const validateProfileData = (): string | null => {
+    if (formData.birthDate) {
+      const d = new Date(formData.birthDate)
+      if (isNaN(d.getTime())) return "Please enter a valid birth date."
+      if (d > new Date()) return "Birth date cannot be in the future."
+      if (d.getFullYear() < 1900) return "Please enter a birth year after 1900."
+    }
+    if (formData.birthPlace && formData.birthPlace.trim().length < 2) {
+      return "Please enter a valid birth place (at least 2 characters)."
+    }
+    if (formData.displayName && formData.displayName.trim().length < 1) {
+      return "Please enter a display name."
+    }
+    return null
+  }
+
   const handleSave = async () => {
     if (!user?.uid) return
+    const validationError = validateProfileData()
+    if (validationError) { setError(validationError); return }
     setIsLoading(true); setError(null); setSuccess(null)
     try {
       let bt24 = formData.birthTime

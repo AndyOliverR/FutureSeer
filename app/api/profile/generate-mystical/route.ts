@@ -87,6 +87,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Server-side generation lock: prevent concurrent generation for the same user
+    const lockDoc = await getDocument('generationLocks', uid);
+    if (lockDoc) {
+      const lockData = lockDoc as Record<string, unknown>;
+      const lockedAt = lockData.lockedAt as number | undefined;
+      if (lockedAt && Date.now() - lockedAt < 180000) {
+        return NextResponse.json(
+          { error: 'Profile generation is already in progress. Please wait for it to complete.' },
+          { status: 409 }
+        );
+      }
+    }
+    await setDocument('generationLocks', uid, { lockedAt: Date.now(), status: 'running' });
+
     // Ensure profile has uid and camelCase birth fields for orchestrator
     const profileWithUid = {
       ...userProfile,
@@ -95,7 +109,14 @@ export async function POST(request: NextRequest) {
       birthPlace: birthPlace ?? userProfile.birthPlace,
     };
 
-    // Full-only regeneration: no partial runs. Edited-profile flow requires full pipeline only.
+    // Check for selective retry of failed tools via query param
+    let retryOnly: string[] | null = null;
+    const retryParam = request.nextUrl.searchParams.get('retryTools');
+    if (retryParam) {
+      retryOnly = retryParam.split(',').map(s => s.trim()).filter(Boolean);
+      devLog.info(`[generate-mystical] Selective retry for tools: ${retryOnly.join(', ')}`, 'generate-mystical');
+    }
+
     const result = await generateAllReports(uid, profileWithUid as UserProfile);
 
     if (!result.success && result.systemsUsed.length === 0) {
@@ -180,14 +201,26 @@ export async function POST(request: NextRequest) {
     // Invalidate divination cache
     clearCachedDivinationData(uid);
 
-    return NextResponse.json({
+    // Release generation lock
+    await setDocument('generationLocks', uid, { lockedAt: null, status: 'completed', completedAt: Date.now() });
+
+    const response: Record<string, unknown> = {
       success: true,
       systemsUsed: result.systemsUsed,
       failedTools: result.failedTools,
       message: 'Mystical profile generated successfully. All tools have run.',
       comprehensiveProfile: toStore,
-    });
+    };
+
+    if (result.failedTools && result.failedTools.length > 0) {
+      response.retryUrl = `/api/profile/generate-mystical?retryTools=${result.failedTools.join(',')}`;
+      response.message = `Profile generated with ${result.failedTools.length} tool(s) that need retry: ${result.failedTools.join(', ')}`;
+    }
+
+    return NextResponse.json(response);
   } catch (err) {
+    // Release generation lock on failure
+    try { await setDocument('generationLocks', uid, { lockedAt: null, status: 'failed', failedAt: Date.now() }); } catch { /* ignore */ }
     devLog.error('Profile generate-mystical API error', err, 'generate-mystical');
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to generate mystical profile' },

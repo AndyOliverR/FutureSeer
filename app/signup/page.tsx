@@ -87,18 +87,22 @@ function SignUpPageContent() {
       let captchaToken = null;
 
       // Only execute reCAPTCHA on the web platform
-      if (!isAndroid && typeof window !== 'undefined' && (window as any).grecaptcha) {
-        captchaToken = await new Promise((resolve) => {
-          (window as any).grecaptcha.enterprise.ready(async () => {
-            try {
-              const token = await (window as any).grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'SIGNUP'});
-              resolve(token);
-            } catch (err) {
-              console.error('reCAPTCHA signup execution failed:', err);
-              resolve(null);
-            }
+      if (!isAndroid && typeof window !== 'undefined') {
+        if (!(window as any).grecaptcha) {
+          devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signup');
+        } else {
+          captchaToken = await new Promise((resolve) => {
+            (window as any).grecaptcha.enterprise.ready(async () => {
+              try {
+                const token = await (window as any).grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'SIGNUP'});
+                resolve(token);
+              } catch (err) {
+                devLog.error('reCAPTCHA signup execution failed:', err, 'signup');
+                resolve(null);
+              }
+            });
           });
-        });
+        }
 
         // Verify the token with our backend
         if (captchaToken) {

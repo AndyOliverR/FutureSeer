@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState, useMemo, useEffect } from 'react';
+import { devLog } from '@/lib/devLogger';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
@@ -49,7 +50,7 @@ function BaziPageContent() {
     const hasReport = pipelineReport != null && typeof pipelineReport === 'object';
     const isPlaceholder = hasReport && (pipelineReport as Record<string, unknown>).placeholder === true;
     const hasRealReport = !!baziReport;
-    console.log('[BaZi page] pipelineReport present:', hasReport, 'placeholder:', isPlaceholder, 'baziReport (real):', hasRealReport);
+    devLog.debug(`[BaZi page] pipelineReport present: ${hasReport}, placeholder: ${isPlaceholder}, baziReport (real): ${hasRealReport}`, 'bazi');
   }, [pipelineReport, baziReport]);
 
   const comprehensiveAnalysis = useMemo(() => {
