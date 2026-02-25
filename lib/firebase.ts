@@ -320,6 +320,12 @@ export const signUpWithEmail = async (
   }
 };
 
+export const resetPassword = async (email: string): Promise<void> => {
+  const auth = getFirebaseAuth();
+  if (!auth) throw new Error('Firebase not initialized');
+  await sendPasswordResetEmail(auth, email);
+};
+
 export const signOutUser = async (): Promise<void> => {
   try {
     const auth = getFirebaseAuth();
