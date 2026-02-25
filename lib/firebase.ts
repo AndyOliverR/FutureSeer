@@ -163,12 +163,20 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       // Initialize Firebase app
       app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-      // OPTIMIZED FOR CAPACITOR: Initialize Auth with persistence and proper resolvers
-      // This prevents the "browser takeover" by ensuring auth state is handled internally
-      firebaseAuth = initializeAuth(app, {
-        persistence: [indexedDBLocalPersistence, browserSessionPersistence],
-        popupRedirectResolver: browserPopupRedirectResolver,
-      });
+      // Initialize Auth with persistence and proper resolvers.
+      // Falls back to session-only persistence if IndexedDB is unavailable (e.g. private browsing).
+      try {
+        firebaseAuth = initializeAuth(app, {
+          persistence: [indexedDBLocalPersistence, browserSessionPersistence],
+          popupRedirectResolver: browserPopupRedirectResolver,
+        });
+      } catch (persistError) {
+        devLog.warn('IndexedDB persistence unavailable, falling back to session persistence', undefined, 'firebase');
+        firebaseAuth = initializeAuth(app, {
+          persistence: [browserSessionPersistence],
+          popupRedirectResolver: browserPopupRedirectResolver,
+        });
+      }
 
       firebaseStorage = getStorage(app);
 
@@ -241,15 +249,17 @@ export const signInWithGoogle = async (): Promise<User> => {
         result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
         return result.user;
       } catch (popupError: any) {
-        devLog.warn('⚠️ Web popup failed, trying stable redirect...', popupError.code, 'firebase');
+        const code = popupError?.code || '';
+        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+          throw popupError;
+        }
+        devLog.warn('⚠️ Web popup failed, trying stable redirect...', code, 'firebase');
         const { signInWithRedirect } = await import('firebase/auth');
         await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver);
-        throw new Error('Redirect initiated');
+        return new Promise<User>(() => {});
       }
     } catch (error: any) {
-      if (error.message !== 'Redirect initiated') {
-        devLog.error('Error signing in with Google:', error, 'firebase');
-      }
+      devLog.error('Error signing in with Google:', error, 'firebase');
       throw error;
     } finally {
       isSigningIn = false;
@@ -328,12 +338,15 @@ export const signOutUser = async (): Promise<void> => {
       await signOutNative();
     }
     if (auth) await signOut(auth);
+    // Only redirect after sign-out succeeds
     if (typeof window !== 'undefined') {
+      document.cookie = 'fs_auth=; path=/; max-age=0; SameSite=Lax';
       sessionStorage.clear();
       window.location.href = '/';
     }
   } catch (error) {
     devLog.error('Error signing out:', error, 'firebase');
+    throw error;
   }
 };
 
