@@ -15,10 +15,28 @@ FutureSeer is an AI-powered divination platform that unifies 50+ occult and divi
 7. **Main Ask the Seer**: A unified AI expert (`/seer`) that draws from **all tools** to answer questions holistically — like consulting a master who understands every system.
 8. **Community page**: Users can interact, converse, share information, and discuss insights with other users.
 
-### Design System
+### Dual Design System (Critical — context-aware)
 
-- **Web**: Devotionist styling — dark mystical theme with gold accents, cosmic backgrounds, serif typography
-- **Mobile**: Android Material 3 design language via Capacitor shell
+The app runs TWO distinct design systems based on screen size and platform:
+
+| Signal | Design | Styling |
+|---|---|---|
+| Desktop/laptop (>= 768px) | **Devotionist Web** | Transparent surfaces, light serif headings (Cinzel), wide letter-spacing, cosmic floating aesthetic |
+| Mobile/small screen (< 768px) OR Capacitor native | **Material 3 Mobile** | Solid dark surfaces, medium-weight headings, tighter spacing, bottom nav bar, Material 3 elevation |
+
+**How it works:**
+- `PlatformClassProvider` (in `components/PlatformClassProvider.tsx`) applies `.platform-android` or `.platform-web` to `<body>` on every page load and window resize.
+- CSS custom properties (`--m3-surface`, etc.) in `globals.css` change values under `.platform-android` — e.g., surfaces become solid (#020617) instead of transparent.
+- Tailwind responsive classes (`md:hidden`, `md:grid-cols-3`) handle layout.
+- `BottomNavBar` is visible only on mobile/Android (`bottom-nav-mobile` class + `md:hidden`).
+- `DevotionistStyleCard` is for web; `Material3FAB`, `Material3LoadingSpinner` are for mobile.
+
+**Rules for agents:**
+- NEVER use Material 3 component patterns (solid surface cards, FABs, bottom sheets) on desktop/web layouts.
+- NEVER use Devotionist components (transparent glass cards, wide-tracking serif text) on mobile layouts.
+- When adding UI, ALWAYS check which design system applies at the target breakpoint.
+- Use Tailwind responsive prefixes (`md:`, `lg:`) to differentiate — DO NOT hardcode one style for all screens.
+- Test UI changes at BOTH mobile width (< 768px) and desktop width (>= 1024px).
 
 ### Non-Negotiable Rules
 
