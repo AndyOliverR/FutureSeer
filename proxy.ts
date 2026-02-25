@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Lightweight route protection middleware.
+ * Lightweight route protection proxy (Next.js 16 — renamed from middleware).
  *
  * Checks for a `fs_auth` cookie (set client-side after Firebase auth) to
  * decide whether the user is likely authenticated.  This prevents the
@@ -40,7 +40,7 @@ function isProtectedRoute(pathname: string): boolean {
   return false;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!isProtectedRoute(pathname)) {
