@@ -614,6 +614,8 @@ export interface UserProfile {
   birthTimeNote?: string;
   birthLatitude?: number;
   birthLongitude?: number;
+  latitude?: number;
+  longitude?: number;
   coordinatesResolvedAt?: number;
   currentLocation?: string;
   gender?: 'male' | 'female' | 'non-binary';
@@ -634,6 +636,7 @@ export interface UserProfile {
   autoMandateAccepted?: boolean;
   subscriptionStatus?: string;
   trialEndDate?: number;
+  trialEndTime?: number;
   nextBillingDate?: number;
   referralCode?: string;
   referralCount?: number;
@@ -651,7 +654,7 @@ export interface UserProfile {
     communityUpdates?: boolean;
     newFeatures?: boolean;
   };
-  timezone?: number;
+  timezone?: number | string;
 }
 
 export interface Note {
