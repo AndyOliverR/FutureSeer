@@ -25,6 +25,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
 
 export async function POST(request: NextRequest) {
+  let uid: string | undefined;
   try {
     const authHeader = request.headers.get('Authorization');
     const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
@@ -32,7 +33,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing Authorization Bearer token' }, { status: 401 });
     }
 
-    let uid: string;
     try {
       const decoded = await getAuth().verifyIdToken(idToken);
       uid = decoded.uid;
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (err) {
     // Release generation lock on failure
-    try { await setDocument('generationLocks', uid, { lockedAt: null, status: 'failed', failedAt: Date.now() }); } catch { /* ignore */ }
+    if (uid) { try { await setDocument('generationLocks', uid, { lockedAt: null, status: 'failed', failedAt: Date.now() }); } catch { /* ignore */ } }
     devLog.error('Profile generate-mystical API error', err, 'generate-mystical');
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to generate mystical profile' },
