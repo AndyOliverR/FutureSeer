@@ -145,8 +145,8 @@ export function useHoraryAstrology() {
             question: question.trim(),
             questionTime,
             questionPlace: questionPlace.trim(),
-            latitude: userProfile?.latitude || 12.2958,
-            longitude: userProfile?.longitude || 76.6394,
+            latitude: userProfile?.birthLatitude ?? 12.2958,
+            longitude: userProfile?.birthLongitude ?? 76.6394,
             timezone: userProfile?.timezone || 5.5
           }
         }),
