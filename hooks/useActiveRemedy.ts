@@ -65,7 +65,7 @@ export function useActiveRemedy() {
       }
 
       // Priority 3: Check most recent reading's remedies
-      if (readings.length > 0) {
+      if (Array.isArray(readings) && readings.length > 0) {
         const mostRecentReading = readings[0];
         if (mostRecentReading.remedies && mostRecentReading.remedies.length > 0) {
           const remedy = mostRecentReading.remedies[0];
