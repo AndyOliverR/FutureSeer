@@ -19,6 +19,7 @@ import {
   DeferredServiceWorkerRegistration,
   DeferredViewportHeightSync,
 } from "@/components/DeferredLayoutComponents"
+import { PlatformClassProvider } from "@/components/PlatformClassProvider"
 
 export const metadata: Metadata = {
   title: "FutureSeer - AI-Powered Mystical Insights",
@@ -51,6 +52,7 @@ export default function RootLayout({
       </head>
       <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans">
         <DeferredViewportHeightSync />
+        <PlatformClassProvider />
         <SchemaMarkup />
         <DeferredFirestoreErrorSuppressor />
         <main role="main" id="main-content">

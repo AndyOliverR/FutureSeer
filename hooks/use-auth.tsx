@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from 'firebase/auth';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile, ensureFirestoreConnection, getRedirectResult } from '@/lib/firebase';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 
@@ -27,20 +28,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSpecialUser, setIsSpecialUser] = useState(false);
 
-  // Admin role checking function
   const checkAdminRoles = (email: string | null) => {
     if (!email) return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
-    
-    // Super admin (God Mode)
-    if (email === 'andyrozario@hotmail.com') {
+
+    const superadminEmails = (process.env.NEXT_PUBLIC_SUPERADMIN_EMAILS || 'andyrozario@hotmail.com')
+      .split(',').map(e => e.trim().toLowerCase());
+    const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'andyoliverrozario2@gmail.com')
+      .split(',').map(e => e.trim().toLowerCase());
+
+    const lowerEmail = email.toLowerCase();
+
+    if (superadminEmails.includes(lowerEmail)) {
       return { isSuperadmin: true, isAdmin: true, isSpecialUser: false };
     }
-    
-    // Admin (Mary Mode)
-    if (email === 'andyoliverrozario2@gmail.com') {
+    if (adminEmails.includes(lowerEmail)) {
       return { isSuperadmin: false, isAdmin: true, isSpecialUser: false };
     }
-    
     return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
   };
 
@@ -61,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Then sign out from Firebase (this also clears localStorage now)
       await signOutUser();
       
-      console.log('✅ User signed out successfully');
+      devLog.debug('User signed out successfully', 'auth');
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;
@@ -92,10 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const redirectResult = await getRedirectResult();
         if (redirectResult) {
-          console.log('✅ Redirect authentication completed successfully');
+          devLog.debug('Redirect authentication completed successfully', 'auth');
         }
       } catch (redirectError) {
-        console.log('ℹ️ No redirect result or redirect error:', redirectError);
+        devLog.debug('No redirect result or redirect error', 'auth');
       }
 
       // Regular Firebase authentication (no longer blocked on Firestore)
@@ -105,21 +108,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      const PROFILE_LOAD_TIMEOUT_MS = 5000; // 5s so Firestore hang does not block UI forever
+      const PROFILE_LOAD_TIMEOUT_MS = 8000;
+      const PROFILE_RETRY_DELAY_MS = 2000;
+      const MAX_PROFILE_RETRIES = 2;
+
+      const loadProfileWithRetry = async (uid: string, attempt = 0): Promise<UserProfile | null> => {
+        const timeoutPromise = new Promise<null>((_, reject) =>
+          setTimeout(() => reject(new Error('Profile load timeout')), PROFILE_LOAD_TIMEOUT_MS)
+        );
+        try {
+          return await Promise.race([getUserProfile(uid), timeoutPromise]);
+        } catch (err) {
+          if (attempt < MAX_PROFILE_RETRIES) {
+            console.warn(`⚠️ Profile load attempt ${attempt + 1} failed, retrying in ${PROFILE_RETRY_DELAY_MS}ms...`);
+            await new Promise(r => setTimeout(r, PROFILE_RETRY_DELAY_MS));
+            return loadProfileWithRetry(uid, attempt + 1);
+          }
+          console.warn('⚠️ Profile load failed after retries; continuing without profile.');
+          return null;
+        }
+      };
 
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         setUser(firebaseUser);
+
+        // Sync lightweight auth cookie for middleware route protection
+        if (typeof document !== 'undefined') {
+          if (firebaseUser) {
+            document.cookie = 'fs_auth=1; path=/; max-age=2592000; SameSite=Lax';
+          } else {
+            document.cookie = 'fs_auth=; path=/; max-age=0; SameSite=Lax';
+          }
+        }
         
         try {
           if (firebaseUser) {
             try {
-              // Check for admin roles based on email
               const adminRoles = checkAdminRoles(firebaseUser.email);
               setIsSuperadmin(adminRoles.isSuperadmin);
               setIsAdmin(adminRoles.isAdmin);
               setIsSpecialUser(adminRoles.isSpecialUser);
               
-              // Also check for Firebase custom claims (for future use)
               const token = await getIdTokenResult(firebaseUser, true);
               if (token.claims.superadmin) {
                 setIsSuperadmin(true);
@@ -131,20 +160,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setIsAdmin(true);
               }
             } catch (e) {
-              // Fallback to email-based role checking
               const adminRoles = checkAdminRoles(firebaseUser.email);
               setIsSuperadmin(adminRoles.isSuperadmin);
               setIsAdmin(adminRoles.isAdmin);
               setIsSpecialUser(adminRoles.isSpecialUser);
             }
             
-            const timeoutPromise = new Promise<null>((_, reject) =>
-              setTimeout(() => reject(new Error('Profile load timeout')), PROFILE_LOAD_TIMEOUT_MS)
-            );
-            const profile = await Promise.race([
-              getUserProfile(firebaseUser.uid),
-              timeoutPromise,
-            ]);
+            const profile = await loadProfileWithRetry(firebaseUser.uid);
             setUserProfile(profile);
           } else {
             setUserProfile(null);
@@ -153,10 +175,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsSpecialUser(false);
           }
         } catch (e) {
-          if (e instanceof Error && e.message === 'Profile load timeout') {
-            console.warn('⚠️ Profile load timed out; continuing without profile.');
-            setUserProfile(null);
-          }
           if (firebaseUser) {
             setUserProfile(null);
           } else {

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
-import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, isReturningUser } from '@/lib/firebase';
+import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, isReturningUser, getAuthErrorMessage } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { CountrySelector } from '@/components/CountrySelector';
 import { ModalPortal } from '@/components/ui/ModalPortal';
@@ -70,10 +70,11 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         return;
       }
       
-      setError(error.message);
+      const msg = getAuthErrorMessage(error);
+      setError(msg);
       toast({
         title: "Sign-in failed",
-        description: error.message,
+        description: msg,
         variant: "destructive",
       });
     } finally {
@@ -100,10 +101,11 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
       onClose();
       router.push('/tools');
     } catch (error: any) {
-      setError(error.message);
+      const msg = getAuthErrorMessage(error);
+      setError(msg);
       toast({
         title: "Sign-in failed",
-        description: error.message,
+        description: msg,
         variant: "destructive",
       });
     } finally {
@@ -140,10 +142,11 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
       onClose();
       router.push('/profile');
     } catch (error: any) {
-      setError(error.message);
+      const msg = getAuthErrorMessage(error);
+      setError(msg);
       toast({
         title: "Sign-up failed",
-        description: error.message,
+        description: msg,
         variant: "destructive",
       });
     } finally {
@@ -169,10 +172,11 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
       });
       setActiveTab('signin');
     } catch (error: any) {
-      setError(error.message);
+      const msg = getAuthErrorMessage(error);
+      setError(msg);
       toast({
         title: "Password reset failed",
-        description: error.message,
+        description: msg,
         variant: "destructive",
       });
     } finally {
