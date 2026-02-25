@@ -439,6 +439,14 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
   }
 };
 
+export const updateSubscriptionStatus = async (uid: string, isSubscribed: boolean): Promise<void> => {
+  await updateUserProfile(uid, { isSubscribed });
+};
+
+export const updateTipStatus = async (uid: string, isTipped: boolean): Promise<void> => {
+  await updateUserProfile(uid, { isTipped });
+};
+
 // Profile generation status utilities
 export const calculateProfileDataHash = (profile: Partial<UserProfile>): string => {
   const relevantData = {
@@ -573,6 +581,93 @@ export const getNotes = async (uid: string): Promise<any[]> => {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   } catch (error) {
     devLog.error('Error getting notes:', error, 'firebase');
+    return [];
+  }
+};
+
+/** Saves an ask entry to history (local for now; Firestore can be added later). */
+export const saveAskHistory = async (data: {
+  uid: string;
+  question: string;
+  aiSummary: string;
+  scientificData?: any;
+  symbolicData?: any;
+  remedies?: any[];
+  timestamp: number;
+}): Promise<void> => {
+  saveLocalAskHistory(data);
+};
+
+/** Returns ask history for a user (from local storage for now; filter by uid). */
+export const getAskHistory = async (uid: string): Promise<any[]> => {
+  const all = getLocalAskHistory();
+  return all.filter((entry) => entry.uid === uid);
+};
+
+/** Ask history entry shape (matches LocalAskHistory). */
+export interface AskHistory {
+  id: string;
+  uid: string;
+  question: string;
+  aiSummary: string;
+  scientificData?: any;
+  symbolicData?: any;
+  remedies?: any[];
+  timestamp: number;
+}
+
+/** User activity log item from Firestore. */
+export interface UserActivityItem {
+  type?: string;
+  toolSlug?: string;
+  path?: string;
+  timestamp?: any;
+  [key: string]: any;
+}
+
+/** Returns recent activity for a user from Firestore (users/{uid}/activities). */
+export const getUserActivity = async (uid: string, limitCount: number = 50): Promise<UserActivityItem[]> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return [];
+    const activityRef = collection(db, 'users', uid, 'activities');
+    const q = query(activityRef, orderBy('timestamp', 'desc'), limit(limitCount));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as UserActivityItem));
+  } catch {
+    return [];
+  }
+};
+
+/** Returns user's saved remedies (e.g. from profile or a future collection). Stub returns [] until persistence is added. */
+export const getSavedRemedies = async (_uid: string): Promise<any[]> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return [];
+    // TODO: read from user profile field or remedies subcollection when added
+    return [];
+  } catch {
+    return [];
+  }
+};
+
+/** Unified reading shape used by useAllReadings. */
+export interface UnifiedReading {
+  timestamp: number;
+  confidence?: number;
+  symbolicData?: { elementalInfluence?: string };
+  remedies?: any[];
+  [key: string]: any;
+}
+
+/** Returns all readings for a user. Stub returns [] until persistence is added. */
+export const getAllReadings = async (_uid: string): Promise<UnifiedReading[]> => {
+  try {
+    const db = getFirebaseDB();
+    if (!db) return [];
+    // TODO: read from user readings subcollection or activity log when added
+    return [];
+  } catch {
     return [];
   }
 };
