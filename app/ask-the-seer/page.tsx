@@ -16,11 +16,35 @@ export default function AskTheSeerPage() {
     }
   }, [authLoading, user, userProfile, router]);
 
-  if (authLoading || !user) {
-    return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-amber-500/30 rounded-full animate-spin border-t-amber-400" />
+          <p className="text-amber-400/70 text-sm animate-pulse">Connecting to the Seer...</p>
+        </div>
+      </div>
+    );
+  }
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] flex items-center justify-center px-4">
+        <div className="text-center space-y-4">
+          <p className="text-amber-400 text-lg font-serif">Please sign in to consult the Seer</p>
+          <a href="/signin" className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl">Sign In</a>
+        </div>
+      </div>
+    );
   }
   if (userProfile != null && !hasRequiredProfileSetup(userProfile)) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] flex items-center justify-center px-4">
+        <div className="text-center space-y-4">
+          <p className="text-amber-400 text-lg font-serif">Complete your profile to consult the Seer</p>
+          <a href="/profile" className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl">Complete Profile</a>
+        </div>
+      </div>
+    );
   }
 
   return (

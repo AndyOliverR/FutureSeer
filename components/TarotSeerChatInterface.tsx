@@ -143,17 +143,31 @@ export default function TarotSeerChatInterface({
       const decoder = new TextDecoder()
       let accumulatedContent = ''
       if (reader) {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-          const chunk = decoder.decode(value)
-          accumulatedContent += chunk
-          streamingLengthRef.current = accumulatedContent.length
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            const chunk = decoder.decode(value)
+            accumulatedContent += chunk
+            streamingLengthRef.current = accumulatedContent.length
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              )
             )
-          )
+          }
+        } catch (streamError) {
+          devLog.error('Stream interrupted', streamError, 'TarotSeerChatInterface')
+          if (accumulatedContent.length > 0) {
+            accumulatedContent += '\n\n---\n*Connection was interrupted. The response above may be incomplete. Please try again.*'
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              )
+            )
+          } else {
+            throw streamError
+          }
         }
       }
       setStreamingMessageId(null)

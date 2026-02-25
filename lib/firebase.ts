@@ -163,12 +163,20 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       // Initialize Firebase app
       app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-      // OPTIMIZED FOR CAPACITOR: Initialize Auth with persistence and proper resolvers
-      // This prevents the "browser takeover" by ensuring auth state is handled internally
-      firebaseAuth = initializeAuth(app, {
-        persistence: [indexedDBLocalPersistence, browserSessionPersistence],
-        popupRedirectResolver: browserPopupRedirectResolver,
-      });
+      // Initialize Auth with persistence and proper resolvers.
+      // Falls back to session-only persistence if IndexedDB is unavailable (e.g. private browsing).
+      try {
+        firebaseAuth = initializeAuth(app, {
+          persistence: [indexedDBLocalPersistence, browserSessionPersistence],
+          popupRedirectResolver: browserPopupRedirectResolver,
+        });
+      } catch (persistError) {
+        devLog.warn('IndexedDB persistence unavailable, falling back to session persistence', undefined, 'firebase');
+        firebaseAuth = initializeAuth(app, {
+          persistence: [browserSessionPersistence],
+          popupRedirectResolver: browserPopupRedirectResolver,
+        });
+      }
 
       firebaseStorage = getStorage(app);
 
@@ -241,15 +249,17 @@ export const signInWithGoogle = async (): Promise<User> => {
         result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
         return result.user;
       } catch (popupError: any) {
-        devLog.warn('⚠️ Web popup failed, trying stable redirect...', popupError.code, 'firebase');
+        const code = popupError?.code || '';
+        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+          throw popupError;
+        }
+        devLog.warn('⚠️ Web popup failed, trying stable redirect...', code, 'firebase');
         const { signInWithRedirect } = await import('firebase/auth');
         await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver);
-        throw new Error('Redirect initiated');
+        return new Promise<User>(() => {});
       }
     } catch (error: any) {
-      if (error.message !== 'Redirect initiated') {
-        devLog.error('Error signing in with Google:', error, 'firebase');
-      }
+      devLog.error('Error signing in with Google:', error, 'firebase');
       throw error;
     } finally {
       isSigningIn = false;
@@ -334,12 +344,25 @@ export const signOutUser = async (): Promise<void> => {
       await signOutNative();
     }
     if (auth) await signOut(auth);
+    // Only redirect after sign-out succeeds
     if (typeof window !== 'undefined') {
+      document.cookie = 'fs_auth=; path=/; max-age=0; SameSite=Lax';
       sessionStorage.clear();
       window.location.href = '/';
     }
   } catch (error) {
     devLog.error('Error signing out:', error, 'firebase');
+    throw error;
+  }
+};
+
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase not initialized');
+    await sendPasswordResetEmail(auth, email);
+  } catch (error: any) {
+    throw error;
   }
 };
 
@@ -348,12 +371,21 @@ export const getAuthErrorMessage = (error: any): string => {
   switch (code) {
     case 'auth/user-not-found': return 'No account found with this email.';
     case 'auth/wrong-password': return 'Incorrect password.';
-    case 'auth/email-already-in-use': return 'Email already in use.';
-    case 'auth/invalid-credential': return 'Invalid credentials.';
-    case 'auth/network-request-failed': return 'Network error. Check your connection.';
+    case 'auth/email-already-in-use': return 'An account with this email already exists. Try signing in instead.';
+    case 'auth/invalid-credential': return 'Invalid email or password. Please try again.';
+    case 'auth/invalid-email': return 'Please enter a valid email address.';
+    case 'auth/weak-password': return 'Password is too weak. Please use at least 6 characters.';
+    case 'auth/too-many-requests': return 'Too many attempts. Please wait a moment and try again.';
+    case 'auth/user-disabled': return 'This account has been disabled. Please contact support.';
+    case 'auth/operation-not-allowed': return 'This sign-in method is not enabled. Please contact support.';
+    case 'auth/network-request-failed': return 'Network error. Please check your connection and try again.';
     case 'auth/popup-closed-by-user': return 'Sign-in cancelled.';
-    case 'auth/unauthorized-domain': return 'Domain not authorized. Please check Firebase settings.';
-    default: return 'Authentication failed. Please try again.';
+    case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
+    case 'auth/cancelled-popup-request': return 'Sign-in cancelled.';
+    case 'auth/unauthorized-domain': return 'This domain is not authorized. Please contact support.';
+    case 'auth/requires-recent-login': return 'Please sign in again to complete this action.';
+    case 'auth/credential-already-in-use': return 'These credentials are already linked to another account.';
+    default: return 'Something went wrong. Please try again.';
   }
 };
 
@@ -588,6 +620,8 @@ export interface UserProfile {
   birthTimeNote?: string;
   birthLatitude?: number;
   birthLongitude?: number;
+  latitude?: number;
+  longitude?: number;
   coordinatesResolvedAt?: number;
   currentLocation?: string;
   gender?: 'male' | 'female' | 'non-binary';
@@ -608,6 +642,7 @@ export interface UserProfile {
   autoMandateAccepted?: boolean;
   subscriptionStatus?: string;
   trialEndDate?: number;
+  trialEndTime?: number;
   nextBillingDate?: number;
   referralCode?: string;
   referralCount?: number;
@@ -625,7 +660,7 @@ export interface UserProfile {
     communityUpdates?: boolean;
     newFeatures?: boolean;
   };
-  timezone?: number;
+  timezone?: number | string;
 }
 
 export interface Note {
