@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from 'firebase/auth';
+import { devLog } from '@/lib/devLogger';
 import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile, ensureFirestoreConnection, getRedirectResult } from '@/lib/firebase';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 
@@ -27,20 +28,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSpecialUser, setIsSpecialUser] = useState(false);
 
-  // Admin role checking function
   const checkAdminRoles = (email: string | null) => {
     if (!email) return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
-    
-    // Super admin (God Mode)
-    if (email === 'andyrozario@hotmail.com') {
+
+    const superadminEmails = (process.env.NEXT_PUBLIC_SUPERADMIN_EMAILS || 'andyrozario@hotmail.com')
+      .split(',').map(e => e.trim().toLowerCase());
+    const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'andyoliverrozario2@gmail.com')
+      .split(',').map(e => e.trim().toLowerCase());
+
+    const lowerEmail = email.toLowerCase();
+
+    if (superadminEmails.includes(lowerEmail)) {
       return { isSuperadmin: true, isAdmin: true, isSpecialUser: false };
     }
-    
-    // Admin (Mary Mode)
-    if (email === 'andyoliverrozario2@gmail.com') {
+    if (adminEmails.includes(lowerEmail)) {
       return { isSuperadmin: false, isAdmin: true, isSpecialUser: false };
     }
-    
     return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
   };
 
@@ -61,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Then sign out from Firebase (this also clears localStorage now)
       await signOutUser();
       
-      console.log('✅ User signed out successfully');
+      devLog.debug('User signed out successfully', 'auth');
     } catch (error) {
       console.error('Sign out error:', error);
       throw error;
@@ -92,10 +95,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const redirectResult = await getRedirectResult();
         if (redirectResult) {
-          console.log('✅ Redirect authentication completed successfully');
+          devLog.debug('Redirect authentication completed successfully', 'auth');
         }
       } catch (redirectError) {
-        console.log('ℹ️ No redirect result or redirect error:', redirectError);
+        devLog.debug('No redirect result or redirect error', 'auth');
       }
 
       // Regular Firebase authentication (no longer blocked on Firestore)
