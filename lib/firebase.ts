@@ -337,17 +337,36 @@ export const signOutUser = async (): Promise<void> => {
   }
 };
 
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase not initialized');
+    await sendPasswordResetEmail(auth, email);
+  } catch (error: any) {
+    throw error;
+  }
+};
+
 export const getAuthErrorMessage = (error: any): string => {
   const code = error?.code || '';
   switch (code) {
     case 'auth/user-not-found': return 'No account found with this email.';
     case 'auth/wrong-password': return 'Incorrect password.';
-    case 'auth/email-already-in-use': return 'Email already in use.';
-    case 'auth/invalid-credential': return 'Invalid credentials.';
-    case 'auth/network-request-failed': return 'Network error. Check your connection.';
+    case 'auth/email-already-in-use': return 'An account with this email already exists. Try signing in instead.';
+    case 'auth/invalid-credential': return 'Invalid email or password. Please try again.';
+    case 'auth/invalid-email': return 'Please enter a valid email address.';
+    case 'auth/weak-password': return 'Password is too weak. Please use at least 6 characters.';
+    case 'auth/too-many-requests': return 'Too many attempts. Please wait a moment and try again.';
+    case 'auth/user-disabled': return 'This account has been disabled. Please contact support.';
+    case 'auth/operation-not-allowed': return 'This sign-in method is not enabled. Please contact support.';
+    case 'auth/network-request-failed': return 'Network error. Please check your connection and try again.';
     case 'auth/popup-closed-by-user': return 'Sign-in cancelled.';
-    case 'auth/unauthorized-domain': return 'Domain not authorized. Please check Firebase settings.';
-    default: return 'Authentication failed. Please try again.';
+    case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
+    case 'auth/cancelled-popup-request': return 'Sign-in cancelled.';
+    case 'auth/unauthorized-domain': return 'This domain is not authorized. Please contact support.';
+    case 'auth/requires-recent-login': return 'Please sign in again to complete this action.';
+    case 'auth/credential-already-in-use': return 'These credentials are already linked to another account.';
+    default: return 'Something went wrong. Please try again.';
   }
 };
 

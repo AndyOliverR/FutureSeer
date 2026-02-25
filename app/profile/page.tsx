@@ -34,6 +34,18 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
+  const [generationStatus, setGenerationStatus] = useState<string>("")
+  const generationAbortRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    if (!isGeneratingProfile) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [isGeneratingProfile])
 
   const [formData, setFormData] = useState({
     displayName: "", fullName: "", email: "",
@@ -168,6 +180,14 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {!formData.birthTime && formData.birthDate && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
+                <p className="text-amber-300 text-xs font-medium">
+                  ⚠️ Birth time not set — readings will use 12:00 PM (noon) as default, which may reduce accuracy for time-sensitive charts like houses and ascendant.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 text-center">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
@@ -187,23 +207,53 @@ export default function ProfilePage() {
               <div className="pt-6 border-t border-outline-variant/30">
                 <Button
                   onClick={async () => {
+                    if (isGeneratingProfile) return
                     setIsGeneratingProfile(true)
+                    setError(null)
+                    setGenerationStatus("Preparing your cosmic reading...")
+                    const abort = new AbortController()
+                    generationAbortRef.current = abort
                     try {
+                      setGenerationStatus("Connecting to the celestial realm...")
                       const t = await user?.getIdToken()
-                      const res = await fetch('/api/profile/generate-mystical', { method: 'POST', headers: { Authorization: `Bearer ${t}` } })
-                      if (!res.ok) throw new Error("API failed")
+                      if (!t) throw new Error("Please sign in again to continue.")
+                      setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+                      const res = await fetch('/api/profile/generate-mystical', {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${t}` },
+                        signal: abort.signal,
+                      })
+                      if (!res.ok) {
+                        const body = await res.json().catch(() => ({}))
+                        throw new Error(body.error || "Profile generation failed. Please try again.")
+                      }
                       const data = await res.json()
+                      if (data.failedTools && data.failedTools.length > 0) {
+                        devLog.warn(`Some tools had issues: ${data.failedTools.join(', ')}`, 'profile')
+                      }
                       applyGeneratedProfile(data.comprehensiveProfile)
                       setSuccess("Mystical Profile Generated!")
                       router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
-                    } catch(e) { setError("Generation failed.") }
-                    finally { setIsGeneratingProfile(false) }
+                    } catch(e: any) {
+                      if (e?.name === 'AbortError') return
+                      setError(e?.message || "Generation failed. Please check your connection and try again.")
+                    } finally {
+                      setIsGeneratingProfile(false)
+                      setGenerationStatus("")
+                      generationAbortRef.current = null
+                    }
                   }}
                   disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace}
                   className="w-full h-16 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 rounded-[24px] font-bold text-lg shadow-xl active:scale-95 transition-all"
                 >
                   {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
                 </Button>
+                {isGeneratingProfile && generationStatus && (
+                  <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
+                )}
+                {!formData.birthDate && !isGeneratingProfile && (
+                  <p className="text-center text-amber-400/50 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                )}
               </div>
             )}
           </div>
