@@ -139,7 +139,7 @@ export default function CommunityAttributionPage() {
         }),
       }).catch((err) => {
         devLog.error('Error auto-joining community:', err, 'page');
-        return null;
+        return { __failed: true } as any;
       });
 
       const membersPromise = fetch('/api/community/members?limit=50').then(async (r) => {
@@ -163,12 +163,25 @@ export default function CommunityAttributionPage() {
         return null;
       });
 
-      const [_, membersData, discussionsData, attributionData] = await Promise.all([
+      const [autoJoinResult, membersData, discussionsData, attributionData] = await Promise.all([
         autoJoinPromise,
         membersPromise,
         discussionsPromise,
         attributionPromise,
       ]);
+
+      // Surface auto-join failures to the user
+      if (autoJoinResult && (autoJoinResult as any).__failed) {
+        toast({ title: "Community", description: "Could not join community automatically. Some features may be limited.", variant: "destructive" });
+      }
+
+      // Notify if some community sections failed to load
+      const failedSections: string[] = [];
+      if (!membersData) failedSections.push('members');
+      if (!discussionsData) failedSections.push('discussions');
+      if (failedSections.length > 0) {
+        toast({ title: "Partial load", description: `Could not load ${failedSections.join(' and ')}. Pull to refresh to try again.` });
+      }
 
       if (membersData?.length) {
         setCommunityMembers(membersData.map((m: any) => ({

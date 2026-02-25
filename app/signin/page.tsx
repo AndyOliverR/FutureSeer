@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, Suspense, useEffect } from "react"
+import { devLog } from '@/lib/devLogger'
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
@@ -64,18 +65,22 @@ function SignInContent() {
       let captchaToken = null;
 
       // Only execute reCAPTCHA on the web platform
-      if (!isAndroid && typeof window !== 'undefined' && window.grecaptcha) {
-        captchaToken = await new Promise((resolve) => {
-          window.grecaptcha.enterprise.ready(async () => {
-            try {
-              const token = await window.grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'LOGIN'});
-              resolve(token);
-            } catch (err) {
-              console.error('reCAPTCHA execution failed:', err);
-              resolve(null);
-            }
+      if (!isAndroid && typeof window !== 'undefined') {
+        if (!window.grecaptcha) {
+          devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signin');
+        } else {
+          captchaToken = await new Promise((resolve) => {
+            window.grecaptcha.enterprise.ready(async () => {
+              try {
+                const token = await window.grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'LOGIN'});
+                resolve(token);
+              } catch (err) {
+                devLog.error('reCAPTCHA execution failed:', err, 'signin');
+                resolve(null);
+              }
+            });
           });
-        });
+        }
 
         // Verify the token with our backend
         if (captchaToken) {

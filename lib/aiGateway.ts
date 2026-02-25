@@ -18,6 +18,43 @@ const isGatewayAvailable = () => {
   return !!process.env.AI_GATEWAY_API_KEY;
 };
 
+const MAX_RETRIES = 2;
+const RETRY_DELAYS = [1000, 3000];
+
+/**
+ * Retry wrapper for AI SDK calls. Retries on transient errors (429 rate
+ * limit, 5xx server errors, network timeouts). Returns the result on
+ * success, throws on permanent failures or after all retries exhausted.
+ */
+async function withRetry<T>(fn: () => Promise<T>, label = 'AI call'): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastError = err;
+      const status = err?.status ?? err?.statusCode ?? err?.error?.status;
+      const isRetryable =
+        status === 429 ||
+        (status >= 500 && status < 600) ||
+        err?.code === 'ECONNRESET' ||
+        err?.code === 'ETIMEDOUT' ||
+        err?.message?.includes('timeout');
+
+      if (!isRetryable || attempt === MAX_RETRIES) {
+        if (status === 429) {
+          throw new Error('Our AI service is currently busy. Please wait a moment and try again.');
+        }
+        throw err;
+      }
+      const delay = RETRY_DELAYS[attempt] ?? 3000;
+      devLog.warn(`${label} attempt ${attempt + 1} failed (status=${status}), retrying in ${delay}ms`, 'aiGateway');
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastError;
+}
+
 // Map model names to AI Gateway format (provider/model)
 const mapModelToGateway = (model: string): string => {
   // If already in provider/model format, return as-is
@@ -122,11 +159,14 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
   // Keep meta-llama/ and other vendor prefixes intact
 
   if (provider === 'groq') {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
     });
 
-    const stream = await groq.chat.completions.create({
+    const stream = await withRetry(() => groq.chat.completions.create({
       model: modelName,
       messages: options.messages as Parameters<typeof groq.chat.completions.create>[0]['messages'],
       stream: true,
@@ -136,16 +176,18 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
       frequency_penalty: options.frequencyPenalty,
       presence_penalty: options.presencePenalty,
       response_format: options.responseFormat || options.response_format,
-    });
+    }), 'Groq streaming');
 
     return stream as AsyncIterable<{ choices: Array<{ delta: { content?: string } }> }>;
   } else {
-    // OpenAI
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const stream = await openai.chat.completions.create({
+    const stream = await withRetry(() => openai.chat.completions.create({
       model: modelName,
       messages: options.messages as Parameters<typeof openai.chat.completions.create>[0]['messages'],
       stream: true,
@@ -155,7 +197,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
       frequency_penalty: options.frequencyPenalty,
       presence_penalty: options.presencePenalty,
       response_format: options.responseFormat || options.response_format,
-    });
+    }), 'OpenAI streaming');
 
     // Convert OpenAI stream to Groq-compatible format
     return {
@@ -221,11 +263,14 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
   // Keep meta-llama/ and other vendor prefixes intact
 
   if (provider === 'groq') {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
     });
 
-    const completion = await groq.chat.completions.create({
+    const completion = await withRetry(() => groq.chat.completions.create({
       model: modelName,
       messages: options.messages as Parameters<typeof groq.chat.completions.create>[0]['messages'],
       max_tokens: options.maxTokens,
@@ -234,7 +279,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
       frequency_penalty: options.frequencyPenalty,
       presence_penalty: options.presencePenalty,
       response_format: options.responseFormat || options.response_format,
-    });
+    }), 'Groq completion');
 
     const content = completion.choices[0]?.message?.content || '';
     return {
@@ -247,12 +292,14 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
       finishReason: completion.choices[0]?.finish_reason,
     };
   } else {
-    // OpenAI
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('AI service is temporarily unavailable. Please try again later.');
+    }
     const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const completion = await openai.chat.completions.create({
+    const completion = await withRetry(() => openai.chat.completions.create({
       model: modelName,
       messages: options.messages as Parameters<typeof openai.chat.completions.create>[0]['messages'],
       max_tokens: options.maxTokens,
@@ -261,7 +308,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
       frequency_penalty: options.frequencyPenalty,
       presence_penalty: options.presencePenalty,
       response_format: options.responseFormat || options.response_format,
-    });
+    }), 'OpenAI completion');
 
     const content = completion.choices[0]?.message?.content || '';
     return {
