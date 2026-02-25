@@ -1,8 +1,34 @@
 # AGENTS.md
 
+## Product Overview & Core Flow
+
+FutureSeer is an AI-powered divination platform that unifies 50+ occult and divination systems (Vedic/Western astrology, tarot, numerology, runes, I Ching, palmistry, etc.) into one cohesive experience. The core value proposition: occult and divination information is scattered across many sources — FutureSeer provides both **individual tool-specific insights** and a **unified cross-tool perspective**.
+
+### User Flow (Critical — all agents must understand this)
+
+1. **Sign-in / Sign-up**: User signs in (existing) or creates a new account via Firebase Auth.
+2. **Profile completion** (new users): Redirected to the profile page to fill in required details (birth date/time/place, name, etc.). This data is the foundation for all readings.
+3. **Mystical profile generation**: Once the profile is complete and the user clicks "Generate my mystical profile", **all divination tools generate their reports simultaneously**. This is a comprehensive, one-time generation that produces detailed reports for every occult field.
+4. **Persistent storage**: All generated reports are stored in Firebase Firestore under the user's profile. When the same user signs back in, they see their previously generated information — nothing is lost.
+5. **Tool-specific views**: When a user navigates to a specific tool (e.g., `/tools/tarot`), they see the **detailed report for that specific tool** — generated according to that tool's own rules and methodology.
+6. **Per-tool Ask the Seer**: Each divination tool has its own AI expert ("Ask the Seer") that answers questions **specific to that tool's domain and the user's report**. The Tarot expert only speaks about Tarot, the Vedic expert only about Vedic astrology, etc.
+7. **Main Ask the Seer**: A unified AI expert (`/seer`) that draws from **all tools** to answer questions holistically — like consulting a master who understands every system.
+8. **Community page**: Users can interact, converse, share information, and discuss insights with other users.
+
+### Design System
+
+- **Web**: Devotionist styling — dark mystical theme with gold accents, cosmic backgrounds, serif typography
+- **Mobile**: Android Material 3 design language via Capacitor shell
+
+### Non-Negotiable Rules
+
+- **Occult accuracy**: Each divination system has its own established rules and methodologies. The app MUST follow the traditional rules of each field. Do not mix methodologies between tools or take shortcuts with interpretations.
+- **No breakage**: Customer experience is critical. Every code change must be tested to ensure no regressions in existing flows — especially profile generation, report storage/retrieval, and the Ask the Seer chat.
+- **Data integrity**: User-generated reports must persist correctly. A returning user must always see their previously generated data.
+
 ## Cursor Cloud specific instructions
 
-### Overview
+### Architecture
 
 FutureSeer is a single Next.js 16 monolith (App Router + Webpack). All backend logic runs as API routes under `app/api/`. There are no separate microservices or databases to run locally — Firebase (Auth, Firestore) and Groq are cloud-hosted.
 
