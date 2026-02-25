@@ -36,7 +36,7 @@ export function useNotes() {
     setLoading(true);
     setError(null);
     try {
-      await saveNote({ ...note, uid: user.uid });
+      await saveNote(user.uid, note);
       await refreshNotes();
     } catch (err) {
       setError('Failed to create note');

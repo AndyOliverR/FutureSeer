@@ -19,7 +19,7 @@ export function useAllReadings() {
     setError(null);
     try {
       const allReadings = await getAllReadings(user.uid);
-      setReadings(allReadings);
+      setReadings(Array.isArray(allReadings) ? allReadings : []);
     } catch (err) {
       setError('Failed to load readings');
       console.error('Error loading readings:', err);
@@ -45,35 +45,37 @@ export function useAllReadings() {
     return 'Just now';
   }, []);
 
+  const safeReadings = Array.isArray(readings) ? readings : [];
+
   // Calculate statistics
-  const totalReadings = useMemo(() => readings.length, [readings]);
+  const totalReadings = useMemo(() => safeReadings.length, [safeReadings]);
   
   const averageConfidence = useMemo(() => {
-    if (readings.length === 0) return 0;
-    const sum = readings.reduce((acc, reading) => acc + (reading.confidence || 75), 0);
-    return Math.round(sum / readings.length);
-  }, [readings]);
+    if (safeReadings.length === 0) return 0;
+    const sum = safeReadings.reduce((acc, reading) => acc + (reading.confidence || 75), 0);
+    return Math.round(sum / safeReadings.length);
+  }, [safeReadings]);
 
   const recentReadings = useMemo(() => {
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    return readings.filter(reading => reading.timestamp >= sevenDaysAgo).length;
-  }, [readings]);
+    return safeReadings.filter(reading => reading.timestamp >= sevenDaysAgo).length;
+  }, [safeReadings]);
 
   // Confidence trend data (last 7 days)
   const confidenceTrendData = useMemo(() => {
     const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    return readings
+    return safeReadings
       .filter(reading => reading.timestamp >= sevenDaysAgo)
       .map(reading => ({
         date: formatDate(reading.timestamp),
         confidence: reading.confidence || 75
       }))
       .slice(-7);
-  }, [readings, formatDate]);
+  }, [safeReadings, formatDate]);
 
   // Symbolic patterns from all readings
   const symbolicPatterns = useMemo(() => {
-    const patterns = readings.reduce((acc, reading) => {
+    const patterns = safeReadings.reduce((acc, reading) => {
       const element = reading.symbolicData?.elementalInfluence || 'Fire';
       const existing = acc.find(p => p.theme === element);
       if (existing) {
@@ -91,7 +93,7 @@ export function useAllReadings() {
     return patterns
       .sort((a, b) => b.frequency - a.frequency)
       .slice(0, 4);
-  }, [readings]);
+  }, [safeReadings]);
 
   return {
     readings,

@@ -23,12 +23,12 @@ export function useActivityLogger() {
     if (path.startsWith('/tools/')) {
       const toolSlug = path.split('/').filter(Boolean)[1]
       if (toolSlug) {
-        saveUserActivity(user.uid, 'tool_open', { toolSlug }).catch(() => {})
+        saveUserActivity(user.uid, { type: 'tool_open', toolSlug }).catch(() => {})
       }
     } else if (
       ['/', '/ask-the-seer', '/seer', '/profile', '/settings', '/tools', '/pricing'].includes(path)
     ) {
-      saveUserActivity(user.uid, 'page_view', { path }).catch(() => {})
+      saveUserActivity(user.uid, { type: 'page_view', path }).catch(() => {})
     }
   }, [loading, user?.uid, pathname])
 }
