@@ -182,9 +182,9 @@ interface PalmAnalysisResponse {
 
 /**
  * Palm Image Analysis Endpoint
- * 
- * Uses vision-capable AI model (meta-llama/llama-4-maverick-17b-128e-instruct) to analyze actual palm images.
- * The Maverick model has 128 experts optimized for detailed multimodal vision analysis.
+ *
+ * Uses vision-capable AI model (meta-llama/llama-4-scout-17b-16e-instruct) to analyze actual palm images.
+ * Llama 4 Scout is Groq's multimodal vision model (replacement for deprecated Llama 4 Maverick 17B 128E).
  * 
  * The AI examines the uploaded palm photo and provides specific assessments of:
  * - Palm lines (length, depth, quality)
@@ -293,7 +293,7 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
     devLog.info('🤲 Analyzing palm image with vision-capable AI...', undefined, 'palmistry');
 
     const result = await createAICompletion({
-      model: 'meta-llama/llama-4-maverick-17b-128e-instruct',
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       messages: [
         {
           role: 'user',

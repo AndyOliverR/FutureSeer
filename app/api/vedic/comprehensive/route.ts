@@ -165,6 +165,14 @@ interface ComprehensiveVedicResponse {
         challenges: string[];
         opportunities: string[];
       };
+      remedies?: {
+        overview?: string;
+        mantras?: string[];
+        gemstones?: string[];
+        rituals?: string[];
+        practices?: string[];
+        lifestyle?: string[];
+      };
     };
     timestamp: number;
   };
@@ -266,16 +274,46 @@ Generate a comprehensive Vedic Astrology analysis covering all life areas. Forma
       "Specific opportunity related to ${currentDasha} Dasha",
       "Specific opportunity related to planetary combinations"
     ]
+  },
+  "remedies": {
+    "overview": "Short paragraph on Vedic remedies (upayas) suited to this chart: gemstones, mantras, charity, and lifestyle adjustments.",
+    "mantras": ["One or more mantras suited to the chart (e.g. planet-specific or general)"],
+    "gemstones": ["Gemstone(s) recommended for this chart with brief reason"],
+    "rituals": ["Simple rituals or practices (e.g. day of week, charity)"],
+    "practices": ["Daily or periodic practices (e.g. meditation, Surya Namaskar)"],
+    "lifestyle": ["Lifestyle or behavioral suggestions aligned with the chart"]
   }
 }
 
 Make each section comprehensive yet concise. Focus on practical guidance, self-awareness, and empowering insights. Write in a warm, insightful tone that speaks directly to the user.`;
 }
 
+// Normalize planetary analysis array (accept planetName, name, text, summary)
+function normalizePlanetaryAnalysis(raw: unknown): Array<{ planet: string; analysis: string }> {
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw
+    .map((x: any) => ({
+      planet: String(x?.planet ?? x?.planetName ?? x?.name ?? '').trim(),
+      analysis: String(x?.analysis ?? x?.text ?? x?.summary ?? '').trim()
+    }))
+    .filter((x) => x.planet || x.analysis);
+}
+
+// Normalize house analysis array (accept houseNumber, number, text, summary)
+function normalizeHouseAnalysis(raw: unknown): Array<{ house: number; analysis: string }> {
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw
+    .map((x: any) => ({
+      house: Number(x?.house ?? x?.houseNumber ?? x?.number ?? 0),
+      analysis: String(x?.analysis ?? x?.text ?? x?.summary ?? '').trim()
+    }))
+    .filter((x) => x.house >= 1 && x.house <= 12 && x.analysis);
+}
+
 // Parse Groq response and extract structured data
 function parseGroqResponse(response: string, vedicData: any): NonNullable<ComprehensiveVedicResponse['data']>['comprehensiveAnalysis'] {
   devLog.debug('🔍 Parsing Groq response for Vedic', undefined, 'vedic');
-  
+
   if (!response || response.length === 0) {
     throw new Error('Empty response from Groq');
   }
@@ -289,35 +327,72 @@ function parseGroqResponse(response: string, vedicData: any): NonNullable<Compre
     }
 
     const parsed = JSON.parse(jsonStr);
-    
-    // Validate structure
-    if (!parsed.chartOverview || !parsed.ascendantAnalysis) {
-      throw new Error('Invalid response structure from Groq');
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error('Response is not an object');
     }
 
+    // Relaxed validation: default missing strings instead of throwing
+    const chartOverview = typeof parsed.chartOverview === 'string' && parsed.chartOverview.trim()
+      ? parsed.chartOverview
+      : 'Chart overview analysis';
+    const ascendantAnalysis = typeof parsed.ascendantAnalysis === 'string' && parsed.ascendantAnalysis.trim()
+      ? parsed.ascendantAnalysis
+      : 'Ascendant analysis';
+
+    const planetaryAnalysis = normalizePlanetaryAnalysis(parsed.planetaryAnalysis ?? parsed.planetary_analysis);
+    const houseAnalysis = normalizeHouseAnalysis(parsed.houseAnalysis ?? parsed.house_analysis);
+
+    const predictiveInsights = parsed.predictiveInsights && typeof parsed.predictiveInsights === 'object'
+      ? {
+          currentPeriod: String(parsed.predictiveInsights.currentPeriod ?? ''),
+          nextThreeMonths: String(parsed.predictiveInsights.nextThreeMonths ?? ''),
+          currentYear: String(parsed.predictiveInsights.currentYear ?? ''),
+          nextYear: String(parsed.predictiveInsights.nextYear ?? ''),
+          longerTermCycles: String(parsed.predictiveInsights.longerTermCycles ?? '')
+        }
+      : {
+          currentPeriod: 'Current period analysis',
+          nextThreeMonths: 'Next three months analysis',
+          currentYear: 'Current year analysis',
+          nextYear: 'Next year analysis',
+          longerTermCycles: 'Longer-term cycles analysis'
+        };
+
+    const co = parsed.challengesAndOpportunities ?? parsed.challenges_and_opportunities;
+    const challengesAndOpportunities = co && typeof co === 'object'
+      ? {
+          challenges: Array.isArray(co.challenges) ? co.challenges.map(String) : [],
+          opportunities: Array.isArray(co.opportunities) ? co.opportunities.map(String) : []
+        }
+      : { challenges: [], opportunities: [] };
+
+    const rawRemedies = parsed.remedies && typeof parsed.remedies === 'object' ? parsed.remedies : undefined;
+    const remedies = rawRemedies
+      ? {
+          overview: typeof rawRemedies.overview === 'string' ? rawRemedies.overview.trim() : undefined,
+          mantras: Array.isArray(rawRemedies.mantras) ? rawRemedies.mantras.map(String).filter(Boolean) : undefined,
+          gemstones: Array.isArray(rawRemedies.gemstones) ? rawRemedies.gemstones.map(String).filter(Boolean) : undefined,
+          rituals: Array.isArray(rawRemedies.rituals) ? rawRemedies.rituals.map(String).filter(Boolean) : undefined,
+          practices: Array.isArray(rawRemedies.practices) ? rawRemedies.practices.map(String).filter(Boolean) : undefined,
+          lifestyle: Array.isArray(rawRemedies.lifestyle) ? rawRemedies.lifestyle.map(String).filter(Boolean) : undefined
+        }
+      : undefined;
+
     return {
-      chartOverview: parsed.chartOverview || 'Chart overview analysis',
-      ascendantAnalysis: parsed.ascendantAnalysis || 'Ascendant analysis',
-      planetaryAnalysis: parsed.planetaryAnalysis || [],
-      houseAnalysis: parsed.houseAnalysis || [],
-      dashaAnalysis: parsed.dashaAnalysis || 'Dasha analysis',
-      yogasAnalysis: parsed.yogasAnalysis || 'Yogas analysis',
-      nakshatraAnalysis: parsed.nakshatraAnalysis || 'Nakshatra analysis',
-      predictiveInsights: parsed.predictiveInsights || {
-        currentPeriod: 'Current period analysis',
-        nextThreeMonths: 'Next three months analysis',
-        currentYear: 'Current year analysis',
-        nextYear: 'Next year analysis',
-        longerTermCycles: 'Longer-term cycles analysis'
-      },
-      challengesAndOpportunities: parsed.challengesAndOpportunities || {
-        challenges: [],
-        opportunities: []
-      }
+      chartOverview,
+      ascendantAnalysis,
+      planetaryAnalysis,
+      houseAnalysis,
+      dashaAnalysis: typeof parsed.dashaAnalysis === 'string' ? parsed.dashaAnalysis : 'Dasha analysis',
+      yogasAnalysis: typeof parsed.yogasAnalysis === 'string' ? parsed.yogasAnalysis : 'Yogas analysis',
+      nakshatraAnalysis: typeof parsed.nakshatraAnalysis === 'string' ? parsed.nakshatraAnalysis : 'Nakshatra analysis',
+      predictiveInsights,
+      challengesAndOpportunities,
+      ...(remedies && (remedies.overview || remedies.mantras?.length || remedies.gemstones?.length || remedies.rituals?.length || remedies.practices?.length || remedies.lifestyle?.length) ? { remedies } : {})
     };
   } catch (error) {
     devLog.warn('Failed to parse Groq JSON, using fallback', error, 'vedic');
-    // Return fallback structure
+    // Fallback only when JSON parse fails or payload is invalid
     return {
       chartOverview: response.substring(0, 500) || 'Comprehensive Vedic chart analysis',
       ascendantAnalysis: 'Detailed analysis of your Ascendant sign and its influence on your personality and life path.',
@@ -336,6 +411,14 @@ function parseGroqResponse(response: string, vedicData: any): NonNullable<Compre
       challengesAndOpportunities: {
         challenges: ['Challenges revealed through your chart analysis'],
         opportunities: ['Opportunities revealed through your chart analysis']
+      },
+      remedies: {
+        overview: 'Personalized Vedic remedies (upayas) can help balance planetary influences. Consider consulting the Overview tab once the full report loads.',
+        mantras: ['Chanting planet-specific mantras can strengthen favorable influences.'],
+        gemstones: ['Wearing gemstones recommended for your chart can support key life areas.'],
+        rituals: ['Simple rituals aligned with your Dasha and Ascendant can be beneficial.'],
+        practices: ['Daily practices such as meditation and Surya Namaskar support overall balance.'],
+        lifestyle: ['Lifestyle adjustments based on your chart can enhance well-being.']
       }
     };
   }

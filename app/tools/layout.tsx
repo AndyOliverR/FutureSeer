@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { BottomNavBar } from "@/components/BottomNavBar";
+import { ToolsLayoutClient } from "@/app/tools/ToolsLayoutClient";
 
 export default function ToolsLayout({
   children,
@@ -21,7 +22,7 @@ export default function ToolsLayout({
 
       {/* Content wrapper with M3 safe areas */}
       <main className="relative z-10 w-full min-h-screen pt-[env(safe-area-inset-top)] pb-24 md:pb-12">
-        {children}
+        <ToolsLayoutClient>{children}</ToolsLayoutClient>
       </main>
 
       {/* Platform-aware Bottom Navigation */}

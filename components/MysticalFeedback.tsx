@@ -81,6 +81,7 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
         width: window.innerWidth, height: window.innerHeight,
         useCORS: true, backgroundColor: '#0a0f1f',
         ignoreElements: (el) => !!el.closest('[data-feedback-widget]'),
+        logging: false,
       });
 
       if (modal) modal.style.opacity = '1';

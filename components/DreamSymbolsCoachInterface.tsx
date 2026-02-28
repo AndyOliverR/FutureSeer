@@ -103,7 +103,7 @@ export function DreamSymbolsCoachInterface({
               Key Insights
             </CardTitle>
           </CardHeader>
-          <CardContent className={`space-y-4 ${cardContentClassName}`}>
+          <CardContent className={`space-y-6 pt-6 ${cardContentClassName}`}>
             <div className="bg-amber-100 rounded-lg p-4 border-l-4 border-amber-400">
               <p className={`text-sm ${textSecondaryClassName} mb-2`}>Spiritual Message</p>
               <p className={`${textPrimaryClassName} leading-relaxed`}>{analysis.spiritualMessage}</p>
@@ -129,7 +129,7 @@ export function DreamSymbolsCoachInterface({
             transition={{ delay: index * 0.1 }}
             whileHover={{ scale: 1.05, y: -5 }}
           >
-            <Card className={`${cardClassName} hover:border-amber-400 hover:shadow-xl transition-all duration-300 cursor-pointer group`}>
+            <Card className={`${cardClassName} overflow-hidden hover:border-amber-400 hover:shadow-xl transition-all duration-300 cursor-pointer group`}>
               <CardContent className={`p-5 ${cardContentClassName}`}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -165,9 +165,10 @@ export function DreamSymbolsCoachInterface({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="mt-8"
         >
-          <Card className={cardClassName}>
-            <CardHeader className={cardHeaderClassName}>
+          <Card className={`${cardClassName} overflow-hidden`}>
+            <CardHeader className={`${cardHeaderClassName} rounded-t-3xl`}>
               <CardTitle className={`text-xl ${cardTitleClassName}`}>Symbols by Category</CardTitle>
             </CardHeader>
             <CardContent className={cardContentClassName}>
@@ -345,14 +346,14 @@ export function DreamSymbolsCoachInterface({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <Card className={cardClassName}>
+          <Card className={`${cardClassName} overflow-hidden`}>
             <CardHeader className={cardHeaderClassName}>
               <CardTitle className={`text-xl ${cardTitleClassName} flex items-center gap-3`}>
                 <Lightbulb className="w-6 h-6 text-amber-700" />
                 Practical Steps
               </CardTitle>
             </CardHeader>
-            <CardContent className={cardContentClassName}>
+            <CardContent className={`${cardContentClassName} pt-4`}>
               <ul className="space-y-3">
                 {analysis.practicalAdvice.map((advice, index) => (
                   <motion.li
@@ -388,11 +389,11 @@ export function DreamSymbolsCoachInterface({
             </CardTitle>
           </CardHeader>
           <CardContent className={`space-y-4 ${cardContentClassName}`}>
-            <p className={`${textSecondaryClassName} mb-4 text-sm`}>
+            <p className={`${textSecondaryClassName} mb-6 text-sm`}>
               These symbols connect to universal archetypes from the collective unconscious, 
               representing fundamental patterns of human experience.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               {analysis.symbols.slice(0, 6).map((symbol, index) => (
                 <div
                   key={symbol.symbol}

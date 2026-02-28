@@ -13,9 +13,11 @@ export function getServerBaseUrl(): string {
     return `https://${process.env.VERCEL_URL}`;
   }
 
-  // 3. Android Emulator Development Mode
+  // 3. Local development: use localhost so server-side self-fetch works (e.g. financial-astrology → occult/universal)
+  // For Android emulator, set NEXT_PUBLIC_BASE_URL=http://10.0.2.2:3000
   if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
-    return 'http://10.0.2.2:3000';
+    const port = process.env.PORT || '3000';
+    return `http://127.0.0.1:${port}`;
   }
 
   // 4. Production Fallback (Play Store / Live Site)

@@ -71,6 +71,9 @@
   }
 }
 
+/* Deep space background utility - use instead of slate for devotionist consistency */
+.bg-deep-space { background-color: var(--bg-deep-space); }
+
 /* Starfield Background Layer - Universal */
 .starfield-ultra-sharp::before {
   content: '';

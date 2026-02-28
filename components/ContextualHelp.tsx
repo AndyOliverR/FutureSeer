@@ -76,7 +76,7 @@ export function ContextualHelp({
             </button>
           )}
         </TooltipTrigger>
-        <TooltipContent side={placement} className="max-w-xs bg-slate-900 border-amber-400/50">
+        <TooltipContent side={placement} className="max-w-xs bg-[#020617] border-amber-400/50">
           {title && <h4 className="font-semibold text-white mb-2">{title}</h4>}
           <p className="text-sm text-white/80 leading-relaxed">{content}</p>
         </TooltipContent>

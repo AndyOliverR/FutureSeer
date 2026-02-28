@@ -36,6 +36,9 @@ export default function DreamSymbolsPage() {
   // Check if user has complete birth details (similar to tarot page pattern)
   const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthPlace
 
+  const tabTriggerClass =
+    'shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all'
+
   return (
     <div className="min-h-screen starfield-ultra-sharp text-white p-4 overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
@@ -127,7 +130,7 @@ export default function DreamSymbolsPage() {
                   <Button
                     onClick={performDreamAnalysis}
                     disabled={isLoading || !dreamDescription.trim()}
-                    className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold"
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold active:scale-[0.98] active:opacity-90 transition-transform"
                   >
                     {isLoading ? (
                       <>
@@ -201,50 +204,29 @@ export default function DreamSymbolsPage() {
                   </div>
                 </div>
 
-                {/* Tabs */}
+                {/* Tabs — strip and content share px-4 sm:px-6 for alignment */}
                 <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full min-w-0">
-                  <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
-                    <TabsTrigger 
-                      value="introduction" 
-                      className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                    >
+                  <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 px-4 sm:px-6 py-2 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+                    <TabsTrigger value="introduction" className={tabTriggerClass}>
                       Introduction
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="overview" 
-                      className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                    >
+                    <TabsTrigger value="overview" className={tabTriggerClass}>
                       Overview
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="symbols" 
-                      className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                    >
+                    <TabsTrigger value="symbols" className={tabTriggerClass}>
                       Symbols
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="meaning" 
-                      className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                    >
+                    <TabsTrigger value="meaning" className={tabTriggerClass}>
                       Meaning
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="guidance" 
-                      className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                    >
+                    <TabsTrigger value="guidance" className={tabTriggerClass}>
                       Guidance
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="archetypes" 
-                      className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                    >
+                    <TabsTrigger value="archetypes" className={tabTriggerClass}>
                       Archetypes
                     </TabsTrigger>
-                    <TabsTrigger 
-                      value="ask-the-seer" 
-                      className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                    >
+                    <TabsTrigger value="ask-the-seer" className={tabTriggerClass}>
                       Ask the Seer
                     </TabsTrigger>
                   </TabsList>

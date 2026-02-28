@@ -66,6 +66,8 @@ export default function ToolPage() {
           toolCategory={tool.category}
           isPremium={tool.isPremium}
           isComingSoon={tool.isComingSoon}
+          backHref={`/tools?category=${encodeURIComponent(tool.category)}`}
+          backLabel={`Back to ${tool.category}`}
         />
 
         {/* Tool Content */}

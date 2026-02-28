@@ -1103,6 +1103,16 @@ export const INDIAN_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
   .filter(([, c]) => c.category === 'Indian')
   .map(([slug]) => slug);
 
+/** Slugs of all tools in the Analysis category (for "Back to Analysis" navigation). */
+export const ANALYSIS_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Analysis')
+  .map(([slug]) => slug);
+
+/** Slugs of all tools in the Energy category (for "Back to Energy" navigation). */
+export const ENERGY_TOOL_SLUGS: string[] = Object.entries(TOOL_CONFIGS)
+  .filter(([, c]) => c.category === 'Energy')
+  .map(([slug]) => slug);
+
 export class ToolManager {
   private static instance: ToolManager;
   private tools: Map<string, ToolConfig>;

@@ -4,6 +4,7 @@ import { getAuth, adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { cancelSubscription } from '@/lib/razorpay';
 import { writeAuditLog } from '@/lib/adminAudit';
+import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 
 async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?: string } | null> {
   const authHeader = request.headers.get('Authorization');
@@ -42,12 +43,30 @@ export async function POST(request: NextRequest) {
 
     await cancelSubscription(subscriptionId, false);
     if (userId && adminDb) {
+      let targetEmail: string | null = null;
+      try {
+        const targetUser = await getAuth().getUser(userId);
+        targetEmail = targetUser.email ?? null;
+      } catch {
+        const userDoc = await adminDb.collection('users').doc(userId).get();
+        targetEmail = (userDoc.data()?.email as string) ?? null;
+      }
+      const isNoCharge = targetEmail ? isNoChargeSubscriptionEmail(targetEmail) : false;
       const userRef = adminDb.collection('users').doc(userId);
-      await userRef.update({
-        subscriptionStatus: 'cancelled',
-        subscriptionCancelledAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+      if (isNoCharge) {
+        await userRef.update({
+          subscriptionStatus: 'active',
+          subscriptionId: FieldValue.delete(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        devLog.info(`[cancel-user-subscription] No-charge user ${targetEmail}: set status active after Razorpay cancel`, 'route');
+      } else {
+        await userRef.update({
+          subscriptionStatus: 'cancelled',
+          subscriptionCancelledAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+      }
     }
     await writeAuditLog({
       actorUid: auth.uid,

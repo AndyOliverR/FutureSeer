@@ -421,21 +421,21 @@ export default function AkashicRecordsPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="rounded-xl p-6 border-2 border-purple-200 bg-purple-50/90"
+                      className="rounded-xl p-6 border-2 border-purple-300 bg-purple-100/95"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
                           <h3 className="text-xl font-semibold text-slate-900 mb-2">Life #{index + 1}</h3>
                           <div className="flex flex-wrap gap-2">
-                            <Badge className="bg-purple-200/80 text-purple-900 border-purple-300">
+                            <Badge className="bg-purple-700 text-white border-purple-800 font-medium shadow-sm">
                               <Calendar className="w-3 h-3 mr-1" />
                               {life.era}
                             </Badge>
-                            <Badge className="bg-purple-200/80 text-purple-900 border-purple-300">
+                            <Badge className="bg-purple-700 text-white border-purple-800 font-medium shadow-sm">
                               <MapPin className="w-3 h-3 mr-1" />
                               {life.location}
                             </Badge>
-                            <Badge className="bg-purple-200/80 text-purple-900 border-purple-300">
+                            <Badge className="bg-purple-700 text-white border-purple-800 font-medium shadow-sm">
                               <User className="w-3 h-3 mr-1" />
                               {life.role}
                             </Badge>

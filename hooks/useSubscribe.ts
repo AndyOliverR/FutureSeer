@@ -241,6 +241,12 @@ export function useSubscribe() {
         throw new Error(createData.error || 'Failed to create subscription');
       }
 
+      if (createData.noSubscriptionRequired === true) {
+        setLoading(false);
+        router.push('/tools');
+        return;
+      }
+
       const { subscriptionId, razorpayKeyId } = createData;
       if (!subscriptionId || !razorpayKeyId) {
         throw new Error('Missing subscription or key from server');

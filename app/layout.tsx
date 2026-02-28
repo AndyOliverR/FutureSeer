@@ -12,7 +12,6 @@ import { Header } from "@/components/header"
 import { BottomNavBar } from "@/components/BottomNavBar"
 import { FloatingTipJar } from "@/components/FloatingTipJar"
 import { MysticalFeedback } from "@/components/MysticalFeedback"
-import Script from "next/script"
 import {
   DeferredAnalyticsInitializer,
   DeferredFirestoreErrorSuppressor,
@@ -42,15 +41,27 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
-        {/* reCAPTCHA Enterprise Script */}
-        <Script
-          src="https://www.google.com/recaptcha/enterprise.js?render=REDACTED_RECAPTCHA_SITE_KEY"
-          strategy="afterInteractive"
+        {/* Patch console before any other script so COOP/window.closed from Firebase popup is suppressed */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(typeof console==="undefined")return;var w=console.warn,e=console.error;function coop(msg){if(typeof msg!=="string")return false;return msg.indexOf("Cross-Origin-Opener-Policy")!==-1||(msg.indexOf("block")!==-1&&(msg.indexOf("window.closed")!==-1||msg.indexOf("window.close")!==-1));}function nextImgSizes(msg){if(typeof msg!=="string")return false;return msg.indexOf("Image with src")!==-1&&msg.indexOf("fill")!==-1&&msg.indexOf("sizes")!==-1&&msg.indexOf("missing")!==-1;}function preloadNotUsed(msg){if(typeof msg!=="string")return false;return msg.indexOf("preloaded using link preload")!==-1&&msg.indexOf("not used within")!==-1;}console.warn=function(){var m=Array.prototype.join.call(arguments," ");if(coop(m)||nextImgSizes(m)||preloadNotUsed(m))return;return w.apply(console,arguments);};console.error=function(){var m=Array.prototype.join.call(arguments," ");if(coop(m))return;return e.apply(console,arguments);};})();`,
+          }}
+        />
+        {/* Remove layout CSS preload as soon as possible to avoid browser "preloaded but not used" warning (stylesheet still loads via normal link) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){function r(){var links=document.querySelectorAll('link[rel="preload"]');for(var i=0;i<links.length;i++){var h=links[i].getAttribute('href');if(h&&h.indexOf('layout.css')!==-1){links[i].remove();break;}}}setTimeout(r,0);document.addEventListener('DOMContentLoaded',r);})();`,
+          }}
         />
       </head>
-      <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans">
+      <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans" suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var w=window.innerWidth;var isSmall=w>0&&w<768;var isAndroid=/Android/i.test(navigator.userAgent);var cls=isSmall||isAndroid?'platform-android':'platform-web';document.body.classList.add(cls);document.documentElement.setAttribute('data-platform',cls==='platform-android'?'android':'web');})();`,
+          }}
+        />
         <DeferredViewportHeightSync />
         <PlatformClassProvider />
         <SchemaMarkup />

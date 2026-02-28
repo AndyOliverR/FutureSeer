@@ -126,7 +126,7 @@ export function ServiceStatus() {
     return (
       <button
         onClick={handleOpen}
-        className="fixed bottom-4 right-4 p-2 bg-slate-800/80 text-amber-300 rounded-full hover:bg-slate-700/80 transition-colors z-50 button-glow"
+        className="fixed bottom-4 right-4 p-2 bg-[#0f172a]/90 text-amber-300 rounded-full hover:bg-[#1e293b]/90 transition-colors z-50 button-glow"
         title="Show service status"
       >
         {hasCriticalErrors ? (
@@ -139,12 +139,12 @@ export function ServiceStatus() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 bg-slate-900/95 backdrop-blur-md border border-amber-400/30 rounded-xl p-4 shadow-xl z-50 max-w-sm status-glow">
+    <div className="fixed bottom-4 right-4 bg-[#020617]/95 backdrop-blur-md border border-amber-400/30 rounded-xl p-4 shadow-xl z-50 max-w-sm status-glow">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-amber-200 font-serif text-sm">Service Status</h3>
         <button
           onClick={handleClose}
-          className="text-slate-400 hover:text-amber-300 transition-colors button-glow p-1 rounded"
+          className="text-amber-200/80 hover:text-amber-300 transition-colors button-glow p-1 rounded"
         >
           ×
         </button>
@@ -158,12 +158,12 @@ export function ServiceStatus() {
           >
             <div className="flex items-center gap-2">
               {getStatusIcon(service.status)}
-              <span className="text-slate-200 text-sm font-medium">{service.name}</span>
+              <span className="text-white text-sm font-medium">{service.name}</span>
             </div>
             <div className="text-right">
-              <div className="text-slate-300 text-xs">{service.message}</div>
+              <div className="text-amber-200/90 text-xs">{service.message}</div>
               {service.details && (
-                <div className="text-slate-400 text-xs mt-1">{service.details}</div>
+                <div className="text-amber-200/70 text-xs mt-1">{service.details}</div>
               )}
             </div>
           </div>

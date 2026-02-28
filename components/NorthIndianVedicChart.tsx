@@ -13,16 +13,22 @@ interface NorthIndianVedicChartProps {
   ascendantSign: number;
   ascendantDegree?: number;
   chartType?: string;
+  /** Optional dimensions; when provided (e.g. 450x333), match South Indian chart size for consistent layout */
+  width?: number;
+  height?: number;
 }
 
 const NorthIndianVedicChart: React.FC<NorthIndianVedicChartProps> = ({
   planets,
   ascendantSign,
   ascendantDegree = 0,
-  chartType = "D1"
+  chartType = "D1",
+  width: widthProp,
+  height: heightProp
 }) => {
-  const chartWidth = 450;
-  const chartHeight = 333;
+  // Default 550x400; when width/height provided (e.g. 450x333), match South Indian chart for consistent layout
+  const chartWidth = widthProp ?? 550;
+  const chartHeight = heightProp ?? 400;
 
   // Planet symbols mapping
   const planetSymbols: { [key: string]: string } = {

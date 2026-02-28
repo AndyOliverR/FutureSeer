@@ -52,6 +52,7 @@ function WesternAstrologyPageContent() {
   }, [searchParams])
 
   const { report: westernPipelineReport, loading: isLoading, error: profileError, hasReport, refreshProfile } = useToolReport('western')
+  const { report: astroNumerologyReport, loading: isLoadingAstroNumerologyReport } = useToolReport('astroNumerology')
   const analysis = useMemo(() => {
     const raw = (westernPipelineReport as Record<string, unknown> | undefined)?.chart
     if (!raw) return null
@@ -158,8 +159,6 @@ function WesternAstrologyPageContent() {
     return () => { cancelled = true }
   }, [user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.birthLatitude, userProfile?.birthLongitude, analysis?.data])
 
-  const [comprehensiveAstroNumerologyReport, setComprehensiveAstroNumerologyReport] = useState<any>(null)
-  const [isLoadingAstroNumerologyReport, setIsLoadingAstroNumerologyReport] = useState(false)
   const [westernNoReportGraceEnded, setWesternNoReportGraceEnded] = useState(false)
   const [isGeneratingWestern, setIsGeneratingWestern] = useState(false)
 
@@ -779,7 +778,7 @@ function WesternAstrologyPageContent() {
                     fullName={userProfile?.displayName || userProfile?.fullName || user?.displayName || user?.email || (user ? 'You' : '')}
                     sunSign={analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName || analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign}
                     analysis={analysis}
-                    cachedReport={comprehensiveAstroNumerologyReport}
+                    cachedReport={astroNumerologyReport}
                     isLoadingReport={isLoadingAstroNumerologyReport}
                   />
                 </TabsContent>
@@ -874,15 +873,18 @@ function WesternAstrologyPageContent() {
                       userProfile={userProfile}
                       westernChartData={analysis?.data}
                       astroNumerologyData={
-                        // Only pass Astro-Numerology data if we have the comprehensive report OR if we have the required profile data
-                        (comprehensiveAstroNumerologyReport || (userProfile?.birthDate && userProfile?.displayName && analysis?.data)) ? {
-                          sunSign: comprehensiveAstroNumerologyReport?.sunSign || 
-                                  analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName || 
-                                  analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign || 'Unknown',
-                          lifePathNumber: comprehensiveAstroNumerologyReport?.lifePathNumber || 0,
-                          nameNumber: comprehensiveAstroNumerologyReport?.nameNumber || 0,
-                          comprehensiveReport: comprehensiveAstroNumerologyReport?.comprehensiveAnalysis || comprehensiveAstroNumerologyReport || undefined
-                        } : undefined
+                        // Only pass Astro-Numerology data if we have the pipeline report OR if we have the required profile data
+                        (astroNumerologyReport || (userProfile?.birthDate && userProfile?.displayName && analysis?.data)) ? (() => {
+                          const numReport = astroNumerologyReport as { sunSign?: string; lifePathNumber?: number; nameNumber?: number; comprehensiveAnalysis?: unknown } | null | undefined;
+                          return {
+                            sunSign: numReport?.sunSign ||
+                              analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName ||
+                              analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign || 'Unknown',
+                            lifePathNumber: numReport?.lifePathNumber || 0,
+                            nameNumber: numReport?.nameNumber || 0,
+                            comprehensiveReport: numReport?.comprehensiveAnalysis ?? numReport ?? undefined
+                          };
+                        })() : undefined
                       }
                     />
                   </div>
