@@ -129,7 +129,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const westernRes = await universalOccultService.calculateWesternChart(birthData, {
+    // Geocode when latitude/longitude are missing so the occult API receives valid coordinates
+    let finalBirthData = birthData;
+    if ((birthData.latitude === 0 && birthData.longitude === 0) && birthData.birthPlace) {
+      try {
+        const { geocodePlace } = await import('@/services/geocoding');
+        const coords = await geocodePlace(birthData.birthPlace);
+        if (coords) {
+          finalBirthData = {
+            ...birthData,
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+          };
+        }
+      } catch (geoErr) {
+        devLog.warn('Financial astrology: geocoding failed, using 0,0', geoErr, 'route');
+      }
+    }
+
+    const westernRes = await universalOccultService.calculateWesternChart(finalBirthData, {
       houseSystem: 'placidus',
       includeAspects: true,
     });

@@ -34,16 +34,16 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
       {/* Overall Balance */}
       <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
-          <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
-            <Zap className="w-5 h-5 text-amber-600" />
+          <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+            <Zap className="w-5 h-5 text-amber-700" />
             Overall Chakra Balance
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-amber-900">Balance Score</span>
-              <span className="text-2xl font-bold text-amber-900">{typeof analysis.overallBalance === 'number' ? analysis.overallBalance : '—'}%</span>
+              <span className="text-amber-950 font-medium">Balance Score</span>
+              <span className="text-2xl font-bold text-amber-950">{typeof analysis.overallBalance === 'number' ? analysis.overallBalance : '—'}%</span>
             </div>
             <div className="w-full bg-amber-100 rounded-full h-3">
               <div 
@@ -53,10 +53,10 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
             </div>
             {Array.isArray(analysis.primaryIssues) && analysis.primaryIssues.length > 0 && (
               <div className="mt-4">
-                <p className="text-amber-800 text-sm mb-2">Focus Areas:</p>
+                <p className="text-amber-950 text-sm font-medium mb-2">Focus Areas:</p>
                 <div className="flex flex-wrap gap-2">
                   {analysis.primaryIssues.map((issue, index) => (
-                    <Badge key={index} variant="outline" className="border-amber-500 text-amber-900 bg-amber-50">
+                    <Badge key={index} variant="outline" className="border-amber-600 text-amber-950 bg-amber-100 font-medium">
                       {issue}
                     </Badge>
                   ))}
@@ -90,13 +90,13 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
                           {chakra.name.charAt(0)}
                         </div>
                         <div>
-                          <h3 className="text-amber-900 font-semibold">{chakra.name}</h3>
-                          <p className="text-amber-800 text-sm">{chakraData?.sanskritName || ''}</p>
+                          <h3 className="text-amber-950 font-semibold">{chakra.name}</h3>
+                          <p className="text-amber-900 text-sm font-medium">{chakraData?.sanskritName || ''}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {getStatusIcon(chakra.status)}
-                        <Badge variant="outline" className="border-amber-500 text-amber-900 bg-amber-50">
+                        <Badge variant="outline" className="border-amber-600 text-amber-950 bg-amber-100 font-medium">
                           {chakra.status}
                         </Badge>
                       </div>
@@ -104,8 +104,8 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
 
                     <div className="space-y-2 mb-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-amber-800">Balance</span>
-                        <span className="text-amber-900 font-semibold">{chakra.balance}%</span>
+                        <span className="text-amber-950 font-medium">Balance</span>
+                        <span className="text-amber-950 font-semibold">{chakra.balance}%</span>
                       </div>
                       <div className="w-full bg-amber-100 rounded-full h-2">
                         <div 
@@ -115,15 +115,15 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
                       </div>
                     </div>
 
-                    <p className="text-amber-800 text-sm mb-3">{chakra.interpretation}</p>
+                    <p className="text-amber-950 text-sm font-medium mb-3">{chakra.interpretation}</p>
 
                     {chakra.recommendations && chakra.recommendations.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-amber-300">
-                        <p className="text-amber-800 text-xs mb-2">Recommendations:</p>
+                        <p className="text-amber-950 text-xs font-semibold mb-2">Recommendations:</p>
                         <ul className="space-y-1">
                           {chakra.recommendations.map((rec, recIndex) => (
-                            <li key={recIndex} className="text-amber-800 text-xs flex items-start gap-2">
-                              <span className="text-amber-600 mt-1">•</span>
+                            <li key={recIndex} className="text-amber-950 text-xs font-medium flex items-start gap-2">
+                              <span className="text-amber-800 mt-1">•</span>
                               <span>{rec}</span>
                             </li>
                           ))}
@@ -142,7 +142,7 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
                           {crystal}
                         </Badge>
                       ))}
-                      <AffiliateLink href={getCrystalAffiliateUrl(chakraData?.associatedCrystals?.[0] || `${chakra.name} crystal`)} label="Shop crystals" className="text-amber-600 text-xs" />
+                      <AffiliateLink href={getCrystalAffiliateUrl(chakraData?.associatedCrystals?.[0] || `${chakra.name} crystal`)} label="Shop crystals" className="text-amber-800 font-medium text-xs" />
                     </div>
                   </div>
                 </CardContent>
@@ -156,16 +156,16 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
       {analysis.recommendations && analysis.recommendations.length > 0 && (
         <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-amber-900 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-600" />
+            <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+              <Zap className="w-5 h-5 text-amber-700" />
               General Recommendations
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
               {analysis.recommendations.map((rec, index) => (
-                <li key={index} className="text-amber-800 flex items-start gap-2">
-                  <span className="text-amber-600 mt-1">•</span>
+                <li key={index} className="text-amber-950 font-medium flex items-start gap-2">
+                  <span className="text-amber-800 mt-1">•</span>
                   <span>{rec}</span>
                 </li>
               ))}

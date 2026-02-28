@@ -4,7 +4,8 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   EmailAuthProvider,
-  signInWithPopup, 
+  signInWithPopup,
+  signInWithRedirect,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -218,7 +219,7 @@ googleProvider.addScope('email');
 googleProvider.addScope('profile');
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  display: 'popup'
+  display: 'page'
 });
 
 export const emailProvider = new EmailAuthProvider();
@@ -242,22 +243,11 @@ export const signInWithGoogle = async (): Promise<User> => {
         return await signInWithGoogleNative();
       }
 
-      // WEB FLOW
-      let result: UserCredential;
-      try {
-        devLog.debug('🔄 Attempting Web Google sign-in...');
-        result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-        return result.user;
-      } catch (popupError: any) {
-        const code = popupError?.code || '';
-        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-          throw popupError;
-        }
-        devLog.warn('⚠️ Web popup failed, trying stable redirect...', code, 'firebase');
-        const { signInWithRedirect } = await import('firebase/auth');
-        await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver);
-        return new Promise<User>(() => {});
-      }
+      // WEB FLOW: use popup so we get the user in-page and can redirect reliably.
+      // (Redirect flow often leaves getRedirectResult() null due to storage/origin, causing signin loop.)
+      devLog.debug('🔄 Attempting Web Google sign-in (popup)...');
+      const result = await signInWithPopup(auth, googleProvider);
+      return result.user;
     } catch (error: any) {
       devLog.error('Error signing in with Google:', error, 'firebase');
       throw error;
@@ -362,7 +352,7 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/user-not-found': return 'No account found with this email.';
     case 'auth/wrong-password': return 'Incorrect password.';
     case 'auth/email-already-in-use': return 'An account with this email already exists. Try signing in instead.';
-    case 'auth/invalid-credential': return 'Invalid email or password. Please try again.';
+    case 'auth/invalid-credential': return 'Invalid email or password. Try "Forgot password?" or sign in with Google if you used that.';
     case 'auth/invalid-email': return 'Please enter a valid email address.';
     case 'auth/weak-password': return 'Password is too weak. Please use at least 6 characters.';
     case 'auth/too-many-requests': return 'Too many attempts. Please wait a moment and try again.';
@@ -429,8 +419,12 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
     const db = getFirebaseDB();
     if (!db) return;
     const userRef = doc(db, 'users', uid);
+    // Firestore updateDoc() does not accept undefined; omit undefined fields
+    const clean = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    ) as Partial<UserProfile>;
     await updateDoc(userRef, {
-      ...data,
+      ...clean,
       updatedAt: Date.now()
     });
   } catch (error) {

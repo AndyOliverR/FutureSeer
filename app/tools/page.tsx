@@ -20,7 +20,10 @@ function ToolsPageContent() {
   const categoryParam = searchParams.get('category');
   const { user, userProfile, loading: authLoading } = useAuth();
   const { tools, searchTerm, setSearchTerm } = useTools();
-  const [isAndroid, setIsAndroid] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(() => {
+    if (typeof document === 'undefined') return false;
+    return document.documentElement.getAttribute('data-platform') === 'android';
+  });
 
   useEffect(() => {
     setIsAndroid(/Android/i.test(navigator.userAgent));
@@ -37,6 +40,22 @@ function ToolsPageContent() {
     }
     return list;
   }, [tools, categoryParam, searchTerm]);
+
+  const toolsByCategoryOrdered = useMemo(() => {
+    if (categoryParam || searchTerm.trim()) return null;
+    const byCat: Record<string, typeof displayedTools> = {};
+    for (const tool of displayedTools) {
+      if (!byCat[tool.category]) byCat[tool.category] = [];
+      byCat[tool.category].push(tool);
+    }
+    const ordered: { category: string; tools: typeof displayedTools }[] = [];
+    for (const cat of CATEGORY_ORDER) {
+      if (byCat[cat]?.length) ordered.push({ category: cat, tools: byCat[cat] });
+    }
+    const rest = Object.keys(byCat).filter(c => !(CATEGORY_ORDER as readonly string[]).includes(c));
+    for (const cat of rest) ordered.push({ category: cat, tools: byCat[cat] });
+    return ordered;
+  }, [displayedTools, categoryParam, searchTerm]);
 
   if (user && userProfile != null && !hasRequiredProfileSetup(userProfile)) return null;
 
@@ -61,6 +80,15 @@ function ToolsPageContent() {
           </div>
         </div>
 
+        {categoryParam && (
+          <div className="px-4 pb-2">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 font-medium">
+              <ArrowLeft className="w-4 h-4" />
+              Back to all tools
+            </Link>
+          </div>
+        )}
+
         <div className="flex overflow-x-auto gap-2 px-4 pb-4 no-scrollbar">
           <Link href="/tools" className={cn("h-10 px-5 rounded-full border flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-all", !categoryParam ? "bg-primary text-on-primary border-primary shadow-lg shadow-amber-500/20" : "bg-surface-container-low border-outline-variant text-surface-on-variant")}>All</Link>
           {CATEGORY_ORDER.map(cat => (
@@ -68,21 +96,48 @@ function ToolsPageContent() {
           ))}
         </div>
 
-        <div className="px-4 grid grid-cols-1 gap-3">
-          {displayedTools.map((tool, index) => (
-            <motion.div
-              key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
-              className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", tool.isComingSoon ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
-            >
-              <div className="shrink-0 w-16 h-16 rounded-2xl bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
-              <div className="flex-1 min-w-0 pr-6">
-                <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
-                <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
+        <div className="px-4 space-y-8 pb-6">
+          {toolsByCategoryOrdered ? (
+            toolsByCategoryOrdered.map(({ category, tools: catTools }) => (
+              <div key={category}>
+                <h2 className="text-lg font-bold text-amber-400 uppercase tracking-wider mb-3 px-1">{category}</h2>
+                <div className="grid grid-cols-1 gap-3">
+                  {catTools.map((tool, index) => (
+                    <motion.div
+                      key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03 }}
+                      onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
+                      className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", tool.isComingSoon ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
+                    >
+                      <div className="shrink-0 w-16 h-16 rounded-2xl bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
+                      <div className="flex-1 min-w-0 pr-6">
+                        <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
+                        <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
+                      </div>
+                      <ChevronRight className="absolute right-4 w-6 h-6 text-amber-400 opacity-30" />
+                    </motion.div>
+                  ))}
+                </div>
               </div>
-              <ChevronRight className="absolute right-4 w-6 h-6 text-amber-400 opacity-30" />
-            </motion.div>
-          ))}
+            ))
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {displayedTools.map((tool, index) => (
+                <motion.div
+                  key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                  onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
+                  className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", tool.isComingSoon ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
+                >
+                  <div className="shrink-0 w-16 h-16 rounded-2xl bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
+                  <div className="flex-1 min-w-0 pr-6">
+                    <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
+                    <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
+                  </div>
+                  <ChevronRight className="absolute right-4 w-6 h-6 text-amber-400 opacity-30" />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -106,7 +161,46 @@ function ToolsPageContent() {
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {categoryParam && (
+          <div className="mb-6 max-w-7xl mx-auto">
+            <Link href="/tools" className="inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 font-medium">
+              <ArrowLeft className="w-4 h-4" />
+              Back to all tools
+            </Link>
+          </div>
+        )}
+
+        {toolsByCategoryOrdered ? (
+          <div className="space-y-16">
+            {toolsByCategoryOrdered.map(({ category, tools: catTools }) => (
+              <section key={category}>
+                <h2 className="text-2xl font-heading font-light text-amber-400 mb-6 tracking-widest uppercase border-b border-amber-500/20 pb-2">
+                  {category}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {catTools.map((tool) => (
+                    <motion.div
+                      key={tool.slug} whileHover={{ y: -8, scale: 1.02 }}
+                      onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
+                      className="group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 cursor-pointer overflow-hidden transition-all hover:border-amber-500/60"
+                    >
+                      <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="relative z-10 h-full flex flex-col items-center text-center">
+                        <div className="text-6xl mb-6 group-hover:scale-110 transition-transform">{tool.icon}</div>
+                        <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
+                        <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
+                        <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                          Explore <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayedTools.map((tool) => (
             <motion.div
               key={tool.slug} whileHover={{ y: -8, scale: 1.02 }}
@@ -125,6 +219,7 @@ function ToolsPageContent() {
             </motion.div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

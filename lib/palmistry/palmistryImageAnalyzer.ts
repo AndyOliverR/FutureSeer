@@ -99,7 +99,7 @@ class PalmistryImageAnalyzer {
   /**
    * Analyze palm image using vision-capable AI service
    * 
-   * Sends the palm image to the API endpoint which uses meta-llama/llama-4-maverick-17b-128e-instruct
+   * Sends the palm image to the API endpoint which uses meta-llama/llama-4-scout-17b-16e-instruct
    * (Llama 4 Maverick with 128 experts, optimized for vision) to perform actual visual analysis of palm features.
    * 
    * @param imageUrl - URL of the uploaded palm image

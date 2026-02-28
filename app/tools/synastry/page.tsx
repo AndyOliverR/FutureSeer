@@ -11,6 +11,28 @@ import { useSynastry } from "@/hooks/useSynastry"
 import { AffiliateLink } from "@/components/AffiliateLink"
 import { getSynastryChartUrl } from "@/lib/affiliateConfig"
 
+/** Parse 24h "HH:mm" to 12h hour (1-12), minute (0-59), and AM/PM */
+function time24To12(time24: string): { hour12: number; minute: number; ampm: "AM" | "PM" } {
+  const [h = "0", m = "0"] = (time24 || "").trim().split(":")
+  const hour = Math.min(23, Math.max(0, parseInt(h, 10) || 0))
+  const minute = Math.min(59, Math.max(0, parseInt(m, 10) || 0))
+  const hour12 = hour % 12 || 12
+  const ampm = hour < 12 ? "AM" : "PM"
+  return { hour12, minute, ampm }
+}
+
+/** Build 24h "HH:mm" from 12h hour (1-12), minute, and AM/PM */
+function time12To24(hour12: number, minute: number, ampm: "AM" | "PM"): string {
+  const m = Math.min(59, Math.max(0, minute))
+  let hour24: number
+  if (ampm === "AM") {
+    hour24 = hour12 === 12 ? 0 : hour12
+  } else {
+    hour24 = hour12 === 12 ? 12 : hour12 + 12
+  }
+  return `${String(hour24).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+}
+
 export default function SynastryPage() {
   const { userProfile, user } = useAuth()
   const {
@@ -127,12 +149,46 @@ export default function SynastryPage() {
                     onChange={(e) => setBirthData1({ ...birthData1, birthDate: e.target.value })}
                     className="w-full bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300 [color-scheme:dark]"
                   />
-                  <input
-                    type="time"
-                    value={(birthData1?.birthTime ?? "")}
-                    onChange={(e) => setBirthData1({ ...birthData1, birthTime: e.target.value })}
-                    className="w-full bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300 [color-scheme:dark]"
-                  />
+                  <div className="flex gap-2 items-center">
+                    <div className="flex gap-1 flex-1">
+                      <select
+                        value={time24To12(birthData1?.birthTime ?? "00:00").hour12}
+                        onChange={(e) => {
+                          const { minute, ampm } = time24To12(birthData1?.birthTime ?? "00:00")
+                          setBirthData1({ ...birthData1, birthTime: time12To24(Number(e.target.value), minute, ampm) })
+                        }}
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <span className="self-center text-slate-600">:</span>
+                      <select
+                        value={time24To12(birthData1?.birthTime ?? "00:00").minute}
+                        onChange={(e) => {
+                          const { hour12, ampm } = time24To12(birthData1?.birthTime ?? "00:00")
+                          setBirthData1({ ...birthData1, birthTime: time12To24(hour12, Number(e.target.value), ampm) })
+                        }}
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                      >
+                        {Array.from({ length: 60 }, (_, i) => i).map((n) => (
+                          <option key={n} value={n}>{String(n).padStart(2, "0")}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <select
+                      value={time24To12(birthData1?.birthTime ?? "00:00").ampm}
+                      onChange={(e) => {
+                        const { hour12, minute } = time24To12(birthData1?.birthTime ?? "00:00")
+                        setBirthData1({ ...birthData1, birthTime: time12To24(hour12, minute, e.target.value as "AM" | "PM") })
+                      }}
+                      className="w-20 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
                   <input
                     type="text"
                     placeholder="Birth Location"
@@ -163,12 +219,46 @@ export default function SynastryPage() {
                     onChange={(e) => setBirthData2({ ...birthData2, birthDate: e.target.value })}
                     className="w-full bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300 [color-scheme:dark]"
                   />
-                  <input
-                    type="time"
-                    value={(birthData2?.birthTime ?? "")}
-                    onChange={(e) => setBirthData2({ ...birthData2, birthTime: e.target.value })}
-                    className="w-full bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all duration-300 [color-scheme:dark]"
-                  />
+                  <div className="flex gap-2 items-center">
+                    <div className="flex gap-1 flex-1">
+                      <select
+                        value={time24To12(birthData2?.birthTime ?? "00:00").hour12}
+                        onChange={(e) => {
+                          const { minute, ampm } = time24To12(birthData2?.birthTime ?? "00:00")
+                          setBirthData2({ ...birthData2, birthTime: time12To24(Number(e.target.value), minute, ampm) })
+                        }}
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                      <span className="self-center text-slate-600">:</span>
+                      <select
+                        value={time24To12(birthData2?.birthTime ?? "00:00").minute}
+                        onChange={(e) => {
+                          const { hour12, ampm } = time24To12(birthData2?.birthTime ?? "00:00")
+                          setBirthData2({ ...birthData2, birthTime: time12To24(hour12, Number(e.target.value), ampm) })
+                        }}
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                      >
+                        {Array.from({ length: 60 }, (_, i) => i).map((n) => (
+                          <option key={n} value={n}>{String(n).padStart(2, "0")}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <select
+                      value={time24To12(birthData2?.birthTime ?? "00:00").ampm}
+                      onChange={(e) => {
+                        const { hour12, minute } = time24To12(birthData2?.birthTime ?? "00:00")
+                        setBirthData2({ ...birthData2, birthTime: time12To24(hour12, minute, e.target.value as "AM" | "PM") })
+                      }}
+                      className="w-20 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                    >
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
                   <input
                     type="text"
                     placeholder="Birth Location"
@@ -415,7 +505,7 @@ export default function SynastryPage() {
                         >
                           <div className="text-center py-16">
                             <div className="text-6xl mb-6">💕</div>
-                            <h3 className="text-2xl font-heading font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-4">Ready for Love Analysis?</h3>
+                            <h3 className="text-2xl font-heading font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 mb-4">Ready for Love Analysis?</h3>
                             <p className="text-slate-700 leading-relaxed text-lg max-w-2xl mx-auto">
                               Enter both birth details above to discover the cosmic compatibility 
                               and relationship dynamics between two souls.
@@ -469,7 +559,7 @@ export default function SynastryPage() {
         >
           <Card elevation={2} className="bg-gradient-to-br from-amber-50/90 to-yellow-50/90 border-2 border-amber-200 rounded-3xl">
             <CardContent className="p-8">
-              <h3 className="text-2xl font-heading font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 mb-6 text-center">✨ Synastry Features</h3>
+              <h3 className="text-2xl font-heading font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 mb-6 text-center">✨ Synastry Features</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="text-3xl mb-3">💫</div>

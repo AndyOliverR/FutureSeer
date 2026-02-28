@@ -180,19 +180,6 @@ export default function SortilegePage() {
     setIsAnimating(false)
   }
 
-  // Debug: Log state changes
-  useEffect(() => {
-    devLog.debug('📊 [SORTILEGE PAGE] State update:', {
-      activeTab,
-      activeReportTab,
-      hasReading: !!reading,
-      isLoading,
-      isAnimating,
-      error,
-      question: question.substring(0, 50) + '...'
-    })
-  }, [activeTab, activeReportTab, reading, isLoading, isAnimating, error, question])
-
   return (
     <ToolReportGuard loading={profileLoading} error={null} toolLabel="Sortilege">
       {isLoading && !displayReading ? (

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserProfile } from '@/lib/firebase'
+import { getDocument } from '@/lib/firebase-admin'
 import { calculateTransitData } from '@/lib/transitCalculatorServer'
 import { getChart } from '@/lib/astronomia-vedic'
 import { geocodePlace } from '@/services/geocoding'
@@ -66,29 +67,41 @@ export async function POST(request: NextRequest) {
     let userBirthData = birthData
     let coordinates: { latitude: number; longitude: number } | null = null
 
-    // If userId provided, fetch profile
+    // If userId provided, try to fetch profile (client SDK then Admin fallback)
     if (userId) {
+      let userProfile: { birthDate?: string; birthTime?: string; birthPlace?: string; displayName?: string } | null = null
       try {
-        const userProfile = await getUserProfile(userId)
-        if (userProfile) {
-          userBirthData = {
-            birthDate: userProfile.birthDate,
-            birthTime: userProfile.birthTime,
-            birthPlace: userProfile.birthPlace,
-            displayName: userProfile.displayName || 'User'
-          }
-        } else {
-          return NextResponse.json(
-            { success: false, error: 'User profile not found' },
-            { status: 404 }
-          )
+        userProfile = await getUserProfile(userId)
+      } catch (err) {
+        devLog.warn('⚠️ getUserProfile (client) failed, trying Admin:', err, 'route')
+      }
+      if (!userProfile && typeof getDocument === 'function') {
+        try {
+          const data = await getDocument('users', userId)
+          if (data && typeof data === 'object') userProfile = data as { birthDate?: string; birthTime?: string; birthPlace?: string; displayName?: string }
+        } catch (adminErr) {
+          devLog.warn('⚠️ getDocument (admin) failed:', adminErr, 'route')
         }
-      } catch (error) {
-        devLog.error('❌ Error fetching user profile:', error, 'route')
-        return NextResponse.json(
-          { success: false, error: 'Failed to fetch user profile' },
-          { status: 500 }
-        )
+      }
+      if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
+        userBirthData = {
+          birthDate: userProfile.birthDate,
+          birthTime: userProfile.birthTime,
+          birthPlace: userProfile.birthPlace,
+          displayName: userProfile.displayName || 'User'
+        }
+      }
+      // If still no birth data, use request body birthData so transits work when Firestore fails
+      if (!userBirthData?.birthDate || !userBirthData?.birthTime || !userBirthData?.birthPlace) {
+        if (birthData?.birthDate && birthData?.birthTime && birthData?.birthPlace) {
+          userBirthData = {
+            birthDate: birthData.birthDate,
+            birthTime: birthData.birthTime,
+            birthPlace: birthData.birthPlace,
+            displayName: birthData.displayName || 'User'
+          }
+          devLog.debug('📋 Using birth data from request body (profile unavailable)', undefined, 'kp-astrology')
+        }
       }
     }
 

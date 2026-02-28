@@ -47,9 +47,9 @@ function IdealNameSuggestionCard({ suggestion, index }: IdealNameSuggestionCardP
   const [isExpanded, setIsExpanded] = useState(false);
   
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-700 border-green-300 bg-green-100';
-    if (score >= 60) return 'text-amber-700 border-amber-300 bg-amber-100';
-    return 'text-orange-700 border-orange-300 bg-orange-100';
+    if (score >= 80) return 'text-green-900 border-green-500 bg-green-200';
+    if (score >= 60) return 'text-amber-900 border-amber-500 bg-amber-200';
+    return 'text-orange-900 border-orange-500 bg-orange-200';
   };
   
   const getElementIcon = (element: string) => {
@@ -83,20 +83,20 @@ function IdealNameSuggestionCard({ suggestion, index }: IdealNameSuggestionCardP
               </Badge>
             </div>
             <div className="flex flex-wrap gap-2 mb-2">
-              <Badge className="bg-slate-100 border-slate-300 text-slate-700 text-xs">
+              <Badge className="bg-slate-400 border-slate-600 text-white text-xs font-semibold shadow-sm">
                 Destiny: {suggestion.destinyNumber}
               </Badge>
-              <Badge className="bg-slate-100 border-slate-300 text-slate-700 text-xs">
+              <Badge className="bg-slate-400 border-slate-600 text-white text-xs font-semibold shadow-sm">
                 Soul: {suggestion.soulNumber}
               </Badge>
-              <Badge className="bg-slate-100 border-slate-300 text-slate-700 text-xs">
+              <Badge className="bg-slate-400 border-slate-600 text-white text-xs font-semibold shadow-sm">
                 Personality: {suggestion.personalityNumber}
               </Badge>
             </div>
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-slate-600 text-xs">Elements:</span>
+              <span className="text-slate-900 text-xs font-semibold">Elements:</span>
               {suggestion.elements.map((el, idx) => (
-                <Badge key={idx} className="bg-slate-100 border-slate-300 text-slate-700 text-xs flex items-center gap-1">
+                <Badge key={idx} className="bg-slate-400 border-slate-600 text-white text-xs font-semibold shadow-sm flex items-center gap-1">
                   {getElementIcon(el)}
                   {el}
                 </Badge>
@@ -128,8 +128,8 @@ function IdealNameSuggestionCard({ suggestion, index }: IdealNameSuggestionCardP
                   </h6>
                   <ul className="space-y-1">
                     {suggestion.whyIdeal.map((reason, idx) => (
-                      <li key={idx} className="text-slate-700 text-xs flex items-start">
-                        <span className="text-amber-700 mr-2 mt-0.5">•</span>
+                      <li key={idx} className="text-slate-800 text-xs flex items-start">
+                        <span className="text-amber-800 mr-2 mt-0.5">•</span>
                         {reason}
                       </li>
                     ))}
@@ -146,8 +146,8 @@ function IdealNameSuggestionCard({ suggestion, index }: IdealNameSuggestionCardP
                   </h6>
                   <ul className="space-y-1">
                     {suggestion.numerologyBenefits.map((benefit, idx) => (
-                      <li key={idx} className="text-slate-700 text-xs flex items-start">
-                        <span className="text-amber-700 mr-2 mt-0.5">•</span>
+                      <li key={idx} className="text-slate-800 text-xs flex items-start">
+                        <span className="text-amber-800 mr-2 mt-0.5">•</span>
                         {benefit}
                       </li>
                     ))}
@@ -164,8 +164,8 @@ function IdealNameSuggestionCard({ suggestion, index }: IdealNameSuggestionCardP
                   </h6>
                   <ul className="space-y-1">
                     {suggestion.astrologyAlignment.map((alignment, idx) => (
-                      <li key={idx} className="text-slate-700 text-xs flex items-start">
-                        <span className="text-amber-700 mr-2 mt-0.5">•</span>
+                      <li key={idx} className="text-slate-800 text-xs flex items-start">
+                        <span className="text-amber-800 mr-2 mt-0.5">•</span>
                         {alignment}
                       </li>
                     ))}
@@ -182,8 +182,8 @@ function IdealNameSuggestionCard({ suggestion, index }: IdealNameSuggestionCardP
                   </h6>
                   <ul className="space-y-1">
                     {suggestion.elementalBalance.map((balance, idx) => (
-                      <li key={idx} className="text-slate-700 text-xs flex items-start">
-                        <span className="text-amber-700 mr-2 mt-0.5">•</span>
+                      <li key={idx} className="text-slate-800 text-xs flex items-start">
+                        <span className="text-amber-800 mr-2 mt-0.5">•</span>
                         {balance}
                       </li>
                     ))}
@@ -1060,8 +1060,8 @@ export function NameAnalysisCoachInterface({
             <CardContent>
               <ul className="space-y-2">
                 {analysis.recommendations.nameOptimization.map((suggestion, idx) => (
-                  <li key={idx} className="text-slate-700 text-sm flex items-start">
-                    <span className="text-amber-700 mr-2 mt-0.5">•</span>
+                  <li key={idx} className="text-slate-800 text-sm flex items-start">
+                    <span className="text-amber-800 mr-2 mt-0.5">•</span>
                     {suggestion}
                   </li>
                 ))}
@@ -1082,7 +1082,7 @@ export function NameAnalysisCoachInterface({
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {analysis.recommendations.nicknameSuggestions.map((nickname, idx) => (
-                  <Badge key={idx} variant="outline" className="border-amber-300 text-amber-900 bg-white/60">
+                  <Badge key={idx} variant="outline" className="border-amber-400 text-amber-900 bg-amber-50/80">
                     {nickname}
                   </Badge>
                 ))}
@@ -1103,8 +1103,8 @@ export function NameAnalysisCoachInterface({
             <CardContent>
               <ul className="space-y-2">
                 {analysis.recommendations.businessNameIdeas.map((idea, idx) => (
-                  <li key={idx} className="text-slate-700 text-sm flex items-start">
-                    <span className="text-amber-700 mr-2 mt-0.5">•</span>
+                  <li key={idx} className="text-slate-800 text-sm flex items-start">
+                    <span className="text-amber-800 mr-2 mt-0.5">•</span>
                     {idea}
                   </li>
                 ))}
@@ -1125,7 +1125,7 @@ export function NameAnalysisCoachInterface({
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {analysis.recommendations.spiritualNames.map((spiritualName, idx) => (
-                  <Badge key={idx} variant="outline" className="border-purple-300 text-purple-700 bg-white/60">
+                  <Badge key={idx} variant="outline" className="border-purple-400 text-purple-900 bg-purple-50/80">
                     {spiritualName}
                   </Badge>
                 ))}
@@ -1145,15 +1145,15 @@ export function NameAnalysisCoachInterface({
           <CardContent className="space-y-4">
             <div>
               <h4 className="text-amber-900 font-semibold mb-2">Current Focus</h4>
-              <p className="text-slate-700 text-sm">{analysis.coaching.currentFocus}</p>
+              <p className="text-slate-800 text-sm">{analysis.coaching.currentFocus}</p>
             </div>
             
             <div>
               <h4 className="text-amber-900 font-semibold mb-2">Recommendations</h4>
               <ul className="space-y-2">
                 {analysis.coaching.recommendations.map((rec, idx) => (
-                  <li key={idx} className="text-slate-700 text-sm flex items-start">
-                    <span className="text-amber-700 mr-2 mt-0.5">•</span>
+                  <li key={idx} className="text-slate-800 text-sm flex items-start">
+                    <span className="text-amber-800 mr-2 mt-0.5">•</span>
                     {rec}
                   </li>
                 ))}
@@ -1164,10 +1164,10 @@ export function NameAnalysisCoachInterface({
               <h4 className="text-amber-900 font-semibold mb-2">Affirmations</h4>
               <ul className="space-y-2">
                 {analysis.coaching.affirmations.map((affirmation, idx) => (
-                  <li key={idx} className="text-slate-700 text-sm italic flex items-start">
-                    <span className="text-amber-700 mr-2 mt-0.5">"</span>
+                  <li key={idx} className="text-slate-800 text-sm italic flex items-start">
+                    <span className="text-amber-800 mr-2 mt-0.5">"</span>
                     {affirmation}
-                    <span className="text-amber-700 ml-1">"</span>
+                    <span className="text-amber-800 ml-1">"</span>
                   </li>
                 ))}
               </ul>
@@ -1177,8 +1177,8 @@ export function NameAnalysisCoachInterface({
               <h4 className="text-amber-900 font-semibold mb-2">Next Steps</h4>
               <ul className="space-y-2">
                 {analysis.coaching.nextSteps.map((step, idx) => (
-                  <li key={idx} className="text-slate-700 text-sm flex items-start">
-                    <span className="text-amber-700 mr-2 mt-0.5">{idx + 1}.</span>
+                  <li key={idx} className="text-slate-800 text-sm flex items-start">
+                    <span className="text-amber-800 mr-2 mt-0.5">{idx + 1}.</span>
                     {step}
                   </li>
                 ))}
@@ -1206,16 +1206,16 @@ export function NameAnalysisCoachInterface({
                 <div className="space-y-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-slate-700 text-sm">Alignment Score</span>
+                      <span className="text-slate-800 text-sm font-medium">Alignment Score</span>
                       <span className={`text-sm font-semibold ${
-                        idealNameAnalysis.currentNameAnalysis.alignmentScore >= 80 ? 'text-green-700' :
-                        idealNameAnalysis.currentNameAnalysis.alignmentScore >= 60 ? 'text-amber-700' :
-                        'text-orange-700'
+                        idealNameAnalysis.currentNameAnalysis.alignmentScore >= 80 ? 'text-green-800' :
+                        idealNameAnalysis.currentNameAnalysis.alignmentScore >= 60 ? 'text-amber-800' :
+                        'text-orange-800'
                       }`}>
                         {idealNameAnalysis.currentNameAnalysis.alignmentScore}/100
                       </span>
                     </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="w-full bg-slate-300 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-500 ${
                           idealNameAnalysis.currentNameAnalysis.alignmentScore >= 80 ? 'bg-gradient-to-r from-green-600 to-green-500' :
@@ -1226,13 +1226,13 @@ export function NameAnalysisCoachInterface({
                       />
                     </div>
                   </div>
-                  <p className="text-slate-700 text-sm">{idealNameAnalysis.analysis.lifePathAlignment}</p>
+                  <p className="text-slate-800 text-sm">{idealNameAnalysis.analysis.lifePathAlignment}</p>
                   {idealNameAnalysis.currentNameAnalysis.currentChallenges.length > 0 && (
                     <div>
-                      <p className="text-slate-600 text-xs mb-1">Current Challenges:</p>
+                      <p className="text-slate-800 text-xs font-medium mb-1">Current Challenges:</p>
                       <ul className="space-y-1">
                         {idealNameAnalysis.currentNameAnalysis.currentChallenges.map((challenge, idx) => (
-                          <li key={idx} className="text-slate-600 text-xs flex items-start">
+                          <li key={idx} className="text-slate-800 text-xs flex items-start">
                             <AlertTriangle className="w-3 h-3 mr-1 mt-0.5 text-orange-600" />
                             {challenge}
                           </li>

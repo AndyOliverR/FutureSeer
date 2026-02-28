@@ -167,6 +167,25 @@ export async function POST(request: NextRequest) {
         devLog.info(`[generate-mystical] Preserved existing real report for tool: ${slug}`, 'generate-mystical');
       }
     }
+    // Preserve pipeline-derived reports (not in ALL_TOOL_SLUGS) when this run didn't produce them or produced placeholder
+    const EXTRA_PROFILE_KEYS = ['vedicAstroNumerology', 'astroNumerology'] as const;
+    for (const slug of EXTRA_PROFILE_KEYS) {
+      const newVal = (toStore as Record<string, unknown>)[slug];
+      const existingVal = storedProfile[slug];
+      const newIsPlaceholder =
+        newVal != null &&
+        typeof newVal === 'object' &&
+        (newVal as { placeholder?: boolean }).placeholder === true;
+      const existingIsRealReport =
+        existingVal != null &&
+        typeof existingVal === 'object' &&
+        (existingVal as { placeholder?: boolean }).placeholder !== true;
+      const shouldPreserve = existingIsRealReport && (newVal == null || newIsPlaceholder);
+      if (shouldPreserve) {
+        (toStore as Record<string, unknown>)[slug] = existingVal;
+        devLog.info(`[generate-mystical] Preserved existing real report for tool: ${slug}`, 'generate-mystical');
+      }
+    }
 
     const newHash = calculateProfileDataHash(userProfile);
     const batchSuccess = await batchSetDocuments([

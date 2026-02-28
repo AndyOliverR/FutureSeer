@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { BackButton } from "@/components/navigation/BackButton"
-import { ASTROLOGY_TOOL_SLUGS, DIVINATION_TOOL_SLUGS, NUMEROLOGY_TOOL_SLUGS, READING_TOOL_SLUGS, CHINESE_TOOL_SLUGS, REMEDIES_TOOL_SLUGS, INDIAN_TOOL_SLUGS } from "@/lib/services/toolManager"
+import { ASTROLOGY_TOOL_SLUGS, DIVINATION_TOOL_SLUGS, NUMEROLOGY_TOOL_SLUGS, READING_TOOL_SLUGS, CHINESE_TOOL_SLUGS, REMEDIES_TOOL_SLUGS, INDIAN_TOOL_SLUGS, ANALYSIS_TOOL_SLUGS, ENERGY_TOOL_SLUGS } from "@/lib/services/toolManager"
 
 export function ToolsLayoutClient({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -42,6 +42,8 @@ export function ToolsLayoutClient({ children }: { children: React.ReactNode }) {
     (INDIAN_TOOL_SLUGS.includes(pathSegment) ||
       (pathSegment === 'vedic' && INDIAN_TOOL_SLUGS.includes('vedic-astrology')))
   )
+  const isAnalysisTool = Boolean(pathSegment && ANALYSIS_TOOL_SLUGS.includes(pathSegment))
+  const isEnergyTool = Boolean(pathSegment && ENERGY_TOOL_SLUGS.includes(pathSegment))
 
   return (
     <>
@@ -62,6 +64,10 @@ export function ToolsLayoutClient({ children }: { children: React.ReactNode }) {
           <BackButton href="/tools?category=Remedies" label="Back to Remedies" />
         ) : isIndianTool ? (
           <BackButton href="/tools?category=Indian" label="Back to Indian" />
+        ) : isAnalysisTool ? (
+          <BackButton href="/tools?category=Analysis" label="Back to Analysis" />
+        ) : isEnergyTool ? (
+          <BackButton href="/tools?category=Energy" label="Back to Energy" />
         ) : (
           <BackButton href="/tools" label="Back to Tools" />
         )}

@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+function isLocalhost(request: NextRequest): boolean {
+  const host = request.headers.get('host') ?? request.nextUrl.hostname ?? '';
+  return host.startsWith('localhost') || host.startsWith('127.0.0.1');
+}
+
 export async function POST(request: NextRequest) {
+  const nodeEnv = process.env.NODE_ENV as string | undefined;
   try {
+    // Skip reCAPTCHA for local dev so it works without adding localhost to reCAPTCHA settings
+    if (isLocalhost(request) || nodeEnv === 'development') {
+      return NextResponse.json({ success: true, score: 1.0, message: 'Local dev bypass' });
+    }
+
     const { token, action } = await request.json();
 
     if (!token) {
@@ -15,7 +26,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey) {
       console.error('Missing RECAPTCHA_ENTERPRISE_API_KEY in environment variables');
       // In dev, we might want to skip verification if the key is missing
-      if (process.env.NODE_ENV === 'development') {
+      if (nodeEnv === 'development') {
         return NextResponse.json({ success: true, score: 1.0, message: 'Dev mode bypass' });
       }
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
@@ -44,13 +55,16 @@ export async function POST(request: NextRequest) {
         success: true,
         score: data.riskAnalysis.score
       });
-    } else {
-      return NextResponse.json({
-        success: false,
-        error: 'Security check failed',
-        reason: data.tokenProperties?.invalidReason || 'Low score'
-      }, { status: 403 });
     }
+    // In development, allow through when captcha fails (e.g. localhost not in allowed domains)
+    if (nodeEnv === 'development') {
+      return NextResponse.json({ success: true, score: 0.5, message: 'Dev bypass (captcha failed)' });
+    }
+    return NextResponse.json({
+      success: false,
+      error: 'Security check failed',
+      reason: data.tokenProperties?.invalidReason || 'Low score'
+    }, { status: 403 });
 
   } catch (error) {
     console.error('reCAPTCHA verification error:', error);

@@ -13,7 +13,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, ArrowLeft, User, Clock, MapPin, Edit3, Save, X, LogOut, Sparkles, Heart, Camera, Calendar } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
-import { updateUserProfile, type UserProfile } from "@/lib/firebase"
+import { updateUserProfile, getFirebaseStorage, type UserProfile } from "@/lib/firebase"
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache, useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
 import { ReferralCodeCard } from "@/components/ReferralCodeCard"
 import { SubscriptionStatus } from "@/components/SubscriptionStatus"
@@ -36,6 +37,15 @@ export default function ProfilePage() {
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
   const [generationStatus, setGenerationStatus] = useState<string>("")
   const generationAbortRef = useRef<AbortController | null>(null)
+  const [isAndroid, setIsAndroid] = useState(false)
+  const [uploadingFace, setUploadingFace] = useState(false)
+  const [uploadingPalm, setUploadingPalm] = useState(false)
+  const faceInputRef = useRef<HTMLInputElement>(null)
+  const palmInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    setIsAndroid(typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent))
+  }, [])
 
   useEffect(() => {
     if (!isGeneratingProfile) return
@@ -142,9 +152,52 @@ export default function ProfilePage() {
     finally { setIsLoading(false) }
   }
 
-  if (authLoading) return <div className="min-h-screen bg-surface flex items-center justify-center"><Loader2 className="animate-spin text-amber-400" /></div>
+  const handlePhotoUpload = async (file: File, type: "face" | "palm") => {
+    if (!user?.uid) return
+    const storage = getFirebaseStorage()
+    if (!storage) { setError("Storage not available."); return }
+    const setUploading = type === "face" ? setUploadingFace : setUploadingPalm
+    const key = type === "face" ? "facePhotoUrl" : "palmPhotoUrl"
+    setUploading(true)
+    setError(null)
+    try {
+      const path = type === "face" ? `users/${user.uid}/face_${Date.now()}` : `users/${user.uid}/palm_${Date.now()}`
+      const storageRef = ref(storage, path)
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      setFormData((prev) => ({ ...prev, [key]: url }))
+      await updateUserProfile(user.uid, { [key]: url })
+      setTimeout(() => refreshProfile(), 300)
+    } catch (e) {
+      setError(type === "face" ? "Face photo upload failed." : "Palm photo upload failed.")
+    } finally {
+      setUploading(false)
+    }
+  }
 
-  return (
+  const handleRemovePhoto = async (type: "face" | "palm") => {
+    if (!user?.uid) return
+    const key = type === "face" ? "facePhotoUrl" : "palmPhotoUrl"
+    try {
+      setFormData((prev) => ({ ...prev, [key]: "" }))
+      await updateUserProfile(user.uid, { [key]: "" })
+      setTimeout(() => refreshProfile(), 300)
+    } catch (e) {
+      setError(`Failed to remove ${type} photo.`)
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isAndroid ? "bg-surface" : "starfield-ultra-sharp"}`}>
+        <Loader2 className="animate-spin text-amber-400" />
+      </div>
+    )
+  }
+
+  // Android / Mobile: Material 3 layout
+  if (isAndroid) {
+    return (
     <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
       <div className="flex items-center justify-between h-16 mb-6">
         <Link href="/tools" className="p-2 text-amber-400 active:scale-90 transition-transform"><ArrowLeft className="w-6 h-6" /></Link>
@@ -187,6 +240,25 @@ export default function ProfilePage() {
               {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
             </div>
 
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
+              {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
+              {isEditing ? (
+                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
+                  <option value="">Not set</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                </select>
+              ) : (
+                <p className="text-lg font-bold text-white ml-1">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Date</Label>
@@ -195,6 +267,27 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Place</Label>
                 {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthPlace || "Not set"}</p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Time of Birth</Label>
+                {isEditing ? (
+                  <div className="flex gap-2 items-center">
+                    <Input type="time" value={formData.birthTime} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark] flex-1" />
+                    <select value={formData.birthTimeAMPM} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white min-w-[72px]">
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                ) : (
+                  <p className="text-lg font-bold text-white ml-1">{formData.birthTime ? `${formData.birthTime} ${formData.birthTimeAMPM}` : "Not set"}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Current residence</Label>
+                {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="City, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
               </div>
             </div>
 
@@ -209,15 +302,31 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 text-center">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
-                <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
-                  {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 opacity-20" />}
+                <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
+                  {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
+                  {uploadingFace && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
                 </div>
+                {isEditing && (
+                  <div className="flex flex-col gap-1">
+                    <input ref={faceInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }} />
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>Upload</Button>
+                    {formData.facePhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("face")}>Remove</Button>}
+                  </div>
+                )}
               </div>
               <div className="space-y-2 text-center">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
-                <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
-                  {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 opacity-20" />}
+                <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
+                  {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
+                  {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
                 </div>
+                {isEditing && (
+                  <div className="flex flex-col gap-1">
+                    <input ref={palmInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }} />
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>Upload</Button>
+                    {formData.palmPhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("palm")}>Remove</Button>}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -275,6 +384,202 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+    )
+  }
+
+  // Web: devotionist layout (deep blue + golden yellow, starfield)
+  return (
+    <div className="min-h-screen starfield-ultra-sharp flex flex-col pb-16 px-4 md:px-8 overflow-x-hidden">
+      <div className="max-w-2xl mx-auto w-full py-8">
+        <div className="flex items-center justify-between h-14 mb-8">
+          <Link href="/tools" className="text-amber-400 flex items-center gap-2 font-heading tracking-widest uppercase text-sm opacity-80 hover:opacity-100"><ArrowLeft className="w-5 h-5" /> Back</Link>
+          <h1 className="text-2xl font-heading font-light text-amber-400 gold-glow uppercase tracking-widest">Cosmic Profile</h1>
+          <button onClick={() => signOut()} className="p-2 text-amber-200/80 hover:text-red-400 rounded-full transition-colors" aria-label="Sign out"><LogOut className="w-5 h-5" /></button>
+        </div>
+
+        <div className="space-y-6">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-amber-500/20 rounded-xl"><Heart className="w-5 h-5 text-amber-400" /></div>
+              <h2 className="font-bold text-amber-400 uppercase text-sm tracking-widest">Plan & Referral</h2>
+            </div>
+            {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
+            {user && <div className="mt-4 border-t border-amber-400/20 pt-4"><ReferralCodeCard userId={user.uid} /></div>}
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-6">
+            <div className="flex items-center justify-between border-b border-amber-400/20 pb-4">
+              <div className="flex items-center gap-3">
+                <User className="w-6 h-6 text-amber-400" />
+                <h2 className="text-xl font-bold text-white">Personal Data</h2>
+              </div>
+              {!isEditing ? (
+                <Button onClick={() => setIsEditing(true)} variant="ghost" className="text-amber-400 font-bold uppercase text-xs tracking-widest px-4 h-10 bg-amber-500/10 rounded-full hover:bg-amber-500/20">Edit</Button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={handleSave} className="p-2 bg-amber-500 text-[#020617] rounded-full shadow-lg hover:bg-amber-400"><Save className="w-5 h-5" /></button>
+                  <button onClick={() => setIsEditing(false)} className="p-2 bg-white/10 text-white rounded-full border border-amber-400/30 hover:bg-white/20"><X className="w-5 h-5" /></button>
+                </div>
+              )}
+            </div>
+
+            {error && <Alert className="bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"><AlertDescription className="font-bold">{error}</AlertDescription></Alert>}
+            {success && <Alert className="bg-green-500/10 border-green-500/20 text-green-400 rounded-2xl"><AlertDescription className="font-bold">{success}</AlertDescription></Alert>}
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Display Name</Label>
+                {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.displayName || "Not set"}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
+                {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
+                {isEditing ? (
+                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-12 w-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:border-amber-500 [color-scheme:dark]">
+                    <option value="">Not set</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="non-binary">Non-binary</option>
+                  </select>
+                ) : (
+                  <p className="text-lg font-medium text-white">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Date</Label>
+                  {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-medium text-white">{formData.birthDate || "Not set"}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Place</Label>
+                  {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.birthPlace || "Not set"}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Time of Birth</Label>
+                  {isEditing ? (
+                    <div className="flex gap-2 items-center">
+                      <Input type="time" value={formData.birthTime} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark] flex-1" />
+                      <select value={formData.birthTimeAMPM} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-12 bg-white/5 border border-amber-400/30 rounded-2xl px-3 text-white min-w-[72px]">
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <p className="text-lg font-medium text-white">{formData.birthTime ? `${formData.birthTime} ${formData.birthTimeAMPM}` : "Not set"}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Current residence</Label>
+                  {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="City, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.currentLocation || "Not set"}</p>}
+                </div>
+              </div>
+
+              {!formData.birthTime && formData.birthDate && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
+                  <p className="text-amber-300 text-xs font-medium">
+                    ⚠️ Birth time not set — readings will use 12:00 PM (noon) as default, which may reduce accuracy for time-sensitive charts like houses and ascendant.
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 text-center">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
+                  <div className="aspect-square bg-white/5 rounded-2xl border-2 border-dashed border-amber-400/20 flex items-center justify-center overflow-hidden relative">
+                    {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 text-amber-400/40" />}
+                    {uploadingFace && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
+                  </div>
+                  {isEditing && (
+                    <div className="flex flex-col gap-1">
+                      <input ref={faceInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }} />
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>Upload</Button>
+                      {formData.facePhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("face")}>Remove</Button>}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2 text-center">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                  <div className="aspect-square bg-white/5 rounded-2xl border-2 border-dashed border-amber-400/20 flex items-center justify-center overflow-hidden relative">
+                    {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 text-amber-400/40" />}
+                    {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
+                  </div>
+                  {isEditing && (
+                    <div className="flex flex-col gap-1">
+                      <input ref={palmInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }} />
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>Upload</Button>
+                      {formData.palmPhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("palm")}>Remove</Button>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {!isEditing && (
+                <div className="pt-6 border-t border-amber-400/20">
+                  <Button
+                    onClick={async () => {
+                      if (isGeneratingProfile) return
+                      setIsGeneratingProfile(true)
+                      setError(null)
+                      setGenerationStatus("Preparing your cosmic reading...")
+                      const abort = new AbortController()
+                      generationAbortRef.current = abort
+                      try {
+                        setGenerationStatus("Connecting to the celestial realm...")
+                        const t = await user?.getIdToken()
+                        if (!t) throw new Error("Please sign in again to continue.")
+                        setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+                        const res = await fetch('/api/profile/generate-mystical', {
+                          method: 'POST',
+                          headers: { Authorization: `Bearer ${t}` },
+                          signal: abort.signal,
+                        })
+                        if (!res.ok) {
+                          const body = await res.json().catch(() => ({}))
+                          throw new Error(body.error || "Profile generation failed. Please try again.")
+                        }
+                        const data = await res.json()
+                        if (data.failedTools && data.failedTools.length > 0) {
+                          devLog.warn(`Some tools had issues: ${data.failedTools.join(', ')}`, 'profile')
+                        }
+                        applyGeneratedProfile(data.comprehensiveProfile)
+                        setSuccess("Mystical Profile Generated!")
+                        router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
+                      } catch(e: any) {
+                        if (e?.name === 'AbortError') return
+                        setError(e?.message || "Generation failed. Please check your connection and try again.")
+                      } finally {
+                        setIsGeneratingProfile(false)
+                        setGenerationStatus("")
+                        generationAbortRef.current = null
+                      }
+                    }}
+                    disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace}
+                    className="w-full h-14 bg-gradient-to-r from-amber-600 to-yellow-500 text-[#020617] rounded-2xl font-bold shadow-xl hover:opacity-95 transition-opacity"
+                  >
+                    {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
+                  </Button>
+                  {isGeneratingProfile && generationStatus && (
+                    <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
+                  )}
+                  {!formData.birthDate && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/70 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

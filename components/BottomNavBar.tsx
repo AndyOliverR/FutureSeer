@@ -10,7 +10,7 @@ const mobileNavItems = [
   { name: "Home", href: "/", icon: Home },
   { name: "Tools", href: "/tools", icon: Wrench },
   { name: "Seer", href: "/ask-the-seer", icon: Sparkles },
-  { name: "Community", href: "/community", icon: Users },
+  { name: "Community", href: "/community/attribution", icon: Users },
   { name: "Profile", href: "/profile", icon: User },
 ];
 

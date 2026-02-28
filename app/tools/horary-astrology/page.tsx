@@ -102,6 +102,28 @@ function normalizeTimePart(timePart: string): string {
   return s != null ? `${h}:${m}:${s}` : `${h}:${m}`
 }
 
+/** Parse 24h "HH:mm" to 12h hour (1-12), minute (0-59), and AM/PM */
+function time24To12(time24: string): { hour12: number; minute: number; ampm: "AM" | "PM" } {
+  const [h = "0", m = "0"] = (time24 || "").trim().split(":")
+  const hour = Math.min(23, Math.max(0, parseInt(h, 10) || 0))
+  const minute = Math.min(59, Math.max(0, parseInt(m, 10) || 0))
+  const hour12 = hour % 12 || 12
+  const ampm = hour < 12 ? "AM" : "PM"
+  return { hour12, minute, ampm }
+}
+
+/** Build 24h "HH:mm" from 12h hour (1-12), minute, and AM/PM */
+function time12To24(hour12: number, minute: number, ampm: "AM" | "PM"): string {
+  const m = Math.min(59, Math.max(0, minute))
+  let hour24: number
+  if (ampm === "AM") {
+    hour24 = hour12 === 12 ? 0 : hour12
+  } else {
+    hour24 = hour12 === 12 ? 12 : hour12 + 12
+  }
+  return `${String(hour24).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+}
+
 export default function HoraryAstrologyPage() {
   const { user, userProfile } = useAuth()
   const [horaryData, setHoraryData] = useState<HoraryData | null>(null)
@@ -295,18 +317,76 @@ export default function HoraryAstrologyPage() {
                   </p>
                 </div>
 
-                {/* Question Time */}
+                {/* Question Time: date + time with AM/PM */}
                 <div>
                   <label className="block text-slate-700 font-semibold mb-3">
                     <span className="mr-2">⏰</span>
                     When did you ask this question?
                   </label>
-                  <input
-                    type="datetime-local"
-                    value={questionTime}
-                    onChange={(e) => setQuestionTime(e.target.value)}
-                    className="w-full bg-white border-2 border-amber-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300"
-                  />
+                  <div className="flex flex-wrap gap-3 items-end">
+                    <div className="flex-1 min-w-[140px]">
+                      <label className="block text-slate-600 text-xs mb-1">Date</label>
+                      <input
+                        type="date"
+                        value={questionTime ? questionTime.split("T")[0] : ""}
+                        onChange={(e) => {
+                          const date = e.target.value
+                          const timePart = questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00"
+                          setQuestionTime(date ? `${date}T${timePart}` : "")
+                        }}
+                        className="w-full bg-white border-2 border-amber-300 rounded-xl p-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300"
+                      />
+                    </div>
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <div>
+                        <label className="block text-slate-600 text-xs mb-1">Hour</label>
+                        <select
+                          value={time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00").hour12}
+                          onChange={(e) => {
+                            const datePart = questionTime ? questionTime.split("T")[0] : new Date().toISOString().slice(0, 10)
+                            const { minute, ampm } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
+                            setQuestionTime(`${datePart}T${time12To24(Number(e.target.value), minute, ampm)}`)
+                          }}
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[72px]"
+                        >
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                            <option key={n} value={n}>{n}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 text-xs mb-1">Min</label>
+                        <select
+                          value={time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00").minute}
+                          onChange={(e) => {
+                            const datePart = questionTime ? questionTime.split("T")[0] : new Date().toISOString().slice(0, 10)
+                            const { hour12, ampm } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
+                            setQuestionTime(`${datePart}T${time12To24(hour12, Number(e.target.value), ampm)}`)
+                          }}
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[72px]"
+                        >
+                          {Array.from({ length: 60 }, (_, i) => (
+                            <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-slate-600 text-xs mb-1">AM/PM</label>
+                        <select
+                          value={time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00").ampm}
+                          onChange={(e) => {
+                            const datePart = questionTime ? questionTime.split("T")[0] : new Date().toISOString().slice(0, 10)
+                            const { hour12, minute } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
+                            setQuestionTime(`${datePart}T${time12To24(hour12, minute, e.target.value as "AM" | "PM")}`)
+                          }}
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[80px]"
+                        >
+                          <option value="AM">AM</option>
+                          <option value="PM">PM</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                   <p className="text-slate-600 text-sm mt-2">
                     The exact moment you first thought of this question
                   </p>
@@ -515,7 +595,14 @@ export default function HoraryAstrologyPage() {
                       <div className="text-center p-4 bg-white border-2 border-amber-200 rounded-xl shadow-sm">
                         <div className="text-3xl mb-2">⏰</div>
                         <div className="text-slate-600 text-sm">Chart Time</div>
-                        <div className="text-amber-900 text-sm font-medium">{new Date(horaryData.basicInfo?.chartTime).toLocaleString()}</div>
+                        <div className="text-amber-900 text-sm font-medium">
+                          {(() => {
+                            const ct = horaryData.basicInfo?.chartTime
+                            if (!ct) return '—'
+                            const d = new Date(ct)
+                            return Number.isNaN(d.getTime()) ? ct : d.toLocaleString()
+                          })()}
+                        </div>
                       </div>
                       <div className="text-center p-4 bg-white border-2 border-amber-200 rounded-xl shadow-sm">
                         <div className="text-3xl mb-2">📍</div>

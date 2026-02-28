@@ -631,7 +631,7 @@ function SupportTools() {
           Read support tickets and feedback here. Respond to users from Support Desk.
         </p>
         <p className="text-sm text-white/70">
-          Public community: <Link href="/community" className="text-amber-300 hover:underline">/community</Link> — Manage discussions: Community Management below.
+          Public community: <Link href="/community/attribution" className="text-amber-300 hover:underline">/community/attribution</Link> — Manage discussions: Community Management below.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link href="/admin/support">

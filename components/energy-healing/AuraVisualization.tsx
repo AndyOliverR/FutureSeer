@@ -47,33 +47,33 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
       {/* Overall Aura Health */}
       <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
-          <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
-            <Eye className="w-5 h-5 text-amber-600" />
+          <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+            <Eye className="w-5 h-5 text-amber-700" />
             Aura Reading Overview
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-amber-900">Dominant Color</span>
+              <span className="text-amber-950 font-medium">Dominant Color</span>
               <div className="flex items-center gap-2">
                 <div
                   className="w-8 h-8 rounded-full border-2 border-amber-500 shadow-lg"
                   style={{ backgroundColor: getAuraColorHex(reading.dominantColor ?? '') }}
                 />
-                <span className="text-amber-900 font-semibold capitalize">{reading.dominantColor ?? '—'}</span>
+                <span className="text-amber-950 font-semibold capitalize">{reading.dominantColor ?? '—'}</span>
               </div>
             </div>
             
             <div className="space-y-2">
-              <p className="text-amber-800">{reading.colorInterpretation ?? '—'}</p>
+              <p className="text-amber-950 font-medium">{reading.colorInterpretation ?? '—'}</p>
             </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-amber-300">
-              <span className="text-amber-900">Overall Health</span>
+              <span className="text-amber-950 font-medium">Overall Health</span>
               <div className="flex items-center gap-2">
                 {getHealthIcon(reading.overallHealth ?? '')}
-                <Badge variant="outline" className="border-amber-500 text-amber-900 bg-amber-50">
+                <Badge variant="outline" className="border-amber-600 text-amber-950 bg-amber-100 font-medium">
                   {(typeof reading.overallHealth === 'string' ? reading.overallHealth : '—').replace(/_/g, ' ').toUpperCase()}
                 </Badge>
               </div>
@@ -85,8 +85,8 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
       {/* Aura Layers Visualization */}
       <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
-          <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
-            <Layers className="w-5 h-5 text-amber-600" />
+          <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+            <Layers className="w-5 h-5 text-amber-700" />
             Aura Layers
           </CardTitle>
         </CardHeader>
@@ -144,15 +144,15 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
                       style={{ backgroundColor: getAuraColorHex(layer?.color ?? '') }}
                     />
                     <div>
-                      <h3 className="text-amber-900 font-semibold">{layer?.name ?? '—'}</h3>
-                      <p className="text-sm text-amber-800">
+                      <h3 className="text-amber-950 font-semibold">{layer?.name ?? '—'}</h3>
+                      <p className="text-sm text-amber-950 font-medium">
                         {(layer?.clarity ?? '').toUpperCase()} • {(layer?.thickness ?? '').toUpperCase()}
                       </p>
                     </div>
                   </div>
                 </div>
                 
-                <p className="text-amber-800 text-sm mt-2">{layer?.interpretation ?? '—'}</p>
+                <p className="text-amber-950 text-sm font-medium mt-2">{layer?.interpretation ?? '—'}</p>
               </motion.div>
             ))}
           </div>
@@ -162,8 +162,8 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
       {/* Color Meanings */}
       <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
         <CardHeader>
-          <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-600" />
+          <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-amber-700" />
             Color Meanings
           </CardTitle>
         </CardHeader>
@@ -175,7 +175,7 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
                   className="w-8 h-8 rounded-full border-2 border-amber-500 shadow-md"
                   style={{ backgroundColor: getAuraColorHex(color) }}
                 />
-                <span className="text-amber-900 text-xs capitalize">{color}</span>
+                <span className="text-amber-950 text-xs font-semibold capitalize">{color}</span>
               </div>
             ))}
           </div>
@@ -186,16 +186,16 @@ export function AuraVisualization({ reading }: AuraVisualizationProps) {
       {reading.recommendations && reading.recommendations.length > 0 && (
         <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
-            <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
-              <Eye className="w-5 h-5 text-amber-600" />
+            <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+              <Eye className="w-5 h-5 text-amber-700" />
               Recommendations
             </CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
               {reading.recommendations.map((rec, index) => (
-                <li key={index} className="text-amber-800 flex items-start gap-2">
-                  <span className="text-amber-600 mt-1">•</span>
+                <li key={index} className="text-amber-950 font-medium flex items-start gap-2">
+                  <span className="text-amber-800 mt-1">•</span>
                   <span>{rec}</span>
                 </li>
               ))}

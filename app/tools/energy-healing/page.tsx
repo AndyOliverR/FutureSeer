@@ -148,11 +148,26 @@ export default function EnergyHealingPage() {
   const reportFromProfile = useMemo(() => {
     const p = profile as Record<string, unknown> | null
     if (!p || typeof p !== 'object') return undefined
-    const r = p.energyHealing ?? p['Energy & Healing']
+    const r =
+      p.energyHealing ??
+      p['Energy & Healing'] ??
+      (p.toolReports as Record<string, { data?: unknown }> | undefined)?.energyHealing?.data ??
+      (p.toolReports as Record<string, { data?: unknown }> | undefined)?.['Energy & Healing']?.data
     return r != null ? r : undefined
   }, [profile])
 
   const effectiveReport = pipelineReport ?? reportFromProfile
+
+  /** True if the user has already generated a mystical profile (returning user). Don't show "generate again" in that case. */
+  const hasAnyGeneratedProfile = useMemo(() => {
+    const p = profile as Record<string, unknown> | null
+    if (!p || typeof p !== 'object') return false
+    return (
+      p.vedic != null ||
+      p.interpretations != null ||
+      (p.metadata as { generatedAt?: string } | undefined)?.generatedAt != null
+    )
+  }, [profile])
 
   const hasRealReport = useMemo(() => {
     if (!effectiveReport || typeof effectiveReport !== 'object') return false
@@ -301,8 +316,8 @@ export default function EnergyHealingPage() {
             </Card>
           )}
 
-          {/* When no report from mystical profile: only message and link to Profile page */}
-          {!hasRealReport && !loading && (
+          {/* When no report: only show "generate" CTA if user has not yet generated a profile (new user). Returning users with existing profile see tabs with empty states instead. */}
+          {!hasRealReport && !loading && !hasAnyGeneratedProfile && (
             <Card className="bg-amber-500/10 border-amber-500/30 rounded-2xl shadow-md mb-8">
               <CardContent className="p-6 text-center">
                 <p className="text-slate-300 mb-2">Your Energy & Healing report is generated from your mystical profile.</p>
@@ -314,8 +329,8 @@ export default function EnergyHealingPage() {
             </Card>
           )}
 
-          {/* Report from mystical profile: show tabs only when we have a real report */}
-          {hasRealReport && (
+          {/* Report from mystical profile, or returning user with profile: show tabs (with empty states per section if no energy data) */}
+          {(hasRealReport || hasAnyGeneratedProfile) && (
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full min-w-0">
               <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -355,7 +370,7 @@ export default function EnergyHealingPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Zap className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">No data for this section in your profile.</p>
+                      <p className="text-amber-950 font-medium">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -369,7 +384,7 @@ export default function EnergyHealingPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Eye className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">No data for this section in your profile.</p>
+                      <p className="text-amber-950 font-medium">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -380,53 +395,53 @@ export default function EnergyHealingPage() {
                 {allAnalyses.reiki ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
                     <CardHeader>
-                      <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
-                        <Heart className="w-5 h-5 text-amber-600" />
+                      <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+                        <Heart className="w-5 h-5 text-amber-700" />
                         Reiki Energy Analysis
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
-                          <p className="text-amber-800 text-sm mb-1">Energy Level</p>
-                          <p className="text-amber-900 font-semibold capitalize">{allAnalyses.reiki.energyLevel}</p>
+                          <p className="text-amber-950 text-sm font-medium mb-1">Energy Level</p>
+                          <p className="text-amber-950 font-semibold capitalize">{allAnalyses.reiki.energyLevel}</p>
                         </div>
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
-                          <p className="text-amber-800 text-sm mb-1">Blockages</p>
-                          <p className="text-amber-900 font-semibold">{allAnalyses.reiki.blockages.length}</p>
+                          <p className="text-amber-950 text-sm font-medium mb-1">Blockages</p>
+                          <p className="text-amber-950 font-semibold">{allAnalyses.reiki.blockages.length}</p>
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-amber-900 font-semibold mb-2">Recommended Symbols</h3>
+                        <h3 className="text-amber-950 font-semibold mb-2">Recommended Symbols</h3>
                         <div className="flex flex-wrap gap-2">
                           {allAnalyses.reiki.recommendedSymbols.map((symbol, index) => (
-                            <Badge key={index} variant="outline" className="border-amber-500 text-amber-900 bg-amber-50">
+                            <Badge key={index} variant="outline" className="border-amber-600 text-amber-950 bg-amber-100 font-medium">
                               {symbol}
                             </Badge>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-amber-900 font-semibold mb-2">Treatment Areas</h3>
+                        <h3 className="text-amber-950 font-semibold mb-2">Treatment Areas</h3>
                         <div className="flex flex-wrap gap-2">
                           {allAnalyses.reiki.treatmentAreas.map((area, index) => (
-                            <Badge key={index} variant="outline" className="border-amber-400 text-amber-800 bg-amber-50">
+                            <Badge key={index} variant="outline" className="border-amber-600 text-amber-950 bg-amber-100 font-medium">
                               {area}
                             </Badge>
                           ))}
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-amber-900 font-semibold mb-2">Interpretation</h3>
-                        <p className="text-amber-800">{allAnalyses.reiki.interpretation}</p>
+                        <h3 className="text-amber-950 font-semibold mb-2">Interpretation</h3>
+                        <p className="text-amber-950 font-medium">{allAnalyses.reiki.interpretation}</p>
                       </div>
                       {allAnalyses.reiki.recommendations && allAnalyses.reiki.recommendations.length > 0 && (
                         <div>
-                          <h3 className="text-amber-900 font-semibold mb-2">Recommendations</h3>
+                          <h3 className="text-amber-950 font-semibold mb-2">Recommendations</h3>
                           <ul className="space-y-2">
                             {allAnalyses.reiki.recommendations.map((rec, index) => (
-                              <li key={index} className="text-amber-800 flex items-start gap-2">
-                                <span className="text-amber-600 mt-1">•</span>
+                              <li key={index} className="text-amber-950 font-medium flex items-start gap-2">
+                                <span className="text-amber-800 mt-1">•</span>
                                 <span>{rec}</span>
                               </li>
                             ))}
@@ -439,7 +454,7 @@ export default function EnergyHealingPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Heart className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">No data for this section in your profile.</p>
+                      <p className="text-amber-950 font-medium">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -453,7 +468,7 @@ export default function EnergyHealingPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Gem className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">No data for this section in your profile.</p>
+                      <p className="text-amber-950 font-medium">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
@@ -464,38 +479,38 @@ export default function EnergyHealingPage() {
                 {allAnalyses.energy ? (
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
                     <CardHeader>
-                      <CardTitle className="text-amber-900 gold-glow flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-amber-600" />
+                      <CardTitle className="text-amber-950 font-semibold flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-amber-700" />
                         Energy Balance Analysis
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
-                          <p className="text-amber-800 text-sm mb-1">Overall Balance</p>
-                          <p className="text-2xl font-bold text-amber-900">{typeof allAnalyses.energy.overallBalance === 'number' ? allAnalyses.energy.overallBalance : '—'}%</p>
+                          <p className="text-amber-950 text-sm font-medium mb-1">Overall Balance</p>
+                          <p className="text-2xl font-bold text-amber-950">{typeof allAnalyses.energy.overallBalance === 'number' ? allAnalyses.energy.overallBalance : '—'}%</p>
                         </div>
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
-                          <p className="text-amber-800 text-sm mb-1">Chakra Balance</p>
-                          <p className="text-2xl font-bold text-amber-900">{typeof allAnalyses.energy.chakraBalance === 'number' ? allAnalyses.energy.chakraBalance : '—'}%</p>
+                          <p className="text-amber-950 text-sm font-medium mb-1">Chakra Balance</p>
+                          <p className="text-2xl font-bold text-amber-950">{typeof allAnalyses.energy.chakraBalance === 'number' ? allAnalyses.energy.chakraBalance : '—'}%</p>
                         </div>
                         <div className="p-4 bg-amber-100/50 rounded-xl border-2 border-amber-300">
-                          <p className="text-amber-800 text-sm mb-1">Aura Health</p>
-                          <p className="text-2xl font-bold text-amber-900">{typeof allAnalyses.energy.auraHealth === 'number' ? allAnalyses.energy.auraHealth : '—'}%</p>
+                          <p className="text-amber-950 text-sm font-medium mb-1">Aura Health</p>
+                          <p className="text-2xl font-bold text-amber-950">{typeof allAnalyses.energy.auraHealth === 'number' ? allAnalyses.energy.auraHealth : '—'}%</p>
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-amber-900 font-semibold mb-2">Energy Flow</h3>
-                        <Badge variant="outline" className="border-amber-500 text-amber-900 bg-amber-50 capitalize">
+                        <h3 className="text-amber-950 font-semibold mb-2">Energy Flow</h3>
+                        <Badge variant="outline" className="border-amber-600 text-amber-950 bg-amber-100 font-medium capitalize">
                           {(typeof allAnalyses.energy.energyFlow === 'string' ? allAnalyses.energy.energyFlow : '—').replace(/_/g, ' ')}
                         </Badge>
                       </div>
                       {allAnalyses.energy.blockages && allAnalyses.energy.blockages.length > 0 && (
                         <div>
-                          <h3 className="text-amber-900 font-semibold mb-2">Energy Blockages</h3>
+                          <h3 className="text-amber-950 font-semibold mb-2">Energy Blockages</h3>
                           <div className="flex flex-wrap gap-2">
                             {allAnalyses.energy.blockages.map((blockage, index) => (
-                              <Badge key={index} variant="outline" className="border-amber-500 text-amber-900 bg-amber-50">
+                              <Badge key={index} variant="outline" className="border-amber-600 text-amber-950 bg-amber-100 font-medium">
                                 {blockage}
                               </Badge>
                             ))}
@@ -504,11 +519,11 @@ export default function EnergyHealingPage() {
                       )}
                       {allAnalyses.energy.techniques && allAnalyses.energy.techniques.length > 0 && (
                         <div>
-                          <h3 className="text-amber-900 font-semibold mb-2">Recommended Techniques</h3>
+                          <h3 className="text-amber-950 font-semibold mb-2">Recommended Techniques</h3>
                           <ul className="space-y-2">
                             {allAnalyses.energy.techniques.map((technique, index) => (
-                              <li key={index} className="text-amber-800 flex items-start gap-2">
-                                <span className="text-amber-600 mt-1">•</span>
+                              <li key={index} className="text-amber-950 font-medium flex items-start gap-2">
+                                <span className="text-amber-800 mt-1">•</span>
                                 <span>{technique}</span>
                               </li>
                             ))}
@@ -517,11 +532,11 @@ export default function EnergyHealingPage() {
                       )}
                       {allAnalyses.energy.recommendations && allAnalyses.energy.recommendations.length > 0 && (
                         <div>
-                          <h3 className="text-amber-900 font-semibold mb-2">Recommendations</h3>
+                          <h3 className="text-amber-950 font-semibold mb-2">Recommendations</h3>
                           <ul className="space-y-2">
                             {allAnalyses.energy.recommendations.map((rec, index) => (
-                              <li key={index} className="text-amber-800 flex items-start gap-2">
-                                <span className="text-amber-600 mt-1">•</span>
+                              <li key={index} className="text-amber-950 font-medium flex items-start gap-2">
+                                <span className="text-amber-800 mt-1">•</span>
                                 <span>{rec}</span>
                               </li>
                             ))}
@@ -534,7 +549,7 @@ export default function EnergyHealingPage() {
                   <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md">
                     <CardContent className="p-8 text-center">
                       <Activity className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-amber-900">No data for this section in your profile.</p>
+                      <p className="text-amber-950 font-medium">No data for this section in your profile.</p>
                     </CardContent>
                   </Card>
                 )}
