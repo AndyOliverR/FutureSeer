@@ -18,7 +18,7 @@ import { devLog } from '@/lib/devLogger';
 export const dynamic = 'force-dynamic';
 
 /** Any slug the pipeline can store can also be saved incrementally via this API. */
-const ALLOWED_TOOL_SLUGS = new Set([...ALL_TOOL_SLUGS, 'vedicAstroNumerology']);
+const ALLOWED_TOOL_SLUGS = new Set([...ALL_TOOL_SLUGS, 'vedicAstroNumerology', 'astroNumerology']);
 
 export async function POST(request: NextRequest) {
   try {

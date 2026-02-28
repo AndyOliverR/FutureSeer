@@ -37,10 +37,14 @@ interface ComprehensiveVedicReportProps {
   vedicChartData?: any
   userProfile?: any
   cachedReport?: ComprehensiveAnalysis | null
+  /** True while the mystical profile is loading from storage (returning user). When true, show "Loading..." not "Generating...". */
+  isProfileLoading?: boolean
   isLoadingReport?: boolean
+  /** When the report is loaded (from cache or fetch), call this so the parent can use it for Planets/Houses/Remedies tabs */
+  onReportLoaded?: (report: ComprehensiveAnalysis) => void
 }
 
-interface ComprehensiveAnalysis {
+export interface ComprehensiveAnalysis {
   chartOverview: string
   ascendantAnalysis: string
   planetaryAnalysis: Array<{ planet: string; analysis: string }>
@@ -66,31 +70,47 @@ export default function ComprehensiveVedicReport({
   vedicChartData,
   userProfile,
   cachedReport,
-  isLoadingReport = false
+  isProfileLoading = false,
+  isLoadingReport = false,
+  onReportLoaded
 }: ComprehensiveVedicReportProps) {
   const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(
     cachedReport || null
   )
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
+  const [showGeneratingMessage, setShowGeneratingMessage] = useState(false)
 
-  // Update local state when cachedReport prop changes
+  // Update local state when cachedReport prop changes; notify parent so Planets/Houses/Remedies can show the report
   useEffect(() => {
     if (cachedReport) {
       setComprehensiveAnalysis(cachedReport)
+      onReportLoaded?.(cachedReport)
     }
-  }, [cachedReport])
+  }, [cachedReport, onReportLoaded])
 
-  // Only fetch if we don't have cached data and report isn't being loaded by parent
+  // Only show "Generating..." when we're actually fetching, not while profile is loading (returning user has report in profile)
   useEffect(() => {
-    if (isLoadingReport || cachedReport || comprehensiveAnalysis) {
+    const actuallyGenerating = !isProfileLoading && (isLoadingReport || isLoadingAnalysis) && !comprehensiveAnalysis
+    if (!actuallyGenerating) {
+      setShowGeneratingMessage(false)
+      return
+    }
+    const t = setTimeout(() => setShowGeneratingMessage(true), 400)
+    return () => clearTimeout(t)
+  }, [isProfileLoading, isLoadingReport, isLoadingAnalysis, comprehensiveAnalysis])
+
+  // Only fetch if we don't have cached data and report isn't being loaded by parent; don't fetch while profile is loading
+  useEffect(() => {
+    if (isProfileLoading || isLoadingReport || cachedReport || comprehensiveAnalysis) {
       return
     }
 
-    if (!userId || !userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
+    if (!userId || !userProfile?.birthDate || !userProfile?.birthPlace) {
       return
     }
 
+    const birthTime = userProfile.birthTime || '12:00:00'
     const fetchComprehensiveAnalysis = async () => {
       setIsLoadingAnalysis(true)
       setAnalysisError(null)
@@ -106,7 +126,7 @@ export default function ComprehensiveVedicReport({
             vedicChartData,
             userProfile: {
               birthDate: userProfile.birthDate,
-              birthTime: userProfile.birthTime,
+              birthTime,
               birthPlace: userProfile.birthPlace,
               fullName: userProfile.fullName || userProfile.displayName,
               displayName: userProfile.displayName
@@ -120,8 +140,10 @@ export default function ComprehensiveVedicReport({
         }
 
         const result = await response.json()
-        if (result.success && result.data?.comprehensiveAnalysis) {
-          setComprehensiveAnalysis(result.data.comprehensiveAnalysis)
+        const report = result.data?.comprehensiveAnalysis ?? result.comprehensiveAnalysis ?? result.data
+        if (result.success && report && typeof report === 'object') {
+          setComprehensiveAnalysis(report)
+          onReportLoaded?.(report)
         } else {
           throw new Error(result.error || 'Failed to generate analysis. Please try again.')
         }
@@ -213,15 +235,32 @@ export default function ComprehensiveVedicReport({
         </Card>
       </div>
 
-      {/* Comprehensive Analysis Section */}
-      {(isLoadingAnalysis || isLoadingReport) && !comprehensiveAnalysis ? (
+      {/* Comprehensive Analysis Section - show "Loading..." while profile loads (returning user); "Generating" only when actually fetching */}
+      {isProfileLoading && !cachedReport && !comprehensiveAnalysis ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="text-center py-8 md:py-12"
+        >
+          <Card className="bg-[var(--m3-surface-container-high)] md:glass-card border border-[var(--m3-outline-variant)] md:border-white/10 max-w-md mx-auto text-[var(--m3-on-surface)] md:text-white">
+            <CardContent className="p-8 text-white">
+              <Loader2 className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-spin" />
+              <h3 className="text-xl font-semibold text-white mb-2">Loading Your Report</h3>
+              <p className="text-slate-200">
+                Loading your saved Vedic report…
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ) : showGeneratingMessage ? (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="text-center py-12"
+          className="text-center py-8 md:py-12"
         >
-          <Card className="glass-card border-white/10 max-w-md mx-auto text-white">
+          <Card className="bg-[var(--m3-surface-container-high)] md:glass-card border border-[var(--m3-outline-variant)] md:border-white/10 max-w-md mx-auto text-[var(--m3-on-surface)] md:text-white">
             <CardContent className="p-8 text-white">
               <Loader2 className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-spin" />
               <h3 className="text-xl font-semibold text-white mb-2">Generating Your Comprehensive Report</h3>
@@ -259,9 +298,9 @@ export default function ComprehensiveVedicReport({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-2 border-slate-200 shadow-lg rounded-3xl">
+          <Card className="bg-[var(--m3-surface-container)] md:bg-gradient-to-br md:from-slate-50 md:to-gray-100 border border-[var(--m3-outline-variant)] md:border-2 md:border-slate-200 shadow-lg rounded-2xl md:rounded-3xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-slate-800">
+              <CardTitle className="flex items-center gap-2 text-[var(--m3-on-surface)] md:text-slate-800">
                 <Sparkles className="w-6 h-6 text-amber-600" />
                 Comprehensive Vedic Astrology Analysis
               </CardTitle>
@@ -269,8 +308,8 @@ export default function ComprehensiveVedicReport({
             <CardContent>
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {/* Chart Overview */}
-                <AccordionItem value="overview" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
+                <AccordionItem value="overview" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-amber-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-amber-50 md:to-yellow-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-amber-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Star className="w-5 h-5 text-amber-600" />
                       <span className="text-left font-semibold">Chart Overview</span>
@@ -280,15 +319,15 @@ export default function ComprehensiveVedicReport({
                     <DevotionistStyleCard
                       icon={<Star className="w-5 h-5" />}
                       title="Your Vedic Chart Profile"
-                      summary={comprehensiveAnalysis.chartOverview}
+                      summary={comprehensiveAnalysis.chartOverview ?? ''}
                       colorScheme="amber"
                     />
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Ascendant Analysis */}
-                <AccordionItem value="ascendant" className="border-2 border-yellow-200 rounded-lg bg-gradient-to-br from-yellow-50 to-amber-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-yellow-700 py-4 [&[data-state=open]]:text-yellow-700 [&>svg]:text-slate-600">
+                <AccordionItem value="ascendant" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-yellow-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-yellow-50 md:to-amber-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-yellow-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-yellow-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Target className="w-5 h-5 text-yellow-600" />
                       <span className="text-left font-semibold">Ascendant Analysis</span>
@@ -298,8 +337,8 @@ export default function ComprehensiveVedicReport({
                     <DevotionistStyleCard
                       icon={<Target className="w-5 h-5" />}
                       title={`${ascendant} Ascendant (Lagna)`}
-                      summary={comprehensiveAnalysis.ascendantAnalysis}
-                      items={textToBulletPoints(comprehensiveAnalysis.ascendantAnalysis, 5).map(item => ({
+                      summary={comprehensiveAnalysis.ascendantAnalysis ?? ''}
+                      items={textToBulletPoints(comprehensiveAnalysis.ascendantAnalysis ?? '', 5).map(item => ({
                         ...item,
                         type: 'neutral' as const
                       }))}
@@ -309,15 +348,15 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Planetary Analysis */}
-                <AccordionItem value="planets" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-blue-700 py-4 [&[data-state=open]]:text-blue-700 [&>svg]:text-slate-600">
+                <AccordionItem value="planets" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-blue-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-blue-50 md:to-cyan-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-blue-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-blue-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Star className="w-5 h-5 text-blue-600" />
                       <span className="text-left font-semibold">Planetary Analysis</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 pb-4 space-y-3">
-                    {comprehensiveAnalysis.planetaryAnalysis.map((item, index) => (
+                    {(Array.isArray(comprehensiveAnalysis.planetaryAnalysis) ? comprehensiveAnalysis.planetaryAnalysis : []).map((item, index) => (
                       <DevotionistStyleCard
                         key={index}
                         icon={<Star className="w-5 h-5" />}
@@ -334,15 +373,15 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* House Analysis */}
-                <AccordionItem value="houses" className="border-2 border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-purple-700 py-4 [&[data-state=open]]:text-purple-700 [&>svg]:text-slate-600">
+                <AccordionItem value="houses" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-purple-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-purple-50 md:to-pink-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-purple-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-purple-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Home className="w-5 h-5 text-purple-600" />
                       <span className="text-left font-semibold">House Analysis</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 pb-4 space-y-3">
-                    {comprehensiveAnalysis.houseAnalysis.map((item, index) => (
+                    {(Array.isArray(comprehensiveAnalysis.houseAnalysis) ? comprehensiveAnalysis.houseAnalysis : []).map((item, index) => (
                       <DevotionistStyleCard
                         key={index}
                         icon={<Home className="w-5 h-5" />}
@@ -359,8 +398,8 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Dasha Analysis */}
-                <AccordionItem value="dasha" className="border-2 border-green-200 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-green-700 py-4 [&[data-state=open]]:text-green-700 [&>svg]:text-slate-600">
+                <AccordionItem value="dasha" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-green-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-green-50 md:to-emerald-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-green-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-green-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-green-600" />
                       <span className="text-left font-semibold">Dasha Analysis</span>
@@ -370,8 +409,8 @@ export default function ComprehensiveVedicReport({
                     <DevotionistStyleCard
                       icon={<Calendar className="w-5 h-5" />}
                       title={`Current ${currentDasha} Dasha Period`}
-                      summary={comprehensiveAnalysis.dashaAnalysis}
-                      items={textToBulletPoints(comprehensiveAnalysis.dashaAnalysis, 5).map(item => ({
+                      summary={comprehensiveAnalysis.dashaAnalysis ?? ''}
+                      items={textToBulletPoints(comprehensiveAnalysis.dashaAnalysis ?? '', 5).map(item => ({
                         ...item,
                         type: 'neutral' as const
                       }))}
@@ -381,8 +420,8 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Yogas Analysis */}
-                <AccordionItem value="yogas" className="border-2 border-orange-200 rounded-lg bg-gradient-to-br from-orange-50 to-amber-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-orange-700 py-4 [&[data-state=open]]:text-orange-700 [&>svg]:text-slate-600">
+                <AccordionItem value="yogas" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-orange-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-orange-50 md:to-amber-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-orange-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-orange-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Sparkles className="w-5 h-5 text-orange-600" />
                       <span className="text-left font-semibold">Yogas Analysis</span>
@@ -392,8 +431,8 @@ export default function ComprehensiveVedicReport({
                     <DevotionistStyleCard
                       icon={<Sparkles className="w-5 h-5" />}
                       title="Planetary Combinations (Yogas)"
-                      summary={comprehensiveAnalysis.yogasAnalysis}
-                      items={textToBulletPoints(comprehensiveAnalysis.yogasAnalysis, 5).map(item => ({
+                      summary={comprehensiveAnalysis.yogasAnalysis ?? ''}
+                      items={textToBulletPoints(comprehensiveAnalysis.yogasAnalysis ?? '', 5).map(item => ({
                         ...item,
                         type: 'neutral' as const
                       }))}
@@ -403,8 +442,8 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Nakshatra Analysis */}
-                <AccordionItem value="nakshatra" className="border-2 border-pink-200 rounded-lg bg-gradient-to-br from-pink-50 to-purple-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-pink-700 py-4 [&[data-state=open]]:text-pink-700 [&>svg]:text-slate-600">
+                <AccordionItem value="nakshatra" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-pink-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-pink-50 md:to-purple-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-pink-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-pink-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Moon className="w-5 h-5 text-pink-600" />
                       <span className="text-left font-semibold">Nakshatra Analysis</span>
@@ -414,8 +453,8 @@ export default function ComprehensiveVedicReport({
                     <DevotionistStyleCard
                       icon={<Moon className="w-5 h-5" />}
                       title="Birth Star (Nakshatra)"
-                      summary={comprehensiveAnalysis.nakshatraAnalysis}
-                      items={textToBulletPoints(comprehensiveAnalysis.nakshatraAnalysis, 5).map(item => ({
+                      summary={comprehensiveAnalysis.nakshatraAnalysis ?? ''}
+                      items={textToBulletPoints(comprehensiveAnalysis.nakshatraAnalysis ?? '', 5).map(item => ({
                         ...item,
                         type: 'neutral' as const
                       }))}
@@ -425,30 +464,30 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Challenges & Opportunities */}
-                <AccordionItem value="challenges-opportunities" className="border-2 border-orange-200 rounded-lg bg-gradient-to-br from-orange-50 to-amber-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-orange-700 py-4 [&[data-state=open]]:text-orange-700 [&>svg]:text-slate-600">
+                <AccordionItem value="challenges-opportunities" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-orange-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-orange-50 md:to-amber-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-orange-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-orange-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <TrendingUp className="w-5 h-5 text-orange-600" />
                       <span className="text-left font-semibold">Challenges & Opportunities</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 pb-4 space-y-3">
-                    {comprehensiveAnalysis.challengesAndOpportunities.challenges.length > 0 && (
+                    {(Array.isArray(comprehensiveAnalysis.challengesAndOpportunities?.challenges) ? comprehensiveAnalysis.challengesAndOpportunities.challenges : []).length > 0 && (
                       <DevotionistStyleCard
                         icon={<AlertCircle className="w-5 h-5" />}
                         title="Challenges"
-                        items={comprehensiveAnalysis.challengesAndOpportunities.challenges.map(challenge => ({
+                        items={(comprehensiveAnalysis.challengesAndOpportunities?.challenges ?? []).map((challenge: string) => ({
                           text: challenge,
                           type: 'challenge' as const
                         }))}
                         colorScheme="orange"
                       />
                     )}
-                    {comprehensiveAnalysis.challengesAndOpportunities.opportunities.length > 0 && (
+                    {(Array.isArray(comprehensiveAnalysis.challengesAndOpportunities?.opportunities) ? comprehensiveAnalysis.challengesAndOpportunities.opportunities : []).length > 0 && (
                       <DevotionistStyleCard
                         icon={<Zap className="w-5 h-5" />}
                         title="Opportunities"
-                        items={comprehensiveAnalysis.challengesAndOpportunities.opportunities.map(opportunity => ({
+                        items={(comprehensiveAnalysis.challengesAndOpportunities?.opportunities ?? []).map((opportunity: string) => ({
                           text: opportunity,
                           type: 'positive' as const
                         }))}
@@ -459,8 +498,8 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Predictive Insights */}
-                <AccordionItem value="predictions" className="border-2 border-cyan-200 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 px-4 shadow-sm">
-                  <AccordionTrigger className="text-slate-800 hover:text-cyan-700 py-4 [&[data-state=open]]:text-cyan-700 [&>svg]:text-slate-600">
+                <AccordionItem value="predictions" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-cyan-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-cyan-50 md:to-blue-50 px-4 shadow-sm">
+                  <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-cyan-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-cyan-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Activity className="w-5 h-5 text-cyan-600" />
                       <span className="text-left font-semibold">Predictive Insights</span>
@@ -470,31 +509,31 @@ export default function ComprehensiveVedicReport({
                     <DevotionistStyleCard
                       icon={<Zap className="w-5 h-5" />}
                       title="Current Period"
-                      summary={comprehensiveAnalysis.predictiveInsights.currentPeriod}
+                      summary={comprehensiveAnalysis.predictiveInsights?.currentPeriod ?? ''}
                       colorScheme="cyan"
                     />
                     <DevotionistStyleCard
                       icon={<Calendar className="w-5 h-5" />}
                       title="Next Three Months"
-                      summary={comprehensiveAnalysis.predictiveInsights.nextThreeMonths}
+                      summary={comprehensiveAnalysis.predictiveInsights?.nextThreeMonths ?? ''}
                       colorScheme="blue"
                     />
                     <DevotionistStyleCard
                       icon={<Calendar className="w-5 h-5" />}
                       title="This Year"
-                      summary={comprehensiveAnalysis.predictiveInsights.currentYear}
+                      summary={comprehensiveAnalysis.predictiveInsights?.currentYear ?? ''}
                       colorScheme="purple"
                     />
                     <DevotionistStyleCard
                       icon={<TrendingUp className="w-5 h-5" />}
                       title="Next Year Preview"
-                      summary={comprehensiveAnalysis.predictiveInsights.nextYear}
+                      summary={comprehensiveAnalysis.predictiveInsights?.nextYear ?? ''}
                       colorScheme="amber"
                     />
                     <DevotionistStyleCard
                       icon={<Star className="w-5 h-5" />}
                       title="Longer-Term Cycles"
-                      summary={comprehensiveAnalysis.predictiveInsights.longerTermCycles}
+                      summary={comprehensiveAnalysis.predictiveInsights?.longerTermCycles ?? ''}
                       colorScheme="pink"
                     />
                   </AccordionContent>

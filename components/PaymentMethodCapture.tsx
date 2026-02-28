@@ -113,7 +113,14 @@ export function PaymentMethodCapture({
         throw new Error(errorData.error || 'Failed to create subscription');
       }
 
-      const { subscriptionId, razorpayKeyId } = await response.json();
+      const data = await response.json();
+      if (data.noSubscriptionRequired === true) {
+        onPaymentMethodCaptured('no-charge');
+        setIsLoading(false);
+        return;
+      }
+
+      const { subscriptionId, razorpayKeyId } = data;
 
       // Trial and paid plans both use subscription checkout so verify-payment receives payment_id and subscription_id.
       await loadRazorpayScript();

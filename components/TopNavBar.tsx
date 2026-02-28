@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Share2, Info } from "lucide-react";
@@ -20,7 +21,7 @@ const navLinks = [
   { name: "Profile", href: "/profile", icon: "👤" },
   { name: "Tools", href: "/tools", icon: "🧰" },
   { name: "Ask the Seer", href: "/ask-the-seer", icon: "🔮" },
-  { name: "Community", href: "/community", icon: "🏆" },
+  { name: "Community", href: "/community/attribution", icon: "🏆" },
   { name: "Remedies", href: "/remedies", icon: "💎" },
   { name: "Tip Jar", href: "/tip-jar", icon: "💝", isModal: true },
   { name: "Settings", href: "/settings", icon: "⚙️" },
@@ -29,6 +30,7 @@ const navLinks = [
 ];
 
 export function TopNavBar() {
+  const router = useRouter();
   const { isAdmin, isSuperadmin } = useAuth();
   const { open: openTipJar } = useTipJar();
   const { open: openFeedback } = useFeedback();
@@ -40,6 +42,11 @@ export function TopNavBar() {
   useEffect(() => {
     if (showShareModal) return registerModal();
   }, [showShareModal, registerModal]);
+
+  // Prefetch community when menu opens so the chunk can load before the user clicks
+  useEffect(() => {
+    if (showMenu) router.prefetch("/community/attribution");
+  }, [showMenu, router]);
 
   const visibleNavLinks = navLinks.filter(
     (link) =>
@@ -106,17 +113,32 @@ export function TopNavBar() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
             >
-              {visibleNavLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-center gap-4 w-full text-left px-4 py-3 rounded-xl text-white active:bg-amber-500/20 transition-colors"
-                  onClick={() => setShowMenu(false)}
-                >
-                  <span className="text-xl">{link.icon}</span>
-                  <span className="text-sm font-bold">{link.name}</span>
-                </Link>
-              ))}
+              {visibleNavLinks.map((link) =>
+                link.isModal && link.name === "Tip Jar" ? (
+                  <button
+                    key={link.href}
+                    type="button"
+                    className="flex items-center gap-4 w-full text-left px-4 py-3 rounded-xl text-white active:bg-amber-500/20 transition-colors"
+                    onClick={() => {
+                      setShowMenu(false);
+                      openTipJar();
+                    }}
+                  >
+                    <span className="text-xl">{link.icon}</span>
+                    <span className="text-sm font-bold">{link.name}</span>
+                  </button>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="flex items-center gap-4 w-full text-left px-4 py-3 rounded-xl text-white active:bg-amber-500/20 transition-colors"
+                    onClick={() => setShowMenu(false)}
+                  >
+                    <span className="text-xl">{link.icon}</span>
+                    <span className="text-sm font-bold">{link.name}</span>
+                  </Link>
+                )
+              )}
             </motion.div>
           )}
         </AnimatePresence>

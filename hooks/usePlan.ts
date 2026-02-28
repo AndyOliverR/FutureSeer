@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from './use-auth';
 import { getFirebaseDB } from '@/lib/firebase';
+import { isNoChargeSubscriptionEmailClient } from '@/lib/subscriptionConfig';
 
 const TRIAL_DURATION_SECONDS = 9 * 60 * 60; // 9 hours
 
@@ -26,8 +27,8 @@ export function usePlan() {
       return;
     }
 
-    // Check if user should bypass trial/upgrade prompts
-    const shouldBypassUpgrade = isSuperadmin || isAdmin;
+    // Check if user should bypass trial/upgrade prompts (admins + no-charge subscription emails)
+    const shouldBypassUpgrade = isSuperadmin || isAdmin || isNoChargeSubscriptionEmailClient(user.email);
     
     if (shouldBypassUpgrade) {
       // For admin users, set them as paid users

@@ -37,13 +37,17 @@ export async function POST(request: NextRequest) {
       throw new Error('Firestore not initialized');
     }
 
+    // Prefer user_id (Firebase uid) from notes so recurring updates target users/{uid}; fallback to customer_id for older subscriptions
+    const getUserIdFromSubscription = (sub: { notes?: Record<string, string>; customer_id?: string }) =>
+      sub.notes?.user_id || sub.notes?.customer_id || sub.customer_id;
+
     // Handle different webhook events
     switch (event) {
       case 'subscription.activated':
         // Subscription activated (trial ended, first charge successful)
         if (payload.subscription?.entity) {
           const subscription = payload.subscription.entity;
-          const userId = subscription.notes?.customer_id || subscription.customer_id;
+          const userId = getUserIdFromSubscription(subscription);
 
           if (userId) {
             const userRef = doc(db, 'users', userId);
@@ -62,7 +66,7 @@ export async function POST(request: NextRequest) {
         // Subscription charged (recurring payment successful)
         if (payload.subscription?.entity) {
           const subscription = payload.subscription.entity;
-          const userId = subscription.notes?.customer_id || subscription.customer_id;
+          const userId = getUserIdFromSubscription(subscription);
           const paymentId = payload.payment?.entity?.id;
 
           if (userId) {
@@ -84,7 +88,7 @@ export async function POST(request: NextRequest) {
         // Subscription cancelled
         if (payload.subscription?.entity) {
           const subscription = payload.subscription.entity;
-          const userId = subscription.notes?.customer_id || subscription.customer_id;
+          const userId = getUserIdFromSubscription(subscription);
 
           if (userId) {
             const userRef = doc(db, 'users', userId);
@@ -101,7 +105,7 @@ export async function POST(request: NextRequest) {
         // Payment failed
         if (payload.payment?.entity) {
           const payment = payload.payment.entity;
-          const userId = payment.notes?.customer_id;
+          const userId = payment.notes?.user_id || payment.notes?.customer_id;
 
           if (userId) {
             const userRef = doc(db, 'users', userId);

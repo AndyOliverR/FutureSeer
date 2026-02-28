@@ -11,8 +11,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, User } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
+import { RecaptchaScript } from "@/components/RecaptchaScript"
 
 const SignupFlow = dynamic(() => import("@/components/SignupFlow").then(mod => ({ default: mod.SignupFlow })), {
   loading: () => (
@@ -42,6 +44,7 @@ function SignUpPageContent() {
   const searchParams = useSearchParams()
   const planParam = searchParams?.get('plan') as 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper' | null
   const refParam = searchParams?.get('ref')
+  const { user } = useAuth()
   
   const RECAPTCHA_SITE_KEY = "6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz";
 
@@ -50,13 +53,37 @@ function SignUpPageContent() {
     if (refParam) setReferralCode(refParam)
   }, [refParam])
 
+  // After Google redirect (or if already signed in), redirect away immediately.
+  // Use full page replace so we don't rely on client router after OAuth redirect.
+  useEffect(() => {
+    if (!user) return;
+    const destination = isReturningUser(user) ? "/tools" : "/profile";
+    if (typeof window !== "undefined") {
+      window.location.replace(destination);
+    } else {
+      router.replace(destination);
+    }
+  }, [user, router]);
+
+  // Show redirecting state as soon as user is set
+  if (user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 animate-spin text-amber-400 mx-auto mb-4" />
+          <p className="text-surface-on-variant font-medium">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
   const handleGoogleSignIn = async () => {
     if (isLoading || activeProvider === 'google') return;
     setIsLoading(true); setError(null); setActiveProvider('google')
     try {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
-      router.push(returning ? "/tools" : "/profile-setup")
+      router.push(returning ? "/tools" : "/profile")
     } catch (error: any) {
       if (error.message?.includes('Redirect initiated')) return;
       setError(getAuthErrorMessage(error))
@@ -85,9 +112,10 @@ function SignUpPageContent() {
 
     try {
       let captchaToken = null;
+      const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-      // Only execute reCAPTCHA on the web platform
-      if (!isAndroid && typeof window !== 'undefined') {
+      // Skip reCAPTCHA on localhost (not in reCAPTCHA allowed domains); only run on web, not Android
+      if (!isAndroid && !isLocalhost && typeof window !== 'undefined') {
         if (!(window as any).grecaptcha) {
           devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signup');
         } else {
@@ -132,7 +160,7 @@ function SignUpPageContent() {
     setIsLoading(true); setError(null)
     try {
       await signUpWithEmail(email, password, displayName, selectedCountry, data.selectedPlan, data.paymentMethodId, data.autoMandateAccepted, data.subscriptionId, referralCode || undefined)
-      router.push("/profile-setup")
+      router.push("/profile")
     } catch (error: any) {
       setError(error.message)
     } finally {
@@ -178,15 +206,15 @@ function SignUpPageContent() {
               <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} onComplete={handleSignupFlowComplete} onError={setError} />
             ) : (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-5">
-                <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Full Name" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
+                <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Full Name" autoComplete="name" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
                 <CountrySelector value={selectedCountry} onChange={setSelectedCountry} autoDetect={true} />
-                <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
+                <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
                 <div className="relative">
-                  <Input value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="Create Password" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4 w-full" />
+                  <Input value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="Create Password" autoComplete="new-password" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4 w-full" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-on-variant"><Eye className="w-5 h-5" /></button>
                 </div>
                 <div className="relative">
-                  <Input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type={showConfirmPassword ? "text" : "password"} placeholder="Repeat Password" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4 w-full" />
+                  <Input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type={showConfirmPassword ? "text" : "password"} placeholder="Repeat Password" autoComplete="new-password" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4 w-full" />
                   <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-surface-on-variant"><Eye className="w-5 h-5" /></button>
                 </div>
                 <Button type="submit" disabled={isLoading} className="w-full h-14 bg-amber-500 text-slate-900 rounded-2xl font-bold text-lg shadow-lg active:scale-[0.98] transition-all">
@@ -217,10 +245,10 @@ function SignUpPageContent() {
             <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} onComplete={handleSignupFlowComplete} onError={setError} />
           ) : (
             <form onSubmit={handleBasicInfoSubmit} className="space-y-6">
-              <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
+              <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" autoComplete="name" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
               <CountrySelector value={selectedCountry} onChange={setSelectedCountry} autoDetect={true} />
-              <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
-              <Input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
+              <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
+              <Input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" autoComplete="new-password" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
               <Button type="submit" disabled={isLoading} className="w-full h-16 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-2xl text-xl transition-all shadow-xl shadow-amber-500/10">
                 {isLoading ? <Loader2 className="animate-spin" /> : "Begin Transformation"}
               </Button>
@@ -240,8 +268,11 @@ function SignUpPageContent() {
 
 export default function SignUpPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-surface flex items-center justify-center"><Loader2 className="animate-spin text-amber-400" /></div>}>
-      <SignUpPageContent />
-    </Suspense>
+    <>
+      <RecaptchaScript />
+      <Suspense fallback={<div className="min-h-screen bg-surface flex items-center justify-center"><Loader2 className="animate-spin text-amber-400" /></div>}>
+        <SignUpPageContent />
+      </Suspense>
+    </>
   )
 }

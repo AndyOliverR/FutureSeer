@@ -57,6 +57,8 @@ export interface KPAnalysis {
     pratyantardasha: string
     currentPeriod: string
     nextPeriod: string
+    startDate?: string
+    endDate?: string
   }
   significations: {
     career: string[]
@@ -347,53 +349,78 @@ class KPAstrologyIntelligence {
   }
 
   private calculateTiming(data: KPChartData, chart: any) {
+    const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000
+    const fallbackStart = new Date()
+    const fallbackEnd = new Date(fallbackStart.getTime() + MS_PER_YEAR)
+    const fallbackDates = {
+      startDate: fallbackStart.toISOString(),
+      endDate: fallbackEnd.toISOString()
+    }
+
     // Get Moon's sidereal longitude for dasha calculation
     const moonData = chart.planets.moon
     if (!moonData || !moonData.valid) {
-      // Fallback
       return {
         dasha: 'Moon',
         antardasha: 'Sun',
         pratyantardasha: 'Mars',
         currentPeriod: 'Moon Dasha - Sun Antardasha',
-        nextPeriod: 'Mars Dasha'
+        nextPeriod: 'Mars Dasha',
+        ...fallbackDates
       }
     }
-    
+
     const moonLon = moonData.lonSidereal
     const [year, month, day] = data.birthDate.split('-').map(Number)
     const birthDate = new Date(year, month - 1, day)
-    
+    const birthMs = birthDate.getTime()
+
     // Calculate current dasha using Vimshottari system
     const currentDashaInfo = calculateCurrentDasha(data.birthDate, moonLon)
-    
+
     if (!currentDashaInfo.currentDasha) {
       return {
         dasha: 'Moon',
         antardasha: 'Sun',
         pratyantardasha: 'Mars',
         currentPeriod: 'Moon Dasha - Sun Antardasha',
-        nextPeriod: 'Mars Dasha'
+        nextPeriod: 'Mars Dasha',
+        ...fallbackDates
       }
     }
-    
+
     const currentDasha = currentDashaInfo.currentDasha.lord
     const dashaSequence = ['Ketu', 'Venus', 'Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury']
     const currentIndex = dashaSequence.indexOf(currentDasha)
     const nextDasha = dashaSequence[(currentIndex + 1) % 9]
-    
+
     // Calculate antardasha (simplified - would need full calculation for accurate timing)
     const antardashaIndex = (currentIndex + Math.floor(currentDashaInfo.progress / 11.11)) % 9
     const antardasha = dashaSequence[antardashaIndex]
     const pratyantardashaIndex = (antardashaIndex + 1) % 9
     const pratyantardasha = dashaSequence[pratyantardashaIndex]
-    
+
+    // Compute mahadasha start/end from timeline
+    const { timeline } = currentDashaInfo
+    const mahadashaIndex = timeline.mahadasas.findIndex((m: { lord: string }) => m.lord === currentDasha)
+    let yearsBeforeCurrent = 0
+    if (mahadashaIndex >= 0) {
+      for (let i = 0; i < mahadashaIndex; i++) {
+        yearsBeforeCurrent += timeline.mahadasas[i].years
+      }
+    }
+    const startMs = birthMs + yearsBeforeCurrent * MS_PER_YEAR
+    const currentYears = currentDashaInfo.currentDasha.years
+    const endMs = startMs + currentYears * MS_PER_YEAR
+
     return {
       dasha: currentDasha,
       antardasha: antardasha,
       pratyantardasha: pratyantardasha,
       currentPeriod: `${currentDasha} Dasha - ${antardasha} Antardasha`,
-      nextPeriod: `${nextDasha} Dasha`
+      nextPeriod: `${nextDasha} Dasha`,
+      startDate: new Date(startMs).toISOString(),
+      endDate: new Date(endMs).toISOString()
     }
   }
 

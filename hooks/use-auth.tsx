@@ -91,11 +91,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('⚠️ Firestore connection check failed during auth initialization:', connectionError);
       });
 
-      // Check for redirect result first
+      // Check for redirect result first – set user and loading immediately so signin page can redirect
       try {
         const redirectResult = await getRedirectResult();
-        if (redirectResult) {
+        if (redirectResult?.user) {
           devLog.debug('Redirect authentication completed successfully', 'auth');
+          setUser(redirectResult.user);
+          setLoading(false);
+          // Load profile in background so rest of app has it soon
+          void getUserProfile(redirectResult.user.uid).then((profile) => {
+            setUserProfile(profile);
+          }).catch(() => setUserProfile(null));
         }
       } catch (redirectError) {
         devLog.debug('No redirect result or redirect error', 'auth');

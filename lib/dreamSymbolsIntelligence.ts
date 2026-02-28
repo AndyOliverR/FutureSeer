@@ -757,8 +757,21 @@ class DreamSymbolsIntelligence {
   private async calculateDream(data: DreamData): Promise<DreamAnalysis> {
     // Extract symbols from dream description
     const extractedSymbols = this.extractSymbols(data.dreamDescription)
-    const symbols = extractedSymbols.map(symbol => DREAM_SYMBOLS[symbol] || this.createDefaultSymbol(symbol))
-    
+    const fromDescription = extractedSymbols.map(symbol => DREAM_SYMBOLS[symbol] || this.createDefaultSymbol(symbol))
+
+    // Merge user-provided Key Symbols (normalize, dedupe, resolve via dictionary or default)
+    const seen = new Set(extractedSymbols.map(s => s.toLowerCase()))
+    const userSymbols = (data.symbols || [])
+      .map(s => s.trim().toLowerCase())
+      .filter(Boolean)
+    const fromUser: DreamSymbol[] = []
+    for (const s of userSymbols) {
+      if (seen.has(s)) continue
+      seen.add(s)
+      fromUser.push(DREAM_SYMBOLS[s] || this.createDefaultSymbol(s))
+    }
+    const symbols = [...fromDescription, ...fromUser]
+
     const overallTheme = this.determineTheme(symbols, data.emotions)
     const emotionalTone = this.analyzeEmotionalTone(data.emotions, data.dreamType)
     const spiritualMessage = this.generateSpiritualMessage(symbols, data.dreamType)
@@ -804,7 +817,9 @@ class DreamSymbolsIntelligence {
     if (description.includes('hill') || description.includes('peak')) symbols.push('mountain')
     if (description.includes('crossing') || description.includes('path')) symbols.push('bridge')
     if (description.includes('time') || description.includes('hour')) symbols.push('clock')
-    
+    if (description.includes('road') || description.includes('path')) symbols.push('road')
+    if (description.includes('country') || description.includes('foreign')) symbols.push('country')
+
     return [...new Set(symbols)] // Remove duplicates
   }
 

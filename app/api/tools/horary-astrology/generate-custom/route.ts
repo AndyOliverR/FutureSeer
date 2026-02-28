@@ -70,13 +70,21 @@ export async function POST(request: NextRequest) {
       saturnInFirst: saturn?.house === 1,
     }
 
+    // Full ISO datetime for display (Chart Time); API receives date + time separately
+    const chartTimeIso =
+      questionData.questionTime?.includes('T')
+        ? questionData.questionTime
+        : questionData.questionDate && questionData.questionTime
+          ? `${questionData.questionDate}T${questionData.questionTime}`
+          : questionData.questionTime
+
     // Transform data to match our UI expectations
     const transformedData = {
       basicInfo: {
         question: questionData.question,
         questionTime: questionData.questionTime,
         questionPlace: questionData.questionPlace,
-        chartTime: questionData.questionTime
+        chartTime: chartTimeIso
       },
       seerState,
       chartImages: {

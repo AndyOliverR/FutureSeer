@@ -17,7 +17,7 @@ export default function RefundPolicyPage() {
         </div>
 
         {/* Main Content */}
-        <div className="bg-slate-800/50 rounded-lg p-8 border border-slate-700 space-y-8">
+        <div className="bg-[#0f172a]/80 rounded-lg p-8 border border-amber-400/20 space-y-8">
           
           {/* Important Notice */}
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-6">

@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
 import { log } from '@/lib/consoleLogger';
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {

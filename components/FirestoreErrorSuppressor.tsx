@@ -52,8 +52,27 @@ export function FirestoreErrorSuppressor() {
       return messageCheck || contextCheck;
     };
 
+    // Helper: true if message is COOP/window.closed (Firebase popup polling)
+    const isCOOPWindowClosedMessage = (message: string, args: any[]): boolean => {
+      const errorString = args.map((arg: any) =>
+        typeof arg === 'object' && arg !== null ? (() => { try { return JSON.stringify(arg); } catch { return String(arg); } })() : String(arg)
+      ).join(' ');
+      return (
+        message.includes('Cross-Origin-Opener-Policy') ||
+        message.includes('policy would block') ||
+        message.includes('window.closed') ||
+        message.includes('COOP') ||
+        message.includes('opener-policy') ||
+        (message.includes('block') && message.includes('window.closed')) ||
+        errorString.includes('Cross-Origin-Opener-Policy') ||
+        errorString.includes('policy would block') ||
+        (errorString.includes('block') && errorString.includes('window.closed'))
+      );
+    };
+
     // Patch console.error to catch errors before Next.js overlay
     const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
     let corruptionRecoveryTriggered = false;
 
     const triggerCorruptionRecovery = () => {
@@ -145,6 +164,13 @@ export function FirestoreErrorSuppressor() {
       }
       
       originalConsoleError.apply(console, args);
+    };
+
+    // Patch console.warn to suppress COOP/window.closed (Firebase popup polling)
+    console.warn = (...args: any[]) => {
+      const message = args.map((a: any) => (typeof a === 'string' ? a : String(a))).join(' ');
+      if (isCOOPWindowClosedMessage(message, args)) return;
+      originalConsoleWarn.apply(console, args);
     };
 
     // Patch unhandledrejection handler - must be set up FIRST with capture phase
@@ -242,6 +268,7 @@ export function FirestoreErrorSuppressor() {
     // Cleanup
     return () => {
       console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
       window.onerror = originalOnError;
       window.onunhandledrejection = originalOnUnhandledRejection;
       window.removeEventListener('unhandledrejection', handleUnhandledRejection, true);

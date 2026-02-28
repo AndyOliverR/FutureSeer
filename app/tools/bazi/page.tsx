@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useState, useMemo, useEffect } from 'react';
+import { Suspense, useState, useMemo, useEffect, useRef } from 'react';
 import { devLog } from '@/lib/devLogger';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
-import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile';
+import { useToolReport, useComprehensiveMysticalProfile } from '@/hooks/useComprehensiveMysticalProfile';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,13 +36,60 @@ function BaziPageContent() {
   const { user, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabValue>('introduction');
   const { report: pipelineReport, loading: isLoading, error, refreshProfile } = useToolReport('bazi');
+  const { profile } = useComprehensiveMysticalProfile();
+
+  const reportFromProfile = useMemo(() => {
+    const p = profile as Record<string, unknown> | null;
+    if (!p || typeof p !== 'object') return undefined;
+    const tr = p.toolReports as Record<string, { data?: unknown } | unknown> | undefined;
+    const baziFromTr = tr?.bazi != null && typeof tr.bazi === 'object'
+      ? ((tr.bazi as Record<string, unknown>).data ?? tr.bazi)
+      : undefined;
+    const r =
+      p.bazi ??
+      p['BaZi'] ??
+      baziFromTr ??
+      (p.readings as Record<string, unknown> | undefined)?.bazi ??
+      (p.reports as Record<string, unknown> | undefined)?.bazi;
+    return r != null ? r : undefined;
+  }, [profile]);
+
+  const effectivePipelineReport = pipelineReport ?? reportFromProfile;
 
   const baziReport = useMemo(() => {
-    if (pipelineReport == null || typeof pipelineReport !== 'object') return null;
-    const raw = pipelineReport as Record<string, unknown>;
-    if (raw.placeholder === true) return null;
+    if (effectivePipelineReport == null || typeof effectivePipelineReport !== 'object') return null;
+    const outer = effectivePipelineReport as Record<string, unknown>;
+    if (outer.placeholder === true && !outer.chart && !outer.elements) return null;
+    // Unwrap when stored as { data: BaziReading } (e.g. some cache or API shapes)
+    const raw =
+      outer.data != null && typeof outer.data === 'object'
+        ? (outer.data as Record<string, unknown>)
+        : outer;
+    if ((raw as Record<string, unknown>).placeholder === true && !(raw as Record<string, unknown>).chart && !(raw as Record<string, unknown>).elements) return null;
     return raw as unknown as BaziReading;
-  }, [pipelineReport]);
+  }, [effectivePipelineReport]);
+
+  /** True if the user has already generated a mystical profile (returning user). Don't show "generate your mystical profile" as main CTA in that case. */
+  const hasAnyGeneratedProfile = useMemo(() => {
+    const p = profile as Record<string, unknown> | null;
+    if (!p || typeof p !== 'object') return false;
+    return (
+      p.vedic != null ||
+      p.interpretations != null ||
+      (p.metadata as { generatedAt?: string } | undefined)?.generatedAt != null
+    );
+  }, [profile]);
+
+  // When we have a generated profile but no BaZi report, refetch profile once (skip cache) so we get latest from Firestore
+  const hasRefetchedForMissingBazi = useRef(false);
+  useEffect(() => {
+    if (!user?.uid || isLoading || baziReport != null) return;
+    const p = profile as Record<string, unknown> | null;
+    const hasProfile = p != null && typeof p === 'object' && (p.vedic != null || p.interpretations != null || (p.metadata as { generatedAt?: string } | undefined)?.generatedAt != null);
+    if (!hasProfile || hasRefetchedForMissingBazi.current) return;
+    hasRefetchedForMissingBazi.current = true;
+    refreshProfile();
+  }, [user?.uid, isLoading, baziReport, profile, refreshProfile]);
 
   // Dev-only: log what the BaZi page received so we can verify report-after-generate-mystical
   useEffect(() => {
@@ -215,7 +262,12 @@ function BaziPageContent() {
   }
 
   return (
-    <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="BaZi (Four Pillars)">
+    <ToolReportGuard
+      loading={isLoading}
+      error={error ?? null}
+      toolLabel="BaZi (Four Pillars)"
+      hasReport={hasAnyGeneratedProfile || !!baziReport}
+    >
       <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
         <div className="relative z-10 max-w-7xl mx-auto py-8">
           <div className="text-center mb-8 pt-4">
@@ -244,30 +296,11 @@ function BaziPageContent() {
                 ))}
               </TabsList>
 
-              <AnimatePresence mode="wait">
-                {activeTab === 'introduction' && (
-                  <motion.div
-                    key="introduction"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
-                    <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                      <ToolIntroductionTab toolSlug="bazi" />
-                    </TabsContent>
-                  </motion.div>
-                )}
+              <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <ToolIntroductionTab toolSlug="bazi" />
+              </TabsContent>
 
-                {activeTab === 'report' && (
-                  <motion.div
-                    key="report"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
-                    <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]">
+              <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]">
                       {isLoading ? (
                         <div className="text-center py-8">
                           <motion.div
@@ -279,21 +312,39 @@ function BaziPageContent() {
                         </div>
                       ) : !baziReport ? (
                         <div className="text-center py-8">
-                          <p className="text-slate-600 mb-4">Generate your mystical profile to unlock your BaZi report.</p>
-                          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                              <Link href="/profile">Generate your mystical profile</Link>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="border-amber-500/60 text-amber-800 bg-amber-50/80 hover:bg-amber-100/90"
-                              onClick={handleGenerateBaziReportNow}
-                              disabled={isGeneratingBaziReport}
-                            >
-                              {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
-                            </Button>
-                          </div>
+                          {hasAnyGeneratedProfile ? (
+                            <>
+                              <p className="text-slate-600 mb-4">Your BaZi report is not available yet. You can generate it below.</p>
+                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <Button
+                                  type="button"
+                                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                                  onClick={handleGenerateBaziReportNow}
+                                  disabled={isGeneratingBaziReport}
+                                >
+                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
+                                </Button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-slate-600 mb-4">Generate your mystical profile to unlock your BaZi report.</p>
+                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                                  <Link href="/profile">Generate your mystical profile</Link>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="border-amber-500/60 text-amber-800 bg-amber-50/80 hover:bg-amber-100/90"
+                                  onClick={handleGenerateBaziReportNow}
+                                  disabled={isGeneratingBaziReport}
+                                >
+                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
+                                </Button>
+                              </div>
+                            </>
+                          )}
                           {baziGenerateError && (
                             <p className="mt-4 text-sm text-red-600" role="alert">
                               {baziGenerateError}
@@ -307,40 +358,48 @@ function BaziPageContent() {
                           isLoadingComprehensive={isLoadingComprehensive}
                         />
                       )}
-                    </TabsContent>
-                  </motion.div>
-                )}
+              </TabsContent>
 
-                {activeTab === 'ask-the-seer' && (
-                  <motion.div
-                    key="ask-the-seer"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
-                    <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       {baziReport ? (
                         <div className="h-[800px] min-h-0">
                           <BaZiCoachInterface reading={baziReport} />
                         </div>
                       ) : (
                         <div className="text-center py-8 text-slate-300">
-                          <p className="mb-4">Generate your mystical profile to use Ask the Seer for BaZi.</p>
-                          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                              <Link href="/profile">Generate your mystical profile</Link>
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="border-amber-500/60 text-amber-200 bg-slate-800/50 hover:bg-slate-700/50"
-                              onClick={handleGenerateBaziReportNow}
-                              disabled={isGeneratingBaziReport}
-                            >
-                              {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
-                            </Button>
-                          </div>
+                          {hasAnyGeneratedProfile ? (
+                            <>
+                              <p className="mb-4">Your BaZi report is not available yet. Generate it below to use Ask the Seer for BaZi.</p>
+                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <Button
+                                  type="button"
+                                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                                  onClick={handleGenerateBaziReportNow}
+                                  disabled={isGeneratingBaziReport}
+                                >
+                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
+                                </Button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="mb-4">Generate your mystical profile to use Ask the Seer for BaZi.</p>
+                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                                  <Link href="/profile">Generate your mystical profile</Link>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="border-amber-500/60 text-amber-200 bg-slate-800/50 hover:bg-slate-700/50"
+                                  onClick={handleGenerateBaziReportNow}
+                                  disabled={isGeneratingBaziReport}
+                                >
+                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
+                                </Button>
+                              </div>
+                            </>
+                          )}
                           {baziGenerateError && (
                             <p className="mt-4 text-sm text-amber-200/90" role="alert">
                               {baziGenerateError}
@@ -348,10 +407,7 @@ function BaziPageContent() {
                           )}
                         </div>
                       )}
-                    </TabsContent>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -359,6 +415,8 @@ function BaziPageContent() {
     </ToolReportGuard>
   );
 }
+
+const DEFAULT_ELEMENTS = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
 
 function ReportTabContent({
   report,
@@ -374,10 +432,27 @@ function ReportTabContent({
   } | null;
   isLoadingComprehensive: boolean;
 }) {
-  const { chart, elements, dayMaster, personality, career, wealth, relationships, health, favorable } = report;
+  const chart = report?.chart;
+  const elements = report?.elements && typeof report.elements === 'object' ? report.elements : DEFAULT_ELEMENTS;
+  const dayMaster = report?.dayMaster;
+  const personality = report?.personality;
+  const career = report?.career;
+  const wealth = report?.wealth;
+  const relationships = report?.relationships;
+  const health = report?.health;
+  const favorable = report?.favorable;
   const luckPillars = chart?.luckPillars ?? [];
-  const totalElements = elements.wood + elements.fire + elements.earth + elements.metal + elements.water || 1;
+  const totalElements = (elements.wood + elements.fire + elements.earth + elements.metal + elements.water) || 1;
   const elementPct = (v: number) => Math.round((v / totalElements) * 100);
+
+  const hasAnyContent = chart || totalElements > 0 || dayMaster || comprehensive?.chartOverview || comprehensive?.lifePathInsights || (luckPillars.length > 0) || wealth || career || health || relationships || favorable;
+  if (!hasAnyContent) {
+    return (
+      <div className="text-center py-8 text-slate-600">
+        <p>Report data is incomplete. Try generating your BaZi report again from the button above.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -395,7 +470,7 @@ function ReportTabContent({
               {(['yearPillar', 'monthPillar', 'dayPillar', 'hourPillar'] as const).map((key, i) => {
                 const labels = ['Year', 'Month', 'Day', 'Hour'];
                 const pillar = chart[key];
-                if (!pillar) return null;
+                if (!pillar || !pillar.heavenlyStem || !pillar.earthlyBranch) return null;
                 const stem = pillar.heavenlyStem;
                 const branch = pillar.earthlyBranch;
                 return (
@@ -510,10 +585,10 @@ function ReportTabContent({
         <DevotionistStyleCard
           icon={<DollarSign className="w-5 h-5" />}
           title="Wealth"
-          summary={wealth.wealthPattern}
+          summary={wealth.wealthPattern ?? ''}
           items={[
-            ...(wealth.incomeSources?.slice(0, 3).map((t) => ({ text: t, type: 'positive' as const })) ?? []),
-            ...(wealth.favorablePeriods?.slice(0, 2).map((t) => ({ text: `Favorable: ${t}`, type: 'neutral' as const })) ?? []),
+            ...((wealth.incomeSources?.slice(0, 3) ?? []).map((t) => ({ text: t, type: 'positive' as const }))),
+            ...((wealth.favorablePeriods?.slice(0, 2) ?? []).map((t) => ({ text: `Favorable: ${t}`, type: 'neutral' as const }))),
           ]}
           colorScheme="green"
         />
@@ -522,8 +597,8 @@ function ReportTabContent({
         <DevotionistStyleCard
           icon={<Briefcase className="w-5 h-5" />}
           title="Career"
-          summary={career.financialPotential}
-          items={career.suitablePaths?.slice(0, 4).map((t) => ({ text: t, type: 'positive' as const }))}
+          summary={career.financialPotential ?? ''}
+          items={(career.suitablePaths?.slice(0, 4) ?? []).map((t) => ({ text: t, type: 'positive' as const }))}
           colorScheme="blue"
         />
       )}
@@ -531,8 +606,8 @@ function ReportTabContent({
         <DevotionistStyleCard
           icon={<Activity className="w-5 h-5" />}
           title="Health"
-          summary={health.constitution}
-          items={health.wellnessAdvice?.slice(0, 3).map((t) => ({ text: t, type: 'neutral' as const }))}
+          summary={health.constitution ?? ''}
+          items={(health.wellnessAdvice?.slice(0, 3) ?? []).map((t) => ({ text: t, type: 'neutral' as const }))}
           colorScheme="orange"
         />
       )}
@@ -540,8 +615,8 @@ function ReportTabContent({
         <DevotionistStyleCard
           icon={<Heart className="w-5 h-5" />}
           title="Relationships"
-          summary={relationships.interpersonalDynamics}
-          items={relationships.partnershipAdvice?.slice(0, 3).map((t) => ({ text: t, type: 'positive' as const }))}
+          summary={relationships.interpersonalDynamics ?? ''}
+          items={(relationships.partnershipAdvice?.slice(0, 3) ?? []).map((t) => ({ text: t, type: 'positive' as const }))}
           colorScheme="pink"
         />
       )}

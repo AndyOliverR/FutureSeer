@@ -74,7 +74,7 @@ export default function DailyDecisionsPage() {
       const res = await fetch('/api/tools/daily-decisions/analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.uid, date: selectedDate }),
+        body: JSON.stringify({ userId: user.uid, userProfile: userProfile ?? undefined, date: selectedDate }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -93,7 +93,7 @@ export default function DailyDecisionsPage() {
     } finally {
       setGeneratingDecisions(false)
     }
-  }, [user?.uid, hasCompleteProfile, selectedDate])
+  }, [user?.uid, userProfile, hasCompleteProfile, selectedDate])
 
   const profileStatus = userProfile ? getProfileCompletionStatus(userProfile) : { isComplete: false, missingFields: [], completionPercentage: 0 }
 

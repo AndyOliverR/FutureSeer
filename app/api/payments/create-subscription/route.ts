@@ -4,6 +4,8 @@ import { getRazorpayClient, createPlan, createSubscription } from '@/lib/razorpa
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
+import { getAuth, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +17,31 @@ export async function POST(request: NextRequest) {
         { error: 'Missing required fields' },
         { status: 400 }
       );
+    }
+
+    // No-charge accounts (god mode, mary mode, special test admin): skip Razorpay, grant access
+    if (isNoChargeSubscriptionEmail(email)) {
+      let uid: string | null = typeof userId === 'string' && userId.trim() ? userId.trim() : null;
+      if (!uid && isAdminAvailable()) {
+        try {
+          const authUser = await getAuth().getUserByEmail(email.trim().toLowerCase());
+          uid = authUser.uid;
+        } catch {
+          devLog.warn('[create-subscription] No-charge email: could not resolve uid from getUserByEmail', 'route');
+        }
+      }
+      if (uid && isAdminAvailable()) {
+        await setDocument('users', uid, {
+          subscriptionStatus: 'active',
+          noChargeAccount: true,
+          updatedAt: Date.now(),
+        });
+        devLog.info(`[create-subscription] No-charge access granted for ${email}`, 'route');
+      }
+      return NextResponse.json({
+        success: true,
+        noSubscriptionRequired: true,
+      });
     }
 
     // Check if user has free months remaining (skip charge if they do)
@@ -55,6 +82,17 @@ export async function POST(request: NextRequest) {
           devLog.error('Error checking free months:', error, 'route');
           // Continue with normal billing if check fails
         }
+      }
+    }
+
+    // Resolve Firebase uid for webhook (recurring updates must target users/{uid})
+    let uid: string | null = typeof userId === 'string' && userId.trim() ? userId.trim() : null;
+    if (!uid && isAdminAvailable()) {
+      try {
+        const authUser = await getAuth().getUserByEmail(email.trim().toLowerCase());
+        uid = authUser.uid;
+      } catch {
+        devLog.warn('[create-subscription] Could not resolve uid from getUserByEmail', 'route');
       }
     }
 
@@ -131,6 +169,7 @@ export async function POST(request: NextRequest) {
         plan: plan,
         country: country,
         contribution_type: plan,
+        ...(uid ? { user_id: uid } : {}),
       },
     });
 

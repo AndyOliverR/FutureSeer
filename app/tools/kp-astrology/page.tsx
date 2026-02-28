@@ -35,11 +35,30 @@ import { KPAnalysis as KPIntelligenceAnalysis } from "@/lib/kpAstrologyIntellige
 import { useAuth } from "@/hooks/use-auth"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { ToolReportGuard } from '@/components/ToolReportGuard'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
+import { calculateCurrentDasha } from '@/lib/vedic-core'
 
 const CHART_CANVAS_W = 450
 const CHART_CANVAS_H = 333
+
+const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000
+
+/** Derive current mahadasha start/end from birth date and Moon longitude (for client-side fallback when dasha_forecast has no dates). */
+function deriveDashaDates(birthDate: string, moonLon: number): { startDate: Date; endDate: Date } | null {
+  const info = calculateCurrentDasha(birthDate, moonLon)
+  if (!info.currentDasha || !info.timeline?.mahadasas?.length) return null
+  const idx = info.timeline.mahadasas.findIndex((m: { lord: string }) => m.lord === info.currentDasha!.lord)
+  if (idx < 0) return null
+  let yearsBefore = 0
+  for (let i = 0; i < idx; i++) yearsBefore += info.timeline.mahadasas[i].years
+  const [y, mo, d] = birthDate.split('-').map(Number)
+  const birthMs = new Date(y, (mo ?? 1) - 1, d ?? 1).getTime()
+  const startMs = birthMs + yearsBefore * MS_PER_YEAR
+  const endMs = startMs + info.currentDasha.years * MS_PER_YEAR
+  return { startDate: new Date(startMs), endDate: new Date(endMs) }
+}
 
 function ResponsiveChartWrap({ children }: { children: React.ReactNode }) {
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -362,6 +381,8 @@ function nativeKPAnalysisToRawAstroAppData(native: KPIntelligenceAnalysis): Reco
         pratyantardasha: native.timingAnalysis?.pratyantardasha ?? 'Mars',
         description: native.timingAnalysis?.currentPeriod ?? 'Current dasha period',
         nextPeriod: native.timingAnalysis?.nextPeriod ?? 'Next dasha period',
+        startDate: (native.timingAnalysis as { startDate?: string })?.startDate,
+        endDate: (native.timingAnalysis as { endDate?: string })?.endDate,
       },
     ],
     significations: native.significations || {},
@@ -426,8 +447,9 @@ export default function KPAstrologyPage() {
     })
   }, [analysis])
   const [isLoadingTransits, setIsLoadingTransits] = useState(false)
+  const [transitsError, setTransitsError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'chart_images' | 'planetary_positions' | 'sublord_analysis' | 'dasha_forecast' | 'remedies' | 'current_transits' | 'kp_astrology_expert'>('chart_images')
+  const [activeTab, setActiveTab] = useState<'introduction' | 'chart_images' | 'planetary_positions' | 'sublord_analysis' | 'dasha_forecast' | 'remedies' | 'current_transits' | 'kp_astrology_expert'>('introduction')
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false
@@ -439,6 +461,7 @@ export default function KPAstrologyPage() {
   }, [prefersReducedMotion])
   const tabsConfig = useMemo(
     () => [
+      { value: 'introduction', label: 'Introduction' },
       { value: 'chart_images', label: 'Chart Images' },
       { value: 'planetary_positions', label: 'Planetary Positions' },
       { value: 'sublord_analysis', label: 'Sublord Analysis' },
@@ -529,6 +552,7 @@ export default function KPAstrologyPage() {
   const fetchCurrentTransits = useCallback(async () => {
     if (!hasCompleteProfile || !userProfile?.uid) return
 
+    setTransitsError(null)
     setIsLoadingTransits(true)
     try {
       devLog.debug('🔄 Fetching current transits for KP astrology...')
@@ -559,6 +583,7 @@ export default function KPAstrologyPage() {
         
         if (result.success) {
           setCurrentTransits(result.data)
+          setTransitsError(null)
           // Store current transits with shorter cache time
           storeCurrentChart(
             userProfile.uid || 'default', 
@@ -578,15 +603,20 @@ export default function KPAstrologyPage() {
           })
         } else {
           devLog.warn('⚠️ Failed to fetch transits:', result.error, 'page')
-          setCurrentTransits(null) // Clear transits on error
+          setTransitsError(result.error || 'Failed to load transits')
+          setCurrentTransits(null)
         }
       } else {
         const errorData = await response.json().catch(() => ({}))
-        devLog.warn('Transits API error', { status: response.status, error: errorData.error || 'Unknown error' }, 'kp-astrology')
-        setCurrentTransits(null) // Clear transits on error
+        const errMsg = errorData.error || `Request failed (${response.status})`
+        devLog.warn('Transits API error', { status: response.status, error: errMsg }, 'kp-astrology')
+        setTransitsError(errMsg)
+        setCurrentTransits(null)
       }
     } catch (err) {
       devLog.error('❌ Error loading current transits:', err, 'page')
+      setTransitsError(err instanceof Error ? err.message : 'Failed to load transits')
+      setCurrentTransits(null)
     } finally {
       setIsLoadingTransits(false)
     }
@@ -595,17 +625,31 @@ export default function KPAstrologyPage() {
   const loadCurrentTransits = useCallback(async () => {
     if (!hasCompleteProfile || !userProfile?.uid) return
 
-    // First try to load cached current transits
-    const cachedTransits = getCurrentChart(userProfile.uid || 'default', 'kp-astrology')
-    if (cachedTransits) {
-      setCurrentTransits(cachedTransits)
-      devLog.debug('✅ Loaded current transits from cache')
-      return
+    setTransitsError(null)
+    // getCurrentChart returns a Promise; transit payload is stored in chartUrl
+    try {
+      const stored = await getCurrentChart(userProfile.uid || 'default', 'kp-astrology')
+      const payload = stored && typeof (stored as { chartUrl?: unknown }).chartUrl === 'object' && (stored as { chartUrl: unknown }).chartUrl !== null
+        ? (stored as { chartUrl: { activeTransits?: unknown[]; upcomingTransits?: unknown[] } }).chartUrl
+        : null
+      if (payload && (Array.isArray(payload.activeTransits) || Array.isArray(payload.upcomingTransits))) {
+        setCurrentTransits(payload)
+        setTransitsError(null)
+        devLog.debug('✅ Loaded current transits from cache')
+        return
+      }
+    } catch (e) {
+      devLog.warn('⚠️ Failed to read transit cache:', e, 'page')
     }
 
-    // If no cached transits, fetch fresh ones
     await fetchCurrentTransits()
   }, [hasCompleteProfile, userProfile?.uid, fetchCurrentTransits])
+
+  // Load transits on mount when profile is complete so the tab is not blank
+  useEffect(() => {
+    if (!hasCompleteProfile || !userProfile?.uid) return
+    loadCurrentTransits().catch(() => {})
+  }, [hasCompleteProfile, userProfile?.uid, loadCurrentTransits])
 
   const performKPAnalysis = useCallback(async () => {
     if (!hasCompleteProfile) {
@@ -990,9 +1034,21 @@ export default function KPAstrologyPage() {
                 ))}
               </TabsList>
 
-            {/* Tab Content - Show empty states when no analysis */}
+            {/* Tab Content - Introduction always visible; other tabs show empty state when no analysis */}
             <AnimatePresence mode="wait">
-              {!analysis ? (
+              {activeTab === 'introduction' ? (
+                <motion.div
+                  key="introduction"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="space-y-6"
+                >
+                  <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <ToolIntroductionTab toolSlug="kp-astrology" />
+                  </TabsContent>
+                </motion.div>
+              ) : !analysis ? (
                 <motion.div
                   key="empty-state"
                   initial={{ opacity: 0, y: 20 }}
@@ -1024,7 +1080,7 @@ export default function KPAstrologyPage() {
                 >
           {/* Tab Content */}
           <AnimatePresence mode="wait">
-            {/* Chart Images Tab */}
+            {/* Chart Images Tab (only when analysis exists) */}
             {activeTab === 'chart_images' && (
               <motion.div
                 key="charts"
@@ -1115,6 +1171,8 @@ export default function KPAstrologyPage() {
                               ascendantSign={ascendantSign}
                               ascendantDegree={ascendantDegree}
                               chartType="KP"
+                              width={CHART_CANVAS_W}
+                              height={CHART_CANVAS_H}
                             />
                       </ResponsiveChartWrap>
                 </div>
@@ -1478,29 +1536,54 @@ export default function KPAstrologyPage() {
                     Sublord Analysis
                   </h2>
                   
-                  {analysis.rawAstroAppData?.sublord_analysis ? (
+                  {(() => {
+                    const raw = analysis.rawAstroAppData
+                    const fromPipeline = raw?.sublord_analysis
+                    const planets = raw?.planetary_positions || []
+                    const hasPlanets = Array.isArray(planets) && planets.length > 0
+                    const derivedSublords = hasPlanets && !fromPipeline?.sublords?.length
+                      ? planets.map((p: any) => ({
+                          planet: p.planet || p.name || 'Planet',
+                          sublord: p.sublord || p.subLord || 'Unknown',
+                          influence: p.nakshatra ? `${p.planet || p.name} in ${p.sign || ''} (${p.nakshatra}) — sub-lord influences timing and significations.` : 'KP sub-lord analysis based on Vimshottari dasha system.',
+                          strength: 'moderate'
+                        }))
+                      : fromPipeline?.sublords || []
+                    const summary = fromPipeline?.summary || (derivedSublords.length > 0 ? {
+                      totalSublords: derivedSublords.length,
+                      dominantSublord: (() => {
+                        const counts: Record<string, number> = {}
+                        derivedSublords.forEach((s: any) => { const sl = s.sublord || 'Unknown'; counts[sl] = (counts[sl] || 0) + 1 })
+                        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown'
+                      })(),
+                      strongestSublord: derivedSublords[0]?.sublord || 'Unknown'
+                    } : null)
+                    const hasContent = (summary && (summary.totalSublords > 0 || summary.dominantSublord)) || derivedSublords.length > 0 || (raw?.house_analysis && raw.house_analysis.length > 0)
+                    return hasContent ? (
                     <>
                       {/* Sublord Summary */}
+                      {summary && (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className="bg-white rounded-lg p-4 text-center border-2 border-purple-200 shadow-sm">
                           <h4 className="text-purple-700 font-medium mb-1">Total Sublords</h4>
-                          <p className="text-purple-900 text-2xl font-bold">{analysis.rawAstroAppData.sublord_analysis.summary?.totalSublords || 0}</p>
+                          <p className="text-purple-900 text-2xl font-bold">{summary.totalSublords ?? 0}</p>
                         </div>
                         <div className="bg-white rounded-lg p-4 text-center border-2 border-purple-200 shadow-sm">
                           <h4 className="text-purple-700 font-medium mb-1">Dominant Sublord</h4>
-                          <p className="text-purple-900 text-xl font-bold">{analysis.rawAstroAppData.sublord_analysis.summary?.dominantSublord || 'Unknown'}</p>
+                          <p className="text-purple-900 text-xl font-bold">{summary.dominantSublord || 'Unknown'}</p>
                         </div>
                         <div className="bg-white rounded-lg p-4 text-center border-2 border-purple-200 shadow-sm">
                           <h4 className="text-purple-700 font-medium mb-1">Strongest Sublord</h4>
-                          <p className="text-purple-900 text-xl font-bold">{analysis.rawAstroAppData.sublord_analysis.summary?.strongestSublord || 'Unknown'}</p>
+                          <p className="text-purple-900 text-xl font-bold">{summary.strongestSublord || 'Unknown'}</p>
                         </div>
                       </div>
+                      )}
 
                       {/* Sublord Details */}
                       <div className="space-y-4">
                         <h3 className="text-xl font-semibold text-purple-900 mb-4">Sub-Lord Details</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {analysis.rawAstroAppData.sublord_analysis.sublords?.map((sublord: any, index: number) => (
+                          {derivedSublords.map((sublord: any, index: number) => (
                             <div key={index} className="bg-white rounded-lg p-4 border-2 border-purple-200 shadow-sm">
                               <div className="flex items-center justify-between mb-2">
                                 <h4 className="text-slate-900 font-medium">{sublord.planet || `Planet ${index + 1}`}</h4>
@@ -1518,7 +1601,7 @@ export default function KPAstrologyPage() {
                           ))}
                           
                           {/* House Cusp Sub-Lords with Interpretations */}
-                          {analysis.rawAstroAppData.house_analysis && analysis.rawAstroAppData.house_analysis.length > 0 && (
+                          {raw?.house_analysis && raw.house_analysis.length > 0 && (
                             <div className="col-span-full mt-6">
                               <h3 className="text-xl font-bold text-purple-900 mb-4 flex items-center gap-2">
                                 <Home className="w-5 h-5 text-purple-700" />
@@ -1528,7 +1611,7 @@ export default function KPAstrologyPage() {
                                 Each house cusp has its own sub-lord which influences the timing and outcomes of matters related to that life area. Understanding these sub-lords is crucial for precise KP predictions.
                               </p>
                               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {analysis.rawAstroAppData.house_analysis.slice(0, 12).map((house: any, idx: number) => {
+                                {(raw?.house_analysis || []).slice(0, 12).map((house: any, idx: number) => {
                                   const interpretation = getHouseInterpretation(house.house, house.sign || 'Unknown', house.sublord || 'Unknown')
                                   
                                   return (
@@ -1570,9 +1653,10 @@ export default function KPAstrologyPage() {
                   ) : (
                     <div className="text-center py-12">
                       <Target className="w-16 h-16 text-purple-700 mx-auto mb-4" />
-                      <p className="text-slate-700 text-lg">Sublord analysis will be calculated based on your planetary positions</p>
-                      </div>
-                    )}
+                      <p className="text-slate-700 text-lg">Sublord analysis will be calculated based on your planetary positions.</p>
+                    </div>
+                  )
+                  })()}
                 </div>
               </motion.div>
             )}
@@ -1596,12 +1680,33 @@ export default function KPAstrologyPage() {
                     <div className="space-y-6">
                       {analysis.rawAstroAppData.dasha_forecast.map((dasha: any, index: number) => {
                         const dashaInfluence = getDashaInfluence(dasha.planet || 'Moon')
-                        const startDate = new Date(dasha.startDate)
-                        const endDate = new Date(dasha.endDate)
+                        let startDate = new Date(dasha.startDate)
+                        let endDate = new Date(dasha.endDate)
+                        if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+                          const birthDate = userProfile?.birthDate
+                          const planets = analysis?.rawAstroAppData?.planetary_positions
+                          const moon = Array.isArray(planets) ? planets.find((p: any) => (String(p.planet || p.name || '').toLowerCase()) === 'moon') : undefined
+                          if (birthDate && moon) {
+                            const signNames = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
+                            const signIndex = signNames.findIndex((s: string) => s.toLowerCase() === String(moon.sign || '').toLowerCase())
+                            const moonLon = (signIndex >= 0 ? signIndex : 0) * 30 + (Number(moon.degree) || 0)
+                            const derived = deriveDashaDates(birthDate, moonLon)
+                            if (derived) {
+                              startDate = derived.startDate
+                              endDate = derived.endDate
+                            }
+                          }
+                          if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+                            const fallbackEnd = new Date()
+                            fallbackEnd.setFullYear(fallbackEnd.getFullYear() + 1)
+                            startDate = new Date()
+                            endDate = fallbackEnd
+                          }
+                        }
                         const now = new Date()
                         const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
                         const elapsedDays = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-                        const progressPercent = Math.max(0, Math.min(100, (elapsedDays / totalDays) * 100))
+                        const progressPercent = totalDays > 0 ? Math.max(0, Math.min(100, (elapsedDays / totalDays) * 100)) : 0
                         const remainingDays = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
                         
                         return (
@@ -2028,7 +2133,17 @@ export default function KPAstrologyPage() {
                   ) : (
                     <div className="text-center py-12">
                       <RefreshCw className="w-16 h-16 text-cyan-700 mx-auto mb-4" />
-                      <p className="text-slate-700 text-lg">Click "Refresh Transits" to load current KP planetary influences</p>
+                      {transitsError ? (
+                        <>
+                          <p className="text-red-700 font-medium mb-2">Could not load transits</p>
+                          <p className="text-slate-600 text-sm mb-4">{transitsError}</p>
+                        </>
+                      ) : (
+                        <p className="text-slate-700 text-lg mb-2">Click &quot;Refresh Transits&quot; to load current KP planetary influences for today</p>
+                      )}
+                      {!hasCompleteProfile && (
+                        <p className="text-amber-700 text-sm mt-2">Complete your profile (birth date, time, place) to calculate transits.</p>
+                      )}
                     </div>
                   )}
                 </div>

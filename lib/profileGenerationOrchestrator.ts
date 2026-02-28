@@ -1056,6 +1056,39 @@ export async function runProfileGeneration(
     devLog.warn('[ProfileOrchestrator] Interpretation engine failed:', err, 'profileGenerationOrchestrator');
   }
 
+  // 2a. Fetch Vedic comprehensive report (planetaryAnalysis, houseAnalysis, etc.) and store in vedicEntry.data so it is saved to profile; Overview/Planets/Houses/Remedies then show it without generating on mount
+  try {
+    const res = await fetch(`${baseUrl}/api/vedic/comprehensive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        vedicChartData: vedicEntry.data,
+        userProfile: {
+          birthDate: userProfile.birthDate,
+          birthTime: userProfile.birthTime ?? '12:00:00',
+          birthPlace: userProfile.birthPlace,
+          fullName: (userProfile as unknown as Record<string, unknown>).fullName ?? userProfile.displayName,
+          displayName: userProfile.displayName,
+        },
+      }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      const analysis = json?.data?.comprehensiveAnalysis ?? json?.comprehensiveAnalysis ?? json?.data;
+      if (analysis && typeof analysis === 'object') {
+        (vedicEntry.data as Record<string, unknown>).comprehensiveAnalysis = analysis;
+        devLog.info('[ProfileOrchestrator] Vedic comprehensive report stored for user', userId, 'profileGenerationOrchestrator');
+      } else {
+        devLog.warn('[ProfileOrchestrator] Vedic comprehensive response missing analysis (non-blocking)', undefined, 'profileGenerationOrchestrator');
+      }
+    } else {
+      devLog.warn('[ProfileOrchestrator] Vedic comprehensive fetch failed (non-blocking)', undefined, 'profileGenerationOrchestrator');
+    }
+  } catch (err) {
+    devLog.warn('[ProfileOrchestrator] Vedic comprehensive fetch failed (non-blocking):', err, 'profileGenerationOrchestrator');
+  }
+
   // 2b. Run Vedic Astro-Numerology (depends on Vedic chart; runs after vedic so we have moon/lagna/sun)
   const vedicAstroNumGeneratedAt = new Date().toISOString();
   try {
@@ -1141,6 +1174,53 @@ export async function runProfileGeneration(
       failedTools.push(slug);
     }
   });
+
+  // 3b. Run Western Astro-Numerology (depends on Western chart for sun sign; runs after western so we have chart)
+  const astroNumGeneratedAt = new Date().toISOString();
+  try {
+    const westernEntry = toolReports.western;
+    const westernData = westernEntry?.status === 'success' && westernEntry?.data ? (westernEntry.data as Record<string, unknown>) : undefined;
+    const chart = westernData?.chart as { planets?: Array<{ name: string; sign?: string; signName?: string }> } | undefined;
+    const planets = chart?.planets;
+    const findSun = () =>
+      Array.isArray(planets) ? planets.find((p) => p.name === 'Sun' || p.name === 'sun') : undefined;
+    const sunPlanet = findSun();
+    const sunSign =
+      (sunPlanet?.signName ?? sunPlanet?.sign) ?? 'Unknown';
+
+    const birthDate = userProfile.birthDate ?? '';
+    const fullName = (userProfile.displayName ?? (userProfile as unknown as Record<string, unknown>).fullName ?? '') as string;
+
+    if (birthDate && fullName && sunSign !== 'Unknown') {
+      const res = await fetch(`${baseUrl}/api/astro-numerology/analysis`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          birthDate,
+          fullName,
+          sunSign,
+        }),
+      });
+      if (res.ok) {
+        const result = await res.json();
+        const data = result?.data ?? result;
+        toolReports.astroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: astroNumGeneratedAt };
+      } else {
+        const err = await res.json().catch(() => ({}));
+        toolReports.astroNumerology = { status: 'failed', error: (err as { error?: string })?.error ?? `API ${res.status}`, generatedAt: astroNumGeneratedAt };
+        failedTools.push('astroNumerology');
+      }
+    } else {
+      toolReports.astroNumerology = { status: 'failed', error: 'Missing birthDate, fullName, or sunSign from Western chart', generatedAt: astroNumGeneratedAt };
+      failedTools.push('astroNumerology');
+    }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown';
+    devLog.warn('[ProfileOrchestrator] Western Astro-Numerology failed:', msg, 'profileGenerationOrchestrator');
+    toolReports.astroNumerology = { status: 'failed', error: msg, generatedAt: astroNumGeneratedAt };
+    failedTools.push('astroNumerology');
+  }
 
   const systemsUsed = Object.entries(toolReports).filter(([, v]) => v.status === 'success').map(([k]) => k);
 

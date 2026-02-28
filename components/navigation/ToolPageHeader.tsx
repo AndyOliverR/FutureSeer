@@ -15,6 +15,10 @@ interface ToolPageHeaderProps {
   isComing_soon?: boolean
   isComingSoon?: boolean
   showIcon?: boolean
+  /** When set, back arrow links here (e.g. "/tools?category=Astrology") instead of /tools */
+  backHref?: string
+  /** Accessible label for the back link (e.g. "Back to Astrology") */
+  backLabel?: string
 }
 
 export function ToolPageHeader({
@@ -24,8 +28,11 @@ export function ToolPageHeader({
   toolCategory,
   isPremium = false,
   isComingSoon = false,
-  showIcon = true
+  showIcon = true,
+  backHref,
+  backLabel = "Back to tools"
 }: ToolPageHeaderProps) {
+  const backLinkHref = backHref ?? "/tools"
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -35,9 +42,9 @@ export function ToolPageHeader({
     >
       <div className="flex items-center gap-2">
         <Link
-          href="/tools"
+          href={backLinkHref}
           className="p-2 -ml-2 rounded-full hover:bg-surface-container-low active:scale-90 transition-all text-amber-400"
-          aria-label="Back to tools"
+          aria-label={backLabel}
         >
           <ArrowLeft className="w-6 h-6" />
         </Link>

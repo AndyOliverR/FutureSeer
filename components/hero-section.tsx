@@ -1,5 +1,7 @@
 "use client";
+
 import { Button } from "@/components/ui/button"
+// Landing CTAs: Join the Experiment, Sign In with email (Google is on /signin)
 import { useRouter } from "next/navigation"
 import { ArrowRight, ChevronDown } from "lucide-react"
 import { useAnalytics } from "@/lib/analytics"
@@ -44,16 +46,16 @@ export function HeroSection() {
           <Button
             size="lg"
             variant="outlined"
-            className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-transparent border-2 border-white/20 text-white font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full hover:bg-white/5 transition-all"
+            className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-transparent border-2 border-amber-400/30 text-primary font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full hover:bg-amber-500/10 transition-all"
             onClick={() => router.push("/signin")}
           >
-            Sign In
+            Sign In with email
           </Button>
         </div>
       </div>
 
-      {/* Scroll indicator - hidden on very small screens */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce opacity-30 hidden sm:block">
+      {/* Scroll indicator - in empty space below CTAs, hidden on very small screens */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 animate-bounce opacity-30 hidden sm:block">
         <ChevronDown className="w-6 h-6 text-white" />
       </div>
     </section>
