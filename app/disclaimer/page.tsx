@@ -16,7 +16,7 @@ export default function DisclaimerPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+            <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
               <CardContent className="p-8 md:p-12">
                 <h1 className="text-2xl font-bold text-amber-400 mb-4 text-center">Disclaimer</h1>
                 <p className="text-sm text-white/80 font-light mb-4">

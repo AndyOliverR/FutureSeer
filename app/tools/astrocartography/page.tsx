@@ -55,7 +55,7 @@ function AstrocartographyPageContent() {
               <h2 className="text-xl font-semibold text-white mb-2">Profile Incomplete</h2>
               <p className="text-slate-200 mb-4">Complete your profile (birth date, time, and place) to unlock your Astrocartography report</p>
               <motion.div
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                whileHover={{}}
                 whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                 transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }}
               >
@@ -95,7 +95,7 @@ function AstrocartographyPageContent() {
             {tabsConfig.map((tab) => (
               <motion.div
                 key={tab.value}
-                whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                whileHover={{}}
                 whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                 transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }}
                 className="relative shrink-0"

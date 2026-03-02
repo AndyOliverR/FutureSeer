@@ -60,7 +60,7 @@ export function MysticalSymbol({
     <div 
       className={cn(
         'flex flex-col items-center justify-center',
-        onClick && 'cursor-pointer hover:scale-110 transition-transform',
+        onClick && 'cursor-pointer transition-transform',
         className
       )}
       onClick={onClick}

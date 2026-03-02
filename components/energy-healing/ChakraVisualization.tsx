@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Zap, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from 'lucide-react';
 import { AffiliateLink } from '@/components/AffiliateLink';
 import { getCrystalAffiliateUrl } from '@/lib/affiliateConfig';
+import { getCrystalPhotoPath } from '@/lib/crystalImageMap';
 
 interface ChakraVisualizationProps {
   analysis: ChakraAnalysis;
@@ -80,7 +81,7 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+              <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 ">
                 <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -133,15 +134,28 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
 
                   <div className="mt-3 pt-3 border-t border-amber-300">
                     <div className="flex flex-wrap gap-2 items-center">
-                      {(chakraData?.associatedCrystals ?? []).slice(0, 3).map((crystal, crystalIndex) => (
-                        <Badge
-                          key={crystalIndex}
-                          variant="outline"
-                          className="border-amber-400 text-amber-800 bg-amber-50 text-xs"
-                        >
-                          {crystal}
-                        </Badge>
-                      ))}
+                      {(chakraData?.associatedCrystals ?? []).slice(0, 3).map((crystal, crystalIndex) => {
+                        const photoPath = getCrystalPhotoPath(crystal);
+                        return (
+                          <Badge
+                            key={crystalIndex}
+                            variant="outline"
+                            className="border-amber-400 text-amber-800 bg-amber-50 text-xs inline-flex items-center gap-1.5 py-1 pr-2 pl-1"
+                          >
+                            {photoPath ? (
+                              <span className="w-5 h-5 rounded overflow-hidden flex-shrink-0 bg-transparent border border-amber-300/20">
+                                <img
+                                  src={photoPath}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                />
+                              </span>
+                            ) : null}
+                            <span>{crystal}</span>
+                          </Badge>
+                        );
+                      })}
                       <AffiliateLink href={getCrystalAffiliateUrl(chakraData?.associatedCrystals?.[0] || `${chakra.name} crystal`)} label="Shop crystals" className="text-amber-800 font-medium text-xs" />
                     </div>
                   </div>

@@ -38,7 +38,7 @@ export function FeedbackImprovement({ variant = 'section' }: FeedbackImprovement
 
   if (variant === 'compact') {
     return (
-      <div className="feedback-improvement-compact bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-xl p-6">
+      <div className="feedback-improvement-compact bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-xl p-6">
         <h4 className="text-xl font-serif text-amber-400 mb-3 font-normal">
           Your Feedback, Implemented Instantly
         </h4>
@@ -58,7 +58,7 @@ export function FeedbackImprovement({ variant = 'section' }: FeedbackImprovement
   }
 
   return (
-    <section className="feedback-improvement bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl p-6 sm:p-8">
+    <section className="feedback-improvement bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-2xl p-6 sm:p-8">
       <div className="flex items-center gap-3 mb-4">
         <Sparkles className="w-6 h-6 text-amber-400" />
         <h3 className="text-2xl sm:text-3xl font-serif text-amber-400 font-normal">

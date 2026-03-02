@@ -150,7 +150,7 @@ export default function NotesPage() {
           className="text-center mb-8"
         >
           <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{}}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
               setEditingNote(null)
@@ -197,14 +197,14 @@ export default function NotesPage() {
                   initial={{ opacity: 0, y: 20, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  whileHover={{ scale: 1.02, y: -5 }}
+                  whileHover={{}}
                   className={`backdrop-blur-md bg-slate-900/40 border border-slate-700/50 rounded-2xl p-6 shadow-xl card-glow ${colors.find((c) => c.name === (note.color ?? 'gray'))?.border}`}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-4 h-4 rounded-full ${colors.find((c) => c.name === (note.color ?? 'gray'))?.class}`}></div>
                     <div className="flex space-x-3">
                       <motion.button
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{}}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => handleEditNote(note)}
                         className="text-slate-400 hover:text-amber-200 text-lg transition-colors duration-200"
@@ -212,7 +212,7 @@ export default function NotesPage() {
                         ✏️
                       </motion.button>
                       <motion.button
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{}}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => note.id && handleDeleteNote(note.id)}
                         className="text-slate-400 hover:text-red-400 text-lg transition-colors duration-200"
@@ -273,7 +273,7 @@ export default function NotesPage() {
                     {colors.map((color) => (
                       <motion.button
                         key={color.name}
-                        whileHover={{ scale: 1.1 }}
+                        whileHover={{}}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setSelectedColor(color.name ? color.name : "gray")}
                         className={`w-8 h-8 rounded-full ${color.class} ${selectedColor === color.name ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-slate-900" : ""} transition-all duration-200`}
@@ -284,7 +284,7 @@ export default function NotesPage() {
                 
                 <div className="flex space-x-4 mt-8">
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => {
                       setShowModal(false)
@@ -298,7 +298,7 @@ export default function NotesPage() {
                     Cancel
                   </motion.button>
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSaveNote}
                     disabled={!noteTitle.trim() || !newNote.trim() || isSubmitting}

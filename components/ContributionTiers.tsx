@@ -157,7 +157,7 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
         return (
           <Card
             key={tier.id}
-            className={`relative overflow-hidden transition-all duration-300 hover:scale-105 ${
+            className={`relative overflow-hidden transition-all duration-300 ${
               tier.popular
                 ? 'ring-2 ring-amber-500 shadow-2xl shadow-amber-500/20'
                 : 'hover:shadow-xl hover:shadow-slate-700/20'

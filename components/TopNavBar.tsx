@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Share2, Info } from "lucide-react";
+import { Share2, Info, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTipJar } from "@/components/TipJarContext";
 import { useFeedback } from "@/components/FeedbackContext";
@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ShareAppModal } from "@/components/ShareAppModal";
+import { UserMenuDropdown } from "@/components/UserMenuDropdown";
 
 const navLinks = [
   { name: "Home", href: "/", icon: "🏠" },
@@ -31,7 +32,7 @@ const navLinks = [
 
 export function TopNavBar() {
   const router = useRouter();
-  const { isAdmin, isSuperadmin } = useAuth();
+  const { user, userProfile, isAdmin, isSuperadmin, signOut } = useAuth();
   const { open: openTipJar } = useTipJar();
   const { open: openFeedback } = useFeedback();
   const [showMenu, setShowMenu] = useState(false);
@@ -67,7 +68,7 @@ export function TopNavBar() {
       <nav className="w-full bg-[var(--m3-surface)]/95 backdrop-blur-xl border-b border-[var(--m3-outline-variant)] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border select-none" role="navigation">
         <Link 
           href="/" 
-          className="futureseer-logo gold-glow text-xl font-bold tracking-tighter hover:scale-105 transition-transform text-amber-400 flex items-center h-14"
+          className="futureseer-logo gold-glow text-xl font-bold tracking-tighter transition-transform text-amber-400 flex items-center h-14"
           aria-label="FutureSeer - Home"
         >
           FutureSeer
@@ -92,7 +93,18 @@ export function TopNavBar() {
           >
             <Share2 className="w-6 h-6" />
           </button>
-          
+
+          {/* User avatar dropdown (Profile, Settings, Sign out) when logged in */}
+          {user && (
+            <div className="flex items-center shrink-0">
+              <UserMenuDropdown
+                userName={userProfile?.displayName || user.displayName || user.email?.split("@")[0] || "User"}
+                userEmail={user.email ?? undefined}
+                userPhotoURL={user.photoURL ?? userProfile?.photoURL ?? undefined}
+              />
+            </div>
+          )}
+
           {/* Hamburger menu - Increased to 48px for Android */}
           <motion.button
             className="flex flex-col justify-center items-center w-12 h-12 relative z-[102]"
@@ -139,6 +151,18 @@ export function TopNavBar() {
                   </Link>
                 )
               )}
+              <button
+                type="button"
+                className="flex items-center gap-4 w-full text-left px-4 py-3 rounded-xl text-white active:bg-amber-500/20 transition-colors border-t border-outline-variant mt-1 pt-3"
+                onClick={() => {
+                  setShowMenu(false);
+                  signOut();
+                }}
+                aria-label="Sign out"
+              >
+                <LogOut className="w-5 h-5 shrink-0" />
+                <span className="text-sm font-bold">Sign out</span>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

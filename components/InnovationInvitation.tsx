@@ -16,7 +16,7 @@ export function InnovationInvitation() {
       </p>
 
       {/* Key Message */}
-      <div className="bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl p-6 md:p-8 max-w-4xl mx-auto">
+      <div className="bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-2xl p-6 md:p-8 max-w-4xl mx-auto">
         <p className="text-lg md:text-xl text-amber-400 mb-4 font-light">
           Start free for 30 days. Your usage makes this innovation possible.
         </p>
@@ -27,25 +27,25 @@ export function InnovationInvitation() {
 
       {/* Future-Seeing Capabilities Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-12 max-w-5xl mx-auto">
-        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
           <Eye className="w-8 h-8 text-amber-400 mb-3" />
           <h3 className="text-amber-400 font-semibold mb-2 text-sm">Occult Wisdom</h3>
           <p className="text-white/80 text-xs text-center">Ancient divination methods</p>
         </div>
         
-        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
           <TrendingUp className="w-8 h-8 text-amber-400 mb-3" />
           <h3 className="text-amber-400 font-semibold mb-2 text-sm">AI Forecasting</h3>
           <p className="text-white/80 text-xs text-center">Predictive analytics</p>
         </div>
         
-        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
           <Sparkles className="w-8 h-8 text-amber-400 mb-3" />
           <h3 className="text-amber-400 font-semibold mb-2 text-sm">Hidden Patterns</h3>
           <p className="text-white/80 text-xs text-center">Data pattern recognition</p>
         </div>
         
-        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+        <div className="flex flex-col items-center p-4 rounded-xl bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
           <Users className="w-8 h-8 text-amber-400 mb-3" />
           <h3 className="text-amber-400 font-semibold mb-2 text-sm">Community Power</h3>
           <p className="text-white/80 text-xs text-center">Your usage improves accuracy</p>

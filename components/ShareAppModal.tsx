@@ -96,7 +96,7 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
                         key={platform.id}
                         className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-container-low border border-outline-variant hover:bg-primary-container transition-all group"
                       >
-                        <platform.icon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
+                        <platform.icon className="w-6 h-6 text-primary transition-transform" />
                         <span className="text-[10px] font-bold text-surface-on">{platform.label}</span>
                       </button>
                     ))}

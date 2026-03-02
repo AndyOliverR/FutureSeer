@@ -9,6 +9,7 @@ import { Gem, Clock, Shield, Sparkles, AlertTriangle, CheckCircle } from 'lucide
 import { useState } from 'react'
 import { AffiliateLink } from '@/components/AffiliateLink'
 import { getGemstoneAffiliateUrl } from '@/lib/affiliateConfig'
+import { getGemstonePhotoPath } from '@/lib/gemstoneImageMap'
 
 interface GemstoneRecommendationCardProps {
   recommendation: GemstoneRecommendation
@@ -57,27 +58,25 @@ export function GemstoneRecommendationCard({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-gradient-to-br from-amber-100 to-yellow-100 flex items-center justify-center border-2 border-amber-300 relative">
-                {recommendation.gemstone.iconPath ? (
+              <div className="w-16 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-transparent border border-amber-300/20 flex items-center justify-center relative">
+                {(() => {
+                  const photoPath = recommendation.gemstone.imagePath ?? getGemstonePhotoPath(recommendation.gemstone.english)
+                  const iconPath = recommendation.gemstone.iconPath
+                  const src = photoPath ?? iconPath
+                  return src ? (
                   <>
                     <img
-                      src={recommendation.gemstone.iconPath}
+                      src={src}
                       alt={recommendation.gemstone.english}
-                      className="w-full h-full object-contain p-2"
+                      className={`w-full h-full ${photoPath ? 'object-cover' : 'object-contain p-2'}`}
                       onError={(e) => {
-                        devLog.warn('Failed to load gemstone icon:', recommendation.gemstone.iconPath, 'GemstoneRecommendationCard')
                         const target = e.currentTarget as HTMLImageElement
                         target.style.display = 'none'
                         const fallback = target.parentElement?.querySelector('.emoji-fallback') as HTMLElement
-                        if (fallback) {
-                          fallback.style.display = 'block'
-                        }
-                      }}
-                      onLoad={() => {
-                        devLog.debug('Successfully loaded gemstone icon:', recommendation.gemstone.iconPath)
+                        if (fallback) fallback.style.display = 'block'
                       }}
                     />
-                    <span className="emoji-fallback text-3xl hidden absolute inset-0 flex items-center justify-center">
+                    <span className="emoji-fallback text-3xl hidden absolute inset-0 flex items-center justify-center bg-amber-100/80">
                       {isLifeStone ? '👑' : '💎'}
                     </span>
                   </>
@@ -85,7 +84,8 @@ export function GemstoneRecommendationCard({
                   <span className="text-3xl">
                     {isLifeStone ? '👑' : '💎'}
                   </span>
-                )}
+                )
+                })()}
               </div>
               <div>
                 <CardTitle className="text-amber-900 text-xl">
@@ -270,12 +270,12 @@ export function GemstoneRecommendationCard({
 
         {isExpanded && (
           <div className="space-y-3 pt-3 border-t border-amber-200">
-            {recommendation.gemstone.imagePath && (
+            {(recommendation.gemstone.imagePath ?? getGemstonePhotoPath(recommendation.gemstone.english)) && (
               <div>
                 <h5 className="text-slate-600 text-sm mb-2">Gemstone Image</h5>
-                <div className="w-full max-w-xs mx-auto rounded-xl overflow-hidden bg-amber-100 border-2 border-amber-300">
+                <div className="w-full max-w-xs mx-auto rounded-xl overflow-hidden bg-transparent border border-amber-300/20">
                   <img
-                    src={recommendation.gemstone.imagePath}
+                    src={recommendation.gemstone.imagePath ?? getGemstonePhotoPath(recommendation.gemstone.english)!}
                     alt={`${recommendation.gemstone.english} gemstone`}
                     className="w-full h-auto object-cover"
                     onError={(e) => {

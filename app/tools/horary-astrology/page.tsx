@@ -455,7 +455,7 @@ export default function HoraryAstrologyPage() {
                 setError(null)
               }}
               className="flex items-center gap-2 bg-[var(--m3-surface-container)] border-2 border-amber-500/50 text-amber-400 py-3 px-6 rounded-xl font-semibold hover:bg-[var(--m3-surface-container-high)] hover:border-amber-400 transition-all duration-300"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{}}
               whileTap={{ scale: 0.95 }}
             >
               <RefreshCw className="w-5 h-5" />
@@ -466,7 +466,7 @@ export default function HoraryAstrologyPage() {
               onClick={fetchCurrentTransits}
               disabled={isLoadingTransits}
               className="flex items-center gap-2 bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] text-slate-200 py-3 px-6 rounded-xl font-semibold hover:bg-[var(--m3-surface-container)] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              whileHover={{ scale: 1.05 }}
+              whileHover={{}}
               whileTap={{ scale: 0.95 }}
             >
               {isLoadingTransits ? (
@@ -547,7 +547,7 @@ export default function HoraryAstrologyPage() {
                 ].map((tab) => (
                   <motion.button
                     key={tab.id}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveTab(tab.id as any)}
                     className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${

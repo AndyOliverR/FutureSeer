@@ -82,7 +82,7 @@ export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
                 transition={{ delay: index * 0.1 }}
                 className="p-8 rounded-[32px] glass-effect hover:border-amber-500/40 transition-all flex flex-col items-center text-center shadow-xl group"
               >
-                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6 transition-transform">
                   <Icon className="w-8 h-8 text-amber-400" />
                 </div>
                 <h3 className="text-2xl font-heading font-bold text-white mb-1 uppercase tracking-tight">{option.name}</h3>

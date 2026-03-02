@@ -174,7 +174,7 @@ function FinancialAstrologyPageContent() {
                 Complete your profile to unlock your Financial Astrology report
               </p>
               <motion.div
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                whileHover={{}}
                 whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                 transition={
                   prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }
@@ -231,7 +231,7 @@ function FinancialAstrologyPageContent() {
                 {tabsConfig.map((tab) => (
                   <motion.div
                     key={tab.value}
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                     transition={
                       prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }

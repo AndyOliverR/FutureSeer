@@ -79,7 +79,7 @@ export function AngelNumbersLookup({ onLookupComplete }: AngelNumbersLookupProps
           className="flex items-center gap-3 mb-6"
         >
           <motion.div
-            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileHover={{}}
             whileTap={{ scale: 0.95 }}
             className="bg-amber-200/60 rounded-full p-3"
           >
@@ -105,7 +105,7 @@ export function AngelNumbersLookup({ onLookupComplete }: AngelNumbersLookupProps
               className="flex-1 bg-white border-2 border-amber-300 text-slate-800 placeholder-slate-500 focus:border-amber-500 focus:ring-amber-500/30 rounded-xl transition-all duration-200"
             />
             <motion.button
-              whileHover={{ scale: 1.05, y: -2 }}
+              whileHover={{}}
               whileTap={{ scale: 0.95, y: 0 }}
               onClick={handleLookup}
               disabled={!isValidInput}
@@ -116,7 +116,7 @@ export function AngelNumbersLookup({ onLookupComplete }: AngelNumbersLookupProps
               <motion.div
                 className="absolute inset-0 bg-white/20"
                 initial={{ scale: 0, opacity: 0 }}
-                whileHover={{ scale: 1, opacity: 1 }}
+                whileHover={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
               />
             </motion.button>
@@ -124,7 +124,7 @@ export function AngelNumbersLookup({ onLookupComplete }: AngelNumbersLookupProps
               <motion.button
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                whileHover={{ scale: 1.05, y: -2 }}
+                whileHover={{}}
                 whileTap={{ scale: 0.95, y: 0 }}
                 onClick={clearLookup}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}

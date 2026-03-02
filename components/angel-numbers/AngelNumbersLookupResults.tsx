@@ -118,7 +118,7 @@ export function AngelNumbersLookupResults({ result }: AngelNumbersLookupResultsP
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05, type: "spring", stiffness: 200 }}
-                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileHover={{}}
                     className="px-3 py-1 bg-amber-500/20 text-amber-700 border border-amber-300 rounded-full text-sm font-medium cursor-default"
                   >
                     {keyword}

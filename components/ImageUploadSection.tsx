@@ -346,8 +346,8 @@ export function ImageUploadSection({
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             <div className="relative flex items-center justify-center gap-2">
-              <X className="w-4 h-4 transition-transform group-hover:scale-110" />
-              <span className="transition-transform group-hover:scale-105">Remove Photo</span>
+              <X className="w-4 h-4 transition-transform " />
+              <span className="transition-transform ">Remove Photo</span>
             </div>
           </Button>
         </motion.div>
@@ -387,8 +387,8 @@ export function ImageUploadSection({
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 <div className="relative flex items-center justify-center gap-2">
-                  <Camera className="w-4 h-4 transition-transform group-hover:scale-110" />
-                  <span className="transition-transform group-hover:scale-105">Capture Photo</span>
+                  <Camera className="w-4 h-4 transition-transform " />
+                  <span className="transition-transform ">Capture Photo</span>
                 </div>
               </Button>
             ) : (
@@ -400,8 +400,8 @@ export function ImageUploadSection({
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <div className="relative flex items-center justify-center gap-2">
-                    <RotateCcw className="w-4 h-4 transition-transform group-hover:scale-110" />
-                    <span className="transition-transform group-hover:scale-105">Retake</span>
+                    <RotateCcw className="w-4 h-4 transition-transform " />
+                    <span className="transition-transform ">Retake</span>
                   </div>
                 </Button>
                 <Button
@@ -410,8 +410,8 @@ export function ImageUploadSection({
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                   <div className="relative flex items-center justify-center gap-2">
-                    <Check className="w-4 h-4 transition-transform group-hover:scale-110" />
-                    <span className="transition-transform group-hover:scale-105">Use Photo</span>
+                    <Check className="w-4 h-4 transition-transform " />
+                    <span className="transition-transform ">Use Photo</span>
                   </div>
                 </Button>
               </>
@@ -423,8 +423,8 @@ export function ImageUploadSection({
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               <div className="relative flex items-center justify-center gap-2">
-                <X className="w-4 h-4 transition-transform group-hover:scale-110" />
-                <span className="transition-transform group-hover:scale-105">Close</span>
+                <X className="w-4 h-4 transition-transform " />
+                <span className="transition-transform ">Close</span>
               </div>
             </Button>
           </div>
@@ -451,9 +451,9 @@ export function ImageUploadSection({
               {isCapturing ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-300" />
               ) : (
-                <Camera className="w-5 h-5 transition-transform group-hover:scale-110" />
+                <Camera className="w-5 h-5 transition-transform " />
               )}
-              <span className="text-lg transition-transform group-hover:scale-105">
+              <span className="text-lg transition-transform ">
                 {isCapturing ? 'Opening Camera...' : 'Take Photo with Camera'}
               </span>
             </div>
@@ -485,8 +485,8 @@ export function ImageUploadSection({
             >
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               <div className="relative flex items-center justify-center gap-2">
-                <Monitor className="w-4 h-4 transition-transform group-hover:scale-110" />
-                <span className="transition-transform group-hover:scale-105">Choose from Device</span>
+                <Monitor className="w-4 h-4 transition-transform " />
+                <span className="transition-transform ">Choose from Device</span>
               </div>
             </Button>
           </div>

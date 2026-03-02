@@ -25,7 +25,7 @@ export function HelpButton() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center justify-center w-10 h-10 hover:scale-110 transition-all duration-200 text-amber-400 hover:text-amber-300 relative z-[102] focus-visible:outline-2 focus-visible:outline-amber-400 focus-visible:outline-offset-2 rounded"
+        className="flex items-center justify-center w-10 h-10 transition-all duration-200 text-amber-400 hover:text-amber-300 relative z-[102] focus-visible:outline-2 focus-visible:outline-amber-400 focus-visible:outline-offset-2 rounded"
         aria-label="Help"
         title="Help"
       >

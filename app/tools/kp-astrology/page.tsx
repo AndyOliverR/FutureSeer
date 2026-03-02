@@ -903,7 +903,7 @@ export default function KPAstrologyPage() {
               </p>
               <motion.a
                 href="/profile"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-300"
                 whileHover={{ y: -2 }}
               >
                 <User className="w-5 h-5" />
@@ -1012,7 +1012,7 @@ export default function KPAstrologyPage() {
                 {tabsConfig.map((tab) => (
                   <motion.div
                     key={tab.value}
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                     transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }}
                     className="relative shrink-0"
@@ -2060,7 +2060,7 @@ export default function KPAstrologyPage() {
                     <button
                       onClick={fetchCurrentTransits}
                       disabled={isLoadingTransits}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300 hover:scale-105 disabled:hover:scale-100"
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300 "
                     >
                       {isLoadingTransits ? (
                         <>

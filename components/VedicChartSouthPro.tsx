@@ -231,7 +231,7 @@ const VedicChartSouthPro: React.FC<VedicChartSouthProProps> = ({
 
       <Button
         onClick={exportToPNG}
-        className="bg-gradient-to-r from-yellow-500 to-yellow-700 text-black font-semibold shadow-lg hover:scale-105 transition-all"
+        className="bg-gradient-to-r from-yellow-500 to-yellow-700 text-black font-semibold shadow-lg transition-all"
       >
         📥 Export Chart as PNG
       </Button>

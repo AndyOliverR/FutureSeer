@@ -13,7 +13,7 @@ export function AttributionLeaderboard() {
   ];
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl p-8 md:p-12 mb-16">
+    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-2xl p-8 md:p-12 mb-16">
       <div className="flex items-center justify-center gap-3 mb-6">
         <Trophy className="w-8 h-8 text-amber-400" />
         <h2 className="text-2xl md:text-3xl font-bold text-white">
@@ -30,7 +30,7 @@ export function AttributionLeaderboard() {
         {leaderboardPreview.map((user) => (
           <Card
             key={user.rank}
-            className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105"
+            className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300"
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">

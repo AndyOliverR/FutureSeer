@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Gem, Star, Sparkles, Zap } from 'lucide-react';
 import { AffiliateLink } from '@/components/AffiliateLink';
 import { getCrystalAffiliateUrl } from '@/lib/affiliateConfig';
+import { getCrystalPhotoPath } from '@/lib/crystalImageMap';
 
 interface CrystalRecommendationsProps {
   recommendation: CrystalRecommendation;
@@ -28,9 +29,27 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center border-2 border-amber-300">
-                <Gem className="w-10 h-10 text-amber-700" />
-              </div>
+              {getCrystalPhotoPath(recommendation.primaryCrystal) ? (
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-transparent border border-amber-300/20 flex-shrink-0">
+                  <img
+                    src={getCrystalPhotoPath(recommendation.primaryCrystal)!}
+                    alt={recommendation.primaryCrystal}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const el = e.currentTarget as HTMLImageElement;
+                      el.style.display = 'none';
+                      el.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="hidden absolute inset-0 flex items-center justify-center rounded-xl bg-amber-100/80 border border-amber-300/30">
+                    <Gem className="w-10 h-10 text-amber-700" />
+                  </div>
+                </div>
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center border-2 border-amber-300 flex-shrink-0">
+                  <Gem className="w-10 h-10 text-amber-700" />
+                </div>
+              )}
               <div>
                 <h3 className="text-2xl font-bold text-amber-950">{recommendation.primaryCrystal}</h3>
                 <p className="text-amber-950 text-sm font-medium mt-1">
@@ -70,12 +89,30 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="bg-amber-100/50 border-2 border-amber-300 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+                  <Card className="bg-amber-100/50 border-2 border-amber-300 rounded-xl transition-all duration-300  hover:shadow-lg">
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3 mb-3">
-                        <div className="w-16 h-16 rounded-lg bg-amber-100 flex items-center justify-center border-2 border-amber-300 flex-shrink-0">
-                          <Gem className="w-8 h-8 text-amber-800" />
-                        </div>
+                        {getCrystalPhotoPath(crystalName) ? (
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-transparent border border-amber-300/20 flex-shrink-0">
+                            <img
+                              src={getCrystalPhotoPath(crystalName)!}
+                              alt={crystalName}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const el = e.currentTarget as HTMLImageElement;
+                                el.style.display = 'none';
+                                el.nextElementSibling?.classList.remove('hidden');
+                              }}
+                            />
+                            <div className="hidden absolute inset-0 flex items-center justify-center rounded-lg bg-amber-100/80 border border-amber-300/30">
+                              <Gem className="w-8 h-8 text-amber-800" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-amber-100 flex items-center justify-center border-2 border-amber-300 flex-shrink-0">
+                            <Gem className="w-8 h-8 text-amber-800" />
+                          </div>
+                        )}
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
                             <h3 className="text-amber-950 font-semibold">{crystalName}</h3>

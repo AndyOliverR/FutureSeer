@@ -65,7 +65,7 @@ export default function BaguaMap({ areas, favorableDirections = [], className = 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.05, zIndex: 10 }}
+              whileHover={{}}
               className={`
                 relative p-4 rounded-xl border-2 backdrop-blur-sm
                 ${isFav 

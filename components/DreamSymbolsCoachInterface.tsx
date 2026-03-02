@@ -127,7 +127,7 @@ export function DreamSymbolsCoachInterface({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.05, y: -5 }}
+            whileHover={{}}
           >
             <Card className={`${cardClassName} overflow-hidden hover:border-amber-400 hover:shadow-xl transition-all duration-300 cursor-pointer group`}>
               <CardContent className={`p-5 ${cardContentClassName}`}>

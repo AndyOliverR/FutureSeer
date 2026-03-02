@@ -155,7 +155,7 @@ export default function HellenisticAstrologyPage() {
               <Star className="w-12 h-12 text-amber-400 mx-auto mb-4" />
               <h2 className="text-xl font-semibold text-amber-200 mb-2">Profile Incomplete</h2>
               <p className="text-slate-300 mb-4">Complete your profile to unlock your Hellenistic astrology chart</p>
-              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg" aria-label="Navigate to profile">
+              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:shadow-lg" aria-label="Navigate to profile">
                 <Link href="/profile">Complete Profile</Link>
               </Button>
             </CardContent>
@@ -296,7 +296,7 @@ export default function HellenisticAstrologyPage() {
                     <CardContent className="p-8 text-center">
                       <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
                       <p className="text-red-700 mb-4">{effectiveError}</p>
-                      <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                      <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white transition-all duration-300 hover:shadow-lg">
                         <Link href="/profile">Generate your mystical profile</Link>
                       </Button>
                     </CardContent>

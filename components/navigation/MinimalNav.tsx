@@ -21,7 +21,7 @@ export function MinimalNav() {
     >
       <Link 
         href="/" 
-        className="futureseer-logo text-2xl font-semibold tracking-wide hover:scale-105 transition-transform text-amber-400 relative z-[101] flex items-center h-10 focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
+        className="futureseer-logo text-2xl font-semibold tracking-wide transition-transform text-amber-400 relative z-[101] flex items-center h-10 focus-visible:outline-2 focus-visible:outline-[var(--m3-primary)] focus-visible:outline-offset-2 rounded"
         aria-label="FutureSeer - Home"
       >
         FutureSeer

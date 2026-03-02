@@ -53,7 +53,7 @@ export function TarotCardDisplay({
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
-      whileHover={isClickable ? { scale: 1.05 } : {}}
+      whileHover={{}}
       onClick={onClick}
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}

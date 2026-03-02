@@ -12,7 +12,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/"
-          className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-3xl font-semibold text-lg hover:scale-105 transition-transform shadow-lg cosmic-button-primary"
+          className="px-8 py-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black rounded-3xl font-semibold text-lg  transition-transform shadow-lg cosmic-button-primary"
         >
           🔮 Return to FutureSeer
         </Link>

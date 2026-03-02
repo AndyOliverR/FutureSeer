@@ -257,7 +257,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                 <Button
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-white to-gray-50 text-gray-700 hover:from-gray-50 hover:to-gray-100 border border-gray-300 hover:border-gray-400 shadow-lg hover:shadow-xl font-medium py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 transform hover:scale-[1.02] hover:-translate-y-0.5"
+                  className="w-full bg-gradient-to-r from-white to-gray-50 text-gray-700 hover:from-gray-50 hover:to-gray-100 border border-gray-300 hover:border-gray-400 shadow-lg hover:shadow-xl font-medium py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 hover:-translate-y-0.5"
                   variant="outline"
                 >
                   {isLoading ? (
@@ -344,7 +344,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
 
                                        <Button 
                       type="submit" 
-                      className="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] hover:-translate-y-0.5 transition-all duration-300 mt-6" 
+                      className="w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:via-yellow-600 hover:to-amber-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 mt-6" 
                       disabled={isLoading}
                     >
                                             {isLoading ? (
@@ -500,7 +500,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                <Button
                  variant="ghost"
                  onClick={onClose}
-                 className="text-sm text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 px-6 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+                 className="text-sm text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 px-6 py-2 rounded-lg transition-all duration-300"
                >
                                   <span className="text-amber-200">✨</span> Cancel <span className="text-amber-200">✨</span>
                </Button>
