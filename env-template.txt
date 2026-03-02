@@ -77,9 +77,13 @@ FOUNDER_EMAIL=your@email.com
 # Razorpay Public Key (Client-side - safe to expose)
 NEXT_PUBLIC_RAZORPAY_KEY_ID=your-razorpay-key-id
 
-# Resend (notification emails)
+# Resend (notification emails + inbound support)
 RESEND_API_KEY=your-resend-api-key
 NOTIFICATION_FROM_EMAIL=notifications@yourdomain.com
+# Webhook secret for Resend Inbound (emails to support@futureseer.app). Get it when creating the webhook in Resend dashboard.
+RESEND_WEBHOOK_SECRET=whsec_xxxx
+# Optional: forward copies of support emails to this address (e.g. your personal inbox)
+SUPPORT_FORWARD_EMAIL=
 
 # Cron secret (secure the cron route; set in Vercel env and send as Authorization: Bearer CRON_SECRET)
 CRON_SECRET=your-cron-secret

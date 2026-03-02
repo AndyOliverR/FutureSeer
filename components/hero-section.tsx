@@ -33,7 +33,7 @@ export function HeroSection() {
         <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center items-center pt-6">
           <Button
             size="lg"
-            className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-primary text-on-primary font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full hover:scale-105 transition-all shadow-xl shadow-amber-500/10"
+            className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-primary text-on-primary font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full transition-all shadow-xl shadow-amber-500/10"
             onClick={() => {
               trackEvent(ANALYTICS_EVENTS.HERO_CTA_CLICKED, { cta_type: "join_experiment" })
               router.push("/signup")

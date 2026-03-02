@@ -32,7 +32,7 @@ export default function SupportPage() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8"
           >
             {/* FAQ */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 p-6 transition-all duration-300 hover:scale-105">
+            <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 p-6 transition-all duration-300">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
                   <HelpCircle className="w-6 h-6 text-amber-400" />
@@ -52,7 +52,7 @@ export default function SupportPage() {
             </div>
 
             {/* Documentation */}
-            <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 p-6 transition-all duration-300 hover:scale-105">
+            <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 p-6 transition-all duration-300">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
                   <Book className="w-6 h-6 text-amber-400" />

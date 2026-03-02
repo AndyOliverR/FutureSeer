@@ -301,7 +301,7 @@ export function BaziLuckCycles({ cycles, currentAge }: BaziLuckCyclesProps) {
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: i * 0.05 }}
                                   >
-                                    <Card className={`${colors.bg} border ${colors.border} rounded-lg overflow-hidden hover:scale-105 transition-transform`}>
+                                    <Card className={`${colors.bg} border ${colors.border} rounded-lg overflow-hidden transition-transform`}>
                                       <CardContent className="p-2.5 text-center">
                                         <div className="text-xs font-bold mb-1 flex items-center justify-center gap-1">
                                           <span>{year.year}</span>

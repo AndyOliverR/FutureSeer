@@ -114,7 +114,7 @@ export default function AdminFeedbackPage() {
         )}
 
         {submissions.length === 0 && !error && (
-          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01] p-8 text-center">
+          <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300  p-8 text-center">
             <MessageSquare className="w-12 h-12 text-amber-400/60 mx-auto mb-4" />
             <p className="text-white/80 text-sm">No feedback submissions yet.</p>
           </div>
@@ -122,7 +122,7 @@ export default function AdminFeedbackPage() {
 
         <div className="space-y-4">
           {submissions.map((s) => (
-            <Card key={s.id} className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-[1.01]">
+            <Card key={s.id} className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 ">
               <CardHeader className="pb-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">

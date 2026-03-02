@@ -113,7 +113,7 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
         >
           <motion.button
             onClick={() => setIsExpanded(true)}
-            whileHover={{ scale: 1.1 }}
+            whileHover={{}}
             whileTap={{ scale: 0.9 }}
             className="pointer-events-auto w-14 h-14 bg-transparent border-none flex items-center justify-center relative"
           >

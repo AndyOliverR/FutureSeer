@@ -28,6 +28,7 @@ import {
   MANTRA_DATABASE, 
   MUDRA_DATABASE 
 } from '@/lib/remedyDatabase'
+import { getGemstonePhotoPath } from '@/lib/gemstoneImageMap'
 import { AffiliateLink } from '@/components/AffiliateLink'
 import { getGemstoneAffiliateUrl } from '@/lib/affiliateConfig'
 
@@ -68,7 +69,7 @@ export default function RemediesPage() {
 
   const renderGemstoneRemedies = () => {
     return Object.entries(GEMSTONE_DATABASE).map(([sign, gemstones]) => (
-      <Card key={sign} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+      <Card key={sign} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl capitalize text-amber-400">
             <Gem className="w-5 h-5 text-blue-500" />
@@ -77,12 +78,26 @@ export default function RemediesPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {gemstones.map((gemstone, index) => (
-              <Card key={index} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+            {gemstones.map((gemstone, index) => {
+              const photoPath = getGemstonePhotoPath(gemstone.name)
+              return (
+              <Card key={index} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg text-amber-400">{gemstone.name}</CardTitle>
-                    <Badge variant="secondary" className="bg-blue-500 text-white">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {photoPath && (
+                        <div className="flex-shrink-0 w-12 h-12 rounded-xl overflow-hidden bg-transparent border border-amber-500/10">
+                          <img
+                            src={photoPath}
+                            alt={gemstone.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                          />
+                        </div>
+                      )}
+                      <CardTitle className="text-lg text-amber-400 truncate">{gemstone.name}</CardTitle>
+                    </div>
+                    <Badge variant="secondary" className="bg-blue-500 text-white flex-shrink-0">
                       {gemstone.planetaryRuler}
                     </Badge>
                   </div>
@@ -128,7 +143,7 @@ export default function RemediesPage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            ); })}
           </div>
         </CardContent>
       </Card>
@@ -137,7 +152,7 @@ export default function RemediesPage() {
 
   const renderColorTherapy = () => {
     return Object.entries(COLOR_THERAPY).map(([color, therapy]) => (
-      <Card key={color} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+      <Card key={color} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl capitalize text-amber-400">
             <Palette className="w-5 h-5 text-green-500" />
@@ -192,7 +207,7 @@ export default function RemediesPage() {
 
   const renderMantras = () => {
     return Object.entries(MANTRA_DATABASE).map(([mantra, details]) => (
-      <Card key={mantra} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+      <Card key={mantra} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl text-amber-400">
             <BookOpen className="w-5 h-5 text-purple-500" />
@@ -243,7 +258,7 @@ export default function RemediesPage() {
 
   const renderMudras = () => {
     return Object.entries(MUDRA_DATABASE).map(([mudra, details]) => (
-      <Card key={mudra} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+      <Card key={mudra} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl text-amber-400">
             <Heart className="w-5 h-5 text-red-500" />
@@ -299,7 +314,7 @@ export default function RemediesPage() {
   const renderNumerologyRemedies = () => {
     return (
       <div className="space-y-6">
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-xl text-amber-400">
               <Star className="w-5 h-5 text-yellow-500" />
@@ -309,7 +324,7 @@ export default function RemediesPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(NUMEROLOGY_REMEDIES.missingNumbers).map(([number, remedy]) => (
-                <Card key={number} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+                <Card key={number} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg text-amber-400">Number {number}</CardTitle>
                   </CardHeader>
@@ -423,35 +438,35 @@ export default function RemediesPage() {
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-transparent p-0 gap-2">
             <TabsTrigger 
               value="gemstones" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Gem className="w-4 h-4" />
               <span className="hidden md:inline">Gemstones</span>
             </TabsTrigger>
             <TabsTrigger 
               value="colors" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Palette className="w-4 h-4" />
               <span className="hidden md:inline">Colors</span>
             </TabsTrigger>
             <TabsTrigger 
               value="mantras" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <BookOpen className="w-4 h-4" />
               <span className="hidden md:inline">Mantras</span>
             </TabsTrigger>
             <TabsTrigger 
               value="mudras" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Heart className="w-4 h-4" />
               <span className="hidden md:inline">Mudras</span>
             </TabsTrigger>
             <TabsTrigger 
               value="numerology" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Star className="w-4 h-4" />
               <span className="hidden md:inline">Numerology</span>
@@ -481,7 +496,7 @@ export default function RemediesPage() {
 
         {/* Footer Note */}
         <div className="mt-12 text-center">
-          <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105">
+          <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
             <CardContent className="p-6">
               <p className="text-white/80 mb-4">
                 💫 <strong>Important Note:</strong> These remedies are based on ancient wisdom and spiritual traditions. 

@@ -131,7 +131,7 @@ export default function FaceReadingPage() {
                 </h3>
                 <div className="flex gap-2 mb-4">
                   <motion.button
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                    whileHover={{}}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                     onClick={() => setReadingMethod('modern')}
                     className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 cursor-pointer ${
@@ -143,7 +143,7 @@ export default function FaceReadingPage() {
                     Modern Physiognomy
                   </motion.button>
                   <motion.button
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                    whileHover={{}}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                     onClick={() => setReadingMethod('chinese')}
                     className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 cursor-pointer ${
@@ -248,7 +248,7 @@ export default function FaceReadingPage() {
               {/* Action Buttons */}
               <div className="space-y-4">
                 <motion.button
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                  whileHover={{}}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                   onClick={() => performFaceReading(userProfile?.facePhotoUrl)}
                   disabled={isLoading || (!userProfile?.facePhotoUrl && (!faceData.eyeShape || !faceData.noseType || !faceData.mouthShape || !faceData.foreheadType || !faceData.analysisFocus))}
@@ -258,7 +258,7 @@ export default function FaceReadingPage() {
                 </motion.button>
                 
                 <motion.button
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                   onClick={resetData}
                   className="w-full bg-white border-2 border-amber-200 text-slate-700 rounded-xl p-4 font-semibold hover:bg-amber-50 hover:border-amber-300 transition-all duration-300"

@@ -117,7 +117,7 @@ export default function AngelNumbersPage() {
                     {ANGEL_NUMBERS_CONSTANTS.MESSAGES.CLICK_REFRESH}
                   </p>
                   <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.95, y: 0 }}
                     onClick={refresh}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}

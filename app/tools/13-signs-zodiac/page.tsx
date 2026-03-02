@@ -147,7 +147,7 @@ export default function ThirteenSignsZodiacPage() {
                 {["overview", "signs", "ophiuchus", "compatibility", "personality", "career", "guidance"].map((tab) => (
                   <motion.button
                     key={tab}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveTab(tab)}
                     className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${

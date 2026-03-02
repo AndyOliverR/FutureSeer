@@ -196,7 +196,7 @@ export function VedicCoachInterface() {
                   key={topic.id}
                   onClick={() => handleTopicClick(topic)}
                   className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg border border-slate-600 hover:bg-slate-700/50 transition-colors"
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className={`w-8 h-8 ${topic.color} rounded-full flex items-center justify-center`}>

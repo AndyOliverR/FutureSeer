@@ -104,7 +104,7 @@ export default function SettingsPage() {
         </AnimatePresence>
 
         {/* Profile Card */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 mb-8 rounded-2xl">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
               <User className="w-6 h-6" /> Profile
@@ -156,8 +156,8 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="flex gap-4 mt-4">
-                  <Button type="submit" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 font-semibold text-sm hover:scale-105 transition-all duration-300 rounded-xl">Save</Button>
-                  <Button type="button" variant="outline" onClick={() => setIsEditingProfile(false)} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white/80 hover:text-amber-400 text-sm hover:scale-105 transition-all duration-300 rounded-xl">Cancel</Button>
+                  <Button type="submit" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 font-semibold text-sm transition-all duration-300 rounded-xl">Save</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsEditingProfile(false)} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white/80 hover:text-amber-400 text-sm transition-all duration-300 rounded-xl">Cancel</Button>
                 </div>
               </form>
             ) : (
@@ -178,14 +178,14 @@ export default function SettingsPage() {
                   <span className="text-white/80 text-sm">Birth Place:</span>
                   <span className="text-amber-400 text-sm font-semibold">{formattedBirthPlace}</span>
                 </div>
-                <Button onClick={() => setIsEditingProfile(true)} className="mt-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 font-semibold text-sm hover:scale-105 transition-all duration-300 rounded-xl">Edit Profile</Button>
+                <Button onClick={() => setIsEditingProfile(true)} className="mt-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 font-semibold text-sm transition-all duration-300 rounded-xl">Edit Profile</Button>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Preferences Card */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 mb-8 rounded-2xl">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
               <Moon className="w-6 h-6" /> {t('settings.preferences')}
@@ -302,7 +302,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Personal Context Section */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 mb-8 rounded-2xl">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
               <Heart className="w-6 h-6" /> Personal Context
@@ -403,7 +403,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Divination Tool Interests Section */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 mb-8 rounded-2xl">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
               <Sparkles className="w-6 h-6" /> Divination Tool Interests
@@ -444,7 +444,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Notification Preferences Section */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 mb-8 rounded-2xl">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
               <Bell className="w-6 h-6" /> Notification Preferences
@@ -493,7 +493,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Trial/Subscription Status */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 mb-8 rounded-2xl">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
               <Badge className="bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs">Trial</Badge>
@@ -517,7 +517,7 @@ export default function SettingsPage() {
         </Card>
 
         {/* Account Management */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 mb-8 rounded-2xl">
+        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
               <LogOut className="w-6 h-6" /> Account
@@ -547,8 +547,8 @@ export default function SettingsPage() {
                   >
                     <div className="mb-2">Are you sure you want to delete your account? This action cannot be undone.</div>
                     <div className="flex gap-4 justify-center mt-4">
-                      <Button variant="outline" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white/80 hover:text-amber-400 text-sm hover:scale-105 transition-all duration-300" onClick={() => setShowDelete(false)}>Cancel</Button>
-                      <Button variant="destructive" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm hover:scale-105 transition-all duration-300" disabled>Delete (Coming Soon)</Button>
+                      <Button variant="outline" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white/80 hover:text-amber-400 text-sm transition-all duration-300" onClick={() => setShowDelete(false)}>Cancel</Button>
+                      <Button variant="destructive" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm transition-all duration-300" disabled>Delete (Coming Soon)</Button>
                     </div>
                   </motion.div>
                 )}

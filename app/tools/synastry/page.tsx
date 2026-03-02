@@ -286,7 +286,7 @@ export default function SynastryPage() {
               {/* Action Buttons */}
               <div className="space-y-4">
                 <motion.button
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                   onClick={performSynastryAnalysis}
                   disabled={isLoading || !birthData1.name || !birthData1.birthDate || !birthData1.birthTime || !birthData1.birthLocation || !birthData2.name || !birthData2.birthDate || !birthData2.birthTime || !birthData2.birthLocation}
@@ -296,7 +296,7 @@ export default function SynastryPage() {
                 </motion.button>
                 
                 <motion.button
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                   onClick={resetData}
                     className="w-full bg-white/90 border-2 border-amber-300 text-slate-800 rounded-xl p-4 font-semibold hover:bg-white transition-all duration-300"
@@ -332,7 +332,7 @@ export default function SynastryPage() {
                     ].map((type) => (
                       <motion.button
                         key={type.value}
-                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileHover={{}}
                         whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                         onClick={() => setChartType(type.value as any)}
                         className={`flex-1 px-4 py-3 rounded-xl font-medium m3-elevation-0 m3-elevation-transition m3-transition-standard transition-all duration-300 ${
@@ -363,7 +363,7 @@ export default function SynastryPage() {
                   {tabsConfig.map((tab) => (
                     <motion.div
                       key={tab.value}
-                      whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                      whileHover={{}}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                       transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                       className="relative shrink-0"
@@ -458,7 +458,7 @@ export default function SynastryPage() {
                             <p className="text-red-400 text-lg mb-2 font-semibold">Analysis Error</p>
                             <p className="text-slate-200 mb-4">{error}</p>
                             <motion.button
-                              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                              whileHover={{}}
                               whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                               onClick={performSynastryAnalysis}
                               className="px-6 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-300"

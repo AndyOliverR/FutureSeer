@@ -56,7 +56,7 @@ const FAB = React.forwardRef<HTMLButtonElement, FABProps>(
           positionClasses[position],
           className
         )}
-        whileHover={{ scale: 1.05 }}
+        whileHover={{}}
         whileTap={{ scale: 0.95 }}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

@@ -43,7 +43,7 @@ export default function OghamStave({
 
   return (
     <motion.div
-      whileHover={{ scale: 1.05 }}
+      whileHover={{}}
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
       className={onClick ? 'cursor-pointer' : ''}

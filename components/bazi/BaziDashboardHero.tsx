@@ -113,7 +113,7 @@ export function BaziDashboardHero({ reading, userProfile, currentAge }: BaziDash
               transition={{ ...m3BouncySpring, delay: 0.3 }}
             >
               <motion.div
-                whileHover={{ scale: 1.02 }}
+                whileHover={{}}
                 transition={m3BouncySpring}
               >
                 <Card className="bg-white border-2 border-amber-200 shadow-md hover:shadow-lg rounded-2xl overflow-hidden transition-all duration-300">

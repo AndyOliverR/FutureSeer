@@ -188,7 +188,7 @@ export default function PalmistryPage() {
                       {!userProfile?.palmPhotoUrl && (
                         <motion.a
                           href="/profile"
-                          whileHover={{ scale: 1.05 }}
+                          whileHover={{}}
                           whileTap={{ scale: 0.95 }}
                           className="inline-block bg-gradient-to-r from-amber-500 to-red-600 text-white rounded-xl px-6 py-3 font-semibold hover:shadow-xl transition-all duration-300"
                         >
@@ -326,7 +326,7 @@ export default function PalmistryPage() {
                       </p>
                       <motion.a
                         href="/profile"
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{}}
                         whileTap={{ scale: 0.95 }}
                         className="inline-block bg-gradient-to-r from-amber-500 to-red-600 text-white rounded-xl px-6 py-3 font-semibold hover:shadow-xl transition-all duration-300"
                       >

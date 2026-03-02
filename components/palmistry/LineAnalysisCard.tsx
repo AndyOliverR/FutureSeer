@@ -35,7 +35,7 @@ export const LineAnalysisCard = memo(function LineAnalysisCard({ line }: LineAna
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02, y: -4 }}
+      whileHover={{}}
       transition={{ duration: 0.2 }}
     >
       <Card className={`bg-gradient-to-br ${colors.bg} border-2 ${colors.border} shadow-md hover:shadow-lg transition-shadow duration-200 rounded-2xl`}>

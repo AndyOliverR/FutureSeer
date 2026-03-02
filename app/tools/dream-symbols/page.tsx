@@ -181,7 +181,7 @@ export default function DreamSymbolsPage() {
                     ].map((type) => (
                       <motion.button
                         key={type.value}
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{}}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setPatternType(type.value)}
                         className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${

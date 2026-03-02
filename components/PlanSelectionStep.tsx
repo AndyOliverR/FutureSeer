@@ -175,7 +175,7 @@ export function PlanSelectionStep({
           return (
             <motion.div
               key={tier.id}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{}}
               whileTap={{ scale: 0.98 }}
             >
               <Card
