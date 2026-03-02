@@ -180,7 +180,7 @@ export function TipJarForm({ countryCode, onSuccess }: TipJarFormProps) {
               key={amount}
               type="button"
               onClick={() => handleQuickAmountSelect(amount)}
-              className={`relative py-2 px-2 rounded-lg border-2 transition-all transform hover:scale-105 ${
+              className={`relative py-2 px-2 rounded-lg border-2 transition-all transform  ${
                 selectedAmount === amount
                   ? 'border-amber-400 bg-amber-500/20 text-amber-400'
                   : 'border-white/20 bg-slate-800/50 text-white hover:border-amber-500/50 hover:bg-amber-500/10'

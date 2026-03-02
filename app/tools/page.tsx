@@ -180,13 +180,13 @@ function ToolsPageContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                   {catTools.map((tool) => (
                     <motion.div
-                      key={tool.slug} whileHover={{ y: -8, scale: 1.02 }}
+                      key={tool.slug} whileHover={{}}
                       onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
                       className="group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 cursor-pointer overflow-hidden transition-all hover:border-amber-500/60"
                     >
                       <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative z-10 h-full flex flex-col items-center text-center">
-                        <div className="text-6xl mb-6 group-hover:scale-110 transition-transform">{tool.icon}</div>
+                        <div className="text-6xl mb-6 transition-transform">{tool.icon}</div>
                         <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
                         <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                         <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
@@ -203,13 +203,13 @@ function ToolsPageContent() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {displayedTools.map((tool) => (
             <motion.div
-              key={tool.slug} whileHover={{ y: -8, scale: 1.02 }}
+              key={tool.slug} whileHover={{}}
               onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
               className="group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 cursor-pointer overflow-hidden transition-all hover:border-amber-500/60"
             >
               <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10 h-full flex flex-col items-center text-center">
-                <div className="text-6xl mb-6 group-hover:scale-110 transition-transform">{tool.icon}</div>
+                <div className="text-6xl mb-6 transition-transform">{tool.icon}</div>
                 <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
                 <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                 <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">

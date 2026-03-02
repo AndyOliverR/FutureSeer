@@ -53,7 +53,7 @@ export const MountDashboard = memo(function MountDashboard({ mounts }: MountDash
             key={mount.name}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            whileHover={{ scale: 1.02, y: -4 }}
+            whileHover={{}}
             transition={{ duration: 0.2 }}
           >
             <Card className={`bg-gradient-to-br ${colors.bg} border-2 ${colors.border} shadow-md hover:shadow-lg transition-shadow duration-200 rounded-2xl`}>

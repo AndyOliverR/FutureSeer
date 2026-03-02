@@ -95,7 +95,7 @@ export function BaziDashboardSection({
               <div className="flex items-center gap-4">
                 <motion.div 
                   className="p-2 bg-amber-100 rounded-xl border-2 border-amber-300"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  whileHover={{}}
                   transition={m3BouncySpring}
                 >
                   <div className="text-amber-700" aria-hidden="true">

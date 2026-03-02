@@ -200,7 +200,7 @@ function TarotPage() {
               return (
                 <motion.div
                   key={tab.value}
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                   transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                   className="relative shrink-0"
@@ -330,7 +330,7 @@ function TarotPage() {
                       <h3 className="font-semibold text-red-900 mb-2">Profile Cards Error</h3>
                       <p className="text-red-700 text-sm mb-3">{profileCardsError}</p>
                       <motion.div
-                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileHover={{}}
                         whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                         transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                       >
@@ -401,7 +401,7 @@ function TarotPage() {
                               {new Date(currentReading.timestamp).toLocaleDateString()}
                             </div>
                             <motion.div
-                              whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                              whileHover={{}}
                               whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                               transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                               className="mt-3"
@@ -424,7 +424,7 @@ function TarotPage() {
                       <Sparkles className="w-12 h-12 text-amber-400 mx-auto mb-4" />
                       <p className="text-slate-600 mb-4">No readings performed yet</p>
                       <motion.div
-                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileHover={{}}
                         whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                         transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                       >
@@ -510,7 +510,7 @@ function TarotPage() {
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <motion.div
-                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileHover={{}}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                       transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                     >
@@ -523,7 +523,7 @@ function TarotPage() {
                       </Button>
                     </motion.div>
                     <motion.div
-                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileHover={{}}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                       transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                     >
@@ -537,7 +537,7 @@ function TarotPage() {
                       </Button>
                     </motion.div>
                     <motion.div
-                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileHover={{}}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                       transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                     >
@@ -616,7 +616,7 @@ function TarotPage() {
                             aria-pressed={spreadType === spread.name}
                             role="radio"
                             aria-labelledby="spread-selection-label"
-                            whileHover={prefersReducedMotion ? {} : { scale: 1.02, y: -2 }}
+                            whileHover={{}}
                             whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                           >
                             {spreadType === spread.name && (
@@ -640,7 +640,7 @@ function TarotPage() {
 
                     {/* Perform Reading Button */}
                   <motion.div
-                    whileHover={prefersReducedMotion || (!question.trim() || !spreadType || isReadingLoading) ? {} : { scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={prefersReducedMotion || (!question.trim() || !spreadType || isReadingLoading) ? {} : { scale: 0.98 }}
                     transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                   >
@@ -930,7 +930,7 @@ function TarotPage() {
                     {/* Reset Button */}
                     <div className="text-center pt-4">
                       <motion.div
-                        whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                        whileHover={{}}
                         whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                         transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                       >
@@ -988,7 +988,7 @@ function TarotPage() {
                           initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
                           animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
                           transition={prefersReducedMotion ? {} : { duration: 0.3, delay: index * 0.03, ease: [0.4, 0, 0.2, 1] }}
-                          whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                          whileHover={{}}
                           className="bg-gradient-to-br from-purple-50/80 to-pink-50/80 rounded-xl p-4 border-2 border-purple-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all"
                         >
                           <div className="text-center">
@@ -1056,7 +1056,7 @@ function TarotPage() {
                               initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
                               animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
                               transition={prefersReducedMotion ? {} : { duration: 0.3, delay: index * 0.02, ease: [0.4, 0, 0.2, 1] }}
-                              whileHover={prefersReducedMotion ? {} : { y: -4, scale: 1.02, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                              whileHover={{}}
                               className={`bg-gradient-to-br ${colors.bg} rounded-xl p-3 border-2 ${colors.border} shadow-sm hover:shadow-md transition-all`}
                             >
                               <div className="text-center">
@@ -1119,7 +1119,7 @@ function TarotPage() {
                     <Info className="w-12 h-12 text-amber-500 mx-auto mb-4" />
                     <p className="text-slate-700 mb-4">Complete your profile (birth date and name) to unlock the Combined Divination System</p>
                     <motion.div
-                      whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                      whileHover={{}}
                       whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                       transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                     >

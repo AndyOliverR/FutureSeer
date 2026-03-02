@@ -268,7 +268,7 @@ function WesternAstrologyPageContent() {
               {tabsConfig.map((tab) => (
                 <motion.div
                   key={tab.value}
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                   transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                   className="relative shrink-0"
@@ -386,7 +386,7 @@ function WesternAstrologyPageContent() {
                 <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
                 <p className="text-red-300 mb-4">{profileError}</p>
                 <motion.div
-                  whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                  whileHover={{}}
                   whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                   transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                 >
@@ -825,7 +825,7 @@ function WesternAstrologyPageContent() {
                             <div className="flex items-center gap-3 mb-3">
                               <motion.div 
                                 className="bg-amber-200/60 rounded-full p-2"
-                                whileHover={prefersReducedMotion ? {} : { scale: 1.1, rotate: 5 }}
+                                whileHover={{}}
                                 transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                               >
                                 <span className="text-3xl">{technique.icon}</span>
@@ -834,7 +834,7 @@ function WesternAstrologyPageContent() {
                             </div>
                             <p className="text-slate-700 text-sm mb-4 leading-relaxed">{technique.description}</p>
                             <motion.div
-                              whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                              whileHover={{}}
                               whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                               transition={prefersReducedMotion ? {} : { type: "spring", stiffness: 400, damping: 17 }}
                             >

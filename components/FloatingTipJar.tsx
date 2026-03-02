@@ -32,7 +32,7 @@ export function FloatingTipJar() {
       <motion.button
         ref={buttonRef}
         onClick={() => open(buttonRef.current?.getBoundingClientRect())}
-        whileHover={{ scale: 1.1 }}
+        whileHover={{}}
         whileTap={{ scale: 0.95 }}
         tabIndex={isAnyModalOpen ? -1 : 0}
         className="pointer-events-auto w-14 h-14 bg-transparent border-none flex items-center justify-center relative"

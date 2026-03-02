@@ -373,7 +373,7 @@ export default function IChingPage() {
                 {/* Action Buttons */}
                 <div className="space-y-4">
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.98 }}
                     onClick={performIChingReading}
                     disabled={isLoading || !question.trim() || !method}
@@ -384,7 +384,7 @@ export default function IChingPage() {
                   </motion.button>
                   
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.98 }}
                     onClick={resetData}
                     className="w-full bg-white border-2 border-amber-300 text-amber-900 rounded-xl p-4 font-semibold hover:bg-amber-50 transition-all duration-300"
@@ -411,7 +411,7 @@ export default function IChingPage() {
                 {["overview", "hexagrams", "interpretation", "guidance", "timing", "ask-the-seer"].map((tab) => (
                   <motion.button
                     key={tab}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveTab(tab)}
                     className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 m3-elevation-0 m3-elevation-transition m3-transition-standard ${

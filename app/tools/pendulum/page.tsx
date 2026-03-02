@@ -145,7 +145,7 @@ export default function PendulumPage() {
                       onClick={performPendulumReading}
                       disabled={isLoading || !(question ?? '').trim()}
                       className="bg-gradient-to-r from-amber-600 to-yellow-600 text-white px-8 py-3 rounded-2xl font-semibold hover:from-amber-500 hover:to-yellow-500 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-amber-500 flex items-center justify-center gap-2 mx-auto"
-                      whileHover={{ scale: isLoading ? 1 : 1.05 }}
+                      whileHover={{}}
                       whileTap={{ scale: isLoading ? 1 : 0.95 }}
                     >
                       {isLoading ? (
@@ -220,7 +220,7 @@ export default function PendulumPage() {
                   <motion.button
                     onClick={resetData}
                     className="flex items-center gap-2 bg-white border-2 border-amber-300 text-slate-800 py-2 px-4 rounded-2xl font-semibold hover:bg-amber-50 transition-all duration-300"
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.95 }}
                   >
                     Ask New Question
@@ -232,7 +232,7 @@ export default function PendulumPage() {
                   {["overview", "answer", "interpretation", "guidance"].map((tab) => (
                     <motion.button
                       key={tab}
-                      whileHover={{ scale: 1.05 }}
+                      whileHover={{}}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setActiveTab(tab)}
                       className={`px-4 py-2 rounded-2xl font-medium transition-all duration-300 ${

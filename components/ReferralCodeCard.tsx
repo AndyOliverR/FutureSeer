@@ -149,7 +149,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
 
   if (isLoading) {
     return (
-      <Card elevation={1} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl">
+      <Card elevation={1} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-2xl">
         <CardContent className="p-6 text-center">
           <div className="text-white/80 m3-body-medium">Loading referral information...</div>
         </CardContent>
@@ -158,7 +158,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
   }
 
   return (
-    <Card elevation={2} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl">
+    <Card elevation={2} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-2xl">
       <CardContent className="p-6">
         {/* Referral Code Display */}
         <div className="mb-6">
@@ -171,7 +171,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
                   <Button
                     onClick={generateMissingCode}
                     disabled={isGenerating}
-                    className="m3-body-small bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 transition-all duration-300 hover:scale-105 text-red-400 w-full m3-ripple m3-button-bounce"
+                    className="m3-body-small bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 transition-all duration-300 text-red-400 w-full m3-ripple m3-button-bounce"
                     size="sm"
                   >
                     {isGenerating ? (
@@ -195,7 +195,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
             </div>
             <Button
               onClick={handleCopyCode}
-              className="px-4 py-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 m3-ripple m3-button-bounce"
+              className="px-4 py-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 text-amber-400 m3-ripple m3-button-bounce"
               disabled={!referralStats.referralCode || error !== null}
             >
               {copiedCode ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -204,7 +204,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
         </div>
 
         {/* How It Works */}
-        <div className="mb-6 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-lg">
+        <div className="mb-6 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-lg">
           <h4 className="text-amber-400 m3-title-small font-semibold mb-3">How Referrals Work</h4>
           <ul className="space-y-2 m3-body-small text-white/80">
             <li>• Share your code with friends</li>
@@ -216,11 +216,11 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-lg text-center">
+          <div className="p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-lg text-center">
             <div className="m3-headline-small font-bold text-amber-400">{referralStats.referralCount}</div>
             <div className="m3-body-small text-white/80">Friends Referred</div>
           </div>
-          <div className="p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-lg text-center">
+          <div className="p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-lg text-center">
             <div className="m3-headline-small font-bold text-amber-400">{referralStats.freeMonthsRemaining}</div>
             <div className="m3-body-small text-white/80">Free Months Left</div>
           </div>
@@ -230,7 +230,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
         <div className="space-y-2">
           <Button
             onClick={handleCopyLink}
-            className="w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 m3-label-large font-semibold m3-ripple m3-button-bounce"
+            className="w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 text-amber-400 m3-label-large font-semibold m3-ripple m3-button-bounce"
             disabled={!referralStats.referralCode || error !== null || isGenerating}
           >
             {copiedLink ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
@@ -239,7 +239,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
           <div className="grid grid-cols-2 gap-2">
             <Button
               onClick={() => handleShare('whatsapp')}
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 m3-label-medium m3-ripple m3-button-bounce"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 text-amber-400 m3-label-medium m3-ripple m3-button-bounce"
               disabled={!referralStats.referralCode || error !== null || isGenerating}
             >
               <Share2 className="w-4 h-4 mr-2" />
@@ -247,7 +247,7 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
             </Button>
             <Button
               onClick={() => handleShare('twitter')}
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 text-amber-400 m3-label-medium m3-ripple m3-button-bounce"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 text-amber-400 m3-label-medium m3-ripple m3-button-bounce"
               disabled={!referralStats.referralCode || error !== null || isGenerating}
             >
               <Share2 className="w-4 h-4 mr-2" />

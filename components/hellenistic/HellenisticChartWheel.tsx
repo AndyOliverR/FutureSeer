@@ -216,7 +216,7 @@ export default function HellenisticChartWheel({
               fill={PLANET_COLORS[planet.name] || '#FBBF24'}
               stroke="rgba(251, 191, 36, 0.9)"
               strokeWidth="2.5"
-              className="cursor-pointer transition-all duration-300 ease-in-out hover:scale-125 hover:stroke-amber-400 hover:stroke-width-3"
+              className="cursor-pointer transition-all duration-300 ease-in-out hover:stroke-amber-400 hover:stroke-width-3"
               onMouseEnter={() => setHoveredElement(`planet-${planet.name}`)}
               onMouseLeave={() => setHoveredElement(null)}
               aria-label={`${planet.name} in ${planet.sign} at ${planet.degree.toFixed(1)} degrees in House ${planet.house}`}
@@ -279,7 +279,7 @@ export default function HellenisticChartWheel({
               fill="#FBBF24"
               stroke="rgba(251, 191, 36, 0.9)"
               strokeWidth="2"
-              className="cursor-pointer transition-all duration-300 ease-in-out hover:scale-125 hover:fill-amber-400 hover:stroke-amber-300"
+              className="cursor-pointer transition-all duration-300 ease-in-out hover:fill-amber-400 hover:stroke-amber-300"
               onMouseEnter={() => setHoveredElement(`lot-${lot.name}`)}
               onMouseLeave={() => setHoveredElement(null)}
               aria-label={`${lot.name} in ${lot.sign} at ${lot.degree.toFixed(1)} degrees in House ${lot.house}`}

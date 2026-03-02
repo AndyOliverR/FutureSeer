@@ -135,7 +135,7 @@ export function AstroDataStatus() {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-amber-400/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
             <div className="relative flex items-center justify-center gap-2 text-amber-200 group-hover:text-amber-100 transition-colors">
-              <RefreshCw className={`w-4 h-4 transition-transform group-hover:scale-110 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 transition-transform  ${refreshing ? 'animate-spin' : ''}`} />
               <span className="font-serif font-medium text-sm">
                 {refreshing ? 'Refreshing...' : 'Refresh Data'}
               </span>

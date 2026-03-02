@@ -59,7 +59,7 @@ export function PowerUserBenefits() {
           {benefits.map((benefit, index) => (
             <Card
               key={index}
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300"
             >
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
@@ -78,7 +78,7 @@ export function PowerUserBenefits() {
       </div>
 
       {/* Contribution Impact */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 hover:scale-105 rounded-2xl p-8 md:p-12">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 rounded-2xl p-8 md:p-12">
         <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
           Your <span className="text-amber-400">Contribution Impact</span>
         </h2>

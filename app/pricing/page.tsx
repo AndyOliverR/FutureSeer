@@ -36,7 +36,7 @@ export default function PricingPage() {
   return (
     <div className="starfield-ultra-sharp min-h-screen py-12 px-3 sm:px-4 md:px-6 overflow-hidden relative">
       {/* Logo - Top Left */}
-      <Link href="/" className="futureseer-logo text-2xl font-semibold tracking-wide hover:scale-105 transition-transform text-amber-400 absolute top-4 left-4 z-50">
+      <Link href="/" className="futureseer-logo text-2xl font-semibold tracking-wide transition-transform text-amber-400 absolute top-4 left-4 z-50">
         FutureSeer
       </Link>
       

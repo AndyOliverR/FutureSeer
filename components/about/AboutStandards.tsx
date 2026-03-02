@@ -23,7 +23,7 @@ export function AboutStandards() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className={`p-6 rounded-[32px] glass-effect border ${item.color} text-center shadow-xl hover:scale-105 transition-all duration-300`}
+              className={`p-6 rounded-[32px] glass-effect border ${item.color} text-center shadow-xl transition-all duration-300`}
             >
               <div className="text-4xl mb-4">{item.emoji}</div>
               <h4 className="text-lg font-heading font-bold gold-glow mb-2">{item.title}</h4>

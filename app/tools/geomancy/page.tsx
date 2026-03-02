@@ -92,7 +92,7 @@ export default function GeomancyPage() {
                 {/* Action Buttons */}
                 <div className="space-y-4">
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.98 }}
                     onClick={performGeomancyAnalysis}
                     disabled={isLoading || !question.trim()}
@@ -102,7 +102,7 @@ export default function GeomancyPage() {
                   </motion.button>
                   
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.98 }}
                     onClick={resetData}
                     className="w-full bg-white border-2 border-amber-400 text-amber-700 hover:text-amber-900 hover:border-amber-500 rounded-xl p-4 font-semibold hover:bg-amber-50 transition-all duration-300"
@@ -128,7 +128,7 @@ export default function GeomancyPage() {
                   {["overview", "figures", "houses", "interpretation", "timing", "advice", "ask-the-seer"].map((tab) => (
                     <motion.button
                       key={tab}
-                      whileHover={{ scale: 1.05 }}
+                      whileHover={{}}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setActiveTab(tab)}
                       className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${

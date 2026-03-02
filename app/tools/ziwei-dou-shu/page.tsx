@@ -80,7 +80,7 @@ function ZiWeiDouShuPageContent() {
                 Complete your birth date, time, and place to unlock your Zi Wei Dou Shu chart.
               </p>
               <motion.div
-                whileHover={prefersReducedMotion ? {} : { scale: 1.05 }}
+                whileHover={{}}
                 whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
                 transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }}
               >
@@ -122,7 +122,7 @@ function ZiWeiDouShuPageContent() {
                 {tabsConfig.map((tab) => (
                   <motion.div
                     key={tab.value}
-                    whileHover={prefersReducedMotion ? {} : { scale: 1.02 }}
+                    whileHover={{}}
                     whileTap={prefersReducedMotion ? {} : { scale: 0.98 }}
                     transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 400, damping: 17 }}
                     className="relative shrink-0"

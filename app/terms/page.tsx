@@ -99,8 +99,9 @@ export default function TermsPage() {
                 under your account. Notify us immediately of any unauthorized use.
               </p>
               <p>
-                <strong>Age Requirement:</strong> You must be at least 18 years old to use our Service. 
-                Users under 18 must have parental consent.
+                <strong>Age Requirement:</strong> You must be at least 16 years old to use our Service. 
+                If your country or region requires a higher minimum age for using online services, you must meet that age. 
+                By creating an account, you confirm that you meet this eligibility requirement.
               </p>
               <p>
                 <strong>Account Termination:</strong> We reserve the right to terminate accounts that 

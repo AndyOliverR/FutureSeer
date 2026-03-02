@@ -140,7 +140,7 @@ export default function SubscribePage() {
             <Card
               key={plan.id}
               onMouseEnter={() => handlePlanHover(plan.id)}
-              className={`relative overflow-hidden transition-all duration-300 hover:scale-105 ${
+              className={`relative overflow-hidden transition-all duration-300  ${
                 plan.popular
                   ? "border-2 border-amber-500 shadow-lg shadow-amber-500/20"
                   : plan.id === "power-user-trial"

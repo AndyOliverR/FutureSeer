@@ -195,7 +195,7 @@ export default function AstroScribePage() {
               {/* Action Buttons */}
               <div className="space-y-4">
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={{ scale: 0.98 }}
                   onClick={generateInterpretation}
                   disabled={isLoading || !scribeData.interpretationType || !scribeData.writingStyle || !scribeData.astrologicalData || !scribeData.reportLength}
@@ -205,7 +205,7 @@ export default function AstroScribePage() {
                 </motion.button>
                 
                 <motion.button
-                  whileHover={{ scale: 1.02 }}
+                  whileHover={{}}
                   whileTap={{ scale: 0.98 }}
                   onClick={resetData}
                   className="w-full bg-white/5 border border-white/20 text-soft rounded-xl p-4 font-semibold hover:bg-white/10 transition-all duration-300"
@@ -229,7 +229,7 @@ export default function AstroScribePage() {
                 {["overview", "analysis", "insights", "recommendations", "timing", "summary"].map((tab) => (
                   <motion.button
                     key={tab}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{}}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => setActiveTab(tab)}
                     className={`px-4 py-2 rounded-xl font-medium transition-all duration-300 ${

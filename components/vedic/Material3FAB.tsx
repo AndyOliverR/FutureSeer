@@ -54,7 +54,7 @@ export function Material3FAB({
         hover:m3-elevation-4
         active:m3-elevation-2
       `}
-      whileHover={{ scale: 1.05 }}
+      whileHover={{}}
       whileTap={{ scale: 0.95 }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}

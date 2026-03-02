@@ -102,7 +102,7 @@ export function AngelNumbersAnalysis({
           <p className="text-red-700 text-lg mb-2">{ANGEL_NUMBERS_CONSTANTS.ERRORS.DECODING_ERROR}</p>
           <p className="text-slate-700">{error}</p>
           <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
+            whileHover={{}}
             whileTap={{ scale: 0.95, y: 0 }}
             onClick={onRefresh}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
@@ -125,7 +125,7 @@ export function AngelNumbersAnalysis({
       {/* Action Buttons */}
       <div className="flex gap-3 justify-end">
         <motion.button
-          whileHover={{ scale: 1.05, y: -2 }}
+          whileHover={{}}
           whileTap={{ scale: 0.95, y: 0 }}
           onClick={onRefresh}
           disabled={loading}
@@ -136,7 +136,7 @@ export function AngelNumbersAnalysis({
                     {loading ? ANGEL_NUMBERS_CONSTANTS.BUTTONS.REFRESHING : ANGEL_NUMBERS_CONSTANTS.BUTTONS.REFRESH}
         </motion.button>
         <motion.button
-          whileHover={{ scale: 1.05, y: -2 }}
+          whileHover={{}}
           whileTap={{ scale: 0.95, y: 0 }}
           onClick={handleClearAndRegenerate}
           disabled={loading}
@@ -158,7 +158,7 @@ export function AngelNumbersAnalysis({
       >
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <motion.div
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl hover:shadow-lg transition-all duration-300">
@@ -170,7 +170,7 @@ export function AngelNumbersAnalysis({
             </Card>
           </motion.div>
           <motion.div
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl hover:shadow-lg transition-all duration-300">
@@ -182,7 +182,7 @@ export function AngelNumbersAnalysis({
             </Card>
           </motion.div>
           <motion.div
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-2xl hover:shadow-lg transition-all duration-300">
@@ -194,7 +194,7 @@ export function AngelNumbersAnalysis({
             </Card>
           </motion.div>
           <motion.div
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl hover:shadow-lg transition-all duration-300">
@@ -284,7 +284,7 @@ export function AngelNumbersAnalysis({
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <motion.div
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl hover:shadow-lg transition-all duration-300">
@@ -295,7 +295,7 @@ export function AngelNumbersAnalysis({
             </Card>
           </motion.div>
           <motion.div
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-2xl hover:shadow-lg transition-all duration-300">
@@ -306,7 +306,7 @@ export function AngelNumbersAnalysis({
             </Card>
           </motion.div>
           <motion.div
-            whileHover={{ scale: 1.05, y: -4 }}
+            whileHover={{}}
             transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             <Card className="bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 rounded-2xl hover:shadow-lg transition-all duration-300">
@@ -339,7 +339,7 @@ export function AngelNumbersAnalysis({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05, type: "spring", stiffness: 200 }}
-                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileHover={{}}
                     className="px-3 py-1 bg-pink-500/20 text-pink-700 border border-pink-300 rounded-full text-sm cursor-default"
                   >
                     {seq}
@@ -376,7 +376,7 @@ export function AngelNumbersAnalysis({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.1, type: "spring", stiffness: 200 }}
-                    whileHover={{ scale: 1.1, y: -2 }}
+                    whileHover={{}}
                   >
                     <Badge className="bg-purple-600 text-white px-4 py-2 text-lg">
                       {master.number}
