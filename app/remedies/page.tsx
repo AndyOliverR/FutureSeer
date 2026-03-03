@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,6 +37,17 @@ export default function RemediesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedElement, setSelectedElement] = useState('all')
   const [selectedPlanet, setSelectedPlanet] = useState('all')
+  const [isAndroid, setIsAndroid] = useState(false)
+
+  useEffect(() => {
+    const check = () => {
+      const platform = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-platform') : null
+      setIsAndroid(platform === 'android' || /Android/i.test(navigator.userAgent))
+    }
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const categories = [
     { id: 'all', name: 'All Remedies', icon: Sparkles },
@@ -67,11 +78,18 @@ export default function RemediesPage() {
     { id: 'saturn', name: 'Saturn' }
   ]
 
+  const cardBase = isAndroid
+    ? 'bg-surface-container-high border border-outline-variant rounded-2xl shadow-sm'
+    : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300'
+  const cardTitleClass = isAndroid ? 'text-xl font-bold text-amber-400' : 'text-xl capitalize text-amber-400'
+  const textMuted = isAndroid ? 'text-surface-on-variant' : 'text-white/80'
+  const badgeOutline = isAndroid ? 'border-outline-variant text-surface-on-variant' : 'text-gray-300 border-gray-600'
+
   const renderGemstoneRemedies = () => {
     return Object.entries(GEMSTONE_DATABASE).map(([sign, gemstones]) => (
-      <Card key={sign} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
+      <Card key={sign} className={cardBase}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl capitalize text-amber-400">
+          <CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>
             <Gem className="w-5 h-5 text-blue-500" />
             {sign} Gemstones
           </CardTitle>
@@ -81,7 +99,7 @@ export default function RemediesPage() {
             {gemstones.map((gemstone, index) => {
               const photoPath = getGemstonePhotoPath(gemstone.name)
               return (
-              <Card key={index} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
+              <Card key={index} className={cardBase}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
@@ -95,19 +113,19 @@ export default function RemediesPage() {
                           />
                         </div>
                       )}
-                      <CardTitle className="text-lg text-amber-400 truncate">{gemstone.name}</CardTitle>
+                      <CardTitle className={`text-lg truncate ${isAndroid ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>{gemstone.name}</CardTitle>
                     </div>
-                    <Badge variant="secondary" className="bg-blue-500 text-white flex-shrink-0">
+                    <Badge variant="secondary" className={isAndroid ? 'bg-primary-container text-on-primary-container flex-shrink-0' : 'bg-blue-500 text-white flex-shrink-0'}>
                       {gemstone.planetaryRuler}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <p className="text-sm text-white/80">{gemstone.description}</p>
+                  <p className={`text-sm ${textMuted}`}>{gemstone.description}</p>
                   
                   <div>
                     <h5 className="font-semibold text-sm mb-2 text-amber-400">Instructions:</h5>
-                    <ul className="text-xs text-white/80 space-y-1">
+                    <ul className={`text-xs space-y-1 ${textMuted}`}>
                       {gemstone.instructions.map((instruction, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <span className="text-amber-400 mt-1">•</span>
@@ -119,7 +137,7 @@ export default function RemediesPage() {
                   
                   <div>
                     <h5 className="font-semibold text-sm mb-2 text-amber-400">Benefits:</h5>
-                    <ul className="text-xs text-white/80 space-y-1">
+                    <ul className={`text-xs space-y-1 ${textMuted}`}>
                       {gemstone.benefits.map((benefit, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <span className="text-green-400 mt-1">✓</span>
@@ -130,10 +148,10 @@ export default function RemediesPage() {
                   </div>
                   
                   <div className="flex gap-2 flex-wrap items-center">
-                    <Badge variant="outline" className="text-xs text-gray-300 border-gray-600">
+                    <Badge variant="outline" className={`text-xs border ${badgeOutline}`}>
                       {gemstone.element}
                     </Badge>
-                    <Badge variant="outline" className="text-xs text-gray-300 border-gray-600">
+                    <Badge variant="outline" className={`text-xs border ${badgeOutline}`}>
                       {gemstone.planetaryRuler}
                     </Badge>
                     {(() => {
@@ -152,20 +170,20 @@ export default function RemediesPage() {
 
   const renderColorTherapy = () => {
     return Object.entries(COLOR_THERAPY).map(([color, therapy]) => (
-      <Card key={color} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
+      <Card key={color} className={cardBase}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl capitalize text-amber-400">
+          <CardTitle className={`flex items-center gap-2 ${cardTitleClass} capitalize`}>
             <Palette className="w-5 h-5 text-green-500" />
             {color} Color Therapy
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-white/80">{therapy.description}</p>
+            <p className={textMuted}>{therapy.description}</p>
             
             <div>
               <h5 className="font-semibold text-sm mb-2 text-amber-400">Instructions:</h5>
-              <ul className="text-sm text-white/80 space-y-1">
+              <ul className={`text-sm space-y-1 ${textMuted}`}>
                 {therapy.instructions.map((instruction, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="text-amber-400 mt-1">•</span>
@@ -177,7 +195,7 @@ export default function RemediesPage() {
             
             <div>
               <h5 className="font-semibold text-sm mb-2 text-amber-400">Benefits:</h5>
-              <ul className="text-sm text-white/80 space-y-1">
+              <ul className={`text-sm space-y-1 ${textMuted}`}>
                 {therapy.benefits.map((benefit, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="text-green-400 mt-1">✓</span>
@@ -189,12 +207,12 @@ export default function RemediesPage() {
             
             <div className="flex gap-2">
               {therapy.elementalAssociations?.map((element, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs text-gray-300 border-gray-600">
+                <Badge key={idx} variant="outline" className={`text-xs border ${badgeOutline}`}>
                   {element}
                 </Badge>
               ))}
               {therapy.planetaryRulers?.map((planet, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs text-gray-300 border-gray-600">
+                <Badge key={idx} variant="outline" className={`text-xs border ${badgeOutline}`}>
                   {planet}
                 </Badge>
               ))}
@@ -207,20 +225,20 @@ export default function RemediesPage() {
 
   const renderMantras = () => {
     return Object.entries(MANTRA_DATABASE).map(([mantra, details]) => (
-      <Card key={mantra} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
+      <Card key={mantra} className={cardBase}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl text-amber-400">
+          <CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>
             <BookOpen className="w-5 h-5 text-purple-500" />
             {details.title}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-white/80">{details.description}</p>
+            <p className={textMuted}>{details.description}</p>
             
             <div>
               <h5 className="font-semibold text-sm mb-2 text-amber-400">Instructions:</h5>
-              <ul className="text-sm text-white/80 space-y-1">
+              <ul className={`text-sm space-y-1 ${textMuted}`}>
                 {details.instructions.map((instruction, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="text-amber-400 mt-1">•</span>
@@ -232,7 +250,7 @@ export default function RemediesPage() {
             
             <div>
               <h5 className="font-semibold text-sm mb-2 text-amber-400">Benefits:</h5>
-              <ul className="text-sm text-white/80 space-y-1">
+              <ul className={`text-sm space-y-1 ${textMuted}`}>
                 {details.benefits.map((benefit, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="text-green-400 mt-1">✓</span>
@@ -243,10 +261,10 @@ export default function RemediesPage() {
             </div>
             
             <div className="flex gap-2">
-              <Badge variant="outline" className="text-xs text-gray-300 border-gray-600">
+              <Badge variant="outline" className={`text-xs border ${badgeOutline}`}>
                 Duration: {details.duration}
               </Badge>
-              <Badge variant="outline" className="text-xs text-gray-300 border-gray-600">
+              <Badge variant="outline" className={`text-xs border ${badgeOutline}`}>
                 Difficulty: {details.difficulty}
               </Badge>
             </div>
@@ -258,20 +276,20 @@ export default function RemediesPage() {
 
   const renderMudras = () => {
     return Object.entries(MUDRA_DATABASE).map(([mudra, details]) => (
-      <Card key={mudra} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
+      <Card key={mudra} className={cardBase}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl text-amber-400">
+          <CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>
             <Heart className="w-5 h-5 text-red-500" />
             {details.title}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <p className="text-white/80">{details.description}</p>
+            <p className={textMuted}>{details.description}</p>
             
             <div>
               <h5 className="font-semibold text-sm mb-2 text-amber-400">Instructions:</h5>
-              <ul className="text-sm text-white/80 space-y-1">
+              <ul className={`text-sm space-y-1 ${textMuted}`}>
                 {details.instructions.map((instruction, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="text-amber-400 mt-1">•</span>
@@ -283,7 +301,7 @@ export default function RemediesPage() {
             
             <div>
               <h5 className="font-semibold text-sm mb-2 text-amber-400">Benefits:</h5>
-              <ul className="text-sm text-white/80 space-y-1">
+              <ul className={`text-sm space-y-1 ${textMuted}`}>
                 {details.benefits.map((benefit, idx) => (
                   <li key={idx} className="flex items-start gap-2">
                     <span className="text-green-400 mt-1">✓</span>
@@ -295,12 +313,12 @@ export default function RemediesPage() {
             
             <div className="flex gap-2">
               {details.elementalAssociations?.map((element, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs text-gray-300 border-gray-600">
+                <Badge key={idx} variant="outline" className={`text-xs border ${badgeOutline}`}>
                   {element}
                 </Badge>
               ))}
               {details.planetaryRulers?.map((planet, idx) => (
-                <Badge key={idx} variant="outline" className="text-xs text-gray-300 border-gray-600">
+                <Badge key={idx} variant="outline" className={`text-xs border ${badgeOutline}`}>
                   {planet}
                 </Badge>
               ))}
@@ -314,9 +332,9 @@ export default function RemediesPage() {
   const renderNumerologyRemedies = () => {
     return (
       <div className="space-y-6">
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
+        <Card className={cardBase}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl text-amber-400">
+            <CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>
               <Star className="w-5 h-5 text-yellow-500" />
               Missing Numbers Remedies
             </CardTitle>
@@ -324,16 +342,16 @@ export default function RemediesPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {Object.entries(NUMEROLOGY_REMEDIES.missingNumbers).map(([number, remedy]) => (
-                <Card key={number} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300">
+                <Card key={number} className={cardBase}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg text-amber-400">Number {number}</CardTitle>
+                    <CardTitle className={`text-lg ${isAndroid ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>Number {number}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <p className="text-sm text-white/80">{remedy.description}</p>
+                    <p className={`text-sm ${textMuted}`}>{remedy.description}</p>
                     
                     <div>
                       <h5 className="font-semibold text-sm mb-2 text-amber-400">Instructions:</h5>
-                      <ul className="text-xs text-white/80 space-y-1">
+                      <ul className={`text-xs space-y-1 ${textMuted}`}>
                         {remedy.instructions.map((instruction, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             <span className="text-amber-400 mt-1">•</span>
@@ -345,7 +363,7 @@ export default function RemediesPage() {
                     
                     <div>
                       <h5 className="font-semibold text-sm mb-2 text-amber-400">Benefits:</h5>
-                      <ul className="text-xs text-white/80 space-y-1">
+                      <ul className={`text-xs space-y-1 ${textMuted}`}>
                         {remedy.benefits.map((benefit, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             <span className="text-green-400 mt-1">✓</span>
@@ -364,6 +382,93 @@ export default function RemediesPage() {
     )
   }
 
+  // Material 3 layout for mobile / Android
+  if (isAndroid) {
+    return (
+      <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 overflow-x-hidden">
+        <div className="px-4 py-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-heading font-bold text-amber-400 uppercase tracking-tight">Remedies</h1>
+            <div className="p-2 bg-primary-container rounded-full text-on-primary-container">
+              <Sparkles className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="text-sm text-surface-on-variant">
+            Gemstones, mantras, mudras, colors & numerology.
+          </p>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-on-variant opacity-50" />
+            <input
+              type="text"
+              placeholder="Search remedies..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-12 pl-11 bg-surface-container-high rounded-2xl border border-outline-variant text-surface-on text-sm"
+            />
+          </div>
+        </div>
+
+        <Tabs defaultValue="gemstones" className="flex-1 px-4 pb-6">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto bg-surface-container-low p-1 rounded-2xl gap-1 mb-8">
+            <TabsTrigger value="gemstones" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+              <Gem className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Gemstones</span>
+            </TabsTrigger>
+            <TabsTrigger value="colors" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+              <Palette className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Colors</span>
+            </TabsTrigger>
+            <TabsTrigger value="mantras" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+              <BookOpen className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Mantras</span>
+            </TabsTrigger>
+            <TabsTrigger value="mudras" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+              <Heart className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Mudras</span>
+            </TabsTrigger>
+            <TabsTrigger value="numerology" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+              <Star className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Numerology</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="gemstones" className="space-y-4 mt-0">
+            {renderGemstoneRemedies()}
+          </TabsContent>
+          <TabsContent value="colors" className="space-y-4 mt-0">
+            {renderColorTherapy()}
+          </TabsContent>
+          <TabsContent value="mantras" className="space-y-4 mt-0">
+            {renderMantras()}
+          </TabsContent>
+          <TabsContent value="mudras" className="space-y-4 mt-0">
+            {renderMudras()}
+          </TabsContent>
+          <TabsContent value="numerology" className="space-y-4 mt-0">
+            {renderNumerologyRemedies()}
+          </TabsContent>
+        </Tabs>
+
+        <div className="px-4 pb-6">
+          <Card className={cardBase}>
+            <CardContent className="p-4">
+              <p className={`text-sm ${textMuted} mb-4`}>
+                For personalized recommendations, use Ask the Seer with your profile.
+              </p>
+              <Button
+                onClick={() => window.location.href = '/ask-the-seer'}
+                className="w-full bg-primary text-on-primary rounded-xl"
+              >
+                Get Personalized Remedies
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  // Devotionist layout for web / large screens
   return (
     <div className="starfield-ultra-sharp min-h-screen py-12 px-4 overflow-hidden">
       <div className="max-w-7xl mx-auto pt-20">
@@ -435,7 +540,7 @@ export default function RemediesPage() {
 
         {/* Remedies Content */}
         <Tabs defaultValue="gemstones" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-transparent p-0 gap-2">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto bg-transparent p-0 gap-2 mb-4">
             <TabsTrigger 
               value="gemstones" 
               className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
