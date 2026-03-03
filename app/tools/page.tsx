@@ -20,10 +20,8 @@ function ToolsPageContent() {
   const categoryParam = searchParams.get('category');
   const { user, userProfile, loading: authLoading } = useAuth();
   const { tools, searchTerm, setSearchTerm } = useTools();
-  const [isAndroid, setIsAndroid] = useState(() => {
-    if (typeof document === 'undefined') return false;
-    return document.documentElement.getAttribute('data-platform') === 'android';
-  });
+  // Start false so server and first client render match (avoids hydration error in Capacitor).
+  const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
     setIsAndroid(/Android/i.test(navigator.userAgent));

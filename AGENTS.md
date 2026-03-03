@@ -82,12 +82,18 @@ npx eslint .
 
 An `eslint.config.mjs` (flat config) was added to bridge the existing `.eslintrc.json` config with ESLint 9.
 
+### Security checks (free, in-repo)
+
+Run `pnpm run security` to run dependency audit + lint (including security rules). See [docs/SECURITY_CHECKS.md](docs/SECURITY_CHECKS.md) for all commands.
+
 ### Testing
 
 ```bash
 pnpm test            # Jest unit/integration tests
 pnpm test:integration  # integration tests only (15s timeout)
 ```
+
+**E2E (real browser):** `pnpm run test:e2e` — requires the app running (`pnpm build && pnpm start` in another terminal, or run `pnpm run test:e2e:ci` to build, start server, run Playwright, then stop). E2E runs in GitHub Actions on every PR. See [docs/E2E_TESTS.md](docs/E2E_TESTS.md) for details.
 
 Some tests reference modules via `@/lib/...` that may fail due to path resolution — these are pre-existing issues, not environment problems.
 
