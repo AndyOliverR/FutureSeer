@@ -6,6 +6,7 @@
 import { HumanDesignChart } from './humanDesignCalculator';
 import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 export interface HumanDesignReport {
   overview: {
@@ -91,12 +92,8 @@ export async function generateHumanDesignReport(
   chart: HumanDesignChart,
   userProfile?: UserProfile | null
 ): Promise<HumanDesignReport> {
-  // Use displayName for personalization (e.g., "AnDY"), fallback to fullName, then default
-  const displayName = userProfile?.displayName || userProfile?.fullName || 'Beloved Seeker';
-  // Keep fullName available for calculations if needed
+  // Keep fullName available for calculations if needed (never used in report text; reports use second person only)
   const fullName = userProfile?.fullName || userProfile?.displayName || '';
-  // Use displayName for all personalization text
-  const userName = displayName;
   
   // Generate AI-powered interpretations
   const aiReport = await generateAIReport(chart, userProfile);
@@ -104,9 +101,9 @@ export async function generateHumanDesignReport(
   // Combine with structured data
   const finalReport: HumanDesignReport = {
     overview: {
-      summary: aiReport.overview || generateOverviewSummary(chart, userName),
+      summary: aiReport.overview || generateOverviewSummary(chart),
       keyInsights: aiReport.keyInsights || generateKeyInsights(chart),
-      personalMessage: aiReport.personalMessage || generatePersonalMessage(chart, userName)
+      personalMessage: aiReport.personalMessage || generatePersonalMessage(chart)
     },
     type: {
       description: aiReport.typeDescription || chart.type.description,
@@ -159,16 +156,18 @@ export async function generateHumanDesignReport(
     }
   };
 
-  // Final safety check: ensure personalMessage and summary use displayName
-  if (userProfile?.fullName && userProfile?.displayName && userProfile?.fullName !== userProfile?.displayName) {
-    const fullNameEscaped = userProfile.fullName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const fullNameRegex = new RegExp(`\\b${fullNameEscaped}\\b`, 'gi');
-    
-    if (finalReport.overview.personalMessage) {
-      finalReport.overview.personalMessage = finalReport.overview.personalMessage.replace(fullNameRegex, userProfile.displayName);
-    }
-    if (finalReport.overview.summary) {
-      finalReport.overview.summary = finalReport.overview.summary.replace(fullNameRegex, userProfile.displayName);
+  // Final safety check: ensure no user name appears in overview (second person only)
+  if (userProfile?.fullName || userProfile?.displayName) {
+    const names = [userProfile.fullName, userProfile.displayName].filter(Boolean) as string[];
+    for (const n of [...new Set(names)]) {
+      if (!n?.trim()) continue;
+      const re = new RegExp(`\\b${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+      if (finalReport.overview.personalMessage) {
+        finalReport.overview.personalMessage = finalReport.overview.personalMessage.replace(re, '').replace(/\b(Dear|Beloved)\s*,?\s*/gi, '').trim();
+      }
+      if (finalReport.overview.summary) {
+        finalReport.overview.summary = finalReport.overview.summary.replace(re, '').replace(/\b(Dear|Beloved)\s*,?\s*/gi, '').trim();
+      }
     }
   }
 
@@ -183,12 +182,8 @@ async function generateAIReport(
   userProfile?: UserProfile | null
 ): Promise<any> {
   try {
-    // Extract displayName for AI generation - use only displayName for personalization
-    const displayNameForAI = userProfile?.displayName || userProfile?.fullName || 'this person';
-    const fullNameForAI = userProfile?.fullName || '';
-    
-    // Build question with explicit instruction to use only displayName
-    const question = `Generate a comprehensive, personalized Human Design interpretation for ${displayNameForAI}. IMPORTANT: When addressing the person in your response, use only "${displayNameForAI}" (their display name). ${fullNameForAI && fullNameForAI !== displayNameForAI ? `Do NOT use their full name "${fullNameForAI}" in the response.` : ''} Always use the display name when personalizing the message.`;
+    // Build question: second person only; no user name in report
+    const question = `Generate a comprehensive, personalized Human Design interpretation. ${REPORT_VOICE_RULE} Write as if FutureSeer has analyzed the chart and is speaking directly to the user.`;
     
     const response = await fetch('/api/openai', {
       method: 'POST',
@@ -223,19 +218,23 @@ async function generateAIReport(
     const result = await response.json();
     const aiResponse = result.prediction || '';
     
-    // Post-process: Replace any fullName occurrences with displayName if they differ
+    // Post-process: Remove any user name from response (reports must not contain the user's name)
     let cleanedResponse = aiResponse;
-    if (userProfile?.fullName && userProfile?.displayName && userProfile?.fullName !== userProfile?.displayName) {
-      // Replace fullName with displayName (case-insensitive, whole word matching)
-      // Also handle patterns like "Beloved [fullName]", "Dear [fullName]"
-      const fullNameEscaped = userProfile.fullName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const fullNameRegex = new RegExp(`\\b${fullNameEscaped}\\b`, 'gi');
-      cleanedResponse = aiResponse.replace(fullNameRegex, userProfile.displayName);
+    if (userProfile?.fullName || userProfile?.displayName) {
+      const names = [userProfile.fullName, userProfile.displayName].filter(Boolean) as string[];
+      const uniqueNames = [...new Set(names)];
+      for (const n of uniqueNames) {
+        if (!n.trim()) continue;
+        const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(`\\b${escaped}\\b`, 'gi');
+        cleanedResponse = cleanedResponse.replace(re, '');
+      }
+      cleanedResponse = cleanedResponse.replace(/\b(Dear|Beloved)\s*,?\s*/gi, '').trim();
     }
     
     const parsedResponse = parseAIResponse(cleanedResponse);
     
-    // Post-process each extracted field to replace fullName with displayName
+    // Post-process each extracted field to remove any user name
     return cleanAIResponseFields(parsedResponse, userProfile);
   } catch (error) {
     devLog.error('Error generating AI report:', error, 'humanDesignReportGenerator');
@@ -284,26 +283,33 @@ function extractList(text: string, ...keywords: string[]): string[] {
 }
 
 /**
- * Clean AI response fields to replace fullName with displayName
+ * Clean AI response fields: remove any user name so the report never contains the user's name.
  */
 function cleanAIResponseFields(aiResponse: any, userProfile?: UserProfile | null): any {
-  if (!userProfile?.fullName || !userProfile?.displayName || userProfile?.fullName === userProfile?.displayName) {
+  if (!userProfile?.fullName && !userProfile?.displayName) {
     return aiResponse;
   }
 
-  const fullName = userProfile.fullName;
-  const displayName = userProfile.displayName;
-  const fullNameEscaped = fullName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const fullNameRegex = new RegExp(`\\b${fullNameEscaped}\\b`, 'gi');
+  const names = [userProfile.fullName, userProfile.displayName].filter(Boolean) as string[];
+  const uniqueNames = [...new Set(names)];
 
-  // Clean all string fields
+  const stripNames = (s: string): string => {
+    let out = s;
+    for (const n of uniqueNames) {
+      if (!n.trim()) continue;
+      const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      out = out.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), '');
+    }
+    return out.replace(/\b(Dear|Beloved)\s*,?\s*/gi, '').trim();
+  };
+
   const cleaned: any = {};
   for (const key in aiResponse) {
     if (typeof aiResponse[key] === 'string') {
-      cleaned[key] = aiResponse[key].replace(fullNameRegex, displayName);
+      cleaned[key] = stripNames(aiResponse[key]);
     } else if (Array.isArray(aiResponse[key])) {
-      cleaned[key] = aiResponse[key].map((item: any) => 
-        typeof item === 'string' ? item.replace(fullNameRegex, displayName) : item
+      cleaned[key] = aiResponse[key].map((item: any) =>
+        typeof item === 'string' ? stripNames(item) : item
       );
     } else {
       cleaned[key] = aiResponse[key];
@@ -312,9 +318,9 @@ function cleanAIResponseFields(aiResponse: any, userProfile?: UserProfile | null
   return cleaned;
 }
 
-// Fallback generators
-function generateOverviewSummary(chart: HumanDesignChart, userName: string): string {
-  return `Dear ${userName}, your Human Design reveals a ${chart.type.name} with ${chart.authority.name}. Your ${chart.profile.name} profile guides your life role, and your ${chart.incarnationCross.name} illuminates your unique purpose. You have ${chart.centers.defined.length} defined centers and ${chart.centers.undefined.length} undefined centers, creating a ${chart.definition.type} definition that shapes how you experience energy.`;
+// Fallback generators (second person only; no user name in report)
+function generateOverviewSummary(chart: HumanDesignChart): string {
+  return `Your Human Design reveals a ${chart.type.name} with ${chart.authority.name}. Your ${chart.profile.name} profile guides your life role, and your ${chart.incarnationCross.name} illuminates your unique purpose. You have ${chart.centers.defined.length} defined centers and ${chart.centers.undefined.length} undefined centers, creating a ${chart.definition.type} definition that shapes how you experience energy.`;
 }
 
 function generateKeyInsights(chart: HumanDesignChart): string[] {
@@ -326,8 +332,8 @@ function generateKeyInsights(chart: HumanDesignChart): string[] {
   ];
 }
 
-function generatePersonalMessage(chart: HumanDesignChart, userName: string): string {
-  return `Beloved ${userName}, you are designed to ${chart.type.description.toLowerCase()}. Trust your ${chart.authority.name.toLowerCase()} to guide your decisions. Your ${chart.profile.name} profile shows you are here to ${chart.profile.role.toLowerCase()}. Embrace your authentic nature and live according to your design.`;
+function generatePersonalMessage(chart: HumanDesignChart): string {
+  return `You are designed to ${chart.type.description.toLowerCase()}. Trust your ${chart.authority.name.toLowerCase()} to guide your decisions. Your ${chart.profile.name} profile shows you are here to ${chart.profile.role.toLowerCase()}. Embrace your authentic nature and live according to your design.`;
 }
 
 function generateTypeGuidance(typeId: string): string[] {

@@ -1,4 +1,5 @@
 import type { RuneQuestionType } from '@/lib/runesSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Runes Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildRunesSeerSystemPrompt(
   _questionType: RuneQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a warm generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Rune Divination reader (Elder Futhark). You reason only from the state below.
+You are an expert Rune Divination reader (Elder Futhark). You reason only from the state below.
 
 ## ROLE
 Runes are a **symbolic directional divination system**. They work with: individual rune meanings, upright/reversed (or blocked) energy, spread positions (present, challenge, outcome, advice), archetypal forces (action, resistance, transformation). They answer: what energy surrounds the situation, what supports or blocks progress, what direction things are moving toward. They do **not** guarantee outcomes or dates.
@@ -42,9 +40,5 @@ ${slice}
 
 Answer the user's question using the rune state above. Keep language direct, grounded, and non-mystical. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

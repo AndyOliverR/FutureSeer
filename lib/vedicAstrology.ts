@@ -2,6 +2,8 @@
 // Based on ChatGPT's recommendation for proper ephemeris calculations
 
 import * as julian from "astronomia/julian"
+import { normalizeBirthTime } from '@/lib/birthTimeUtils'
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC'
 import { devLog } from '@/lib/devLogger';
 import * as planetposition from "astronomia/planetposition"
 import earthData from "astronomia/data/vsop87Bearth"
@@ -264,9 +266,8 @@ function calculatePlanetaryPositions(jd: number, houses: HouseCusp[], birthData:
   
   // Add Rahu and Ketu (lunar nodes) using Swiss Ephemeris TRUE_NODE
   try {
-    // Parse birth date and time for Swiss Ephemeris
-    const [year, month, day] = birthData.birthDate.split('-').map(Number)
-    const [hour, minute] = birthData.birthTime.split(':').map(Number)
+    const normalizedTime = normalizeBirthTime(birthData.birthTime)
+    const [hour, minute] = normalizedTime.split(':').map((x) => parseInt(x, 10) || 0)
     const utHours = hour + minute / 60
     
     // Swiss Ephemeris disabled for browser compatibility
@@ -409,8 +410,11 @@ function calculatePlanetaryPositions(jd: number, houses: HouseCusp[], birthData:
 // Main function to generate Vedic chart
 export function generateVedicChart(birthData: BirthData, chartType: string = 'D1'): VedicChart {
   try {
-    // Parse birth date and time
-    const birthDateTime = new Date(`${birthData.birthDate}T${birthData.birthTime}`)
+    const normalizedTime = normalizeBirthTime(birthData.birthTime)
+    const birthDateTime = birthLocalToUTC(birthData.birthDate, normalizedTime, {
+      latitude: birthData.latitude,
+      longitude: birthData.longitude
+    })
     const jd = dateToJulianDay(birthDateTime)
     
     // Calculate proper ascendant using sidereal time and latitude/longitude
@@ -491,7 +495,11 @@ export function generateDivisionalChart(birthData: BirthData, chartType: string)
   }
   
   // Recalculate houses for modified ascendant
-  modifiedHouses = calculateHouseCusps(modifiedAscendant, birthData.latitude, birthData.longitude, dateToJulianDay(new Date(`${birthData.birthDate}T${birthData.birthTime}`)))
+  const birthDateTime = birthLocalToUTC(birthData.birthDate, normalizeBirthTime(birthData.birthTime), {
+    latitude: birthData.latitude,
+    longitude: birthData.longitude
+  })
+  modifiedHouses = calculateHouseCusps(modifiedAscendant, birthData.latitude, birthData.longitude, dateToJulianDay(birthDateTime))
   
   return {
     ascendant: modifiedAscendant,

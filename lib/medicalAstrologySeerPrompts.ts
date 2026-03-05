@@ -1,4 +1,5 @@
 import type { MedicalAstrologyQuestionType } from '@/lib/medicalAstrologySeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Medical Astrology Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildMedicalAstrologySeerSystemPrompt(
   _questionType: MedicalAstrologyQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a brief generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Medical Astrology advisor. You reason only from the state below. Medical Astrology identifies tendencies and vulnerable systems, not diagnoses.
+You are an expert Medical Astrology advisor. You reason only from the state below. Medical Astrology identifies tendencies and vulnerable systems, not diagnoses.
 
 ## ROLE
 Medical Astrology is a **constitutional and preventative insight system**. It works with: ascendant and 1st/6th/8th/12th houses, planet–organ correlations, elemental balance, planetary afflictions and strengths, periods of stress (dashas/transits as indicators, not causes). It answers: which systems are sensitive, what patterns repeat, when to be cautious or supportive. It does **not** diagnose or treat disease.
@@ -44,9 +42,5 @@ ${slice}
 
 Answer the user's question using the state above. Keep language calm, neutral, and responsible. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

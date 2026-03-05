@@ -4,6 +4,7 @@
  */
 
 import type { AkashicQuestionType } from './akashicSeerState';
+import { REPORT_VOICE_RULE } from './reportVoiceRule';
 
 export interface AkashicPromptOptions {
   displayName?: string;
@@ -54,7 +55,9 @@ EXAMPLES (match this style and brevity):
 - "What is my soul purpose?" → The dominant theme reflects guidance through communication and clarity. The lesson centers on helping others understand themselves while refining your own voice. Purpose unfolds through consistent expression rather than dramatic revelation.
 `.trim();
 
-  return `${role}
+  return `${REPORT_VOICE_RULE}
+
+${role}
 
 ${structure}
 

@@ -245,18 +245,27 @@ function SignUpPageContent() {
     )
   }
 
-  // WEB VERSION
+  // WEB VERSION: when in signup flow use single column so tier/payment has full width; quote moves below
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-transparent">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[1000px] grid grid-cols-1 md:grid-cols-2 bg-slate-900/80 backdrop-blur-3xl rounded-[40px] border border-amber-500/20 overflow-hidden shadow-2xl glass-effect">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-transparent">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className={`w-full max-w-[1000px] grid bg-slate-900/80 backdrop-blur-3xl rounded-[40px] border border-amber-500/20 overflow-hidden shadow-2xl glass-effect ${showSignupFlow ? "grid-cols-1 max-w-4xl" : "grid-cols-1 md:grid-cols-2"}`}
+      >
         <div className="p-12 flex flex-col justify-center space-y-8">
           <Link href="/" className="text-amber-400 flex items-center gap-2 font-heading tracking-widest uppercase text-sm mb-4 opacity-60 hover:opacity-100"><ArrowLeft className="w-4 h-4" /> Back to Home</Link>
-          <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your <br/>Journey.</h1>
+          {!showSignupFlow && (
+            <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your <br/>Journey.</h1>
+          )}
 
           {error && <Alert className="bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"><AlertDescription className="font-bold">{error}</AlertDescription></Alert>}
 
           {showSignupFlow ? (
-            <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} onComplete={handleSignupFlowComplete} onError={setError} />
+            <>
+              <h1 className="text-3xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your Journey</h1>
+              <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} onComplete={handleSignupFlowComplete} onError={setError} />
+            </>
           ) : (
             <form onSubmit={handleBasicInfoSubmit} className="space-y-6">
               <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" autoComplete="name" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
@@ -274,13 +283,18 @@ function SignUpPageContent() {
             </form>
           )}
         </div>
-        <div className="hidden md:block bg-[url('/assets/bg/starfieldn-8k.png')] bg-cover bg-center relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-transparent to-transparent opacity-60" />
-          <div className="absolute inset-0 flex items-center justify-center p-12 text-center bg-black/20">
-            <p className="text-2xl font-heading font-light italic text-amber-200/80 leading-relaxed tracking-widest">"Knowledge is power, but cosmic insight is wisdom."</p>
+        {!showSignupFlow && (
+          <div className="hidden md:block bg-[url('/assets/bg/starfieldn-8k.png')] bg-cover bg-center relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-transparent to-transparent opacity-60" />
+            <div className="absolute inset-0 flex items-center justify-center p-12 text-center bg-black/20">
+              <p className="text-2xl font-heading font-light italic text-amber-200/80 leading-relaxed tracking-widest">&quot;Knowledge is power, but cosmic insight is wisdom.&quot;</p>
+            </div>
           </div>
-        </div>
+        )}
       </motion.div>
+      {showSignupFlow && (
+        <p className="w-full max-w-4xl mt-4 text-center text-amber-200/60 font-heading font-light italic text-sm tracking-widest" aria-hidden="true">&quot;Knowledge is power, but cosmic insight is wisdom.&quot;</p>
+      )}
     </div>
   )
 }

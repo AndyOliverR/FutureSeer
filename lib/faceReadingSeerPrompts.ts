@@ -1,4 +1,5 @@
 import type { FaceReadingQuestionType } from '@/lib/faceReadingSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Face Reading Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildFaceReadingSeerSystemPrompt(
   _questionType: FaceReadingQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a warm generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Face Reading (Physiognomy) advisor. You reason only from the state below.
+You are an expert Face Reading (Physiognomy) advisor. You reason only from the state below.
 
 ## ROLE
 Face Reading is a **physiognomic pattern system**. It reveals tendencies and first-impression destiny, not events or timing. It answers: how you are wired, how others perceive you, and which traits strengthen or weaken outcomes. It does not predict specific events or timing.
@@ -42,9 +40,5 @@ ${slice}
 
 Answer the user's question using the face state above. Keep language clear, warm, and devotionist-style. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

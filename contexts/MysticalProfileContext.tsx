@@ -113,6 +113,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
   const userProfileRef = useRef(userProfile)
   userProfileRef.current = userProfile
   const lastAppliedGeneratedAtRef = useRef<string | null>(null)
+  const profileUserIdRef = useRef<string | null>(null)
 
   const [profile, setProfile] = useState<ComprehensiveMysticalProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -125,6 +126,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     // are shown immediately. isReportsStale is used for cache and UI only; do not discard
     // server-written data here, or the client may clear the profile before the user doc
     // (profileDataHash) has refreshed and the report would never appear.
+    profileUserIdRef.current = userId
     if (data) {
       const at = data.metadata?.generatedAt
       if (at) lastAppliedGeneratedAtRef.current = at
@@ -279,15 +281,25 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     if (typeof window !== 'undefined' && sessionStorage.getItem('signing_out') === 'true') {
       setLoading(false)
       setProfile(null)
+      profileUserIdRef.current = null
       return
     }
     if (!user?.uid) {
       setLoading(false)
       setProfile(null)
+      profileUserIdRef.current = null
       return
     }
 
     const uid = user.uid
+    // When user switched, clear profile immediately so we never show the previous user's data
+    if (profileUserIdRef.current !== null && profileUserIdRef.current !== uid) {
+      setProfile(null)
+      setLoading(true)
+      profileCache.delete(profileUserIdRef.current)
+    }
+    profileUserIdRef.current = uid
+
     // When stale, only clear in-memory cache so we refetch; keep persistent cache so the last
     // generated report still shows if the refetch fails (e.g. Firestore "Target ID already exists").
     if (stale) {
@@ -375,6 +387,19 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     window.addEventListener('futureSeer:profileRegenerated', handler)
     return () => window.removeEventListener('futureSeer:profileRegenerated', handler)
   }, [user?.uid, refreshProfile, applyFirestoreProfile])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !user?.uid) return
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ userId?: string }>).detail
+      if (detail?.userId !== user.uid) return
+      clearComprehensiveMysticalProfileCache(user.uid)
+      clearPersistentProfileCache(user.uid)
+      setProfile(null)
+    }
+    window.addEventListener('futureSeer:profileInvalidated', handler)
+    return () => window.removeEventListener('futureSeer:profileInvalidated', handler)
+  }, [user?.uid])
 
   useEffect(() => {
     if (typeof window === 'undefined') return

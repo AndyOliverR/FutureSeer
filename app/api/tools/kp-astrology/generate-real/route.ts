@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { kpAstrologyIntelligence, KPChartData } from '@/lib/kpAstrologyIntelligence'
 import { getUserProfile } from '@/lib/firebase'
 import { devLog } from '@/lib/devLogger'
+import { normalizeBirthTime } from '@/lib/birthTimeUtils'
 
 interface Coordinates {
   latitude: number
@@ -74,13 +75,38 @@ export async function POST(request: NextRequest) {
 
     devLog.info('🎯 Generating KP Astrology report...', undefined, 'kp-astrology')
 
-    let userProfile = null
     let chartData: KPChartData | null = null
 
-    // If userId provided, fetch profile
-    if (userId) {
+    // Prefer request body birthData when complete (orchestrator sends normalized profile this way)
+    const hasCompleteBirthData =
+      birthData &&
+      birthData.birthDate &&
+      String(birthData.birthDate).trim() &&
+      birthData.birthTime != null &&
+      String(birthData.birthTime).trim() !== '' &&
+      birthData.birthPlace &&
+      String(birthData.birthPlace).trim()
+
+    if (hasCompleteBirthData) {
+      let latitude = birthData.latitude
+      let longitude = birthData.longitude
+      if (!latitude || !longitude) {
+        const coords = await getCoordinatesWithFallback(birthData.birthPlace)
+        latitude = coords.latitude
+        longitude = coords.longitude
+      }
+      chartData = {
+        birthDate: String(birthData.birthDate).trim(),
+        birthTime: normalizeBirthTime(birthData.birthTime),
+        birthPlace: String(birthData.birthPlace).trim(),
+        latitude,
+        longitude
+      }
+    } else if (userId) {
+      // Use fetched profile; normalize camelCase and snake_case fields
+      let userProfile: Record<string, unknown> | null = null
       try {
-        userProfile = await getUserProfile(userId)
+        userProfile = (await getUserProfile(userId)) as Record<string, unknown> | null
       } catch (profileError) {
         devLog.error('⚠️ Failed to fetch user profile:', profileError, 'route')
         return NextResponse.json(
@@ -89,50 +115,37 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Check if profile is complete
-      if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
+      const birthDate = (userProfile?.birthDate ?? userProfile?.birth_date) as string | undefined
+      const birthTimeRaw = (userProfile?.birthTime ?? userProfile?.birth_time) as string | undefined
+      const birthPlace = (userProfile?.birthPlace ?? userProfile?.birth_place) as string | undefined
+
+      if (!birthDate || !String(birthDate).trim() || !birthPlace || !String(birthPlace).trim()) {
+        return NextResponse.json(
+          { success: false, error: 'Complete profile (birth date, time, and place) is required for KP astrology analysis' },
+          { status: 400 }
+        )
+      }
+      if (birthTimeRaw == null || String(birthTimeRaw).trim() === '') {
         return NextResponse.json(
           { success: false, error: 'Complete profile (birth date, time, and place) is required for KP astrology analysis' },
           { status: 400 }
         )
       }
 
-      // Geocode birth place
-      const coords = await getCoordinatesWithFallback(userProfile.birthPlace)
-      
+      const coords = await getCoordinatesWithFallback(String(birthPlace).trim())
       chartData = {
-        birthDate: userProfile.birthDate,
-        birthTime: userProfile.birthTime,
-        birthPlace: userProfile.birthPlace,
+        birthDate: String(birthDate).trim(),
+        birthTime: normalizeBirthTime(birthTimeRaw),
+        birthPlace: String(birthPlace).trim(),
         latitude: coords.latitude,
         longitude: coords.longitude
       }
     } else if (birthData) {
-      // Use provided birth data
-      if (!birthData.birthDate || !birthData.birthTime || !birthData.birthPlace) {
-        return NextResponse.json(
-          { success: false, error: 'Birth date, time, and place are required' },
-          { status: 400 }
-        )
-      }
-
-      // Geocode if coordinates not provided
-      let latitude = birthData.latitude
-      let longitude = birthData.longitude
-
-      if (!latitude || !longitude) {
-        const coords = await getCoordinatesWithFallback(birthData.birthPlace)
-        latitude = coords.latitude
-        longitude = coords.longitude
-      }
-
-      chartData = {
-        birthDate: birthData.birthDate,
-        birthTime: birthData.birthTime,
-        birthPlace: birthData.birthPlace,
-        latitude,
-        longitude
-      }
+      // birthData present but incomplete
+      return NextResponse.json(
+        { success: false, error: 'Birth date, time, and place are required' },
+        { status: 400 }
+      )
     }
 
     if (!chartData) {
@@ -175,9 +188,7 @@ export async function GET(request: NextRequest) {
 
     devLog.info('🎯 Fetching KP astrology report for user:', userId, 'kp-astrology')
 
-    // Fetch user profile
-    const userProfile = await getUserProfile(userId)
-    
+    const userProfile = (await getUserProfile(userId)) as Record<string, unknown> | null
     if (!userProfile) {
       return NextResponse.json(
         { success: false, error: 'User profile not found' },
@@ -185,21 +196,28 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check if profile is complete
-    if (!userProfile.birthDate || !userProfile.birthTime || !userProfile.birthPlace) {
+    const birthDate = (userProfile.birthDate ?? userProfile.birth_date) as string | undefined
+    const birthTimeRaw = (userProfile.birthTime ?? userProfile.birth_time) as string | undefined
+    const birthPlace = (userProfile.birthPlace ?? userProfile.birth_place) as string | undefined
+
+    if (!birthDate || !String(birthDate).trim() || !birthPlace || !String(birthPlace).trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Complete profile (birth date, time, and place) is required for KP astrology analysis' },
+        { status: 400 }
+      )
+    }
+    if (birthTimeRaw == null || String(birthTimeRaw).trim() === '') {
       return NextResponse.json(
         { success: false, error: 'Complete profile (birth date, time, and place) is required for KP astrology analysis' },
         { status: 400 }
       )
     }
 
-    // Geocode birth place
-    const coords = await getCoordinatesWithFallback(userProfile.birthPlace)
-    
+    const coords = await getCoordinatesWithFallback(String(birthPlace).trim())
     const chartData: KPChartData = {
-      birthDate: userProfile.birthDate,
-      birthTime: userProfile.birthTime,
-      birthPlace: userProfile.birthPlace,
+      birthDate: String(birthDate).trim(),
+      birthTime: normalizeBirthTime(birthTimeRaw),
+      birthPlace: String(birthPlace).trim(),
       latitude: coords.latitude,
       longitude: coords.longitude
     }

@@ -75,24 +75,16 @@ export function AstrologyIcon({
         break
     }
 
-    setIconPath(path)
+    setIconPath(path && path.length > 0 ? path : null)
     setFallbackIcon(fallback || fbIcon || null)
-    setUseFallback(false) // Start by trying to load the icon
+    setUseFallback(!path || path.length === 0) // Use fallback when no path (e.g. chart points without SVGs)
   }, [category, value, fallback])
 
-  // Handle image load error - try alternative paths/extensions, then use fallback
+  // Handle image load error - use fallback (no .svg.svg retry to avoid duplicate 404s)
   const handleImageError = () => {
     if (!iconPath) {
       setUseFallback(true)
       if (onError) onError()
-      return
-    }
-
-    // Try .svg.svg extension as fallback (for backward compatibility)
-    if (iconPath.endsWith('.svg') && !iconPath.endsWith('.svg.svg')) {
-      const altPath = iconPath.replace('.svg', '.svg.svg')
-      setIconPath(altPath)
-      setUseFallback(false)
       return
     }
 

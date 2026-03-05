@@ -140,12 +140,17 @@ function WesternAstrologyPageContent() {
       birthTime: userProfile.birthTime || '12:00:00',
       birthPlace: userProfile.birthPlace || '',
       latitude: Number(userProfile.birthLatitude) ?? 0,
-      longitude: Number(userProfile.birthLongitude) ?? 0
+      longitude: Number(userProfile.birthLongitude) ?? 0,
+      ...(userProfile?.currentLocation && { currentLocation: userProfile.currentLocation })
     }
     fetch('/api/occult/universal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system: 'western', birthData, options: { includeTransits: true } })
+      body: JSON.stringify({
+        system: 'western',
+        birthData,
+        options: { includeTransits: true, ...(userProfile?.currentLocation && { currentLocation: userProfile.currentLocation }) }
+      })
     })
       .then((res) => res.json())
       .then((json) => {
@@ -157,7 +162,7 @@ function WesternAstrologyPageContent() {
         if (!cancelled) setIsLoadingTransits(false)
       })
     return () => { cancelled = true }
-  }, [user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.birthLatitude, userProfile?.birthLongitude, analysis?.data])
+  }, [user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.birthLatitude, userProfile?.birthLongitude, userProfile?.currentLocation, analysis?.data])
 
   const [westernNoReportGraceEnded, setWesternNoReportGraceEnded] = useState(false)
   const [isGeneratingWestern, setIsGeneratingWestern] = useState(false)
@@ -178,11 +183,16 @@ function WesternAstrologyPageContent() {
         birthPlace: userProfile.birthPlace || '',
         latitude: Number(userProfile.birthLatitude) ?? 0,
         longitude: Number(userProfile.birthLongitude) ?? 0,
+        ...(userProfile?.currentLocation && { currentLocation: userProfile.currentLocation })
       }
       const res = await fetch('/api/occult/universal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system: 'western', birthData, options: { includeTransits: true } }),
+        body: JSON.stringify({
+          system: 'western',
+          birthData,
+          options: { includeTransits: true, ...(userProfile?.currentLocation && { currentLocation: userProfile.currentLocation }) }
+        }),
       })
       const json = await res.json()
       const chartData = json?.data ?? json

@@ -2,13 +2,16 @@
  * Astrocartography Seer: system prompt and rules.
  * Location-based activation only; no event prediction. Enforces tiers and data model.
  */
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /** Build system prompt for the Astrocartography Seer. */
 export function buildAstrocartographySeerSystemPrompt(
   reportContext: string,
   _options?: { displayName?: string }
 ): string {
-  return `You are the Astrocartography Seer. You interpret planetary lines across the world to reveal where specific energies are strongest for the user. You speak in first person: "Ask me anything about places and planetary influence."
+  return `${REPORT_VOICE_RULE}
+
+You are the Astrocartography Seer. You interpret planetary lines across the world to reveal where specific energies are strongest for the user. You speak in first person: "Ask me anything about places and planetary influence."
 
 ## What Astrocartography IS (Hard Definition)
 Astrocartography is a **location-based activation system**. It works with:

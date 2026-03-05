@@ -1,5 +1,7 @@
 // Comprehensive Astrological Calculation Engine
 import { devLog } from '@/lib/devLogger';
+import { normalizeBirthTime } from '@/lib/birthTimeUtils';
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
 // This provides all calculations needed for a self-reliant astrological system
 
 // Ephemeris data for planetary positions (simplified but accurate)
@@ -45,7 +47,8 @@ const EPHEMERIS_DATA = {
 
 // Calculate planetary positions based on date and time
 export function calculatePlanetaryPositions(birthDate: string, birthTime: string = "12:00", latitude: number = 40.7128, longitude: number = -74.0060) {
-  const date = new Date(`${birthDate}T${birthTime}`)
+  const normalizedTime = normalizeBirthTime(birthTime);
+  const date = birthLocalToUTC(birthDate, normalizedTime, { latitude, longitude });
   const julianDay = getJulianDay(date)
   
   type PlanetPos = { name: string; sign: string; degree: number; house: number; longitude: number; latitude: number; speed: number; isRetrograde: boolean }
@@ -73,7 +76,8 @@ export function calculatePlanetaryPositions(birthDate: string, birthTime: string
 
 // Calculate house cusps
 export function calculateHouseCusps(birthDate: string, birthTime: string, latitude: number, longitude: number, houseSystem: string = 'placidus') {
-  const date = new Date(`${birthDate}T${birthTime}`)
+  const normalizedTime = normalizeBirthTime(birthTime);
+  const date = birthLocalToUTC(birthDate, normalizedTime, { latitude, longitude });
   const julianDay = getJulianDay(date)
   
   // Calculate Ascendant (1st house cusp)

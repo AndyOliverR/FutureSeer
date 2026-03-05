@@ -6,10 +6,12 @@
 
 import { NextRequest } from 'next/server';
 import { calculateProfileDataHash } from '@/lib/firebase';
+import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
 
 const mockVerifyIdToken = jest.fn();
 const mockGetDocument = jest.fn();
 const mockSetDocument = jest.fn();
+const mockBatchSetDocuments = jest.fn();
 const mockGenerateAllReports = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
 
@@ -20,7 +22,9 @@ jest.mock('firebase-admin/auth', () => ({
 jest.mock('@/lib/firebase-admin', () => ({
   getDocument: (...args: unknown[]) => mockGetDocument(...args),
   setDocument: (...args: unknown[]) => mockSetDocument(...args),
+  batchSetDocuments: (...args: unknown[]) => mockBatchSetDocuments(...args),
   isAdminAvailable: () => true,
+  adminDb: {},
 }));
 
 jest.mock('@/lib/reportGenerationService', () => ({
@@ -49,6 +53,7 @@ describe('Profile generate-mystical API', () => {
     jest.clearAllMocks();
     mockVerifyIdToken.mockResolvedValue({ uid });
     mockSetDocument.mockResolvedValue(undefined);
+    mockBatchSetDocuments.mockResolvedValue(true);
     mockClearCachedDivinationData.mockReturnValue(undefined);
   });
 
@@ -67,10 +72,21 @@ describe('Profile generate-mystical API', () => {
     it('returns alreadyGenerated when profile is generated and hash matches', async () => {
       const profile = { ...baseProfile };
       const hash = calculateProfileDataHash(profile);
-      mockGetDocument.mockResolvedValue({
-        ...profile,
-        mysticalProfileGenerated: true,
-        profileDataHash: hash,
+      const storedProfileWithAllTools = Object.fromEntries(
+        ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }])
+      );
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') {
+          return Promise.resolve({
+            ...profile,
+            mysticalProfileGenerated: true,
+            profileDataHash: hash,
+          });
+        }
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve(storedProfileWithAllTools);
+        }
+        return Promise.resolve(undefined);
       });
 
       const res = await callGenerate();
@@ -86,7 +102,12 @@ describe('Profile generate-mystical API', () => {
   describe('New signup → generate', () => {
     it('runs generation and returns success when profile is complete and not yet generated', async () => {
       const profile = { ...baseProfile };
-      mockGetDocument.mockResolvedValue(profile);
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve(profile);
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
+        return Promise.resolve(undefined);
+      });
       mockGenerateAllReports.mockResolvedValue({
         success: true,
         systemsUsed: ['vedic', 'numerology'],
@@ -114,7 +135,12 @@ describe('Profile generate-mystical API', () => {
         mysticalProfileGenerated: true,
         profileDataHash: 'old-hash-different-from-current',
       };
-      mockGetDocument.mockResolvedValue(profile);
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve(profile);
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
+        return Promise.resolve(undefined);
+      });
       mockGenerateAllReports.mockResolvedValue({
         success: true,
         systemsUsed: ['vedic', 'numerology'],

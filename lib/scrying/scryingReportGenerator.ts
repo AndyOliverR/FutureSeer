@@ -124,11 +124,8 @@ export function generateScryingReport(
   const dominantEmotion = seed % 3 === 0 ? 'Calm' : seed % 3 === 1 ? 'Receptive' : 'Focused';
   const intensity = 4 + (seed % 4);
 
-  const displayName =
-    (userProfile.fullName || 'Seeker').trim().split(/\s+/)[0] || 'Seeker';
-
   const topThemes = symbols.slice(0, 3).map((s) => s.label);
-  const sessionOverview = `${displayName}'s symbolic reading was generated under ${moonPhase}, using ${medium} as the focal medium. The session reflects a ${dominantEmotion.toLowerCase()} state and is intended as guidance aligned to your current life phase. This is a symbolic introspection report, not a literal scrying session.`;
+  const sessionOverview = `Your symbolic reading was generated under ${moonPhase}, using ${medium} as the focal medium. The session reflects a ${dominantEmotion.toLowerCase()} state and is intended as guidance aligned to your current life phase. This is a symbolic introspection report, not a literal scrying session.`;
 
   const elementalEntries = Object.entries(elementalBalance).filter(
     ([_, v]) => v > 0

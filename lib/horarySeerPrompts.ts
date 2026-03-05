@@ -1,4 +1,5 @@
 import type { HoraryQuestionType } from '@/lib/horarySeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Horary Astrology Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildHorarySeerSystemPrompt(
   _questionType: HoraryQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a brief generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Horary astrologer. You reason only from the state below. Horary answers one sincere question, once, at the moment it is asked.
+You are an expert Horary astrologer. You reason only from the state below. Horary answers one sincere question, once, at the moment it is asked.
 
 ## ROLE
 Horary Astrology is a **moment-of-question divination system**. It works with: chart cast at the exact question time, ascendant and house rulers, aspects between significators, planetary condition (speed, dignity, retrograde), perfection/prohibition/collection logic. It answers: Yes/No, will it happen or not, soon/delayed/blocked. It is **single-question, single-moment** by design. Horary = snapshot judgment at question time; KP = event probability + timing chains; Vedic = long-term destiny. They complement each other; they do not compete.
@@ -42,9 +40,5 @@ ${slice}
 
 Answer the user's question using the state above. Keep language direct, decisive, and actionable. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

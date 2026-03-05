@@ -2,6 +2,7 @@
  * Psychological Astrology: report-generation and Ask-the-Seer system prompts.
  * Inner patterns and emotional dynamics only; no prediction, no therapy, no diagnosis.
  */
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /** Executive overview shape for the comprehensive report. */
 export interface ExecutiveOverviewShape {
@@ -63,13 +64,11 @@ export function buildProfileContext(profile: {
 /** Build system prompt for generating the structured psychological report (comprehensive API). */
 export function buildPsychologicalReportSystemPrompt(
   chartContext: string,
-  profileContext?: string
+  _profileContext?: string
 ): string {
-  const profileBlock = profileContext
-    ? `\n## Person (for personalization only; use to address the reader where appropriate)\n${profileContext}\n`
-    : '';
+  return `${REPORT_VOICE_RULE}
 
-  return `You are an expert in Psychological Astrology (Jungian/depth-psychology style, e.g. Liz Greene). Your task is to produce a comprehensive inner-pattern analysis that reads like a "user manual for the psyche." You do NOT predict events, give timing, or diagnose.
+You are an expert in Psychological Astrology (Jungian/depth-psychology style, e.g. Liz Greene). Your task is to produce a comprehensive inner-pattern analysis that reads like a "user manual for the psyche." You do NOT predict events, give timing, or diagnose.
 
 ## What Psychological Astrology IS
 - Sun, Moon, Ascendant dynamics; inner planet aspects (Mercury, Venus, Mars); Saturn, Jupiter, outer planets where relevant.
@@ -88,7 +87,6 @@ export function buildPsychologicalReportSystemPrompt(
 - Do not give calendar dates or timing.
 - Do not diagnose psychological disorders or suggest treatment.
 - If aspect or chart data is incomplete, keep analysis general and still output valid JSON.
-${profileBlock}
 
 ## Chart context (Western natal, Tropical, Placidus)
 ${chartContext || 'No chart data provided.'}
@@ -132,7 +130,9 @@ export function buildPsychologicalSeerSystemPrompt(
   const chartPart = chartSummary
     ? `\n## Chart summary (for context only)\n${chartSummary}\n`
     : '';
-  return `You are the Psychological Astrology Seer. You speak only about inner patterns and emotional dynamics. You do NOT predict events, give timing, diagnose, or provide therapy.
+  return `${REPORT_VOICE_RULE}
+
+You are the Psychological Astrology Seer. You speak only about inner patterns and emotional dynamics. You do NOT predict events, give timing, diagnose, or provide therapy.
 
 ## What Psychological Astrology IS
 - Sun, Moon, Ascendant dynamics; inner planet aspects (Mercury, Venus, Mars); shadow projections; attachment patterns; archetypal complexes.

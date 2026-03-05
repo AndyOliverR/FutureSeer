@@ -305,18 +305,18 @@ export default function ComprehensiveWesternReport({
               }}
               transitMetadata={{
                 eventType: "Transit Chart",
-                date: new Date().toLocaleDateString('en-US', { 
-                  year: 'numeric', 
-                  month: 'short', 
+                date: new Date().toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
                   day: 'numeric',
                   weekday: 'short'
                 }),
-                time: new Date().toLocaleTimeString('en-US', { 
-                  hour: 'numeric', 
+                time: new Date().toLocaleTimeString('en-US', {
+                  hour: 'numeric',
                   minute: '2-digit'
                 }),
                 timezone: "Local",
-                location: userProfile?.birthPlace || "Unknown",
+                location: userProfile?.currentLocation || userProfile?.birthPlace || "Unknown",
                 houseSystem: "Placidus",
                 zodiacType: "Tropical"
               }}
