@@ -7,6 +7,8 @@ import {
   calculateTropicalAspects 
 } from '@/lib/western/tropicalCalculator';
 import { devLog } from '@/lib/devLogger';
+import { normalizeBirthTime } from '@/lib/birthTimeUtils';
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
 
 export const dynamic = 'force-static'
 
@@ -19,6 +21,7 @@ export interface BirthData {
   birthPlace: string;
   latitude: number;
   longitude: number;
+  currentLocation?: string;
 }
 
 export interface OccultRequest {
@@ -103,20 +106,15 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     devLog.info('🔮 Calculating PURE TROPICAL Western chart for:', birthData, 'occult');
     devLog.debug('🔮 Birth Date String:', birthData.birthDate, 'occult');
     devLog.debug('🔮 Birth Time String:', birthData.birthTime, 'occult');
-    
-    // Create birth date object with explicit timezone handling
-    // Use UTC to avoid timezone shifts that could change the date
-    const [year, month, day] = birthData.birthDate.split('-');
-    const [hour, minute] = birthData.birthTime.split(':');
-    const birthDateTime = new Date(Date.UTC(
-      parseInt(year),
-      parseInt(month) - 1, // Month is 0-indexed
-      parseInt(day),
-      parseInt(hour),
-      parseInt(minute || '0')
-    ));
-    
-    devLog.debug('🔮 Birth Date Components:', { year, month, day, hour, minute }, 'occult');
+
+    const normalizedTime = normalizeBirthTime(birthData.birthTime);
+    const birthDateTime = birthLocalToUTC(birthData.birthDate, normalizedTime, {
+      latitude: birthData.latitude,
+      longitude: birthData.longitude
+    });
+    const [hour, minute] = normalizedTime.split(':').map((x) => parseInt(x, 10) || 0);
+
+    devLog.debug('🔮 Birth time normalized:', { from: birthData.birthTime, to: normalizedTime }, 'occult');
     devLog.debug('🔮 Parsed Birth DateTime (UTC):', birthDateTime, 'occult');
     devLog.debug('🔮 Birth DateTime ISO:', birthDateTime.toISOString(), 'occult');
     devLog.debug('🔮 Birth DateTime Month:', birthDateTime.getUTCMonth() + 1, 'occult'); // Should be 2 for February
@@ -147,8 +145,8 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
           targetDate.getUTCFullYear(),
           targetDate.getUTCMonth(),
           targetDate.getUTCDate(),
-          parseInt(hour),
-          parseInt(minute || '0')
+          hour,
+          minute
         ));
         devLog.debug('🔮 Solar Return target date:', targetDateTime.toISOString(), 'occult');
       } else if (calculationType === 'lunar-return' && options.targetDate) {
@@ -158,8 +156,8 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
           targetDate.getUTCFullYear(),
           targetDate.getUTCMonth(),
           targetDate.getUTCDate(),
-          parseInt(hour),
-          parseInt(minute || '0')
+          hour,
+          minute
         ));
         devLog.debug('🔮 Lunar Return target date:', targetDateTime.toISOString(), 'occult');
       } else if (calculationType === 'progressions' && options.targetDate) {
@@ -169,8 +167,8 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
           targetDate.getUTCFullYear(),
           targetDate.getUTCMonth(),
           targetDate.getUTCDate(),
-          parseInt(hour),
-          parseInt(minute || '0')
+          hour,
+          minute
         ));
         devLog.debug('🔮 Progressed date:', targetDateTime.toISOString(), 'occult');
       }
@@ -295,21 +293,41 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
   
     // Calculate transits if requested
     let transits: any[] = [];
+    let transitLocationUsed: string | undefined;
     if (options.includeTransits) {
       devLog.debug('🔮 Calculating transits...', undefined, 'occult');
       devLog.debug('🔮 Options includeTransits:', options.includeTransits, 'occult');
-      
+
+      const currentLocation = (birthData as { currentLocation?: string }).currentLocation ?? options.currentLocation;
+      const currentLocationStr = typeof currentLocation === 'string' ? currentLocation.trim() : '';
+
       // Use custom transit date if provided, otherwise use current date
       const transitDate = options.transitDate ? new Date(options.transitDate) : new Date();
-      
+
       if (options.transitDate) {
         devLog.debug('🔮 Using FUTURE transit date:', transitDate.toISOString(), 'occult');
       } else {
         devLog.debug('🔮 Using CURRENT transit date:', transitDate.toISOString(), 'occult');
       }
-      
+
       const transitPlanets = calculateTropicalPlanets(transitDate);
-      
+
+      // Use current residence for transit houses when available; otherwise natal houses
+      let transitHouses = houses;
+      if (currentLocationStr.length > 0) {
+        try {
+          const { geocodePlace } = await import('@/services/geocoding');
+          const coords = await geocodePlace(currentLocationStr);
+          if (coords?.latitude != null && coords?.longitude != null) {
+            transitHouses = calculateTropicalHouses(transitDate, coords.latitude, coords.longitude);
+            transitLocationUsed = currentLocationStr;
+            devLog.debug('🔮 Using current residence for transit houses:', currentLocationStr, 'occult');
+          }
+        } catch (err) {
+          devLog.warn('⚠️ Geocoding current location for transits failed, using natal houses', err, 'occult');
+        }
+      }
+
       devLog.debug('🔮 Transit planets calculated:', Object.keys(transitPlanets), 'occult');
       transits = Object.entries(transitPlanets).map(([name, planetData]: [string, any]) => ({
         name: capitalizeFirst(name),
@@ -319,7 +337,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
         speed: planetData.speed,
         sign: getTropicalSign(planetData.longitude),
         degree: getDegreeInSignLocal(planetData.longitude),
-        house: calculateHouseFromLongitude(planetData.longitude, houses), // Use natal houses for transit house placement
+        house: calculateHouseFromLongitude(planetData.longitude, transitHouses),
         isRetrograde: planetData.speed < 0
       }));
       devLog.debug(`✅ Calculated ${transits.length} transit planets`, undefined, 'occult');
@@ -383,7 +401,8 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
         version: '1.0.0',
         generatedAt: new Date().toISOString(),
         calculationTime: Date.now()
-      }
+      },
+      ...(transitLocationUsed && { transitLocation: transitLocationUsed })
     };
     
     devLog.info('✅ Western chart calculated successfully', undefined, 'occult');
@@ -673,30 +692,30 @@ function getDegreeInSignLocal(longitude: number): number {
 
 function calculateHouseFromLongitude(planetLongitude: number, houses: any[]): number {
   const normalizedLongitude = ((planetLongitude % 360) + 360) % 360;
-  
-  for (let i = 0; i < houses.length; i++) {
-    const currentHouse = houses[i];
-    const nextHouse = houses[(i + 1) % houses.length];
-    
-    // Handle different house data formats from astronomia-vedic
-    const currentCusp = currentHouse.longitude || currentHouse.cuspLonSid || currentHouse.cusp || currentHouse.degree || 0;
-    const nextCusp = nextHouse.longitude || nextHouse.cuspLonSid || nextHouse.cusp || nextHouse.degree || 0;
-    
-    // Handle the case where we cross 0 degrees
-    if (currentCusp > nextCusp) {
-      // We're crossing the 0 degree point
-      if (normalizedLongitude >= currentCusp || normalizedLongitude < nextCusp) {
-        return i + 1;
-      }
-    } else {
-      // Normal case
-      if (normalizedLongitude >= currentCusp && normalizedLongitude < nextCusp) {
-        return i + 1;
-      }
-    }
+  if (!houses || houses.length === 0) return 1;
+
+  // Build cusps with house number; sort by longitude so segments are in zodiac order
+  const cusps = houses.map((h: any) => ({
+    number: h.number ?? 0,
+    longitude: ((h.longitude ?? h.cuspLonSid ?? h.cusp ?? h.degree ?? 0) % 360 + 360) % 360
+  })).filter((c: { number: number }) => c.number >= 1 && c.number <= 12);
+  if (cusps.length === 0) return 1;
+
+  cusps.sort((a: { longitude: number }, b: { longitude: number }) => a.longitude - b.longitude);
+
+  for (let i = 0; i < cusps.length; i++) {
+    const current = cusps[i];
+    const next = cusps[(i + 1) % cusps.length];
+    const currentCusp = current.longitude;
+    const nextCusp = next.longitude;
+    const wrapsZero = currentCusp > nextCusp;
+    const inSegment = wrapsZero
+      ? (normalizedLongitude >= currentCusp || normalizedLongitude < nextCusp)
+      : (normalizedLongitude >= currentCusp && normalizedLongitude < nextCusp);
+    if (inSegment) return current.number;
   }
-  
-  return 1; // Default to first house if not found
+
+  return cusps[0]?.number ?? 1;
 }
 
 function calculateHouseLord(sign: string): string {

@@ -288,6 +288,7 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
+      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Psychological comprehensive API error:', err, 'route');

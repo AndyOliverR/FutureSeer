@@ -5,6 +5,8 @@ import { calculateTransitData } from '@/lib/transitCalculatorServer'
 import { getChart } from '@/lib/astronomia-vedic'
 import { geocodePlace } from '@/services/geocoding'
 import { devLog } from '@/lib/devLogger'
+import { normalizeBirthTime } from '@/lib/birthTimeUtils'
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC'
 
 /**
  * Server-side geocoding with fallback to common Indian cities
@@ -66,22 +68,28 @@ export async function POST(request: NextRequest) {
 
     let userBirthData = birthData
     let coordinates: { latitude: number; longitude: number } | null = null
+    let currentLocation: string | undefined
 
     // If userId provided, try to fetch profile (client SDK then Admin fallback)
+    type ProfileShape = { birthDate?: string; birthTime?: string; birthPlace?: string; displayName?: string; currentLocation?: string; current_location?: string }
     if (userId) {
-      let userProfile: { birthDate?: string; birthTime?: string; birthPlace?: string; displayName?: string } | null = null
+      let userProfile: ProfileShape | null = null
       try {
-        userProfile = await getUserProfile(userId)
+        userProfile = await getUserProfile(userId) as ProfileShape | null
       } catch (err) {
         devLog.warn('⚠️ getUserProfile (client) failed, trying Admin:', err, 'route')
       }
       if (!userProfile && typeof getDocument === 'function') {
         try {
           const data = await getDocument('users', userId)
-          if (data && typeof data === 'object') userProfile = data as { birthDate?: string; birthTime?: string; birthPlace?: string; displayName?: string }
+          if (data && typeof data === 'object') userProfile = data as ProfileShape
         } catch (adminErr) {
           devLog.warn('⚠️ getDocument (admin) failed:', adminErr, 'route')
         }
+      }
+      if (userProfile) {
+        currentLocation = (userProfile.currentLocation ?? userProfile.current_location) as string | undefined
+        if (typeof currentLocation === 'string') currentLocation = currentLocation.trim() || undefined
       }
       if (userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace) {
         userBirthData = {
@@ -115,10 +123,11 @@ export async function POST(request: NextRequest) {
     // Get coordinates for birth place
     coordinates = await getCoordinatesWithFallback(userBirthData.birthPlace)
 
-    // Parse birth date and time
-    const [year, month, day] = userBirthData.birthDate.split('-').map(Number)
-    const [hour, minute] = userBirthData.birthTime.split(':').map(Number)
-    const birthDateTime = new Date(Date.UTC(year, month - 1, day, hour, minute))
+    const normalizedTime = normalizeBirthTime(userBirthData.birthTime)
+    const birthDateTime = birthLocalToUTC(userBirthData.birthDate, normalizedTime, {
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude
+    })
 
     // Calculate natal chart for transit comparison
     const natalChart = getChart({
@@ -145,16 +154,30 @@ export async function POST(request: NextRequest) {
       ascendantLon: natalChart.ascendant?.lonSidereal
     }, 'kp-astrology')
 
+    // Use current residence for transit chart when available; otherwise birth place
+    const transitPayload: Parameters<typeof calculateTransitData>[1] = {
+      birthDate: userBirthData.birthDate,
+      birthTime: userBirthData.birthTime,
+      birthPlace: userBirthData.birthPlace,
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude
+    }
+    if (currentLocation && currentLocation.length > 0) {
+      try {
+        const transitCoords = await getCoordinatesWithFallback(currentLocation)
+        transitPayload.transitPlace = currentLocation
+        transitPayload.transitLatitude = transitCoords.latitude
+        transitPayload.transitLongitude = transitCoords.longitude
+        devLog.debug('📍 Using current residence for transit chart:', currentLocation, 'kp-astrology')
+      } catch {
+        // Keep birth place for transit if geocoding current residence fails
+      }
+    }
+
     // Calculate transit data
     let transitData
     try {
-      transitData = calculateTransitData(natalChart, {
-        birthDate: userBirthData.birthDate,
-        birthTime: userBirthData.birthTime,
-        birthPlace: userBirthData.birthPlace,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude
-      })
+      transitData = calculateTransitData(natalChart, transitPayload)
 
       devLog.debug('📊 Transit data calculated:', {
         favorable: transitData.favorable.length,

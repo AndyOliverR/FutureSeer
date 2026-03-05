@@ -2,6 +2,7 @@
  * Kabbalistic Astrology: report-generation and Ask-the-Seer system prompts.
  * Karmic correction (Tikkun) and spiritual blueprint only; no prediction of events, timing, or outcomes.
  */
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /** Precomputed context from chart (deterministic, passed to LLM). */
 export interface KabbalisticPrecomputedContext {
@@ -82,11 +83,9 @@ export function buildKabbalisticAstrologyReportSystemPrompt(
     typeof chartContextOrOptions === 'string'
       ? { chartContext: chartContextOrOptions }
       : chartContextOrOptions;
-  const { chartContext, userName, precomputedContext } = opts;
+  const { chartContext, precomputedContext } = opts;
 
-  const personalization = userName?.trim()
-    ? `Address the report for ${userName.trim()} when writing. Use "you" or their name as appropriate. `
-    : '';
+  const personalization = `${REPORT_VOICE_RULE} `;
 
   const precomputedSection = precomputedContext
     ? `
@@ -175,7 +174,9 @@ export function buildKabbalisticAstrologySeerSystemPrompt(
   const chartPart = chartSummary
     ? `\n## Chart summary (for context only)\n${chartSummary}\n`
     : '';
-  return `You are the Kabbalistic Astrology Seer. You interpret spiritual blueprint and karmic correction (Tikkun). You do NOT predict events, give timing, or replace Vedic/KP astrology.
+  return `${REPORT_VOICE_RULE}
+
+You are the Kabbalistic Astrology Seer. You interpret spiritual blueprint and karmic correction (Tikkun). You do NOT predict events, give timing, or replace Vedic/KP astrology.
 
 ## What Kabbalistic Astrology IS
 - Hebrew zodiac correspondences; soul correction (Tikkun); past-life residue themes; spiritual rectification patterns; inner transformation pathways.

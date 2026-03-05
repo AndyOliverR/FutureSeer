@@ -49,34 +49,31 @@ export function PersonalNote() {
         <div className="space-y-10">
           <div className="space-y-5 font-sans text-sm sm:text-base leading-relaxed text-surface-on">
             <p>
-              I've been drawn to the occult and divination for years—not from superstition, but from curiosity. Across cultures and civilizations, these systems were treated as structured knowledge frameworks: Vedic Astrology, Bazi, Tarot, Numerology, Bibliomancy, geomancy, and dozens more. They weren't casual novelties. They were consulted seriously.
+              I&apos;ve been drawn to the occult and divination for years—not out of superstition, but out of curiosity. Across cultures and civilizations, systems like Vedic Astrology, Bazi, Tarot, Numerology, Bibliomancy, Geomancy, and many others were treated as structured frameworks of knowledge. They were not casual novelties. They were consulted seriously, studied deeply, and refined over centuries.
             </p>
             <p>
-              What fascinated me wasn't secrecy. It was depth. The sheer intellectual architecture behind these systems is immense—layered logic, symbolic mathematics, archetypal psychology, cosmology. Entire civilizations refined them over centuries. Yet most people today only see fragmented, oversimplified versions.
+              What fascinated me wasn&apos;t mystery or secrecy. It was the depth. The intellectual architecture behind these systems is immense—layered symbolic logic, archetypal psychology, mathematical cycles, and cosmological models. Entire civilizations invested time in understanding these patterns. Yet today, most people only encounter fragmented or oversimplified versions.
             </p>
             <p>
               Futureseer exists to change that.
             </p>
             <p>
-              This is not about belief. It's about exploration. Think of it as entering a vast library of symbolic intelligence that few people fully explore. You don't need to accept it blindly. Experience it. Test it against your own life. Extract insight. Discard what doesn't resonate. Keep what sharpens your awareness.
+              This platform is not about blind belief. It is about exploration. Think of it as entering a vast library of symbolic intelligence that few people fully explore. You do not need to accept everything you see. Experience it. Test it against your own life. Extract insight. Discard what doesn&apos;t resonate. Keep what sharpens your awareness.
             </p>
             <p>
-              Even if you approach it analytically, these systems function as structured reflection engines. They surface blind spots. They reveal patterns. They force better questions. Used correctly, they become cognitive tools.
+              Even when approached analytically, these systems function as structured reflection engines. They reveal patterns. They expose blind spots. They encourage better questions. Used thoughtfully, they become cognitive tools for deeper self-understanding and decision-making.
             </p>
             <p>
-              Futureseer brings together culturally significant, historically rich divination systems into one refined platform. Instead of scattered interpretations, you get depth. Instead of generic readings, you get structured frameworks.
+              Futureseer brings together culturally significant, historically rich divination systems into one refined platform. Instead of scattered interpretations, you encounter depth. Instead of generic readings, you engage with structured frameworks.
             </p>
             <p>
-              If you're intellectually curious, ambitious, or simply exploring alternative models of decision-making, you'll find this compelling.
+              If you&apos;re intellectually curious, ambitious, or simply exploring alternative models of insight and decision-making, you may find this compelling.
             </p>
             <p>
-              We're building something expansive. Over time, access will become limited and invite-only. Not for hype—but to preserve quality, depth, and serious engagement.
+              We&apos;re building something expansive. Over time, access may become more limited—not for hype, but to preserve quality, depth, and meaningful engagement.
             </p>
             <p>
-              If you're here early, you're ahead of the curve.
-            </p>
-            <p>
-              Explore it before the doors narrow.
+              If you&apos;re here early, you&apos;re ahead of the curve.
             </p>
           </div>
 
@@ -105,7 +102,10 @@ export function PersonalNote() {
             </ul>
           </div>
           <p className="font-sans text-sm sm:text-base leading-relaxed text-surface-on">
-            This is just the beginning. Your feedback shapes what we build. Thank you for being part of this mission.
+            This is just the beginning. Your feedback will help shape what we build next.
+          </p>
+          <p className="font-sans text-sm sm:text-base leading-relaxed text-surface-on text-center">
+            Crafted with ❤️ in India — For the World.
           </p>
         </div>
       </div>

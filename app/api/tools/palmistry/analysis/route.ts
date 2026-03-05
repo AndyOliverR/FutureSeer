@@ -460,8 +460,9 @@ REMEMBER: Base ALL observations on the ACTUAL image. Use diverse values - not ev
 
     return NextResponse.json({
       success: true,
-      data: validatedData
-    } as PalmAnalysisResponse);
+      data: validatedData,
+      _usage: result.usage,
+    } as PalmAnalysisResponse & { _usage?: typeof result.usage });
 
   } catch (error: any) {
     // Detailed error handling with user-friendly messages

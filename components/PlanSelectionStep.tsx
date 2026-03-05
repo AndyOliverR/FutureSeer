@@ -166,7 +166,7 @@ export function PlanSelectionStep({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {contributionTiers.map((tier) => {
           const priceInfo = getPriceInfo(tier);
           const isTrial = tier.contributionType === 'trial';
@@ -180,7 +180,7 @@ export function PlanSelectionStep({
             >
               <Card
                 onClick={() => handlePlanSelect(tier.id)}
-                className={`relative overflow-hidden transition-all duration-300 cursor-pointer ${
+                className={`relative overflow-visible transition-all duration-300 cursor-pointer ${
                   isSelected
                     ? 'ring-2 ring-amber-500 shadow-2xl shadow-amber-500/20'
                     : tier.popular
@@ -212,14 +212,14 @@ export function PlanSelectionStep({
                   <p className="text-white/70 text-sm">{tier.description}</p>
                 </CardHeader>
 
-                <CardContent className="text-center">
+                <CardContent className="text-center overflow-visible">
                   {/* Pricing/Contribution */}
-                  <div className="mb-6">
+                  <div className="mb-6 min-h-[4.5rem] flex flex-col justify-center">
                     {isTrial ? (
                       <div className="text-3xl font-bold text-green-400">Free</div>
                     ) : priceInfo ? (
-                      <div>
-                        <div className="text-3xl font-bold text-amber-400">
+                      <div className="min-w-0">
+                        <div className="text-3xl font-bold text-amber-400 break-words">
                           {priceInfo.formatted}
                           {tier.contributionType === 'annual'
                             ? '/year'
@@ -227,7 +227,7 @@ export function PlanSelectionStep({
                             ? '/quarter'
                             : '/month'}
                         </div>
-                        <p className="text-white/60 text-xs mt-2">
+                        <p className="text-white/60 text-sm mt-2">
                           {tier.contributionType === 'monthly' && 'Your monthly contribution'}
                           {tier.contributionType === 'quarterly' && 'Your quarterly contribution'}
                           {tier.contributionType === 'annual' && 'Your annual contribution'}
@@ -237,9 +237,9 @@ export function PlanSelectionStep({
                   </div>
 
                   {/* Features */}
-                  <ul className="space-y-2 mb-6 text-left">
+                  <ul className="space-y-2 mb-6 text-left max-h-32 overflow-y-auto overflow-x-visible">
                     {tier.features.slice(0, 4).map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2 text-xs text-white/80">
+                      <li key={index} className="flex items-start gap-2 text-sm text-white/80">
                         <Check className="w-3 h-3 text-amber-400 mt-0.5 flex-shrink-0" />
                         <span>{feature}</span>
                       </li>

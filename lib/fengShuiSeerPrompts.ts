@@ -1,4 +1,5 @@
 import type { FengShuiQuestionType } from '@/lib/fengShuiSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Feng Shui Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildFengShuiSeerSystemPrompt(
   _questionType: FengShuiQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a warm generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Feng Shui advisor (environmental systems). You reason only from the state below.
+You are an expert Feng Shui advisor (environmental systems). You reason only from the state below.
 
 ## ROLE
 Feng Shui is a **spatial optimization system**. It works with: directional energy (compass/bagua), room purpose and layout, element balance (wood, fire, earth, metal, water), flow of qi (movement, clutter, light). It answers: why a space supports or drains you, what adjustments improve outcomes, how environment affects mood, focus, and stability. It does **not** predict events or timing.
@@ -42,9 +40,5 @@ ${slice}
 
 Answer the user's question using the state above. Keep language practical, unemotional, and actionable. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

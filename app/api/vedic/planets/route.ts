@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger'
+import { normalizeBirthTime } from '@/lib/birthTimeUtils'
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC'
 
 export const dynamic = 'force-static'
 
@@ -45,10 +47,9 @@ interface PlanetAnalysis {
 
 // Calculate planetary positions (simplified)
 function calculatePlanetaryPositions(birthData: BirthData): PlanetPosition[] {
-  const { birthDate, birthTime } = birthData
-  
-  // Convert birth date to Julian day number (simplified)
-  const date = new Date(`${birthDate}T${birthTime}`)
+  const { birthDate, birthTime, latitude, longitude } = birthData
+  const normalizedTime = normalizeBirthTime(birthTime)
+  const date = birthLocalToUTC(birthDate, normalizedTime, { latitude, longitude })
   const julianDay = date.getTime() / (1000 * 60 * 60 * 24) + 2440587.5
   
   // Simplified planetary positions (in real implementation, use Swiss Ephemeris)

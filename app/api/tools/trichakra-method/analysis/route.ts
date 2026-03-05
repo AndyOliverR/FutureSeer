@@ -3,8 +3,9 @@ import { trichakraIntelligence, UserProfile as TrichakraUserProfile } from '@/li
 import { getUserProfile } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/firebase';
 import { devLog } from '@/lib/devLogger';
+import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,17 +51,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedProfile: TrichakraUserProfile = {
+      ...finalProfile,
+      birthTime: normalizeBirthTime(finalProfile.birthTime),
+    };
+
     devLog.info('🕉️ Generating Trichakra analysis for user:', userId || 'anonymous', 'trichakra-method');
     devLog.debug('🕉️ Birth data:', {
-      birthDate: finalProfile.birthDate,
-      birthTime: finalProfile.birthTime,
-      birthPlace: finalProfile.birthPlace,
-      latitude: finalProfile.latitude,
-      longitude: finalProfile.longitude
+      birthDate: normalizedProfile.birthDate,
+      birthTime: normalizedProfile.birthTime,
+      birthPlace: normalizedProfile.birthPlace,
+      latitude: normalizedProfile.latitude,
+      longitude: normalizedProfile.longitude
     }, 'trichakra-method');
 
     // Generate Trichakra analysis
-    const analysis = await trichakraIntelligence.generateTrichakraRemedies(finalProfile);
+    const analysis = await trichakraIntelligence.generateTrichakraRemedies(normalizedProfile);
 
     devLog.info('✅ Trichakra analysis generated successfully', undefined, 'trichakra-method');
 

@@ -1,4 +1,5 @@
 import type { KabbalisticQuestionType } from '@/lib/kabbalisticNumerologySeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Kabbalistic Numerology Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildKabbalisticNumerologySeerSystemPrompt(
   _questionType: KabbalisticQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a brief generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Kabbalistic Numerology advisor. You reason only from the state below. Kabbalistic Numerology reveals soul patterns, not timing.
+You are an expert Kabbalistic Numerology advisor. You reason only from the state below. Kabbalistic Numerology reveals soul patterns, not timing.
 
 ## ROLE
 Kabbalistic Numerology is a **soul-level interpretive system**. It works with: name vibrations (Hebrew-based mappings), Soul Urge / Inner Self numbers, karmic lessons and debts, hidden strengths and blocks. It answers: who you are at a soul level, why certain patterns repeat, what lessons you are meant to integrate. It is **not** a timing or predictive system.
@@ -44,9 +42,5 @@ ${slice}
 
 Answer the user's question using the state above. Keep language reflective, calm, and inward-focused. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

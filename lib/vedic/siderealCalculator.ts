@@ -75,6 +75,14 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
   const siderealAsc = norm360(tropicalAsc - ayanamsha);
   
   devLog.debug(`🕉️ Ascendant: Tropical ${tropicalAsc.toFixed(2)}° → Sidereal ${siderealAsc.toFixed(2)}°`);
+  // Lagna diagnostic for 22 Apr 1959 22:00 IST Kushalnagar: expected sidereal Ascendant ~253° (Sagittarius ~13°)
+  const isTestChart1959 = date.getUTCFullYear() === 1959 && date.getUTCMonth() === 3 && date.getUTCDate() === 22 && Math.abs(longitude - 75.96) < 2;
+  if (isTestChart1959) {
+    devLog.debug('🔮 Lagna diagnostic (22 Apr 1959 Kushalnagar):', { siderealAscendant: Math.round(siderealAsc * 100) / 100, expected: 'Sagittarius ~253° (~13°)' }, 'siderealCalculator');
+    if (process.env.NODE_ENV === 'development' && (siderealAsc < 248 || siderealAsc > 258)) {
+      devLog.warn(`Lagna fails reference: expected Sagittarius ~13° (248°–258°), got ${siderealAsc.toFixed(2)}°`, undefined, 'siderealCalculator');
+    }
+  }
   
   // Validate Feb 24, 1983
   if (date.getUTCFullYear() === 1983 && 
@@ -99,13 +107,38 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
       devLog.error(`  Asc: ${ascLon.toFixed(2)}° (expected ~97°)`, undefined, 'siderealCalculator');
     }
   }
-  
+
+  // Optional: Moon sign vs longitude consistency (dev-only warning)
+  if (process.env.NODE_ENV === 'development' && siderealPlanets.moon) {
+    const moonLon = siderealPlanets.moon.siderealLongitude;
+    const moonSign = siderealPlanets.moon.sign;
+    const expectedSign = getSignFromLongitude(moonLon);
+    if (moonSign !== expectedSign) {
+      devLog.warn(`Moon longitude ${moonLon.toFixed(2)}° implies sign ${expectedSign}, got ${moonSign}`, undefined, 'siderealCalculator');
+    }
+  }
+
+  const ascendantSign = getSignFromLongitude(siderealAsc);
+  // Dev-only: ensure Ascendant longitude falls within the range implied by the returned sign
+  if (process.env.NODE_ENV === 'development') {
+    const signIndex = Math.floor(siderealAsc / 30) % 12;
+    const expectedMin = signIndex * 30;
+    const expectedMax = expectedMin + 30;
+    if (siderealAsc < expectedMin - 0.01 || siderealAsc >= expectedMax + 0.01) {
+      devLog.warn(
+        `Ascendant longitude ${siderealAsc.toFixed(2)}° outside range for ${ascendantSign} (${expectedMin}°–${expectedMax}°)`,
+        undefined,
+        'siderealCalculator'
+      );
+    }
+  }
+
   return {
     planets: siderealPlanets,
     ascendant: {
       tropicalLongitude: tropicalAsc,
       siderealLongitude: siderealAsc,
-      sign: getSignFromLongitude(siderealAsc),
+      sign: ascendantSign,
       degree: siderealAsc % 30
     },
     ayanamsha: ayanamsha

@@ -13,8 +13,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, ArrowLeft, User, Clock, MapPin, Edit3, Save, X, LogOut, Sparkles, Heart, Camera, Calendar } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
-import { updateUserProfile, getFirebaseStorage, type UserProfile } from "@/lib/firebase"
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
+import { updateUserProfile, type UserProfile } from "@/lib/firebase"
+import { normalizeBirthTime } from "@/lib/birthTimeUtils"
+import { getOverQuotaMessage } from "@/lib/profileEditQuota"
 import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache, useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
 import { ReferralCodeCard } from "@/components/ReferralCodeCard"
 import { SubscriptionStatus } from "@/components/SubscriptionStatus"
@@ -24,7 +25,7 @@ import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 
 export default function ProfilePage() {
   const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
-  const { applyGeneratedProfile } = useComprehensiveMysticalProfile()
+  const { applyGeneratedProfile, refreshProfile: refreshComprehensiveProfile } = useComprehensiveMysticalProfile()
   const router = useRouter()
   const { t } = useTranslation('common')
 
@@ -40,6 +41,7 @@ export default function ProfilePage() {
   const [isAndroid, setIsAndroid] = useState(false)
   const [uploadingFace, setUploadingFace] = useState(false)
   const [uploadingPalm, setUploadingPalm] = useState(false)
+  const [canGenerateMysticalProfile, setCanGenerateMysticalProfile] = useState(true)
   const faceInputRef = useRef<HTMLInputElement>(null)
   const palmInputRef = useRef<HTMLInputElement>(null)
 
@@ -66,6 +68,28 @@ export default function ProfilePage() {
     birthTimeNote: "", birthPlace: "", currentLocation: "",
     facePhotoUrl: "", palmPhotoUrl: ""
   })
+
+  // Fetch edit quota on load so Generate button state is correct
+  useEffect(() => {
+    if (!user?.uid) return
+    let cancelled = false
+    const fetchQuota = async () => {
+      try {
+        const token = await user.getIdToken()
+        const res = await fetch('/api/profile/edit-quota', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!cancelled && res.ok) {
+          const data = await res.json()
+          setCanGenerateMysticalProfile(data.canGenerate !== false)
+        }
+      } catch {
+        if (!cancelled) setCanGenerateMysticalProfile(true)
+      }
+    }
+    fetchQuota()
+    return () => { cancelled = true }
+  }, [user?.uid])
 
   useEffect(() => {
     if (userProfile && !isEditing) {
@@ -112,22 +136,80 @@ export default function ProfilePage() {
     return null
   }
 
+  // Build 24h birth time and profile overrides from current form (so Generate uses latest values even without Save)
+  const buildProfileOverridesForGenerate = (): Record<string, string | number | undefined> => {
+    let bt24 = formData.birthTime ?? ''
+    if (formData.birthTime && formData.birthTimeAMPM) {
+      const p = String(formData.birthTime).split(':')
+      if (p.length >= 2) {
+        let h = parseInt(p[0], 10)
+        const m = Math.min(59, Math.max(0, parseInt(p[1], 10) || 0))
+        const minStr = m.toString().padStart(2, '0')
+        if (h >= 1 && h <= 12) {
+          if (formData.birthTimeAMPM === 'PM' && h !== 12) h += 12
+          else if (formData.birthTimeAMPM === 'AM' && h === 12) h = 0
+          h = Math.max(0, Math.min(23, h))
+          bt24 = `${h.toString().padStart(2, '0')}:${minStr}`
+          if (p[2] !== undefined) bt24 += `:${String(p[2]).padStart(2, '0')}`
+        } else {
+          bt24 = `${h.toString().padStart(2, '0')}:${minStr}`
+          if (p[2] !== undefined) bt24 += `:${String(p[2]).padStart(2, '0')}`
+        }
+      }
+    }
+    const [hh, mm] = (bt24 || '0:0').split(':').map((x) => parseInt(x, 10) || 0)
+    if (hh > 23 || hh < 0 || mm > 59 || mm < 0) bt24 = '12:00'
+    const overrides: Record<string, string | number | undefined> = {
+      birthDate: formData.birthDate || undefined,
+      birthTime: normalizeBirthTime(bt24 || '12:00:00') || undefined,
+      birthPlace: formData.birthPlace || undefined,
+      currentLocation: formData.currentLocation || undefined,
+      fullName: formData.fullName || undefined,
+      displayName: formData.displayName || undefined,
+      gender: formData.gender ?? undefined,
+      facePhotoUrl: formData.facePhotoUrl || undefined,
+      palmPhotoUrl: formData.palmPhotoUrl || undefined,
+    }
+    if (typeof userProfile?.birthLatitude === 'number') overrides.birthLatitude = userProfile.birthLatitude
+    if (typeof userProfile?.birthLongitude === 'number') overrides.birthLongitude = userProfile.birthLongitude
+    return overrides
+  }
+
   const handleSave = async () => {
     if (!user?.uid) return
     const validationError = validateProfileData()
     if (validationError) { setError(validationError); return }
     setIsLoading(true); setError(null); setSuccess(null)
     try {
-      let bt24 = formData.birthTime
+      let bt24 = formData.birthTime ?? ''
       if (formData.birthTime && formData.birthTimeAMPM) {
         const p = String(formData.birthTime).split(':')
         if (p.length >= 2) {
-          let h = parseInt(p[0])
-          if (formData.birthTimeAMPM === "PM" && h !== 12) h += 12
-          else if (formData.birthTimeAMPM === "AM" && h === 12) h = 0
-          bt24 = `${h.toString().padStart(2, '0')}:${p[1]}`
+          let h = parseInt(p[0], 10)
+          const m = Math.min(59, Math.max(0, parseInt(p[1], 10) || 0))
+          const minStr = m.toString().padStart(2, '0')
+          // Hour 1-12 is ambiguous: could be 12h input (10:30 PM) or 24h. Always apply AM/PM for 1-12 so 10:30 PM -> 22:30.
+          // Hour 0 or 13-23 is already 24h (e.g. loaded 22:30); use as-is to avoid double-applying PM (22+12=34).
+          if (h >= 1 && h <= 12) {
+            if (formData.birthTimeAMPM === "PM" && h !== 12) h += 12
+            else if (formData.birthTimeAMPM === "AM" && h === 12) h = 0
+            h = Math.max(0, Math.min(23, h))
+            bt24 = `${h.toString().padStart(2, '0')}:${minStr}`
+            if (p[2] !== undefined) bt24 += `:${String(p[2]).padStart(2, '0')}`
+          } else {
+            bt24 = `${h.toString().padStart(2, '0')}:${minStr}`
+            if (p[2] !== undefined) bt24 += `:${String(p[2]).padStart(2, '0')}`
+          }
         }
       }
+      // Reject invalid stored time (e.g. legacy 34:00)
+      const [hh, mm] = (bt24 || '0:0').split(':').map((x) => parseInt(x, 10) || 0)
+      if (hh > 23 || hh < 0 || mm > 59 || mm < 0) {
+        bt24 = '12:00'
+      }
+
+      // Store birth time in 24h HH:mm:ss so downstream charts never see mixed format (e.g. "22:00 PM")
+      const birthTimeToStore = normalizeBirthTime(bt24 || '12:00:00')
 
       // Explicitly type the update data to match UserProfile definition
       const updatePayload: Partial<UserProfile> = {
@@ -135,7 +217,7 @@ export default function ProfilePage() {
         fullName: formData.fullName,
         gender: formData.gender,
         birthDate: formData.birthDate,
-        birthTime: bt24,
+        birthTime: birthTimeToStore,
         birthTimeKnown: formData.birthTimeKnown,
         birthTimePeriod: formData.birthTimePeriod as UserProfile['birthTimePeriod'],
         birthTimeNote: formData.birthTimeNote,
@@ -146,6 +228,37 @@ export default function ProfilePage() {
       }
 
       await updateUserProfile(user.uid, updatePayload)
+
+      // Clear stored mystical profile so user can regenerate from updated data
+      try {
+        const token = await user.getIdToken()
+        await fetch('/api/profile/invalidate-cache', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      } catch {
+        // Best-effort; profile save already succeeded
+      }
+      clearComprehensiveMysticalProfileCache(user.uid)
+      clearPersistentProfileCache(user.uid)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('futureSeer:profileInvalidated', { detail: { userId: user.uid } }))
+      }
+
+      try {
+        const token = await user.getIdToken()
+        const recordRes = await fetch('/api/profile/record-edit', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (recordRes.ok) {
+          const quota = await recordRes.json()
+          setCanGenerateMysticalProfile(quota.canGenerate !== false)
+        }
+      } catch {
+        // Best-effort; don't lock user out on network error
+      }
+
       setSuccess("Profile updated successfully!"); setIsEditing(false); setHasUnsavedChanges(false)
       setTimeout(() => refreshProfile(), 500)
     } catch (e) { setError("Failed to save profile.") }
@@ -154,17 +267,26 @@ export default function ProfilePage() {
 
   const handlePhotoUpload = async (file: File, type: "face" | "palm") => {
     if (!user?.uid) return
-    const storage = getFirebaseStorage()
-    if (!storage) { setError("Storage not available."); return }
     const setUploading = type === "face" ? setUploadingFace : setUploadingPalm
     const key = type === "face" ? "facePhotoUrl" : "palmPhotoUrl"
     setUploading(true)
     setError(null)
     try {
-      const path = type === "face" ? `users/${user.uid}/face_${Date.now()}` : `users/${user.uid}/palm_${Date.now()}`
-      const storageRef = ref(storage, path)
-      await uploadBytes(storageRef, file)
-      const url = await getDownloadURL(storageRef)
+      const token = await user.getIdToken()
+      const formData = new FormData()
+      formData.append("file", file)
+      formData.append("type", type)
+      const res = await fetch("/api/profile/upload-photo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || "Upload failed")
+      }
+      const { url } = await res.json()
+      if (!url) throw new Error("No URL returned")
       setFormData((prev) => ({ ...prev, [key]: url }))
       await updateUserProfile(user.uid, { [key]: url })
       setTimeout(() => refreshProfile(), 300)
@@ -245,7 +367,7 @@ export default function ProfilePage() {
               {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 relative z-20 overflow-visible">
               <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
               {isEditing ? (
                 <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
@@ -316,6 +438,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2 text-center">
                 <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                <p className="text-[10px] text-white/70">Upload left palm (female) or right palm (male).</p>
                 <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
                   {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
                   {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
@@ -335,6 +458,13 @@ export default function ProfilePage() {
                 <Button
                   onClick={async () => {
                     if (isGeneratingProfile) return
+                    if (user?.uid) {
+                      clearComprehensiveMysticalProfileCache(user.uid)
+                      clearPersistentProfileCache(user.uid)
+                      if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('futureSeer:profileInvalidated', { detail: { userId: user.uid } }))
+                      }
+                    }
                     setIsGeneratingProfile(true)
                     setError(null)
                     setGenerationStatus("Preparing your cosmic reading...")
@@ -345,20 +475,27 @@ export default function ProfilePage() {
                       const t = await user?.getIdToken()
                       if (!t) throw new Error("Please sign in again to continue.")
                       setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+                      const profileOverrides = buildProfileOverridesForGenerate()
                       const res = await fetch('/api/profile/generate-mystical', {
                         method: 'POST',
-                        headers: { Authorization: `Bearer ${t}` },
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+                        body: JSON.stringify({ profileOverrides }),
                         signal: abort.signal,
                       })
                       if (!res.ok) {
                         const body = await res.json().catch(() => ({}))
+                        if (res.status === 403) setCanGenerateMysticalProfile(false)
                         throw new Error(body.error || "Profile generation failed. Please try again.")
                       }
                       const data = await res.json()
                       if (data.failedTools && data.failedTools.length > 0) {
                         devLog.warn(`Some tools had issues: ${data.failedTools.join(', ')}`, 'profile')
                       }
-                      applyGeneratedProfile(data.comprehensiveProfile)
+                      if (data.success && data.comprehensiveProfile) {
+                        applyGeneratedProfile(data.comprehensiveProfile)
+                      } else if (data.success && data.alreadyGenerated) {
+                        await refreshComprehensiveProfile()
+                      }
                       setSuccess("Mystical Profile Generated!")
                       router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
                     } catch(e: any) {
@@ -370,7 +507,7 @@ export default function ProfilePage() {
                       generationAbortRef.current = null
                     }
                   }}
-                  disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace}
+                  disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateMysticalProfile}
                   className="w-full h-16 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 rounded-[24px] font-bold text-lg shadow-xl active:scale-95 transition-all"
                 >
                   {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
@@ -380,6 +517,12 @@ export default function ProfilePage() {
                 )}
                 {!formData.birthDate && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/50 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                )}
+                {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
+                  <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
+                )}
+                {formData.birthDate && formData.birthPlace && canGenerateMysticalProfile && !isGeneratingProfile && (
+                  <p className="text-center text-amber-400/50 text-xs mt-2">Your current birth details above will be used for generation.</p>
                 )}
               </div>
             )}
@@ -440,7 +583,7 @@ export default function ProfilePage() {
                 {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative z-20 overflow-visible">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
                 {isEditing ? (
                   <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-12 w-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:border-amber-500 [color-scheme:dark]">
@@ -511,6 +654,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-2 text-center">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                  <p className="text-xs text-amber-400/70">Upload left palm (female) or right palm (male).</p>
                   <div className="aspect-square bg-white/5 rounded-2xl border-2 border-dashed border-amber-400/20 flex items-center justify-center overflow-hidden relative">
                     {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 text-amber-400/40" />}
                     {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
@@ -530,6 +674,13 @@ export default function ProfilePage() {
                   <Button
                     onClick={async () => {
                       if (isGeneratingProfile) return
+                      if (user?.uid) {
+                        clearComprehensiveMysticalProfileCache(user.uid)
+                        clearPersistentProfileCache(user.uid)
+                        if (typeof window !== 'undefined') {
+                          window.dispatchEvent(new CustomEvent('futureSeer:profileInvalidated', { detail: { userId: user.uid } }))
+                        }
+                      }
                       setIsGeneratingProfile(true)
                       setError(null)
                       setGenerationStatus("Preparing your cosmic reading...")
@@ -540,20 +691,27 @@ export default function ProfilePage() {
                         const t = await user?.getIdToken()
                         if (!t) throw new Error("Please sign in again to continue.")
                         setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+                        const profileOverrides = buildProfileOverridesForGenerate()
                         const res = await fetch('/api/profile/generate-mystical', {
                           method: 'POST',
-                          headers: { Authorization: `Bearer ${t}` },
+                          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+                          body: JSON.stringify({ profileOverrides }),
                           signal: abort.signal,
                         })
                         if (!res.ok) {
                           const body = await res.json().catch(() => ({}))
+                          if (res.status === 403) setCanGenerateMysticalProfile(false)
                           throw new Error(body.error || "Profile generation failed. Please try again.")
                         }
                         const data = await res.json()
                         if (data.failedTools && data.failedTools.length > 0) {
                           devLog.warn(`Some tools had issues: ${data.failedTools.join(', ')}`, 'profile')
                         }
-                        applyGeneratedProfile(data.comprehensiveProfile)
+                        if (data.success && data.comprehensiveProfile) {
+                          applyGeneratedProfile(data.comprehensiveProfile)
+                        } else if (data.success && data.alreadyGenerated) {
+                          await refreshComprehensiveProfile()
+                        }
                         setSuccess("Mystical Profile Generated!")
                         router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
                       } catch(e: any) {
@@ -565,7 +723,7 @@ export default function ProfilePage() {
                         generationAbortRef.current = null
                       }
                     }}
-                    disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace}
+                    disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateMysticalProfile}
                     className="w-full h-14 bg-gradient-to-r from-amber-600 to-yellow-500 text-[#020617] rounded-2xl font-bold shadow-xl hover:opacity-95 transition-opacity"
                   >
                     {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
@@ -575,6 +733,12 @@ export default function ProfilePage() {
                   )}
                   {!formData.birthDate && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/70 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                  )}
+                  {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
+                  )}
+                  {formData.birthDate && formData.birthPlace && canGenerateMysticalProfile && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/60 text-xs mt-2">Your current birth details above will be used for generation.</p>
                   )}
                 </div>
               )}

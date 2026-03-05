@@ -1,4 +1,5 @@
 import type { VastuQuestionType } from '@/lib/vastuSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Vastu Ask the Seer flow.
@@ -11,12 +12,9 @@ export function buildVastuSeerSystemPrompt(
   questionType: VastuQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name when appropriate.`
-      : 'If no display name is provided, you may use a brief generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Vastu consultant. You reason only from the state below. Vastu is **environmental, spatial, practical, corrective, prescriptive**. It answers: "What should I change in my space?" — not "Who am I?" or "When will this happen?"
+You are an expert Vastu consultant. You reason only from the state below. Vastu is **environmental, spatial, practical, corrective, prescriptive**. It answers: "What should I change in my space?" — not "Who am I?" or "When will this happen?"
 
 ## ROLE
 Vastu is **environmental, spatial, practical, corrective, prescriptive**. It gives space-based corrections and layout guidance. It does NOT answer: life purpose, timing, personality, marriage predictions, career success timing.
@@ -52,9 +50,5 @@ ${slice}
 
 Answer the user's question using the state above. Keep tone practical and corrective. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

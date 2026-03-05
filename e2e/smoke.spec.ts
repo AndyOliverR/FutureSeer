@@ -29,7 +29,7 @@ test.describe('Landing page', () => {
 test.describe('Sign-in page', () => {
   test('loads and shows auth UI', async ({ page }) => {
     await page.goto('/signin');
-    await expect(page.getByText(/Welcome Back|Sign in with Google|or email/i)).toBeVisible();
+    await expect(page.getByText(/Welcome Back|Sign in with Google|or email/i).first()).toBeVisible();
     await expect(page.getByPlaceholder(/Email Address|email/i)).toBeVisible();
     await expect(page.getByPlaceholder(/Password/i)).toBeVisible();
   });

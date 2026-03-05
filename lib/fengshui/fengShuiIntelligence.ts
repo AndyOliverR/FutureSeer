@@ -98,8 +98,7 @@ function generateOverview(
   kua: any,
   elementAnalysis: any
 ): string {
-  const name = userProfile?.fullName || userProfile?.displayName || 'you'
-  return `Welcome, ${name}. Your Feng Shui analysis reveals a ${kua.element} element nature with Kua number ${kua.number}. This indicates ${kua.attributes.toLowerCase()}. Your favorable directions for success, health, relationships, and wisdom are ${Object.values(kua.favorableDirections).join(', ')}. By aligning your space with these directions and balancing the ${kua.element} element, you can enhance the flow of Qi (energy) in your environment and support your life goals.`
+  return `Your Feng Shui analysis reveals a ${kua.element} element nature with Kua number ${kua.number}. This indicates ${kua.attributes.toLowerCase()}. Your favorable directions for success, health, relationships, and wisdom are ${Object.values(kua.favorableDirections).join(', ')}. By aligning your space with these directions and balancing the ${kua.element} element, you can enhance the flow of Qi (energy) in your environment and support your life goals.`
 }
 
 function generateKuaSummary(kua: any): string {

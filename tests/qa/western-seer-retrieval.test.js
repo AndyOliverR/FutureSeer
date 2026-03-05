@@ -12,8 +12,8 @@ describe('Western Seer retrieval', () => {
     test('career returns career, sun, timing', () => {
       expect(getSectionsForIntent('career')).toEqual(['career', 'sun', 'timing']);
     });
-    test('relationships returns relationships, moon, personality', () => {
-      expect(getSectionsForIntent('relationships')).toEqual(['relationships', 'moon', 'personality']);
+    test('relationships returns relationships, moon, personality, timing', () => {
+      expect(getSectionsForIntent('relationships')).toEqual(['relationships', 'moon', 'personality', 'timing']);
     });
     test('timing returns timing, general', () => {
       expect(getSectionsForIntent('timing')).toEqual(['timing', 'general']);

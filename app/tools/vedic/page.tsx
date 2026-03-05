@@ -347,6 +347,16 @@ function VedicAstrologyPageContent() {
                       <span className="text-2xl font-heading text-white">{getSignName(compProfile?.vedic?.ascendant)}</span>
                     </div>
                     <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2">Moon sign</span>
+                      <span className="text-2xl font-heading text-white">
+                        {(() => {
+                          const planets = (compProfile?.vedic as Record<string, unknown>)?.planets as Array<{ name?: string; sign?: number; signName?: string }> | undefined;
+                          const moon = planets?.find((p) => String(p?.name).toLowerCase() === 'moon');
+                          return moon ? getSignName(moon) : '—';
+                        })()}
+                      </span>
+                    </div>
+                    <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2">Mahadasha</span>
                       <span className="text-2xl font-heading text-white">{compProfile?.vedic?.currentDasha?.planet || "N/A"}</span>
                     </div>

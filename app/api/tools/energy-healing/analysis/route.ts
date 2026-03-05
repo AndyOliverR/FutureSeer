@@ -203,8 +203,9 @@ Return JSON.`;
 
     return NextResponse.json({
       success: true,
-      data: healingData
-    } as EnergyHealingResponse);
+      data: healingData,
+      _usage: result.usage,
+    } as EnergyHealingResponse & { _usage?: typeof result.usage });
 
   } catch (error: any) {
     // Check for context length errors specifically

@@ -9,6 +9,7 @@ import { devLog } from '@/lib/devLogger';
 import { createAICompletion } from '@/lib/aiGateway';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
 import { adminDb } from '@/lib/firebase-admin';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -50,12 +51,11 @@ function formatChartContextForAstro(planets: any[], houses: any[]): string {
 }
 
 function buildCover(
-  userProfile: AstrocartographyComprehensiveRequest['userProfile'],
+  _userProfile: AstrocartographyComprehensiveRequest['userProfile'],
   birthData: BirthData
 ): Record<string, string> {
-  const reportFor = userProfile?.fullName || userProfile?.displayName || 'Your';
   return {
-    reportFor,
+    reportFor: 'you',
     birthDate: birthData.birthDate,
     birthTime: birthData.birthTime || '',
     birthPlace: birthData.birthPlace,
@@ -64,7 +64,9 @@ function buildCover(
 }
 
 function buildAstrocartographyReportPrompt(chartContext: string): string {
-  return `You are an expert in Astrocartography (location-based astrology). Generate a comprehensive, simple-to-understand report based on the birth chart below. Use a "zoom-in" structure: global view → specific lines → personal meaning.
+  return `${REPORT_VOICE_RULE}
+
+You are an expert in Astrocartography (location-based astrology). Generate a comprehensive, simple-to-understand report based on the birth chart below. Use a "zoom-in" structure: global view → specific lines → personal meaning.
 
 CRITICAL: Astrocartography shows WHERE certain energies ACTIVATE, not what will happen. Use language of activation and influence, never guarantees or predictions.
 
@@ -73,7 +75,7 @@ ${chartContext}
 
 Respond with a single JSON object (no markdown, no code fence) with exactly these keys. All string values should be concise and user-friendly.
 
-1. "overview" (string): 2–4 sentences on how this person's chart translates to geographic activation—key angles (MC, IC, ASC, DSC) and what they mean for place. Emphasize activation, not outcomes.
+1. "overview" (string): 2–4 sentences on how your chart translates to geographic activation—key angles (MC, IC, ASC, DSC) and what they mean for place. Address the reader as "you". Emphasize activation, not outcomes.
 
 2. "keyPlanetaryLines" (array of objects): Each object has "angle" (string: "MC" | "IC" | "ASC" | "DSC"), "planet" (string), "theme" (string). Describe 4–8 key line themes based on the chart (e.g. Jupiter MC: career expansion; Venus ASC: social harmony). Focus on what each line ACTIVATES.
 
@@ -93,7 +95,7 @@ Respond with a single JSON object (no markdown, no code fence) with exactly thes
 
 10. "locationHighlights" (array of objects): Optional. Each object has "regionOrCity" (string), "line" (string, e.g. "Sun on MC"), "interpretation" (string). 3–6 example locations with one-line interpretations (e.g. "New York: Sun on MC – career visibility, less privacy"). If no specific cities fit the chart, use general regions.
 
-11. "crossLineDynamics" (string): 1–2 paragraphs on where this person's lines cluster or cross, and how overlapping energies blend or create tension. Activation language only.
+11. "crossLineDynamics" (string): 1–2 paragraphs on where your lines cluster or cross, and how overlapping energies blend or create tension. Address the reader as "you". Activation language only.
 
 12. "practicalScenarios" (string): Use cases in 1–2 paragraphs: relocation for career, travel for emotional reset, places that support relationship building, zones that challenge identity growth. Actionable but not deterministic.
 
@@ -230,6 +232,7 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
+      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Astrocartography comprehensive API error:', err, 'route');

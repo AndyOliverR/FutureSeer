@@ -11,11 +11,13 @@ import { UserProfile } from './firebase';
 import { devLog } from '@/lib/devLogger';
 import { getServerBaseUrl } from './serverBaseUrl';
 import { calculateVedicNumerologyProfile } from './vedicNumerologyCalculations';
+import { normalizeBirthTime } from './birthTimeUtils';
 export interface ToolReportEntry {
   status: 'success' | 'failed';
   data?: Record<string, unknown>;
   error?: string;
   generatedAt: string;
+  _usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }
 
 export interface ToolReports {
@@ -45,6 +47,23 @@ export interface GenerationResult {
   comprehensiveProfile: Record<string, unknown>;
   failedTools: string[];
   systemsUsed: string[];
+  aggregateUsage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+}
+
+/** Add usage from a tool API response body (_usage or usage) into the running aggregate. */
+function addResponseUsage(
+  aggregate: { promptTokens: number; completionTokens: number; totalTokens: number },
+  body: unknown
+): void {
+  if (!body || typeof body !== 'object') return;
+  const u = (body as Record<string, unknown>)._usage ?? (body as Record<string, unknown>).usage;
+  if (!u || typeof u !== 'object') return;
+  const p = (u as Record<string, unknown>).promptTokens;
+  const c = (u as Record<string, unknown>).completionTokens;
+  const t = (u as Record<string, unknown>).totalTokens;
+  if (typeof p === 'number') aggregate.promptTokens += p;
+  if (typeof c === 'number') aggregate.completionTokens += c;
+  if (typeof t === 'number') aggregate.totalTokens += t;
 }
 
 /** List of all tools to run at profile generation time. No lazy loading. Exported so API can check for missing reports. */
@@ -120,7 +139,7 @@ async function runTool(
         });
         if (!res.ok) throw new Error(`Vedic API: ${res.status}`);
         const data = await res.json();
-        return { status: 'success', data: data.data ?? data, generatedAt };
+        return { status: 'success', data: data.data ?? data, generatedAt, _usage: data._usage ?? data.usage };
       }
 
       case 'western': {
@@ -142,7 +161,7 @@ async function runTool(
         if (!res.ok) throw new Error(`Western API: ${res.status}`);
         const json = await res.json();
         const chartData = json.data ?? json;
-        return { status: 'success', data: { chart: chartData }, generatedAt };
+        return { status: 'success', data: { chart: chartData }, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'astrocartography': {
@@ -164,7 +183,7 @@ async function runTool(
         if (!res.ok) throw new Error(`Astrocartography API: ${res.status}`);
         const json = await res.json();
         const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data;
-        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt };
+        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'esotericAstrology': {
@@ -186,7 +205,7 @@ async function runTool(
         if (!res.ok) throw new Error(`Esoteric Astrology API: ${res.status}`);
         const json = await res.json();
         const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data;
-        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt };
+        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'psychologicalAstrology': {
@@ -208,7 +227,7 @@ async function runTool(
         if (!res.ok) throw new Error(`Psychological Astrology API: ${res.status}`);
         const json = await res.json();
         const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data;
-        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt };
+        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'shamanicAstrology': {
@@ -230,7 +249,7 @@ async function runTool(
         if (!res.ok) throw new Error(`Shamanic Astrology API: ${res.status}`);
         const json = await res.json();
         const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data;
-        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt };
+        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'kabbalisticAstrology': {
@@ -252,7 +271,7 @@ async function runTool(
         if (!res.ok) throw new Error(`Kabbalistic Astrology API: ${res.status}`);
         const json = await res.json();
         const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data;
-        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt };
+        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'hermeticAstrology': {
@@ -274,7 +293,7 @@ async function runTool(
         if (!res.ok) throw new Error(`Hermetic Astrology API: ${res.status}`);
         const json = await res.json();
         const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data;
-        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt };
+        return { status: 'success', data: report ? { comprehensiveAnalysis: report } : json.data ?? json, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'hellenistic': {
@@ -303,9 +322,10 @@ async function runTool(
               reason: json.error ?? 'Hellenistic reading unavailable',
             },
             generatedAt,
+            _usage: json._usage ?? json.usage,
           };
         }
-        return { status: 'success', data, generatedAt };
+        return { status: 'success', data, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'numerology': {
@@ -373,9 +393,9 @@ async function runTool(
         const json = await res.json();
         const analysis = json.data ?? json;
         if (!analysis?.cusps?.length || !analysis?.timingAnalysis) {
-          return { status: 'success', data: { placeholder: true, reason: 'KP chart incomplete' }, generatedAt };
+          return { status: 'success', data: { placeholder: true, reason: 'KP chart incomplete' }, generatedAt, _usage: json._usage ?? json.usage };
         }
-        return { status: 'success', data: analysis, generatedAt };
+        return { status: 'success', data: analysis, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'iching': {
@@ -475,6 +495,7 @@ async function runTool(
             status: 'success',
             data: { palmistryContext: analysis, analysis },
             generatedAt,
+            _usage: json._usage ?? json.usage,
           };
         } catch (err) {
           devLog.warn('[ProfileOrchestrator] Palmistry analysis failed:', err, 'profileGenerationOrchestrator');
@@ -514,9 +535,10 @@ async function runTool(
               placeholder: true,
             },
             generatedAt,
+            _usage: json._usage ?? json.usage,
           };
         }
-        return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+        return { status: 'success', data: data as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'medicalAstrology': {
@@ -548,12 +570,14 @@ async function runTool(
               reason: (json as { error?: string })?.error ?? 'Medical astrology reading unavailable',
             },
             generatedAt,
+            _usage: json._usage ?? json.usage,
           };
         }
         return {
           status: 'success',
           data: { data: responseData, metadata: json.metadata ?? { generatedAt: new Date().toISOString() } },
           generatedAt,
+          _usage: json._usage ?? json.usage,
         };
       }
 
@@ -583,6 +607,7 @@ async function runTool(
           status: 'success',
           data: report ? { comprehensiveAnalysis: report } : { comprehensiveAnalysis: json },
           generatedAt,
+          _usage: json._usage ?? json.usage,
         };
       }
 
@@ -612,6 +637,7 @@ async function runTool(
           status: 'success',
           data: report ? { comprehensiveAnalysis: report } : { comprehensiveAnalysis: json },
           generatedAt,
+          _usage: json._usage ?? json.usage,
         };
       }
 
@@ -639,12 +665,14 @@ async function runTool(
             status: 'success',
             data: responseData as Record<string, unknown>,
             generatedAt,
+            _usage: json._usage ?? json.usage,
           };
         }
         return {
           status: 'success',
           data: (responseData as Record<string, unknown>) ?? { placeholder: true, reason: 'Zi Wei report unavailable' },
           generatedAt,
+          _usage: json._usage ?? json.usage,
         };
       }
 
@@ -708,7 +736,7 @@ async function runTool(
           }
           const json = await res.json();
           const data = json.data ?? json;
-          return { status: 'success', data: (data as Record<string, unknown>) ?? {}, generatedAt };
+          return { status: 'success', data: (data as Record<string, unknown>) ?? {}, generatedAt, _usage: json._usage ?? json.usage };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] Ogham failed:', msg, 'profileGenerationOrchestrator');
@@ -742,10 +770,11 @@ async function runTool(
               status: 'success',
               data: { placeholder: true, reason: 'BaZi reading unavailable for this profile.' },
               generatedAt,
+              _usage: json._usage ?? json.usage,
             };
           }
           devLog.info('[ProfileOrchestrator] BaZi report generated successfully', 'profileGenerationOrchestrator');
-          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] BaZi failed:', msg, 'profileGenerationOrchestrator');
@@ -785,9 +814,10 @@ async function runTool(
               status: 'success',
               data: { placeholder: true, reason: 'Human Design report unavailable.' },
               generatedAt,
+              _usage: json._usage ?? json.usage,
             };
           }
-          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] Human Design failed:', msg, 'profileGenerationOrchestrator');
@@ -817,9 +847,10 @@ async function runTool(
               status: 'success',
               data: { placeholder: true, reason: 'Navaratna analysis unavailable.' },
               generatedAt,
+              _usage: json._usage ?? json.usage,
             };
           }
-          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] Navaratna failed:', msg, 'profileGenerationOrchestrator');
@@ -849,9 +880,10 @@ async function runTool(
               status: 'success',
               data: { placeholder: true, reason: 'Trichakra analysis unavailable.' },
               generatedAt,
+              _usage: json._usage ?? json.usage,
             };
           }
-          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] Trichakra failed:', msg, 'profileGenerationOrchestrator');
@@ -867,6 +899,7 @@ async function runTool(
         const methods = ['chakra', 'aura', 'reiki', 'crystal', 'energy'] as const;
         const combined: Record<string, unknown> = {};
         let hasAny = false;
+        const energyUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
         for (const method of methods) {
           try {
             const res = await fetch(`${baseUrl}/api/tools/energy-healing/analysis`, {
@@ -880,6 +913,12 @@ async function runTool(
               continue;
             }
             const json = await res.json();
+            if (json._usage || json.usage) {
+              const u = json._usage ?? json.usage;
+              if (typeof u.promptTokens === 'number') energyUsage.promptTokens += u.promptTokens;
+              if (typeof u.completionTokens === 'number') energyUsage.completionTokens += u.completionTokens;
+              if (typeof u.totalTokens === 'number') energyUsage.totalTokens += u.totalTokens;
+            }
             const data = json.data ?? json;
             if (data && typeof data === 'object' && (data as Record<string, unknown>).placeholder !== true) {
               combined[method] = data;
@@ -895,9 +934,10 @@ async function runTool(
             status: 'success',
             data: { placeholder: true, reason: 'Energy healing analysis unavailable.' },
             generatedAt,
+            _usage: energyUsage.promptTokens + energyUsage.completionTokens + energyUsage.totalTokens > 0 ? energyUsage : undefined,
           };
         }
-        return { status: 'success', data: combined as Record<string, unknown>, generatedAt };
+        return { status: 'success', data: combined as Record<string, unknown>, generatedAt, _usage: energyUsage.promptTokens + energyUsage.completionTokens + energyUsage.totalTokens > 0 ? energyUsage : undefined };
       }
 
       case 'akashicRecords': {
@@ -918,9 +958,10 @@ async function runTool(
               status: 'success',
               data: { placeholder: true, reason: 'Akashic Records reading unavailable.' },
               generatedAt,
+              _usage: json._usage ?? json.usage,
             };
           }
-          return { status: 'success', data: data as Record<string, unknown>, generatedAt };
+          return { status: 'success', data: data as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] Akashic Records failed:', msg, 'profileGenerationOrchestrator');
@@ -1023,13 +1064,20 @@ export async function runProfileGeneration(
   const baseUrl = getServerBaseUrl();
   const toolReports: ToolReports = {};
   const failedTools: string[] = [];
+  const aggregateUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+
+  // Normalize birth time so invalid values (e.g. 34:00) never reach tool APIs
+  const profile: UserProfile = {
+    ...userProfile,
+    birthTime: normalizeBirthTime(userProfile.birthTime) || userProfile.birthTime || '12:00:00',
+  };
 
   // 1. Run Vedic first (required for interpretations)
-  const vedicEntry = await runTool('vedic', userId, userProfile, baseUrl);
+  const vedicEntry = await runTool('vedic', userId, profile, baseUrl);
   toolReports.vedic = vedicEntry;
   if (vedicEntry.status === 'failed') {
     failedTools.push('vedic');
-    // Cannot build interpretations without Vedic; return early with partial result
+    addResponseUsage(aggregateUsage, vedicEntry);
     return {
       success: false,
       toolReports,
@@ -1037,6 +1085,7 @@ export async function runProfileGeneration(
       comprehensiveProfile: {},
       failedTools,
       systemsUsed: [],
+      aggregateUsage,
     };
   }
 
@@ -1049,7 +1098,7 @@ export async function runProfileGeneration(
       'vedic',
       userId,
       vedicData,
-      userProfile
+      profile
     );
     interpretations = interpretation as unknown as Record<string, unknown>;
   } catch (err) {
@@ -1065,16 +1114,17 @@ export async function runProfileGeneration(
         userId,
         vedicChartData: vedicEntry.data,
         userProfile: {
-          birthDate: userProfile.birthDate,
-          birthTime: userProfile.birthTime ?? '12:00:00',
-          birthPlace: userProfile.birthPlace,
-          fullName: (userProfile as unknown as Record<string, unknown>).fullName ?? userProfile.displayName,
-          displayName: userProfile.displayName,
+          birthDate: profile.birthDate,
+          birthTime: profile.birthTime ?? '12:00:00',
+          birthPlace: profile.birthPlace,
+          fullName: (profile as unknown as Record<string, unknown>).fullName ?? profile.displayName,
+          displayName: profile.displayName,
         },
       }),
     });
     if (res.ok) {
       const json = await res.json();
+      addResponseUsage(aggregateUsage, json);
       const analysis = json?.data?.comprehensiveAnalysis ?? json?.comprehensiveAnalysis ?? json?.data;
       if (analysis && typeof analysis === 'object') {
         (vedicEntry.data as Record<string, unknown>).comprehensiveAnalysis = analysis;
@@ -1117,8 +1167,8 @@ export async function runProfileGeneration(
         ? getSign(vdata?.ascendant, 'signName', 'sign')
         : getSign(vdata?.lagna, 'signName', 'sign');
 
-    const birthDate = userProfile.birthDate ?? '';
-    const fullName = (userProfile.displayName ?? (userProfile as unknown as Record<string, unknown>).fullName ?? '') as string;
+    const birthDate = profile.birthDate ?? '';
+    const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
 
     if (birthDate && fullName && moonSign !== 'Unknown') {
       const numerologyProfile = calculateVedicNumerologyProfile(fullName, birthDate);
@@ -1137,8 +1187,9 @@ export async function runProfileGeneration(
       });
       if (res.ok) {
         const result = await res.json();
+        addResponseUsage(aggregateUsage, result);
         const data = result?.data ?? result;
-        toolReports.vedicAstroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: vedicAstroNumGeneratedAt };
+        toolReports.vedicAstroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: vedicAstroNumGeneratedAt, _usage: result._usage ?? result.usage };
       } else {
         const err = await res.json().catch(() => ({}));
         toolReports.vedicAstroNumerology = { status: 'failed', error: err?.error ?? `API ${res.status}`, generatedAt: vedicAstroNumGeneratedAt };
@@ -1159,7 +1210,7 @@ export async function runProfileGeneration(
   const otherTools = ALL_TOOL_SLUGS.filter((t) => t !== 'vedic');
   const results = await Promise.allSettled(
     otherTools.map(async (slug) => {
-      const entry = await runTool(slug, userId, userProfile, baseUrl);
+      const entry = await runTool(slug, userId, profile, baseUrl);
       toolReports[slug] = entry;
       if (entry.status === 'failed') failedTools.push(slug);
       return entry;
@@ -1175,6 +1226,10 @@ export async function runProfileGeneration(
     }
   });
 
+  for (const entry of Object.values(toolReports)) {
+    if (entry._usage) addResponseUsage(aggregateUsage, { _usage: entry._usage });
+  }
+
   // 3b. Run Western Astro-Numerology (depends on Western chart for sun sign; runs after western so we have chart)
   const astroNumGeneratedAt = new Date().toISOString();
   try {
@@ -1188,8 +1243,8 @@ export async function runProfileGeneration(
     const sunSign =
       (sunPlanet?.signName ?? sunPlanet?.sign) ?? 'Unknown';
 
-    const birthDate = userProfile.birthDate ?? '';
-    const fullName = (userProfile.displayName ?? (userProfile as unknown as Record<string, unknown>).fullName ?? '') as string;
+    const birthDate = profile.birthDate ?? '';
+    const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
 
     if (birthDate && fullName && sunSign !== 'Unknown') {
       const res = await fetch(`${baseUrl}/api/astro-numerology/analysis`, {
@@ -1204,8 +1259,9 @@ export async function runProfileGeneration(
       });
       if (res.ok) {
         const result = await res.json();
+        addResponseUsage(aggregateUsage, result);
         const data = result?.data ?? result;
-        toolReports.astroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: astroNumGeneratedAt };
+        toolReports.astroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: astroNumGeneratedAt, _usage: result._usage ?? result.usage };
       } else {
         const err = await res.json().catch(() => ({}));
         toolReports.astroNumerology = { status: 'failed', error: (err as { error?: string })?.error ?? `API ${res.status}`, generatedAt: astroNumGeneratedAt };
@@ -1257,9 +1313,9 @@ export async function runProfileGeneration(
     },
     userId,
     lastUpdated: Date.now(),
-    birthDate: userProfile.birthDate,
-    birthPlace: userProfile.birthPlace,
-    birthTime: userProfile.birthTime,
+    birthDate: profile.birthDate,
+    birthPlace: profile.birthPlace,
+    birthTime: profile.birthTime,
   };
 
   // 5. Merge successful tool reports into comprehensiveProfile (top-level keys for Seer route)
@@ -1286,5 +1342,6 @@ export async function runProfileGeneration(
     comprehensiveProfile,
     failedTools,
     systemsUsed,
+    aggregateUsage,
   };
 }

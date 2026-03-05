@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger'
+import { normalizeBirthTime } from '@/lib/birthTimeUtils'
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC'
 
 export const dynamic = 'force-static'
 
@@ -47,10 +49,13 @@ const DASA_PERIODS: { [key: string]: number } = {
 const DASA_SEQUENCE = ['Sun', 'Moon', 'Mars', 'Rahu', 'Jupiter', 'Saturn', 'Mercury', 'Ketu', 'Venus']
 
 // Calculate birth nakshatra (simplified)
-function calculateBirthNakshatra(birthDate: string, birthTime: string): string {
-  // Simplified calculation - in real implementation, use Swiss Ephemeris
-  const date = new Date(`${birthDate}T${birthTime}`)
-  const dayOfYear = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24))
+function calculateBirthNakshatra(birthData: BirthData): string {
+  const normalizedTime = normalizeBirthTime(birthData.birthTime)
+  const date = birthLocalToUTC(birthData.birthDate, normalizedTime, {
+    latitude: birthData.latitude,
+    longitude: birthData.longitude
+  })
+  const dayOfYear = Math.floor((date.getTime() - new Date(Date.UTC(date.getUTCFullYear(), 0, 0)).getTime()) / (1000 * 60 * 60 * 24))
   
   // Simplified nakshatra calculation based on day of year
   const nakshatras = [
@@ -81,17 +86,18 @@ function getStartingPlanet(nakshatra: string): string {
 
 // Calculate Dasa periods
 function calculateVimshottariDasa(birthData: BirthData): DasaData {
-  const { birthDate, birthTime } = birthData
-  
+  const normalizedTime = normalizeBirthTime(birthData.birthTime)
+  const birthDateObj = birthLocalToUTC(birthData.birthDate, normalizedTime, {
+    latitude: birthData.latitude,
+    longitude: birthData.longitude
+  })
+
   // Calculate birth nakshatra
-  const birthNakshatra = calculateBirthNakshatra(birthDate, birthTime)
+  const birthNakshatra = calculateBirthNakshatra(birthData)
   const startingPlanet = getStartingPlanet(birthNakshatra)
-  
+
   // Find starting planet index
   const startingIndex = DASA_SEQUENCE.indexOf(startingPlanet)
-  
-  // Calculate birth date
-  const birthDateObj = new Date(`${birthDate}T${birthTime}`)
   const currentDate = new Date()
   
   // Calculate elapsed time since birth

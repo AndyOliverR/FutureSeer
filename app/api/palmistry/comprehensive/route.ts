@@ -185,7 +185,8 @@ Provide only valid JSON in your response.`;
     return NextResponse.json({
       success: true,
       data: validatedAnalysis,
-      cached: false
+      cached: false,
+      _usage: result.usage,
     });
 
   } catch (error: any) {

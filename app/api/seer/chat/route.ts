@@ -169,6 +169,9 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
     }
 
     const data = await response.json();
+    if (data.usage && userId) {
+      devLog.debug('[Seer] Token usage', { userId, ...data.usage }, 'route');
+    }
     const reply = data.choices?.[0]?.message?.content?.trim() || "The vision is unclear. Ask again.";
 
     const updatedThread = [

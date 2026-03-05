@@ -24,7 +24,9 @@ export interface UpcomingTransit {
 }
 
 /**
- * Calculate current planetary transits based on natal chart
+ * Calculate current planetary transits based on natal chart.
+ * When transitPlace/transitLatitude/transitLongitude are provided (e.g. current residence),
+ * the transit chart is calculated for that location; otherwise birth place is used.
  */
 export function calculateTransitData(
   natalChart: any,
@@ -34,19 +36,25 @@ export function calculateTransitData(
     birthPlace: string
     latitude: number
     longitude: number
+    transitPlace?: string
+    transitLatitude?: number
+    transitLongitude?: number
   }
 ): TransitData {
   try {
-    devLog.debug('Calculating transit data', { birthDate: birthData.birthDate, birthTime: birthData.birthTime, birthPlace: birthData.birthPlace }, 'transitCalculatorServer');
-    
-    // Get current planetary positions
+    const transitPlace = birthData.transitPlace ?? birthData.birthPlace
+    const transitLat = birthData.transitLatitude ?? birthData.latitude
+    const transitLon = birthData.transitLongitude ?? birthData.longitude
+    devLog.debug('Calculating transit data', { birthDate: birthData.birthDate, birthTime: birthData.birthTime, birthPlace: birthData.birthPlace, transitPlace }, 'transitCalculatorServer');
+
+    // Get current planetary positions (use current residence when provided)
     const currentDate = new Date()
     const currentChart = getChart({
       date: currentDate,
-      latitude: birthData.latitude,
-      longitude: birthData.longitude,
+      latitude: transitLat,
+      longitude: transitLon,
       name: 'Current Chart',
-      place: birthData.birthPlace,
+      place: transitPlace,
       birthDate: undefined  // Transit charts should NOT calculate Dasha
     }, {
       ayanamsha: 'kp',

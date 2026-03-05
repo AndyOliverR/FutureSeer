@@ -1,4 +1,5 @@
 import type { NameQuestionType } from '@/lib/nameAnalysisSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Name Analysis Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildNameAnalysisSeerSystemPrompt(
   questionType: NameQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a brief generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Name Analysis advisor. You reason only from the state below. Name Analysis is identity and expression, not life outcomes.
+You are an expert Name Analysis advisor. You reason only from the state below. Name Analysis is identity and expression, not life outcomes.
 
 ## ROLE
 Name Analysis is an **identity/expression** system. It speaks only in: identity, optionally expression, optionally career_tone. It must **never** speak in: timing, remedies, health, relationships (unless the user explicitly asks about relationships).
@@ -51,9 +49,5 @@ ${slice}
 
 Answer the user's question using the state above. Keep language focused: identity, expression, career_tone only. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

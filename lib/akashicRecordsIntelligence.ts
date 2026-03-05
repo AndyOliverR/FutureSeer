@@ -8,6 +8,7 @@ import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
+import { REPORT_VOICE_RULE } from './reportVoiceRule'
 
 
 export interface PastLife {
@@ -140,16 +141,14 @@ class AkashicRecordsIntelligence {
    */
   private generateBasicReading(
     userId: string,
-    userProfile: UserProfile | null
+    _userProfile: UserProfile | null
   ): AkashicReading {
-    const displayName = userProfile?.displayName || userProfile?.fullName || 'Beloved Seeker'
-    
     return {
       id: `basic-${Date.now()}`,
       timestamp: new Date(),
       userId,
       soulJourney: {
-        overview: `Dear ${displayName}, the Akashic Records hold profound wisdom about your soul's journey. To access the most detailed insights about your past lives, karmic patterns, and life purpose, please complete your birth information in your profile.`,
+        overview: `The Akashic Records hold profound wisdom about your soul's journey. To access the most detailed insights about your past lives, karmic patterns, and life purpose, please complete your birth information in your profile.`,
         evolution: [
           'Your soul is on a journey of growth and expansion',
           'Each lifetime brings new lessons and experiences',
@@ -178,7 +177,7 @@ class AkashicRecordsIntelligence {
         alignment: []
       },
       guidance: {
-        current: `The Records are ready to reveal your path, ${displayName}. Complete your birth details to unlock the full wisdom of your soul's journey.`,
+        current: `The Records are ready to reveal your path. Complete your birth details to unlock the full wisdom of your soul's journey.`,
         spiritual: [
           'Meditate on your life purpose',
           'Connect with your higher self',
@@ -195,7 +194,7 @@ class AkashicRecordsIntelligence {
           'The Akashic Records hold wisdom for me'
         ]
       },
-      personalMessage: `Dear ${displayName}, the Akashic Records are a universal library containing all thoughts, events, experiences, and knowledge - past, present, and future. To access your personal soul records with the most accurate insights, please complete your birth information. Once you do, you'll receive a comprehensive reading about your soul's journey, past lives, karmic patterns, and life purpose.`,
+      personalMessage: `The Akashic Records are a universal library containing all thoughts, events, experiences, and knowledge - past, present, and future. To access your personal soul records with the most accurate insights, please complete your birth information. Once you do, you'll receive a comprehensive reading about your soul's journey, past lives, karmic patterns, and life purpose.`,
       generatedAt: new Date().toISOString()
     }
   }
@@ -207,7 +206,6 @@ class AkashicRecordsIntelligence {
     userId: string,
     userProfile: UserProfile
   ): Promise<AkashicReading> {
-    const displayName = userProfile.displayName || userProfile.fullName || 'Beloved Seeker'
     const birthDate = userProfile.birthDate || ''
     const birthTime = userProfile.birthTime || ''
     const birthPlace = userProfile.birthPlace || ''
@@ -224,7 +222,7 @@ Key Concepts:
 - Access is through meditation, prayer, or spiritual practice
 
 Guidelines:
-- Address the user by their name directly (use "you" and "your")
+- ${REPORT_VOICE_RULE}
 - Be profound yet practical
 - Connect past lives to current life patterns
 - Explain karmic patterns with clarity
@@ -237,7 +235,7 @@ Guidelines:
 - Be concise and specific - avoid generic statements
 - Each section should be unique and not repeat content from other sections`
 
-      const userPrompt = `Generate a comprehensive Akashic Records reading for ${displayName}.
+      const userPrompt = `Generate a comprehensive Akashic Records reading.
 
 Birth Information:
 - Date: ${birthDate}
@@ -380,9 +378,9 @@ Affirmations:
 
 === PERSONAL MESSAGE ===
 
-[Write a beautiful, inspiring closing message - 4-6 sentences that addresses ${displayName} directly and speaks to their soul. Do NOT repeat information from above sections.]
+[Write a beautiful, inspiring closing message - 4-6 sentences that address the reader as "you" and speak to their soul. Do NOT repeat information from above sections.]
 
-Remember: Use plain text only. No markdown formatting. Be specific and personal. Address ${displayName} directly using "you" and "your".`
+Remember: Use plain text only. No markdown formatting. Be specific and personal. Address the reader as "you" and "your" only; do not use the person's name.`
 
       const result = await createAICompletion({
         model: 'llama-3.3-70b-versatile',
@@ -400,7 +398,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
       const aiResponse = result.content || ''
       
       // Parse AI response into structured format
-      const parsed = this.parseAIResponse(aiResponse, displayName, userId)
+      const parsed = this.parseAIResponse(aiResponse, userId)
 
       return parsed
     } catch (error) {
@@ -415,7 +413,6 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
    */
   private parseAIResponse(
     aiResponse: string,
-    displayName: string,
     userId: string
   ): AkashicReading {
     devLog.debug('📚 Parsing AI response, length:', aiResponse.length)
@@ -531,7 +528,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
     }
     
     if (!soulJourneyOverview || soulJourneyOverview.length < 20) {
-      soulJourneyOverview = `Dear ${displayName}, your soul is on a profound journey of evolution and growth across lifetimes.`
+      soulJourneyOverview = `Your soul is on a profound journey of evolution and growth across lifetimes.`
     }
     
     // Clean up overview - remove any repetition
@@ -825,13 +822,13 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
       personalMessage = personalMessageSection[1].trim()
     } else {
       personalMessage = extractSection('PERSONAL MESSAGE', aiResponse) || 
-                       `Dear ${displayName}, the Akashic Records reveal that your soul is on a beautiful journey of growth and evolution. Trust in the wisdom that flows through you and know that you are exactly where you need to be.`
+                       `The Akashic Records reveal that your soul is on a beautiful journey of growth and evolution. Trust in the wisdom that flows through you and know that you are exactly where you need to be.`
     }
     personalMessage = cleanText(personalMessage)
     
     // Ensure personal message doesn't repeat other sections
     if (personalMessage.includes('Soul Journey') || personalMessage.includes('Past Lives') || personalMessage.includes('Karmic')) {
-      personalMessage = `Dear ${displayName}, the Akashic Records reveal that your soul is on a beautiful journey of growth and evolution. Trust in the wisdom that flows through you and know that you are exactly where you need to be.`
+      personalMessage = `The Akashic Records reveal that your soul is on a beautiful journey of growth and evolution. Trust in the wisdom that flows through you and know that you are exactly where you need to be.`
     }
 
     return {
@@ -893,16 +890,14 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
    */
   private generateFallbackReading(
     userId: string,
-    userProfile: UserProfile
+    _userProfile: UserProfile
   ): AkashicReading {
-    const displayName = userProfile.displayName || userProfile.fullName || 'Beloved Seeker'
-    
     return {
       id: `fallback-${Date.now()}`,
       timestamp: new Date(),
       userId,
       soulJourney: {
-        overview: `Dear ${displayName}, your soul is on a profound journey of evolution. The Akashic Records reveal that you are here to learn, grow, and express your unique gifts.`,
+        overview: `Your soul is on a profound journey of evolution. The Akashic Records reveal that you are here to learn, grow, and express your unique gifts.`,
         evolution: [
           'Awakening to your true nature',
           'Integrating wisdom from past experiences',
@@ -962,7 +957,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
         ]
       },
       guidance: {
-        current: `Dear ${displayName}, trust in your journey and follow your inner guidance. The Akashic Records reveal that you are exactly where you need to be.`,
+        current: `Trust in your journey and follow your inner guidance. The Akashic Records reveal that you are exactly where you need to be.`,
         spiritual: [
           'Meditate daily to connect with your higher self',
           'Practice gratitude for all experiences',
@@ -985,7 +980,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
           'I am healing and growing every day'
         ]
       },
-      personalMessage: `Dear ${displayName}, the Akashic Records are a universal library containing all knowledge and experiences. Your soul's record reveals a beautiful journey of growth, learning, and service. Trust in the wisdom that flows through you, know that you are exactly where you need to be, and remember that your purpose is unfolding perfectly. The Records are always accessible to you through meditation, prayer, and spiritual practice.`,
+      personalMessage: `The Akashic Records are a universal library containing all knowledge and experiences. Your soul's record reveals a beautiful journey of growth, learning, and service. Trust in the wisdom that flows through you, know that you are exactly where you need to be, and remember that your purpose is unfolding perfectly. The Records are always accessible to you through meditation, prayer, and spiritual practice.`,
       generatedAt: new Date().toISOString()
     }
   }

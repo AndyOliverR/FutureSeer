@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getIntelligentHellenisticAstrologyData } from '@/lib/hellenisticAstrologyIntelligence';
 import { devLog } from '@/lib/devLogger';
+import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const birthDate = userProfile?.birthDate ?? '';
-    const birthTime = userProfile?.birthTime ?? '12:00:00';
+    const birthTime = normalizeBirthTime(userProfile?.birthTime ?? '12:00:00');
     const birthPlace = userProfile?.birthPlace ?? '';
     const lat = Number(userProfile?.birthLatitude);
     const lon = Number(userProfile?.birthLongitude);

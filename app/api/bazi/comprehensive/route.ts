@@ -216,11 +216,13 @@ export async function POST(req: NextRequest) {
       devLog.debug(`[BAZI] Report generated successfully in ${responseTime}ms`);
     }
 
+    const { _usage: baziUsage, ...data } = comprehensiveAnalysis as typeof comprehensiveAnalysis & { _usage?: { promptTokens: number; completionTokens: number; totalTokens: number } };
     return NextResponse.json({
       success: true,
-      data: comprehensiveAnalysis,
+      data,
       cached: false,
-      responseTime: `${responseTime}ms`
+      responseTime: `${responseTime}ms`,
+      _usage: baziUsage,
     });
 
   } catch (error) {
@@ -263,6 +265,7 @@ async function generateComprehensiveAnalysis(
   timingAndOpportunities: string;
   generatedAt: string;
   version: string;
+  _usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
 }> {
   const userName = userProfile?.displayName || userProfile?.fullName || 'Seeker';
   
@@ -411,12 +414,27 @@ Be specific with ages/years and explain the elemental reasoning. 2-3 paragraphs.
 
   const timingAndOpportunities = timingResult.content;
 
+  let _usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+  const usages = [chartOverviewResult.usage, lifePathResult.usage, elementResult.usage, timingResult.usage].filter(Boolean);
+  if (usages.length > 0) {
+    type UsageSum = { promptTokens: number; completionTokens: number; totalTokens: number };
+    _usage = usages.reduce<UsageSum>(
+      (acc, u) => ({
+        promptTokens: acc.promptTokens + (u?.promptTokens ?? 0),
+        completionTokens: acc.completionTokens + (u?.completionTokens ?? 0),
+        totalTokens: acc.totalTokens + (u?.totalTokens ?? 0),
+      }),
+      { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
+    );
+  }
+
   return {
     chartOverview,
     lifePathInsights,
     elementHarmonization,
     timingAndOpportunities,
     generatedAt: new Date().toISOString(),
-    version: '1.0'
+    version: '1.0',
+    _usage,
   };
 }

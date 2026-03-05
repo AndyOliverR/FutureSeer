@@ -89,7 +89,6 @@ export function generateOghamReportStructure(
     celticWisdom?: OghamCelticWisdom
   }
 ): OghamReport {
-  const displayName = userProfile?.displayName || userProfile?.fullName || 'Beloved Seeker'
   const allLetters = getAllOghamLetters()
   
   // Determine primary and secondary letters
@@ -106,8 +105,8 @@ export function generateOghamReportStructure(
     timestamp: new Date(),
     userId,
     overview: {
-      summary: aiInsights?.overview || `Welcome to your Ogham reading, ${displayName}. The ancient Celtic tree alphabet reveals profound insights about your path, connecting you with the wisdom of the trees and the natural world.`,
-      personalMessage: aiInsights?.personalMessage || `The trees speak your name in the ancient Ogham script, ${displayName}. Your birth tree, the ${birthTree.birthTree.tree}, guides your path, while the letters of your name reveal your unique gifts and challenges.`,
+      summary: aiInsights?.overview || `Welcome to your Ogham reading. The ancient Celtic tree alphabet reveals profound insights about your path, connecting you with the wisdom of the trees and the natural world.`,
+      personalMessage: aiInsights?.personalMessage || `The trees speak to you in the ancient Ogham script. Your birth tree, the ${birthTree.birthTree.tree}, guides your path, while the letters of your name reveal your unique gifts and challenges.`,
       keyInsights: [
         `Your birth tree is the ${birthTree.birthTree.tree}, representing ${birthTree.birthTree.meaning}`,
         `Your name in Ogham reveals ${nameAnalysis.combinedTraits.length} key traits`,
@@ -123,7 +122,7 @@ export function generateOghamReportStructure(
       allRelevant
     },
     guidance: aiInsights?.guidance || {
-      current: `The trees guide you, ${displayName}. Trust in the wisdom of your birth tree and the letters of your name.`,
+      current: `The trees guide you. Trust in the wisdom of your birth tree and the letters of your name.`,
       spiritual: [
         'Connect with nature regularly',
         'Meditate under trees when possible',

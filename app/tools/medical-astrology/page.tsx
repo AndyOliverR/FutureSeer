@@ -157,34 +157,57 @@ export default function MedicalAstrologyPage() {
     }
   }, [hasCompleteDetails, chart, onDemandReport, onDemandLoading])
 
-  // Planetary strength calculator
+  // Essential dignity: domicile/exaltation strengthen; detriment/fall weaken (Western tropical)
+  const ESSENTIAL_DIGNITY: Record<string, { domicile: string[]; exaltation: string; detriment: string[]; fall: string }> = {
+    Sun: { domicile: ['Leo'], exaltation: 'Aries', detriment: ['Aquarius'], fall: 'Libra' },
+    Moon: { domicile: ['Cancer'], exaltation: 'Taurus', detriment: ['Capricorn'], fall: 'Scorpio' },
+    Mercury: { domicile: ['Gemini', 'Virgo'], exaltation: 'Virgo', detriment: ['Sagittarius', 'Pisces'], fall: 'Pisces' },
+    Venus: { domicile: ['Taurus', 'Libra'], exaltation: 'Pisces', detriment: ['Aries', 'Scorpio'], fall: 'Virgo' },
+    Mars: { domicile: ['Aries', 'Scorpio'], exaltation: 'Capricorn', detriment: ['Libra', 'Taurus'], fall: 'Cancer' },
+    Jupiter: { domicile: ['Sagittarius', 'Pisces'], exaltation: 'Cancer', detriment: ['Gemini', 'Virgo'], fall: 'Capricorn' },
+    Saturn: { domicile: ['Capricorn', 'Aquarius'], exaltation: 'Libra', detriment: ['Cancer', 'Leo'], fall: 'Aries' },
+    Uranus: { domicile: ['Aquarius'], exaltation: 'Scorpio', detriment: ['Leo'], fall: 'Taurus' },
+    Neptune: { domicile: ['Pisces'], exaltation: 'Cancer', detriment: ['Virgo'], fall: 'Capricorn' },
+    Pluto: { domicile: ['Scorpio'], exaltation: 'Aries', detriment: ['Taurus'], fall: 'Libra' },
+  }
+
+  // Planetary strength calculator: house placement (accidental) + sign placement (essential dignity)
   function calculatePlanetaryStrengths(chart: any) {
     const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
     const strengths: { [key: string]: number } = {}
-    
-    // House categories for strength calculation
     const angularHouses = [1, 4, 7, 10]
     const succedentHouses = [2, 5, 8, 11]
     const cadentHouses = [3, 6, 9, 12]
-    
+
     planets.forEach(planet => {
       const planetData = chart.planets?.[planet]
       if (!planetData) return
-      
-      let strength = 50 // Base strength
-      
-      // House strength: Angular (strongest), Succedent (moderate), Cadent (weakest)
-      if (angularHouses.includes(planetData.house)) strength += 20
-      else if (succedentHouses.includes(planetData.house)) strength += 10
-      else if (cadentHouses.includes(planetData.house)) strength -= 10
-      
-      // Health houses (6th, 8th, 12th) reduce planetary strength
-      if ([6, 8, 12].includes(planetData.house)) strength -= 15
-      
-      // Ensure strength stays within 0-100
-      strengths[planet] = Math.max(0, Math.min(100, strength))
+
+      const house = typeof planetData.house === 'number' ? planetData.house : parseInt(planetData.house, 10)
+      const sign = (planetData.sign || '').trim()
+
+      let strength = 50
+
+      // Accidental dignity: house placement
+      if (Number.isFinite(house)) {
+        if (angularHouses.includes(house)) strength += 20
+        else if (succedentHouses.includes(house)) strength += 10
+        else if (cadentHouses.includes(house)) strength -= 10
+        if ([6, 8, 12].includes(house)) strength -= 15
+      }
+
+      // Essential dignity: sign placement
+      const dignity = ESSENTIAL_DIGNITY[planet]
+      if (dignity && sign) {
+        if (dignity.domicile.includes(sign)) strength += 12
+        else if (dignity.exaltation === sign) strength += 15
+        else if (dignity.detriment.includes(sign)) strength -= 12
+        else if (dignity.fall === sign) strength -= 10
+      }
+
+      strengths[planet] = Math.max(0, Math.min(100, Math.round(strength)))
     })
-    
+
     return strengths
   }
 
@@ -568,11 +591,13 @@ export default function MedicalAstrologyPage() {
                     title="General Health Overview"
                   >
                     <p className="text-slate-800 mb-4">
-                      Your chart shows balanced health indicators. Here&apos;s what your Medical Astrology analysis reveals:
+                      {healthInsights?.planetaryStrengths && Object.keys(healthInsights.planetaryStrengths).length > 0
+                        ? 'Your chart has been analyzed for health-related placements. Planetary strengths above reflect sign and house positions (essential and accidental dignity).'
+                        : 'Your chart has been analyzed for health correlations. Use the Health and Body Parts tabs for detailed influences.'}
                     </p>
                     <div className="space-y-2">
                       <p className="text-sm text-slate-800">
-                        ✓ Your planetary positions have been analyzed for health correlations
+                        ✓ Planetary positions and house placements have been analyzed for health correlations
                       </p>
                       <p className="text-sm text-slate-800">
                         ✓ Check the <strong className="text-amber-900">Health</strong> tab for detailed planetary influences

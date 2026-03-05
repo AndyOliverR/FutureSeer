@@ -1,4 +1,5 @@
 import type { KPQuestionType } from '@/lib/kpSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the KP Astrology Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildKPSeerSystemPrompt(
   _questionType: KPQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a brief generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert KP (Krishnamurti Paddhati) astrologer. You reason only from the state below. In KP, the Sub-Lord decides. Always.
+You are an expert KP (Krishnamurti Paddhati) astrologer. You reason only from the state below. In KP, the Sub-Lord decides. Always.
 
 ## ROLE
 KP Astrology is a **decision-centric predictive system**. It works with: cusps (house matters), star lords and sub-lords, significators, ruling planets, event-specific logic. It answers: will it happen or not, which area of life is activated, when is the probability highest. This is the sharpest predictive blade; KP gives decision finality and yes/no clarity.
@@ -43,9 +41,5 @@ ${slice}
 
 Answer the user's question using the chart state above. Keep language direct, traceable, and non-emotional. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

@@ -67,10 +67,10 @@ export const ZODIAC_ICONS: Record<string, string> = {
 }
 
 /**
- * Planet icon mappings with fallback to lucide-react
- * Stores component constructors (not JSX) to avoid JSX syntax in .ts file
+ * Planet icon mappings with fallback to lucide-react.
+ * path is optional: when omitted, only the fallback is used (no image request).
  */
-export const PLANET_ICONS: Record<string, { path: string; FallbackComponent: React.ComponentType<any> }> = {
+export const PLANET_ICONS: Record<string, { path?: string; FallbackComponent: React.ComponentType<any> }> = {
   sun: {
     path: '/icons/astrology/western/planets/sun.svg',
     FallbackComponent: Sun
@@ -80,37 +80,36 @@ export const PLANET_ICONS: Record<string, { path: string; FallbackComponent: Rea
     FallbackComponent: Moon
   },
   mercury: {
-    path: '/icons/astrology/western/planets/mercury.svg',
-    FallbackComponent: Star // Mercury icon not available in lucide-react
+    FallbackComponent: Star
   },
   venus: {
-    path: '/icons/astrology/western/planets/venus.svg',
-    FallbackComponent: Star // Venus icon not available in lucide-react (version issue)
+    FallbackComponent: Star
   },
   mars: {
     path: '/icons/astrology/western/planets/mars.svg',
-    FallbackComponent: Star // Mars icon not available in lucide-react (version issue)
+    FallbackComponent: Star
   },
   jupiter: {
     path: '/icons/astrology/western/planets/jupiter.svg',
-    FallbackComponent: Star // Jupiter icon not available in lucide-react
+    FallbackComponent: Star
   },
   saturn: {
     path: '/icons/astrology/western/planets/saturn.svg',
-    FallbackComponent: Star // Saturn icon not available in lucide-react
+    FallbackComponent: Star
   },
   uranus: {
-    path: '/icons/astrology/western/planets/uranus.svg',
-    FallbackComponent: Star // Uranus icon not available in lucide-react
+    FallbackComponent: Star
   },
   neptune: {
-    path: '/icons/astrology/western/planets/neptune.svg',
-    FallbackComponent: Star // Neptune icon not available in lucide-react
+    FallbackComponent: Star
   },
   pluto: {
-    path: '/icons/astrology/western/planets/pluto.svg',
-    FallbackComponent: Circle // Pluto icon not in lucide-react
-  }
+    FallbackComponent: Circle
+  },
+  northnode: { FallbackComponent: Circle },
+  southnode: { FallbackComponent: Circle },
+  ascendant: { FallbackComponent: Star },
+  mc: { FallbackComponent: Star }
 }
 
 /**
@@ -199,17 +198,21 @@ export function getZodiacIconPath(signName: string): string {
 }
 
 /**
- * Get planet icon configuration (path + fallback)
- * Creates JSX element from component constructor using React.createElement
+ * Get planet icon configuration (path + fallback).
+ * path is null when no SVG exists (fallback only), to avoid 404s.
  */
-export function getPlanetIconConfig(planetName: string): { path: string; fallback: ReactNode } {
+export function getPlanetIconConfig(planetName: string): { path: string | null; fallback: ReactNode } {
   const normalized = planetName.toLowerCase()
   const config = PLANET_ICONS[normalized] || {
     path: `/icons/astrology/western/planets/${normalized}.svg`,
     FallbackComponent: Star
   }
+  const hasPath = config.path !== undefined && config.path !== ''
+  const path = PLANET_ICONS[normalized]
+    ? (hasPath ? config.path! : null)
+    : `/icons/astrology/western/planets/${normalized}.svg`
   return {
-    path: config.path,
+    path: path as string | null,
     fallback: React.createElement(config.FallbackComponent, { className: "w-5 h-5" })
   }
 }

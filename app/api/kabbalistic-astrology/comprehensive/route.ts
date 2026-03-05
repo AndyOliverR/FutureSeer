@@ -438,6 +438,7 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
+      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Kabbalistic Astrology comprehensive API error:', err, 'route');
