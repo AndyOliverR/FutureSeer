@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { calculateSiderealPlanets, calculateVedicHouses } from '@/lib/vedic/siderealCalculator';
 import { calculateVimshottariDasha } from '@/lib/astronomia-vedic'; // Keep dasha calc
 import { devLog } from '@/lib/devLogger';
+import { normalizeBirthTime } from '@/lib/birthTimeUtils';
+import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,35 +22,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Parse date and time
-    const [year, month, day] = birthDate.split('-').map(Number);
-    const [hour, minute] = birthTime.split(':').map(Number);
+    const normalizedTime = normalizeBirthTime(birthTime);
+    const birthDateTime = birthLocalToUTC(birthDate, normalizedTime, { latitude, longitude });
 
-    // For India (Mysore coordinates: lat 12.3, lon 76.65)
-    // IST is UTC+5:30 regardless of coordinates
-    const IST_OFFSET_HOURS = 5;
-    const IST_OFFSET_MINUTES = 30;
-
-    // Convert IST to UTC
-    let utcHours = hour - IST_OFFSET_HOURS;
-    let utcMinutes = minute - IST_OFFSET_MINUTES;
-    let utcDay = day;
-
-    // Handle minute wraparound
-    if (utcMinutes < 0) {
-      utcMinutes += 60;
-      utcHours -= 1;
-    }
-
-    // Handle hour wraparound
-    if (utcHours < 0) {
-      utcHours += 24;
-      utcDay -= 1;
-    }
-
-    const birthDateTime = new Date(Date.UTC(year, month - 1, utcDay, utcHours, utcMinutes));
-
-    devLog.debug(`🕐 TIMEZONE CONVERSION: ${hour}:${minute} IST → ${utcHours}:${utcMinutes} UTC`, undefined, 'vedic');
+    devLog.debug(`🕐 Birth time normalized: ${birthTime} → ${normalizedTime}`, undefined, 'vedic');
     devLog.debug(`🕐 Birth DateTime (UTC): ${birthDateTime.toISOString()}`, undefined, 'vedic');
 
     devLog.debug('🕉️ Birth DateTime:', birthDateTime.toISOString(), 'vedic');

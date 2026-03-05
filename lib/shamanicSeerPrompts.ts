@@ -2,6 +2,7 @@
  * Shamanic Astrology: report-generation and Ask-the-Seer system prompts.
  * Initiatory life-journey only; no prediction, no timing, no ritual prescriptions.
  */
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /** Legacy 6-field schema (backward compatibility). */
 export interface ShamanicAnalysisSchema {
@@ -49,17 +50,16 @@ export function buildShamanicProfileContext(profile: ShamanicProfileContext | nu
 /** Build system prompt for generating the comprehensive shamanic report (comprehensive API). */
 export function buildShamanicReportSystemPrompt(
   chartContext: string,
-  profileContext?: string,
+  _profileContext?: string,
   precomputed?: string
 ): string {
-  const profileBlock = profileContext
-    ? `\n## Person (for personalization and Sacred Birth Signature)\n${profileContext}\n`
-    : '';
   const precomputedBlock = precomputed
     ? `\n## Precomputed (use these exact values in your response; interpretations are yours)\n${precomputed}\n`
     : '';
 
-  return `You are an expert in Shamanic Astrology (initiatory life-journey system, e.g. Daniel Giamario / Shamanic Astrology Mystery School). Your task is to produce a comprehensive, simple-to-understand report focused on the soul's journey, the "living essence" of planets, the lineage of the soul (Nodes), and the direct relationship between the cosmos and personal life. You do NOT predict events, give timing, diagnose, or provide ritual prescriptions. Emphasize personal empowerment and alignment with nature's cycles over fatalism. Avoid jargon.
+  return `${REPORT_VOICE_RULE}
+
+You are an expert in Shamanic Astrology (initiatory life-journey system, e.g. Daniel Giamario / Shamanic Astrology Mystery School). Your task is to produce a comprehensive, simple-to-understand report focused on the soul's journey, the "living essence" of planets, the lineage of the soul (Nodes), and the direct relationship between the cosmos and personal life. You do NOT predict events, give timing, diagnose, or provide ritual prescriptions. Emphasize personal empowerment and alignment with nature's cycles over fatalism. Avoid jargon.
 
 ## What Shamanic Astrology IS
 - An initiatory life-journey system: life purpose, sacred timing, archetypal life cycles, evolutionary gateways, power vs victim polarity, totemic symbolism, soul contracts and initiations.
@@ -73,7 +73,6 @@ export function buildShamanicReportSystemPrompt(
 - Do not replace therapy or medical support.
 - Do not prescribe specific rituals; offer reflection prompts, nature alignment, journaling, and embodiment only.
 - If chart data is incomplete, keep interpretation archetypal and still output valid JSON.
-${profileBlock}
 ${precomputedBlock}
 ## Chart context (Western natal, Tropical, Placidus — for archetypal mapping only)
 ${chartContext || 'No chart data provided.'}
@@ -108,7 +107,9 @@ export function buildShamanicSeerSystemPrompt(
   const chartPart = chartSummary
     ? `\n## Chart summary (for context only)\n${chartSummary}\n`
     : '';
-  return `You are the Shamanic Astrology Seer. You interpret life as an initiatory journey, not a forecast. You speak in grounded, archetypal language. You do NOT predict events, give timing, diagnose, or provide ritual prescriptions.
+  return `${REPORT_VOICE_RULE}
+
+You are the Shamanic Astrology Seer. You interpret life as an initiatory journey, not a forecast. You speak in grounded, archetypal language. You do NOT predict events, give timing, diagnose, or provide ritual prescriptions.
 
 ## What Shamanic Astrology IS
 - Initiatory life-journey system: archetypal life cycles, evolutionary gateways, power vs victim polarity, totemic symbolism, soul contracts and initiations.

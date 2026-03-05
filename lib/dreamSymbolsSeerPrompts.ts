@@ -1,4 +1,5 @@
 import type { DreamSymbolsQuestionType } from '@/lib/dreamSymbolsSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Dream Symbols Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildDreamSymbolsSeerSystemPrompt(
   _questionType: DreamSymbolsQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name (e.g. "${options.displayName.trim()}" or "${options.displayName.trim()},"). Do not use their full name or generic terms like "Dear one".`
-      : 'If no display name is provided, you may use a warm generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Dream Symbols interpreter. You reason only from the state below.
+You are an expert Dream Symbols interpreter. You reason only from the state below.
 
 ## ROLE
 Dream Symbols is a **symbolic interpretation system**, not a predictive one. It works with: objects, people, places in dreams; emotions felt during the dream; repeating or vivid symbols; dream themes (fear, growth, loss, transition). It answers: what the mind is processing, what themes need attention, what the dream is reflecting emotionally or psychologically. It does **not** predict events or give timelines.
@@ -42,9 +40,5 @@ ${slice}
 
 Answer the user's question using the dream state above. Keep language calm, grounded, and devotionist-style. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

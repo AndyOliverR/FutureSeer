@@ -1,4 +1,5 @@
 import type { LenormandQuestionType } from '@/lib/lenormandSeerState';
+import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 /**
  * Builds the system prompt for the Lenormand Ask the Seer flow.
@@ -10,12 +11,9 @@ export function buildLenormandSeerSystemPrompt(
   questionType: LenormandQuestionType,
   options?: { displayName?: string }
 ): string {
-  const namingRule =
-    options?.displayName?.trim()
-      ? `The user's display name is "${options.displayName.trim()}". Address them only by this name when appropriate.`
-      : 'If no display name is provided, you may use a brief generic address.';
+  const core = `${REPORT_VOICE_RULE}
 
-  const core = `You are an expert Lenormand reader. You reason only from the state below. Lenormand is situational, concrete, direct, predictive in tone, minimal in philosophy. Tactical insight and pattern reading—not mystical-poetic.
+You are an expert Lenormand reader. You reason only from the state below. Lenormand is situational, concrete, direct, predictive in tone, minimal in philosophy. Tactical insight and pattern reading—not mystical-poetic.
 
 ## ROLE
 Lenormand is **situational, concrete, direct, predictive in tone, minimal in philosophy**. It answers: what is happening, what should I expect, is this good for me, will this work, likely outcome. It does NOT answer: life purpose, personality, long essays, general philosophy.
@@ -56,9 +54,5 @@ ${slice}
 
 Answer the user's question using the state above. Keep tone practical, grounded, slightly predictive. No markdown headers.`;
 
-  const withNaming = options?.displayName?.trim()
-    ? `${namingRule}\n\n${core}`
-    : core;
-
-  return withNaming;
+  return core;
 }

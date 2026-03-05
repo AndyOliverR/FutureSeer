@@ -1227,6 +1227,11 @@ const NAME_MEANINGS: Record<string, NameData> = {
     origin: "Gujarati",
     culturalContext: "Common Gujarati surname"
   },
+  "SEQUEIRA": {
+    meaning: "Place of dry land; from the land",
+    origin: "Portuguese",
+    culturalContext: "Common in Goa and Portuguese-influenced regions; toponymic surname"
+  },
   "GUPTA": {
     meaning: "Protected, secret",
     origin: "Sanskrit",
@@ -1493,6 +1498,13 @@ const NAME_MEANINGS: Record<string, NameData> = {
     meaning: "Princess",
     origin: "Hebrew",
     variations: ["Sarah", "Sara", "Zara"]
+  },
+  "AGNES": {
+    meaning: "Pure, holy, chaste",
+    origin: "Greek",
+    gender: "female",
+    variations: ["Agness", "Agnessa", "Ines", "Ynez"],
+    countries: ["English-speaking", "German", "Scandinavian"]
   },
   "ANNA": {
     meaning: "Favor, grace",
@@ -3900,7 +3912,7 @@ export function getAllNameMeanings(fullName: string): Array<{
       // Still include the part even if meaning not found
       results.push({
         name: originalPart,
-        meaning: "Meaning not available",
+        meaning: "Not in our name dictionary; interpretation is based on numerology and letter analysis only.",
         origin: undefined,
         gender: undefined,
         countries: undefined,

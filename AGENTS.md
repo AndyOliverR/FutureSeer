@@ -44,6 +44,15 @@ The app runs TWO distinct design systems based on screen size and platform:
 - **No breakage**: Customer experience is critical. Every code change must be tested to ensure no regressions in existing flows — especially profile generation, report storage/retrieval, and the Ask the Seer chat.
 - **Data integrity**: User-generated reports must persist correctly. A returning user must always see their previously generated data.
 
+### Astrology calculation pipeline
+
+When changing or adding astrology logic:
+
+- **Audit first**: Find existing modules for time parsing (`lib/birthTimeUtils.ts`), local-to-UTC (`lib/birthDateTimeToUTC.ts`), timezone/offset (coordinates-based in that module), ephemeris (`lib/astronomia-vedic.ts`, `lib/vedic/siderealCalculator.ts`, `lib/western/tropicalCalculator.ts`), and zodiac/sign logic. Reuse them; do not recreate.
+- **Pipeline**: (1) Normalize birth time to 24h (`normalizeBirthTime` → `HH:mm:ss`). (2) Convert local birth time to UTC using place timezone or coordinates-based offset (`birthLocalToUTC`). (3) Use that UTC `Date` for all chart calculations. (4) Western = tropical; Vedic/KP = sidereal Lahiri.
+- **Preservation**: Do not delete working code or do large refactors. Prefer patching and small helpers. If a change could break other tools (Western, KP, Horary, etc.), propose instead of implementing blindly.
+- **Validation**: After computing Moon (or any planet) longitude, the assigned sign must match the longitude range (e.g. Libra 180–210°, Scorpio 210–240°). In development, a mismatch is logged as a warning.
+
 ## Cursor Cloud specific instructions
 
 ### Architecture

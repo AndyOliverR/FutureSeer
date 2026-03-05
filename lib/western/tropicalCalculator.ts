@@ -30,31 +30,10 @@ const estimateDeltaT = (year: number) => {
   return 69;
 };
 
-// Convert Date to Julian Day (TT)
+// Convert Date to Julian Day (TT). Uses astronomia/julian for correct JD, then adds ΔT for Terrestrial Time.
 const toJD_TT = (date: Date) => {
-  // Manual Julian Day calculation from UTC components
-  // This avoids ANY timezone interpretation by Date methods
-  const y = date.getUTCFullYear();
-  const m = date.getUTCMonth() + 1; // JS months are 0-indexed
-  const d = date.getUTCDate();
-  const h = date.getUTCHours();
-  const min = date.getUTCMinutes();
-  const s = date.getUTCSeconds();
-  const ms = date.getUTCMilliseconds();
-  
-  // Calculate day fraction
-  const dayFraction = (h + min / 60 + s / 3600 + ms / 3600000) / 24;
-  
-  // Julian Day calculation (Meeus algorithm)
-  let a = Math.floor((14 - m) / 12);
-  let y2 = y + 4800 - a;
-  let m2 = m + 12 * a - 3;
-  
-  const jdUTC = d + Math.floor((153 * m2 + 2) / 5) + 365 * y2 + 
-          Math.floor(y2 / 4) - Math.floor(y2 / 100) + 
-          Math.floor(y2 / 400) - 32045 - 0.5 + dayFraction;
-  
-  const year = y;
+  const jdUTC = julian.DateToJD(date);
+  const year = date.getUTCFullYear();
   const deltaT = estimateDeltaT(year);
   return jdUTC + deltaT / 86400;
 };
@@ -390,6 +369,9 @@ export function calculateTropicalHouses(date: Date, latitude: number, longitude:
     const jd = toJD_TT(date);
     const lst = calculateLST(jd, longitude);
     const ascendant = calculateAscendant(lst, latitude);
+    // Lagna diagnostic: JD, LST, GMST (LST - lon), tropical Ascendant (ref: 22 Apr 1959 16:30 UTC → JD ~2436686, LST ~204°, asc ~276°)
+    const gmst = norm360(lst - longitude);
+    devLog.debug('🔮 Lagna diagnostic:', { julianDay: jd, lst: Math.round(lst * 100) / 100, gmst: Math.round(gmst * 100) / 100, tropicalAscendant: Math.round(ascendant * 100) / 100 }, 'tropicalCalculator');
     
     // Calculate MC (Midheaven) from RAMC
     const ramc = lst; // Right Ascension of Midheaven

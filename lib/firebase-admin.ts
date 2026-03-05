@@ -10,6 +10,9 @@ import { getAuth } from 'firebase-admin/auth';
 let adminApp;
 if (getApps().length === 0) {
   try {
+    const storageBucket =
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+      process.env.FIREBASE_ADMIN_STORAGE_BUCKET;
     adminApp = initializeApp({
       credential: cert({
         projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
@@ -17,6 +20,7 @@ if (getApps().length === 0) {
         privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
       }),
       projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+      ...(storageBucket ? { storageBucket } : {}),
     });
   } catch (error) {
     devLog.error('❌ Firebase Admin initialization failed:', error, 'firebase-admin');

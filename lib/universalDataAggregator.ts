@@ -15607,9 +15607,7 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
     // Skip transit calculation on server - will use comprehensive profile data
-
-
-
+    // On client, use current residence for transit chart when available
 
 
 
@@ -15670,13 +15668,26 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
 
-      ? calculateTransitData(chartData, {
-          birthDate: userProfile.birthDate ?? '',
-          birthTime: userProfile.birthTime || '12:00',
-          birthPlace: userProfile.birthPlace ?? '',
-          latitude: (userProfile as any).latitude ?? 0,
-          longitude: (userProfile as any).longitude ?? 0
-        })
+      ? await (async () => {
+          const transitPayload: Parameters<typeof calculateTransitData>[1] = {
+            birthDate: userProfile.birthDate ?? '',
+            birthTime: userProfile.birthTime || '12:00',
+            birthPlace: userProfile.birthPlace ?? '',
+            latitude: (userProfile as any).latitude ?? 0,
+            longitude: (userProfile as any).longitude ?? 0
+          };
+          const currentLocation = (userProfile as any).currentLocation;
+          if (typeof currentLocation === 'string' && currentLocation.trim()) {
+            try {
+              const { getCoordinatesWithFallback } = await import('@/lib/geocoding');
+              const coords = await getCoordinatesWithFallback(currentLocation.trim());
+              transitPayload.transitPlace = currentLocation.trim();
+              transitPayload.transitLatitude = coords.latitude;
+              transitPayload.transitLongitude = coords.longitude;
+            } catch (_) { /* use birth place for transit */ }
+          }
+          return calculateTransitData(chartData, transitPayload);
+        })()
 
 
 

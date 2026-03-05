@@ -13,13 +13,21 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { getDocument, setDocument, batchSetDocuments, isAdminAvailable } from '@/lib/firebase-admin';
+import { getDocument, setDocument, batchSetDocuments, isAdminAvailable, adminDb } from '@/lib/firebase-admin';
 import { generateAllReports } from '@/lib/reportGenerationService';
 import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import { calculateProfileDataHash } from '@/lib/firebase';
+import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { devLog } from '@/lib/devLogger';
+import {
+  getEditLimit,
+  getPeriodStartForReset,
+  shouldResetPeriod,
+  isPaidPlan,
+} from '@/lib/profileEditQuota';
+import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
@@ -56,13 +64,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Idempotent guard: already generated with same data — do not re-run tools
+    // Profile edit quota: reject if over limit (no-charge / admin emails bypass)
+    const email = (userProfile.email ?? userProfile.Email) as string | undefined;
+    if (!isNoChargeSubscriptionEmail(email)) {
+      const selectedPlan = (userProfile.selectedPlan ?? userProfile.selected_plan) as string | undefined;
+      const limit = getEditLimit(selectedPlan);
+      const isPaid = isPaidPlan(selectedPlan);
+      const now = new Date();
+      let count = typeof userProfile.profileEditCount === 'number' ? userProfile.profileEditCount : 0;
+      const periodStart = typeof userProfile.profileEditPeriodStart === 'number' ? userProfile.profileEditPeriodStart : undefined;
+      if (shouldResetPeriod(periodStart, now, isPaid)) {
+        count = 0;
+      }
+      if (count > limit) {
+        return NextResponse.json(
+          { error: 'Profile update limit reached for this period. Upgrade your plan for more.' },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Build effective profile from Firestore + optional client overrides (before idempotency so we compare against what we would use)
+    const ALLOWED_OVERRIDES = [
+      'birthDate', 'birthTime', 'birthPlace', 'birthLatitude', 'birthLongitude',
+      'currentLocation', 'fullName', 'displayName',
+      'gender', 'facePhotoUrl', 'palmPhotoUrl',
+    ] as const;
+    let profileWithUid: Record<string, unknown> = {
+      ...userProfile,
+      uid,
+      birthDate: birthDate ?? userProfile.birthDate,
+      birthPlace: birthPlace ?? userProfile.birthPlace,
+    };
+    try {
+      const body = await request.json().catch(() => ({}));
+      const overrides = (body && typeof body === 'object' && (body as Record<string, unknown>).profileOverrides) as Record<string, unknown> | undefined;
+      if (overrides && typeof overrides === 'object') {
+        for (const key of ALLOWED_OVERRIDES) {
+          const val = overrides[key];
+          if (val !== undefined && val !== null) {
+            if (key === 'birthTime' && typeof val === 'string') {
+              profileWithUid[key] = normalizeBirthTime(val) || val;
+            } else {
+              profileWithUid[key] = val;
+            }
+          }
+        }
+        devLog.info('[generate-mystical] Applied profileOverrides from request body', 'generate-mystical');
+      }
+    } catch {
+      // No body or invalid JSON: proceed with Firestore profile only
+    }
+
+    // Idempotent guard: already generated with same effective data — do not re-run tools
     // Unless stored comprehensive profile is missing any tool report (e.g. new tool added after first run)
+    const effectiveHash = calculateProfileDataHash(profileWithUid as Partial<UserProfile>);
     const hashMatches =
       userProfile.mysticalProfileGenerated === true &&
       userProfile.profileDataHash != null &&
       userProfile.profileDataHash !== '' &&
-      userProfile.profileDataHash === calculateProfileDataHash(userProfile);
+      userProfile.profileDataHash === effectiveHash;
 
     if (hashMatches) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
@@ -101,14 +162,6 @@ export async function POST(request: NextRequest) {
     }
     await setDocument('generationLocks', uid, { lockedAt: Date.now(), status: 'running' });
 
-    // Ensure profile has uid and camelCase birth fields for orchestrator
-    const profileWithUid = {
-      ...userProfile,
-      uid,
-      birthDate: birthDate ?? userProfile.birthDate,
-      birthPlace: birthPlace ?? userProfile.birthPlace,
-    };
-
     // Check for selective retry of failed tools via query param
     let retryOnly: string[] | null = null;
     const retryParam = request.nextUrl.searchParams.get('retryTools');
@@ -117,7 +170,27 @@ export async function POST(request: NextRequest) {
       devLog.info(`[generate-mystical] Selective retry for tools: ${retryOnly.join(', ')}`, 'generate-mystical');
     }
 
-    const result = await generateAllReports(uid, profileWithUid as UserProfile);
+    const result = await generateAllReports(uid, profileWithUid as unknown as UserProfile);
+
+    if (result.aggregateUsage && adminDb) {
+      const runId = Date.now().toString();
+      try {
+        await adminDb
+          .collection('profileGenerationUsage')
+          .doc(uid)
+          .collection('runs')
+          .doc(runId)
+          .set({
+            promptTokens: result.aggregateUsage.promptTokens,
+            completionTokens: result.aggregateUsage.completionTokens,
+            totalTokens: result.aggregateUsage.totalTokens,
+            generatedAt: new Date().toISOString(),
+            toolCount: result.systemsUsed?.length ?? 0,
+          });
+      } catch (usageErr) {
+        devLog.warn('[generate-mystical] Failed to store aggregate usage (non-blocking)', usageErr, 'generate-mystical');
+      }
+    }
 
     if (!result.success && result.systemsUsed.length === 0) {
       return NextResponse.json(
@@ -187,19 +260,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const newHash = calculateProfileDataHash(userProfile);
+    const newHash = calculateProfileDataHash(profileWithUid as Partial<UserProfile>);
+    const profileDefiningFields = [
+      'birthDate', 'birthTime', 'birthPlace', 'currentLocation', 'fullName', 'displayName',
+      'gender', 'facePhotoUrl', 'palmPhotoUrl', 'birthLatitude', 'birthLongitude',
+    ] as const;
+    const userUpdate: Record<string, unknown> = {
+      mysticalProfileGenerated: true,
+      mysticalProfileGeneratedAt: Date.now(),
+      profileDataHash: newHash,
+      profileStatus: 'completed',
+      updatedAt: Date.now(),
+    };
+    for (const key of profileDefiningFields) {
+      if (profileWithUid[key] !== undefined) {
+        userUpdate[key] = profileWithUid[key];
+      }
+    }
     const batchSuccess = await batchSetDocuments([
       { collection: 'comprehensiveMysticalProfiles', docId: uid, data: toStore },
       {
         collection: 'users',
         docId: uid,
-        data: {
-          mysticalProfileGenerated: true,
-          mysticalProfileGeneratedAt: Date.now(),
-          profileDataHash: newHash,
-          profileStatus: 'completed',
-          updatedAt: Date.now(),
-        },
+        data: userUpdate,
       },
       {
         collection: 'seerMaster',

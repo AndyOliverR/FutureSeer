@@ -691,14 +691,6 @@ export class UniversalInterpretationEngine {
                         systemData.ascendant?.sign || 
                         'Unknown';
       
-      // Add defensive logging to verify ascendant data structure
-      devLog.debug('🔍 Ascendant data structure:', {
-        fullAscendant: systemData.ascendant,
-        signName: systemData.ascendant?.signName,
-        sign: systemData.ascendant?.sign,
-        extracted: ascendant
-      });
-      
       const moon = systemData.planets.Moon || { signName: 'Pisces', house: 7 };
       const sun = systemData.planets.Sun || { signName: 'Pisces', house: 7 };
       const jupiter = systemData.planets.Jupiter || { signName: 'Sagittarius', house: 10 };

@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { BACK_NAV_LINK_CLASSES } from "@/components/navigation/BackButton"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 
@@ -80,7 +81,7 @@ function ToolsPageContent() {
 
         {categoryParam && (
           <div className="px-4 pb-2">
-            <Link href="/tools" className="inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 font-medium">
+            <Link href="/tools" className={BACK_NAV_LINK_CLASSES}>
               <ArrowLeft className="w-4 h-4" />
               Back to all tools
             </Link>
@@ -161,7 +162,7 @@ function ToolsPageContent() {
 
         {categoryParam && (
           <div className="mb-6 max-w-7xl mx-auto">
-            <Link href="/tools" className="inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300 font-medium">
+            <Link href="/tools" className={BACK_NAV_LINK_CLASSES}>
               <ArrowLeft className="w-4 h-4" />
               Back to all tools
             </Link>

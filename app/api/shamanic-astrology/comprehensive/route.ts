@@ -354,6 +354,7 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
+      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Shamanic comprehensive API error:', err, 'route');

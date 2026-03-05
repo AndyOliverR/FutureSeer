@@ -197,6 +197,7 @@ export async function POST(request: NextRequest) {
       ],
     };
 
+    let aiUsage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;
     try {
       const result = await createAICompletion({
         model: 'llama-3.3-70b-versatile',
@@ -212,7 +213,8 @@ export async function POST(request: NextRequest) {
         maxTokens: 1200,
         responseFormat: { type: 'json_object' },
       });
-      const content = result.content || '';
+      aiUsage = result?.usage;
+      const content = result?.content || '';
       if (content.trim()) {
         const parsed = parseJsonResponse(content);
         strategicSection = {
@@ -272,6 +274,7 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
+      _usage: aiUsage,
     });
   } catch (err) {
     devLog.error('Financial astrology comprehensive API error:', err, 'route');

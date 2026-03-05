@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HoraryEngine } from '@/lib/horaryEngine'
 import { devLog } from '@/lib/devLogger'
+import { getUserProfile } from '@/lib/firebase'
+import { getDocument } from '@/lib/firebase-admin'
+import { geocodePlace } from '@/services/geocoding'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,18 +19,47 @@ export async function POST(request: NextRequest) {
 
     devLog.info('📊 Loading current transits for horary astrology user:', userId, 'horary')
 
+    let questionPlace = questionData?.questionPlace || 'Current location'
+    let latitude = questionData?.latitude ?? 12.2958
+    let longitude = questionData?.longitude ?? 76.6394
+    const timezone = questionData?.timezone ?? 5.5
+
+    // Use profile current residence when available
+    type ProfileShape = { currentLocation?: string; current_location?: string }
+    let profile: ProfileShape | null = null
+    try {
+      profile = (await getUserProfile(userId)) as ProfileShape | null
+    } catch (_) {}
+    if (!profile && typeof getDocument === 'function') {
+      try {
+        const data = await getDocument('users', userId)
+        if (data && typeof data === 'object') profile = data as ProfileShape
+      } catch (_) {}
+    }
+    const currentLocation = profile ? (profile.currentLocation ?? profile.current_location) : undefined
+    const locationStr = typeof currentLocation === 'string' ? currentLocation.trim() : ''
+    if (locationStr.length > 0) {
+      try {
+        const coords = await geocodePlace(locationStr)
+        if (coords?.latitude != null && coords?.longitude != null) {
+          questionPlace = locationStr
+          latitude = coords.latitude
+          longitude = coords.longitude
+          devLog.debug('📍 Using current residence for horary transits:', locationStr, 'horary')
+        }
+      } catch (_) { /* keep defaults */ }
+    }
+
     // Use our custom Horary engine for current transits
     const horaryEngine = new HoraryEngine()
-    
-    // Generate current transits using real astronomical data
     const currentTime = new Date().toISOString()
     const currentTransits = await horaryEngine.generateHoraryChart({
       question: 'Current planetary influences',
       questionTime: currentTime,
-      questionPlace: questionData?.questionPlace || 'Current location',
-      latitude: questionData?.latitude || 12.2958,
-      longitude: questionData?.longitude || 76.6394,
-      timezone: questionData?.timezone || 5.5
+      questionPlace,
+      latitude,
+      longitude,
+      timezone
     })
 
     // Extract relevant transit information

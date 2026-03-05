@@ -522,7 +522,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       data: {
         comprehensiveAnalysis,
         timestamp: Date.now()
-      }
+      },
+      _usage: aiResponse.usage,
     });
 
   } catch (error: any) {
