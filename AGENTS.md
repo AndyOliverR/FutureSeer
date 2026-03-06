@@ -25,10 +25,11 @@ The app runs TWO distinct design systems based on screen size and platform:
 | Mobile/small screen (< 768px) OR Capacitor native | **Material 3 Mobile** | Solid dark surfaces, medium-weight headings, tighter spacing, bottom nav bar, Material 3 elevation |
 
 **How it works:**
-- `PlatformClassProvider` (in `components/PlatformClassProvider.tsx`) applies `.platform-android` or `.platform-web` to `<body>` on every page load and window resize.
+- **Naming:** `.platform-android` and `data-platform="android"` mean **"mobile layout (Material 3)"**, not Android OS. They are set when screen width &lt; 768px or when running in Capacitor native; use them for layout/design system only.
+- `PlatformClassProvider` (in `components/PlatformClassProvider.tsx`) applies `.platform-android` or `.platform-web` to `<body>` on every page load, resize, and orientationchange, and syncs `data-platform` on the document element.
 - CSS custom properties (`--m3-surface`, etc.) in `globals.css` change values under `.platform-android` — e.g., surfaces become solid (#020617) instead of transparent.
 - Tailwind responsive classes (`md:hidden`, `md:grid-cols-3`) handle layout.
-- `BottomNavBar` is visible only on mobile/Android (`bottom-nav-mobile` class + `md:hidden`).
+- `BottomNavBar` is visible only when body has `.platform-android` and viewport is &lt; 768px (`bottom-nav-mobile` class + `md:hidden`). Use the shared `useIsMobileLayout()` hook (from `hooks/useIsMobileLayout.ts`) for layout branches in components; do not rely on Android user-agent alone.
 - `DevotionistStyleCard` is for web; `Material3FAB`, `Material3LoadingSpinner` are for mobile.
 
 **Rules for agents:**

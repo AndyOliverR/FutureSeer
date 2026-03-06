@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { BottomNavBar } from "@/components/BottomNavBar";
+import React from "react";
 import { ToolsLayoutClient } from "@/app/tools/ToolsLayoutClient";
 
 export default function ToolsLayout({
@@ -9,24 +8,15 @@ export default function ToolsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [isAndroid, setIsAndroid] = useState(false);
-
-  useEffect(() => {
-    setIsAndroid(/Android/i.test(navigator.userAgent));
-  }, []);
-
   return (
     <div className="min-h-screen bg-[#020617] relative overflow-x-hidden">
       {/* Universal Tools Background */}
       <div className="starfield-ultra-sharp fixed inset-0 z-0 pointer-events-none opacity-90" />
 
-      {/* Content wrapper with M3 safe areas */}
+      {/* Content wrapper with M3 safe areas. Root layout renders BottomNavBar; visibility via .platform-android .bottom-nav-mobile in globals.css */}
       <main className="relative z-10 w-full min-h-screen pt-[env(safe-area-inset-top)] pb-24 md:pb-12">
         <ToolsLayoutClient>{children}</ToolsLayoutClient>
       </main>
-
-      {/* Platform-aware Bottom Navigation */}
-      {isAndroid && <BottomNavBar />}
 
       <style jsx global>{`
         /* Global Tool Page Sophistication */

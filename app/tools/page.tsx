@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useEffect, Suspense, useState } from "react"
+import { useCallback, useMemo, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -8,6 +8,7 @@ import { useTools } from "@/hooks/useTools"
 import { navigateToTool } from '@/lib/utils/toolRouting'
 import { ArrowLeft, Search, Sparkles, ChevronRight, Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -21,11 +22,9 @@ function ToolsPageContent() {
   const categoryParam = searchParams.get('category');
   const { user, userProfile, loading: authLoading } = useAuth();
   const { tools, searchTerm, setSearchTerm } = useTools();
-  // Start false so server and first client render match (avoids hydration error in Capacitor).
-  const [isAndroid, setIsAndroid] = useState(false);
+  const isMobileLayout = useIsMobileLayout();
 
   useEffect(() => {
-    setIsAndroid(/Android/i.test(navigator.userAgent));
     if (!authLoading && user && userProfile != null && !hasRequiredProfileSetup(userProfile)) {
       router.replace(PROFILE_SETUP_PATH);
     }
@@ -58,8 +57,8 @@ function ToolsPageContent() {
 
   if (user && userProfile != null && !hasRequiredProfileSetup(userProfile)) return null;
 
-  // RENDER MATERIAL 3 (ANDROID)
-  if (isAndroid) {
+  // RENDER MATERIAL 3 (mobile layout: small screen or native)
+  if (isMobileLayout) {
     return (
       <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 overflow-x-hidden">
         <div className="px-4 py-6 space-y-4">

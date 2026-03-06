@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Eye, ArrowLeft, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 
@@ -34,7 +35,7 @@ function SignInContent() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [isAndroid, setIsAndroid] = useState(false)
+  const isMobileLayout = useIsMobileLayout()
   
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -42,10 +43,6 @@ function SignInContent() {
   const { user } = useAuth()
 
   const RECAPTCHA_SITE_KEY = "REDACTED_RECAPTCHA_SITE_KEY";
-
-  useEffect(() => {
-    setIsAndroid(/Android/i.test(navigator.userAgent));
-  }, []);
 
   // After Google redirect (or if already signed in), redirect away from signin immediately.
   // Use full page replace so we don't rely on client router after OAuth redirect.
@@ -92,7 +89,7 @@ function SignInContent() {
       const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
       // Skip reCAPTCHA on localhost (not in reCAPTCHA allowed domains); only run on web, not Android
-      if (!isAndroid && !isLocalhost && typeof window !== 'undefined') {
+      if (!isMobileLayout && !isLocalhost && typeof window !== 'undefined') {
         if (!window.grecaptcha) {
           devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signin');
         } else {
@@ -133,8 +130,8 @@ function SignInContent() {
     }
   }
 
-  // ANDROID VERSION (Material 3)
-  if (isAndroid) {
+  // Mobile layout (Material 3: small screen or native)
+  if (isMobileLayout) {
     return (
       <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-10 px-4">
         <Link href="/" className="inline-flex items-center gap-2 text-amber-400 py-4 active:scale-95 transition-transform">
