@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { ModalPortal } from "@/components/ui/ModalPortal";
+import { safeCopyToClipboard } from "@/lib/safeClipboard";
 
 interface ShareAppModalProps {
   isOpen: boolean;
@@ -30,12 +31,12 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
   }, [isOpen]);
 
   const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareLink);
+    const ok = await safeCopyToClipboard(shareLink);
+    if (ok) {
       setCopied(true);
       toast({ title: "Link Copied! 📋", description: "Share link copied to clipboard" });
       setTimeout(() => setCopied(false), 1500);
-    } catch {
+    } else {
       toast({ title: "Copy Failed", variant: "destructive" });
     }
   };

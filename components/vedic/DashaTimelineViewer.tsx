@@ -23,6 +23,7 @@ import {
   Share2
 } from 'lucide-react'
 import { VedicDasha } from '@/lib/firestoreSchemas'
+import { safeCopyToClipboard } from '@/lib/safeClipboard'
 import { getPlanetEmoji } from '@/lib/vedicDataNormalizer'
 
 interface DashaTimelineViewerProps {
@@ -175,7 +176,7 @@ export function DashaTimelineViewer({
         devLog.debug('Error sharing:', error)
       }
     } else {
-      navigator.clipboard.writeText(window.location.href)
+      await safeCopyToClipboard(window.location.href)
     }
   }
 
