@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,23 +31,14 @@ import {
 import { getGemstonePhotoPath } from '@/lib/gemstoneImageMap'
 import { AffiliateLink } from '@/components/AffiliateLink'
 import { getGemstoneAffiliateUrl } from '@/lib/affiliateConfig'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 
 export default function RemediesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedElement, setSelectedElement] = useState('all')
   const [selectedPlanet, setSelectedPlanet] = useState('all')
-  const [isAndroid, setIsAndroid] = useState(false)
-
-  useEffect(() => {
-    const check = () => {
-      const platform = typeof document !== 'undefined' ? document.documentElement.getAttribute('data-platform') : null
-      setIsAndroid(platform === 'android' || /Android/i.test(navigator.userAgent))
-    }
-    check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
+  const isMobileLayout = useIsMobileLayout()
 
   const categories = [
     { id: 'all', name: 'All Remedies', icon: Sparkles },
@@ -78,12 +69,12 @@ export default function RemediesPage() {
     { id: 'saturn', name: 'Saturn' }
   ]
 
-  const cardBase = isAndroid
+  const cardBase = isMobileLayout
     ? 'bg-surface-container-high border border-outline-variant rounded-2xl shadow-sm'
     : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300'
-  const cardTitleClass = isAndroid ? 'text-xl font-bold text-amber-400' : 'text-xl capitalize text-amber-400'
-  const textMuted = isAndroid ? 'text-surface-on-variant' : 'text-white/80'
-  const badgeOutline = isAndroid ? 'border-outline-variant text-surface-on-variant' : 'text-gray-300 border-gray-600'
+  const cardTitleClass = isMobileLayout ? 'text-xl font-bold text-amber-400' : 'text-xl capitalize text-amber-400'
+  const textMuted = isMobileLayout ? 'text-surface-on-variant' : 'text-white/80'
+  const badgeOutline = isMobileLayout ? 'border-outline-variant text-surface-on-variant' : 'text-gray-300 border-gray-600'
 
   const renderGemstoneRemedies = () => {
     return Object.entries(GEMSTONE_DATABASE).map(([sign, gemstones]) => (
@@ -113,9 +104,9 @@ export default function RemediesPage() {
                           />
                         </div>
                       )}
-                      <CardTitle className={`text-lg truncate ${isAndroid ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>{gemstone.name}</CardTitle>
+                      <CardTitle className={`text-lg truncate ${isMobileLayout ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>{gemstone.name}</CardTitle>
                     </div>
-                    <Badge variant="secondary" className={isAndroid ? 'bg-primary-container text-on-primary-container flex-shrink-0' : 'bg-blue-500 text-white flex-shrink-0'}>
+                    <Badge variant="secondary" className={isMobileLayout ? 'bg-primary-container text-on-primary-container flex-shrink-0' : 'bg-blue-500 text-white flex-shrink-0'}>
                       {gemstone.planetaryRuler}
                     </Badge>
                   </div>
@@ -344,7 +335,7 @@ export default function RemediesPage() {
               {Object.entries(NUMEROLOGY_REMEDIES.missingNumbers).map(([number, remedy]) => (
                 <Card key={number} className={cardBase}>
                   <CardHeader className="pb-3">
-                    <CardTitle className={`text-lg ${isAndroid ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>Number {number}</CardTitle>
+                    <CardTitle className={`text-lg ${isMobileLayout ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>Number {number}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <p className={`text-sm ${textMuted}`}>{remedy.description}</p>
@@ -383,7 +374,7 @@ export default function RemediesPage() {
   }
 
   // Material 3 layout for mobile / Android
-  if (isAndroid) {
+  if (isMobileLayout) {
     return (
       <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 overflow-x-hidden">
         <div className="px-4 py-6 space-y-4">

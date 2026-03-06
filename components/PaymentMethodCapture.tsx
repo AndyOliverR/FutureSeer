@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { loadRazorpayScript } from '@/lib/razorpayClient';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
+import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
 
 declare global {
   interface Window {
@@ -189,6 +190,9 @@ export function PaymentMethodCapture({
     }
   };
 
+  const config = getCountryPricingConfig(userCountry);
+  const chargeInUsdFallback = !isRazorpayPlanCurrency(config.currency);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -206,6 +210,11 @@ export function PaymentMethodCapture({
           <CardTitle className="text-2xl font-serif text-white mb-2">
             Secure Your Spot in the Innovation Experiment
           </CardTitle>
+          {chargeInUsdFallback && (
+            <p className="text-sm text-amber-200/90 mb-2">
+              Payment will be processed in USD. Your card may show the equivalent in your local currency.
+            </p>
+          )}
           <CardDescription className="text-slate-300 font-serif">
             {selectedPlan === 'power-user-trial' ? (
               <>

@@ -59,7 +59,7 @@ export default function RootLayout({
       <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var w=window.innerWidth;var isSmall=w>0&&w<768;var isAndroid=/Android/i.test(navigator.userAgent);var cls=isSmall||isAndroid?'platform-android':'platform-web';document.body.classList.add(cls);document.documentElement.setAttribute('data-platform',cls==='platform-android'?'android':'web');})();`,
+            __html: `(function(){var isSmall=typeof window.matchMedia!=='undefined'&&window.matchMedia('(max-width: 767px)').matches;var isAndroid=/Android/i.test(navigator.userAgent);var cls=isSmall||isAndroid?'platform-android':'platform-web';document.body.classList.add(cls);document.documentElement.setAttribute('data-platform',cls==='platform-android'?'android':'web');})();`,
           }}
         />
         <DeferredViewportHeightSync />
