@@ -22,6 +22,7 @@ import {
   Minimize2
 } from 'lucide-react'
 import { ModalPortal } from '@/components/ui/ModalPortal'
+import { safeCopyToClipboard } from '@/lib/safeClipboard'
 import { VedicChart, VedicPlanetaryPosition, VedicHouse } from '@/lib/firestoreSchemas'
 import { getPlanetEmoji, getSignEmoji, formatDegree } from '@/lib/vedicDataNormalizer'
 import { devLog } from '@/lib/devLogger'
@@ -218,8 +219,7 @@ export function RasiChartViewer({
         devLog.error('Error sharing', error, 'RasiChartViewer')
       }
     } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href)
+      await safeCopyToClipboard(window.location.href)
     }
   }
 

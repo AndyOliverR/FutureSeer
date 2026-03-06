@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/use-toast';
 import { getReferralStats } from '@/lib/referralUtils';
 import { getFirebaseDB } from '@/lib/firebase';
+import { safeCopyToClipboard } from '@/lib/safeClipboard';
 import { AboutSection } from './AboutSection';
 import { motion } from 'framer-motion';
 
@@ -44,9 +45,10 @@ export function AboutReferral() {
     }
   }, [user]);
 
-  const handleCopyReferralCode = () => {
-    if (referralStats.referralCode) {
-      navigator.clipboard.writeText(referralStats.referralCode);
+  const handleCopyReferralCode = async () => {
+    if (!referralStats.referralCode) return;
+    const ok = await safeCopyToClipboard(referralStats.referralCode);
+    if (ok) {
       setCopiedCode(true);
       toast({
         title: "Copied!",
@@ -57,7 +59,7 @@ export function AboutReferral() {
     }
   };
 
-  const handleShareReferral = (platform: string) => {
+  const handleShareReferral = async (platform: string) => {
     const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://futureseer.app'}?ref=${referralStats.referralCode}`;
     const shareText = "Join me on FutureSeer - AI-powered mystic insights!";
 
@@ -69,12 +71,13 @@ export function AboutReferral() {
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`);
         break;
       case 'copy':
-        navigator.clipboard.writeText(shareUrl);
-        toast({
-          title: "Link copied!",
-          description: "Share link copied to clipboard",
-          duration: 2000
-        });
+        if (await safeCopyToClipboard(shareUrl)) {
+          toast({
+            title: "Link copied!",
+            description: "Share link copied to clipboard",
+            duration: 2000
+          });
+        }
         break;
     }
   };
