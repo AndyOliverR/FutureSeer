@@ -22,6 +22,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    lint {
+        // Capacitor uses activity_main, bridge_layout_main; config.xml and launcher assets are used at build/runtime
+        disable 'UnusedResources'
+        // Splash/icon density and monochrome are acceptable for this app
+        disable 'IconDipSize', 'IconDuplicatesConfig', 'IconMissingDensityFolder'
+    }
 }
 
 repositories {
@@ -49,6 +55,6 @@ try {
     if (servicesJSON.text) {
         apply plugin: 'com.google.gms.google-services'
     }
-} catch(Exception e) {
+} catch (Exception ignored) {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }

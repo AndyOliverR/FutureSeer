@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { devLog } from '@/lib/devLogger';
+import { devLog } from '@/lib/devLogger'
+import { safeCopyToClipboard } from '@/lib/safeClipboard'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -258,7 +259,7 @@ export function TransitsOverlay({
         devLog.debug('Error sharing:', error)
       }
     } else {
-      navigator.clipboard.writeText(window.location.href)
+      await safeCopyToClipboard(window.location.href)
     }
   }
 

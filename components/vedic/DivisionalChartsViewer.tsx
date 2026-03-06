@@ -23,6 +23,7 @@ import {
 import { SouthIndianVedicChart } from '@/components/SouthIndianVedicChart'
 import { VedicChart, VedicPlanetaryPosition } from '@/lib/firestoreSchemas'
 import { getPlanetEmoji, getSignEmoji, formatDegree } from '@/lib/vedicDataNormalizer'
+import { safeCopyToClipboard } from '@/lib/safeClipboard'
 
 interface DivisionalChartsViewerProps {
   charts: VedicChart[]
@@ -307,7 +308,7 @@ export function DivisionalChartsViewer({
         devLog.debug('Error sharing:', error)
       }
     } else {
-      navigator.clipboard.writeText(window.location.href)
+      await safeCopyToClipboard(window.location.href)
     }
   }
 

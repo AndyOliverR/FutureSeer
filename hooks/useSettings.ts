@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAuth } from './use-auth';
 import { updateSubscriptionStatus, updateTipStatus, updateUserProfile } from '@/lib/firebase';
+import { safeCopyToClipboard } from '@/lib/safeClipboard';
 import i18n from 'i18next';
 
 export interface UserSettings {
@@ -136,10 +137,10 @@ export function useSettings() {
   }, [user]);
 
   const copyToClipboard = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+    const ok = await safeCopyToClipboard(text);
+    if (ok) {
       setSuccess('Copied to clipboard!');
-    } catch (err) {
+    } else {
       setError('Failed to copy to clipboard');
     }
   }, []);

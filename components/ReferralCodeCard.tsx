@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { getReferralStats } from '@/lib/referralUtils';
 import { getFirebaseDB } from '@/lib/firebase';
+import { safeCopyToClipboard } from '@/lib/safeClipboard';
 
 interface ReferralCodeCardProps {
   userId: string;
@@ -108,9 +109,10 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
     };
   }, [userId]);
 
-  const handleCopyCode = () => {
-    if (referralStats.referralCode) {
-      navigator.clipboard.writeText(referralStats.referralCode);
+  const handleCopyCode = async () => {
+    if (!referralStats.referralCode) return;
+    const ok = await safeCopyToClipboard(referralStats.referralCode);
+    if (ok) {
       setCopiedCode(true);
       toast({
         title: "Copied!",
@@ -121,16 +123,18 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
     }
   };
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://futureseer.app'}?ref=${referralStats.referralCode}`;
-    navigator.clipboard.writeText(shareUrl);
-    setCopiedLink(true);
-    toast({
-      title: "Link copied!",
-      description: "Share link copied to clipboard",
-      duration: 2000
-    });
-    setTimeout(() => setCopiedLink(false), 2000);
+    const ok = await safeCopyToClipboard(shareUrl);
+    if (ok) {
+      setCopiedLink(true);
+      toast({
+        title: "Link copied!",
+        description: "Share link copied to clipboard",
+        duration: 2000
+      });
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
   };
 
   const handleShare = (platform: string) => {
