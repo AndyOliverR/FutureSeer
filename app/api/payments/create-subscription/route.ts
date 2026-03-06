@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getRazorpayClient, createPlan, createSubscription } from '@/lib/razorpay';
+import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
+import { convertToUsdCents } from '@/lib/currencyConversion';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -137,13 +139,24 @@ export async function POST(request: NextRequest) {
       ? Math.round(config.pricingTiers.allFeatures * (noSubUnit ? 1 : 100))
       : amount;
 
+    // Razorpay Plans API supports only INR and USD; others (e.g. AED) return "Currency provided is not supported".
+    const useFallbackCurrency = !isRazorpayPlanCurrency(config.currency);
+    const planCurrency = useFallbackCurrency ? 'USD' : config.currency;
+    const planAmountForRazorpay = useFallbackCurrency
+      ? convertToUsdCents(planAmount, config.currency)
+      : planAmount;
+
+    if (useFallbackCurrency) {
+      devLog.info(`[create-subscription] Using USD fallback for unsupported currency: ${config.currency}`, 'route');
+    }
+
     let razorpayPlanId: string;
 
     try {
       const createdPlan = await createPlan({
         period: planPeriod,
-        amount: planAmount,
-        currency: config.currency,
+        amount: planAmountForRazorpay,
+        currency: planCurrency,
         item: {
           name: planName,
           description: planDescription,
@@ -176,6 +189,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       subscriptionId: subscription.id,
       razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
+      ...(useFallbackCurrency ? { chargeCurrency: 'USD' as const } : {}),
     });
   } catch (error: any) {
     devLog.error('Error creating subscription:', error, 'route');

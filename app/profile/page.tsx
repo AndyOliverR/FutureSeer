@@ -20,6 +20,7 @@ import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache, us
 import { ReferralCodeCard } from "@/components/ReferralCodeCard"
 import { SubscriptionStatus } from "@/components/SubscriptionStatus"
 import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
+import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
 import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 
@@ -38,16 +39,12 @@ export default function ProfilePage() {
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
   const [generationStatus, setGenerationStatus] = useState<string>("")
   const generationAbortRef = useRef<AbortController | null>(null)
-  const [isAndroid, setIsAndroid] = useState(false)
+  const isMobileLayout = useIsMobileLayout()
   const [uploadingFace, setUploadingFace] = useState(false)
   const [uploadingPalm, setUploadingPalm] = useState(false)
   const [canGenerateMysticalProfile, setCanGenerateMysticalProfile] = useState(true)
   const faceInputRef = useRef<HTMLInputElement>(null)
   const palmInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    setIsAndroid(typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent))
-  }, [])
 
   useEffect(() => {
     if (!isGeneratingProfile) return
@@ -311,14 +308,14 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isAndroid ? "bg-surface" : "starfield-ultra-sharp"}`}>
+      <div className={`min-h-screen flex items-center justify-center ${isMobileLayout ? "bg-surface" : "starfield-ultra-sharp"}`}>
         <Loader2 className="animate-spin text-amber-400" />
       </div>
     )
   }
 
   // Android / Mobile: Material 3 layout
-  if (isAndroid) {
+  if (isMobileLayout) {
     return (
     <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
       <div className="flex items-center justify-between h-16 mb-6">

@@ -34,7 +34,6 @@ export default function ProfileSetupPage() {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
-  const [isAndroid, setIsAndroid] = useState(false)
 
   const [profileData, setProfileData] = useState({
     displayName: '', fullName: '', gender: '' as any,
@@ -44,7 +43,6 @@ export default function ProfileSetupPage() {
   })
 
   useEffect(() => {
-    setIsAndroid(/Android/i.test(navigator.userAgent));
     if (userProfile) {
       setProfileData(prev => ({
         ...prev,

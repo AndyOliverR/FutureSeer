@@ -9,8 +9,9 @@ import { Capacitor } from "@capacitor/core";
  * 2. Screen width (< 768px = mobile/Material 3, >= 768px = web/Devotionist)
  * 3. User agent Android detection (secondary signal)
  *
- * Listens for resize events so rotating a tablet or resizing a browser
- * switches the design system in real-time.
+ * Note: "platform-android" means "mobile layout (Material 3)", not Android OS.
+ * Listens for resize and orientationchange so the design system updates in real time.
+ * Also syncs data-platform on document.documentElement for components that read it.
  */
 const MOBILE_BREAKPOINT = 768;
 
@@ -34,15 +35,20 @@ function applyPlatformClass() {
     body.classList.remove(other);
     body.classList.add(cls);
   }
+  document.documentElement.setAttribute("data-platform", cls === "platform-android" ? "android" : "web");
 }
 
 export function PlatformClassProvider() {
   useEffect(() => {
     applyPlatformClass();
 
-    const onResize = () => applyPlatformClass();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const onResizeOrOrientation = () => applyPlatformClass();
+    window.addEventListener("resize", onResizeOrOrientation);
+    window.addEventListener("orientationchange", onResizeOrOrientation);
+    return () => {
+      window.removeEventListener("resize", onResizeOrOrientation);
+      window.removeEventListener("orientationchange", onResizeOrOrientation);
+    };
   }, []);
 
   return null;
