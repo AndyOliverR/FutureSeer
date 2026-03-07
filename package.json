@@ -45,10 +45,10 @@
   "dependencies": {
     "@astrodraw/astrochart": "^3.0.2",
     "@capacitor-firebase/authentication": "^7.0.0",
-    "@capacitor/android": "^7.4.1",
+    "@capacitor/android": "^7.4.2",
     "@capacitor/cli": "latest",
-    "@capacitor/core": "^7.4.1",
-    "@capacitor/ios": "^7.4.1",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/ios": "^7.4.2",
     "@hebcal/core": "^6.0.0",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^3.9.1",
