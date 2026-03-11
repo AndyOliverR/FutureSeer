@@ -18,16 +18,16 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0(@capacitor/core@7.4.2)(firebase@12.1.0)
       '@capacitor/android':
-        specifier: ^7.4.1
+        specifier: ^7.4.2
         version: 7.4.2(@capacitor/core@7.4.2)
       '@capacitor/cli':
         specifier: latest
         version: 7.4.2
       '@capacitor/core':
-        specifier: ^7.4.1
+        specifier: ^7.4.2
         version: 7.4.2
       '@capacitor/ios':
-        specifier: ^7.4.1
+        specifier: ^7.4.2
         version: 7.4.5(@capacitor/core@7.4.2)
       '@hebcal/core':
         specifier: ^6.0.0
