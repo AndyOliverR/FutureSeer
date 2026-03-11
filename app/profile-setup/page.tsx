@@ -73,7 +73,12 @@ export default function ProfileSetupPage() {
         await uploadBytes(faceRef, profileData.facePhoto)
         updateData.facePhotoUrl = await getDownloadURL(faceRef)
       }
-      
+      if (storage && profileData.palmPhoto) {
+        const palmRef = ref(storage, `users/${user.uid}/palm_${Date.now()}`)
+        await uploadBytes(palmRef, profileData.palmPhoto)
+        updateData.palmPhotoUrl = await getDownloadURL(palmRef)
+      }
+
       await updateUserProfile(user.uid, updateData)
       await refreshProfile()
       toast({ title: 'Cosmic Profile Set! 🌟' })

@@ -1,7 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button"
-// Landing CTAs: Join the Experiment, Sign In with email (Google is on /signin)
+import Link from "next/link"
+// Landing: single CTA "Join the Experiment" → signup; secondary link to sign in
 import { useRouter } from "next/navigation"
 import { ArrowRight, ChevronDown } from "lucide-react"
 import { useAnalytics } from "@/lib/analytics"
@@ -29,8 +30,8 @@ export function HeroSection() {
           </p>
         </div>
 
-        {/* Unified CTA Buttons: Stacked on mobile, side-by-side on web */}
-        <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center items-center pt-6">
+        {/* Single primary CTA: Join the Experiment → signup */}
+        <div className="flex flex-col gap-4 md:gap-5 justify-center items-center pt-6">
           <Button
             size="lg"
             className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-primary text-on-primary font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full transition-all shadow-xl shadow-amber-500/10"
@@ -42,15 +43,12 @@ export function HeroSection() {
             Join the Experiment
             <ArrowRight className="ml-2 w-4 h-4 hidden md:block" />
           </Button>
-
-          <Button
-            size="lg"
-            variant="outlined"
-            className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-transparent border-2 border-amber-400/30 text-primary font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full hover:bg-amber-500/10 transition-all"
-            onClick={() => router.push("/signin")}
+          <Link
+            href="/signin"
+            className="text-sm font-medium text-amber-400/80 hover:text-amber-400 transition-colors uppercase tracking-wider"
           >
-            Sign In with email
-          </Button>
+            Already have an account? Sign In
+          </Link>
         </div>
       </div>
 

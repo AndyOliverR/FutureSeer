@@ -86,6 +86,8 @@
   background-repeat: no-repeat;
   opacity: 1;
   pointer-events: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 /* Ensure main content is always above background */
@@ -110,6 +112,14 @@ main {
   }
 }
 
+/* Footer: desktop-first so wide viewport shows full footer on initial load without relying on min-width. */
+.footer-compact-block { display: none !important; }
+.footer-desktop-block { display: block !important; }
+@media (max-width: 767px) {
+  .footer-compact-block { display: block !important; }
+  .footer-desktop-block { display: none !important; }
+}
+
 /* FLOATING WIDGETS POSITIONING */
 /* Web Default */
 [data-tip-jar-widget="true"] { bottom: 96px !important; left: 32px !important; }
@@ -118,6 +128,20 @@ main {
 /* Android Overrides */
 .platform-android [data-tip-jar-widget="true"] { bottom: 160px !important; left: 16px !important; }
 .platform-android [data-feedback-widget="true"] { bottom: 100px !important; left: 16px !important; }
+
+/* Tip jar on landing: enforce min size so icon stays visible (avoids small-heart on mobile landing) */
+[data-tip-jar-widget="true"][data-landing="true"] {
+  min-width: 56px !important;
+  min-height: 56px !important;
+}
+[data-tip-jar-widget="true"][data-landing="true"] button {
+  min-width: 56px !important;
+  min-height: 56px !important;
+}
+[data-tip-jar-widget="true"][data-landing="true"] svg {
+  min-width: 40px !important;
+  min-height: 40px !important;
+}
 
 /* PULSE ANIMATIONS - Only if explicitly enabled */
 .floating-icon-pulse {
