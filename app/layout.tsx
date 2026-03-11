@@ -43,6 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        <link rel="preload" href="/assets/bg/starfieldn-8k.png" as="image" />
         {/* Patch console before any other script so COOP/window.closed from Firebase popup is suppressed */}
         <script
           dangerouslySetInnerHTML={{
@@ -59,7 +60,7 @@ export default function RootLayout({
       <body className="starfield-ultra-sharp min-h-screen overflow-x-hidden font-sans" suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var isSmall=typeof window.matchMedia!=='undefined'&&window.matchMedia('(max-width: 767px)').matches;var isAndroid=/Android/i.test(navigator.userAgent);var cls=isSmall||isAndroid?'platform-android':'platform-web';document.body.classList.add(cls);document.documentElement.setAttribute('data-platform',cls==='platform-android'?'android':'web');})();`,
+            __html: `(function(){var w=typeof window!=='undefined'?window.innerWidth:0;if(w>=768){document.body.classList.add('platform-web');document.documentElement.setAttribute('data-platform','web');return;}var mq=typeof window.matchMedia!=='undefined'&&window.matchMedia('(max-width: 767px)').matches;var vv=window.visualViewport&&window.visualViewport.width>0&&window.visualViewport.width<768;var isSmall=(w>0&&w<768)||mq||!!vv;var cls=isSmall?'platform-android':'platform-web';document.body.classList.add(cls);document.documentElement.setAttribute('data-platform',cls==='platform-android'?'android':'web');})();`,
           }}
         />
         <DeferredViewportHeightSync />

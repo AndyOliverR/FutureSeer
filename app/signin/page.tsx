@@ -159,6 +159,9 @@ function SignInContent() {
               <Button type="submit" disabled={isLoading} className="w-full h-14 bg-amber-500 text-slate-900 rounded-2xl font-bold text-lg shadow-lg active:scale-[0.98] transition-all">Sign In</Button>
             </form>
           </div>
+          <div className="mt-8 text-center pt-6 border-t border-outline-variant/30">
+            <p className="text-surface-on-variant text-sm font-medium">New to FutureSeer? <Link href="/signup" className="text-amber-400 font-bold hover:underline ml-1">Join the Experiment</Link></p>
+          </div>
         </motion.div>
       </div>
     )
