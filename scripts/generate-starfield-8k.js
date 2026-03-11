@@ -6,6 +6,8 @@ const path = require('path');
 const WIDTH = 7680;
 const HEIGHT = 4320;
 const OUTPUT_PATH = path.join(__dirname, '..', 'public', 'assets', 'bg', 'starfieldn-8k.png');
+const OUTPUT_DIR = path.dirname(OUTPUT_PATH);
+fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
 // Create a buffer for the image data (RGBA: 4 bytes per pixel)
 const imageBuffer = Buffer.alloc(WIDTH * HEIGHT * 4);

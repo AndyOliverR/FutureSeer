@@ -268,20 +268,23 @@ function SignUpPageContent() {
             </>
           ) : (
             <form onSubmit={handleBasicInfoSubmit} className="space-y-6">
+              <label className="flex items-start gap-3 cursor-pointer text-white/90 text-sm font-light pb-2 border-b border-white/10">
+                <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-0.5 border-amber-500/40 rounded data-[state=checked]:bg-amber-500/20 shrink-0" />
+                <span>I confirm I am at least 16 years old and agree to the <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">Terms</Link>.</span>
+              </label>
               <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" autoComplete="name" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
               <CountrySelector value={selectedCountry} onChange={setSelectedCountry} autoDetect={true} />
               <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
               <Input value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="Password" autoComplete="new-password" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
               <Input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" autoComplete="new-password" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
-              <label className="flex items-start gap-3 cursor-pointer text-white/80 text-sm font-light">
-                <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-1 border-amber-500/40 rounded data-[state=checked]:bg-amber-500/20" />
-                <span>I confirm I am at least 16 years old and agree to the <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">Terms</Link>.</span>
-              </label>
               <Button type="submit" disabled={isLoading || !confirmAge16} className="w-full h-16 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-2xl text-xl transition-all shadow-xl shadow-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed">
                 {isLoading ? <Loader2 className="animate-spin" /> : "Begin Transformation"}
               </Button>
             </form>
           )}
+          <div className="pt-6 mt-2 border-t border-white/5 text-center">
+            <p className="text-amber-200/80 text-sm font-light">Already have an account? <Link href="/signin" className="text-amber-400 font-bold hover:underline ml-1">Sign In</Link></p>
+          </div>
         </div>
         {!showSignupFlow && (
           <div className="hidden md:block bg-[url('/assets/bg/starfieldn-8k.png')] bg-cover bg-center relative">

@@ -6,6 +6,8 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --webpack",
+    "generate:starfield": "node scripts/generate-starfield-8k.js",
+    "prebuild": "node scripts/generate-starfield-8k.js",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "next lint",

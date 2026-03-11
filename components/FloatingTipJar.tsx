@@ -1,16 +1,19 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { useTipJar } from '@/components/TipJarContext';
 import { useModalOpen } from '@/components/ModalOpenContext';
 
 export function FloatingTipJar() {
+  const pathname = usePathname();
   const { open } = useTipJar();
   const { isAnyModalOpen } = useModalOpen();
   const [mounted, setMounted] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const isLanding = pathname === '/';
 
   useEffect(() => {
     setMounted(true);
@@ -21,6 +24,7 @@ export function FloatingTipJar() {
   return (
     <div
       data-tip-jar-widget="true"
+      data-landing={isLanding ? 'true' : undefined}
       className="fixed z-[9999] pointer-events-none"
       style={{
         bottom: '160px',
