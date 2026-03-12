@@ -3,8 +3,8 @@
  * Implements PWA functionality with offline support and caching strategies
  */
 
-// Cache version - increment on each deployment
-const CACHE_VERSION = 'v1.0.0';
+// Cache version - increment when SW logic or precache list changes so clients drop old caches
+const CACHE_VERSION = 'v1.0.1';
 const CACHE_NAME = `futureseer-${CACHE_VERSION}`;
 
 // Cache names for different strategies
@@ -14,9 +14,8 @@ const CACHES = {
   images: `${CACHE_NAME}-images`,
 };
 
-// Assets to precache on install
+// Assets to precache on install (do NOT include '/' - document must be network-first so footer/UI updates deploy)
 const PRECACHE_ASSETS = [
-  '/',
   '/offline',
   '/assets/bg/starfieldn-8k.png',
   '/og-image.svg',
@@ -195,11 +194,10 @@ async function limitCacheSize(cacheName, maxSize) {
 }
 
 /**
- * Check if request is for a static asset
+ * Check if request is for a static asset (do NOT include '/' - HTML must be network-first so deploys show new content)
  */
 function isStaticAsset(url) {
   return url.pathname.match(/\.(js|css|woff|woff2|ttf|otf)$/) ||
-         url.pathname === '/' ||
          url.pathname === '/manifest.json' ||
          url.pathname.startsWith('/_next/static/');
 }
