@@ -20,15 +20,22 @@ function ToolsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
-  const { user, userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin } = useAuth();
   const { tools, searchTerm, setSearchTerm } = useTools();
   const isMobileLayout = useIsMobileLayout();
 
   useEffect(() => {
-    if (!authLoading && user && userProfile != null && !hasRequiredProfileSetup(userProfile)) {
+    if (
+      !authLoading &&
+      user &&
+      userProfile != null &&
+      !hasRequiredProfileSetup(userProfile) &&
+      !isSuperadmin &&
+      !isAdmin
+    ) {
       router.replace(PROFILE_SETUP_PATH);
     }
-  }, [authLoading, user, userProfile, router]);
+  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin]);
 
   const displayedTools = useMemo(() => {
     let list = categoryParam ? tools.filter(t => t.category === categoryParam) : tools;
@@ -55,7 +62,7 @@ function ToolsPageContent() {
     return ordered;
   }, [displayedTools, categoryParam, searchTerm]);
 
-  if (user && userProfile != null && !hasRequiredProfileSetup(userProfile)) return null;
+  if (user && userProfile != null && !hasRequiredProfileSetup(userProfile) && !isSuperadmin && !isAdmin) return null;
 
   // RENDER MATERIAL 3 (mobile layout: small screen or native)
   if (isMobileLayout) {

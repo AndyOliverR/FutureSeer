@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logServerError } from '@/lib/serverErrorLogging';
 
 function isLocalhost(request: NextRequest): boolean {
   const host = request.headers.get('host') ?? request.nextUrl.hostname ?? '';
@@ -68,6 +69,16 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('reCAPTCHA verification error:', error);
+    try {
+      await logServerError({
+        area: 'auth',
+        action: 'verify_captcha',
+        message: error instanceof Error ? error.message : 'Unknown reCAPTCHA error',
+        route: request.nextUrl.pathname,
+      });
+    } catch {
+      // ignore logging failures
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

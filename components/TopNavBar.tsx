@@ -28,6 +28,8 @@ const navLinks = [
   { name: "Settings", href: "/settings", icon: "⚙️" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
   { name: "About", href: "/about", icon: "ℹ️" },
+  // Admin-only entry visible only to isAdmin / isSuperadmin
+  { name: "Admin Dashboard", href: "/admin/dashboard", icon: "🛡️", adminOnly: true as const },
 ];
 
 export function TopNavBar() {
@@ -49,11 +51,8 @@ export function TopNavBar() {
     if (showMenu) router.prefetch("/community/attribution");
   }, [showMenu, router]);
 
-  const visibleNavLinks = navLinks.filter(
-    (link) =>
-      (link.name !== "Admin Dashboard" && link.name !== "Admin") ||
-      isAdmin ||
-      isSuperadmin
+  const visibleNavLinks = navLinks.filter((link) =>
+    link.adminOnly ? (isAdmin || isSuperadmin) : true
   );
 
   useEffect(() => {

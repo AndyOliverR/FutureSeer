@@ -2,22 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 import { getAuth } from '@/lib/firebase-admin';
+import { isAdminDecoded } from '@/lib/adminConfig';
 
 async function verifyAdmin(request: NextRequest): Promise<boolean> {
   const authHeader = request.headers.get('Authorization');
   const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!idToken) return false;
+  if (!idToken) {
+    devLog.warn('[admin/audit-logs] No Bearer token', 'route');
+    return false;
+  }
   try {
     const decoded = await getAuth().verifyIdToken(idToken);
-    return decoded.admin === true || decoded.superadmin === true;
-  } catch {
+    if (!isAdminDecoded(decoded)) {
+      devLog.warn('[admin/audit-logs] Token valid but not admin', { email: decoded.email ?? '(no email)' }, 'route');
+      return false;
+    }
+    return true;
+  } catch (err) {
+    devLog.warn('[admin/audit-logs] verifyIdToken failed', err, 'route');
     return false;
   }
 }
 
 const COLLECTION = 'auditLogs';
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {
@@ -61,8 +70,18 @@ export async function GET(request: NextRequest) {
 
     const total = list.length;
     const start = pageToken ? Math.max(0, list.findIndex((x) => x.id === pageToken) + 1) : 0;
-    const logs = list.slice(start, start + limit);
+    const sliceList = list.slice(start, start + limit);
     const nextPageToken = list[start + limit] ? (list[start + limit] as { id: string }).id : undefined;
+
+    const logs = sliceList.map((x) => ({
+      id: x.id,
+      timestamp: typeof x.timestamp === 'number' ? x.timestamp : Date.now(),
+      action: x.action ?? '—',
+      performedBy: (x.actorEmail as string) || (x.actorUid as string) || '—',
+      targetUser: (x.targetUid as string) || '—',
+      details: x.details ?? {},
+      ipAddress: (x.ipAddress as string) ?? '',
+    }));
 
     return NextResponse.json({ logs, nextPageToken });
   } catch (err) {

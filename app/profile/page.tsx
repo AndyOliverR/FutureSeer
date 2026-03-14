@@ -26,7 +26,7 @@ import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 
 export default function ProfilePage() {
   const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
-  const { applyGeneratedProfile, refreshProfile: refreshComprehensiveProfile } = useComprehensiveMysticalProfile()
+  const { applyGeneratedProfile, refreshProfile: refreshComprehensiveProfile, hasProfile, canViewFullProfile } = useComprehensiveMysticalProfile()
   const router = useRouter()
   const { t } = useTranslation('common')
 
@@ -334,6 +334,14 @@ export default function ProfilePage() {
           {user && <div className="mt-4 border-t border-outline-variant pt-4"><ReferralCodeCard userId={user.uid} /></div>}
         </div>
 
+        {hasProfile && !canViewFullProfile && (
+          <Alert className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
+            <AlertDescription className="text-amber-200 text-sm">
+              Your mystical profile is ready. Select a plan above to view your full reports in Tools.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl space-y-8">
           <div className="flex items-center justify-between border-b border-outline-variant pb-4">
             <div className="flex items-center gap-3">
@@ -549,6 +557,14 @@ export default function ProfilePage() {
             {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
             {user && <div className="mt-4 border-t border-amber-400/20 pt-4"><ReferralCodeCard userId={user.uid} /></div>}
           </motion.div>
+
+          {hasProfile && !canViewFullProfile && (
+            <Alert className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
+              <AlertDescription className="text-amber-200">
+                Your mystical profile is ready. Select a plan above to view your full reports in Tools.
+              </AlertDescription>
+            </Alert>
+          )}
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-6">
             <div className="flex items-center justify-between border-b border-amber-400/20 pb-4">

@@ -1,8 +1,10 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { getFirebaseDB, isReportsStale } from '@/lib/firebase'
+import { logClientError } from '@/lib/errorLogging'
 import { doc, getDoc, getDocFromServer, onSnapshot } from 'firebase/firestore'
 import {
   getPersistentProfile,
@@ -92,6 +94,8 @@ export interface MysticalProfileContextValue {
   loading: boolean
   error: string | null
   hasProfile: boolean
+  /** True when user has a selected plan (or no-charge); when false, full profile/tools view should show a plan selection CTA. */
+  canViewFullProfile: boolean
   isReportsStale: boolean
   refreshProfile: () => Promise<void>
   /** Apply comprehensive profile from generate-mystical API response so UI shows new data without relying on a follow-up Firestore read (which may fail and fall back to stale cache). */
@@ -110,10 +114,12 @@ export function clearComprehensiveMysticalProfileCache(userId: string): void {
 
 export function MysticalProfileProvider({ children }: { children: React.ReactNode }) {
   const { user, userProfile } = useAuth()
+  const pathname = usePathname()
   const userProfileRef = useRef(userProfile)
   userProfileRef.current = userProfile
   const lastAppliedGeneratedAtRef = useRef<string | null>(null)
   const profileUserIdRef = useRef<string | null>(null)
+  const noProfileLoggedForUserRef = useRef<string | null>(null)
 
   const [profile, setProfile] = useState<ComprehensiveMysticalProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -208,6 +214,22 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         clearPersistentProfileCache(userId)
         if (process.env.NODE_ENV === 'development') {
           console.debug('📭 No comprehensive mystical profile found for user')
+        }
+        if (noProfileLoggedForUserRef.current !== userId) {
+          noProfileLoggedForUserRef.current = userId
+          const browser = typeof navigator !== 'undefined' ? `${navigator.userAgent} | ${navigator.language || ''}` : undefined
+          user?.getIdToken().then((idToken) => {
+            logClientError({
+              severity: 'warning',
+              area: 'profile',
+              action: 'no_mystical_profile',
+              message: 'No comprehensive mystical profile found for user',
+              route: pathname || undefined,
+              browser,
+              meta: { hasUser: true },
+              idToken,
+            }).catch(() => {})
+          }).catch(() => {})
         }
       }
     } catch (err) {
@@ -415,11 +437,17 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     return () => window.removeEventListener('futureSeer:toolReportSaved', handler)
   }, [])
 
+  const hasProfileData = !!profile && !!profile.vedic && !!profile.interpretations
+  const canViewFullProfile = Boolean(
+    userProfile?.selectedPlan && String(userProfile.selectedPlan).trim().length > 0
+  )
+
   const value: MysticalProfileContextValue = {
     profile,
     loading,
     error,
-    hasProfile: !!profile && !!profile.vedic && !!profile.interpretations,
+    hasProfile: hasProfileData,
+    canViewFullProfile,
     isReportsStale: stale,
     refreshProfile,
     applyGeneratedProfile

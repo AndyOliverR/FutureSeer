@@ -45,7 +45,7 @@ interface CommunityFeature {
 
 export function useSubscribe() {
   const router = useRouter();
-  const { user, userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading, isSpecialUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [subscriptionConfig, setSubscriptionConfig] = useState<SubscriptionConfig>({
@@ -195,6 +195,24 @@ export function useSubscribe() {
 
     if (!user) {
       router.push('/signin?redirect=/subscribe');
+      return;
+    }
+
+    // Special users: treat as fully active without charging or opening checkout
+    if (isSpecialUser) {
+      try {
+        if (userProfile?.subscriptionStatus !== 'active' || !userProfile?.noChargeAccount) {
+          await updateUserProfile(user.uid, {
+            subscriptionStatus: 'active',
+            noChargeAccount: true,
+          });
+        }
+      } catch (err) {
+        console.error("Error marking special user as active:", err);
+        // Fall through to tools even if profile update fails
+      }
+      router.push('/tools');
+      setLoading(false);
       return;
     }
 

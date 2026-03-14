@@ -109,14 +109,14 @@ export function AspectPatternDiagram({ chartData }: AspectPatternDiagramProps) {
                     <div className={`${colors.iconBg} rounded-lg p-3 flex-shrink-0`}>
                       <IconComponent className={`w-8 h-8 ${colors.text}`} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className={`font-bold text-xl ${colors.text}`}>
                           {pattern.name}
                         </h4>
                         <span className="text-2xl text-slate-800">{patternSymbol}</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 gap-y-1">
                         <Badge className={`${colors.badge} font-medium`}>
                           {pattern.influence.charAt(0).toUpperCase() + pattern.influence.slice(1)}
                         </Badge>

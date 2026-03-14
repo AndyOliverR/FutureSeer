@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ToolsLayoutClient } from "@/app/tools/ToolsLayoutClient";
+import { ToolsProfileGate } from "@/app/tools/ToolsProfileGate";
 
 export default function ToolsLayout({
   children,
@@ -15,7 +16,9 @@ export default function ToolsLayout({
 
       {/* Content wrapper with M3 safe areas. Root layout renders BottomNavBar; visibility via .platform-android .bottom-nav-mobile in globals.css */}
       <main className="relative z-10 w-full min-h-screen pt-[env(safe-area-inset-top)] pb-24 md:pb-12">
-        <ToolsLayoutClient>{children}</ToolsLayoutClient>
+        <ToolsProfileGate>
+          <ToolsLayoutClient>{children}</ToolsLayoutClient>
+        </ToolsProfileGate>
       </main>
 
       <style jsx global>{`

@@ -6,17 +6,15 @@ import { SecurityDashboard } from '@/components/admin/SecurityDashboard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, AlertTriangle, CheckCircle, ChevronLeft } from 'lucide-react';
-const adminCardClass = "rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 ";
-
 export default function AdminSecurityPage() {
   const { isAdmin, isSuperadmin, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center starfield-ultra-sharp">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4" />
-          <p className="text-amber-200">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4" />
+          <p className="text-slate-300">Loading...</p>
         </div>
       </div>
     );
@@ -24,12 +22,11 @@ export default function AdminSecurityPage() {
 
   if (!isAdmin && !isSuperadmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center starfield-ultra-sharp">
-        <Card className="w-96 bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="admin-card max-w-md text-slate-200">
           <CardContent className="p-6 text-center">
-            <Shield className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-amber-200 mb-2">Admin Access Required</h2>
-            <p className="text-gray-400 mb-4">You need admin or superadmin privileges to access this page.</p>
+            <CardTitle className="text-sm font-medium text-slate-200 mb-2">Admin Access Required</CardTitle>
+            <p className="text-slate-300 text-sm">You need admin or superadmin privileges to access this page.</p>
           </CardContent>
         </Card>
       </div>
@@ -37,62 +34,56 @@ export default function AdminSecurityPage() {
   }
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-20 space-y-6">
+    <div className="min-h-screen overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-20 space-y-6">
         <Link
           href="/admin/dashboard"
-          className="inline-flex items-center gap-1 text-amber-400/90 hover:text-amber-300 text-sm font-medium mb-8"
+          className="inline-flex items-center gap-1 text-slate-300 hover:text-slate-200 text-sm font-medium mb-6"
         >
           <ChevronLeft className="w-4 h-4" />
           Back to Admin Dashboard
         </Link>
-        {/* Header */}
-        <div className="text-center mb-8 space-y-2">
-          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">
-            Security Administration
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Monitor and manage the security of your FutureSeer application. 
-            Track authentication events, suspicious activities, and system health.
-          </p>
-        </div>
+        <h1 className="text-xl font-semibold text-slate-200 mb-2">Security Administration</h1>
+        <p className="text-slate-400 text-sm max-w-2xl mb-6">
+          Monitor and manage the security of your FutureSeer application. Track authentication events, suspicious activities, and system health.
+        </p>
 
         {/* Security Status Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className={adminCardClass}>
+          <Card className="admin-card text-slate-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-green-400">Firebase Security Rules</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-400">Active</div>
-              <p className="text-xs text-white/80">
+              <div className="text-lg font-semibold text-green-400">Active</div>
+              <p className="text-xs text-slate-300">
                 Security rules are properly configured
               </p>
             </CardContent>
           </Card>
 
-          <Card className={adminCardClass}>
+          <Card className="admin-card text-slate-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-blue-400">Rate Limiting</CardTitle>
               <Shield className="h-4 w-4 text-blue-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-400">Enabled</div>
-              <p className="text-xs text-white/80">
+              <div className="text-lg font-semibold text-blue-400">Enabled</div>
+              <p className="text-xs text-slate-300">
                 API endpoints are rate limited
               </p>
             </CardContent>
           </Card>
 
-          <Card className={adminCardClass}>
+          <Card className="admin-card text-slate-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-orange-400">Security Monitoring</CardTitle>
               <AlertTriangle className="h-4 w-4 text-orange-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-400">Active</div>
-              <p className="text-xs text-white/80">
+              <div className="text-lg font-semibold text-orange-400">Active</div>
+              <p className="text-xs text-slate-300">
                 Real-time security monitoring enabled
               </p>
             </CardContent>
@@ -100,26 +91,26 @@ export default function AdminSecurityPage() {
         </div>
 
         {/* Security Alerts */}
-        <Alert className="border-amber-500/30 bg-slate-800/80 [&>svg]:text-amber-400">
-          <Shield className="h-4 w-4 text-amber-400" />
-          <AlertDescription className="text-white/90">
-            <strong>Security Status:</strong> Your FutureSeer application is currently protected by comprehensive security measures including Firebase Security Rules, rate limiting, and real-time monitoring.
+        <Alert className="border-slate-600 bg-slate-800/80 [&>svg]:text-slate-400">
+          <Shield className="h-4 w-4 text-slate-400" />
+          <AlertDescription className="text-slate-300 text-sm">
+            <strong className="text-slate-200">Security Status:</strong> Your FutureSeer application is currently protected by comprehensive security measures including Firebase Security Rules, rate limiting, and real-time monitoring.
           </AlertDescription>
         </Alert>
 
         {/* Security Dashboard */}
-        <div className={`${adminCardClass} p-6`}>
+        <div className="admin-card p-6">
           <SecurityDashboard />
         </div>
 
         {/* Security Recommendations */}
-        <Card className={adminCardClass}>
+        <Card className="admin-card text-slate-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400">
-              <Shield className="h-5 w-5 text-amber-400" />
+            <CardTitle className="text-sm font-medium text-slate-200 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-slate-400" />
               Security Recommendations
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-slate-400 text-sm">
               Best practices to enhance your application's security
             </CardDescription>
           </CardHeader>
@@ -127,7 +118,7 @@ export default function AdminSecurityPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <h4 className="font-semibold text-green-400">Implemented</h4>
-                <ul className="space-y-2 text-sm text-white/80">
+                <ul className="space-y-2 text-sm text-slate-300">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-400 flex-shrink-0" />
                     Firebase Authentication with multiple providers
@@ -153,7 +144,7 @@ export default function AdminSecurityPage() {
 
               <div className="space-y-3">
                 <h4 className="font-semibold text-orange-400">Recommended</h4>
-                <ul className="space-y-2 text-sm text-white/80">
+                <ul className="space-y-2 text-sm text-slate-300">
                   <li className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-orange-400 flex-shrink-0" />
                     Set up email/Slack alerts for security events
@@ -181,13 +172,13 @@ export default function AdminSecurityPage() {
         </Card>
 
         {/* Firebase Security Rules Status */}
-        <Card className={adminCardClass}>
+        <Card className="admin-card text-slate-200">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400">
-              <Shield className="h-5 w-5 text-amber-400" />
+            <CardTitle className="text-sm font-medium text-slate-200 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-slate-400" />
               Firebase Security Rules Status
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-slate-400 text-sm">
               Current status of your Firestore security rules
             </CardDescription>
           </CardHeader>
@@ -200,9 +191,9 @@ export default function AdminSecurityPage() {
                 </AlertDescription>
               </Alert>
 
-              <div className="bg-slate-800 rounded-lg p-4 font-mono text-sm">
+              <div className="bg-slate-800/80 rounded-lg border border-slate-600 p-4 font-mono text-sm text-slate-300">
                 <div className="text-green-400 mb-2">// Current Security Rules Status:</div>
-                <div className="text-gray-200 space-y-1">
+                <div className="text-slate-300 space-y-1">
                   <div>✅ Authentication required for all operations</div>
                   <div>✅ User data isolation enforced</div>
                   <div>✅ Data validation implemented</div>
@@ -211,7 +202,7 @@ export default function AdminSecurityPage() {
                 </div>
               </div>
 
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-slate-400">
                 <p>
                   <strong>Last Updated:</strong> {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
                 </p>

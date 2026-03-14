@@ -51,10 +51,20 @@ export default function MyTicketsPage() {
       try {
         setLoading(true)
         setError(null)
+        // First attempt with current token
         const token = await user.getIdToken()
-        const res = await fetch('/api/support-tickets?mine=true', {
+        let res = await fetch('/api/support-tickets?mine=true', {
           headers: { Authorization: `Bearer ${token}` },
         })
+
+        // If unauthorized, retry once with a forced fresh token
+        if (res.status === 401) {
+          const freshToken = await user.getIdToken(true)
+          res = await fetch('/api/support-tickets?mine=true', {
+            headers: { Authorization: `Bearer ${freshToken}` },
+          })
+        }
+
         if (!res.ok) {
           const data = await res.json().catch(() => ({}))
           throw new Error(data.error || `HTTP ${res.status}`)

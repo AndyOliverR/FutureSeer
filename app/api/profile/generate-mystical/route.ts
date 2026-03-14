@@ -28,6 +28,7 @@ import {
   isPaidPlan,
 } from '@/lib/profileEditQuota';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
+import { logServerError } from '@/lib/serverErrorLogging';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
@@ -64,10 +65,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Profile edit quota: reject if over limit (no-charge / admin emails bypass)
     const email = (userProfile.email ?? userProfile.Email) as string | undefined;
+    const selectedPlan = (userProfile.selectedPlan ?? userProfile.selected_plan) as string | undefined;
+    const hasPlan = selectedPlan && typeof selectedPlan === 'string' && selectedPlan.trim().length > 0;
+    if (!isNoChargeSubscriptionEmail(email) && !hasPlan) {
+      return NextResponse.json(
+        { error: 'Please select a plan to generate your mystical profile.' },
+        { status: 403 }
+      );
+    }
+
+    // Profile edit quota: reject if over limit (no-charge / admin emails bypass)
     if (!isNoChargeSubscriptionEmail(email)) {
-      const selectedPlan = (userProfile.selectedPlan ?? userProfile.selected_plan) as string | undefined;
       const limit = getEditLimit(selectedPlan);
       const isPaid = isPaidPlan(selectedPlan);
       const now = new Date();
@@ -193,8 +202,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (!result.success && result.systemsUsed.length === 0) {
+      const errorMessage = 'Profile generation failed. Vedic chart could not be generated.';
+      await logServerError({
+        area: 'profile',
+        action: 'generate_mystical',
+        message: errorMessage,
+        userId: uid ?? null,
+        route: '/api/profile/generate-mystical',
+        meta: { systemsUsed: result.systemsUsed?.length ?? 0, failedTools: result.failedTools ?? [] },
+      }).catch(() => {});
       return NextResponse.json(
-        { error: 'Profile generation failed. Vedic chart could not be generated.' },
+        { error: errorMessage },
         { status: 500 }
       );
     }
@@ -324,6 +342,17 @@ export async function POST(request: NextRequest) {
     // Release generation lock on failure
     if (uid) { try { await setDocument('generationLocks', uid, { lockedAt: null, status: 'failed', failedAt: Date.now() }); } catch { /* ignore */ } }
     devLog.error('Profile generate-mystical API error', err, 'generate-mystical');
+    try {
+      await logServerError({
+        area: 'mystical-profile',
+        action: 'generate',
+        message: err instanceof Error ? err.message : 'Unknown generate-mystical error',
+        userId: uid,
+        route: request.nextUrl.pathname,
+      });
+    } catch {
+      // ignore logging failures
+    }
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to generate mystical profile' },
       { status: 500 }
