@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
+import { useErrorLogger } from "@/hooks/useErrorLogger"
 
 // Declare grecaptcha for TypeScript
 declare global {
@@ -41,6 +42,7 @@ function SignInContent() {
   const searchParams = useSearchParams()
   const redirectTo = getSafeRedirect(searchParams?.get("redirect") ?? null)
   const { user } = useAuth()
+  const { logError } = useErrorLogger({ area: "auth" })
 
   const RECAPTCHA_SITE_KEY = "6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz";
 
@@ -74,7 +76,11 @@ function SignInContent() {
       const user = await signInWithGoogle()
       router.push(redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile"))
     } catch (error: any) {
-      if (!error.message?.includes('Redirect initiated')) setError(getAuthErrorMessage(error))
+      if (!error.message?.includes('Redirect initiated')) {
+        const msg = getAuthErrorMessage(error)
+        setError(msg)
+        await logError("sign_in_google", msg, "error", { provider: "google" })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -124,7 +130,9 @@ function SignInContent() {
       const user = await signInWithEmail(email, password)
       router.push(redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile"))
     } catch (error: any) {
-      setError(error?.message || 'Sign-in failed')
+      const msg = error?.message || 'Sign-in failed'
+      setError(msg)
+      await logError("sign_in_email", msg, "error")
     } finally {
       setIsLoading(false)
     }

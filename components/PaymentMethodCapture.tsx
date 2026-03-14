@@ -22,6 +22,7 @@ interface PaymentMethodCaptureProps {
   userCountry: string;
   onPaymentMethodCaptured: (paymentMethodId: string, subscriptionId?: string) => void;
   onError?: (error: string) => void;
+  isSpecialUser?: boolean;
 }
 
 export function PaymentMethodCapture({
@@ -31,11 +32,23 @@ export function PaymentMethodCapture({
   userCountry,
   onPaymentMethodCaptured,
   onError,
+  isSpecialUser,
 }: PaymentMethodCaptureProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
 
+   // Special users: immediately mark as no-charge and skip payment UI/flows
+   useEffect(() => {
+     if (isSpecialUser) {
+       onPaymentMethodCaptured('no-charge');
+     }
+   }, [isSpecialUser, onPaymentMethodCaptured]);
+
   useEffect(() => {
+    if (isSpecialUser) {
+      // Do not load Razorpay for special users
+      return;
+    }
     // Load Razorpay script
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -58,6 +71,10 @@ export function PaymentMethodCapture({
   }, [onError]);
 
   const handleSecureSpot = async () => {
+    if (isSpecialUser) {
+      // Button should be effectively a no-op for special users, but guard just in case
+      return;
+    }
     if (!isScriptLoaded) {
       if (onError) {
         onError('Payment system is still loading. Please wait a moment.');

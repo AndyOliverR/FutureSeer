@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Download, Search, UserCheck, Eye, ChevronLeft, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, Settings, FileText, Filter } from 'lucide-react';
+import { Download, Search, UserCheck, Eye, ChevronLeft, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, Settings, FileText, Filter, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 async function updateUserClaims(uid: string, claims: any, idToken: string) {
@@ -26,14 +26,27 @@ async function updateUserClaims(uid: string, claims: any, idToken: string) {
   return data;
 }
 
-async function fetchUsersWithClaimsApi(idToken: string, pageToken?: string, searchEmail?: string) {
+async function fetchUsersWithClaimsApi(
+  idToken: string,
+  pageToken?: string,
+  searchEmail?: string,
+  freshToken?: () => Promise<string>
+) {
+  if (!idToken?.trim()) throw new Error('Not signed in');
   const params = new URLSearchParams();
   if (pageToken) params.append('pageToken', pageToken);
   if (searchEmail) params.append('email', searchEmail);
-  const res = await fetch(`/api/admin/list-users?${params.toString()}`, {
+  let res = await fetch(`/api/admin/list-users?${params.toString()}`, {
     headers: { 'Authorization': `Bearer ${idToken}` },
   });
-  const data = await res.json();
+  let data = await res.json();
+  if (res.status === 401 && freshToken) {
+    const token = await freshToken();
+    res = await fetch(`/api/admin/list-users?${params.toString()}`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    data = await res.json();
+  }
   if (!res.ok) throw new Error(data.error || 'Failed to fetch users');
   return data;
 }
@@ -111,27 +124,30 @@ async function performBulkAction(action: string, userIds: string[], idToken: str
   return response.json();
 }
 
-async function fetchAuditLogs(idToken: string, filters?: any) {
+async function fetchAuditLogs(idToken: string, filters?: any, freshToken?: () => Promise<string>) {
+  if (!idToken?.trim()) throw new Error('Not signed in');
   const params = new URLSearchParams();
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
       if (value) params.append(key, String(value));
     });
   }
-  
-  const response = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
+  let response = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
     headers: { Authorization: `Bearer ${idToken}` }
   });
-  
+  if (response.status === 401 && freshToken) {
+    const token = await freshToken();
+    response = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  }
   if (!response.ok) {
     throw new Error('Failed to fetch audit logs');
   }
-  
   return response.json();
 }
 
-function UserManagement() {
-  const { user } = useAuth();
+function UserManagement({ adminToken, getToken }: { adminToken: string | null; getToken: () => Promise<string> }) {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<{ [uid: string]: boolean }>({});
@@ -146,16 +162,10 @@ function UserManagement() {
   const [searchInput, setSearchInput] = useState('');
   const { toast } = useToast();
 
-  // Get the current user's ID token for secure API calls
-  async function getIdToken() {
-    if (!user) return '';
-    return await user.getIdToken();
-  }
-
   const fetchUsers = async (token: string, pageToken?: string, searchEmail?: string) => {
     setLoading(true);
     try {
-      const data = await fetchUsersWithClaimsApi(token, pageToken, searchEmail);
+      const data = await fetchUsersWithClaimsApi(token, pageToken, searchEmail, getToken);
       setUsers(data.users);
       setNextPageToken(data.nextPageToken);
     } catch (e: any) {
@@ -166,20 +176,22 @@ function UserManagement() {
   };
 
   useEffect(() => {
-    getIdToken().then((token) => {
-      fetchUsers(token, undefined, search);
-    });
-    // eslint-disable-next-line
-  }, [search]);
+    if (!adminToken?.trim()) {
+      setLoading(false);
+      return;
+    }
+    fetchUsers(adminToken, undefined, search);
+  }, [adminToken, search]);
 
   const handleToggle = async (uid: string, claimKey: string, value: boolean) => {
     setUpdating((u) => ({ ...u, [uid]: true }));
     // Optimistic update
-    setUsers((prev) => prev.map((user) => user.uid === uid ? { ...user, claims: { ...user.claims, [claimKey]: value } } : user));
+    setUsers((prev) => prev.map((u) => u.uid === uid ? { ...u, claims: { ...u.claims, [claimKey]: value } } : u));
     try {
       const userObj = users.find((u) => u.uid === uid);
-      const idToken = await getIdToken();
-      await updateUserClaims(uid, { ...userObj.claims, [claimKey]: value }, idToken);
+      const idToken = await getToken();
+      if (!idToken?.trim()) throw new Error('Not signed in');
+      await updateUserClaims(uid, { ...userObj!.claims, [claimKey]: value }, idToken);
       toast({ title: 'Success', description: `Updated ${claimKey} for ${userObj.email}` });
     } catch (e: any) {
       // Rollback on error
@@ -191,7 +203,8 @@ function UserManagement() {
   };
 
   const handleNextPage = async () => {
-    const idToken = await getIdToken();
+    const idToken = await getToken();
+    if (!idToken?.trim()) return;
     fetchUsers(idToken, nextPageToken, search);
     setPageToken(nextPageToken);
   };
@@ -205,7 +218,8 @@ function UserManagement() {
   const handleImpersonate = async (targetUid: string, targetEmail: string) => {
     setImpersonating(prev => ({ ...prev, [targetUid]: true }));
     try {
-      const idToken = await getIdToken();
+      const idToken = await getToken();
+      if (!idToken?.trim()) throw new Error('Not signed in');
       const result = await impersonateUser(targetUid, idToken);
       
       // Store the impersonation token in localStorage for the frontend to use
@@ -226,7 +240,8 @@ function UserManagement() {
   const handleExport = async (format: 'json' | 'csv') => {
     setExporting(true);
     try {
-      const idToken = await getIdToken();
+      const idToken = await getToken();
+      if (!idToken?.trim()) throw new Error('Not signed in');
       await exportUsers(format, idToken, []);
       toast({ 
         title: 'Export Successful', 
@@ -265,7 +280,8 @@ function UserManagement() {
     
     setBulkActioning(true);
     try {
-      const idToken = await getIdToken();
+      const idToken = await getToken();
+      if (!idToken?.trim()) throw new Error('Not signed in');
       const userIds = Array.from(selectedUsers);
       const result = await performBulkAction(action, userIds, idToken, claims);
       
@@ -285,20 +301,20 @@ function UserManagement() {
     }
   };
 
-  if (loading) return <div className="p-4 text-center text-amber-200">Loading users...</div>;
+  if (loading) return <div className="p-4 text-center text-slate-300">Loading users...</div>;
 
   return (
-    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90">
+    <Card className="admin-card text-slate-200">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="text-amber-400">User Management</CardTitle>
+          <CardTitle className="text-sm font-medium text-slate-200">User Management</CardTitle>
           <div className="flex gap-2">
             <Button
               onClick={() => handleExport('csv')}
               disabled={exporting}
               size="sm"
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 border-slate-500 text-slate-200 hover:bg-slate-800"
             >
               <Download className="w-4 h-4" />
               {exporting ? 'Exporting...' : 'Export CSV'}
@@ -308,7 +324,7 @@ function UserManagement() {
               disabled={exporting}
               size="sm"
               variant="outline"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 border-slate-500 text-slate-200 hover:bg-slate-800"
             >
               <Download className="w-4 h-4" />
               {exporting ? 'Exporting...' : 'Export JSON'}
@@ -323,18 +339,18 @@ function UserManagement() {
             placeholder="Search by email..."
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
-            className="flex-1 bg-slate-800/50 border-slate-600 text-white placeholder:text-gray-400"
+            className="flex-1 bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
           />
-          <Button type="submit" size="sm" className="flex items-center gap-2 border-amber-500/50 text-amber-200">
+          <Button type="submit" size="sm" className="flex items-center gap-2 border-slate-500 text-slate-200 hover:bg-slate-800">
             <Search className="w-4 h-4" />
             Search
           </Button>
         </form>
 
         {showBulkActions && (
-          <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+          <div className="mb-4 p-3 bg-slate-800/80 border border-slate-600 rounded-lg">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-amber-200">
+              <span className="text-sm text-slate-200">
                 {selectedUsers.size} user{selectedUsers.size !== 1 ? 's' : ''} selected
               </span>
               <div className="flex gap-2">
@@ -343,6 +359,7 @@ function UserManagement() {
                   disabled={bulkActioning}
                   size="sm"
                   variant="outline"
+                  className="border-slate-500 text-slate-200 hover:bg-slate-800"
                 >
                   <Shield className="w-4 h-4 mr-1" />
                   Make Support
@@ -352,6 +369,7 @@ function UserManagement() {
                   disabled={bulkActioning}
                   size="sm"
                   variant="outline"
+                  className="border-slate-500 text-slate-200 hover:bg-slate-800"
                 >
                   <Users className="w-4 h-4 mr-1" />
                   Make Admin
@@ -377,14 +395,18 @@ function UserManagement() {
           </div>
         )}
 
-        <div className="overflow-x-auto">
+        <p className="mt-1 mb-1 hidden text-xs text-slate-400 md:block">
+          Scroll horizontally to view all permission toggles.
+        </p>
+
+        <div className="mt-1 max-h-[60vh] overflow-x-auto overflow-y-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="text-amber-200/90">
-                <th className="p-2">
+              <tr className="bg-slate-800/80 text-slate-200">
+                <th className="sticky left-0 z-10 bg-slate-800/80 p-2 w-10">
                   <button
                     onClick={handleSelectAll}
-                    className="flex items-center justify-center w-4 h-4 text-amber-200"
+                    className="flex items-center justify-center w-4 h-4 text-slate-200"
                   >
                     {selectedUsers.size === users.length ? (
                       <CheckSquare className="w-4 h-4" />
@@ -393,8 +415,8 @@ function UserManagement() {
                     )}
                   </button>
                 </th>
-                <th className="p-2">Email</th>
-                <th className="p-2">Display Name</th>
+                <th className="sticky left-10 z-10 bg-slate-800/80 p-2 min-w-[12rem]">Email</th>
+                <th className="sticky left-[14.5rem] z-10 bg-slate-800/80 p-2 min-w-[8rem] border-r border-slate-600 shadow-[2px_0_4px_0_rgba(0,0,0,0.2)]">Display Name</th>
                 <th className="p-2">Superadmin</th>
                 <th className="p-2">Admin</th>
                 <th className="p-2">Support</th>
@@ -404,18 +426,19 @@ function UserManagement() {
                 <th className="p-2">Billing</th>
                 <th className="p-2">Feature Flags</th>
                 <th className="p-2">Data Export</th>
+                <th className="p-2">Special user</th>
                 <th className="p-2">Impersonate</th>
                 <th className="p-2">Delete User</th>
                 <th className="p-2">Actions</th>
               </tr>
             </thead>
-            <tbody className="text-white/90">
+            <tbody className="text-slate-300">
               {users.map((user) => (
-                <tr key={user.uid} className="border-b border-slate-700 last:border-0">
-                  <td className="p-2">
+                <tr key={user.uid} className="border-b border-slate-700/60 last:border-0">
+                  <td className="sticky left-0 z-10 bg-slate-900 p-2 w-10">
                     <button
                       onClick={() => handleSelectUser(user.uid)}
-                      className="flex items-center justify-center w-4 h-4 text-amber-200"
+                      className="flex items-center justify-center w-4 h-4 text-slate-200"
                     >
                       {selectedUsers.has(user.uid) ? (
                         <CheckSquare className="w-4 h-4" />
@@ -424,9 +447,9 @@ function UserManagement() {
                       )}
                     </button>
                   </td>
-                  <td className="p-2 font-mono">{user.email}</td>
-                  <td className="p-2">{user.displayName}</td>
-                  {['superadmin','admin','support','userManagement','logs','codeEditor','billing','featureFlags','dataExport','impersonate','deleteUser'].map((claim) => (
+                  <td className="sticky left-10 z-10 bg-slate-900 p-2 min-w-[12rem] font-mono">{user.email}</td>
+                  <td className="sticky left-[14.5rem] z-10 bg-slate-900 p-2 min-w-[8rem] border-r border-slate-600 shadow-[2px_0_4px_0_rgba(0,0,0,0.2)]">{user.displayName}</td>
+                  {['superadmin','admin','support','userManagement','logs','codeEditor','billing','featureFlags','dataExport','specialUser','impersonate','deleteUser'].map((claim) => (
                     <td className="p-2 text-center" key={claim}>
                       <Switch
                         checked={!!user.claims[claim]}
@@ -441,7 +464,7 @@ function UserManagement() {
                       disabled={impersonating[user.uid] || !user.claims.impersonate}
                       size="sm"
                       variant="outline"
-                      className="flex items-center gap-1 border-amber-500/50 text-amber-200 hover:bg-amber-500/20"
+                      className="flex items-center gap-1 border-slate-500 text-slate-200 hover:bg-slate-800"
                     >
                       <Eye className="w-3 h-3" />
                       {impersonating[user.uid] ? 'Impersonating...' : 'Impersonate'}
@@ -453,7 +476,7 @@ function UserManagement() {
           </table>
         </div>
         <div className="flex justify-between items-center mt-4">
-          <p className="text-sm text-white/80">
+          <p className="text-sm text-slate-300">
             Showing {users.length} users
             {nextPageToken && ` (more available)`}
           </p>
@@ -463,7 +486,7 @@ function UserManagement() {
                 onClick={handleNextPage}
                 size="sm"
                 variant="outline"
-                className="flex items-center gap-2 border-amber-500/50 text-amber-200"
+                className="flex items-center gap-2 border-slate-500 text-slate-200 hover:bg-slate-800"
               >
                 <ChevronRight className="w-4 h-4" />
                 Next Page
@@ -471,9 +494,9 @@ function UserManagement() {
             )}
           </div>
         </div>
-        <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <p className="text-sm text-amber-200">
-            <strong>Features:</strong> Live user data, real-time permission toggles, search, pagination, 
+        <div className="mt-4 p-3 bg-slate-800/80 border border-slate-600 rounded-lg">
+          <p className="text-sm text-slate-300">
+            <strong className="text-slate-200">Features:</strong> Live user data, real-time permission toggles, search, pagination, 
             impersonation, and export functionality. All changes update Firebase immediately.
           </p>
         </div>
@@ -482,8 +505,7 @@ function UserManagement() {
   );
 }
 
-function Logs() {
-  const { user } = useAuth();
+function Logs({ adminToken, getToken }: { adminToken: string | null; getToken: () => Promise<string> }) {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -494,16 +516,12 @@ function Logs() {
   });
   const { toast } = useToast();
 
-  async function getIdToken() {
-    if (!user) return '';
-    return await user.getIdToken();
-  }
-
   const fetchLogs = async () => {
+    const idToken = await getToken();
+    if (!idToken?.trim()) return;
     setLoading(true);
     try {
-      const idToken = await getIdToken();
-      const data = await fetchAuditLogs(idToken, filters);
+      const data = await fetchAuditLogs(idToken, filters, getToken);
       setLogs(data.logs);
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
@@ -513,17 +531,21 @@ function Logs() {
   };
 
   useEffect(() => {
+    if (!adminToken?.trim()) {
+      setLoading(false);
+      return;
+    }
     fetchLogs();
-  }, [filters]);
+  }, [adminToken, filters]);
 
-  if (loading) return <div className="p-4 text-center text-amber-200">Loading logs...</div>;
+  if (loading) return <div className="p-4 text-center text-slate-300">Loading logs...</div>;
 
   return (
-    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90">
+    <Card className="admin-card text-slate-200">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="text-amber-400">Audit Logs</CardTitle>
-          <Button onClick={fetchLogs} size="sm" variant="outline" className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20">
+          <CardTitle className="text-sm font-medium text-slate-200">Audit Logs</CardTitle>
+          <Button onClick={fetchLogs} size="sm" variant="outline" className="border-slate-500 text-slate-200 hover:bg-slate-800">
             <Activity className="w-4 h-4 mr-1" />
             Refresh
           </Button>
@@ -535,32 +557,32 @@ function Logs() {
             placeholder="Filter by action..."
             value={filters.action}
             onChange={(e) => setFilters(prev => ({ ...prev, action: e.target.value }))}
-            className="bg-slate-800/50 border-slate-600 text-white placeholder:text-gray-400"
+            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
           />
           <Input
             placeholder="Filter by user ID..."
             value={filters.userId}
             onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
-            className="bg-slate-800/50 border-slate-600 text-white placeholder:text-gray-400"
+            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
           />
           <Input
             type="date"
             value={filters.startDate}
             onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
-            className="bg-slate-800/50 border-slate-600 text-white placeholder:text-gray-400"
+            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
           />
           <Input
             type="date"
             value={filters.endDate}
             onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
-            className="bg-slate-800/50 border-slate-600 text-white placeholder:text-gray-400"
+            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
           />
         </div>
         
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="text-amber-200/90">
+              <tr className="bg-slate-800/80 text-slate-200">
                 <th className="p-2">Timestamp</th>
                 <th className="p-2">Action</th>
                 <th className="p-2">Performed By</th>
@@ -571,17 +593,17 @@ function Logs() {
             </thead>
             <tbody>
               {logs.map((log) => (
-                <tr key={log.id} className="border-b last:border-0 text-white/90">
+                <tr key={log.id} className="border-b border-slate-700/60 last:border-0 text-slate-300">
                   <td className="p-2 font-mono text-xs">
                     {new Date(log.timestamp).toLocaleString()}
                   </td>
                   <td className="p-2">
-                    <Badge variant="outline" className="border-amber-500/40 text-amber-200">{log.action}</Badge>
+                    <Badge variant="outline" className="border-slate-500 text-slate-200">{log.action}</Badge>
                   </td>
                   <td className="p-2 font-mono">{log.performedBy}</td>
                   <td className="p-2 font-mono">{log.targetUser}</td>
                   <td className="p-2">
-                    <pre className="text-xs bg-slate-700/80 text-gray-200 p-1 rounded">
+                    <pre className="text-xs bg-slate-800/80 text-slate-300 p-1 rounded border border-slate-600">
                       {JSON.stringify(log.details, null, 2)}
                     </pre>
                   </td>
@@ -593,30 +615,8 @@ function Logs() {
         </div>
         
         {logs.length === 0 && (
-          <p className="text-center text-amber-200 mt-4">No logs found</p>
+          <p className="text-center text-slate-400 mt-4">No logs found</p>
         )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function CodeEditor() {
-  return (
-    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90">
-      <CardHeader><CardTitle className="text-amber-400">Code Editor</CardTitle></CardHeader>
-      <CardContent>
-        <p className="text-white/80">Edit app files or content here. (Coming soon, advanced feature!)</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AppSettings() {
-  return (
-    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90">
-      <CardHeader><CardTitle className="text-amber-400">App Settings</CardTitle></CardHeader>
-      <CardContent>
-        <p className="text-white/80">Manage feature flags, environment variables, and more. (Coming soon)</p>
       </CardContent>
     </Card>
   );
@@ -624,33 +624,33 @@ function AppSettings() {
 
 function SupportTools() {
   return (
-    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90">
-      <CardHeader><CardTitle className="text-amber-400">Support Tools</CardTitle></CardHeader>
+    <Card className="admin-card text-slate-200">
+      <CardHeader><CardTitle className="text-sm font-medium text-slate-200">Support Tools</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-white/80">
+        <p className="text-sm text-slate-300">
           Read support tickets and feedback here. Respond to users from Support Desk.
         </p>
-        <p className="text-sm text-white/70">
-          Public community: <Link href="/community/attribution" className="text-amber-300 hover:underline">/community/attribution</Link> — Manage discussions: Community Management below.
+        <p className="text-sm text-slate-400">
+          Public community: <Link href="/community/attribution" className="text-amber-200/90 hover:underline">/community/attribution</Link> — Manage discussions: Community Management below.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link href="/admin/support">
-            <Button variant="outline" className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20">
+            <Button variant="outline" className="border-slate-500 text-slate-200 hover:bg-slate-800">
               Support Desk
             </Button>
           </Link>
           <Link href="/admin/feedback">
-            <Button variant="outline" className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20">
+            <Button variant="outline" className="border-slate-500 text-slate-200 hover:bg-slate-800">
               Feedback
             </Button>
           </Link>
           <Link href="/admin/community-management">
-            <Button variant="outline" className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20">
+            <Button variant="outline" className="border-slate-500 text-slate-200 hover:bg-slate-800">
               Community Management
             </Button>
           </Link>
           <Link href="/admin/security">
-            <Button variant="outline" className="border-amber-500/50 text-amber-200 hover:bg-amber-500/20">
+            <Button variant="outline" className="border-slate-500 text-slate-200 hover:bg-slate-800">
               Security
             </Button>
           </Link>
@@ -660,8 +660,7 @@ function SupportTools() {
   );
 }
 
-function Billing() {
-  const { user } = useAuth();
+function Billing({ adminToken, getToken }: { adminToken: string | null; getToken: () => Promise<string> }) {
   const [subscriptions, setSubscriptions] = useState<Array<{ uid: string; email?: string; displayName?: string; subscriptionStatus?: string; nextBillingDate?: unknown; subscriptionId?: string; lastPaymentId?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -673,12 +672,20 @@ function Billing() {
   const { toast } = useToast();
 
   const fetchBilling = async () => {
-    if (!user) return;
+    const token = await getToken();
+    if (!token?.trim()) {
+      setLoading(false);
+      setError('Not signed in');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken();
-      const res = await fetch('/api/admin/billing', { headers: { Authorization: `Bearer ${token}` } });
+      let res = await fetch('/api/admin/billing', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        const fresh = await getToken();
+        res = await fetch('/api/admin/billing', { headers: { Authorization: `Bearer ${fresh}` } });
+      }
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || `HTTP ${res.status}`);
@@ -694,15 +701,18 @@ function Billing() {
   };
 
   useEffect(() => {
-    if (user) fetchBilling();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    if (!adminToken?.trim()) {
+      setLoading(false);
+      return;
+    }
+    fetchBilling();
+  }, [adminToken]);
 
   const handleCancel = async (userId: string) => {
-    if (!user) return;
     setCancelling(userId);
     try {
-      const token = await user.getIdToken();
+      const token = await getToken();
+      if (!token?.trim()) throw new Error('Not signed in');
       const res = await fetch('/api/admin/cancel-user-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -722,10 +732,11 @@ function Billing() {
   };
 
   const handleRefund = async () => {
-    if (!user || !refundPaymentId.trim()) return;
+    if (!refundPaymentId.trim()) return;
     setRefunding(true);
     try {
-      const token = await user.getIdToken();
+      const token = await getToken();
+      if (!token?.trim()) throw new Error('Not signed in');
       const res = await fetch('/api/admin/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -746,14 +757,14 @@ function Billing() {
     }
   };
 
-  if (loading) return <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90"><CardContent className="p-8 text-center text-amber-200">Loading billing...</CardContent></Card>;
-  if (error) return <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90"><CardContent className="p-8 text-center text-red-400">{error}</CardContent></Card>;
+  if (loading) return <Card className="admin-card"><CardContent className="p-8 text-center text-slate-300">Loading billing...</CardContent></Card>;
+  if (error) return <Card className="admin-card"><CardContent className="p-8 text-center text-red-400">{error}</CardContent></Card>;
 
   return (
-    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90">
+    <Card className="admin-card text-slate-200">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-amber-400">Subscriptions & Refunds</CardTitle>
-        <Button variant="outline" size="sm" onClick={() => setRefundModal(true)} className="border-amber-500/50 text-amber-200">
+        <CardTitle className="text-sm font-medium text-slate-200">Subscriptions & Refunds</CardTitle>
+        <Button variant="outline" size="sm" onClick={() => setRefundModal(true)} className="bg-amber-600 hover:bg-amber-700 text-white border-0">
           Issue Refund
         </Button>
       </CardHeader>
@@ -761,24 +772,24 @@ function Billing() {
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr>
-                <th className="p-2 text-amber-200">Email</th>
-                <th className="p-2 text-amber-200">Status</th>
-                <th className="p-2 text-amber-200">Next Billing</th>
-                <th className="p-2 text-amber-200">Subscription ID</th>
-                <th className="p-2 text-amber-200">Actions</th>
+              <tr className="bg-slate-800/80 text-slate-200">
+                <th className="p-2">Email</th>
+                <th className="p-2">Status</th>
+                <th className="p-2">Next Billing</th>
+                <th className="p-2">Subscription ID</th>
+                <th className="p-2">Actions</th>
               </tr>
             </thead>
             <tbody>
               {subscriptions.length === 0 ? (
-                <tr><td colSpan={5} className="p-4 text-gray-400">No subscriptions found.</td></tr>
+                <tr><td colSpan={5} className="p-4 text-slate-400">No subscriptions found.</td></tr>
               ) : (
                 subscriptions.map((s) => (
-                  <tr key={s.uid} className="border-b border-slate-700">
-                    <td className="p-2 text-white/90">{s.email ?? s.uid}</td>
-                    <td className="p-2">{s.subscriptionStatus ?? '—'}</td>
-                    <td className="p-2 text-gray-400">{s.nextBillingDate != null ? String(s.nextBillingDate) : '—'}</td>
-                    <td className="p-2 font-mono text-xs text-gray-500">{s.subscriptionId ?? '—'}</td>
+                  <tr key={s.uid} className="border-b border-slate-700/60">
+                    <td className="p-2 text-slate-300">{s.email ?? s.uid}</td>
+                    <td className="p-2 text-slate-300">{s.subscriptionStatus ?? '—'}</td>
+                    <td className="p-2 text-slate-400">{s.nextBillingDate != null ? String(s.nextBillingDate) : '—'}</td>
+                    <td className="p-2 font-mono text-xs text-slate-500">{s.subscriptionId ?? '—'}</td>
                     <td className="p-2">
                       {s.subscriptionStatus === 'active' && s.subscriptionId && (
                         <Button size="sm" variant="outline" disabled={cancelling === s.uid} onClick={() => handleCancel(s.uid)} className="border-red-500/50 text-red-200">
@@ -794,21 +805,21 @@ function Billing() {
         </div>
         {refundModal && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-md bg-slate-900 border-amber-500/30">
+            <Card className="admin-card w-full max-w-md text-slate-200">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Issue Refund</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => { setRefundModal(false); setRefundPaymentId(''); setRefundAmount(''); }}>Close</Button>
+                <CardTitle className="text-sm font-medium text-slate-200">Issue Refund</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => { setRefundModal(false); setRefundPaymentId(''); setRefundAmount(''); }} className="text-slate-300">Close</Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm text-gray-300 block mb-1">Payment ID (required)</label>
-                  <Input value={refundPaymentId} onChange={(e) => setRefundPaymentId(e.target.value)} placeholder="pay_xxx" className="bg-slate-800 text-white" />
+                  <label className="text-sm text-slate-300 block mb-1">Payment ID (required)</label>
+                  <Input value={refundPaymentId} onChange={(e) => setRefundPaymentId(e.target.value)} placeholder="pay_xxx" className="bg-slate-800 border-slate-600 text-slate-200" />
                 </div>
                 <div>
-                  <label className="text-sm text-gray-300 block mb-1">Amount (optional, partial refund)</label>
-                  <Input type="number" value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} placeholder="Leave empty for full refund" className="bg-slate-800 text-white" />
+                  <label className="text-sm text-slate-300 block mb-1">Amount (optional, partial refund)</label>
+                  <Input type="number" value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} placeholder="Leave empty for full refund" className="bg-slate-800 border-slate-600 text-slate-200" />
                 </div>
-                <Button onClick={handleRefund} disabled={refunding || !refundPaymentId.trim()} className="bg-amber-600 hover:bg-amber-700">
+                <Button onClick={handleRefund} disabled={refunding || !refundPaymentId.trim()} className="bg-amber-600 hover:bg-amber-700 text-white border-0">
                   {refunding ? 'Processing...' : 'Submit Refund'}
                 </Button>
               </CardContent>
@@ -821,16 +832,30 @@ function Billing() {
 }
 
 export default function AdminDashboardPage() {
-  const { isSuperadmin, loading } = useAuth();
+  const { user, isSuperadmin, isAdmin, loading } = useAuth();
+  const [adminToken, setAdminToken] = useState<string | null>(null);
 
-  if (loading) return <div className="p-8 text-center text-amber-200">Loading...</div>;
-  if (!isSuperadmin) {
+  useEffect(() => {
+    if (!user) {
+      setAdminToken(null);
+      return;
+    }
+    user.getIdToken().then((t) => setAdminToken(t && t.trim() ? t : null));
+  }, [user]);
+
+  const getToken = useCallback(async () => {
+    if (!user) return '';
+    return await user.getIdToken(true);
+  }, [user]);
+
+  if (loading) return <div className="p-8 text-center text-slate-300">Loading...</div>;
+  if (!isSuperadmin && !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center starfield-ultra-sharp">
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 text-white/90">
-          <CardHeader><CardTitle className="text-amber-400">Access Denied</CardTitle></CardHeader>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="admin-card border-slate-600/80 text-slate-200">
+          <CardHeader><CardTitle className="text-sm font-medium text-slate-200">Access Denied</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-white/80">You do not have permission to access this page.</p>
+            <p className="text-slate-300 text-sm">You do not have permission to access this page.</p>
           </CardContent>
         </Card>
       </div>
@@ -838,24 +863,39 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen p-8 starfield-ultra-sharp">
-      <div className="max-w-5xl mx-auto pt-20">
-        <h1 className="text-4xl font-bold mb-8 text-amber-300">Admin Dashboard</h1>
+    <div className="min-h-screen p-6 md:p-8">
+      <div className="max-w-6xl mx-auto pt-8">
+        <h1 className="text-xl font-semibold text-slate-200 mb-6">Admin Dashboard</h1>
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="mb-4 bg-slate-800/90 border border-amber-500/30 rounded-xl p-1 text-amber-200">
-            <TabsTrigger value="users" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Users</TabsTrigger>
-            <TabsTrigger value="logs" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Logs</TabsTrigger>
-            <TabsTrigger value="billing" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Billing</TabsTrigger>
-            <TabsTrigger value="code" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Code Editor</TabsTrigger>
-            <TabsTrigger value="settings" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Settings</TabsTrigger>
-            <TabsTrigger value="support" className="text-amber-200/90 hover:text-amber-100 data-[state=active]:text-amber-100 data-[state=active]:font-semibold">Support Tools</TabsTrigger>
+          <TabsList className="mb-4 w-full flex-wrap gap-1 bg-slate-900/90 border border-slate-600 rounded-lg p-1 sm:flex-nowrap">
+            <TabsTrigger value="users" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Users</TabsTrigger>
+            <TabsTrigger value="logs" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Logs</TabsTrigger>
+            <TabsTrigger value="billing" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Billing</TabsTrigger>
+            <TabsTrigger value="support" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Support Tools</TabsTrigger>
+            <TabsTrigger value="errors" className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">
+              <AlertTriangle className="w-3 h-3" />
+              <span>Errors</span>
+            </TabsTrigger>
           </TabsList>
-          <TabsContent value="users"><UserManagement /></TabsContent>
-          <TabsContent value="logs"><Logs /></TabsContent>
-          <TabsContent value="billing"><Billing /></TabsContent>
-          <TabsContent value="code"><CodeEditor /></TabsContent>
-          <TabsContent value="settings"><AppSettings /></TabsContent>
+          <TabsContent value="users"><UserManagement adminToken={adminToken} getToken={getToken} /></TabsContent>
+          <TabsContent value="logs"><Logs adminToken={adminToken} getToken={getToken} /></TabsContent>
+          <TabsContent value="billing"><Billing adminToken={adminToken} getToken={getToken} /></TabsContent>
           <TabsContent value="support"><SupportTools /></TabsContent>
+          <TabsContent value="errors">
+            <Card className="admin-card text-slate-200">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-slate-200">Recent errors</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-slate-300">
+                  View a detailed list of recent errors, with simple explanations and copyable details, on the errors page.
+                </p>
+                <Button asChild className="bg-amber-600 hover:bg-amber-700 text-white border-0">
+                  <Link href="/admin/errors">Open error dashboard</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </div>

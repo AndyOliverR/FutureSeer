@@ -71,17 +71,25 @@ Users should feel:
 
 ### Complete User Journey
 
-The app follows a structured flow where users progressively build their mystical profile and access increasingly sophisticated insights. The journey culminates in two core features:
+The app follows a structured flow where users progressively build their mystical profile and access increasingly sophisticated insights. The journey culminates in two core features.
+
+**Post sign-in / sign-up destinations:**
+- **Returning user** (has signed in before): → **`/tools`**
+- **New user**: → **`/profile`**
+- If the URL has a valid `?redirect=...`, the user is sent there after auth.
+
+**Flow:** Profile Setup (`/profile-setup`) → on completion goes to **`/profile`**. On the Profile page the user selects a plan and clicks "Generate my mystical profile"; then reports appear in Tools and the main Ask the Seer.
 
 ```
-Sign In → Profile Setup → Individual Tool Reports → Tool-Specific "Ask the Seer" → Main "Ask the Seer" (CORE)
-                                                                    ↓
-                                                          Community Page (CORE)
+Sign In → (new: /profile | returning: /tools)
+Profile Setup → /profile → Select plan → Generate mystical profile → Tools + Main "Ask the Seer" (CORE)
+                                                                                ↓
+                                                                      Community Page (CORE)
 ```
 
 **Core Features Access:**
-- **Main "Ask the Seer"**: Available after exploring individual tools - synthesizes ALL systems
-- **Community Page**: Accessible from dashboard - connect with verified experts anytime
+- **Main "Ask the Seer"**: Available at **`/ask-the-seer`** (redirects: `/ask`, `/seer`) - synthesizes ALL systems
+- **Community Page**: Protected route - connect with verified experts anytime
 
 ### Detailed Flow Diagram
 
@@ -98,13 +106,13 @@ flowchart TD
     UploadFacePhoto --> UploadPalmPhoto[Step 4: Palm Photo<br/>For Palmistry]
     UploadPalmPhoto --> SetPreferences[Step 5: Preferences<br/>Interests, Experience Level]
     SetPreferences --> GenerateAstroData[Generate Comprehensive<br/>Astrological Data]
-    GenerateAstroData --> Dashboard[Dashboard]
+    GenerateAstroData --> Profile[Profile Page]
     
     HasProfile -->|No| ProfileSetup
-    HasProfile -->|Yes| Dashboard
+    HasProfile -->|Yes| Profile
     
-    Dashboard --> ToolsPage[Tools Page<br/>60+ Divination Tools]
-    Dashboard --> CommunityPage[Community Page<br/>Verified Experts]
+    Profile --> ToolsPage[Tools Page<br/>60+ Divination Tools]
+    Profile --> CommunityPage[Community Page<br/>Verified Experts]
     
     ToolsPage --> SelectTool[Select Tool]
     
@@ -119,12 +127,12 @@ flowchart TD
     
     MainSeerChat --> Answer[Comprehensive Answer<br/>Based on ALL Systems]
     Answer --> History[Save to History]
-    History --> Dashboard
+    History --> Profile
     
     CommunityPage --> BrowseExperts[Browse Experts<br/>Search & Filter]
     BrowseExperts --> ExpertProfile[Expert Profile<br/>Ratings, Reviews, Rates]
     ExpertProfile --> BookSession[Book Session<br/>With Expert]
-    BookSession --> Dashboard
+    BookSession --> Profile
 ```
 
 ### Data Flow Architecture
@@ -157,42 +165,48 @@ graph TB
 1. **Profile Setup** (`app/profile-setup/page.tsx`)
    - **Required Fields**: Full Name, Gender, Birth Date, Birth Time, Birth Place
    - **Optional Fields**: Face Photo (for Face Reading), Palm Photo (for Palmistry)
-   - **Outcome**: Generates comprehensive astrological data via AstroApp API
+   - **Outcome**: On completion, navigates to **`/profile`**
+   - **"Complete profile" (birth data missing)**: Send users to **`/profile-setup`** to fill birth date/place.
 
-2. **Tools Exploration** (`app/tools/page.tsx`)
-   - Users can browse 60+ divination tools
-   - Each tool generates a personalized report based on user profile
-   - Tools are categorized: Astrology, Numerology, Divination, Reading, Analysis
+2. **Profile Page** (`app/profile/page.tsx`) — **"Generate mystical profile / select plan"**
+   - User must have birth date and birth place (`hasRequiredProfileSetup` in `lib/authRouting.ts`).
+   - User selects a plan (required for generation unless on no-charge list), then clicks "Generate my mystical profile" → `POST /api/profile/generate-mystical`.
+   - When profile is complete but generation not done (or plan not selected), link users here from Tools and Ask the Seer.
 
-3. **Tool-Specific "Ask the Seer"**
+3. **Tools Exploration** (`app/tools/page.tsx`)
+   - **`/tools`** is public. Authenticated users without required profile setup are client-side redirected to `/profile-setup`.
+   - Users can browse 60+ divination tools; each tool shows a report from the comprehensive mystical profile (from Firestore `comprehensiveMysticalProfiles/{uid}`).
+   - Tools are categorized: Astrology, Numerology, Divination, Reading, Analysis.
+
+4. **Tool-Specific "Ask the Seer"**
    - Each tool has its own "Ask the Seer" feature (e.g., `/api/ask-vedic-seer`, `/api/ask-tarot-seer`)
    - These are experts in their specific field
    - They use data from that tool + user profile to answer questions
 
-4. **Main "Ask the Seer"** (`app/ask/page.tsx`, `/api/seer/query`)
+5. **Main "Ask the Seer"** — **Canonical page: `app/ask-the-seer/page.tsx` at `/ask-the-seer`**
    - **This is the main attraction** - synthesizes insights from ALL tools
-   - Uses `ComprehensiveSeerEngine` to aggregate data from all divination systems
-   - Provides definitive answers based on cross-system validation
-   - Only works after user has explored individual tools
+   - **URLs**: `/ask` and `/seer` redirect to **`/ask-the-seer`**
+   - **Chat API**: `/api/ask-the-seer` forwards to **`/api/seer/chat`** (not `/api/seer/query`)
+   - Uses aggregated data from all divination systems; only works after user has profile and (optionally) generated reports
 
-5. **Community Page** (`app/community/page.tsx`)
+6. **Community Page** (`app/community/page.tsx`)
    - Connect with certified mystics, astrologers, and spiritual guides
 
-6. **Ask the Seer Flow**
-   - **Sign-in (existing user)**: Dashboard → Ask the Seer → Tools → Community
-   - **Sign-up (new user)**: Profile Setup → Profile Page → Generate mystical profile → Ask the Seer → Tools → Community
-   - Returning users always go to Dashboard, not Profile Setup (`isReturningUser()` in `lib/firebase.ts`)
+7. **Ask the Seer Flow**
+   - **Sign-in (returning user)**: → `/tools` (or `?redirect`). Then Ask the Seer, Tools, Community.
+   - **Sign-up (new user)**: → `/profile`. Profile Setup (if needed) → Profile Page → Select plan → Generate mystical profile → Ask the Seer → Tools → Community
+   - Returning users go to `/tools`, not Profile Setup (`isReturningUser()` in `lib/firebase.ts` — heuristic: lastSignInTime − creationTime > 60s)
 
-7. **Profile Setup Styling**
+8. **Profile Setup Styling**
    - Uses M3 design system, gradient cards, amber accents
    - Matches Profile and Dashboard styling
 
-8. **Navigation**
+9. **Navigation**
    - Hamburger menu order: Home, Dashboard, Ask the Seer, Tools, Community, then rest
    - Avatar on dashboard: top-left
    - UserMenuDropdown: opens to the right (`left-0`)
 
-9. **Mobile & Capacitor**
+10. **Mobile & Capacitor**
    - Viewport: `maximumScale: 1`, `userScalable: false` when `CAPACITOR_BUILD=1`
    - Safe-area insets: `env(safe-area-inset-*)` on body
    - Height units: `svh` (small viewport height) for modals and full-page layouts to avoid WebView address bar issues
@@ -205,6 +219,25 @@ graph TB
    - Apply to become a verified expert
    - Community stats: 150+ active members, 25 verified experts, 500+ sessions completed
    - Features: Expert verification badges, online status indicators, specialty badges, certifications display
+
+### Stability and critical paths
+
+For third-party users, stability and consistency depend on these paths:
+
+1. **Auth + cookie**: Firebase Auth; client sets `fs_auth` cookie; middleware (or proxy) checks it for protected routes and redirects to `/signin?redirect=<path>` when missing.
+2. **Profile completion and generate-mystical**: Profile setup → profile page → plan selection → `POST /api/profile/generate-mystical` → Firestore writes to `comprehensiveMysticalProfiles/{uid}`, `users/{uid}`, `seerMaster/{uid}`.
+3. **Reports and plan gate**: `MysticalProfileContext` reads `comprehensiveMysticalProfiles/{uid}` (with cache and real-time listener). `ToolsProfileGate` blocks full tool content until the user has a plan (`canViewFullProfile`).
+4. **Main and tool-specific Seer APIs**: Main chat uses `/api/ask-the-seer` → `/api/seer/chat`; tool pages call their `/api/ask-*-seer` endpoints with the user's comprehensive profile.
+
+### Known risks and mitigations
+
+| Risk | Mitigation |
+|------|------------|
+| **Returning-user heuristic** | `isReturningUser()` uses a 60s threshold; a new user who takes longer during OAuth could be sent to `/tools` with no profile. Consider treating "no Firestore profile or no `mysticalProfileGenerated`" as new and sending to `/profile`. |
+| **Route protection** | Protected routes rely on the `fs_auth` cookie and proxy logic. If Next.js does not run the proxy as middleware, add `middleware.ts` that invokes it so unauthenticated users are redirected before content loads. |
+| **Complete Profile link** | When profile is incomplete (missing birth data), "Complete Profile" should link to **`/profile-setup`**; when birth data exists but generation/plan is needed, link to **`/profile`**. Ask the Seer page uses this distinction. |
+| **Generate-mystical partial failure** | API returns `failedTools`; partial success still writes to Firestore so the user sees what succeeded. Ensure error logging and user messages stay consistent for support. |
+| **Plan gate / subscription state** | `canViewFullProfile` depends on plan or no-charge list. Webhook delays can gate users incorrectly; consider idempotent webhooks and a "Refresh plan status" on profile. |
 
 ---
 
@@ -410,6 +443,10 @@ FutureSeer uses a **devotional/mystical design system** that honors the sacred n
 
 ## Technical Architecture
 
+### Route protection
+
+Protected routes (`/profile`, `/profile-setup`, `/ask-the-seer`, `/community`, `/notes`, `/support`) are guarded by checking the `fs_auth` cookie (set client-side after Firebase auth in `hooks/use-auth.tsx`). The logic lives in `proxy.ts`; Next.js invokes it via `middleware.ts` at the project root so that unauthenticated users are redirected to `/signin?redirect=<path>` before protected content is served. Definitive auth still happens client-side via Firebase.
+
 ### Key Files & Their Purposes
 
 #### Core Application Files
@@ -448,10 +485,13 @@ FutureSeer uses a **devotional/mystical design system** that honors the sacred n
 - Report generation
 - Tool-specific "Ask the Seer" integration
 
-**`app/ask/page.tsx`**
-- Main "Ask the Seer" interface
-- Chat interface for comprehensive questions
-- Uses `ComprehensiveSeerEngine`
+**`app/ask-the-seer/page.tsx`**
+- Main "Ask the Seer" interface (canonical URL: **`/ask-the-seer`**)
+- Chat interface for comprehensive questions; calls `/api/ask-the-seer` which forwards to `/api/seer/chat`
+- Uses aggregated data from all tools
+
+**`app/ask/page.tsx`** and **`app/seer/page.tsx`**
+- Redirect to `/ask-the-seer`
 
 **`app/community/page.tsx`**
 - Community marketplace for verified mystics and experts

@@ -1,22 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
+import { isAdminDecoded } from '@/lib/adminConfig';
 
 async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?: string } | null> {
   const authHeader = request.headers.get('Authorization');
   const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!idToken) return null;
+  if (!idToken) {
+    devLog.warn('[admin/list-users] No Bearer token', 'route');
+    return null;
+  }
   try {
     const decoded = await getAuth().verifyIdToken(idToken);
-    const isAdmin = decoded.admin === true || decoded.superadmin === true;
-    if (!isAdmin) return null;
+    if (!isAdminDecoded(decoded)) {
+      devLog.warn('[admin/list-users] Token valid but not admin', { email: decoded.email ?? '(no email)' }, 'route');
+      return null;
+    }
     return { uid: decoded.uid, email: decoded.email as string | undefined };
-  } catch {
+  } catch (err) {
+    devLog.warn('[admin/list-users] verifyIdToken failed', err, 'route');
     return null;
   }
 }
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {

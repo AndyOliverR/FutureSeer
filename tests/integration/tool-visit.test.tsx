@@ -24,6 +24,7 @@ jest.mock('@/hooks/useComprehensiveMysticalProfile', () => ({
     loading: false,
     error: null,
     hasProfile: false,
+    canViewFullProfile: true,
     isReportsStale: false,
     refreshProfile: jest.fn(),
   }),

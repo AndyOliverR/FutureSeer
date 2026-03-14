@@ -159,3 +159,13 @@ main {
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Admin panel: solid dark background so content stands out (no starfield) */
+.admin-panel {
+  background-color: #0f172a; /* slate-900 */
+}
+
+/* Shared admin card style: solid surface, clear border */
+.admin-card {
+  @apply rounded-lg border border-slate-600/80 bg-slate-900 shadow-sm;
+}

@@ -27,6 +27,7 @@ import { updateUserProfile, getFirebaseStorage } from '@/lib/firebase'
 import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { devLog } from '@/lib/devLogger';
+import { useErrorLogger } from '@/hooks/useErrorLogger';
 
 export default function ProfileSetupPage() {
   const { user, userProfile, refreshProfile } = useAuth()
@@ -34,6 +35,7 @@ export default function ProfileSetupPage() {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
+  const { logError } = useErrorLogger({ area: "profile-setup" })
 
   const [profileData, setProfileData] = useState({
     displayName: '', fullName: '', gender: '' as any,
@@ -83,7 +85,14 @@ export default function ProfileSetupPage() {
       await refreshProfile()
       toast({ title: 'Cosmic Profile Set! 🌟' })
       router.push('/profile')
-    } catch (e) { toast({ title: 'Setup Failed', variant: 'destructive' }) }
+    } catch (e: any) {
+      toast({ title: 'Setup Failed', variant: 'destructive' })
+      const msg = e?.message || 'Profile setup failed'
+      await logError("complete", msg, "error", {
+        hasFacePhoto: !!profileData.facePhoto,
+        hasPalmPhoto: !!profileData.palmPhoto,
+      })
+    }
     finally { setIsLoading(false) }
   }
 
