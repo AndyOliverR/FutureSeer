@@ -103,6 +103,7 @@
     "i18next": "^25.3.2",
     "input-otp": "latest",
     "iztro": "^2.5.3",
+    "konsta": "^5.0.7",
     "lucide-react": "^0.454.0",
     "luxon": "^3.6.1",
     "next": "16.1.6",

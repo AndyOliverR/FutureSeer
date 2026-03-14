@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,11 +15,43 @@ const mobileNavItems = [
   { name: "Profile", href: "/profile", icon: User },
 ];
 
+function getDataMobileOS(): string {
+  if (typeof document === "undefined") return "desktop";
+  return document.documentElement.getAttribute("data-mobile-os") || "desktop";
+}
+
+function getUseKonstaIOS(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.getAttribute("data-design-system") === "konsta-ios";
+}
+
 export function BottomNavBar() {
   const pathname = usePathname();
+  const [mobileOS, setMobileOS] = useState(getDataMobileOS);
+  const [useKonstaIOS, setUseKonstaIOS] = useState(getUseKonstaIOS);
+  const isIOS = mobileOS === "ios" || useKonstaIOS;
+
+  useEffect(() => {
+    const sync = () => {
+      setMobileOS(getDataMobileOS());
+      setUseKonstaIOS(getUseKonstaIOS());
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-mobile-os", "data-design-system"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <nav className="bottom-nav-mobile md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-[var(--m3-surface-container-high)] border-t border-[var(--m3-outline-variant)] pb-[max(12px,env(safe-area-inset-bottom))]">
+    <nav
+      className={cn(
+        "bottom-nav-mobile md:hidden fixed bottom-0 left-0 right-0 z-[100] pb-[max(12px,env(safe-area-inset-bottom))]",
+        isIOS ? "bottom-nav-ios" : "bg-[var(--m3-surface-container-high)] border-t border-[var(--m3-outline-variant)]"
+      )}
+    >
       <div className="flex w-full items-center justify-between h-16 px-2">
         {mobileNavItems.map((item) => {
           const isActive = pathname === item.href;
@@ -31,15 +64,17 @@ export function BottomNavBar() {
               className="flex flex-col items-center justify-center flex-1 min-w-0 h-full group"
             >
               <div className="relative flex flex-col items-center justify-center">
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activePill"
-                      className="absolute -top-1 w-12 h-8 bg-amber-500/20 rounded-full -z-10"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                </AnimatePresence>
+                {!isIOS && (
+                  <AnimatePresence>
+                    {isActive && (
+                      <motion.div
+                        layoutId="activePill"
+                        className="absolute -top-1 w-12 h-8 bg-amber-500/20 rounded-full -z-10"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                  </AnimatePresence>
+                )}
 
                 <Icon
                   className={cn(
