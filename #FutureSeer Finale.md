@@ -345,6 +345,27 @@ graph LR
 
 FutureSeer uses a **devotional/mystical design system** that honors the sacred nature of divination practices while providing a modern, smooth user experience.
 
+### Platform-aware modes (desktop, Android mobile, iOS/macOS with Konsta)
+
+The app uses **three** layout/design modes so that desktop, Android, and Apple devices (iOS, macOS) each get the right look without the user choosing anything. **Konsta UI** (free, MIT) supplies iOS and Material themes; Apple ID sign-in can also trigger Konsta iOS styling.
+
+| Mode | When | Design language | Bottom nav |
+|------|------|------------------|------------|
+| **Devotionist (web)** | Viewport ≥ 768px and not macOS (e.g. Windows, Linux) | Transparent surfaces, Cinzel headings, starfield, no bottom nav | None (header nav) |
+| **Material 3 (Android mobile)** | Viewport &lt; 768px and OS = Android (or Capacitor Android) | Solid M3 surfaces, **Konsta** `theme="material"`, bottom nav (Material style) | Yes – M3-style bar |
+| **Konsta iOS (iOS / macOS / Apple ID)** | Viewport &lt; 768px and OS = iOS, **or** viewport ≥ 768px and macOS, **or** user signed in with **Apple ID** | **Konsta** `theme="ios"`, `k-ios` on body, iOS-style tab bar (translucent, blur, safe area) | Yes on mobile – iOS-style tab bar; no bottom nav on desktop |
+
+**How it works:**
+
+- **Layout** is still driven by viewport width (768px) and Capacitor: `platform-web` vs `platform-android` (see AGENTS.md).
+- **Design system** (`data-design-system`): `lib/platformDetection.ts` exposes `getDesignSystem({ isMobile, mobileOS, isMacOS, signedInWithApple })` → `'devotionist' | 'material' | 'konsta-ios'`. **macOS** is detected via UA (Macintosh, not iPhone/iPad). **Apple ID**: when the user signed in with Apple (`providerId === 'apple.com'`), `signedInWithApple` is true and can force `konsta-ios` so Apple users get Konsta iOS styling even on non-Apple devices.
+- **DesignSystemSync** (inside `AuthProvider`): Reads `data-platform` and `data-mobile-os`, gets `signedInWithApple` from the auth user, calls `getDesignSystem()`, and sets `data-design-system` and `data-apple-id` on `<html>`. Adds `k-ios` or `k-material` to `<body>` so Konsta CSS applies.
+- **Konsta UI**: `KonstaThemeProvider` wraps the app with `KonstaProvider theme={data-design-system === 'konsta-ios' ? 'ios' : 'material'}`. Konsta theme CSS is imported in `globals.css` (`konsta/react/theme.css`).
+- **Bottom nav**: When `data-mobile-os="ios"` **or** `data-design-system="konsta-ios"`, the nav uses class `bottom-nav-ios` and iOS styling (blur, safe area). Otherwise the Material 3 bar is used.
+- **Floating widgets** (Tip Jar, Feedback): iOS/Konsta-ios uses the same bottom offsets as Android so they sit above the tab bar.
+
+**References:** [Konsta UI](https://konstaui.com) (MIT), Apple [Human Interface Guidelines – Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars), [Optimizing for Safari](https://developer.apple.com/documentation/webkit/optimizing-your-website-for-safari).
+
 ### Color Scheme
 
 **Primary Colors:**
