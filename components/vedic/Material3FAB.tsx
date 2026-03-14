@@ -41,7 +41,9 @@ export function Material3FAB({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`
-        fixed bottom-6 right-6 z-50
+        fixed z-50
+        right-[max(1.5rem,env(safe-area-inset-right))] md:right-6
+        bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+4rem))] md:bottom-6
         flex items-center gap-3
         bg-gradient-to-r from-amber-500 to-yellow-500
         text-white font-medium

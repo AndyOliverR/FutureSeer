@@ -78,7 +78,9 @@ export default function RootLayout({
               <ErrorBoundary>
                 <I18nProvider>
                   <DeferredAnalyticsInitializer />
-                  {children}
+                  <div className="fs-main-content min-w-0 pl-[72px] md:pl-0">
+                    {children}
+                  </div>
                   {/* BottomNavBar handles its own platform visibility internally */}
                   <BottomNavBar />
                   <Toaster />

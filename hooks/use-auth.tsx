@@ -35,6 +35,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .split(',').map(e => e.trim().toLowerCase());
     const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'andyoliverrozario2@gmail.com')
       .split(',').map(e => e.trim().toLowerCase());
+    const specialUserEmails = (process.env.NEXT_PUBLIC_SPECIAL_USER_EMAILS || 'andyrozario7@gmail.com')
+      .split(',').map(e => e.trim().toLowerCase());
 
     const lowerEmail = email.toLowerCase();
 
@@ -43,6 +45,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     if (adminEmails.includes(lowerEmail)) {
       return { isSuperadmin: false, isAdmin: true, isSpecialUser: false };
+    }
+    if (specialUserEmails.includes(lowerEmail)) {
+      return { isSuperadmin: false, isAdmin: false, isSpecialUser: true };
     }
     return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
   };

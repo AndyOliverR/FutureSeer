@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb } from '@/lib/firebase-admin';
-
-const ADMIN_EMAILS = ['andyrozario@hotmail.com', 'andyoliverrozario2@gmail.com'];
+import { isAdminDecoded } from '@/lib/adminConfig';
 
 async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?: string } | null> {
   const authHeader = request.headers.get('Authorization');
@@ -12,11 +11,7 @@ async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?:
 
   try {
     const decoded = await getAuth().verifyIdToken(idToken);
-    const isAdmin =
-      decoded.admin === true ||
-      decoded.superadmin === true ||
-      (decoded.email && ADMIN_EMAILS.includes(decoded.email as string));
-    if (!isAdmin) return null;
+    if (!isAdminDecoded(decoded)) return null;
     return { uid: decoded.uid, email: decoded.email as string | undefined };
   } catch {
     return null;

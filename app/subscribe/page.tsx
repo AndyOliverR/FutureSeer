@@ -16,7 +16,7 @@ const PLAN_DISPLAY_NAME: Record<string, string> = {
 };
 
 export default function SubscribePage() {
-  const { user } = useAuth();
+  const { user, isSpecialUser } = useAuth();
   const {
     loading,
     error,
@@ -86,6 +86,18 @@ export default function SubscribePage() {
                   Sign in
                 </Link>
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Special user notice */}
+        {user && isSpecialUser && (
+          <Card className="mb-8 border-emerald-500/50 bg-emerald-500/10">
+            <CardContent className="py-4">
+              <p className="text-emerald-200 font-medium">
+                Your account is already fully unlocked and sponsored. You won&apos;t be charged, and
+                contribution payments are disabled for this profile.
+              </p>
             </CardContent>
           </Card>
         )}
@@ -204,7 +216,14 @@ export default function SubscribePage() {
                 </ul>
                 
                 <Button
-                  onClick={() => handleSubscribe(plan.id)}
+                  onClick={() => {
+                    if (isSpecialUser) {
+                      // Special users skip billing and go straight to tools
+                      window.location.href = "/tools";
+                    } else {
+                      handleSubscribe(plan.id);
+                    }
+                  }}
                   disabled={!subscriptionConfig.available}
                   className={`w-full ${
                     plan.id === "power-user-trial"

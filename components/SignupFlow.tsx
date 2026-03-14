@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { PlanSelectionStep } from './PlanSelectionStep';
 import { PaymentMethodCapture } from './PaymentMethodCapture';
 import { AutoMandateAgreement } from './AutoMandateAgreement';
+import { useAuth } from '@/hooks/use-auth';
 
 interface SignupFlowProps {
   // Step 1: Basic Info (handled by parent)
@@ -38,6 +39,8 @@ export function SignupFlow({
   onComplete,
   onError,
 }: SignupFlowProps) {
+  const { isSpecialUser } = useAuth();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState<
     'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper'
@@ -197,6 +200,7 @@ export function SignupFlow({
               userCountry={selectedCountry}
               onPaymentMethodCaptured={handlePaymentMethodCaptured}
               onError={onError}
+              isSpecialUser={isSpecialUser}
             />
           )}
 

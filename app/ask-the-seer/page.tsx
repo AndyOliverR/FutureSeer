@@ -7,14 +7,21 @@ import MainSeerChatInterface from "@/components/MainSeerChatInterface";
 import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting";
 
 export default function AskTheSeerPage() {
-  const { user, userProfile, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!authLoading && user && userProfile != null && !hasRequiredProfileSetup(userProfile)) {
+    if (
+      !authLoading &&
+      user &&
+      userProfile != null &&
+      !hasRequiredProfileSetup(userProfile) &&
+      !isSuperadmin &&
+      !isAdmin
+    ) {
       router.replace(PROFILE_SETUP_PATH);
     }
-  }, [authLoading, user, userProfile, router]);
+  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin]);
 
   if (authLoading) {
     return (
@@ -36,12 +43,12 @@ export default function AskTheSeerPage() {
       </div>
     );
   }
-  if (userProfile != null && !hasRequiredProfileSetup(userProfile)) {
+  if (userProfile != null && !hasRequiredProfileSetup(userProfile) && !isSuperadmin && !isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <p className="text-amber-400 text-lg font-serif">Complete your profile to consult the Seer</p>
-          <a href="/profile" className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl">Complete Profile</a>
+          <a href={PROFILE_SETUP_PATH} className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl">Complete Profile</a>
         </div>
       </div>
     );

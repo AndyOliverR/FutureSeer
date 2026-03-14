@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getAuth } from '@/lib/firebase-admin';
+import { isAdminDecoded } from '@/lib/adminConfig';
 
 async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?: string } | null> {
   const authHeader = request.headers.get('Authorization');
@@ -8,8 +9,7 @@ async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?:
   if (!idToken) return null;
   try {
     const decoded = await getAuth().verifyIdToken(idToken);
-    const isAdmin = decoded.admin === true || decoded.superadmin === true;
-    if (!isAdmin) return null;
+    if (!isAdminDecoded(decoded)) return null;
     return { uid: decoded.uid, email: decoded.email as string | undefined };
   } catch {
     return null;

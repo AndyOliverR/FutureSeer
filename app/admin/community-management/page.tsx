@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, CheckCircle, Clock, TrendingUp, Users, MessageCircle, Star, Zap, Filter, Search, Flag, Archive, Pin, Crown, Loader2, ChevronLeft } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, TrendingUp, Users, MessageCircle, Star, Zap, Filter, Search, Flag, Archive, Pin, Loader2, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 interface DiscussionThread {
   id: string;
@@ -225,8 +225,8 @@ export default function CommunityManagementPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
-          <p className="text-amber-200">Loading community management dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-slate-400 mx-auto mb-4"></div>
+          <p className="text-slate-300">Loading community management dashboard...</p>
         </div>
       </div>
     );
@@ -234,12 +234,11 @@ export default function CommunityManagementPage() {
 
   if (!isSuperadmin && !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-96 bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <Card className="admin-card max-w-md text-slate-200">
           <CardContent className="p-6 text-center">
-            <Crown className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-amber-200 mb-2">Admin Access Required</h2>
-            <p className="text-gray-400 mb-4">You need admin or superadmin privileges to access this page</p>
+            <CardTitle className="text-sm font-medium text-slate-200 mb-2">Admin Access Required</CardTitle>
+            <p className="text-slate-300 text-sm">You need admin or superadmin privileges to access this page</p>
           </CardContent>
         </Card>
       </div>
@@ -247,93 +246,88 @@ export default function CommunityManagementPage() {
   }
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 pt-20 pb-8">
+    <div className="min-h-screen overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 pt-8 pb-8">
         <Link
           href="/admin/dashboard"
-          className="inline-flex items-center gap-1 text-amber-400/90 hover:text-amber-300 text-sm font-medium mb-8"
+          className="inline-flex items-center gap-1 text-slate-300 hover:text-slate-200 text-sm font-medium mb-6"
         >
           <ChevronLeft className="w-4 h-4" />
           Back to Admin Dashboard
         </Link>
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
-            Community Management Dashboard
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Monitor discussions, prioritize actions, and manage community engagement
-          </p>
-        </div>
+        <h1 className="text-xl font-semibold text-slate-200 mb-2">Community Management Dashboard</h1>
+        <p className="text-slate-400 text-sm mb-6">
+          Monitor discussions, prioritize actions, and manage community engagement
+        </p>
 
         {fetchError && (
-          <div className="mb-6 rounded-xl bg-red-500/20 border border-red-500/50 p-4 text-red-400 text-sm">
+          <div className="mb-6 admin-card border-red-500/50 p-4 text-red-300 text-sm">
             {fetchError}
           </div>
         )}
 
         {/* Stats Overview */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="admin-card text-slate-200">
             <CardContent className="p-6 text-center">
               <MessageCircle className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-blue-200">{stats?.totalDiscussions}</h3>
-              <p className="text-gray-400">Total Discussions</p>
+              <h3 className="text-xl font-semibold text-blue-200">{stats?.totalDiscussions}</h3>
+              <p className="text-slate-400 text-sm">Total Discussions</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="admin-card text-slate-200">
             <CardContent className="p-6 text-center">
               <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-red-200">{stats?.criticalIssues}</h3>
-              <p className="text-gray-400">Critical Issues</p>
+              <h3 className="text-xl font-semibold text-red-200">{stats?.criticalIssues}</h3>
+              <p className="text-slate-400 text-sm">Critical Issues</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="admin-card text-slate-200">
             <CardContent className="p-6 text-center">
               <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-green-200">{stats?.averageEngagement}</h3>
-              <p className="text-gray-400">Avg Engagement</p>
+              <h3 className="text-xl font-semibold text-green-200">{stats?.averageEngagement}</h3>
+              <p className="text-slate-400 text-sm">Avg Engagement</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+          <Card className="admin-card text-slate-200">
             <CardContent className="p-6 text-center">
               <Users className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold text-purple-200">{stats?.activeDiscussions}</h3>
-              <p className="text-gray-400">Active Discussions</p>
+              <h3 className="text-xl font-semibold text-purple-200">{stats?.activeDiscussions}</h3>
+              <p className="text-slate-400 text-sm">Active Discussions</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20 mb-8">
+        <Card className="admin-card mb-8 text-slate-200">
           <CardHeader>
-            <CardTitle className="text-amber-200 flex items-center gap-2">
-              <Filter className="w-5 h-5" />
+            <CardTitle className="text-sm font-medium text-slate-200 flex items-center gap-2">
+              <Filter className="w-4 h-4" />
               Filters & Search
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-4 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">Search</label>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Search</label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <Input
                     placeholder="Search discussions..."
                     value={filters.search}
                     onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                    className="pl-10 bg-slate-800/50 border-slate-600 text-gray-300"
+                    className="pl-10 bg-slate-800 border-slate-600 text-slate-200"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">Category</label>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Category</label>
                 <Select value={filters.category} onValueChange={(value) => setFilters({ ...filters, category: value })}>
-                  <SelectTrigger className="bg-slate-800/50 border-slate-600 text-gray-300">
+                  <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
                   <SelectContent>
@@ -349,9 +343,9 @@ export default function CommunityManagementPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">Priority</label>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Priority</label>
                 <Select value={filters.priority} onValueChange={(value) => setFilters({ ...filters, priority: value })}>
-                  <SelectTrigger className="bg-slate-800/50 border-slate-600 text-gray-300">
+                  <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
                     <SelectValue placeholder="All Priorities" />
                   </SelectTrigger>
                   <SelectContent>
@@ -365,9 +359,9 @@ export default function CommunityManagementPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">Status</label>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Status</label>
                 <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
-                  <SelectTrigger className="bg-slate-800/50 border-slate-600 text-gray-300">
+                  <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
                     <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -383,33 +377,33 @@ export default function CommunityManagementPage() {
         </Card>
 
         {/* Discussions List */}
-        <Card className="bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
+        <Card className="admin-card text-slate-200">
           <CardHeader>
-            <CardTitle className="text-amber-200 flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
+            <CardTitle className="text-sm font-medium text-slate-200 flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" />
               Community Discussions ({filteredDiscussions.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {filteredDiscussions.length === 0 ? (
-                <div className="py-12 text-center text-gray-400">
+                <div className="py-12 text-center text-slate-400">
                   <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>No discussions yet.</p>
                 </div>
               ) : (
               filteredDiscussions.map((discussion) => (
-                <div key={discussion.id} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+                <div key={discussion.id} className="p-4 bg-slate-800/80 rounded-lg border border-slate-600">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-amber-200">{discussion.title}</h3>
+                        <h3 className="font-medium text-slate-200">{discussion.title}</h3>
                         {discussion.isHot && <TrendingUp className="w-4 h-4 text-red-400" />}
                         {discussion.isSticky && <Pin className="w-4 h-4 text-yellow-400" />}
                         {discussion.actionRequired && <Flag className="w-4 h-4 text-orange-400" />}
                       </div>
-                      <p className="text-gray-400 text-sm mb-3 line-clamp-2">{discussion.content}</p>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 mb-2">
+                      <p className="text-slate-400 text-sm mb-3 line-clamp-2">{discussion.content}</p>
+                      <div className="flex items-center gap-4 text-xs text-slate-500 mb-2">
                         <span>by {discussion.author}</span>
                         <span>{new Date(discussion.date).toLocaleDateString()}</span>
                         <span>👍 {discussion.upvotes}</span>
@@ -430,17 +424,18 @@ export default function CommunityManagementPage() {
                     </div>
                     <Button
                       onClick={() => handleAction(discussion)}
-                      className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-200 hover:from-amber-500/30 hover:to-yellow-500/30"
+                      className="border-slate-500 text-slate-200 hover:bg-slate-800"
                       size="sm"
+                      variant="outline"
                     >
                       <Zap className="w-4 h-4 mr-2" />
                       Take Action
                     </Button>
                   </div>
                   {discussion.adminNotes && (
-                    <div className="mt-3 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-                      <p className="text-xs text-amber-300 font-medium mb-1">Admin Notes:</p>
-                      <p className="text-xs text-amber-200">{discussion.adminNotes}</p>
+                    <div className="mt-3 p-3 bg-slate-800/80 rounded-lg border border-slate-600">
+                      <p className="text-xs text-slate-300 font-medium mb-1">Admin Notes:</p>
+                      <p className="text-xs text-slate-300">{discussion.adminNotes}</p>
                     </div>
                   )}
                 </div>
@@ -455,19 +450,19 @@ export default function CommunityManagementPage() {
       {/* Action Modal */}
       {showActionModal && selectedDiscussion && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-2xl bg-slate-900/95 backdrop-blur-sm border-amber-500/20">
+          <Card className="admin-card w-full max-w-2xl text-slate-200">
             <CardHeader>
-              <CardTitle className="text-amber-200 flex items-center gap-2">
-                <Zap className="w-5 h-5" />
+              <CardTitle className="text-sm font-medium text-slate-200 flex items-center gap-2">
+                <Zap className="w-4 h-4" />
                 Take Action: {selectedDiscussion.title}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-300 mb-2 block">Priority</label>
+                  <label className="text-sm font-medium text-slate-300 mb-2 block">Priority</label>
                   <Select value={actionData.priority} onValueChange={(value) => setActionData({ ...actionData, priority: value })}>
-                    <SelectTrigger className="bg-slate-800/50 border-slate-600 text-gray-300">
+                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -480,9 +475,9 @@ export default function CommunityManagementPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-300 mb-2 block">Status</label>
+                  <label className="text-sm font-medium text-slate-300 mb-2 block">Status</label>
                   <Select value={actionData.status} onValueChange={(value) => setActionData({ ...actionData, status: value })}>
-                    <SelectTrigger className="bg-slate-800/50 border-slate-600 text-gray-300">
+                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -495,9 +490,9 @@ export default function CommunityManagementPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">Action Type</label>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Action Type</label>
                 <Select value={actionData.action} onValueChange={(value) => setActionData({ ...actionData, action: value })}>
-                  <SelectTrigger className="bg-slate-800/50 border-slate-600 text-gray-300">
+                  <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200">
                     <SelectValue placeholder="Select action..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -511,12 +506,12 @@ export default function CommunityManagementPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-300 mb-2 block">Admin Notes</label>
+                <label className="text-sm font-medium text-slate-300 mb-2 block">Admin Notes</label>
                 <Textarea
                   value={actionData.notes}
                   onChange={(e) => setActionData({ ...actionData, notes: e.target.value })}
                   placeholder="Add notes about this discussion..."
-                  className="bg-slate-800/50 border-slate-600 text-gray-300"
+                  className="bg-slate-800 border-slate-600 text-slate-200"
                   rows={3}
                 />
               </div>
@@ -525,13 +520,13 @@ export default function CommunityManagementPage() {
                 <Button
                   variant="outline"
                   onClick={() => setShowActionModal(false)}
-                  className="flex-1"
+                  className="flex-1 border-slate-500 text-slate-200 hover:bg-slate-800"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={saveAction}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 text-white"
+                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white border-0"
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Save Action

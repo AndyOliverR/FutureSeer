@@ -17,6 +17,7 @@ import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
+import { useErrorLogger } from "@/hooks/useErrorLogger"
 
 const SignupFlow = dynamic(() => import("@/components/SignupFlow").then(mod => ({ default: mod.SignupFlow })), {
   loading: () => (
@@ -48,6 +49,7 @@ function SignUpPageContent() {
   const planParam = searchParams?.get('plan') as 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper' | null
   const refParam = searchParams?.get('ref')
   const { user } = useAuth()
+  const { logError } = useErrorLogger({ area: "auth" })
   
   const RECAPTCHA_SITE_KEY = "6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz";
 
@@ -92,7 +94,9 @@ function SignUpPageContent() {
       router.push(returning ? "/tools" : "/profile")
     } catch (error: any) {
       if (error.message?.includes('Redirect initiated')) return;
-      setError(getAuthErrorMessage(error))
+      const msg = getAuthErrorMessage(error)
+      setError(msg)
+      await logError("signup_google", msg, "error", { provider: "google" })
     } finally {
       setIsLoading(false); setActiveProvider(null)
     }
@@ -160,7 +164,9 @@ function SignUpPageContent() {
       // If captcha passes or we're on mobile, proceed to next step
       setShowSignupFlow(true)
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred during security check.")
+      const msg = err.message || "An unexpected error occurred during security check."
+      setError(msg)
+      await logError("signup_security_check", msg, "warning")
     } finally {
       setIsLoading(false)
     }
@@ -172,7 +178,9 @@ function SignUpPageContent() {
       await signUpWithEmail(email, password, displayName, selectedCountry, data.selectedPlan, data.paymentMethodId, data.autoMandateAccepted, data.subscriptionId, referralCode || undefined)
       router.push("/profile")
     } catch (error: any) {
-      setError(error.message)
+      const msg = error.message || "Signup failed"
+      setError(msg)
+      await logError("signup_email", msg, "error", { selectedPlan: data.selectedPlan })
     } finally {
       setIsLoading(false)
     }

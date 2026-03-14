@@ -101,15 +101,16 @@ export function HouseDashboard({ houses, houseAnalysis }: HouseDashboardProps) {
           return (
             <motion.div
               key={houseData.number}
+              className="min-w-0"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05, duration: 0.3 }}
             >
               <Card 
-                className={`border-2 ${colors.border} bg-gradient-to-br ${colors.bg} hover:shadow-lg transition-all duration-300 rounded-2xl cursor-pointer ${isSelected ? 'ring-2 ring-offset-2 ring-purple-500' : ''}`}
+                className={`min-w-0 overflow-hidden border-2 ${colors.border} bg-gradient-to-br ${colors.bg} hover:shadow-lg transition-all duration-300 rounded-2xl cursor-pointer ${isSelected ? 'ring-2 ring-offset-2 ring-purple-500' : ''}`}
                 onClick={() => setSelectedHouse(isSelected ? null : houseData.number)}
               >
-                <CardContent className="p-4">
+                <CardContent className="p-4 min-w-0 break-words">
                   {/* House Number Badge */}
                   <div className="flex items-start justify-between mb-3">
                     <Badge variant="secondary" className="text-xs font-bold">

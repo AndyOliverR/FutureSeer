@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb } from '@/lib/firebase-admin';
+import { isAdminDecoded } from '@/lib/adminConfig';
 
 /**
  * GET /api/admin/feedback
  * Returns feedback submissions for admin review. Requires admin or superadmin.
  * Header: Authorization: Bearer <Firebase ID token>
  */
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {
@@ -28,8 +29,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
     }
 
-    const isAdmin = decoded.admin === true || decoded.superadmin === true;
-    if (!isAdmin) {
+    if (!isAdminDecoded(decoded)) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 

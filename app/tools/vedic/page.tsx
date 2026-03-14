@@ -382,19 +382,19 @@ function VedicAstrologyPageContent() {
                     <div>
                       <h3 className="text-lg font-heading text-amber-400 mb-4 uppercase tracking-widest">Birth chart (D1)</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="min-w-0 overflow-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
+                        <div className="min-w-0 overflow-x-auto overflow-y-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
                           <h4 className="text-sm font-heading text-amber-400/90 mb-3 uppercase tracking-widest">North Indian</h4>
                           <NorthIndianVedicChart planets={chartPlanets} ascendantSign={ascendantSign} ascendantDegree={ascendantDegree} chartType="D1" />
                         </div>
-                        <div className="min-w-0 overflow-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
+                        <div className="min-w-0 overflow-x-auto overflow-y-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
                           <h4 className="text-sm font-heading text-amber-400/90 mb-3 uppercase tracking-widest">South Indian</h4>
                           <SouthIndianVedicChart planets={chartPlanets} ascendantSign={ascendantSign} ascendantDegree={ascendantDegree} chartType="D1" />
                         </div>
-                        <div className="min-w-0 overflow-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
+                        <div className="min-w-0 overflow-x-auto overflow-y-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
                           <h4 className="text-sm font-heading text-amber-400/90 mb-3 uppercase tracking-widest">East Indian</h4>
                           <VedicChartEast planets={chartPlanets} ascendantSign={ascendantSign} ascendantDegree={ascendantDegree} chartType="D1" />
                         </div>
-                        <div className="min-w-0 overflow-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
+                        <div className="min-w-0 overflow-x-auto overflow-y-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
                           <h4 className="text-sm font-heading text-amber-400/90 mb-3 uppercase tracking-widest">Nakshatra Wheel</h4>
                           <VedicChartCircular chart={chartForCircular} />
                         </div>
@@ -415,7 +415,7 @@ function VedicAstrologyPageContent() {
                               isRetrograde: false,
                             }));
                             return (
-                              <div key={key} className="min-w-0 overflow-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
+                              <div key={key} className="min-w-0 overflow-x-auto overflow-y-hidden p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
                                 <h4 className="text-sm font-heading text-amber-400/90 mb-3 uppercase tracking-widest">D{key.slice(1)} {label}</h4>
                                 <SouthIndianVedicChart
                                   planets={divPlanets}

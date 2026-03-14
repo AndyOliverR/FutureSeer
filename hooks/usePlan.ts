@@ -7,7 +7,7 @@ import { isNoChargeSubscriptionEmailClient } from '@/lib/subscriptionConfig';
 const TRIAL_DURATION_SECONDS = 9 * 60 * 60; // 9 hours
 
 export function usePlan() {
-  const { user, isSuperadmin, isAdmin, loading: authLoading } = useAuth();
+  const { user, isSuperadmin, isAdmin, isSpecialUser, loading: authLoading } = useAuth();
   const [plan, setPlan] = useState<string | null>(null);
   const [trialStartedAt, setTrialStartedAt] = useState<Date | null>(null);
   const [trialTimeLeft, setTrialTimeLeft] = useState<number | null>(null);
@@ -27,8 +27,9 @@ export function usePlan() {
       return;
     }
 
-    // Check if user should bypass trial/upgrade prompts (admins + no-charge subscription emails)
-    const shouldBypassUpgrade = isSuperadmin || isAdmin || isNoChargeSubscriptionEmailClient(user.email);
+    // Check if user should bypass trial/upgrade prompts (admins, special users, no-charge subscription emails)
+    const shouldBypassUpgrade =
+      isSuperadmin || isAdmin || isSpecialUser || isNoChargeSubscriptionEmailClient(user.email);
     
     if (shouldBypassUpgrade) {
       // For admin users, set them as paid users
@@ -86,7 +87,7 @@ export function usePlan() {
       }
     };
     fetchPlan();
-  }, [user, isSuperadmin, isAdmin]);
+  }, [user, isSuperadmin, isAdmin, isSpecialUser]);
 
   return {
     plan,

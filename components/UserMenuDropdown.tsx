@@ -29,7 +29,7 @@ interface UserMenuDropdownProps {
 export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenuDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const { user, userProfile, signOut } = useAuth()
+  const { user, userProfile, signOut, isAdmin, isSuperadmin } = useAuth()
   const router = useRouter()
 
   // Close dropdown when clicking outside
@@ -309,6 +309,24 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
                 <div className="m3-body-small text-[var(--m3-on-surface-variant)] md:text-slate-400">Your data protection</div>
               </div>
             </Link>
+
+            {(isAdmin || isSuperadmin) && (
+              <>
+                <div className="h-px bg-[var(--m3-outline-variant)] md:bg-amber-500/20 my-1" />
+                <Link
+                  href="/admin/dashboard"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-primary-container)] md:hover:bg-amber-500/20 m3-transition-standard group rounded-lg"
+                >
+                  <span className="text-xl hidden md:inline shrink-0" aria-hidden>🛡️</span>
+                  <Shield className="w-5 h-5 md:hidden text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard shrink-0" />
+                  <div className="min-w-0">
+                    <div className="m3-label-large text-[var(--m3-on-surface)] md:text-white md:group-hover:text-amber-400">Admin Dashboard</div>
+                    <div className="m3-body-small text-[var(--m3-on-surface-variant)] md:text-slate-400">Manage users, community &amp; errors</div>
+                  </div>
+                </Link>
+              </>
+            )}
 
             <div className="h-px bg-[var(--m3-outline-variant)] md:bg-amber-500/20 my-1" />
 

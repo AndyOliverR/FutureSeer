@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
+import { logServerError } from '@/lib/serverErrorLogging';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,9 +108,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: signedUrl });
   } catch (err) {
     console.error('[upload-photo]', err);
-    return NextResponse.json(
-      { error: 'Upload failed' },
-      { status: 500 }
-    );
+    try {
+      await logServerError({
+        area: 'profile-setup',
+        action: 'upload_photo',
+        message: err instanceof Error ? err.message : 'Unknown upload-photo error',
+        route: request.nextUrl.pathname,
+        meta: {
+          hint: 'See server logs for full stack',
+        },
+      });
+    } catch {
+      // ignore logging failures
+    }
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
   }
 }

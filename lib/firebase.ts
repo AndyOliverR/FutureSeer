@@ -346,8 +346,10 @@ export const signOutUser = async (): Promise<void> => {
   }
 };
 
+/** User-facing auth messages only. Never returns raw provider text (e.g. "Firebase: Error ..."). */
 export const getAuthErrorMessage = (error: any): string => {
   const code = error?.code || '';
+  const raw = typeof error?.message === 'string' ? error.message : '';
   switch (code) {
     case 'auth/user-not-found': return 'No account found with this email.';
     case 'auth/wrong-password': return 'Incorrect password.';
@@ -365,7 +367,11 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/unauthorized-domain': return 'This domain is not authorized. Please contact support.';
     case 'auth/requires-recent-login': return 'Please sign in again to complete this action.';
     case 'auth/credential-already-in-use': return 'These credentials are already linked to another account.';
-    default: return 'Something went wrong. Please try again.';
+    default:
+      if (raw && (raw.includes('Firebase') || raw.includes('auth/'))) {
+        return 'Sign-in failed. Please check your email and password and try again.';
+      }
+      return 'Something went wrong. Please try again.';
   }
 };
 
@@ -720,6 +726,7 @@ export interface UserProfile {
   selectedPlan?: string;
   autoMandateAccepted?: boolean;
   subscriptionStatus?: string;
+  noChargeAccount?: boolean;
   trialEndDate?: number;
   trialEndTime?: number;
   nextBillingDate?: number;
