@@ -4,6 +4,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Konsta UI theme (iOS / Material) – used when data-design-system is konsta-ios or material */
+@import 'konsta/react/theme.css';
+
 /*
    BASE DESIGN SYSTEM: "Simplicity is the ultimate Sophistication"
    - Rooted in Deep Dark Blue and Golden Yellow.
@@ -128,6 +131,23 @@ main {
 /* Android Overrides */
 .platform-android [data-tip-jar-widget="true"] { bottom: 160px !important; left: 16px !important; }
 .platform-android [data-feedback-widget="true"] { bottom: 100px !important; left: 16px !important; }
+
+/* iOS mobile: tab bar styling (Apple HIG – translucent, blur, safe area) */
+[data-mobile-os="ios"] .bottom-nav-ios {
+  display: flex !important;
+  flex-direction: column;
+  background: rgba(28, 28, 30, 0.72);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+[data-mobile-os="ios"] .bottom-nav-ios .flex.w-full {
+  min-height: 56px;
+}
+
+/* iOS floating widgets: same offsets as Android so they sit above the tab bar */
+[data-mobile-os="ios"] [data-tip-jar-widget="true"] { bottom: 160px !important; left: 16px !important; }
+[data-mobile-os="ios"] [data-feedback-widget="true"] { bottom: 100px !important; left: 16px !important; }
 
 /* Tip jar on landing: enforce min size so icon stays visible (avoids small-heart on mobile landing) */
 [data-tip-jar-widget="true"][data-landing="true"] {

@@ -110,6 +110,9 @@ const config: Config = {
         heading: ["Cinzel", "serif"],
         'sacred-heading': ["Cinzel", "serif"],
         'sacred-body': ["Cormorant Garamond", "serif"],
+        // Konsta UI theme fonts (required by konsta/react/theme.css)
+        ios: ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF UI Text", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+        material: ["Roboto", "system-ui", "Noto Sans", "Helvetica", "Arial", "sans-serif"],
       },
     },
   },
