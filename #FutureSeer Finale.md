@@ -366,6 +366,10 @@ The app uses **three** layout/design modes so that desktop, Android, and Apple d
 
 **References:** [Konsta UI](https://konstaui.com) (MIT), Apple [Human Interface Guidelines – Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars), [Optimizing for Safari](https://developer.apple.com/documentation/webkit/optimizing-your-website-for-safari).
 
+### Accessibility
+
+The app targets WCAG 2.1 AA where practical. Axe rules addressed to avoid audit loopholes: **button-name** (discernible text for icon buttons, e.g. feedback and tip jar triggers), **landmark-one-main** (single `<main>` in the root layout; tools layout uses a div), **color-contrast** (`--m3-on-primary` set for sufficient contrast on primary buttons), **aria-hidden-focus** (floating widgets use `tabIndex={-1}` when a modal is open). Viewport zoom is not disabled (`maximumScale` / `userScalable` not restricted).
+
 ### Color Scheme
 
 **Primary Colors:**

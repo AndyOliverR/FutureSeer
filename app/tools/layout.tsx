@@ -15,11 +15,11 @@ export default function ToolsLayout({
       <div className="starfield-ultra-sharp fixed inset-0 z-0 pointer-events-none opacity-90" />
 
       {/* Content wrapper with M3 safe areas. Root layout renders BottomNavBar; visibility via .platform-android .bottom-nav-mobile in globals.css */}
-      <main className="relative z-10 w-full min-h-screen pt-[env(safe-area-inset-top)] pb-24 md:pb-12">
+      <div className="relative z-10 w-full min-h-screen pt-[env(safe-area-inset-top)] pb-24 md:pb-12">
         <ToolsProfileGate>
           <ToolsLayoutClient>{children}</ToolsLayoutClient>
         </ToolsProfileGate>
-      </main>
+      </div>
 
       <style jsx global>{`
         /* Global Tool Page Sophistication */

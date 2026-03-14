@@ -116,8 +116,10 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
             whileHover={{}}
             whileTap={{ scale: 0.9 }}
             className="pointer-events-auto w-14 h-14 bg-transparent border-none flex items-center justify-center relative"
+            aria-label="Open feedback"
+            tabIndex={isAnyModalOpen ? -1 : 0}
           >
-            <MessageCircle className="w-10 h-10 text-amber-500 relative z-10 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
+            <MessageCircle className="w-10 h-10 text-amber-500 relative z-10 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]" aria-hidden />
           </motion.button>
         </div>
       )}
@@ -145,8 +147,8 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
                   <Sparkles className="w-5 h-5 text-amber-500" />
                   <h3 className="text-xl font-heading font-bold text-surface-on">Mystical Feedback</h3>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(false)} className="rounded-full">
-                  <X className="w-6 h-6" />
+                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(false)} className="rounded-full" aria-label="Close feedback">
+                  <X className="w-6 h-6" aria-hidden />
                 </Button>
               </div>
 
