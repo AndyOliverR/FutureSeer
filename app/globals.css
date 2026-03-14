@@ -23,6 +23,8 @@
   /* DEFAULT WEB VARIABLES (Desktop Look) */
   --m3-surface: transparent;
   --m3-primary: var(--gold-primary);
+  --m3-on-primary: #1c1917;
+  --m3-on-primary-container: #1c1917;
   --m3-on-surface: #FFFFFF;
   --m3-on-surface-variant: #94a3b8;
   --m3-outline-variant: rgba(251, 191, 36, 0.15);
@@ -38,6 +40,8 @@
   --m3-surface-container-high: #1e293b;
   --m3-surface-container-low: #0f172a;
   --m3-surface-container-highest: #334155;
+  --m3-on-primary: #1c1917;
+  --m3-on-primary-container: #1c1917;
   --m3-on-surface: #FFFFFF;
   --m3-on-surface-variant: #94a3b8;
   --m3-outline-variant: rgba(251, 191, 36, 0.15);
