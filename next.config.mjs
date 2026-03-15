@@ -26,9 +26,9 @@ const nextConfig = {
       '.js': ['.js', '.ts', '.tsx'],
     };
     
-    // Optimize Firebase Admin SDK for server-side
-    if (isServer) {
-      config.externals = config.externals || [];
+    // Optimize Firebase Admin SDK for server-side (serverExternalPackages in nextConfig already handles this;
+    // only append to externals when it is an array to avoid breaking webpack when Next passes a function)
+    if (isServer && Array.isArray(config.externals)) {
       config.externals.push('firebase-admin');
     }
     
