@@ -45,6 +45,17 @@ export async function POST(request: NextRequest) {
     }
 
     const user = userDoc as Record<string, unknown>;
+    const isSpecialUser =
+      user.specialUser === true ||
+      user.special_user === true ||
+      user.isSpecialUser === true;
+    if (isSpecialUser) {
+      return NextResponse.json({
+        count: 0,
+        limit: 999999,
+        canGenerate: true,
+      });
+    }
     const email = (user.email ?? user.Email) as string | undefined;
     if (isNoChargeSubscriptionEmail(email)) {
       return NextResponse.json({
