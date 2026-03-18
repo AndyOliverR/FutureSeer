@@ -41,7 +41,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
-        <link rel="preload" href="/assets/bg/starfieldn-8k.png" as="image" />
         {/* Patch console before any other script so COOP/window.closed from Firebase popup is suppressed */}
         <script
           dangerouslySetInnerHTML={{

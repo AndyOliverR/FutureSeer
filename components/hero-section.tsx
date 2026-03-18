@@ -22,7 +22,7 @@ export function HeroSection() {
 
         {/* Quote Section */}
         <div className="max-w-xl mx-auto space-y-4">
-          <p className="text-base md:text-2xl italic font-serif leading-relaxed gold-glow font-light">
+          <p className="text-base md:text-2xl font-quote leading-relaxed gold-glow font-light not-italic">
             "Millionaires don't use astrology, billionaires do."
           </p>
           <p className="text-[10px] md:text-sm font-normal text-primary/80 uppercase tracking-[0.2em]">
@@ -34,7 +34,7 @@ export function HeroSection() {
         <div className="flex flex-col gap-4 md:gap-5 justify-center items-center pt-6">
           <Button
             size="lg"
-            className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-primary text-on-primary font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full transition-all shadow-xl shadow-amber-500/10"
+            className="w-full sm:w-auto px-8 md:px-10 py-6 md:py-7 bg-primary text-[#020617] font-bold md:font-light uppercase tracking-widest rounded-2xl md:rounded-full transition-all shadow-xl shadow-amber-500/10 [&_svg]:text-[#020617]"
             onClick={() => {
               trackEvent(ANALYTICS_EVENTS.HERO_CTA_CLICKED, { cta_type: "join_experiment" })
               router.push("/signup")

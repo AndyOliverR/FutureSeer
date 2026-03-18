@@ -2,35 +2,23 @@
 
 import { useState } from 'react';
 import { devLog } from '@/lib/devLogger';
-import { Heart, Sparkles } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { initializeRazorpayOrderCheckout } from '@/lib/razorpayClient';
+import { getCountryPricingConfig } from '@/lib/pricingConfig';
 
 export interface TipJarFormProps {
   countryCode: string;
   onSuccess?: () => void;
 }
 
-const QUICK_AMOUNTS: Record<string, number[]> = {
-  IN: [50, 100, 250, 500],
-  US: [5, 10, 25, 50],
-  GB: [5, 10, 20, 50],
-  EU: [5, 10, 25, 50],
-  DEFAULT: [50, 100, 250, 500],
-};
-
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  IN: '₹',
-  US: '$',
-  GB: '£',
-  EU: '€',
-  CA: 'C$',
-  AU: 'A$',
-  DEFAULT: '₹',
-};
+/** Currencies that use larger nominal tip amounts (e.g. INR 50–500); others use smaller (e.g. USD 5–50). */
+const CURRENCIES_LARGE_AMOUNTS = new Set(['INR', 'PKR', 'BDT', 'IDR', 'VND', 'THB', 'MYR', 'PHP']);
+const QUICK_AMOUNTS_LARGE = [50, 100, 250, 500];
+const QUICK_AMOUNTS_SMALL = [5, 10, 25, 50];
 
 export function TipJarForm({ countryCode, onSuccess }: TipJarFormProps) {
   const [customAmount, setCustomAmount] = useState('');
@@ -39,8 +27,11 @@ export function TipJarForm({ countryCode, onSuccess }: TipJarFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const quickAmounts = QUICK_AMOUNTS[countryCode] || QUICK_AMOUNTS.DEFAULT;
-  const currencySymbol = CURRENCY_SYMBOLS[countryCode] || CURRENCY_SYMBOLS.DEFAULT;
+  const config = getCountryPricingConfig(countryCode);
+  const currencySymbol = config.currencySymbol;
+  const quickAmounts = CURRENCIES_LARGE_AMOUNTS.has(config.currency)
+    ? QUICK_AMOUNTS_LARGE
+    : QUICK_AMOUNTS_SMALL;
 
   const handleQuickAmountSelect = (amount: number) => {
     setSelectedAmount(amount);
