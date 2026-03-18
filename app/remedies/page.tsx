@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   Gem, 
   Palette, 
@@ -69,6 +70,19 @@ export default function RemediesPage() {
     { id: 'saturn', name: 'Saturn' }
   ]
 
+  const q = searchTerm.trim().toLowerCase()
+  const matchSearch = (text: string) => !q || text.toLowerCase().includes(q)
+  const matchElement = (itemEl: string | string[] | undefined) => {
+    if (selectedElement === 'all') return true
+    if (!itemEl || (Array.isArray(itemEl) && itemEl.length === 0)) return true
+    return Array.isArray(itemEl) ? itemEl.some((e: string) => e.toLowerCase() === selectedElement.toLowerCase()) : itemEl.toLowerCase() === selectedElement.toLowerCase()
+  }
+  const matchPlanet = (itemPlanet: string | string[] | undefined) => {
+    if (selectedPlanet === 'all') return true
+    if (!itemPlanet || (Array.isArray(itemPlanet) && itemPlanet.length === 0)) return true
+    return Array.isArray(itemPlanet) ? itemPlanet.some((p: string) => p.toLowerCase() === selectedPlanet.toLowerCase()) : itemPlanet.toLowerCase() === selectedPlanet.toLowerCase()
+  }
+
   const cardBase = isMobileLayout
     ? 'bg-surface-container-high border border-outline-variant rounded-2xl shadow-sm'
     : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300'
@@ -76,8 +90,28 @@ export default function RemediesPage() {
   const textMuted = isMobileLayout ? 'text-surface-on-variant' : 'text-white/80'
   const badgeOutline = isMobileLayout ? 'border-outline-variant text-surface-on-variant' : 'text-gray-300 border-gray-600'
 
+  const emptyState = (
+    <Card className={cardBase}>
+      <CardContent className="py-12 text-center">
+        <p className={textMuted}>No remedies match your filters. Try changing the filters above or your search.</p>
+      </CardContent>
+    </Card>
+  )
+
   const renderGemstoneRemedies = () => {
-    return Object.entries(GEMSTONE_DATABASE).map(([sign, gemstones]) => (
+    const rows = Object.entries(GEMSTONE_DATABASE)
+      .map(([sign, gemstones]) => {
+        const filtered = gemstones.filter((g) => {
+          if (!matchElement(g.element)) return false
+          if (!matchPlanet(g.planetaryRuler)) return false
+          if (q && !matchSearch(g.name) && !matchSearch(g.description) && !g.benefits.some((b: string) => matchSearch(b))) return false
+          return true
+        })
+        return [sign, filtered] as const
+      })
+      .filter(([, filtered]) => filtered.length > 0)
+    if (rows.length === 0) return emptyState
+    return rows.map(([sign, gemstones]) => (
       <Card key={sign} className={cardBase}>
         <CardHeader>
           <CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>
@@ -160,7 +194,14 @@ export default function RemediesPage() {
   }
 
   const renderColorTherapy = () => {
-    return Object.entries(COLOR_THERAPY).map(([color, therapy]) => (
+    const filtered = Object.entries(COLOR_THERAPY).filter(([color, therapy]) => {
+      if (!matchElement(therapy.elementalAssociations)) return false
+      if (!matchPlanet(therapy.planetaryRulers)) return false
+      if (q && !matchSearch(color) && !matchSearch(therapy.title) && !matchSearch(therapy.description) && !therapy.benefits.some((b: string) => matchSearch(b))) return false
+      return true
+    })
+    if (filtered.length === 0) return emptyState
+    return filtered.map(([color, therapy]) => (
       <Card key={color} className={cardBase}>
         <CardHeader>
           <CardTitle className={`flex items-center gap-2 ${cardTitleClass} capitalize`}>
@@ -215,7 +256,14 @@ export default function RemediesPage() {
   }
 
   const renderMantras = () => {
-    return Object.entries(MANTRA_DATABASE).map(([mantra, details]) => (
+    const filtered = Object.entries(MANTRA_DATABASE).filter(([, details]) => {
+      if (!matchElement((details as { elementalAssociations?: string[] }).elementalAssociations)) return false
+      if (!matchPlanet((details as { planetaryRulers?: string[] }).planetaryRulers)) return false
+      if (q && !matchSearch(details.title) && !matchSearch(details.description) && !details.benefits.some((b: string) => matchSearch(b))) return false
+      return true
+    })
+    if (filtered.length === 0) return emptyState
+    return filtered.map(([mantra, details]) => (
       <Card key={mantra} className={cardBase}>
         <CardHeader>
           <CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>
@@ -266,7 +314,14 @@ export default function RemediesPage() {
   }
 
   const renderMudras = () => {
-    return Object.entries(MUDRA_DATABASE).map(([mudra, details]) => (
+    const filtered = Object.entries(MUDRA_DATABASE).filter(([, details]) => {
+      if (!matchElement(details.elementalAssociations)) return false
+      if (!matchPlanet(details.planetaryRulers)) return false
+      if (q && !matchSearch(details.title) && !matchSearch(details.description) && !details.benefits.some((b: string) => matchSearch(b))) return false
+      return true
+    })
+    if (filtered.length === 0) return emptyState
+    return filtered.map(([mudra, details]) => (
       <Card key={mudra} className={cardBase}>
         <CardHeader>
           <CardTitle className={`flex items-center gap-2 ${cardTitleClass}`}>
@@ -321,6 +376,9 @@ export default function RemediesPage() {
   }
 
   const renderNumerologyRemedies = () => {
+    const numerologyEntries = Object.entries(NUMEROLOGY_REMEDIES.missingNumbers)
+      .filter(([number, remedy]) => !q || matchSearch(remedy.title) || matchSearch(remedy.description) || remedy.benefits.some((b: string) => matchSearch(b)) || matchSearch(number))
+    if (numerologyEntries.length === 0) return emptyState
     return (
       <div className="space-y-6">
         <Card className={cardBase}>
@@ -332,7 +390,7 @@ export default function RemediesPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(NUMEROLOGY_REMEDIES.missingNumbers).map(([number, remedy]) => (
+              {numerologyEntries.map(([number, remedy]) => (
                 <Card key={number} className={cardBase}>
                   <CardHeader className="pb-3">
                     <CardTitle className={`text-lg ${isMobileLayout ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>Number {number}</CardTitle>
@@ -474,57 +532,58 @@ export default function RemediesPage() {
           </p>
         </div>
 
-        {/* Search and Filters */}
+        {/* Search and Filters - full width to match other containers */}
         <div className="mb-8 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+          <div className="flex flex-col md:flex-row gap-4 w-full">
+            <div className="flex-1 min-w-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   placeholder="Search remedies by name, benefit, or keyword..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white placeholder-gray-400 transition-all duration-300"
+                  className="pl-10 rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white placeholder-gray-400 transition-all duration-300"
                 />
               </div>
             </div>
             
-            <div className="flex gap-2">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-3 py-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-md text-white transition-all duration-300"
-              >
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              
-              <select
-                value={selectedElement}
-                onChange={(e) => setSelectedElement(e.target.value)}
-                className="px-3 py-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-md text-white transition-all duration-300"
-              >
-                {elements.map(element => (
-                  <option key={element.id} value={element.id}>
-                    {element.name}
-                  </option>
-                ))}
-              </select>
-              
-              <select
-                value={selectedPlanet}
-                onChange={(e) => setSelectedPlanet(e.target.value)}
-                className="px-3 py-2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 rounded-md text-white transition-all duration-300"
-              >
-                {planets.map(planet => (
-                  <option key={planet.id} value={planet.id}>
-                    {planet.name}
-                  </option>
-                ))}
-              </select>
+            <div className="flex gap-2 flex-shrink-0">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-[11rem] rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white focus:ring-amber-500/50 data-[state=open]:border-amber-500/50">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-amber-500/30 bg-slate-900 text-white shadow-xl">
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id} className="rounded-lg text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white [&_svg]:text-white">
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedElement} onValueChange={setSelectedElement}>
+                <SelectTrigger className="w-[11rem] rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white focus:ring-amber-500/50 data-[state=open]:border-amber-500/50">
+                  <SelectValue placeholder="Element" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-amber-500/30 bg-slate-900 text-white shadow-xl">
+                  {elements.map(element => (
+                    <SelectItem key={element.id} value={element.id} className="rounded-lg text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white [&_svg]:text-white">
+                      {element.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedPlanet} onValueChange={setSelectedPlanet}>
+                <SelectTrigger className="w-[11rem] rounded-xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white focus:ring-amber-500/50 data-[state=open]:border-amber-500/50">
+                  <SelectValue placeholder="Planet" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border border-amber-500/30 bg-slate-900 text-white shadow-xl">
+                  {planets.map(planet => (
+                    <SelectItem key={planet.id} value={planet.id} className="rounded-lg text-white focus:bg-slate-700 focus:text-white data-[highlighted]:bg-slate-700 data-[highlighted]:text-white [&_svg]:text-white">
+                      {planet.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -534,35 +593,35 @@ export default function RemediesPage() {
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto bg-transparent p-0 gap-2 mb-4">
             <TabsTrigger 
               value="gemstones" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Gem className="w-4 h-4" />
               <span className="hidden md:inline">Gemstones</span>
             </TabsTrigger>
             <TabsTrigger 
               value="colors" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Palette className="w-4 h-4" />
               <span className="hidden md:inline">Colors</span>
             </TabsTrigger>
             <TabsTrigger 
               value="mantras" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <BookOpen className="w-4 h-4" />
               <span className="hidden md:inline">Mantras</span>
             </TabsTrigger>
             <TabsTrigger 
               value="mudras" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Heart className="w-4 h-4" />
               <span className="hidden md:inline">Mudras</span>
             </TabsTrigger>
             <TabsTrigger 
               value="numerology" 
-              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
+              className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 data-[state=active]:border-amber-500/50 data-[state=active]:text-amber-400 data-[state=inactive]:text-white/80 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Star className="w-4 h-4" />
               <span className="hidden md:inline">Numerology</span>

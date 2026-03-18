@@ -199,8 +199,8 @@ function SignInContent() {
             <p className="text-amber-200/80 text-sm font-light">New Seeker? <Link href="/signup" className="text-amber-400 font-bold hover:underline ml-1">Create Account</Link></p>
           </div>
         </div>
-        <div className="hidden md:block bg-[url('/assets/bg/starfieldn-8k.png')] bg-cover bg-center relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-transparent to-transparent opacity-60" />
+        <div className="hidden md:block bg-glassy-deep relative min-h-full">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-transparent to-transparent opacity-40" />
           <div className="absolute inset-0 flex items-center justify-center p-12 text-center bg-black/20">
             <p className="text-2xl font-heading font-light italic text-amber-200/80 leading-relaxed tracking-widest">"The stars only reveal what the heart is ready to hear."</p>
           </div>
