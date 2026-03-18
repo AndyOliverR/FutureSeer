@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getAuth } from '@/lib/firebase-admin';
+import { getAuth, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
 import { writeAuditLog } from '@/lib/adminAudit';
 import { isAdminDecoded } from '@/lib/adminConfig';
 
@@ -31,6 +31,20 @@ export async function POST(request: NextRequest) {
     }
 
     await getAuth().setCustomUserClaims(uid, claims);
+    // Keep Firestore in sync for features that use DB fields (e.g. quota bypass).
+    // Best-effort: do not fail the request if Firestore is unavailable.
+    try {
+      if (isAdminAvailable() && Object.prototype.hasOwnProperty.call(claims, 'specialUser')) {
+        const raw = (claims as any).specialUser;
+        const specialUser = Boolean(raw);
+        await setDocument('users', uid, {
+          specialUser,
+          specialUserUpdatedAt: Date.now(),
+        });
+      }
+    } catch (e) {
+      devLog.warn('Failed to persist specialUser to Firestore', e, 'set-claims');
+    }
     await writeAuditLog({
       actorUid: auth.uid,
       actorEmail: auth.email,

@@ -50,6 +50,8 @@ export default function ProfilePage() {
   const { logError } = useErrorLogger({ area: "profile" })
   const faceInputRef = useRef<HTMLInputElement>(null)
   const palmInputRef = useRef<HTMLInputElement>(null)
+  const isUploadBusy = uploadingFace || uploadingPalm || optimizingFace || optimizingPalm
+  const isSaveDisabled = isLoading || isUploadBusy
 
   useEffect(() => {
     if (!isGeneratingProfile) return
@@ -383,8 +385,22 @@ export default function ProfilePage() {
               <Button onClick={() => setIsEditing(true)} variant="ghost" className="text-amber-400 font-bold uppercase text-xs tracking-widest px-4 h-10 bg-amber-500/10 rounded-full">Edit</Button>
             ) : (
               <div className="flex gap-2">
-                <button onClick={handleSave} className="p-2 bg-amber-500 text-slate-900 rounded-full shadow-lg active:scale-90"><Save className="w-5 h-5" /></button>
-                <button onClick={() => setIsEditing(false)} className="p-2 bg-surface-container-lowest text-white rounded-full border border-outline-variant active:scale-90"><X className="w-5 h-5" /></button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaveDisabled}
+                  className={`p-2 bg-amber-500 text-slate-900 rounded-full shadow-lg active:scale-90 ${isSaveDisabled ? "opacity-50 pointer-events-none" : ""}`}
+                  aria-disabled={isSaveDisabled}
+                >
+                  <Save className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  disabled={isLoading}
+                  className={`p-2 bg-surface-container-lowest text-white rounded-full border border-outline-variant active:scale-90 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+                  aria-disabled={isLoading}
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             )}
           </div>
@@ -583,6 +599,44 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {isEditing && (
+        <div className="fixed left-0 right-0 z-[150] bottom-[calc(env(safe-area-inset-bottom)+76px)] px-4">
+          <div className="max-w-md mx-auto w-full rounded-2xl border border-outline-variant bg-surface-container-high/95 backdrop-blur px-3 py-3 shadow-2xl">
+            {isUploadBusy ? (
+              <div className="mb-2 text-[11px] font-medium text-amber-200/90">
+                Finishing upload… you can save once uploads complete.
+              </div>
+            ) : null}
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaveDisabled}
+                className="flex-1 h-12 rounded-2xl bg-amber-500 text-slate-900 font-bold shadow-lg"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving…
+                  </span>
+                ) : (
+                  "Save"
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditing(false)}
+                disabled={isLoading}
+                className="flex-1 h-12 rounded-2xl"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     )
   }
@@ -625,8 +679,22 @@ export default function ProfilePage() {
                 <Button onClick={() => setIsEditing(true)} variant="ghost" className="text-amber-400 font-bold uppercase text-xs tracking-widest px-4 h-10 bg-amber-500/10 rounded-full hover:bg-amber-500/20">Edit</Button>
               ) : (
                 <div className="flex gap-2">
-                  <button onClick={handleSave} className="p-2 bg-amber-500 text-[#020617] rounded-full shadow-lg hover:bg-amber-400"><Save className="w-5 h-5" /></button>
-                  <button onClick={() => setIsEditing(false)} className="p-2 bg-white/10 text-white rounded-full border border-amber-400/30 hover:bg-white/20"><X className="w-5 h-5" /></button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaveDisabled}
+                    className={`p-2 bg-amber-500 text-[#020617] rounded-full shadow-lg hover:bg-amber-400 ${isSaveDisabled ? "opacity-50 pointer-events-none" : ""}`}
+                    aria-disabled={isSaveDisabled}
+                  >
+                    <Save className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    disabled={isLoading}
+                    className={`p-2 bg-white/10 text-white rounded-full border border-amber-400/30 hover:bg-white/20 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+                    aria-disabled={isLoading}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               )}
             </div>
@@ -730,6 +798,42 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
+
+              {isEditing && (
+                <div className="pt-4 border-t border-amber-400/20">
+                  {isUploadBusy ? (
+                    <div className="mb-3 text-xs text-amber-200/80">
+                      Finishing upload… you can save once uploads complete.
+                    </div>
+                  ) : null}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={isSaveDisabled}
+                      className="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-400 text-[#020617] font-bold shadow-xl"
+                    >
+                      {isLoading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Saving…
+                        </span>
+                      ) : (
+                        "Save changes"
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      disabled={isLoading}
+                      className="flex-1 h-12 rounded-2xl border-amber-400/30 text-white"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {!isEditing && (
                 <div className="pt-6 border-t border-amber-400/20">
