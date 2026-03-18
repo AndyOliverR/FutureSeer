@@ -23,6 +23,8 @@ import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
 import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
+import { useErrorLogger } from "@/hooks/useErrorLogger"
+import { compressImageFile } from "@/lib/imageCompression"
 
 export default function ProfilePage() {
   const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
@@ -42,7 +44,10 @@ export default function ProfilePage() {
   const isMobileLayout = useIsMobileLayout()
   const [uploadingFace, setUploadingFace] = useState(false)
   const [uploadingPalm, setUploadingPalm] = useState(false)
+  const [optimizingFace, setOptimizingFace] = useState(false)
+  const [optimizingPalm, setOptimizingPalm] = useState(false)
   const [canGenerateMysticalProfile, setCanGenerateMysticalProfile] = useState(true)
+  const { logError } = useErrorLogger({ area: "profile" })
   const faceInputRef = useRef<HTMLInputElement>(null)
   const palmInputRef = useRef<HTMLInputElement>(null)
 
@@ -265,13 +270,17 @@ export default function ProfilePage() {
   const handlePhotoUpload = async (file: File, type: "face" | "palm") => {
     if (!user?.uid) return
     const setUploading = type === "face" ? setUploadingFace : setUploadingPalm
+    const setOptimizing = type === "face" ? setOptimizingFace : setOptimizingPalm
     const key = type === "face" ? "facePhotoUrl" : "palmPhotoUrl"
     setUploading(true)
     setError(null)
     try {
+      setOptimizing(true)
+      const compressed = await compressImageFile(file, { maxDimension: 1600, quality: 0.82, mimeType: "image/jpeg" })
+      setOptimizing(false)
       const token = await user.getIdToken()
       const formData = new FormData()
-      formData.append("file", file)
+      formData.append("file", compressed.file)
       formData.append("type", type)
       const res = await fetch("/api/profile/upload-photo", {
         method: "POST",
@@ -279,17 +288,39 @@ export default function ProfilePage() {
         body: formData,
       })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || "Upload failed")
+        const data = await res.json().catch(() => ({} as any))
+        const err = new Error(data?.error || "Upload failed")
+        ;(err as any).status = res.status
+        ;(err as any).detail = data
+        throw err
       }
       const { url } = await res.json()
       if (!url) throw new Error("No URL returned")
       setFormData((prev) => ({ ...prev, [key]: url }))
       await updateUserProfile(user.uid, { [key]: url })
       setTimeout(() => refreshProfile(), 300)
-    } catch (e) {
-      setError(type === "face" ? "Face photo upload failed." : "Palm photo upload failed.")
+    } catch (e: any) {
+      const status: number | null = typeof e?.status === "number" ? e.status : null
+      const detailStr = e?.detail ? JSON.stringify(e.detail) : ""
+      let msg = "Photo upload failed. Please try again."
+      if (status === 401) msg = "Session expired. Please sign in again and retry."
+      else if (status === 400) {
+        if (detailStr.includes("File too large")) msg = "That image is too large. Please try again (we’ll optimize it) or choose a smaller photo."
+        else if (detailStr.includes("Invalid file type")) msg = "Unsupported image type. Please use JPEG, PNG, WebP, or GIF."
+        else msg = "That photo couldn’t be uploaded. Please try a different image."
+      } else if (status && status >= 500) msg = "Upload service had trouble. Please retry in a moment."
+      else if (String(e?.message ?? "").includes("Failed to fetch")) msg = "Network error while uploading. Check your connection and retry."
+
+      setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
+      await logError("upload_photo", msg, "error", {
+        type,
+        bytes: file.size,
+        mime: file.type,
+        proxyStatus: status,
+        proxyDetail: e?.detail ?? null,
+      })
     } finally {
+      setOptimizing(false)
       setUploading(false)
     }
   }
@@ -435,8 +466,17 @@ export default function ProfilePage() {
                 </div>
                 {isEditing && (
                   <div className="flex flex-col gap-1">
-                    <input ref={faceInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }} />
-                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>Upload</Button>
+                    <input
+                      ref={faceInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }}
+                    />
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>
+                      Open camera
+                    </Button>
                     {formData.facePhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("face")}>Remove</Button>}
                   </div>
                 )}
@@ -450,8 +490,17 @@ export default function ProfilePage() {
                 </div>
                 {isEditing && (
                   <div className="flex flex-col gap-1">
-                    <input ref={palmInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }} />
-                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>Upload</Button>
+                    <input
+                      ref={palmInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }}
+                    />
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>
+                      Open camera
+                    </Button>
                     {formData.palmPhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("palm")}>Remove</Button>}
                   </div>
                 )}
