@@ -15,8 +15,12 @@
 */
 
 :root {
-  /* GLOBAL CORE COLORS - Deep Cosmic Aesthetic */
+  /* GLOBAL CORE COLORS - Deep Cosmic Aesthetic (no starfield; glossy deep blue) */
   --bg-deep-space: #020617;
+  --bg-deep-space-dark: #010409;
+  /* Glossy gradient: subtle sheen over deepest blue for background layers */
+  --bg-glassy-deep: linear-gradient(165deg, rgba(15, 23, 42, 0.45) 0%, transparent 35%, #020617 70%, #010409 100%);
+  --starfield-image: linear-gradient(165deg, rgba(15, 23, 42, 0.5) 0%, transparent 40%, #020617 75%, #010409 100%);
   --gold-primary: #fbbf24;
   --gold-glow: rgba(251, 191, 36, 0.5);
 
@@ -81,20 +85,21 @@
 /* Deep space background utility - use instead of slate for devotionist consistency */
 .bg-deep-space { background-color: var(--bg-deep-space); }
 
-/* Starfield Background Layer - Universal */
+/* Glossy deep blue background (no starfield) - universal page background */
 .starfield-ultra-sharp::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-image: url('/assets/bg/starfieldn-8k.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 1;
+  background: var(--bg-glassy-deep);
+  background-color: var(--bg-deep-space);
   pointer-events: none;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
+}
+
+/* Reusable glossy deep blue panel (e.g. signin/signup split panel) */
+.bg-glassy-deep {
+  background: var(--bg-glassy-deep);
+  background-color: var(--bg-deep-space);
 }
 
 /* Ensure main content is always above background */

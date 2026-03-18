@@ -23,11 +23,39 @@ import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
-import { updateUserProfile, getFirebaseStorage } from '@/lib/firebase'
+import { updateUserProfile } from '@/lib/firebase'
 import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { devLog } from '@/lib/devLogger';
 import { useErrorLogger } from '@/hooks/useErrorLogger';
+
+type UploadPhotoType = "face" | "palm";
+type UploadStatus = "idle" | "ready" | "uploading" | "success" | "error";
+type UploadState = { status: UploadStatus; error: string | null; uploadedUrl: string | null };
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const value = bytes / Math.pow(1024, i);
+  const fixed = value >= 100 || i === 0 ? 0 : value >= 10 ? 1 : 2;
+  return `${value.toFixed(fixed)} ${units[i]}`;
+}
+
+function toFriendlyUploadError(e: any): string {
+  const status: number | null = typeof e?.status === "number" ? e.status : null;
+  const detailStr = e?.detail ? JSON.stringify(e.detail) : "";
+
+  if (status === 401) return "Your session expired. Please sign in again, then retry the upload.";
+  if (status === 400) {
+    if (detailStr.includes("File too large")) return "That image is too large. Please choose a smaller photo (max 10 MB).";
+    return "That image couldn’t be uploaded. Please choose a different photo and try again.";
+  }
+  if (status === 415) return "Unsupported image type. Please use JPEG, PNG, WebP, or GIF.";
+  if (status && status >= 500) return "Upload service had trouble. Please retry in a moment.";
+
+  const msg = String(e?.message ?? "");
+  if (msg.includes("Failed to fetch")) return "Network error while uploading. Check your connection and retry.";
+  return "Upload failed. Please retry (or try a smaller image).";
+}
 
 export default function ProfileSetupPage() {
   const { user, userProfile, refreshProfile } = useAuth()
@@ -35,6 +63,7 @@ export default function ProfileSetupPage() {
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
+  const [inlineError, setInlineError] = useState<string | null>(null)
   const { logError } = useErrorLogger({ area: "profile-setup" })
 
   const [profileData, setProfileData] = useState({
@@ -42,6 +71,11 @@ export default function ProfileSetupPage() {
     birthDate: '', birthTime: '', birthPlace: '',
     facePhotoUrl: '', palmPhotoUrl: '',
     facePhoto: null as File | null, palmPhoto: null as File | null
+  })
+
+  const [uploadState, setUploadState] = useState<Record<UploadPhotoType, UploadState>>({
+    face: { status: "idle", error: null, uploadedUrl: null },
+    palm: { status: "idle", error: null, uploadedUrl: null },
   })
 
   useEffect(() => {
@@ -60,7 +94,84 @@ export default function ProfileSetupPage() {
   const handleFileUpload = (file: File, type: 'face' | 'palm') => {
     const url = URL.createObjectURL(file)
     setProfileData(prev => ({ ...prev, [`${type}Photo`]: file, [`${type}PhotoUrl`]: url }))
+    setInlineError(null)
+    setUploadState(prev => ({
+      ...prev,
+      [type]: { status: "ready", error: null, uploadedUrl: null },
+    }))
   }
+
+  const uploadViaProxy = async (type: UploadPhotoType, file: File, idToken: string) => {
+    const formData = new FormData()
+    formData.append("type", type)
+    formData.append("file", file)
+
+    const res = await fetch("/api/profile/upload-photo", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${idToken}` },
+      body: formData,
+    })
+
+    if (!res.ok) {
+      let detail: unknown = null
+      try {
+        detail = await res.json()
+      } catch {
+        // ignore
+      }
+      const err = new Error(`Upload failed (${type})`)
+      ;(err as any).status = res.status
+      ;(err as any).detail = detail
+      throw err
+    }
+
+    const json = (await res.json()) as { url?: string }
+    if (!json?.url) throw new Error(`Upload failed (${type}): missing url`)
+    return json.url
+  }
+
+  const startUpload = async (type: UploadPhotoType) => {
+    const file = type === "face" ? profileData.facePhoto : profileData.palmPhoto
+    if (!user?.uid || !file) return null
+
+    setUploadState(prev => ({
+      ...prev,
+      [type]: { ...prev[type], status: "uploading", error: null, uploadedUrl: null },
+    }))
+    setInlineError(null)
+
+    try {
+      const idToken = await user.getIdToken()
+      const url = await uploadViaProxy(type, file, idToken)
+      setUploadState(prev => ({
+        ...prev,
+        [type]: { status: "success", error: null, uploadedUrl: url },
+      }))
+      return url
+    } catch (e: any) {
+      const friendly = toFriendlyUploadError(e)
+      setUploadState(prev => ({
+        ...prev,
+        [type]: { status: "error", error: friendly, uploadedUrl: null },
+      }))
+      setInlineError(friendly)
+      await logError("upload_photo", friendly, "error", {
+        type,
+        bytes: file.size,
+        mime: file.type,
+        proxyStatus: e?.status ?? null,
+        proxyDetail: e?.detail ?? null,
+      })
+      return null
+    }
+  }
+
+  useEffect(() => {
+    if (currentStep !== 3) return
+    if (profileData.facePhoto && uploadState.face.status === "ready") void startUpload("face")
+    if (profileData.palmPhoto && uploadState.palm.status === "ready") void startUpload("palm")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, profileData.facePhoto, profileData.palmPhoto, uploadState.face.status, uploadState.palm.status])
 
   const handleComplete = async () => {
     if (!user?.uid) return;
@@ -68,17 +179,18 @@ export default function ProfileSetupPage() {
     try {
       const updateData: any = { ...profileData };
       delete updateData.facePhoto; delete updateData.palmPhoto;
-      
-      const storage = getFirebaseStorage()
-      if (storage && profileData.facePhoto) {
-        const faceRef = ref(storage, `users/${user.uid}/face_${Date.now()}`)
-        await uploadBytes(faceRef, profileData.facePhoto)
-        updateData.facePhotoUrl = await getDownloadURL(faceRef)
+
+      setInlineError(null)
+
+      if (profileData.facePhoto) {
+        const faceUrl = uploadState.face.uploadedUrl ?? (await startUpload("face"))
+        if (!faceUrl) throw new Error("Face photo upload failed")
+        updateData.facePhotoUrl = faceUrl
       }
-      if (storage && profileData.palmPhoto) {
-        const palmRef = ref(storage, `users/${user.uid}/palm_${Date.now()}`)
-        await uploadBytes(palmRef, profileData.palmPhoto)
-        updateData.palmPhotoUrl = await getDownloadURL(palmRef)
+      if (profileData.palmPhoto) {
+        const palmUrl = uploadState.palm.uploadedUrl ?? (await startUpload("palm"))
+        if (!palmUrl) throw new Error("Palm photo upload failed")
+        updateData.palmPhotoUrl = palmUrl
       }
 
       await updateUserProfile(user.uid, updateData)
@@ -88,15 +200,25 @@ export default function ProfileSetupPage() {
     } catch (e: any) {
       toast({ title: 'Setup Failed', variant: 'destructive' })
       const msg = e?.message || 'Profile setup failed'
+      setInlineError(toFriendlyUploadError(e))
       await logError("complete", msg, "error", {
         hasFacePhoto: !!profileData.facePhoto,
         hasPalmPhoto: !!profileData.palmPhoto,
+        facePhotoBytes: profileData.facePhoto?.size ?? null,
+        palmPhotoBytes: profileData.palmPhoto?.size ?? null,
+        facePhotoType: profileData.facePhoto?.type ?? null,
+        palmPhotoType: profileData.palmPhoto?.type ?? null,
+        proxyStatus: e?.status ?? null,
+        proxyDetail: e?.detail ?? null,
       })
     }
     finally { setIsLoading(false) }
   }
 
   const progress = (currentStep / 4) * 100
+  const faceReady = !!profileData.facePhoto && uploadState.face.status === "success"
+  const palmReady = !!profileData.palmPhoto && uploadState.palm.status === "success"
+  const canComplete = faceReady && palmReady && !isLoading
 
   return (
     <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] px-4 pb-10">
@@ -138,13 +260,81 @@ export default function ProfileSetupPage() {
                     <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
                       {profileData.facePhotoUrl ? <img src={profileData.facePhotoUrl} className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 opacity-20" />}
                     </div>
-                    <label className="block text-center"><input type="file" className="hidden" onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'face')} /><span className="text-[10px] font-bold text-amber-400 uppercase">Face Scan</span></label>
+                    <label className="block text-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'face')}
+                      />
+                      <span className="text-[10px] font-bold text-amber-400 uppercase">Face Scan</span>
+                    </label>
+                    <div className="text-center">
+                      {profileData.facePhoto ? (
+                        <div className="text-[10px] text-white/60">{formatBytes(profileData.facePhoto.size)}</div>
+                      ) : null}
+                      {uploadState.face.status === "uploading" ? (
+                        <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/70">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Uploading…
+                        </div>
+                      ) : uploadState.face.status === "success" ? (
+                        <div className="mt-1 text-[10px] text-emerald-300 font-bold">Uploaded</div>
+                      ) : uploadState.face.status === "error" ? (
+                        <div className="mt-1 space-y-1">
+                          <div className="text-[10px] text-red-300 font-bold">Upload failed</div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-7 px-2 rounded-xl text-[10px] text-amber-300"
+                            onClick={() => void startUpload("face")}
+                            disabled={!profileData.facePhoto || isLoading}
+                          >
+                            Retry
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden">
                       {profileData.palmPhotoUrl ? <img src={profileData.palmPhotoUrl} className="w-full h-full object-cover" /> : <Hand className="w-8 h-8 opacity-20" />}
                     </div>
-                    <label className="block text-center"><input type="file" className="hidden" onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'palm')} /><span className="text-[10px] font-bold text-amber-400 uppercase">Palm Scan</span></label>
+                    <label className="block text-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'palm')}
+                      />
+                      <span className="text-[10px] font-bold text-amber-400 uppercase">Palm Scan</span>
+                    </label>
+                    <div className="text-center">
+                      {profileData.palmPhoto ? (
+                        <div className="text-[10px] text-white/60">{formatBytes(profileData.palmPhoto.size)}</div>
+                      ) : null}
+                      {uploadState.palm.status === "uploading" ? (
+                        <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/70">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Uploading…
+                        </div>
+                      ) : uploadState.palm.status === "success" ? (
+                        <div className="mt-1 text-[10px] text-emerald-300 font-bold">Uploaded</div>
+                      ) : uploadState.palm.status === "error" ? (
+                        <div className="mt-1 space-y-1">
+                          <div className="text-[10px] text-red-300 font-bold">Upload failed</div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-7 px-2 rounded-xl text-[10px] text-amber-300"
+                            onClick={() => void startUpload("palm")}
+                            disabled={!profileData.palmPhoto || isLoading}
+                          >
+                            Retry
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -152,13 +342,40 @@ export default function ProfileSetupPage() {
           </AnimatePresence>
         </div>
 
+        {inlineError ? (
+          <div className="mb-3 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            <div className="font-bold">Couldn’t finish setup</div>
+            <div className="mt-1 text-red-100/90">{inlineError}</div>
+          </div>
+        ) : null}
+
+        {currentStep === 3 && !canComplete ? (
+          <div className="mb-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <div className="font-bold">Face & Palm required</div>
+            <div className="mt-1 text-amber-100/90">
+              Please upload both your Face scan and Palm scan to continue.
+            </div>
+          </div>
+        ) : null}
+
         <div className="flex gap-4">
           <Button variant="ghost" disabled={currentStep === 1} onClick={() => setCurrentStep(currentStep - 1)} className="flex-1 h-14 rounded-2xl text-white font-bold">Back</Button>
           {currentStep < 3 ? (
             <Button onClick={() => setCurrentStep(currentStep + 1)} className="flex-1 h-14 bg-amber-500 text-slate-900 rounded-2xl font-bold shadow-lg">Next</Button>
           ) : (
-            <Button onClick={handleComplete} disabled={isLoading} className="flex-1 h-14 bg-primary text-on-primary rounded-2xl font-bold shadow-lg">
-              {isLoading ? <Loader2 className="animate-spin" /> : "Complete"}
+            <Button
+              onClick={handleComplete}
+              disabled={!canComplete}
+              className="flex-1 h-14 bg-primary text-on-primary rounded-2xl font-bold shadow-lg"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </span>
+              ) : (
+                "Complete"
+              )}
             </Button>
           )}
         </div>
