@@ -39,6 +39,7 @@ function SignInContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const isMobileLayout = useIsMobileLayout()
+  const didAutoRedirectRef = React.useRef(false)
   
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -60,6 +61,8 @@ function SignInContent() {
   // Use full page replace so we don't rely on client router after OAuth redirect.
   useEffect(() => {
     if (!user) return;
+    if (didAutoRedirectRef.current) return;
+    didAutoRedirectRef.current = true;
     const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile");
     void logError("auth_success", "User signed in", "warning", { method: "existing_session", redirectTo: destination })
     if (typeof window !== "undefined") {

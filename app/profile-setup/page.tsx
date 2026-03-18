@@ -241,6 +241,41 @@ export default function ProfileSetupPage() {
           <Progress value={progress} className="h-2 bg-surface-container-low" />
         </div>
 
+        <div className="flex gap-3 mb-4">
+          <Button
+            variant="ghost"
+            disabled={currentStep === 1 || isLoading}
+            onClick={() => setCurrentStep(currentStep - 1)}
+            className="flex-1 h-12 rounded-2xl text-white font-bold"
+          >
+            Back
+          </Button>
+          {currentStep < 3 ? (
+            <Button
+              onClick={() => setCurrentStep(currentStep + 1)}
+              disabled={isLoading}
+              className="flex-1 h-12 bg-amber-500 text-slate-900 rounded-2xl font-bold shadow-lg"
+            >
+              Next
+            </Button>
+          ) : (
+            <Button
+              onClick={handleComplete}
+              disabled={!canComplete}
+              className="flex-1 h-12 bg-primary text-on-primary rounded-2xl font-bold shadow-lg"
+            >
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </span>
+              ) : (
+                "Complete"
+              )}
+            </Button>
+          )}
+        </div>
+
         <div className="flex-1 bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl overflow-hidden mb-6">
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
