@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Mail, Lock, Eye, ArrowLeft, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
-import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
+import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser, resetPassword } from "@/lib/firebase"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 
@@ -33,6 +33,8 @@ function getSafeRedirect(redirect: string | null): string | null {
 function SignInContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [isResetting, setIsResetting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -46,11 +48,20 @@ function SignInContent() {
 
   const RECAPTCHA_SITE_KEY = "REDACTED_RECAPTCHA_SITE_KEY";
 
+  useEffect(() => {
+    void logError("view_loaded", "Sign-in screen loaded", "warning", {
+      isMobileLayout,
+      hasRedirect: !!redirectTo,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // After Google redirect (or if already signed in), redirect away from signin immediately.
   // Use full page replace so we don't rely on client router after OAuth redirect.
   useEffect(() => {
     if (!user) return;
     const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile");
+    void logError("auth_success", "User signed in", "warning", { method: "existing_session", redirectTo: destination })
     if (typeof window !== "undefined") {
       window.location.replace(destination);
     } else {
@@ -73,13 +84,19 @@ function SignInContent() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true); setError(null)
     try {
+      await logError("google_clicked", "Google sign-in clicked", "warning", { hasRedirect: !!redirectTo })
       const user = await signInWithGoogle()
-      router.push(redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile"))
+      const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
+      await logError("auth_success", "User signed in", "warning", { method: "google", redirectTo: destination })
+      router.push(destination)
     } catch (error: any) {
       if (!error.message?.includes('Redirect initiated')) {
         const msg = getAuthErrorMessage(error)
         setError(msg)
-        await logError("sign_in_google", msg, "error", { provider: "google" })
+        await logError("auth_failed", msg, "error", {
+          method: "google",
+          code: error?.code ?? null,
+        })
       }
     } finally {
       setIsLoading(false)
@@ -88,16 +105,19 @@ function SignInContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); setError(null)
+    setIsLoading(true); setError(null); setSuccess(null)
 
     try {
+      await logError("email_submit_clicked", "Email sign-in submitted", "warning", { hasRedirect: !!redirectTo })
       let captchaToken = null;
       const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
       // Skip reCAPTCHA on localhost (not in reCAPTCHA allowed domains); only run on web, not Android
       if (!isMobileLayout && !isLocalhost && typeof window !== 'undefined') {
+        await logError("captcha_started", "Captcha check started", "warning")
         if (!window.grecaptcha) {
           devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signin');
+          await logError("captcha_missing_script", "Captcha script missing", "warning")
         } else {
           captchaToken = await new Promise((resolve) => {
             window.grecaptcha.enterprise.ready(async () => {
@@ -106,6 +126,9 @@ function SignInContent() {
                 resolve(token);
               } catch (err) {
                 devLog.error('reCAPTCHA execution failed:', err, 'signin');
+                void logError("captcha_failed", "Captcha execution failed", "warning", {
+                  message: (err as any)?.message ?? null,
+                })
                 resolve(null);
               }
             });
@@ -122,19 +145,48 @@ function SignInContent() {
 
           if (!verifyRes.ok) {
             const verifyData = await verifyRes.json();
+            await logError("captcha_failed", "Captcha verification failed", "warning", { status: verifyRes.status })
             throw new Error(verifyData.error || 'Security check failed. Please try again.');
           }
+          await logError("captcha_verified", "Captcha verified", "warning")
         }
       }
 
       const user = await signInWithEmail(email, password)
-      router.push(redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile"))
+      const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
+      await logError("auth_success", "User signed in", "warning", { method: "email", redirectTo: destination })
+      router.push(destination)
     } catch (error: any) {
-      const msg = error?.message || 'Sign-in failed'
+      const msg = getAuthErrorMessage(error)
       setError(msg)
-      await logError("sign_in_email", msg, "error")
+      await logError("auth_failed", msg, "error", {
+        method: "email",
+        code: error?.code ?? null,
+      })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async () => {
+    const trimmed = (email || "").trim()
+    setError(null); setSuccess(null)
+    if (!trimmed) {
+      setError("Enter your email above, then tap “Forgot password?”")
+      return
+    }
+    setIsResetting(true)
+    try {
+      await logError("reset_password_clicked", "Password reset clicked", "warning")
+      await resetPassword(trimmed)
+      setSuccess("Password reset email sent. Check your inbox (and spam).")
+      await logError("reset_password_sent", "Password reset email sent", "warning")
+    } catch (e: any) {
+      const msg = getAuthErrorMessage(e)
+      setError(msg)
+      await logError("reset_password_failed", msg, "error", { code: e?.code ?? null })
+    } finally {
+      setIsResetting(false)
     }
   }
 
@@ -184,6 +236,7 @@ function SignInContent() {
           <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Welcome Back, <br/>Seeker.</h1>
 
           {error && <Alert className="bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"><AlertDescription className="font-bold">{error}</AlertDescription></Alert>}
+          {success && <Alert className="bg-green-500/10 border-green-500/20 text-green-300 rounded-2xl"><AlertDescription className="font-bold">{success}</AlertDescription></Alert>}
 
           <Button onClick={handleGoogleSignIn} disabled={isLoading} type="button" className="w-full h-16 bg-white hover:bg-white/90 text-[#020617] font-bold rounded-2xl text-xl flex items-center justify-center gap-3 shadow-lg">
             <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
@@ -192,7 +245,32 @@ function SignInContent() {
           <div className="relative text-center"><span className="bg-transparent px-4 text-xs uppercase tracking-widest text-amber-200/80 font-bold">or email</span></div>
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
-            <Input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" autoComplete="current-password" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
+            <div className="relative">
+              <Input
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                autoComplete="current-password"
+                className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-200/70 hover:text-amber-400"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                <Eye className="w-5 h-5" />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={isResetting || isLoading}
+              className="text-left text-sm text-amber-200/80 hover:text-amber-300 underline underline-offset-4"
+            >
+              {isResetting ? "Sending reset email…" : "Forgot password?"}
+            </button>
             <Button type="submit" disabled={isLoading} className="w-full h-16 bg-amber-500 hover:bg-amber-400 text-[#020617] font-bold rounded-2xl text-xl transition-all shadow-xl shadow-amber-500/10">Continue Journey</Button>
           </form>
           <div className="text-center pt-4 border-t border-white/5">

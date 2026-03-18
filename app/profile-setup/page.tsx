@@ -26,6 +26,7 @@ import Link from 'next/link'
 import { updateUserProfile } from '@/lib/firebase'
 import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
 import { useErrorLogger } from '@/hooks/useErrorLogger';
+import { compressImageFile } from '@/lib/imageCompression'
 
 type UploadPhotoType = "face" | "palm";
 type UploadStatus = "idle" | "ready" | "uploading" | "success" | "error";
@@ -76,6 +77,10 @@ export default function ProfileSetupPage() {
   const [uploadState, setUploadState] = useState<Record<UploadPhotoType, UploadState>>({
     face: { status: "idle", error: null, uploadedUrl: null },
     palm: { status: "idle", error: null, uploadedUrl: null },
+  })
+  const [optimizingState, setOptimizingState] = useState<Record<UploadPhotoType, boolean>>({
+    face: false,
+    palm: false,
   })
 
   useEffect(() => {
@@ -131,8 +136,13 @@ export default function ProfileSetupPage() {
   }
 
   const startUpload = async (type: UploadPhotoType) => {
-    const file = type === "face" ? profileData.facePhoto : profileData.palmPhoto
-    if (!user?.uid || !file) return null
+    const originalFile = type === "face" ? profileData.facePhoto : profileData.palmPhoto
+    if (!user?.uid || !originalFile) return null
+
+    setOptimizingState(prev => ({ ...prev, [type]: true }))
+    const compressed = await compressImageFile(originalFile, { maxDimension: 1600, quality: 0.82, mimeType: "image/jpeg" })
+    setOptimizingState(prev => ({ ...prev, [type]: false }))
+    const file = compressed.file
 
     setUploadState(prev => ({
       ...prev,
@@ -159,6 +169,9 @@ export default function ProfileSetupPage() {
         type,
         bytes: file.size,
         mime: file.type,
+        originalBytes: compressed.originalBytes,
+        finalBytes: compressed.finalBytes,
+        didCompress: compressed.didCompress,
         proxyStatus: e?.status ?? null,
         proxyDetail: e?.detail ?? null,
       })
@@ -264,6 +277,7 @@ export default function ProfileSetupPage() {
                       <input
                         type="file"
                         accept="image/*"
+                        capture="user"
                         className="hidden"
                         onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'face')}
                       />
@@ -277,6 +291,11 @@ export default function ProfileSetupPage() {
                         <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/70">
                           <Loader2 className="h-3 w-3 animate-spin" />
                           Uploading…
+                        </div>
+                      ) : optimizingState.face ? (
+                        <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/70">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Optimizing…
                         </div>
                       ) : uploadState.face.status === "success" ? (
                         <div className="mt-1 text-[10px] text-emerald-300 font-bold">Uploaded</div>
@@ -304,6 +323,7 @@ export default function ProfileSetupPage() {
                       <input
                         type="file"
                         accept="image/*"
+                        capture="environment"
                         className="hidden"
                         onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0], 'palm')}
                       />
@@ -317,6 +337,11 @@ export default function ProfileSetupPage() {
                         <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/70">
                           <Loader2 className="h-3 w-3 animate-spin" />
                           Uploading…
+                        </div>
+                      ) : optimizingState.palm ? (
+                        <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-white/70">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Optimizing…
                         </div>
                       ) : uploadState.palm.status === "success" ? (
                         <div className="mt-1 text-[10px] text-emerald-300 font-bold">Uploaded</div>
