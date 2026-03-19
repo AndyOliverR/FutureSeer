@@ -47,6 +47,7 @@ describe('Profile generate-mystical API', () => {
     birthTime: '10:30',
     birthPlace: 'New York, NY',
     displayName: 'Test User',
+    selectedPlan: 'buy-coffee',
   };
 
   beforeEach(() => {

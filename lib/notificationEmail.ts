@@ -1,8 +1,18 @@
 import { Resend } from 'resend';
 import { devLog } from '@/lib/devLogger';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.NOTIFICATION_FROM_EMAIL || 'onboarding@resend.dev';
+
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  try {
+    return new Resend(apiKey);
+  } catch (err) {
+    devLog.warn('Failed to initialize Resend client', err, 'notificationEmail');
+    return null;
+  }
+}
 
 /**
  * Send a daily astrological insight email to a user.
@@ -12,7 +22,8 @@ export async function sendDailyInsightEmail(
   to: string,
   displayName?: string
 ): Promise<boolean> {
-  if (!process.env.RESEND_API_KEY) {
+  const resend = getResendClient();
+  if (!resend) {
     devLog.warn('RESEND_API_KEY not set, skipping email', 'notificationEmail');
     return false;
   }

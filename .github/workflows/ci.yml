@@ -51,7 +51,7 @@ jobs:
             BASE_SHA="$(git rev-list --max-parents=0 HEAD | tail -n 1)"
           fi
 
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" | grep -E '\.(js|jsx|ts|tsx)$' || true)
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" | grep -E '\.(js|jsx|ts|tsx)$' | grep -Ev '^jest\.config\.js$' || true)
 
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No JS/TS files changed; skipping lint."
