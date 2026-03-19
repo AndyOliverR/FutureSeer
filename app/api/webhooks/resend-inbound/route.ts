@@ -11,11 +11,22 @@ import { Resend } from 'resend';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const fromEmail = process.env.NOTIFICATION_FROM_EMAIL || 'notifications@futureseer.app';
+
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  try {
+    return new Resend(apiKey);
+  } catch (err) {
+    devLog.warn('Failed to initialize Resend client', err, 'resend-inbound');
+    return null;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const resend = getResendClient();
     const rawBody = await request.text();
     const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
 
@@ -34,6 +45,10 @@ export async function POST(request: NextRequest) {
 
     let payload: { type: string; created_at?: string; data?: Record<string, unknown> };
     try {
+      if (!resend) {
+        devLog.warn('RESEND_API_KEY not set; cannot verify webhook signature', 'resend-inbound');
+        return NextResponse.json({ received: true }, { status: 200 });
+      }
       payload = resend.webhooks.verify({
         payload: rawBody,
         headers: { id: svixId, timestamp: svixTimestamp, signature: svixSignature },
@@ -58,7 +73,7 @@ export async function POST(request: NextRequest) {
 
     let bodyText = '';
     let bodyHtml: string | null = null;
-    if (process.env.RESEND_API_KEY && data.email_id) {
+    if (resend && data.email_id) {
       try {
         const rec = await resend.emails.receiving.get(data.email_id);
         if (rec?.data && typeof rec.data === 'object') {
@@ -87,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     const forwardTo = process.env.SUPPORT_FORWARD_EMAIL?.trim();
-    if (forwardTo && process.env.RESEND_API_KEY) {
+    if (forwardTo && resend) {
       const subject = `[FutureSeer Support] ${data.subject}`;
       const html = `
         <p>An email was sent to support@futureseer.app:</p>

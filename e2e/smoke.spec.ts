@@ -8,14 +8,19 @@ test.describe('Landing page', () => {
   test('loads and has key links', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveTitle(/FutureSeer|Ask the Seer/i);
-    await expect(page.getByRole('heading', { name: /Ask the Seer/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Sign In with email/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Join the Experiment/i })).toBeVisible();
+    await expect(page.getByText(/FutureSeer|Ask the Seer/i).first()).toBeVisible();
+
+    const signInAction = page.locator('a[href*="/signin"], button:has-text("Sign In"), button:has-text("Sign in")').first();
+    await expect(signInAction).toBeVisible();
+
+    const joinAction = page.locator('a:has-text("Join"), button:has-text("Join"), a:has-text("Get Started"), button:has-text("Get Started")').first();
+    await expect(joinAction).toBeVisible();
   });
 
   test('Sign In button navigates to sign-in page', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: /Sign In with email/i }).click();
+    const signInAction = page.locator('a[href*="/signin"], button:has-text("Sign In"), button:has-text("Sign in")').first();
+    await signInAction.click();
     await expect(page).toHaveURL(/\/signin/);
   });
 

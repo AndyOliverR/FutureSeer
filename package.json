@@ -24,7 +24,7 @@
     "test:core-stability": "npx ts-node tests/runCoreStabilityCheck.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:ci": "pnpm run build && concurrently -k -n server,e2e -c blue,green \"pnpm start\" \"wait-on http://localhost:3000 && pnpm exec playwright test\"",
+    "test:e2e:ci": "pnpm run build && start-server-and-test \"pnpm start\" http://localhost:3000 \"pnpm exec playwright test\"",
     "electron": "electron .",
     "desktop": "next build && concurrently -k \"next start\" \"wait-on http://localhost:3000 && electron .\"",
     "build:capacitor": "cross-env CAPACITOR_BUILD=1 next build --webpack",
@@ -150,6 +150,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.5",
     "sharp": "^0.34.5",
+    "start-server-and-test": "latest",
     "tailwindcss": "^3.4.17",
     "typescript": "^5",
     "wait-on": "^8.0.5"
