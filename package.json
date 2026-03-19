@@ -10,7 +10,7 @@
     "prebuild": "node scripts/generate-starfield-8k.js",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "npx eslint .",
     "audit": "pnpm audit",
     "audit:fix": "pnpm audit --fix",
     "security:audit": "pnpm audit --audit-level=high",
