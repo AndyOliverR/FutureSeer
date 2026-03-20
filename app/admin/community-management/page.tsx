@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, CheckCircle, Clock, TrendingUp, Users, MessageCircle, Star, Zap, Filter, Search, Flag, Archive, Pin, Loader2, ChevronLeft } from 'lucide-react';
+import { AlertTriangle, CheckCircle, TrendingUp, Users, MessageCircle, Zap, Filter, Search, Flag, Pin, ChevronLeft } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 interface DiscussionThread {
   id: string;
@@ -40,7 +40,7 @@ interface CommunityStats {
 }
 
 export default function CommunityManagementPage() {
-  const { user, isSuperadmin, isAdmin, loading: authLoading } = useAuth();
+  const { isSuperadmin, isAdmin, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [discussions, setDiscussions] = useState<DiscussionThread[]>([]);
   const [filteredDiscussions, setFilteredDiscussions] = useState<DiscussionThread[]>([]);
@@ -141,7 +141,7 @@ export default function CommunityManagementPage() {
       }
     };
     fetchDiscussions();
-  }, [isAdmin, isSuperadmin]);
+  }, [isAdmin, isSuperadmin, toast]);
 
   useEffect(() => {
     let filtered = discussions;
@@ -184,8 +184,8 @@ export default function CommunityManagementPage() {
       if (d.id === selectedDiscussion.id) {
         return {
           ...d,
-          priority: actionData.priority as any,
-          status: actionData.status as any,
+          priority: actionData.priority as DiscussionThread['priority'],
+          status: actionData.status as DiscussionThread['status'],
           adminNotes: actionData.notes,
           actionRequired: actionData.action === 'resolve' ? false : d.actionRequired
         };
