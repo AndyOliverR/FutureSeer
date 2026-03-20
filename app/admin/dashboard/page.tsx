@@ -9,10 +9,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Download, Search, UserCheck, Eye, ChevronLeft, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, Settings, FileText, Filter, AlertTriangle } from 'lucide-react';
+import { Download, Search, Eye, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
-async function updateUserClaims(uid: string, claims: any, idToken: string) {
+function getErrorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+/** Firebase custom claims payload for admin API */
+type AdminClaimsPayload = Record<string, unknown>;
+
+interface AdminUserRow {
+  uid: string;
+  email: string;
+  displayName?: string;
+  claims: Record<string, boolean | undefined>;
+}
+
+interface AuditLogRow {
+  id: string;
+  timestamp: string | number;
+  action?: string;
+  performedBy?: string;
+  targetUser?: string;
+  details?: unknown;
+  ipAddress?: string;
+}
+
+async function updateUserClaims(uid: string, claims: AdminClaimsPayload, idToken: string) {
   const res = await fetch('/api/admin/set-claims', {
     method: 'POST',
     headers: {
@@ -107,7 +131,13 @@ async function exportUsers(format: 'json' | 'csv', idToken: string, fields: stri
   }
 }
 
-async function performBulkAction(action: string, userIds: string[], idToken: string, claims?: any, reason?: string) {
+async function performBulkAction(
+  action: string,
+  userIds: string[],
+  idToken: string,
+  claims?: AdminClaimsPayload,
+  reason?: string
+) {
   const response = await fetch('/api/admin/bulk-actions', {
     method: 'POST',
     headers: { 
@@ -124,7 +154,11 @@ async function performBulkAction(action: string, userIds: string[], idToken: str
   return response.json();
 }
 
-async function fetchAuditLogs(idToken: string, filters?: any, freshToken?: () => Promise<string>) {
+async function fetchAuditLogs(
+  idToken: string,
+  filters?: Record<string, string>,
+  freshToken?: () => Promise<string>
+): Promise<{ logs: AuditLogRow[] }> {
   if (!idToken?.trim()) throw new Error('Not signed in');
   const params = new URLSearchParams();
   if (filters) {
@@ -144,11 +178,11 @@ async function fetchAuditLogs(idToken: string, filters?: any, freshToken?: () =>
   if (!response.ok) {
     throw new Error('Failed to fetch audit logs');
   }
-  return response.json();
+  return response.json() as Promise<{ logs: AuditLogRow[] }>;
 }
 
 function UserManagement({ adminToken, getToken }: { adminToken: string | null; getToken: () => Promise<string> }) {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<{ [uid: string]: boolean }>({});
   const [impersonating, setImpersonating] = useState<{ [uid: string]: boolean }>({});
@@ -162,26 +196,29 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
   const [searchInput, setSearchInput] = useState('');
   const { toast } = useToast();
 
-  const fetchUsers = async (token: string, pageToken?: string, searchEmail?: string) => {
-    setLoading(true);
-    try {
-      const data = await fetchUsersWithClaimsApi(token, pageToken, searchEmail, getToken);
-      setUsers(data.users);
-      setNextPageToken(data.nextPageToken);
-    } catch (e: any) {
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchUsers = useCallback(
+    async (token: string, pageToken?: string, searchEmail?: string) => {
+      setLoading(true);
+      try {
+        const data = await fetchUsersWithClaimsApi(token, pageToken, searchEmail, getToken);
+        setUsers(data.users);
+        setNextPageToken(data.nextPageToken);
+      } catch (e: unknown) {
+        toast({ title: 'Error', description: getErrorMessage(e), variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken, toast]
+  );
 
   useEffect(() => {
     if (!adminToken?.trim()) {
       setLoading(false);
       return;
     }
-    fetchUsers(adminToken, undefined, search);
-  }, [adminToken, search]);
+    void fetchUsers(adminToken, undefined, search);
+  }, [adminToken, search, fetchUsers]);
 
   const handleToggle = async (uid: string, claimKey: string, value: boolean) => {
     setUpdating((u) => ({ ...u, [uid]: true }));
@@ -193,10 +230,10 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
       if (!idToken?.trim()) throw new Error('Not signed in');
       await updateUserClaims(uid, { ...userObj!.claims, [claimKey]: value }, idToken);
       toast({ title: 'Success', description: `Updated ${claimKey} for ${userObj.email}` });
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Rollback on error
       setUsers((prev) => prev.map((user) => user.uid === uid ? { ...user, claims: { ...user.claims, [claimKey]: !value } } : user));
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+      toast({ title: 'Error', description: getErrorMessage(e), variant: 'destructive' });
     } finally {
       setUpdating((u) => ({ ...u, [uid]: false }));
     }
@@ -230,8 +267,8 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
         title: 'Impersonation Ready', 
         description: `You can now sign in as ${targetEmail}. Use the token in your auth system.` 
       });
-    } catch (e: any) {
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } catch (e: unknown) {
+      toast({ title: 'Error', description: getErrorMessage(e), variant: 'destructive' });
     } finally {
       setImpersonating(prev => ({ ...prev, [targetUid]: false }));
     }
@@ -247,8 +284,8 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
         title: 'Export Successful', 
         description: `Users exported as ${format.toUpperCase()}` 
       });
-    } catch (e: any) {
-      toast({ title: 'Export Failed', description: e.message, variant: 'destructive' });
+    } catch (e: unknown) {
+      toast({ title: 'Export Failed', description: getErrorMessage(e), variant: 'destructive' });
     } finally {
       setExporting(false);
     }
@@ -275,7 +312,7 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
     }
   };
 
-  const handleBulkAction = async (action: string, claims?: any) => {
+  const handleBulkAction = async (action: string, claims?: AdminClaimsPayload) => {
     if (selectedUsers.size === 0) return;
     
     setBulkActioning(true);
@@ -294,8 +331,8 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
       fetchUsers(idToken, pageToken, search);
       setSelectedUsers(new Set());
       setShowBulkActions(false);
-    } catch (e: any) {
-      toast({ title: 'Bulk Action Failed', description: e.message, variant: 'destructive' });
+    } catch (e: unknown) {
+      toast({ title: 'Bulk Action Failed', description: getErrorMessage(e), variant: 'destructive' });
     } finally {
       setBulkActioning(false);
     }
@@ -506,7 +543,7 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
 }
 
 function Logs({ adminToken, getToken }: { adminToken: string | null; getToken: () => Promise<string> }) {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<AuditLogRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     action: '',
@@ -516,27 +553,27 @@ function Logs({ adminToken, getToken }: { adminToken: string | null; getToken: (
   });
   const { toast } = useToast();
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     const idToken = await getToken();
     if (!idToken?.trim()) return;
     setLoading(true);
     try {
       const data = await fetchAuditLogs(idToken, filters, getToken);
       setLogs(data.logs);
-    } catch (e: any) {
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } catch (e: unknown) {
+      toast({ title: 'Error', description: getErrorMessage(e), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, filters, toast]);
 
   useEffect(() => {
     if (!adminToken?.trim()) {
       setLoading(false);
       return;
     }
-    fetchLogs();
-  }, [adminToken, filters]);
+    void fetchLogs();
+  }, [adminToken, fetchLogs]);
 
   if (loading) return <div className="p-4 text-center text-slate-300">Loading logs...</div>;
 
@@ -671,7 +708,7 @@ function Billing({ adminToken, getToken }: { adminToken: string | null; getToken
   const [refunding, setRefunding] = useState(false);
   const { toast } = useToast();
 
-  const fetchBilling = async () => {
+  const fetchBilling = useCallback(async () => {
     const token = await getToken();
     if (!token?.trim()) {
       setLoading(false);
@@ -698,15 +735,15 @@ function Billing({ adminToken, getToken }: { adminToken: string | null; getToken
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, toast]);
 
   useEffect(() => {
     if (!adminToken?.trim()) {
       setLoading(false);
       return;
     }
-    fetchBilling();
-  }, [adminToken]);
+    void fetchBilling();
+  }, [adminToken, fetchBilling]);
 
   const handleCancel = async (userId: string) => {
     setCancelling(userId);
@@ -837,10 +874,10 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (!user) {
-      setAdminToken(null);
+      void Promise.resolve().then(() => setAdminToken(null));
       return;
     }
-    user.getIdToken().then((t) => setAdminToken(t && t.trim() ? t : null));
+    void user.getIdToken().then((t) => setAdminToken(t && t.trim() ? t : null));
   }, [user]);
 
   const getToken = useCallback(async () => {
