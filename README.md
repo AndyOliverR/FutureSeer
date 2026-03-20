@@ -2,7 +2,7 @@
 
 <!-- Trigger Vercel deployment from main branch -->
 
-A Next.js 15 application that combines ancient divination wisdom with modern AI to provide personalized mystical insights and guidance.
+A Next.js 16 application that combines ancient divination wisdom with modern AI to provide personalized mystical insights and guidance.
 
 ## 🌟 Features
 
@@ -32,11 +32,16 @@ A Next.js 15 application that combines ancient divination wisdom with modern AI 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ 
-- pnpm (recommended) or npm
+
+Tooling matches [AGENTS.md](AGENTS.md) and `packageManager` in `package.json`:
+
+- **Node.js 24.x** (see `.nvmrc`)
+- **pnpm 10.28.2** — run `corepack enable` then use `pnpm` as usual
 - Firebase project
 - OpenAI API key
 - AstroApp API key (optional)
+
+Full build, CI, and mobile/store steps are indexed in **[docs/DEVELOPER_RUNBOOK.md](docs/DEVELOPER_RUNBOOK.md)**.
 
 ### Installation
 
