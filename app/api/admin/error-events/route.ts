@@ -1,36 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getAuth, adminDb } from '@/lib/firebase-admin';
-import { isAdminDecoded } from '@/lib/adminConfig';
-
-async function verifyAdmin(request: NextRequest): Promise<boolean> {
-  const authHeader = request.headers.get('Authorization');
-  const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!idToken) {
-    devLog.warn('[admin/error-events] No Bearer token', 'route');
-    return false;
-  }
-  try {
-    const decoded = await getAuth().verifyIdToken(idToken);
-    if (!isAdminDecoded(decoded)) {
-      devLog.warn('[admin/error-events] Token valid but not admin', { email: decoded.email ?? '(no email)' }, 'route');
-      return false;
-    }
-    return true;
-  } catch (err) {
-    devLog.warn('[admin/error-events] verifyIdToken failed', err, 'route');
-    return false;
-  }
-}
+import { adminDb } from '@/lib/firebase-admin';
+import { verifyAdminRequest } from '@/lib/adminApiAuth';
 
 export const dynamic = 'force-dynamic';
+
+const TRIAGE_STATUSES = ['open', 'resolved', 'ignored'] as const;
+
+function normalizeTimestamp(ts: unknown): string {
+  if (typeof ts === 'string') return ts;
+  if (ts && typeof ts === 'object' && 'toDate' in ts && typeof (ts as { toDate: () => Date }).toDate === 'function') {
+    return (ts as { toDate: () => Date }).toDate().toISOString();
+  }
+  if (ts != null && (typeof ts === 'number' || ts instanceof Date)) {
+    return new Date(ts as number | Date).toISOString();
+  }
+  return '';
+}
+
+function normalizeIsoField(ts: unknown): string | null {
+  if (ts == null) return null;
+  const s = normalizeTimestamp(ts);
+  return s || null;
+}
+
+function normalizeTriageStatus(v: unknown): 'open' | 'resolved' | 'ignored' {
+  if (typeof v === 'string' && (TRIAGE_STATUSES as readonly string[]).includes(v)) {
+    return v as 'open' | 'resolved' | 'ignored';
+  }
+  return 'open';
+}
+
+function normalizeSeverity(v: unknown): string {
+  if (v === 'error' || v === 'warning' || v === 'info') return v;
+  return 'error';
+}
 
 export async function GET(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 });
   }
   try {
-    if (!(await verifyAdmin(request))) {
+    const auth = await verifyAdminRequest(request, 'admin/error-events');
+    if (!auth.ok) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -46,20 +58,28 @@ export async function GET(request: NextRequest) {
 
     const events = snapshot.docs.map((doc) => {
       const data = doc.data();
-      const ts = data.timestamp;
-      const timestamp =
-        typeof ts === 'string'
-          ? ts
-          : ts?.toDate?.()
-            ? (ts as { toDate: () => Date }).toDate().toISOString()
-            : ts != null
-              ? new Date(ts as number).toISOString()
-              : '';
+      const timestamp = normalizeTimestamp(data.timestamp);
+      const triageUpdatedBy =
+        data.triageUpdatedBy &&
+        typeof data.triageUpdatedBy === 'object' &&
+        data.triageUpdatedBy !== null
+          ? {
+              uid: typeof (data.triageUpdatedBy as { uid?: unknown }).uid === 'string'
+                ? (data.triageUpdatedBy as { uid: string }).uid
+                : '',
+              email:
+                (data.triageUpdatedBy as { email?: unknown }).email === null ||
+                typeof (data.triageUpdatedBy as { email?: unknown }).email === 'string'
+                  ? ((data.triageUpdatedBy as { email: string | null }).email ?? null)
+                  : null,
+            }
+          : null;
+
       return {
         id: doc.id,
         timestamp,
         environment: data.environment || 'unknown',
-        severity: data.severity || 'error',
+        severity: normalizeSeverity(data.severity),
         source: data.source || 'client',
         area: data.area || 'unknown',
         action: data.action || '',
@@ -68,6 +88,10 @@ export async function GET(request: NextRequest) {
         route: data.route,
         browser: data.browser,
         meta: data.meta,
+        triageStatus: normalizeTriageStatus(data.triageStatus),
+        triageNote: typeof data.triageNote === 'string' ? data.triageNote : null,
+        triageUpdatedAt: normalizeIsoField(data.triageUpdatedAt),
+        triageUpdatedBy,
       };
     });
 

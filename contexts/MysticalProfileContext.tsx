@@ -220,7 +220,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           const browser = typeof navigator !== 'undefined' ? `${navigator.userAgent} | ${navigator.language || ''}` : undefined
           user?.getIdToken().then((idToken) => {
             logClientError({
-              severity: 'warning',
+              severity: 'info',
               area: 'profile',
               action: 'no_mystical_profile',
               message: 'No comprehensive mystical profile found for user',

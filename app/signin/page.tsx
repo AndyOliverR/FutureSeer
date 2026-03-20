@@ -50,7 +50,7 @@ function SignInContent() {
   const RECAPTCHA_SITE_KEY = "6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz";
 
   useEffect(() => {
-    void logError("view_loaded", "Sign-in screen loaded", "warning", {
+    void logError("view_loaded", "Sign-in screen loaded", "info", {
       isMobileLayout,
       hasRedirect: !!redirectTo,
     })
@@ -64,7 +64,7 @@ function SignInContent() {
     if (didAutoRedirectRef.current) return;
     didAutoRedirectRef.current = true;
     const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile");
-    void logError("auth_success", "User signed in", "warning", { method: "existing_session", redirectTo: destination })
+    void logError("auth_success", "User signed in", "info", { method: "existing_session", redirectTo: destination })
     if (typeof window !== "undefined") {
       window.location.replace(destination);
     } else {
@@ -87,10 +87,10 @@ function SignInContent() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true); setError(null)
     try {
-      await logError("google_clicked", "Google sign-in clicked", "warning", { hasRedirect: !!redirectTo })
+      await logError("google_clicked", "Google sign-in clicked", "info", { hasRedirect: !!redirectTo })
       const user = await signInWithGoogle()
       const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
-      await logError("auth_success", "User signed in", "warning", { method: "google", redirectTo: destination })
+      await logError("auth_success", "User signed in", "info", { method: "google", redirectTo: destination })
       router.push(destination)
     } catch (error: any) {
       if (!error.message?.includes('Redirect initiated')) {
@@ -111,16 +111,16 @@ function SignInContent() {
     setIsLoading(true); setError(null); setSuccess(null)
 
     try {
-      await logError("email_submit_clicked", "Email sign-in submitted", "warning", { hasRedirect: !!redirectTo })
+      await logError("email_submit_clicked", "Email sign-in submitted", "info", { hasRedirect: !!redirectTo })
       let captchaToken = null;
       const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
       // Skip reCAPTCHA on localhost (not in reCAPTCHA allowed domains); only run on web, not Android
       if (!isMobileLayout && !isLocalhost && typeof window !== 'undefined') {
-        await logError("captcha_started", "Captcha check started", "warning")
+        await logError("captcha_started", "Captcha check started", "info")
         if (!window.grecaptcha) {
           devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signin');
-          await logError("captcha_missing_script", "Captcha script missing", "warning")
+          await logError("captcha_missing_script", "Captcha script missing", "info")
         } else {
           captchaToken = await new Promise((resolve) => {
             window.grecaptcha.enterprise.ready(async () => {
@@ -129,7 +129,7 @@ function SignInContent() {
                 resolve(token);
               } catch (err) {
                 devLog.error('reCAPTCHA execution failed:', err, 'signin');
-                void logError("captcha_failed", "Captcha execution failed", "warning", {
+                void logError("captcha_failed", "Captcha execution failed", "info", {
                   message: (err as any)?.message ?? null,
                 })
                 resolve(null);
@@ -148,16 +148,16 @@ function SignInContent() {
 
           if (!verifyRes.ok) {
             const verifyData = await verifyRes.json();
-            await logError("captcha_failed", "Captcha verification failed", "warning", { status: verifyRes.status })
+            await logError("captcha_failed", "Captcha verification failed", "info", { status: verifyRes.status })
             throw new Error(verifyData.error || 'Security check failed. Please try again.');
           }
-          await logError("captcha_verified", "Captcha verified", "warning")
+          await logError("captcha_verified", "Captcha verified", "info")
         }
       }
 
       const user = await signInWithEmail(email, password)
       const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
-      await logError("auth_success", "User signed in", "warning", { method: "email", redirectTo: destination })
+      await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })
       router.push(destination)
     } catch (error: any) {
       const msg = getAuthErrorMessage(error)
@@ -180,10 +180,10 @@ function SignInContent() {
     }
     setIsResetting(true)
     try {
-      await logError("reset_password_clicked", "Password reset clicked", "warning")
+      await logError("reset_password_clicked", "Password reset clicked", "info")
       await resetPassword(trimmed)
       setSuccess("Password reset email sent. Check your inbox (and spam).")
-      await logError("reset_password_sent", "Password reset email sent", "warning")
+      await logError("reset_password_sent", "Password reset email sent", "info")
     } catch (e: any) {
       const msg = getAuthErrorMessage(e)
       setError(msg)

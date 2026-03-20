@@ -166,7 +166,7 @@ function SignUpPageContent() {
     } catch (err: any) {
       const msg = err.message || "An unexpected error occurred during security check."
       setError(msg)
-      await logError("signup_security_check", msg, "warning")
+      await logError("signup_security_check", msg, "error")
     } finally {
       setIsLoading(false)
     }

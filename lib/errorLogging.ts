@@ -1,6 +1,6 @@
 import { devLog } from '@/lib/devLogger';
 
-export type ErrorSeverity = 'error' | 'warning';
+export type ErrorSeverity = 'error' | 'warning' | 'info';
 
 export interface LogErrorInput {
   severity?: ErrorSeverity;
@@ -45,7 +45,7 @@ function sanitizeMeta(meta?: Record<string, unknown>): Record<string, unknown> |
 export async function logClientError(input: LogErrorInput): Promise<void> {
   // This is a thin wrapper used by the client hook; server-side callers should prefer logServerError.
   const payload = {
-    severity: input.severity || 'error',
+    severity: input.severity ?? 'error',
     area: input.area,
     action: input.action,
     message: truncate(input.message, 800) || 'Unknown error',
