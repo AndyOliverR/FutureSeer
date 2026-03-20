@@ -226,9 +226,10 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
     setUsers((prev) => prev.map((u) => u.uid === uid ? { ...u, claims: { ...u.claims, [claimKey]: value } } : u));
     try {
       const userObj = users.find((u) => u.uid === uid);
+      if (!userObj) throw new Error('User not found');
       const idToken = await getToken();
       if (!idToken?.trim()) throw new Error('Not signed in');
-      await updateUserClaims(uid, { ...userObj!.claims, [claimKey]: value }, idToken);
+      await updateUserClaims(uid, { ...userObj.claims, [claimKey]: value }, idToken);
       toast({ title: 'Success', description: `Updated ${claimKey} for ${userObj.email}` });
     } catch (e: unknown) {
       // Rollback on error
