@@ -11,9 +11,10 @@ import {
   Minus,
   Info
 } from 'lucide-react'
+import { sortAspectsForDisplay, formatAspectType, type AspectRow } from '@/lib/western/sortAspects'
 
 export interface AspectLegendPanelProps {
-  aspects: any[]
+  aspects: AspectRow[]
   onFilterAspect?: (aspectType: string | null) => void
   activeFilter?: string | null
 }
@@ -74,7 +75,15 @@ const ASPECT_TYPES = [
 
 // Get color classes for each aspect type
 function getAspectColorClasses(color: string) {
-  const colorMap: Record<string, any> = {
+  const colorMap: Record<string, {
+    bg: string
+    border: string
+    text: string
+    iconBg: string
+    iconColor: string
+    badgeBg: string
+    badgeText: string
+  }> = {
     blue: {
       bg: 'bg-blue-100',
       border: 'border-blue-300',
@@ -135,10 +144,12 @@ function getInfluenceBadgeColor(influence: string) {
 }
 
 export function AspectLegendPanel({ aspects, onFilterAspect, activeFilter }: AspectLegendPanelProps) {
-  // Count aspects by type
+  const sortedAspects = sortAspectsForDisplay(aspects || [])
+
+  // Count aspects by type (normalize to title case for legend cards)
   const aspectCounts: Record<string, number> = {}
   for (const aspect of aspects) {
-    const type = aspect.type
+    const type = formatAspectType(aspect.type || '')
     aspectCounts[type] = (aspectCounts[type] || 0) + 1
   }
   
@@ -151,6 +162,40 @@ export function AspectLegendPanel({ aspects, onFilterAspect, activeFilter }: Asp
           Understanding the geometric relationships between planets in your chart
         </p>
       </div>
+
+      {/* Dense aspect list (Astro-Charts style): tightest orbs first */}
+      {sortedAspects.length > 0 && (
+        <div className="rounded-xl border-2 border-slate-200 bg-white overflow-hidden">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-200">
+            <h4 className="text-sm font-semibold text-slate-900">All aspects ({sortedAspects.length})</h4>
+            <p className="text-xs text-slate-600">Sorted by smallest orb first</p>
+          </div>
+          <div className="max-h-[min(420px,50vh)] overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-600">
+                <tr>
+                  <th className="px-3 py-2 font-semibold">Point A</th>
+                  <th className="px-3 py-2 font-semibold">Aspect</th>
+                  <th className="px-3 py-2 font-semibold">Point B</th>
+                  <th className="px-3 py-2 font-semibold text-right">Orb</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedAspects.map((a, idx) => (
+                  <tr key={`${a.planet1}-${a.planet2}-${a.type}-${idx}`} className="border-b border-slate-100 hover:bg-amber-50/50">
+                    <td className="px-3 py-2 font-medium text-slate-900">{a.planet1}</td>
+                    <td className="px-3 py-2 text-violet-900">{formatAspectType(a.type || '')}</td>
+                    <td className="px-3 py-2 font-medium text-slate-900">{a.planet2}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-slate-700">
+                      {typeof a.orb === 'number' && !Number.isNaN(a.orb) ? `${a.orb.toFixed(1)}°` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Aspect Type Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -234,7 +279,7 @@ export function AspectLegendPanel({ aspects, onFilterAspect, activeFilter }: Asp
             </div>
             <div className="flex-1">
               <h4 className="font-bold text-purple-900 text-lg mb-2">
-                Your Chart's Aspect Summary
+                Aspect summary for your chart
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="text-center p-3 bg-white/60 rounded-lg">
