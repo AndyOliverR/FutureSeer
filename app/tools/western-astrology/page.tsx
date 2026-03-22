@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect, useMemo } from 'react'
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -8,7 +8,6 @@ import { useAuth } from '@/hooks/use-auth'
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
 import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { convertObjectToWestern } from '@/lib/western/westernTerminology'
@@ -25,6 +24,9 @@ import { HouseDashboard } from '@/components/western/HouseDashboard';
 import { TransitTimeline } from '@/components/western/TransitTimeline';
 import { LifeJourneyMap } from '@/components/western/LifeJourneyMap';
 import { AspectPatternDiagram } from '@/components/western/AspectPatternDiagram';
+import { ChartBirthSummaryCard } from '@/components/western/ChartBirthSummaryCard';
+import { WesternSpecialFeatures } from '@/components/western/WesternSpecialFeatures';
+import { WesternCelebritySampleSection } from '@/components/western/WesternCelebritySampleSection';
 import { 
   Star, 
   Calendar,
@@ -38,17 +40,36 @@ import {
   Sparkles
 } from 'lucide-react'
 
+type WesternToolTab =
+  | 'introduction'
+  | 'compatibility'
+  | 'western-astrology'
+  | 'advanced'
+  | 'astro-numerology'
+  | 'ask-the-seer'
+
+function sunSignFromWesternChart(planets: unknown[] | undefined): string | undefined {
+  const sun = planets?.find(
+    (p): p is { name: string; sign?: string | { signName?: string } } =>
+      typeof p === 'object' && p !== null && 'name' in p && (p as { name: string }).name === 'Sun'
+  )
+  if (!sun) return undefined
+  if (typeof sun.sign === 'string') return sun.sign
+  if (sun.sign && typeof sun.sign === 'object' && 'signName' in sun.sign) return sun.sign.signName
+  return undefined
+}
+
 function WesternAstrologyPageContent() {
   const { user, userProfile, loading: authLoading } = useAuth()
   const searchParams = useSearchParams()
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'introduction' | 'compatibility' | 'western-astrology' | 'advanced' | 'astro-numerology' | 'ask-the-seer'>('introduction')
+  const [activeTab, setActiveTab] = useState<WesternToolTab>('introduction')
 
-  // Open Advanced tab when ?tab=advanced is in the URL (e.g. from "Back to Advanced")
+  // Deep-link tabs: ?tab=advanced | introduction | western-astrology | chart
   useEffect(() => {
-    if (searchParams.get('tab') === 'advanced') {
-      setActiveTab('advanced')
-    }
+    const t = searchParams.get('tab')
+    if (t === 'advanced') setActiveTab('advanced')
+    else if (t === 'introduction') setActiveTab('introduction')
+    else if (t === 'western-astrology' || t === 'chart') setActiveTab('western-astrology')
   }, [searchParams])
 
   const { report: westernPipelineReport, loading: isLoading, error: profileError, hasReport, refreshProfile } = useToolReport('western')
@@ -76,6 +97,18 @@ function WesternAstrologyPageContent() {
   const [fetchedComprehensiveAnalysis, setFetchedComprehensiveAnalysis] = useState<typeof comprehensiveWesternReport>(null)
   const [isLoadingComprehensiveAnalysis, setIsLoadingComprehensiveAnalysis] = useState(false)
   const effectiveComprehensiveReport = comprehensiveWesternReport || fetchedComprehensiveAnalysis
+
+  const chartAutoOpenedRef = useRef(false)
+  // Chart-first: once chart data exists, open the Western dashboard tab (unless URL pins another tab)
+  useEffect(() => {
+    if (chartAutoOpenedRef.current) return
+    const t = searchParams.get('tab')
+    if (t === 'advanced' || t === 'introduction') return
+    if (activeTab !== 'introduction') return
+    if (!analysis?.data || !hasReport) return
+    setActiveTab('western-astrology')
+    chartAutoOpenedRef.current = true
+  }, [analysis?.data, hasReport, searchParams, activeTab])
 
   const [fetchedTransits, setFetchedTransits] = useState<unknown[] | null>(null)
   const [isLoadingTransits, setIsLoadingTransits] = useState(false)
@@ -273,7 +306,7 @@ function WesternAstrologyPageContent() {
         </div>
         {/* Tabs – filing-cabinet style: one bordered container so tabs stay attached to content on all screens */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as WesternToolTab)} className="w-full min-w-0">
             <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
               {tabsConfig.map((tab) => (
                 <motion.div
@@ -312,7 +345,22 @@ function WesternAstrologyPageContent() {
                 transition={motionConfig}
               >
                 <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  {analysis?.data && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pb-2">
+                      <Button
+                        type="button"
+                        onClick={() => setActiveTab('western-astrology')}
+                        className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold shadow-md"
+                      >
+                        View my chart
+                      </Button>
+                      <p className="text-center text-sm text-slate-300 sm:max-w-md">
+                        Your wheel and placements are ready—open the Western Astrology tab for the full snapshot.
+                      </p>
+                    </div>
+                  )}
                   <ToolIntroductionTab toolSlug="western-astrology" />
+                  <WesternCelebritySampleSection />
                 </TabsContent>
               </motion.div>
             )}
@@ -407,16 +455,80 @@ function WesternAstrologyPageContent() {
               </div>
             ) : analysis?.data ? (
               <>
+                <ChartBirthSummaryCard
+                  displayName={userProfile?.displayName}
+                  fullName={userProfile?.fullName}
+                  birthDate={userProfile?.birthDate}
+                  birthTime={userProfile?.birthTime}
+                  birthPlace={userProfile?.birthPlace}
+                />
+
                 {/* HERO SECTION - Always visible */}
                 <WesternDashboardHero 
                   chartData={analysis.data}
                   userProfile={userProfile}
                 />
 
-                {/* DASHBOARD SECTIONS - Organized like astro-charts.com */}
+                {/* DASHBOARD SECTIONS - Factual blocks first (Astro-Charts scan order), then AI narrative */}
                 <div className="space-y-6 mt-8">
                   
-                  {/* Section 1: Chart Overview */}
+                  <WesternSpecialFeatures chartData={analysis.data} />
+
+                  {/* Chart Patterns */}
+                  <DashboardSection 
+                    title="Chart Patterns" 
+                    icon={<Sparkles className="w-6 h-6" />}
+                    badge="Special Configurations"
+                    defaultExpanded={true}
+                    colorScheme="purple"
+                    storageKey="chart-patterns"
+                  >
+                    <AspectPatternDiagram chartData={analysis.data} />
+                  </DashboardSection>
+
+                  {/* Aspects */}
+                  <DashboardSection 
+                    title="Aspects" 
+                    icon={<Zap className="w-6 h-6" />}
+                    badge={`${analysis.data.aspects?.length || 0} Aspects`}
+                    defaultExpanded={true}
+                    colorScheme="pink"
+                    storageKey="aspects"
+                  >
+                    <AspectLegendPanel aspects={analysis.data.aspects || []} />
+                  </DashboardSection>
+
+                  {/* Planets */}
+                  <DashboardSection 
+                    title="Planets" 
+                    icon={<Activity className="w-6 h-6" />}
+                    badge={`${analysis.data.planets?.length || 0} Celestial Bodies`}
+                    defaultExpanded={true}
+                    colorScheme="blue"
+                    storageKey="planets"
+                  >
+                    <PlanetaryDashboard 
+                      planets={analysis.data.planets || []}
+                      planetaryAnalysis={effectiveComprehensiveReport?.planetaryAnalysis}
+                    />
+                  </DashboardSection>
+
+                  {/* Houses */}
+                  <DashboardSection 
+                    title="Houses" 
+                    icon={<Home className="w-6 h-6" />}
+                    badge="12 Life Areas"
+                    defaultExpanded={true}
+                    colorScheme="green"
+                    storageKey="houses"
+                  >
+                    <HouseDashboard 
+                      houses={analysis.data.houses || []}
+                      houseAnalysis={effectiveComprehensiveReport?.houseAnalysis}
+                    />
+                  </DashboardSection>
+
+                  {/* Chart Overview (AI) — after deterministic placements */}
                   <DashboardSection 
                     title="Chart Overview" 
                     icon={<Star className="w-6 h-6" />}
@@ -486,61 +598,7 @@ function WesternAstrologyPageContent() {
                     )}
                   </DashboardSection>
 
-                  {/* Section 2: Chart Patterns */}
-                  <DashboardSection 
-                    title="Chart Patterns" 
-                    icon={<Sparkles className="w-6 h-6" />}
-                    badge="Special Configurations"
-                    defaultExpanded={true}
-                    colorScheme="purple"
-                    storageKey="chart-patterns"
-                  >
-                    <AspectPatternDiagram chartData={analysis.data} />
-                  </DashboardSection>
-
-                  {/* Section 3: Aspects */}
-                  <DashboardSection 
-                    title="Aspects" 
-                    icon={<Zap className="w-6 h-6" />}
-                    badge={`${analysis.data.aspects?.length || 0} Aspects`}
-                    defaultExpanded={false}
-                    colorScheme="pink"
-                    storageKey="aspects"
-                  >
-                    <AspectLegendPanel aspects={analysis.data.aspects || []} />
-                  </DashboardSection>
-
-                  {/* Section 4: Planets */}
-                  <DashboardSection 
-                    title="Planets" 
-                    icon={<Activity className="w-6 h-6" />}
-                    badge={`${analysis.data.planets?.length || 0} Celestial Bodies`}
-                    defaultExpanded={false}
-                    colorScheme="blue"
-                    storageKey="planets"
-                  >
-                    <PlanetaryDashboard 
-                      planets={analysis.data.planets || []}
-                      planetaryAnalysis={effectiveComprehensiveReport?.planetaryAnalysis}
-                    />
-                  </DashboardSection>
-
-                  {/* Section 5: Houses */}
-                  <DashboardSection 
-                    title="Houses" 
-                    icon={<Home className="w-6 h-6" />}
-                    badge="12 Life Areas"
-                    defaultExpanded={false}
-                    colorScheme="green"
-                    storageKey="houses"
-                  >
-                    <HouseDashboard 
-                      houses={analysis.data.houses || []}
-                      houseAnalysis={effectiveComprehensiveReport?.houseAnalysis}
-                    />
-                  </DashboardSection>
-
-                  {/* Section 6: Transit Timeline */}
+                  {/* Transit Timeline */}
                   <DashboardSection 
                     title="Current Transits" 
                     icon={<TrendingUp className="w-6 h-6" />}
@@ -607,7 +665,7 @@ function WesternAstrologyPageContent() {
                                   >
                                     <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
                                       <CardContent className="p-4">
-                                        <h4 className="font-bold text-amber-900 mb-2">Today's Quick Win</h4>
+                                        <h4 className="font-bold text-amber-900 mb-2">Today&apos;s Quick Win</h4>
                                         <p className="text-slate-700 leading-relaxed">{structuredInsights.todaysQuickWin}</p>
                                       </CardContent>
                                     </Card>
@@ -786,7 +844,7 @@ function WesternAstrologyPageContent() {
                     userId={user?.uid}
                     birthDate={userProfile?.birthDate}
                     fullName={userProfile?.displayName || userProfile?.fullName || user?.displayName || user?.email || (user ? 'You' : '')}
-                    sunSign={analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName || analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign}
+                    sunSign={sunSignFromWesternChart(analysis?.data?.planets as unknown[] | undefined)}
                     analysis={analysis}
                     cachedReport={astroNumerologyReport}
                     isLoadingReport={isLoadingAstroNumerologyReport}
@@ -817,7 +875,7 @@ function WesternAstrologyPageContent() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-700 text-sm mb-6 leading-relaxed">
-                    Explore specialized astrological systems and techniques for deeper insights into your cosmic blueprint. Suggest which tools you'd like us to implement next—we use your feedback to prioritize new features.
+                    Explore specialized astrological systems and techniques for deeper insights into your cosmic blueprint. Suggest which tools you&apos;d like us to implement next—we use your feedback to prioritize new features.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {getAllAdvancedTechniques().map((technique, index) => (
@@ -888,8 +946,8 @@ function WesternAstrologyPageContent() {
                           const numReport = astroNumerologyReport as { sunSign?: string; lifePathNumber?: number; nameNumber?: number; comprehensiveAnalysis?: unknown } | null | undefined;
                           return {
                             sunSign: numReport?.sunSign ||
-                              analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName ||
-                              analysis?.data?.planets?.find((p: any) => p.name === 'Sun')?.sign || 'Unknown',
+                              sunSignFromWesternChart(analysis?.data?.planets as unknown[] | undefined) ||
+                              'Unknown',
                             lifePathNumber: numReport?.lifePathNumber || 0,
                             nameNumber: numReport?.nameNumber || 0,
                             comprehensiveReport: numReport?.comprehensiveAnalysis ?? numReport ?? undefined
