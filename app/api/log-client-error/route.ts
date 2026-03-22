@@ -16,6 +16,11 @@ interface IncomingClientErrorBody {
   meta?: Record<string, unknown>;
 }
 
+function normalizeSeverity(v: unknown): ErrorSeverity {
+  if (v === 'error' || v === 'warning' || v === 'info') return v;
+  return 'error';
+}
+
 function truncate(value: unknown, max = 800): string | undefined {
   if (typeof value !== 'string') return undefined;
   if (value.length <= max) return value;
@@ -56,7 +61,7 @@ export async function POST(request: NextRequest) {
     const event = {
       timestamp: new Date().toISOString(),
       environment: getEnvironment(),
-      severity: body.severity || ('error' as ErrorSeverity),
+      severity: normalizeSeverity(body.severity),
       source: 'client' as const,
       area,
       action,

@@ -8,16 +8,22 @@ import dynamic from "next/dynamic"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, User } from "lucide-react"
+import { Loader2, Eye, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
+
+type SignupFlowCompleteData = {
+  selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
+  paymentMethodId: string;
+  autoMandateAccepted: boolean;
+  subscriptionId?: string;
+};
 
 const SignupFlow = dynamic(() => import("@/components/SignupFlow").then(mod => ({ default: mod.SignupFlow })), {
   loading: () => (
@@ -92,9 +98,10 @@ function SignUpPageContent() {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
       router.push(returning ? "/tools" : "/profile")
-    } catch (error: any) {
-      if (error.message?.includes('Redirect initiated')) return;
-      const msg = getAuthErrorMessage(error)
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      if (err.message?.includes('Redirect initiated')) return;
+      const msg = getAuthErrorMessage(err)
       setError(msg)
       await logError("signup_google", msg, "error", { provider: "google" })
     } finally {
@@ -130,13 +137,13 @@ function SignUpPageContent() {
 
       // Skip reCAPTCHA on localhost (not in reCAPTCHA allowed domains); only run on web, not Android
       if (!isMobileLayout && !isLocalhost && typeof window !== 'undefined') {
-        if (!(window as any).grecaptcha) {
+        if (!window.grecaptcha) {
           devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signup');
         } else {
           captchaToken = await new Promise((resolve) => {
-            (window as any).grecaptcha.enterprise.ready(async () => {
+            window.grecaptcha!.enterprise.ready(async () => {
               try {
-                const token = await (window as any).grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'SIGNUP'});
+                const token = await window.grecaptcha!.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'SIGNUP'});
                 resolve(token);
               } catch (err) {
                 devLog.error('reCAPTCHA signup execution failed:', err, 'signup');
@@ -163,22 +170,22 @@ function SignUpPageContent() {
 
       // If captcha passes or we're on mobile, proceed to next step
       setShowSignupFlow(true)
-    } catch (err: any) {
-      const msg = err.message || "An unexpected error occurred during security check."
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An unexpected error occurred during security check."
       setError(msg)
-      await logError("signup_security_check", msg, "warning")
+      await logError("signup_security_check", msg, "error")
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSignupFlowComplete = async (data: any) => {
+  const handleSignupFlowComplete = async (data: SignupFlowCompleteData) => {
     setIsLoading(true); setError(null)
     try {
       await signUpWithEmail(email, password, displayName, selectedCountry, data.selectedPlan, data.paymentMethodId, data.autoMandateAccepted, data.subscriptionId, referralCode || undefined)
       router.push("/profile")
-    } catch (error: any) {
-      const msg = error.message || "Signup failed"
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Signup failed"
       setError(msg)
       await logError("signup_email", msg, "error", { selectedPlan: data.selectedPlan })
     } finally {
