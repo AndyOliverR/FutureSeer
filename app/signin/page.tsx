@@ -7,19 +7,23 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, Mail, Lock, Eye, ArrowLeft, Sparkles } from "lucide-react"
+import { Loader2, Eye, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser, resetPassword } from "@/lib/firebase"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 
-// Declare grecaptcha for TypeScript
+// Declare grecaptcha for TypeScript (enterprise API)
 declare global {
   interface Window {
-    grecaptcha: any;
+    grecaptcha?: {
+      enterprise: {
+        ready: (cb: () => void | Promise<void>) => void;
+        execute: (siteKey: string, opts: { action: string }) => Promise<string>;
+      };
+    };
   }
 }
 
@@ -50,7 +54,7 @@ function SignInContent() {
   const RECAPTCHA_SITE_KEY = "6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz";
 
   useEffect(() => {
-    void logError("view_loaded", "Sign-in screen loaded", "warning", {
+    void logError("view_loaded", "Sign-in screen loaded", "info", {
       isMobileLayout,
       hasRedirect: !!redirectTo,
     })
@@ -64,13 +68,13 @@ function SignInContent() {
     if (didAutoRedirectRef.current) return;
     didAutoRedirectRef.current = true;
     const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile");
-    void logError("auth_success", "User signed in", "warning", { method: "existing_session", redirectTo: destination })
+    void logError("auth_success", "User signed in", "info", { method: "existing_session", redirectTo: destination })
     if (typeof window !== "undefined") {
       window.location.replace(destination);
     } else {
       router.replace(destination);
     }
-  }, [user, redirectTo, router]);
+  }, [user, redirectTo, router, logError]);
 
   // Show redirecting state as soon as user is set (don't wait for profile load)
   if (user) {
@@ -87,18 +91,19 @@ function SignInContent() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true); setError(null)
     try {
-      await logError("google_clicked", "Google sign-in clicked", "warning", { hasRedirect: !!redirectTo })
+      await logError("google_clicked", "Google sign-in clicked", "info", { hasRedirect: !!redirectTo })
       const user = await signInWithGoogle()
       const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
-      await logError("auth_success", "User signed in", "warning", { method: "google", redirectTo: destination })
+      await logError("auth_success", "User signed in", "info", { method: "google", redirectTo: destination })
       router.push(destination)
-    } catch (error: any) {
-      if (!error.message?.includes('Redirect initiated')) {
-        const msg = getAuthErrorMessage(error)
+    } catch (error: unknown) {
+      const err = error as { message?: string; code?: string };
+      if (!err.message?.includes('Redirect initiated')) {
+        const msg = getAuthErrorMessage(err)
         setError(msg)
         await logError("auth_failed", msg, "error", {
           method: "google",
-          code: error?.code ?? null,
+          code: err.code ?? null,
         })
       }
     } finally {
@@ -111,26 +116,27 @@ function SignInContent() {
     setIsLoading(true); setError(null); setSuccess(null)
 
     try {
-      await logError("email_submit_clicked", "Email sign-in submitted", "warning", { hasRedirect: !!redirectTo })
+      await logError("email_submit_clicked", "Email sign-in submitted", "info", { hasRedirect: !!redirectTo })
       let captchaToken = null;
       const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
       // Skip reCAPTCHA on localhost (not in reCAPTCHA allowed domains); only run on web, not Android
       if (!isMobileLayout && !isLocalhost && typeof window !== 'undefined') {
-        await logError("captcha_started", "Captcha check started", "warning")
-        if (!window.grecaptcha) {
+        await logError("captcha_started", "Captcha check started", "info")
+        const grecaptcha = window.grecaptcha;
+        if (!grecaptcha) {
           devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signin');
-          await logError("captcha_missing_script", "Captcha script missing", "warning")
+          await logError("captcha_missing_script", "Captcha script missing", "info")
         } else {
           captchaToken = await new Promise((resolve) => {
-            window.grecaptcha.enterprise.ready(async () => {
+            grecaptcha.enterprise.ready(async () => {
               try {
-                const token = await window.grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'LOGIN'});
+                const token = await grecaptcha.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'LOGIN'});
                 resolve(token);
-              } catch (err) {
+              } catch (err: unknown) {
                 devLog.error('reCAPTCHA execution failed:', err, 'signin');
-                void logError("captcha_failed", "Captcha execution failed", "warning", {
-                  message: (err as any)?.message ?? null,
+                void logError("captcha_failed", "Captcha execution failed", "info", {
+                  message: err instanceof Error ? err.message : null,
                 })
                 resolve(null);
               }
@@ -148,23 +154,24 @@ function SignInContent() {
 
           if (!verifyRes.ok) {
             const verifyData = await verifyRes.json();
-            await logError("captcha_failed", "Captcha verification failed", "warning", { status: verifyRes.status })
+            await logError("captcha_failed", "Captcha verification failed", "info", { status: verifyRes.status })
             throw new Error(verifyData.error || 'Security check failed. Please try again.');
           }
-          await logError("captcha_verified", "Captcha verified", "warning")
+          await logError("captcha_verified", "Captcha verified", "info")
         }
       }
 
       const user = await signInWithEmail(email, password)
       const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
-      await logError("auth_success", "User signed in", "warning", { method: "email", redirectTo: destination })
+      await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })
       router.push(destination)
-    } catch (error: any) {
-      const msg = getAuthErrorMessage(error)
+    } catch (error: unknown) {
+      const err = error as { code?: string };
+      const msg = getAuthErrorMessage(err)
       setError(msg)
       await logError("auth_failed", msg, "error", {
         method: "email",
-        code: error?.code ?? null,
+        code: err.code ?? null,
       })
     } finally {
       setIsLoading(false)
@@ -180,14 +187,15 @@ function SignInContent() {
     }
     setIsResetting(true)
     try {
-      await logError("reset_password_clicked", "Password reset clicked", "warning")
+      await logError("reset_password_clicked", "Password reset clicked", "info")
       await resetPassword(trimmed)
       setSuccess("Password reset email sent. Check your inbox (and spam).")
-      await logError("reset_password_sent", "Password reset email sent", "warning")
-    } catch (e: any) {
+      await logError("reset_password_sent", "Password reset email sent", "info")
+    } catch (e: unknown) {
+      const err = e as { code?: string };
       const msg = getAuthErrorMessage(e)
       setError(msg)
-      await logError("reset_password_failed", msg, "error", { code: e?.code ?? null })
+      await logError("reset_password_failed", msg, "error", { code: err.code ?? null })
     } finally {
       setIsResetting(false)
     }
@@ -283,7 +291,7 @@ function SignInContent() {
         <div className="hidden md:block bg-glassy-deep relative min-h-full">
           <div className="absolute inset-0 bg-gradient-to-r from-[#020617] via-transparent to-transparent opacity-40" />
           <div className="absolute inset-0 flex items-center justify-center p-12 text-center bg-black/20">
-            <p className="text-2xl font-heading font-light italic text-amber-200/80 leading-relaxed tracking-widest">"The stars only reveal what the heart is ready to hear."</p>
+            <p className="text-2xl font-heading font-light italic text-amber-200/80 leading-relaxed tracking-widest">&ldquo;The stars only reveal what the heart is ready to hear.&rdquo;</p>
           </div>
         </div>
       </motion.div>

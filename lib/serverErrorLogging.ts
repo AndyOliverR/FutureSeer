@@ -1,7 +1,7 @@
 import { adminDb } from '@/lib/firebase-admin';
 import { devLog } from '@/lib/devLogger';
 
-export type ErrorSeverity = 'error' | 'warning';
+export type ErrorSeverity = 'error' | 'warning' | 'info';
 
 export interface ServerLogInput {
   severity?: ErrorSeverity;
@@ -49,7 +49,7 @@ export async function logServerError(input: ServerLogInput): Promise<void> {
   const event = {
     timestamp: new Date().toISOString(),
     environment: getEnvironment(),
-    severity: input.severity || 'error',
+    severity: input.severity ?? 'error',
     source: 'server' as const,
     area: input.area,
     action: input.action,

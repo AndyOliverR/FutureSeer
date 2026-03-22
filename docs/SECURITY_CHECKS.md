@@ -6,7 +6,7 @@ FutureSeer runs security checks locally with no paid services. All tools are bui
 
 | Command | What it does |
 |--------|----------------|
-| `pnpm run security` | Runs dependency audit (high/critical only) then lint. Use before releases or when you want a full pass. |
+| `pnpm run security` | Runs dependency audit (high/critical), **then always runs lint** (even if audit fails). Exits non-zero if **either** step fails. Implemented by [`scripts/run-security.mjs`](../scripts/run-security.mjs). |
 | `pnpm audit` | Checks dependencies for known vulnerabilities (npm advisory DB). |
 | `pnpm run security:audit` | Same as `pnpm audit` but fails only on high/critical (`--audit-level=high`). |
 | `pnpm run audit:fix` | Runs `pnpm audit --fix` to apply automatic fixes where possible. |

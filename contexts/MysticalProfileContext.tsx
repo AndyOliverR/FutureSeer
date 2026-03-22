@@ -16,13 +16,13 @@ import {
 export interface ComprehensiveMysticalProfile {
   vedic: {
     ascendant: number
-    planets: any[]
-    houses: any[]
-    nakshatras: any[]
-    yogas: any[]
-    dasha: any[]
-    currentDasha: any
-    vedicCharts?: any
+    planets: Array<Record<string, unknown>>
+    houses: Array<Record<string, unknown>>
+    nakshatras: Array<Record<string, unknown>>
+    yogas: Array<Record<string, unknown>>
+    dasha: Array<Record<string, unknown>>
+    currentDasha: { planet?: string; startDate?: string; endDate?: string } & Record<string, unknown>
+    vedicCharts?: Record<string, unknown>
   }
   interpretations: {
     personality: {
@@ -62,8 +62,8 @@ export interface ComprehensiveMysticalProfile {
     }
     dasha: {
       overview: string
-      current: any
-      upcoming: any[]
+      current: Record<string, unknown>
+      upcoming: Array<Record<string, unknown>>
       timing: string
     }
     remedies: {
@@ -220,7 +220,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           const browser = typeof navigator !== 'undefined' ? `${navigator.userAgent} | ${navigator.language || ''}` : undefined
           user?.getIdToken().then((idToken) => {
             logClientError({
-              severity: 'warning',
+              severity: 'info',
               area: 'profile',
               action: 'no_mystical_profile',
               message: 'No comprehensive mystical profile found for user',
@@ -282,7 +282,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     } finally {
       if (!background) setLoading(false)
     }
-  }, [applyFirestoreProfile])
+  }, [applyFirestoreProfile, pathname, user])
 
   const refreshProfile = useCallback(async () => {
     if (user?.uid) {

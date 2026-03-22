@@ -4,7 +4,7 @@
  */
 
 // Cache version - increment when SW logic or precache list changes so clients drop old caches
-const CACHE_VERSION = 'v1.0.1';
+const CACHE_VERSION = 'v1.0.2';
 const CACHE_NAME = `futureseer-${CACHE_VERSION}`;
 
 // Cache names for different strategies
@@ -17,7 +17,6 @@ const CACHES = {
 // Assets to precache on install (do NOT include '/' - document must be network-first so footer/UI updates deploy)
 const PRECACHE_ASSETS = [
   '/offline',
-  '/assets/bg/starfieldn-8k.png',
   '/og-image.svg',
   '/manifest.json',
 ];
