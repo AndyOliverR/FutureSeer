@@ -56,9 +56,15 @@ When changing or adding astrology logic:
 
 ## Cursor Cloud specific instructions
 
+For a single index linking web, CI, and mobile/store docs, see **[docs/DEVELOPER_RUNBOOK.md](docs/DEVELOPER_RUNBOOK.md)**.
+
 ### Architecture
 
 FutureSeer is a single Next.js 16 monolith (App Router + Webpack). All backend logic runs as API routes under `app/api/`. There are no separate microservices or databases to run locally — Firebase (Auth, Firestore) and Groq are cloud-hosted.
+
+### Firebase Studio product sunset (not the Firebase backend)
+
+The **Firebase Studio** cloud IDE (preview) shuts down **March 22, 2027**. **Firestore, Auth, and hosting for this Firebase project are unaffected** — only the Studio workspace product ends. This repo is the source of truth for development. If you ever find **code that exists only** in a Firebase Studio workspace, export it before that date using Google’s [Firebase Studio migration guide](https://firebase.google.com/docs/studio/migrating-project) (e.g. Zip & Download or `npx firebase-tools@latest studio:export` on an extracted copy).
 
 ### Node.js & Package Manager
 
@@ -94,7 +100,7 @@ An `eslint.config.mjs` (flat config) was added to bridge the existing `.eslintrc
 
 ### Security checks (free, in-repo)
 
-Run `pnpm run security` to run dependency audit + lint (including security rules). See [docs/SECURITY_CHECKS.md](docs/SECURITY_CHECKS.md) for all commands.
+Run `pnpm run security` to run dependency audit then **always** lint (including security rules); see [`scripts/run-security.mjs`](scripts/run-security.mjs). See [docs/SECURITY_CHECKS.md](docs/SECURITY_CHECKS.md) for all commands.
 
 ### Testing
 
