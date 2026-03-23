@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
@@ -26,8 +26,17 @@ import {
   CheckCircle2,
   Eye,
   History,
-  Zap
+  Zap,
+  Users,
 } from 'lucide-react'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -63,6 +72,62 @@ export default function AkashicRecordsPage() {
     if (r.placeholder === true && !data.soulJourney && !data.guidance && !data.personalMessage) return null
     return data as unknown as AkashicReading
   }, [pipelineReport])
+
+  const viralUnlock = useToolReportUnlock('akashicRecords')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showAkashicViral = Boolean(reading) && !bypassViral
+  const akashicTeaser = useMemo(() => buildToolTeaser('akashicRecords', reading), [reading])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${akashicTeaser.archetypeName}: ${akashicTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, akashicTeaser.archetypeName, akashicTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const akashicCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('akashicRecords')}?friend=compare&ref=share`,
+    []
+  )
+
+  const akashicLocked =
+    showAkashicViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   useEffect(() => {
     if (userProfile) setProfileComplete(!!(userProfile.birthDate && userProfile.birthTime && userProfile.birthPlace))
@@ -132,6 +197,36 @@ export default function AkashicRecordsPage() {
           </motion.div>
         )}
 
+        {showAkashicViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={akashicTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={akashicTeaser.archetypeName}
+                hookLine={akashicTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showAkashicViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={akashicCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
@@ -151,6 +246,23 @@ export default function AkashicRecordsPage() {
             })}
           </TabsList>
 
+          {showAkashicViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+          ) : (
+            <div className="relative min-h-[320px]">
+              {akashicLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  akashicLocked &&
+                    'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                )}
+              >
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <DevotionistStyleCard
@@ -658,6 +770,10 @@ export default function AkashicRecordsPage() {
               </DevotionistStyleCard>
             )}
           </TabsContent>
+
+              </div>
+            </div>
+          )}
 
           {/* Ask The Seer Tab */}
           <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">

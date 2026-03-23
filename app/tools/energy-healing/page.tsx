@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
@@ -15,7 +15,9 @@ import {
   Eye,
   Heart,
   Gem,
-  Activity
+  Activity,
+  MessageCircle,
+  Users,
 } from 'lucide-react'
 import {
   ChakraAnalysis,
@@ -30,6 +32,14 @@ import { AuraVisualization } from '@/components/energy-healing/AuraVisualization
 import { CrystalRecommendations } from '@/components/energy-healing/CrystalRecommendations'
 import { EnergyHealingCoach } from '@/components/energy-healing/EnergyHealingCoach'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
 
 interface AllAnalyses {
   chakra: ChakraAnalysis | null
@@ -183,6 +193,61 @@ export default function EnergyHealingPage() {
     return keys.length > 0
   }, [effectiveReport])
 
+  const viralUnlock = useToolReportUnlock('energyHealing')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+  const showEnergyHealingViral = hasRealReport && !bypassViral
+  const ehTeaser = useMemo(() => buildToolTeaser('energyHealing', effectiveReport), [effectiveReport])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${ehTeaser.archetypeName}: ${ehTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, ehTeaser.archetypeName, ehTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const ehCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('energyHealing')}?friend=compare&ref=share`,
+    []
+  )
+
+  const ehLocked =
+    showEnergyHealingViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
+
   const allAnalyses = useMemo((): AllAnalyses => {
     let raw = effectiveReport as Record<string, unknown> | undefined
     if (!raw || typeof raw !== 'object') return { chakra: null, aura: null, reiki: null, crystal: null, energy: null }
@@ -331,9 +396,47 @@ export default function EnergyHealingPage() {
 
           {/* Report from mystical profile, or returning user with profile: show tabs (with empty states per section if no energy data) */}
           {(hasRealReport || hasAnyGeneratedProfile) && (
+          <>
+            {showEnergyHealingViral && !bypassViral && (
+              <div className="mb-6 space-y-4">
+                <TeaserView teaser={ehTeaser} />
+                {showShareCard && (
+                  <ShareCard
+                    archetypeName={ehTeaser.archetypeName}
+                    hookLine={ehTeaser.hookLine}
+                    shareUrl={viralUnlock.shareUrl}
+                    onCopy={copyLink}
+                    onShare={nativeShare}
+                  />
+                )}
+                {waitingLite && (
+                  <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+                )}
+              </div>
+            )}
+
+            {showEnergyHealingViral && viralUnlock.isUnlocked && !bypassViral && (
+              <div className="mb-6 flex justify-center">
+                <Link
+                  href={ehCompareHref}
+                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+                >
+                  <Users className="h-4 w-4" />
+                  Compare with a friend
+                </Link>
+              </div>
+            )}
+
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full min-w-0">
               <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+                <TabsTrigger 
+                  value="ask-the-seer" 
+                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all inline-flex items-center gap-2"
+                >
+                  <MessageCircle className="h-4 w-4 hidden sm:inline" />
+                  Ask the Seer
+                </TabsTrigger>
                 <TabsTrigger 
                   value="introduction" 
                   className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
@@ -349,14 +452,41 @@ export default function EnergyHealingPage() {
                     {method.label}
                   </TabsTrigger>
                 ))}
-                <TabsTrigger 
-                  value="ask-the-seer" 
-                  className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all"
-                >
-                  Ask the Seer
-                </TabsTrigger>
               </TabsList>
 
+              {activeTab === 'ask-the-seer' ? (
+              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <EnergyHealingCoach 
+                  analysis={{
+                    method: 'chakra',
+                    timestamp: new Date(),
+                    chakraAnalysis: allAnalyses.chakra || undefined,
+                    auraReading: allAnalyses.aura || undefined,
+                    reikiAnalysis: allAnalyses.reiki || undefined,
+                    crystalRecommendation: allAnalyses.crystal || undefined,
+                    energyBalance: allAnalyses.energy || undefined,
+                    overallInsights: [],
+                    recommendations: []
+                  }} 
+                />
+              </TabsContent>
+              ) : showEnergyHealingViral && !viralUnlock.hydrated ? (
+              <div className="py-12 text-center text-slate-400">Loading report…</div>
+              ) : (
+              <div className="relative min-h-[320px]">
+                {ehLocked && (
+                  <ViralLockOverlay
+                    onUnlockClick={handleShareToUnlock}
+                    onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                    continueDisabled={waitingLite}
+                  />
+                )}
+                <div
+                  className={cn(
+                    ehLocked &&
+                      'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                  )}
+                >
               {/* Introduction Tab */}
               <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <ToolIntroductionTab toolSlug="energy-healing" />
@@ -554,25 +684,12 @@ export default function EnergyHealingPage() {
                   </Card>
                 )}
               </TabsContent>
-
-              {/* Ask the Seer Tab */}
-              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                <EnergyHealingCoach 
-                  analysis={{
-                    method: 'chakra',
-                    timestamp: new Date(),
-                    chakraAnalysis: allAnalyses.chakra || undefined,
-                    auraReading: allAnalyses.aura || undefined,
-                    reikiAnalysis: allAnalyses.reiki || undefined,
-                    crystalRecommendation: allAnalyses.crystal || undefined,
-                    energyBalance: allAnalyses.energy || undefined,
-                    overallInsights: [],
-                    recommendations: []
-                  }} 
-                />
-              </TabsContent>
+                </div>
+              </div>
+              )}
             </Tabs>
             </div>
+          </>
           )}
         </div>
       </div>

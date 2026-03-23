@@ -1,10 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { devLog } from '@/lib/devLogger';
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
 import { useRouter } from "next/navigation"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
 import { 
   Compass, 
   Layout, 
@@ -14,7 +23,8 @@ import {
   Zap,
   Info,
   BookOpen,
-  MessageCircle
+  MessageCircle,
+  Users,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -56,6 +66,73 @@ export default function FengShuiPage() {
   const [facingDirection, setFacingDirection] = useState<string>('')
   const [layout, setLayout] = useState<FengShuiLayoutInput>({})
 
+  const viralUnlock = useToolReportUnlock('fengShui')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showFengViral = Boolean(analysis && reading) && !bypassViral
+  const fengTeaserSource = useMemo(() => {
+    if (!reading && !analysis) return null
+    if (reading && analysis) {
+      return { ...reading, kua: analysis.kua, elementAnalysis: analysis.elementAnalysis }
+    }
+    return reading ?? analysis
+  }, [reading, analysis])
+
+  const fengTeaser = useMemo(
+    () => buildToolTeaser('fengShui', fengTeaserSource),
+    [fengTeaserSource]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${fengTeaser.archetypeName}: ${fengTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, fengTeaser.archetypeName, fengTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const fengCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("fengShui")}?friend=compare&ref=share`,
+    []
+  )
+
+  const fengLocked =
+    showFengViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
+
   useEffect(() => {
     const loadFengShuiAnalysis = async () => {
       if (!userProfile) {
@@ -88,9 +165,9 @@ export default function FengShuiPage() {
         // Generate reading
         const fengShuiReading = await generateFengShuiReading(userProfile, fengShuiAnalysis)
         setReading(fengShuiReading)
-      } catch (err: any) {
+      } catch (err: unknown) {
         devLog.error('Error loading Feng Shui analysis:', err, 'page')
-        setError(err.message || "An error occurred while generating your Feng Shui analysis.")
+        setError(err instanceof Error ? err.message : "An error occurred while generating your Feng Shui analysis.")
       } finally {
         setIsLoading(false)
       }
@@ -176,11 +253,90 @@ export default function FengShuiPage() {
           {/* Main Content */}
           {!isLoading && analysis && reading && (
             <>
+              {showFengViral && !bypassViral && (
+                <div className="mb-6 space-y-4">
+                  <TeaserView teaser={fengTeaser} />
+                  {showShareCard && (
+                    <ShareCard
+                      archetypeName={fengTeaser.archetypeName}
+                      hookLine={fengTeaser.hookLine}
+                      shareUrl={viralUnlock.shareUrl}
+                      onCopy={copyLink}
+                      onShare={nativeShare}
+                    />
+                  )}
+                  {waitingLite && (
+                    <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+                  )}
+                </div>
+              )}
+
+              {showFengViral && viralUnlock.isUnlocked && !bypassViral && (
+                <div className="mb-4 flex justify-center">
+                  <Link
+                    href={fengCompareHref}
+                    className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+                  >
+                    <Users className="h-4 w-4" />
+                    Compare with a friend
+                  </Link>
+                </div>
+              )}
+
+              {/* Tabs - filing-cabinet, match Western Astrology */}
+              <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full min-w-0">
+                <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+                    {tabs.map((tab) => {
+                      const Icon = tab.icon
+                      return (
+                        <TabsTrigger
+                          key={tab.id}
+                          value={tab.id}
+                          className="shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Icon className="w-4 h-4" />
+                          {tab.label}
+                        </TabsTrigger>
+                      )
+                    })}
+                  </TabsList>
+
+                  {activeTab === 'ask-seer' ? (
+                  <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
+                      <FengShuiSeerChatInterface
+                        analysis={analysis}
+                        userId={user?.uid}
+                        userProfile={userProfile ?? undefined}
+                        sessionId={userProfile?.uid ? `feng-shui_${userProfile.uid}` : undefined}
+                        facingDirection={facingDirection || undefined}
+                        layout={[layout.main_door, layout.bedroom, layout.kitchen, layout.toilet].some(Boolean) ? layout : undefined}
+                      />
+                    </div>
+                  </TabsContent>
+                  ) : showFengViral && !viralUnlock.hydrated ? (
+                  <div className="py-12 text-center text-slate-400">Loading report…</div>
+                  ) : (
+                  <div className="relative min-h-[320px]">
+                    {fengLocked && (
+                      <ViralLockOverlay
+                        onUnlockClick={handleShareToUnlock}
+                        onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                        continueDisabled={waitingLite}
+                      />
+                    )}
+                    <div
+                      className={cn(
+                        fengLocked &&
+                          'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                      )}
+                    >
               {/* Kua Number Summary Card - Material 3 devotionist gradient */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-6 mb-6 shadow-md"
+                className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-6 mb-6 shadow-md mx-4 sm:mx-6 mt-6"
               >
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="text-center">
@@ -210,26 +366,6 @@ export default function FengShuiPage() {
                 </div>
               </motion.div>
 
-              {/* Tabs - filing-cabinet, match Western Astrology */}
-              <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full min-w-0">
-                <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
-                    {tabs.map((tab) => {
-                      const Icon = tab.icon
-                      return (
-                        <TabsTrigger
-                          key={tab.id}
-                          value={tab.id}
-                          className="shrink-0 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Icon className="w-4 h-4" />
-                          {tab.label}
-                        </TabsTrigger>
-                      )
-                    })}
-                  </TabsList>
-
-                  {/* Tab Content - always-mounted TabsContent, Radix controls visibility */}
                   <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
@@ -427,19 +563,9 @@ export default function FengShuiPage() {
                   <TabsContent value="cures" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <FengShuiCures cures={reading.cures} />
                   </TabsContent>
-
-                  <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
-                      <FengShuiSeerChatInterface
-                        analysis={analysis}
-                        userId={user?.uid}
-                        userProfile={userProfile ?? undefined}
-                        sessionId={userProfile?.uid ? `feng-shui_${userProfile.uid}` : undefined}
-                        facingDirection={facingDirection || undefined}
-                        layout={[layout.main_door, layout.bedroom, layout.kitchen, layout.toilet].some(Boolean) ? layout : undefined}
-                      />
                     </div>
-                  </TabsContent>
+                  </div>
+                  )}
                 </Tabs>
                 </div>
             </>

@@ -6,35 +6,43 @@
  * Enhanced with comprehensive reports, profile integration, and visual displays
  */
 
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  Sparkles,
-  Info,
-  BookOpen,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  MessageCircle
-} from 'lucide-react'
+import { Info, BookOpen, AlertCircle, MessageCircle, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
-import { useRouter } from 'next/navigation'
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
 import { ToolReportGuard } from '@/components/ToolReportGuard'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
+import { analytics } from '@/lib/analytics'
 import { OghamReport } from '@/lib/ogham/oghamReportGenerator'
 import OghamReportDisplay from '@/components/ogham/OghamReportDisplay'
 import { OghamSeerChatInterface } from '@/components/ogham/OghamSeerChatInterface'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 
+type OghamToolTab = 'overview' | 'report' | 'ask-seer'
+
+function isOghamToolTab(value: string): value is OghamToolTab {
+  return value === 'overview' || value === 'report' || value === 'ask-seer'
+}
+
 export default function OghamPage() {
   const { user, userProfile } = useAuth()
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'overview' | 'report' | 'ask-seer'>('overview')
+  const bypassViralRestrictions = useViralReportBypass()
+  const viralUnlock = useToolReportUnlock('ogham')
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+  const [activeTab, setActiveTab] = useState<OghamToolTab>('overview')
   const { report: pipelineReport, loading: isGeneratingReport, error, hasReport } = useToolReport('ogham')
   const report = useMemo(() => {
     const raw = pipelineReport as Record<string, unknown> | undefined
@@ -43,6 +51,57 @@ export default function OghamPage() {
     return null
   }, [pipelineReport])
 
+  const oghamTeaser = useMemo(() => {
+    const raw = pipelineReport as Record<string, unknown> | undefined
+    return buildToolTeaser('ogham', raw?.report ?? raw ?? report ?? null)
+  }, [pipelineReport, report])
+
+  const showOghamViral = Boolean(report) && !bypassViralRestrictions
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${oghamTeaser.archetypeName}: ${oghamTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, oghamTeaser.archetypeName, oghamTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const oghamCompareHref = useMemo(() => `/tools/${toolPathForSlug('ogham')}?friend=compare&ref=share`, [])
+
+  const oghamLocked =
+    showOghamViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViralRestrictions
 
   return (
     <ToolReportGuard loading={isGeneratingReport} error={error ?? null} toolLabel="Ogham">
@@ -66,6 +125,45 @@ export default function OghamPage() {
               Discover your connection to the ancient Celtic tree alphabet and unlock the wisdom of the Ogham script
             </p>
           </motion.div>
+
+          {showOghamViral && !bypassViralRestrictions && (
+            <div className="mb-6 space-y-4">
+              <TeaserView teaser={oghamTeaser} />
+              {showShareCard && (
+                <ShareCard
+                  archetypeName={oghamTeaser.archetypeName}
+                  hookLine={oghamTeaser.hookLine}
+                  shareUrl={viralUnlock.shareUrl}
+                  onCopy={copyLink}
+                  onShare={nativeShare}
+                />
+              )}
+              {waitingLite && (
+                <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+              )}
+            </div>
+          )}
+
+          {showOghamViral && viralUnlock.isUnlocked && !bypassViralRestrictions && (
+            <div className="mb-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Link
+                href={oghamCompareHref}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+              >
+                <Users className="h-4 w-4" />
+                Compare with a friend
+              </Link>
+              <Link
+                href="/subscribe"
+                className="text-center text-sm font-medium text-amber-200/90 underline underline-offset-2 hover:text-amber-100"
+                onClick={() =>
+                  analytics.trackPricingView('subscribe_from_viral_gate_footer', { surface: 'ogham_tool' })
+                }
+              >
+                Coffee, Treat, or Hamper — upgrade for full access everywhere
+              </Link>
+            </div>
+          )}
 
           {/* CTA when no report */}
           {!hasReport && !isGeneratingReport && !error && (
@@ -108,7 +206,13 @@ export default function OghamPage() {
 
           {/* Main Content Tabs */}
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => {
+              if (isOghamToolTab(value)) setActiveTab(value)
+            }}
+            className="w-full min-w-0"
+          >
             <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
               <TabsTrigger 
                 value="overview" 
@@ -133,6 +237,51 @@ export default function OghamPage() {
               </TabsTrigger>
             </TabsList>
 
+            {activeTab === 'ask-seer' ? (
+            <TabsContent value="ask-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
+              {user?.uid && userProfile ? (
+                report ? (
+                  <OghamSeerChatInterface
+                    report={report}
+                    userProfile={userProfile}
+                    userId={user.uid}
+                  />
+                ) : (
+                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl">
+                    <CardContent className="p-12 text-center">
+                      <MessageCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
+                      <p className="text-slate-700 mb-4">Generate your mystical profile to unlock your Ogham reading.</p>
+                      <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
+                        <Link href="/profile">Generate your mystical profile</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )
+              ) : (
+                <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl">
+                  <CardContent className="p-12 text-center">
+                    <p className="text-slate-700">Please sign in to ask The Seer about Ogham</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+            ) : showOghamViral && !viralUnlock.hydrated ? (
+              <div className="py-12 text-center text-slate-400">Loading report…</div>
+            ) : (
+              <div className="relative min-h-[320px]">
+                {oghamLocked && (
+                  <ViralLockOverlay
+                    onUnlockClick={handleShareToUnlock}
+                    onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                    continueDisabled={waitingLite}
+                  />
+                )}
+                <div
+                  className={cn(
+                    oghamLocked &&
+                      'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                  )}
+                >
             {/* Overview Tab */}
             <TabsContent value="overview" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
               <ToolIntroductionTab toolSlug="ogham" />
@@ -164,35 +313,9 @@ export default function OghamPage() {
                 </Card>
               )}
             </TabsContent>
-
-            {/* Ask The Seer Tab */}
-            <TabsContent value="ask-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {user?.uid && userProfile ? (
-                report ? (
-                  <OghamSeerChatInterface
-                    report={report}
-                    userProfile={userProfile}
-                    userId={user.uid}
-                  />
-                ) : (
-                  <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl">
-                    <CardContent className="p-12 text-center">
-                      <MessageCircle className="w-12 h-12 text-amber-600 mx-auto mb-4" />
-                      <p className="text-slate-700 mb-4">Generate your mystical profile to unlock your Ogham reading.</p>
-                      <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white rounded-xl">
-                        <Link href="/profile">Generate your mystical profile</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )
-              ) : (
-                <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl">
-                  <CardContent className="p-12 text-center">
-                    <p className="text-slate-700">Please sign in to ask The Seer about Ogham</p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
+                </div>
+              </div>
+            )}
           </Tabs>
           </div>
         </div>
@@ -201,4 +324,3 @@ export default function OghamPage() {
     </ToolReportGuard>
   )
 }
-

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
+import { ToolReportViralShell } from '@/components/report-viral/ToolReportViralShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -70,6 +71,25 @@ function ShamanicAstrologyPageContent() {
     { value: 'ask-the-seer', label: 'Ask the Seer' },
   ];
 
+  const report = comprehensiveShamanicReport as Record<string, unknown> | undefined;
+
+  const hasNewReportFormat = useMemo(() => {
+    if (!report) return false;
+    const extendedKeys = [
+      'executive_summary',
+      'sacred_birth_signature',
+      'life_purpose_axis',
+      'elemental_medicine',
+      'initiatory_cycles',
+      'relationship_sacred_mirror',
+      'power_shadow',
+      'integration_ceremony',
+    ] as const;
+    return extendedKeys.some(
+      (key) => report[key] != null && String(report[key]).trim() !== ''
+    );
+  }, [report]);
+
   if (!hasCompleteDetails) {
     return (
       <div className="relative min-h-screen starfield-ultra-sharp">
@@ -99,25 +119,6 @@ function ShamanicAstrologyPageContent() {
       </div>
     );
   }
-
-  const report = comprehensiveShamanicReport as Record<string, unknown> | undefined;
-
-  const hasNewReportFormat = useMemo(() => {
-    if (!report) return false;
-    const extendedKeys = [
-      'executive_summary',
-      'sacred_birth_signature',
-      'life_purpose_axis',
-      'elemental_medicine',
-      'initiatory_cycles',
-      'relationship_sacred_mirror',
-      'power_shadow',
-      'integration_ceremony',
-    ] as const;
-    return extendedKeys.some(
-      (key) => report[key] != null && String(report[key]).trim() !== ''
-    );
-  }, [report]);
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Shamanic Astrology">
@@ -209,6 +210,7 @@ function ShamanicAstrologyPageContent() {
                       </Button>
                     </div>
                   ) : report ? (
+                    <ToolReportViralShell toolSlug="shamanicAstrology" reportForTeaser={pipelineReport}>
                     <div className="space-y-6">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-300 text-sm">Your shamanic report</span>
@@ -401,6 +403,7 @@ function ShamanicAstrologyPageContent() {
                         </>
                       )}
                     </div>
+                    </ToolReportViralShell>
                   ) : (
                     <div className="text-center py-8">
                       <Info className="w-12 h-12 text-slate-400 mx-auto mb-3" />

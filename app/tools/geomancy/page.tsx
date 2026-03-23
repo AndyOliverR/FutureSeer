@@ -1,12 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { GeomancyCoachInterface } from "@/components/GeomancyCoachInterface"
 import GeomancySeerChatInterface from "@/components/GeomancySeerChatInterface"
 import { useGeomancy } from "@/hooks/useGeomancy"
 import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent } from "@/components/ui/card"
+import { Users } from "lucide-react"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
 
 export default function GeomancyPage() {
   const { user, userProfile } = useAuth()
@@ -19,6 +29,62 @@ export default function GeomancyPage() {
     performGeomancyAnalysis,
     resetData
   } = useGeomancy()
+
+  const viralUnlock = useToolReportUnlock("geomancy")
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showGeomancyViral = Boolean(analysis) && !bypassViral
+  const geomancyTeaser = useMemo(() => buildToolTeaser("geomancy", analysis), [analysis])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${geomancyTeaser.archetypeName}: ${geomancyTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, geomancyTeaser.archetypeName, geomancyTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const geomancyCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("geomancy")}?friend=compare&ref=share`,
+    []
+  )
+
+  const geomancyLocked =
+    showGeomancyViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const [activeTab, setActiveTab] = useState("overview")
 
@@ -47,6 +113,36 @@ export default function GeomancyPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {showGeomancyViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={geomancyTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={geomancyTeaser.archetypeName}
+                hookLine={geomancyTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showGeomancyViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={geomancyCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -190,12 +286,30 @@ export default function GeomancyPage() {
                         ) : (
                           <div className="text-center py-8 text-slate-700">Please sign in to use Ask the Seer.</div>
                         )
+                      ) : showGeomancyViral && !viralUnlock.hydrated ? (
+                        <div className="py-12 text-center text-slate-500">Loading report…</div>
                       ) : (
-                        <GeomancyCoachInterface
-                          analysis={analysis}
-                          activeTab={activeTab}
-                          question={question}
-                        />
+                        <div className="relative min-h-[200px]">
+                          {geomancyLocked && (
+                            <ViralLockOverlay
+                              onUnlockClick={handleShareToUnlock}
+                              onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                              continueDisabled={waitingLite}
+                            />
+                          )}
+                          <div
+                            className={cn(
+                              geomancyLocked &&
+                                "pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none"
+                            )}
+                          >
+                            <GeomancyCoachInterface
+                              analysis={analysis}
+                              activeTab={activeTab}
+                              question={question}
+                            />
+                          </div>
+                        </div>
                       )}
                     </motion.div>
                   ) : (

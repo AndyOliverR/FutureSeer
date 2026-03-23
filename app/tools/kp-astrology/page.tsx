@@ -22,7 +22,8 @@ import {
   RefreshCw,
   Target,
   Brain,
-  Shield
+  Shield,
+  Users,
 } from "lucide-react"
 import { Button } from '@/components/ui/button'
 import { AffiliateLink } from '@/components/AffiliateLink'
@@ -35,6 +36,14 @@ import { KPAnalysis as KPIntelligenceAnalysis } from "@/lib/kpAstrologyIntellige
 import { useAuth } from "@/hooks/use-auth"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { ToolReportGuard } from '@/components/ToolReportGuard'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
@@ -472,6 +481,65 @@ export default function KPAstrologyPage() {
     ],
     []
   )
+
+  const viralUnlock = useToolReportUnlock('kp')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showKpViral = Boolean(analysis) && !bypassViral
+  const kpTeaser = useMemo(
+    () => buildToolTeaser('kp', analysis ?? pipelineReport),
+    [analysis, pipelineReport]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${kpTeaser.archetypeName}: ${kpTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, kpTeaser.archetypeName, kpTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const kpCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('kp')}?friend=compare&ref=share`,
+    []
+  )
+
+  const kpLocked =
+    showKpViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   // Check if user has complete profile
   const hasCompleteProfile = userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace
@@ -1006,6 +1074,36 @@ export default function KPAstrologyPage() {
           transition={{ duration: 0.6 }}
           className="space-y-8"
         >
+          {showKpViral && !bypassViral && (
+            <div className="space-y-4">
+              <TeaserView teaser={kpTeaser} />
+              {showShareCard && (
+                <ShareCard
+                  archetypeName={kpTeaser.archetypeName}
+                  hookLine={kpTeaser.hookLine}
+                  shareUrl={viralUnlock.shareUrl}
+                  onCopy={copyLink}
+                  onShare={nativeShare}
+                />
+              )}
+              {waitingLite && (
+                <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+              )}
+            </div>
+          )}
+
+          {showKpViral && viralUnlock.isUnlocked && !bypassViral && (
+            <div className="flex justify-center">
+              <Link
+                href={kpCompareHref}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+              >
+                <Users className="h-4 w-4" />
+                Compare with a friend
+              </Link>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full min-w-0">
               <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -1034,6 +1132,40 @@ export default function KPAstrologyPage() {
                 ))}
               </TabsList>
 
+            {activeTab === 'kp_astrology_expert' && analysis ? (
+              <motion.div
+                key="kp-expert"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-6"
+              >
+                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <KPSeerChatInterface
+                    analysis={transformToKPIntelligenceAnalysis() ?? undefined}
+                    userId={user?.uid ?? userProfile?.uid}
+                    userProfile={userProfile}
+                    sessionId={userProfile?.uid ? `kp_${userProfile.uid}` : undefined}
+                  />
+                </div>
+              </motion.div>
+            ) : showKpViral && !viralUnlock.hydrated ? (
+              <div className="py-12 text-center text-slate-400">Loading report…</div>
+            ) : (
+              <div className="relative min-h-[320px]">
+                {kpLocked && (
+                  <ViralLockOverlay
+                    onUnlockClick={handleShareToUnlock}
+                    onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                    continueDisabled={waitingLite}
+                  />
+                )}
+                <div
+                  className={cn(
+                    kpLocked &&
+                      'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                  )}
+                >
             {/* Tab Content - Introduction always visible; other tabs show empty state when no analysis */}
             <AnimatePresence mode="wait">
               {activeTab === 'introduction' ? (
@@ -2149,30 +2281,13 @@ export default function KPAstrologyPage() {
                 </div>
               </motion.div>
             )}
-
-            {/* KP Astrology Expert Tab */}
-            {activeTab === 'kp_astrology_expert' && (
-              <motion.div
-                key="kp-expert"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-6"
-              >
-                <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
-                  <KPSeerChatInterface
-                    analysis={transformToKPIntelligenceAnalysis() ?? undefined}
-                    userId={user?.uid ?? userProfile?.uid}
-                    userProfile={userProfile}
-                    sessionId={userProfile?.uid ? `kp_${userProfile.uid}` : undefined}
-                  />
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
                 </motion.div>
               )}
             </AnimatePresence>
+                </div>
+              </div>
+            )}
             </Tabs>
           </div>
         </motion.div>

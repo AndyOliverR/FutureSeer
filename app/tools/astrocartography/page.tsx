@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
+import { ToolReportViralShell } from '@/components/report-viral/ToolReportViralShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -168,6 +169,7 @@ function AstrocartographyPageContent() {
                     </div>
                   )}
                   {hasReport && comprehensiveReport && (
+                    <ToolReportViralShell toolSlug="astrocartography" reportForTeaser={pipelineReport}>
                     <div className="space-y-6">
                       {/* Cover / Metadata */}
                       {(comprehensiveReport.cover || userProfile) && (
@@ -465,6 +467,7 @@ function AstrocartographyPageContent() {
                         </DashboardSection>
                       )}
                     </div>
+                    </ToolReportViralShell>
                   )}
                 </TabsContent>
               </motion.div>

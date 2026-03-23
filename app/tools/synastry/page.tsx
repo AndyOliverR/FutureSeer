@@ -3,12 +3,13 @@
 import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { useAuth } from "@/hooks/use-auth"
 import { SynastryCoachInterface } from "@/components/SynastryCoachInterface"
 import { SynastrySeerChatInterface } from "@/components/SynastrySeerChatInterface"
 import { useSynastry } from "@/hooks/useSynastry"
 import { AffiliateLink } from "@/components/AffiliateLink"
+import { ToolReportViralShell } from "@/components/report-viral/ToolReportViralShell"
 import { getSynastryChartUrl } from "@/lib/affiliateConfig"
 
 /** Parse 24h "HH:mm" to 12h hour (1-12), minute (0-59), and AM/PM */
@@ -325,16 +326,16 @@ export default function SynastryPage() {
                     Relationship Chart Type
                   </h3>
                   <div className="flex gap-2">
-                    {[
-                      { value: "synastry", label: "Synastry", icon: "💫" },
-                      { value: "composite", label: "Composite", icon: "🔮" },
-                      { value: "davison", label: "Davison", icon: "⚖️" }
-                    ].map((type) => (
+                    {([
+                      { value: "synastry" as const, label: "Synastry", icon: "💫" },
+                      { value: "composite" as const, label: "Composite", icon: "🔮" },
+                      { value: "davison" as const, label: "Davison", icon: "⚖️" },
+                    ]).map((type) => (
                       <motion.button
                         key={type.value}
                         whileHover={{}}
                         whileTap={prefersReducedMotion ? {} : { scale: 0.95 }}
-                        onClick={() => setChartType(type.value as any)}
+                        onClick={() => setChartType(type.value)}
                         className={`flex-1 px-4 py-3 rounded-xl font-medium m3-elevation-0 m3-elevation-transition m3-transition-standard transition-all duration-300 ${
                           chartType === type.value
                             ? "m3-elevation-1 bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md"
@@ -358,7 +359,13 @@ export default function SynastryPage() {
 
               {/* Tabs */}
               <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
-              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) => {
+                  if (tabsConfig.some((t) => t.value === value)) setActiveTab(value)
+                }}
+                className="w-full min-w-0"
+              >
                 <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                   {tabsConfig.map((tab) => (
                     <motion.div
@@ -470,6 +477,7 @@ export default function SynastryPage() {
                       )}
 
                       {analysis && !isLoading && !error && activeTab === tab.value && (
+                        <ToolReportViralShell toolSlug="synastry" reportForTeaser={analysis}>
                         <motion.div
                           key="results"
                           initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
@@ -493,6 +501,7 @@ export default function SynastryPage() {
                             }}
                           />
                         </motion.div>
+                        </ToolReportViralShell>
                       )}
 
                       {!analysis && !isLoading && !error && activeTab === tab.value && (

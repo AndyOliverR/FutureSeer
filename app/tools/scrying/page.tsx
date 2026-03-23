@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useToolReport, useComprehensiveMysticalProfile } from '@/hooks/useComprehensiveMysticalProfile';
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock';
+import { useViralReportBypass } from '@/hooks/useViralReportBypass';
+import { TeaserView } from '@/components/report-viral/TeaserView';
+import { ShareCard } from '@/components/report-viral/ShareCard';
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView';
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser';
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath';
+import { cn } from '@/lib/utils';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +32,7 @@ import {
   Clock,
   Target,
   MessageCircle,
+  Users,
 } from 'lucide-react';
 import { ScryingSeerChatInterface } from '@/components/ScryingSeerChatInterface';
 
@@ -32,6 +41,10 @@ type TabValue = 'introduction' | 'report' | 'ask-the-seer';
 function ScryingPageContent() {
   const { user, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabValue>('introduction');
+  const viralUnlock = useToolReportUnlock('scrying');
+  const bypassViral = useViralReportBypass();
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [waitingLite, setWaitingLite] = useState(false);
   const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('scrying');
   const { profile } = useComprehensiveMysticalProfile();
 
@@ -48,6 +61,57 @@ function ScryingPageContent() {
   const scryingFailed = Boolean(
     userProfile?.mysticalProfileGenerated && toolReports?.scrying?.status === 'failed'
   );
+
+  const showScryingViral = Boolean(scryingReport) && !bypassViral;
+  const scryingTeaser = useMemo(() => buildToolTeaser('scrying', scryingReport), [scryingReport]);
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true);
+  }, []);
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl);
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull();
+    setShowShareCard(false);
+  }, [viralUnlock]);
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${scryingTeaser.archetypeName}: ${scryingTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        });
+        viralUnlock.unlockFull();
+        setShowShareCard(false);
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink();
+  }, [copyLink, viralUnlock, scryingTeaser.archetypeName, scryingTeaser.hookLine]);
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true);
+    window.setTimeout(() => {
+      viralUnlock.unlockLite();
+      setWaitingLite(false);
+    }, 4000);
+  }, [viralUnlock]);
+
+  const scryingCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('scrying')}?friend=compare&ref=share`,
+    []
+  );
+
+  const scryingLocked =
+    showScryingViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral;
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -84,6 +148,36 @@ function ScryingPageContent() {
             </p>
           </div>
 
+          {showScryingViral && !bypassViral && (
+            <div className="mb-6 space-y-4">
+              <TeaserView teaser={scryingTeaser} />
+              {showShareCard && (
+                <ShareCard
+                  archetypeName={scryingTeaser.archetypeName}
+                  hookLine={scryingTeaser.hookLine}
+                  shareUrl={viralUnlock.shareUrl}
+                  onCopy={copyLink}
+                  onShare={nativeShare}
+                />
+              )}
+              {waitingLite && (
+                <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+              )}
+            </div>
+          )}
+
+          {showScryingViral && viralUnlock.isUnlocked && !bypassViral && (
+            <div className="mb-4 flex justify-center">
+              <Link
+                href={scryingCompareHref}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+              >
+                <Users className="h-4 w-4" />
+                Compare with a friend
+              </Link>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-purple-500/30 bg-slate-900/80 overflow-hidden">
             <Tabs
               value={activeTab}
@@ -116,6 +210,63 @@ function ScryingPageContent() {
                 ))}
               </TabsList>
 
+              {activeTab === 'ask-the-seer' ? (
+              <AnimatePresence mode="wait">
+                {activeTab === 'ask-the-seer' && (
+                  <motion.div
+                    key="ask-the-seer"
+                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                    transition={motionConfig}
+                  >
+                    <TabsContent
+                      value="ask-the-seer"
+                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                    >
+                      {!hasReport || !scryingReport ? (
+                        <div className="text-center py-12">
+                          <MessageCircle className="w-14 h-14 text-purple-400/70 mx-auto mb-4" />
+                          {scryingFailed ? (
+                            <>
+                              <p className="text-slate-300 mb-4">
+                                Scrying couldn&apos;t be generated in the last run. Generate your mystical profile again from your Profile page to include it.
+                              </p>
+                              <Button asChild className="bg-purple-500 hover:bg-purple-600 text-white">
+                                <Link href="/profile">
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  Regenerate mystical profile
+                                </Link>
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-slate-300 mb-4">
+                                Generate your mystical profile once from your Profile page to unlock Scrying and use Ask the Seer.
+                              </p>
+                              <Button asChild className="bg-purple-500 hover:bg-purple-600 text-white">
+                                <Link href="/profile">
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  Generate your mystical profile
+                                </Link>
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="h-[800px] min-h-0">
+                          <ScryingSeerChatInterface
+                            report={scryingReport}
+                            userProfile={userProfile as unknown as Record<string, unknown>}
+                            userId={user?.uid}
+                          />
+                        </div>
+                      )}
+                    </TabsContent>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              ) : !showScryingViral ? (
               <AnimatePresence mode="wait">
                 {activeTab === 'introduction' && (
                   <motion.div
@@ -190,22 +341,63 @@ function ScryingPageContent() {
                     </TabsContent>
                   </motion.div>
                 )}
-
-                {activeTab === 'ask-the-seer' && (
+              </AnimatePresence>
+              ) : !viralUnlock.hydrated ? (
+                <div className="py-12 text-center text-slate-400">Loading report…</div>
+              ) : (
+                <div className="relative min-h-[320px]">
+                  {scryingLocked && (
+                    <ViralLockOverlay
+                      onUnlockClick={handleShareToUnlock}
+                      onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                      continueDisabled={waitingLite}
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      scryingLocked &&
+                        'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                    )}
+                  >
+              <AnimatePresence mode="wait">
+                {activeTab === 'introduction' && (
                   <motion.div
-                    key="ask-the-seer"
+                    key="introduction"
                     initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
                     animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
                     exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                     transition={motionConfig}
                   >
                     <TabsContent
-                      value="ask-the-seer"
+                      value="introduction"
                       className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
                     >
-                      {!hasReport || !scryingReport ? (
+                      <ToolIntroductionTab toolSlug="scrying" />
+                    </TabsContent>
+                  </motion.div>
+                )}
+
+                {activeTab === 'report' && (
+                  <motion.div
+                    key="report"
+                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                    transition={motionConfig}
+                    className="bg-gradient-to-b from-purple-50/98 to-slate-100/98 min-h-[60vh]"
+                  >
+                    <TabsContent
+                      value="report"
+                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 border-0 bg-transparent"
+                    >
+                      {isLoading ? (
                         <div className="text-center py-12">
-                          <MessageCircle className="w-14 h-14 text-purple-400/70 mx-auto mb-4" />
+                          <Loader2 className="w-12 h-12 mx-auto mb-4 text-purple-400 animate-spin" />
+                          <p className="text-slate-200">Loading your scrying report…</p>
+                        </div>
+                      ) : !hasReport || !scryingReport ? (
+                        <div className="text-center py-12">
+                          <Eye className="w-14 h-14 text-purple-400/70 mx-auto mb-4" />
                           {scryingFailed ? (
                             <>
                               <p className="text-slate-300 mb-4">
@@ -221,30 +413,30 @@ function ScryingPageContent() {
                           ) : (
                             <>
                               <p className="text-slate-300 mb-4">
-                                Generate your mystical profile once from your Profile page to unlock Scrying and use Ask the Seer.
+                                Generate your mystical profile to unlock your Scrying report. Your
+                                personalized symbolic reading will appear here.
                               </p>
-                              <Button asChild className="bg-purple-500 hover:bg-purple-600 text-white">
-                                <Link href="/profile">
-                                  <Sparkles className="w-4 h-4 mr-2" />
-                                  Generate your mystical profile
-                                </Link>
-                              </Button>
+                              <div className="flex flex-wrap gap-3 justify-center">
+                                <Button asChild className="bg-purple-500 hover:bg-purple-600 text-white">
+                                  <Link href="/profile">
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                    Generate your mystical profile
+                                  </Link>
+                                </Button>
+                              </div>
                             </>
                           )}
                         </div>
                       ) : (
-                        <div className="h-[800px] min-h-0">
-                          <ScryingSeerChatInterface
-                            report={scryingReport}
-                            userProfile={userProfile as unknown as Record<string, unknown>}
-                            userId={user?.uid}
-                          />
-                        </div>
+                        <ScryingReportView report={scryingReport} />
                       )}
                     </TabsContent>
                   </motion.div>
                 )}
               </AnimatePresence>
+                  </div>
+                </div>
+              )}
             </Tabs>
           </div>
 

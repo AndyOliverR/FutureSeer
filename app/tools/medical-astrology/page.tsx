@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { devLog } from '@/lib/devLogger';
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { universalOccultService, BirthData } from '@/lib/universalOccultService'
-import { 
+import {
   AlertTriangle,
   Zap,
   Shield,
@@ -22,7 +22,8 @@ import {
   Calendar,
   Moon,
   Target,
-  Leaf
+  Leaf,
+  Users,
 } from 'lucide-react'
 import { DevotionistStyleCard } from '@/components/western/DevotionistStyleCard'
 import { DashboardSection } from '@/components/western/DashboardSection'
@@ -33,11 +34,23 @@ import { MedicalSeerChat } from '@/components/medical/MedicalSeerChat'
 import { medicalDatabaseService } from '@/lib/medical/medicalDatabaseService'
 import { getFormulaRecommendations } from '@/lib/medical/astrologicalFormulas'
 import { getCurrentLunarPhase, getNextHealingPhases, isMercuryRetrograde } from '@/lib/medical/lunarPhases'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { cn } from '@/lib/utils'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
 
 export default function MedicalAstrologyPage() {
   const { userProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<'overview' | 'health' | 'body-parts' | 'remedies' | 'timing' | 'ask-seer'>('overview')
   const [healthInsights, setHealthInsights] = useState<any>(null)
+  const viralUnlock = useToolReportUnlock('medicalAstrology')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
   const { report: pipelineReport, loading: isLoading, error } = useToolReport('medicalAstrology')
   const [onDemandReport, setOnDemandReport] = useState<Record<string, unknown> | null>(null)
   const [onDemandLoading, setOnDemandLoading] = useState(false)
@@ -84,6 +97,60 @@ export default function MedicalAstrologyPage() {
   }, [rawChart])
   const data = useMemo(() => analysis?.data ?? (analysis?.chart ? analysis : null), [analysis])
   const metadata = (reportToUse as Record<string, unknown>)?.metadata ?? analysis?.metadata
+
+  const showMedicalViral = Boolean(chart && (data || healthInsights) && !bypassViral)
+  const medicalTeaser = useMemo(
+    () => buildToolTeaser('medicalAstrology', reportToUse),
+    [reportToUse]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${medicalTeaser.archetypeName}: ${medicalTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, medicalTeaser.archetypeName, medicalTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const medicalCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('medicalAstrology')}?friend=compare&ref=share`,
+    []
+  )
+
+  const medicalLocked =
+    showMedicalViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
 
@@ -369,6 +436,36 @@ export default function MedicalAstrologyPage() {
           </CollapsibleContent>
         </Collapsible>
 
+        {showMedicalViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={medicalTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={medicalTeaser.archetypeName}
+                hookLine={medicalTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showMedicalViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={medicalCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
@@ -411,6 +508,23 @@ export default function MedicalAstrologyPage() {
             </TabsTrigger>
           </TabsList>
 
+          {showMedicalViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+          ) : (
+            <div className="relative min-h-[320px]">
+              {medicalLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  medicalLocked &&
+                    'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                )}
+              >
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {isLoading || (hasCompleteDetails && !(data || healthInsights) && onDemandLoading) ? (
@@ -922,6 +1036,10 @@ export default function MedicalAstrologyPage() {
               </div>
             )}
           </TabsContent>
+
+              </div>
+            </div>
+          )}
 
           {/* Ask the Seer Tab */}
           <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">

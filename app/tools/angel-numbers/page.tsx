@@ -1,8 +1,12 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
+import Link from "next/link"
 import { motion } from "framer-motion"
+import { Users } from "lucide-react"
 import { useAngelNumbersData } from "@/hooks/use-angel-numbers-data"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
 import { ToolIntroductionTab } from "@/components/ToolIntroductionTab"
 import { AngelNumbersCoachInterface } from "@/components/AngelNumbersCoachInterface"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,6 +15,12 @@ import { AngelNumbersLookup } from "@/components/angel-numbers/AngelNumbersLooku
 import { AngelNumbersAnalysis } from "@/components/angel-numbers/AngelNumbersAnalysis"
 import { ANGEL_NUMBERS_CONSTANTS, MATERIAL3_EASING } from "@/components/angel-numbers/constants"
 import { lookupAngelNumber } from "@/lib/angelNumbersLookup"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
 
 export default function AngelNumbersPage() {
   const {
@@ -21,8 +31,67 @@ export default function AngelNumbersPage() {
     clearCache
   } = useAngelNumbersData()
 
+  const viralUnlock = useToolReportUnlock("angel-numbers")
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
   const [activeTab, setActiveTab] = useState<'introduction' | 'lookup' | 'analysis' | 'ask-the-seer'>('introduction')
   const [lastLookupResult, setLastLookupResult] = useState<ReturnType<typeof lookupAngelNumber> | null>(null)
+
+  const showAngelViral = Boolean(angelNumbersData) && !bypassViral
+  const angelTeaser = useMemo(
+    () => buildToolTeaser("angel-numbers", angelNumbersData),
+    [angelNumbersData]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${angelTeaser.archetypeName}: ${angelTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, angelTeaser.archetypeName, angelTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const angelCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("angel-numbers")}?friend=compare&ref=share`,
+    []
+  )
+
+  const angelLocked =
+    showAngelViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value as 'introduction' | 'lookup' | 'analysis' | 'ask-the-seer')
@@ -48,6 +117,36 @@ export default function AngelNumbersPage() {
             Divine messages from the angels through sacred number sequences
           </p>
         </div>
+
+        {showAngelViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={angelTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={angelTeaser.archetypeName}
+                hookLine={angelTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showAngelViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={angelCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
@@ -79,6 +178,34 @@ export default function AngelNumbersPage() {
             </TabsTrigger>
           </TabsList>
 
+          {activeTab === 'ask-the-seer' ? (
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <AngelNumbersCoachInterface
+              observedNumber={
+                lastLookupResult?.originalInput != null
+                  ? String(lastLookupResult.originalInput)
+                  : undefined
+              }
+            />
+          </TabsContent>
+          ) : showAngelViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+          ) : (
+            <div className={cn(showAngelViral && "relative min-h-[320px]")}>
+              {showAngelViral && angelLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  showAngelViral &&
+                    angelLocked &&
+                    'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                )}
+              >
           {/* Introduction Tab */}
           <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <ToolIntroductionTab toolSlug="angel-numbers" />
@@ -129,17 +256,9 @@ export default function AngelNumbersPage() {
               </Card>
             )}
           </TabsContent>
-
-          {/* Ask the Seer Tab */}
-          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-            <AngelNumbersCoachInterface
-              observedNumber={
-                lastLookupResult?.originalInput != null
-                  ? String(lastLookupResult.originalInput)
-                  : undefined
-              }
-            />
-          </TabsContent>
+              </div>
+            </div>
+          )}
         </Tabs>
         </div>
       </div>

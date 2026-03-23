@@ -66,7 +66,7 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
       borderColor: 'border-green-500',
       contributionType: 'trial',
       features: [
-        'Full access to all tools',
+        'Teaser previews across tools (full reports with Coffee, Treat, or Hamper)',
         'Your usage helps improve accuracy',
         'Early adopter status',
         'Attribution on leaderboard',

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react"
 import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { usePalmistry } from "@/hooks/use-palmistry"
 import type { PalmistryAnalysis } from "@/lib/palmistryIntelligence"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
@@ -18,7 +18,22 @@ import PalmistrySeerChatInterface from "@/components/palmistry/PalmistrySeerChat
 import { DashboardSection } from "@/components/western/DashboardSection"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import { Activity, Star, Hand, Brain, Heart, Clock, Sparkles } from "lucide-react"
+import { Activity, Star, Hand, Brain, Heart, Clock, Sparkles, Users } from "lucide-react"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
+
+type PalmistryTabKey =
+  | "introduction"
+  | "palmistry-analysis"
+  | "timing-guidance"
+  | "remedies"
+  | "ask-the-seer"
 
 export default function PalmistryPage() {
   const { user, userProfile } = useAuth()
@@ -29,14 +44,14 @@ export default function PalmistryPage() {
     error: liveError
   } = usePalmistry()
 
-  const [activeTab, setActiveTab] = useState<'introduction' | 'palmistry-analysis' | 'timing-guidance' | 'remedies' | 'ask-the-seer'>('introduction')
+  const [activeTab, setActiveTab] = useState<PalmistryTabKey>("introduction")
 
   const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value as typeof activeTab)
+    setActiveTab(value as PalmistryTabKey)
   }, [])
 
   const handleNavigateToTab = useCallback((tab: string) => {
-    setActiveTab(tab as typeof activeTab)
+    setActiveTab(tab as PalmistryTabKey)
   }, [])
 
   // Prefer stored report from mystical profile when available and not a placeholder
@@ -52,6 +67,65 @@ export default function PalmistryPage() {
   const error = liveError ?? null
 
   const analysisData = useMemo((): PalmistryAnalysis | null => (effectiveAnalysis ? (effectiveAnalysis as unknown as PalmistryAnalysis) : null), [effectiveAnalysis])
+
+  const viralUnlock = useToolReportUnlock("palmistry")
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showPalmViral = Boolean(analysisData) && !bypassViral
+  const palmTeaser = useMemo(
+    () => buildToolTeaser("palmistry", pipelineReport ?? analysisData),
+    [pipelineReport, analysisData]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${palmTeaser.archetypeName}: ${palmTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, palmTeaser.archetypeName, palmTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const palmCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("palmistry")}?friend=compare&ref=share`,
+    []
+  )
+
+  const palmLocked =
+    showPalmViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   // Animation variants
   const pageVariants = {
@@ -89,6 +163,36 @@ export default function PalmistryPage() {
           </h1>
           <p className="text-slate-200 leading-relaxed text-xl font-light">Ancient wisdom revealed in the lines of your hands</p>
         </motion.div>
+
+        {showPalmViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={palmTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={palmTeaser.archetypeName}
+                hookLine={palmTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showPalmViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={palmCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
@@ -136,8 +240,45 @@ export default function PalmistryPage() {
             </TabsTrigger>
           </TabsList>
 
+          {activeTab === "ask-the-seer" ? (
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <motion.div
+              variants={cardVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.3 }}
+            >
+              <Card className="bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-3xl h-[800px] overflow-hidden">
+                <div className="h-full bg-gradient-to-b from-transparent to-white/30">
+                  <PalmistrySeerChatInterface
+                    userId={user?.uid || ""}
+                    userProfile={userProfile}
+                    palmistryAnalysis={analysisData || undefined}
+                  />
+                </div>
+              </Card>
+            </motion.div>
+          </TabsContent>
+          ) : showPalmViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+          ) : (
+            <div className={cn(showPalmViral && "relative min-h-[320px]")}>
+              {showPalmViral && palmLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  showPalmViral &&
+                    palmLocked &&
+                    "pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none"
+                )}
+              >
           {/* Introduction Tab */}
-          <AnimatePresence mode="wait">
             <TabsContent key="introduction" value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <motion.div
                 variants={cardVariants}
@@ -149,10 +290,8 @@ export default function PalmistryPage() {
                 <ToolIntroductionTab toolSlug="palmistry" />
               </motion.div>
             </TabsContent>
-          </AnimatePresence>
 
           {/* Palmistry Analysis Tab */}
-          <AnimatePresence mode="wait">
             <TabsContent key="palmistry-analysis" value="palmistry-analysis" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
@@ -337,10 +476,8 @@ export default function PalmistryPage() {
                 </motion.div>
               )}
             </TabsContent>
-          </AnimatePresence>
 
           {/* Timing & Guidance Tab */}
-          <AnimatePresence mode="wait">
             <TabsContent key="timing-guidance" value="timing-guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               {analysisData ? (
                 <motion.div
@@ -474,7 +611,7 @@ export default function PalmistryPage() {
                               <div className="space-y-2">
                                 {analysisData.coaching.affirmations.map((affirmation, idx) => (
                                   <p key={idx} className="text-sm text-slate-700 italic bg-white/60 p-3 rounded-lg">
-                                    "{affirmation}"
+                                    {`\u201c${affirmation}\u201d`}
                                   </p>
                                 ))}
                               </div>
@@ -526,10 +663,8 @@ export default function PalmistryPage() {
                 </motion.div>
               )}
             </TabsContent>
-          </AnimatePresence>
 
           {/* Remedies Tab */}
-          <AnimatePresence mode="wait">
             <TabsContent key="remedies" value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
               <motion.div
                 variants={cardVariants}
@@ -544,30 +679,9 @@ export default function PalmistryPage() {
                 />
               </motion.div>
             </TabsContent>
-          </AnimatePresence>
-
-          {/* Ask the Seer Tab */}
-          <AnimatePresence mode="wait">
-            <TabsContent key="ask-the-seer" value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              <motion.div
-                variants={cardVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={{ duration: 0.3 }}
-              >
-                <Card className="bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-3xl h-[800px] overflow-hidden">
-                  <div className="h-full bg-gradient-to-b from-transparent to-white/30">
-                    <PalmistrySeerChatInterface
-                      userId={user?.uid || ''}
-                      userProfile={userProfile}
-                      palmistryAnalysis={analysisData || undefined}
-                    />
-                  </div>
-                </Card>
-              </motion.div>
-            </TabsContent>
-          </AnimatePresence>
+              </div>
+            </div>
+          )}
         </Tabs>
         </div>
       </div>

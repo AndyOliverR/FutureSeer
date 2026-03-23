@@ -1,11 +1,19 @@
 'use client';
 
-import { Suspense, useState, useMemo } from 'react';
+import { Suspense, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile';
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock';
+import { useViralReportBypass } from '@/hooks/useViralReportBypass';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
+import { TeaserView } from '@/components/report-viral/TeaserView';
+import { ShareCard } from '@/components/report-viral/ShareCard';
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView';
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser';
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath';
+import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -22,6 +30,7 @@ import {
   Activity,
   Calendar,
   TrendingUp,
+  Users,
 } from 'lucide-react';
 import ZiWeiDouShuSeerChatInterface from '@/components/ZiWeiDouShuSeerChatInterface';
 
@@ -39,6 +48,65 @@ function ZiWeiDouShuPageContent() {
     return raw;
   }, [pipelineReport]);
 
+  const viralUnlock = useToolReportUnlock('ziweiDouShu');
+  const bypassViral = useViralReportBypass();
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [waitingLite, setWaitingLite] = useState(false);
+
+  const showZiweiViral = Boolean(ziweiReport) && !bypassViral;
+  const ziweiTeaser = useMemo(
+    () => buildToolTeaser('ziweiDouShu', ziweiReport ?? pipelineReport),
+    [ziweiReport, pipelineReport]
+  );
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true);
+  }, []);
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl);
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull();
+    setShowShareCard(false);
+  }, [viralUnlock]);
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${ziweiTeaser.archetypeName}: ${ziweiTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        });
+        viralUnlock.unlockFull();
+        setShowShareCard(false);
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink();
+  }, [copyLink, viralUnlock, ziweiTeaser.archetypeName, ziweiTeaser.hookLine]);
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true);
+    window.setTimeout(() => {
+      viralUnlock.unlockLite();
+      setWaitingLite(false);
+    }, 4000);
+  }, [viralUnlock]);
+
+  const ziweiCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('ziweiDouShu')}?friend=compare&ref=share`,
+    []
+  );
+
+  const ziweiLocked =
+    showZiweiViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral;
+
   const chartData = useMemo(() => {
     if (!ziweiReport) return null;
     const chart = (ziweiReport.chartData ?? ziweiReport.chart ?? ziweiReport.astrolabe) as Record<string, unknown> | undefined;
@@ -55,11 +123,6 @@ function ZiWeiDouShuPageContent() {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
-
-  const motionConfig = useMemo(
-    () => (prefersReducedMotion ? {} : { duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }),
-    [prefersReducedMotion]
-  );
 
   const tabsConfig: { value: TabValue; label: string }[] = [
     { value: 'introduction', label: 'Introduction' },
@@ -116,6 +179,36 @@ function ZiWeiDouShuPageContent() {
             </p>
           </div>
 
+          {showZiweiViral && !bypassViral && (
+            <div className="mb-6 space-y-4">
+              <TeaserView teaser={ziweiTeaser} />
+              {showShareCard && (
+                <ShareCard
+                  archetypeName={ziweiTeaser.archetypeName}
+                  hookLine={ziweiTeaser.hookLine}
+                  shareUrl={viralUnlock.shareUrl}
+                  onCopy={copyLink}
+                  onShare={nativeShare}
+                />
+              )}
+              {waitingLite && (
+                <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+              )}
+            </div>
+          )}
+
+          {showZiweiViral && viralUnlock.isUnlocked && !bypassViral && (
+            <div className="mb-4 flex justify-center">
+              <Link
+                href={ziweiCompareHref}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+              >
+                <Users className="h-4 w-4" />
+                Compare with a friend
+              </Link>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="w-full min-w-0">
               <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -144,29 +237,37 @@ function ZiWeiDouShuPageContent() {
                 ))}
               </TabsList>
 
-              <AnimatePresence mode="wait">
-                {activeTab === 'introduction' && (
-                  <motion.div
-                    key="introduction"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
+              {activeTab === 'ask-the-seer' ? (
+                    <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                      <div className="h-[800px] min-h-0">
+                        <ZiWeiDouShuSeerChatInterface
+                          userId={user?.uid ?? ''}
+                          userProfile={userProfile ?? undefined}
+                          ziweiReport={ziweiReport ?? undefined}
+                        />
+                      </div>
+                    </TabsContent>
+              ) : showZiweiViral && !viralUnlock.hydrated ? (
+                    <div className="py-12 text-center text-slate-400">Loading report…</div>
+              ) : (
+                    <div className="relative min-h-[320px]">
+                      {ziweiLocked && (
+                        <ViralLockOverlay
+                          onUnlockClick={handleShareToUnlock}
+                          onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                          continueDisabled={waitingLite}
+                        />
+                      )}
+                      <div
+                        className={cn(
+                          ziweiLocked &&
+                            'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                        )}
+                      >
                     <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       <ToolIntroductionTab toolSlug="ziwei-dou-shu" />
                     </TabsContent>
-                  </motion.div>
-                )}
 
-                {activeTab === 'chart' && (
-                  <motion.div
-                    key="chart"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
                     <TabsContent value="chart" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       {isLoading ? (
                         <div className="text-center py-8">
@@ -219,17 +320,7 @@ function ZiWeiDouShuPageContent() {
                         </div>
                       )}
                     </TabsContent>
-                  </motion.div>
-                )}
 
-                {activeTab === 'report' && (
-                  <motion.div
-                    key="report"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
                     <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       {isLoading ? (
                         <div className="text-center py-8">
@@ -327,29 +418,9 @@ function ZiWeiDouShuPageContent() {
                         </div>
                       )}
                     </TabsContent>
-                  </motion.div>
-                )}
-
-                {activeTab === 'ask-the-seer' && (
-                  <motion.div
-                    key="ask-the-seer"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
-                    <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                      <div className="h-[800px] min-h-0">
-                        <ZiWeiDouShuSeerChatInterface
-                          userId={user?.uid ?? ''}
-                          userProfile={userProfile ?? undefined}
-                          ziweiReport={ziweiReport ?? undefined}
-                        />
                       </div>
-                    </TabsContent>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    </div>
+              )}
             </Tabs>
           </div>
         </div>

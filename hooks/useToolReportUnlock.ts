@@ -5,36 +5,55 @@ import { useSearchParams } from 'next/navigation'
 
 export type UnlockTier = 'none' | 'lite' | 'full'
 
-const STORAGE_KEY = 'fs_western_report_unlock'
 const LEGACY_KEY = 'report_unlocked'
+const LEGACY_WESTERN_KEY = 'fs_western_report_unlock'
 
-function readStored(): { tier: UnlockTier; unlocked: boolean } {
+function storageKeyForTool(toolSlug: string): string {
+  return `fs_tool_report_unlock:${toolSlug}`
+}
+
+function readStored(toolSlug: string): { tier: UnlockTier; unlocked: boolean } {
   if (typeof window === 'undefined') return { tier: 'none', unlocked: false }
   try {
+    const namespaced = localStorage.getItem(storageKeyForTool(toolSlug))
+    if (namespaced) {
+      const j = JSON.parse(namespaced) as { tier?: UnlockTier; unlocked?: boolean }
+      if (j.unlocked && j.tier === 'lite') return { tier: 'lite', unlocked: true }
+      if (j.unlocked && j.tier === 'full') return { tier: 'full', unlocked: true }
+    }
     if (localStorage.getItem(LEGACY_KEY) === 'true') {
       return { tier: 'full', unlocked: true }
     }
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { tier: 'none', unlocked: false }
-    const j = JSON.parse(raw) as { tier?: UnlockTier; unlocked?: boolean }
-    if (j.unlocked && j.tier === 'lite') return { tier: 'lite', unlocked: true }
-    if (j.unlocked && j.tier === 'full') return { tier: 'full', unlocked: true }
+    if (toolSlug === 'western') {
+      const legacy = localStorage.getItem(LEGACY_WESTERN_KEY)
+      if (legacy) {
+        const j = JSON.parse(legacy) as { tier?: UnlockTier; unlocked?: boolean }
+        if (j.unlocked && j.tier === 'lite') return { tier: 'lite', unlocked: true }
+        if (j.unlocked && j.tier === 'full') return { tier: 'full', unlocked: true }
+      }
+    }
   } catch {
     /* ignore */
   }
   return { tier: 'none', unlocked: false }
 }
 
-function writeStored(tier: UnlockTier) {
+function writeStored(toolSlug: string, tier: UnlockTier) {
   if (typeof window === 'undefined') return
   localStorage.setItem(
-    STORAGE_KEY,
+    storageKeyForTool(toolSlug),
     JSON.stringify({ unlocked: true, tier, at: Date.now() })
   )
   localStorage.setItem(LEGACY_KEY, 'true')
+  if (toolSlug === 'western') {
+    localStorage.setItem(
+      LEGACY_WESTERN_KEY,
+      JSON.stringify({ unlocked: true, tier, at: Date.now() })
+    )
+  }
 }
 
-export function useWesternReportUnlock() {
+export function useToolReportUnlock(toolSlug: string) {
   const searchParams = useSearchParams()
   const [tier, setTier] = useState<UnlockTier>('none')
   const [hydrated, setHydrated] = useState(false)
@@ -43,21 +62,21 @@ export function useWesternReportUnlock() {
     const ref = searchParams.get('ref')
     const viral = searchParams.get('viral')
     if (ref === 'share' || viral === '1') {
-      writeStored('full')
+      writeStored(toolSlug, 'full')
       startTransition(() => {
         setTier('full')
         setHydrated(true)
       })
       return
     }
-    const { tier: t, unlocked } = readStored()
+    const { tier: t, unlocked } = readStored(toolSlug)
     startTransition(() => {
       if (unlocked) {
         setTier(t === 'none' ? 'full' : t)
       }
       setHydrated(true)
     })
-  }, [searchParams])
+  }, [searchParams, toolSlug])
 
   const isUnlocked = tier === 'lite' || tier === 'full'
   const isFullUnlock = tier === 'full'
@@ -65,13 +84,13 @@ export function useWesternReportUnlock() {
 
   const unlockFull = useCallback(() => {
     setTier('full')
-    writeStored('full')
-  }, [])
+    writeStored(toolSlug, 'full')
+  }, [toolSlug])
 
   const unlockLite = useCallback(() => {
     setTier('lite')
-    writeStored('lite')
-  }, [])
+    writeStored(toolSlug, 'lite')
+  }, [toolSlug])
 
   const shareUrl = useMemo(() => {
     if (typeof window === 'undefined') return ''

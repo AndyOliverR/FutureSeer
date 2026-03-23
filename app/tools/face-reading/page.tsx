@@ -1,15 +1,24 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import { Users } from "lucide-react"
 import { FaceReadingCoachInterface } from "@/components/FaceReadingCoachInterface"
 import { useFaceReading } from "@/hooks/use-face-reading"
 import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { useAuth } from "@/hooks/use-auth"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
 import type { FaceReadingAnalysis } from "@/lib/faceReadingIntelligence"
 
 export default function FaceReadingPage() {
@@ -37,6 +46,65 @@ export default function FaceReadingPage() {
   const isLoading = pipelineLoading || isLiveLoading
   const error = liveError ?? null
 
+  const viralUnlock = useToolReportUnlock("faceReading")
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showFaceViral = Boolean(effectiveAnalysis) && !bypassViral
+  const faceTeaser = useMemo(
+    () => buildToolTeaser("faceReading", effectiveAnalysis),
+    [effectiveAnalysis]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${faceTeaser.archetypeName}: ${faceTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, faceTeaser.archetypeName, faceTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const faceCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("faceReading")}?friend=compare&ref=share`,
+    []
+  )
+
+  const faceLocked =
+    showFaceViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
+
   const [activeTab, setActiveTab] = useState("overview")
   const [readingMethod, setReadingMethod] = useState<'modern' | 'chinese'>('modern')
 
@@ -45,12 +113,6 @@ export default function FaceReadingPage() {
     if (typeof window === 'undefined') return false
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
   }, [])
-
-  // Material 3 motion configuration - optimized for GPU acceleration
-  const motionConfig = useMemo(() => {
-    if (prefersReducedMotion) return { duration: 0 }
-    return { duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }
-  }, [prefersReducedMotion])
 
   return (
     <div className="min-h-screen p-4 starfield-ultra-sharp">
@@ -76,12 +138,42 @@ export default function FaceReadingPage() {
           >
             <CardContent className="p-6">
               <p className="text-xl italic text-purple-900 font-serif mb-2">
-                "The face is the mirror of the soul, and every feature tells the story of character written by the hand of destiny."
+                {'\u201cThe face is the mirror of the soul, and every feature tells the story of character written by the hand of destiny.\u201d'}
               </p>
               <p className="text-slate-700 text-sm">— Aristotle</p>
             </CardContent>
           </Card>
         </motion.div>
+
+        {showFaceViral && !bypassViral && (
+          <div className="max-w-5xl mx-auto mb-6 space-y-4">
+            <TeaserView teaser={faceTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={faceTeaser.archetypeName}
+                hookLine={faceTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showFaceViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="max-w-5xl mx-auto mb-4 flex justify-center">
+            <Link
+              href={faceCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -103,6 +195,7 @@ export default function FaceReadingPage() {
               {userProfile?.facePhotoUrl && (
                 <div className="mb-6 text-center">
                   <div className="relative inline-block">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- profile photo URL from Firebase */}
                     <img
                       src={userProfile.facePhotoUrl}
                       alt="Your face photo"
@@ -335,12 +428,40 @@ export default function FaceReadingPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
-                    <FaceReadingCoachInterface 
-                      analysis={effectiveAnalysis}
-                      activeTab={activeTab}
-                      faceData={faceData}
-                      readingMethod={readingMethod}
-                    />
+                    {activeTab === "ask-the-seer" ? (
+                      <FaceReadingCoachInterface 
+                        analysis={effectiveAnalysis}
+                        activeTab={activeTab}
+                        faceData={faceData}
+                        readingMethod={readingMethod}
+                      />
+                    ) : showFaceViral && !viralUnlock.hydrated ? (
+                      <div className="text-center py-12 text-slate-400">Loading report…</div>
+                    ) : (
+                      <div className={cn(showFaceViral && "relative min-h-[240px]")}>
+                        {showFaceViral && faceLocked && (
+                          <ViralLockOverlay
+                            onUnlockClick={handleShareToUnlock}
+                            onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                            continueDisabled={waitingLite}
+                          />
+                        )}
+                        <div
+                          className={cn(
+                            showFaceViral &&
+                              faceLocked &&
+                              "pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none"
+                          )}
+                        >
+                          <FaceReadingCoachInterface 
+                            analysis={effectiveAnalysis}
+                            activeTab={activeTab}
+                            faceData={faceData}
+                            readingMethod={readingMethod}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </motion.div>
                 ) : profileError && !hasStoredReport ? (
                   <motion.div
