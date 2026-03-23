@@ -1,9 +1,9 @@
 'use client'
 
-import type { WesternTeaserPayload } from '@/lib/western/buildWesternTeaser'
+import type { ToolTeaserPayload } from '@/lib/report-viral/types'
 
 interface TeaserViewProps {
-  teaser: WesternTeaserPayload
+  teaser: ToolTeaserPayload
 }
 
 export function TeaserView({ teaser }: TeaserViewProps) {

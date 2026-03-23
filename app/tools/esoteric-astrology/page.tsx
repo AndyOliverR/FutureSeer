@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
+import { ToolReportViralShell } from '@/components/report-viral/ToolReportViralShell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -189,6 +190,7 @@ function EsotericAstrologyPageContent() {
                       </Button>
                     </div>
                   ) : report ? (
+                    <ToolReportViralShell toolSlug="esotericAstrology" reportForTeaser={pipelineReport}>
                     <div className="space-y-6">
                       <DashboardSection
                         title="How to read this report"
@@ -623,6 +625,7 @@ function EsotericAstrologyPageContent() {
                         </DashboardSection>
                       ) : null}
                     </div>
+                    </ToolReportViralShell>
                   ) : (
                     <div className="text-center py-8">
                       <Info className="w-12 h-12 text-slate-400 mx-auto mb-3" />

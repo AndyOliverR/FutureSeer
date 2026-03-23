@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion } from "framer-motion"
 import { TrichakraMethodCoachInterface } from "@/components/TrichakraMethodCoachInterface"
 import { useTrichakra } from "@/hooks/use-trichakra"
@@ -13,10 +14,19 @@ import {
   Clock,
   Info,
   AlertTriangle,
-  MessageCircle
+  MessageCircle,
+  Users,
 } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
 
 export default function TrichakraMethodPage() {
   const { analysis, isLoading, error, performTrichakraAnalysis } = useTrichakra()
@@ -42,6 +52,62 @@ export default function TrichakraMethodPage() {
     { value: 'soul', label: 'Soul' },
     { value: 'ask-the-seer', label: 'Ask the Seer', icon: MessageCircle }
   ], [])
+
+  const viralUnlock = useToolReportUnlock('trichakra')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showTrichakraViral = Boolean(analysis) && !bypassViral
+  const trichakraTeaser = useMemo(() => buildToolTeaser('trichakra', analysis), [analysis])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${trichakraTeaser.archetypeName}: ${trichakraTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, trichakraTeaser.archetypeName, trichakraTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const trichakraCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('trichakra')}?friend=compare&ref=share`,
+    []
+  )
+
+  const trichakraLocked =
+    showTrichakraViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -159,6 +225,36 @@ export default function TrichakraMethodPage() {
           </div>
         </motion.div>
 
+        {showTrichakraViral && !bypassViral && (
+          <div className="space-y-4 mb-6">
+            <TeaserView teaser={trichakraTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={trichakraTeaser.archetypeName}
+                hookLine={trichakraTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showTrichakraViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-6 flex justify-center">
+            <Link
+              href={trichakraCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
@@ -173,8 +269,7 @@ export default function TrichakraMethodPage() {
               </TabsTrigger>
             ))}
           </TabsList>
-          {/* Ask the Seer tab: fixed-height chat like Tarot */}
-          {activeTab === 'ask-the-seer' && (
+          {activeTab === 'ask-the-seer' ? (
             <motion.div
               key="ask-the-seer"
               initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
@@ -188,8 +283,23 @@ export default function TrichakraMethodPage() {
                 </div>
               </TabsContent>
             </motion.div>
-          )}
-
+          ) : showTrichakraViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+          ) : (
+            <div className="relative min-h-[320px]">
+              {trichakraLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  trichakraLocked &&
+                    'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                )}
+              >
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {/* Summary Cards */}
@@ -426,6 +536,9 @@ export default function TrichakraMethodPage() {
               ))}
             </div>
           </TabsContent>
+              </div>
+            </div>
+          )}
         </Tabs>
         </div>
       </div>

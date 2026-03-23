@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { VastuCoachInterface } from "@/components/VastuCoachInterface"
 import { VastuMainEntranceGuide } from "@/components/VastuMainEntranceGuide"
@@ -24,10 +25,19 @@ import {
   Zap,
   Clock,
   DollarSign,
-  Info
+  Info,
+  Users,
 } from 'lucide-react'
 import { getVastuTiming, getNextAuspiciousDates } from '@/lib/vastuTimingService'
 import { calculateAayaAayushya, type PropertyAayaData } from '@/lib/vastuAayaCalculations'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
 
 // Helper function to get color styles based on color name
 function getColorStyles(colorName: string): string {
@@ -225,6 +235,62 @@ export default function VastuPage() {
     { id: "coach", label: "Ask the Seer", icon: Zap }
   ]
 
+  const viralUnlock = useToolReportUnlock('vastu')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showVastuViral = Boolean(analysis) && !bypassViral
+  const vastuTeaser = useMemo(() => buildToolTeaser('vastu', analysis), [analysis])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${vastuTeaser.archetypeName}: ${vastuTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, vastuTeaser.archetypeName, vastuTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const vastuCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('vastu')}?friend=compare&ref=share`,
+    []
+  )
+
+  const vastuLocked =
+    showVastuViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
+
   return (
     <div className="min-h-screen starfield-ultra-sharp p-4">
       <div className="max-w-7xl mx-auto relative z-10 pt-4 pb-8">
@@ -315,9 +381,84 @@ export default function VastuPage() {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* Personalized Header */}
+            {showVastuViral && !bypassViral && (
+              <div className="space-y-4">
+                <TeaserView teaser={vastuTeaser} />
+                {showShareCard && (
+                  <ShareCard
+                    archetypeName={vastuTeaser.archetypeName}
+                    hookLine={vastuTeaser.hookLine}
+                    shareUrl={viralUnlock.shareUrl}
+                    onCopy={copyLink}
+                    onShare={nativeShare}
+                  />
+                )}
+                {waitingLite && (
+                  <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+                )}
+              </div>
+            )}
+
+            {showVastuViral && viralUnlock.isUnlocked && !bypassViral && (
+              <div className="flex justify-center">
+                <Link
+                  href={vastuCompareHref}
+                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+                >
+                  <Users className="h-4 w-4" />
+                  Compare with a friend
+                </Link>
+              </div>
+            )}
+
+            {/* Tabs */}
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
+              <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon
+                  return (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="shrink-0 devotionist-tab-trigger flex items-center gap-2 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
+                    >
+                      <Icon className="w-4 h-4" />
+                      {tab.label}
+                    </TabsTrigger>
+                  )
+                })}
+              </TabsList>
+
+              {activeTab === 'coach' ? (
+                <TabsContent value="coach" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                      <VastuCoachInterface
+                        analysis={analysis ?? null}
+                        userProfile={userProfile}
+                        onSwitchToOverview={() => setActiveTab('overview')}
+                        facingDirection={facingDirection || undefined}
+                        layout={(facingDirection && [layout.kitchen, layout.bedroom, layout.toilet, layout.main_door, layout.living_room, layout.prayer_room, layout.center].some(Boolean)) ? { facing_direction: facingDirection, ...layout } : undefined}
+                      />
+                </TabsContent>
+              ) : showVastuViral && !viralUnlock.hydrated ? (
+              <div className="py-12 text-center text-slate-400">Loading report…</div>
+              ) : (
+              <div className="relative min-h-[320px]">
+                {vastuLocked && (
+                  <ViralLockOverlay
+                    onUnlockClick={handleShareToUnlock}
+                    onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                    continueDisabled={waitingLite}
+                  />
+                )}
+                <div
+                  className={cn(
+                    vastuLocked &&
+                      'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                  )}
+                >
             {personalizedDirections && personalizedDirections.bestDirections.length > 0 && (
-              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-sm">
+              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-sm mx-4 sm:mx-6 mt-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Sparkles className="w-6 h-6 text-amber-700" />
                   <h3 className="text-2xl font-bold text-amber-900">Personalized Vastu Recommendations</h3>
@@ -346,25 +487,6 @@ export default function VastuPage() {
                 </div>
               </div>
             )}
-
-            {/* Tabs */}
-            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
-              <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon
-                  return (
-                    <TabsTrigger
-                      key={tab.id}
-                      value={tab.id}
-                      className="shrink-0 devotionist-tab-trigger flex items-center gap-2 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
-                    >
-                      <Icon className="w-4 h-4" />
-                      {tab.label}
-                    </TabsTrigger>
-                  )
-                })}
-              </TabsList>
 
               {/* Tab Content */}
                 <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
@@ -870,15 +992,9 @@ export default function VastuPage() {
                         )}
                       </div>
                 </TabsContent>
-                <TabsContent value="coach" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                      <VastuCoachInterface
-                        analysis={analysis ?? null}
-                        userProfile={userProfile}
-                        onSwitchToOverview={() => setActiveTab('overview')}
-                        facingDirection={facingDirection || undefined}
-                        layout={(facingDirection && [layout.kitchen, layout.bedroom, layout.toilet, layout.main_door, layout.living_room, layout.prayer_room, layout.center].some(Boolean)) ? { facing_direction: facingDirection, ...layout } : undefined}
-                      />
-                </TabsContent>
+                </div>
+              </div>
+              )}
             </Tabs>
             </div>
           </motion.div>

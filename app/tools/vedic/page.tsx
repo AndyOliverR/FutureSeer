@@ -1,10 +1,19 @@
 "use client";
 
 import React, { Suspense, useState, useEffect, useMemo, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile";
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock";
+import { useViralReportBypass } from "@/hooks/useViralReportBypass";
 import { ToolReportGuard } from "@/components/ToolReportGuard";
+import { TeaserView } from "@/components/report-viral/TeaserView";
+import { ShareCard } from "@/components/report-viral/ShareCard";
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView";
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser";
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath";
+import { cn } from "@/lib/utils";
 import { ToolPageHeader } from '@/components/navigation/ToolPageHeader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from "@/components/ToolIntroductionTab";
@@ -15,7 +24,7 @@ import { GotraTab } from "@/components/vedic/GotraTab";
 import VedicSeerChatInterface from "@/components/VedicSeerChatInterface";
 import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard";
 import {
-  Sparkles, ChevronRight, Loader2, MessageCircle, RefreshCw
+  Sparkles, ChevronRight, Loader2, MessageCircle, RefreshCw, Users
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -126,6 +135,65 @@ function VedicAstrologyPageContent() {
       challengesAndOpportunities: r.challengesAndOpportunities ?? (r as any).challenges_and_opportunities ?? {}
     };
   }, [effectiveVedicReport]);
+
+  const viralUnlock = useToolReportUnlock('vedic');
+  const bypassViral = useViralReportBypass();
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [waitingLite, setWaitingLite] = useState(false);
+
+  const showVedicViral = Boolean(hasVedicData) && !bypassViral;
+  const vedicTeaser = useMemo(
+    () => buildToolTeaser('vedic', effectiveVedicReport ?? (compProfile as Record<string, unknown> | null)?.vedic ?? null),
+    [effectiveVedicReport, compProfile]
+  );
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true);
+  }, []);
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl);
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull();
+    setShowShareCard(false);
+  }, [viralUnlock]);
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${vedicTeaser.archetypeName}: ${vedicTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        });
+        viralUnlock.unlockFull();
+        setShowShareCard(false);
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink();
+  }, [copyLink, viralUnlock, vedicTeaser.archetypeName, vedicTeaser.hookLine]);
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true);
+    window.setTimeout(() => {
+      viralUnlock.unlockLite();
+      setWaitingLite(false);
+    }, 4000);
+  }, [viralUnlock]);
+
+  const vedicCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('vedic')}?friend=compare&ref=share`,
+    []
+  );
+
+  const vedicLocked =
+    showVedicViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral;
 
   const onVedicReportLoaded = useCallback((report: ComprehensiveAnalysis) => {
     setVedicComprehensiveReport(report);
@@ -291,6 +359,37 @@ function VedicAstrologyPageContent() {
             </h1>
             <p className="text-slate-200 leading-relaxed text-xl font-light">Comprehensive sidereal birth chart analysis and interpretations.</p>
           </div>
+
+          {showVedicViral && !bypassViral && (
+            <div className="mb-6 space-y-4 px-1 md:px-0">
+              <TeaserView teaser={vedicTeaser} />
+              {showShareCard && (
+                <ShareCard
+                  archetypeName={vedicTeaser.archetypeName}
+                  hookLine={vedicTeaser.hookLine}
+                  shareUrl={viralUnlock.shareUrl}
+                  onCopy={copyLink}
+                  onShare={nativeShare}
+                />
+              )}
+              {waitingLite && (
+                <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+              )}
+            </div>
+          )}
+
+          {showVedicViral && viralUnlock.isUnlocked && !bypassViral && (
+            <div className="mb-4 flex justify-center">
+              <Link
+                href={vedicCompareHref}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+              >
+                <Users className="h-4 w-4" />
+                Compare with a friend
+              </Link>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-[var(--m3-outline-variant)] md:border-amber-500/30 bg-[var(--m3-surface-container)] md:bg-slate-900/80 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
             <TabsList className="flex w-full flex-nowrap overflow-x-auto no-scrollbar md:overflow-x-auto gap-1 sm:gap-2 p-1.5 md:p-2 md:p-3 rounded-2xl md:rounded-none h-auto min-h-0 justify-start mb-4 md:mb-0 border border-[var(--m3-outline-variant)] md:border-0 bg-[var(--m3-surface-container-high)] md:bg-slate-800/50 md:border-b md:border-amber-500/20 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -319,6 +418,42 @@ function VedicAstrologyPageContent() {
               ))}
             </TabsList>
 
+            {activeTab === 'ask-the-seer' ? (
+            <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              {user?.uid && userProfile ? (
+                <div className="p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl min-h-[400px]">
+                  <h3 className="text-xl font-heading text-amber-400 mb-4 uppercase tracking-widest flex items-center gap-2">
+                    <MessageCircle className="w-6 h-6" /> Ask the Vedic Seer
+                  </h3>
+                  <VedicSeerChatInterface
+                    userId={user.uid}
+                    userProfile={userProfile}
+                    vedicChartData={compProfile?.vedic ?? undefined}
+                  />
+                </div>
+              ) : (
+                <div className="p-8 bg-slate-900/40 border border-amber-500/20 rounded-3xl text-center text-slate-400">
+                  <p>Sign in to use Ask the Seer for personalized Vedic guidance.</p>
+                </div>
+              )}
+            </TabsContent>
+            ) : showVedicViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+            ) : (
+            <div className="relative min-h-[320px]">
+              {vedicLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  vedicLocked &&
+                    'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                )}
+              >
             <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"><ToolIntroductionTab toolSlug="vedic-astrology" /></TabsContent>
             <TabsContent value="compatibility" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"><CompatibilityTab toolSlug="vedic-astrology" /></TabsContent>
             <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
@@ -733,24 +868,9 @@ function VedicAstrologyPageContent() {
                 </div>
               )}
             </TabsContent>
-            <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-              {user?.uid && userProfile ? (
-                <div className="p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl min-h-[400px]">
-                  <h3 className="text-xl font-heading text-amber-400 mb-4 uppercase tracking-widest flex items-center gap-2">
-                    <MessageCircle className="w-6 h-6" /> Ask the Vedic Seer
-                  </h3>
-                  <VedicSeerChatInterface
-                    userId={user.uid}
-                    userProfile={userProfile}
-                    vedicChartData={compProfile?.vedic ?? undefined}
-                  />
-                </div>
-              ) : (
-                <div className="p-8 bg-slate-900/40 border border-amber-500/20 rounded-3xl text-center text-slate-400">
-                  <p>Sign in to use Ask the Seer for personalized Vedic guidance.</p>
-                </div>
-              )}
-            </TabsContent>
+              </div>
+            </div>
+            )}
           </Tabs>
           </div>
         </div>

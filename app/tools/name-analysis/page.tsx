@@ -1,12 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import { Users } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NameAnalysisCoachInterface } from "@/components/NameAnalysisCoachInterface"
 import { NameAnalysisSeerChatInterface } from "@/components/NameAnalysisSeerChatInterface"
 import { useNameAnalysis } from "@/hooks/use-name-analysis"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
 
 const NAME_TABS = [
   { id: "overview", label: "Overview" },
@@ -33,6 +43,65 @@ export default function NameAnalysisPage() {
 
   const [activeTab, setActiveTab] = useState("overview")
 
+  const viralUnlock = useToolReportUnlock("nameAnalysis")
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showNameViral = Boolean(analysis) && !bypassViral
+  const nameTeaser = useMemo(
+    () => buildToolTeaser("nameAnalysis", analysis),
+    [analysis]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${nameTeaser.archetypeName}: ${nameTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, nameTeaser.archetypeName, nameTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const nameCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("nameAnalysis")}?friend=compare&ref=share`,
+    []
+  )
+
+  const nameLocked =
+    showNameViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
+
   return (
     <div className="relative min-h-screen starfield-ultra-sharp">
       
@@ -55,11 +124,41 @@ export default function NameAnalysisPage() {
             {/* Inspirational Quote */}
             <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-6 max-w-2xl mx-auto mb-8 shadow-md">
               <p className="text-xl italic text-amber-900 font-serif mb-2">
-                "Your name is not just a label, but a sacred vibration that shapes your destiny and reveals your soul's purpose."
+                {'\u201cYour name is not just a label, but a sacred vibration that shapes your destiny and reveals your soul\u2019s purpose.\u201d'}
               </p>
               <p className="text-slate-600 text-sm">— Ancient Name Wisdom</p>
             </div>
           </motion.div>
+
+        {showNameViral && !bypassViral && (
+          <div className="max-w-5xl mx-auto mb-6 space-y-4">
+            <TeaserView teaser={nameTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={nameTeaser.archetypeName}
+                hookLine={nameTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showNameViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="max-w-5xl mx-auto mb-4 flex justify-center">
+            <Link
+              href={nameCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="max-w-5xl mx-auto pb-8">
@@ -128,16 +227,35 @@ export default function NameAnalysisPage() {
                         variant="light"
                         userProfile={userProfile}
                       />
+                    ) : showNameViral && !viralUnlock.hydrated ? (
+                      <div className="text-center py-12 text-slate-400">Loading report…</div>
                     ) : (
-                      <NameAnalysisCoachInterface 
-                        analysis={analysis}
-                        activeTab={activeTab}
-                        name={name}
-                        birthDate={birthDate}
-                        numerologyData={numerologyData}
-                        vedicData={vedicData}
-                        westernData={westernData}
-                      />
+                      <div className={cn(showNameViral && "relative min-h-[240px]")}>
+                        {showNameViral && nameLocked && (
+                          <ViralLockOverlay
+                            onUnlockClick={handleShareToUnlock}
+                            onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                            continueDisabled={waitingLite}
+                          />
+                        )}
+                        <div
+                          className={cn(
+                            showNameViral &&
+                              nameLocked &&
+                              "pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none"
+                          )}
+                        >
+                          <NameAnalysisCoachInterface 
+                            analysis={analysis}
+                            activeTab={activeTab}
+                            name={name}
+                            birthDate={birthDate}
+                            numerologyData={numerologyData}
+                            vedicData={vedicData}
+                            westernData={westernData}
+                          />
+                        </div>
+                      </div>
                     )}
                   </motion.div>
                 ) : (

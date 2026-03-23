@@ -77,7 +77,7 @@ export function useSubscribe() {
             currencySymbol: cfg.currencySymbol,
             formatted: "Free",
             features: [
-              "Full access to all tools",
+              "Teaser previews across tools (full reports unlock with Coffee, Treat, or Hamper)",
               "Your usage helps improve accuracy",
               "Early adopter status",
               "Attribution on leaderboard",

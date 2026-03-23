@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { PendulumCoachInterface } from "@/components/PendulumCoachInterface"
 import PendulumSeerChatInterface from "@/components/PendulumSeerChatInterface"
@@ -8,8 +9,16 @@ import { usePendulum } from "@/hooks/use-pendulum"
 import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, AlertCircle, MessageCircle } from "lucide-react"
+import { Loader2, AlertCircle, MessageCircle, Users } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
 
 export default function PendulumPage() {
   const { user, userProfile } = useAuth()
@@ -24,6 +33,62 @@ export default function PendulumPage() {
     performPendulumReading,
     resetData
   } = usePendulum()
+
+  const viralUnlock = useToolReportUnlock("pendulum")
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showPendulumViral = Boolean(analysis) && !bypassViral
+  const pendulumTeaser = useMemo(() => buildToolTeaser("pendulum", analysis), [analysis])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${pendulumTeaser.archetypeName}: ${pendulumTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, pendulumTeaser.archetypeName, pendulumTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const pendulumCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("pendulum")}?friend=compare&ref=share`,
+    []
+  )
+
+  const pendulumLocked =
+    showPendulumViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const [pageTab, setPageTab] = useState<"cast" | "ask-the-seer">("cast")
   const [activeTab, setActiveTab] = useState("overview")
@@ -45,6 +110,36 @@ export default function PendulumPage() {
           </p>
         </motion.div>
 
+        {showPendulumViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={pendulumTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={pendulumTeaser.archetypeName}
+                hookLine={pendulumTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showPendulumViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={pendulumCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
+
         {/* Page-level tabs: Cast Reading | Ask the Seer */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs value={pageTab} onValueChange={(v) => setPageTab(v as "cast" | "ask-the-seer")} className="w-full min-w-0">
@@ -56,20 +151,24 @@ export default function PendulumPage() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="ask-the-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
-            <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg rounded-3xl h-[600px] overflow-hidden">
-              <div className="h-full bg-gradient-to-b from-transparent to-white/30 p-4">
-                <PendulumSeerChatInterface
-                  userId={user?.uid || ""}
-                  userProfile={userProfile}
-                  pendulumAnalysis={analysis}
-                  sessionId={`pendulum_${Date.now()}`}
-                />
-              </div>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="cast" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
+          {showPendulumViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+          ) : (
+            <div className="relative min-h-[320px]">
+              {pendulumLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  pendulumLocked &&
+                    "pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none"
+                )}
+              >
         {/* Question Input Form */}
         {!analysis && (
           <motion.div
@@ -300,6 +399,22 @@ export default function PendulumPage() {
             </Card>
           </motion.div>
         )}
+              </div>
+            </div>
+          )}
+          </TabsContent>
+
+          <TabsContent value="ask-the-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <Card className="border-2 border-amber-300 bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 shadow-lg rounded-3xl h-[600px] overflow-hidden">
+              <div className="h-full bg-gradient-to-b from-transparent to-white/30 p-4">
+                <PendulumSeerChatInterface
+                  userId={user?.uid || ""}
+                  userProfile={userProfile}
+                  pendulumAnalysis={analysis}
+                  sessionId={`pendulum_${user?.uid ?? 'session'}`}
+                />
+              </div>
+            </Card>
           </TabsContent>
         </Tabs>
         </div>

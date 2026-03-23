@@ -27,10 +27,9 @@ import { AspectPatternDiagram } from '@/components/western/AspectPatternDiagram'
 import { ChartBirthSummaryCard } from '@/components/western/ChartBirthSummaryCard';
 import { WesternSpecialFeatures } from '@/components/western/WesternSpecialFeatures';
 import { WesternCelebritySampleSection } from '@/components/western/WesternCelebritySampleSection';
-import { buildWesternTeaser } from '@/lib/western/buildWesternTeaser'
-import { isNoChargeSubscriptionEmailClient } from '@/lib/subscriptionConfig'
-import { useWesternReportUnlock } from '@/hooks/useWesternReportUnlock'
-import { WesternReportViralGate } from '@/components/western/report-flow/WesternReportViralGate'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
 import { 
   Star, 
   Calendar,
@@ -64,7 +63,7 @@ function sunSignFromWesternChart(planets: unknown[] | undefined): string | undef
 }
 
 function WesternAstrologyPageContent() {
-  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, isSpecialUser } = useAuth()
+  const { user, userProfile, loading: authLoading } = useAuth()
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<WesternToolTab>('introduction')
 
@@ -103,16 +102,10 @@ function WesternAstrologyPageContent() {
   const effectiveComprehensiveReport = comprehensiveWesternReport || fetchedComprehensiveAnalysis
 
   const teaser = useMemo(
-    () => (analysis?.data ? buildWesternTeaser(analysis.data as never) : null),
+    () => (analysis?.data ? buildToolTeaser('western', analysis.data) : null),
     [analysis?.data]
   )
-  const viralUnlock = useWesternReportUnlock()
-  const bypassViralRestrictions = Boolean(
-    isSuperadmin ||
-      isAdmin ||
-      isSpecialUser ||
-      isNoChargeSubscriptionEmailClient(user?.email ?? null)
-  )
+  const bypassViralRestrictions = useViralReportBypass()
 
   const chartAutoOpenedRef = useRef(false)
   // Chart-first: once chart data exists, open the Western dashboard tab (unless URL pins another tab)
@@ -470,16 +463,11 @@ function WesternAstrologyPageContent() {
                 </motion.div>
               </div>
             ) : analysis?.data ? (
-              <WesternReportViralGate
+              <ToolReportViralGate
+                toolSlug="western"
                 teaser={teaser!}
-                hydrated={viralUnlock.hydrated}
-                tier={viralUnlock.tier}
-                isUnlocked={viralUnlock.isUnlocked}
-                isFullUnlock={viralUnlock.isFullUnlock}
-                shareUrl={viralUnlock.shareUrl}
-                unlockFull={viralUnlock.unlockFull}
-                unlockLite={viralUnlock.unlockLite}
                 bypassViralRestrictions={bypassViralRestrictions}
+                applyLiteVisualStyling
                 renderReport={({ lite }) => (
               <>
                 <ChartBirthSummaryCard
@@ -815,7 +803,7 @@ function WesternAstrologyPageContent() {
 
                 </div>
               </>
-            )}
+                )}
               />
             ) : !westernNoReportGraceEnded ? (
               <motion.div

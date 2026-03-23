@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useAuth } from "@/hooks/use-auth"
@@ -18,7 +18,8 @@ import {
   Brain,
   Info,
   Loader2,
-  Star
+  Star,
+  Users,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,8 +27,17 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import HumanDesignSeerChatInterface from "@/components/HumanDesignSeerChatInterface"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
 
 const tabs = [
+  { id: 'ask-seer', label: 'Ask The Seer', icon: MessageCircle },
   { id: 'overview', label: 'Overview', icon: Sparkles },
   { id: 'bodygraph', label: 'BodyGraph', icon: Target },
   { id: 'centers', label: 'Centers', icon: Brain },
@@ -35,7 +45,6 @@ const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'cross', label: 'Incarnation Cross', icon: Star },
   { id: 'report', label: 'Full Report', icon: BookOpen },
-  { id: 'ask-seer', label: 'Ask The Seer', icon: MessageCircle }
 ]
 
 interface HumanDesignChart {
@@ -175,6 +184,62 @@ export default function HumanDesignPage() {
   const report = useMemo(() => (pipelineReport as Record<string, unknown> | undefined)?.report as HumanDesignReport | undefined, [pipelineReport])
   const hasReport = !!chart && !!report
 
+  const viralUnlock = useToolReportUnlock('humanDesign')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showHumanDesignViral = hasReport && !bypassViral
+  const hdTeaser = useMemo(() => buildToolTeaser('humanDesign', pipelineReport), [pipelineReport])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${hdTeaser.archetypeName}: ${hdTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, hdTeaser.archetypeName, hdTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const hdCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('humanDesign')}?friend=compare&ref=share`,
+    []
+  )
+
+  const hdLocked =
+    showHumanDesignViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
+
   if (!user) {
     return (
       <div className="starfield-ultra-sharp min-h-screen flex items-center justify-center p-4">
@@ -268,6 +333,37 @@ export default function HumanDesignPage() {
 
           {/* Main Content */}
           {!isLoading && hasReport ? (
+            <>
+            {showHumanDesignViral && !bypassViral && (
+              <div className="mb-6 space-y-4">
+                <TeaserView teaser={hdTeaser} />
+                {showShareCard && (
+                  <ShareCard
+                    archetypeName={hdTeaser.archetypeName}
+                    hookLine={hdTeaser.hookLine}
+                    shareUrl={viralUnlock.shareUrl}
+                    onCopy={copyLink}
+                    onShare={nativeShare}
+                  />
+                )}
+                {waitingLite && (
+                  <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+                )}
+              </div>
+            )}
+
+            {showHumanDesignViral && viralUnlock.isUnlocked && !bypassViral && (
+              <div className="mb-6 flex justify-center">
+                <Link
+                  href={hdCompareHref}
+                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+                >
+                  <Users className="h-4 w-4" />
+                  Compare with a friend
+                </Link>
+              </div>
+            )}
+
             <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
               <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -287,6 +383,34 @@ export default function HumanDesignPage() {
                 })}
               </TabsList>
 
+              {activeTab === 'ask-seer' ? (
+              <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <div className="h-[800px] min-h-0">
+                  <HumanDesignSeerChatInterface
+                    userId={user?.uid ?? ''}
+                    userProfile={userProfile}
+                    humanDesignChart={chart}
+                    sessionId={`human_design_${Date.now()}`}
+                  />
+                </div>
+              </TabsContent>
+              ) : showHumanDesignViral && !viralUnlock.hydrated ? (
+              <div className="py-12 text-center text-slate-400">Loading report…</div>
+              ) : (
+              <div className="relative min-h-[320px]">
+                {hdLocked && (
+                  <ViralLockOverlay
+                    onUnlockClick={handleShareToUnlock}
+                    onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                    continueDisabled={waitingLite}
+                  />
+                )}
+                <div
+                  className={cn(
+                    hdLocked &&
+                      'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                  )}
+                >
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
@@ -628,20 +752,12 @@ export default function HumanDesignPage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              {/* Ask The Seer Tab */}
-              <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                <div className="h-[800px] min-h-0">
-                  <HumanDesignSeerChatInterface
-                    userId={user?.uid ?? ''}
-                    userProfile={userProfile}
-                    humanDesignChart={chart}
-                    sessionId={`human_design_${Date.now()}`}
-                  />
                 </div>
-              </TabsContent>
+              </div>
+              )}
             </Tabs>
             </div>
+            </>
           ) : !isLoading ? (
             <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
               <div className="h-1 bg-amber-400" />
