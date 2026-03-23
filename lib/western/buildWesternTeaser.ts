@@ -1,13 +1,8 @@
 import { detectChartPatterns, type AspectPattern } from '@/lib/western/chartPatternDetection'
 import type { PlanetLike } from '@/lib/western/chartDerivedFacts'
+import type { ToolTeaserPayload } from '@/lib/report-viral/types'
 
-export interface WesternTeaserPayload {
-  archetypeName: string
-  rarityLabel: string
-  hookLine: string
-  subLine: string
-  patternName: string | null
-}
+export type WesternTeaserPayload = ToolTeaserPayload
 
 const ARCHETYPES = [
   'Cycle Breaker',
@@ -53,7 +48,7 @@ function computeRarityPercent(planets: PlanetLike[], aspects: { orb?: number }[]
 export function buildWesternTeaser(chartData: {
   planets?: PlanetLike[]
   aspects?: { planet1: string; planet2: string; type: string; orb: number }[]
-}): WesternTeaserPayload {
+}): ToolTeaserPayload {
   const planets = chartData.planets ?? []
   const aspects = chartData.aspects ?? []
   const patterns = detectChartPatterns(planets as never, aspects as never)

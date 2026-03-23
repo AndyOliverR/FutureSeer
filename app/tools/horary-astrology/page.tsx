@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useMemo } from "react"
+import Link from "next/link"
 import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
@@ -19,10 +20,19 @@ import {
   RefreshCw,
   Star,
   Target,
+  Users,
   Zap
 } from "lucide-react"
 import { storeChart, storeCurrentChart, getCurrentChart } from '@/lib/chartStorage'
 import HorarySeerChatInterface from '@/components/HorarySeerChatInterface'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { cn } from '@/lib/utils'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
 
 interface HoraryData {
   basicInfo: {
@@ -126,6 +136,10 @@ function time12To24(hour12: number, minute: number, ampm: "AM" | "PM"): string {
 
 export default function HoraryAstrologyPage() {
   const { user, userProfile } = useAuth()
+  const viralUnlock = useToolReportUnlock('horary')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
   const [horaryData, setHoraryData] = useState<HoraryData | null>(null)
   const [currentTransits, setCurrentTransits] = useState<any>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -137,6 +151,57 @@ export default function HoraryAstrologyPage() {
   const [question, setQuestion] = useState('')
   const [questionTime, setQuestionTime] = useState('')
   const [questionPlace, setQuestionPlace] = useState('')
+
+  const showHoraryViral = Boolean(horaryData) && !bypassViral
+  const horaryTeaser = useMemo(() => buildToolTeaser('horary', horaryData ?? {}), [horaryData])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${horaryTeaser.archetypeName}: ${horaryTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, horaryTeaser.archetypeName, horaryTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const horaryCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('horary')}?friend=compare&ref=share`,
+    []
+  )
+
+  const horaryLocked =
+    showHoraryViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const loadCurrentTransits = async () => {
     if (!user?.uid) return
@@ -531,6 +596,36 @@ export default function HoraryAstrologyPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
+            {showHoraryViral && !bypassViral && (
+              <div className="mb-6 space-y-4">
+                <TeaserView teaser={horaryTeaser} />
+                {showShareCard && (
+                  <ShareCard
+                    archetypeName={horaryTeaser.archetypeName}
+                    hookLine={horaryTeaser.hookLine}
+                    shareUrl={viralUnlock.shareUrl}
+                    onCopy={copyLink}
+                    onShare={nativeShare}
+                  />
+                )}
+                {waitingLite && (
+                  <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+                )}
+              </div>
+            )}
+
+            {showHoraryViral && viralUnlock.isUnlocked && !bypassViral && (
+              <div className="mb-4 flex justify-center">
+                <Link
+                  href={horaryCompareHref}
+                  className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+                >
+                  <Users className="h-4 w-4" />
+                  Compare with a friend
+                </Link>
+              </div>
+            )}
+
             <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl p-6 shadow-md">
               {/* Tabs */}
               <div className="flex flex-wrap gap-2 mb-6">
@@ -562,8 +657,44 @@ export default function HoraryAstrologyPage() {
                 ))}
               </div>
 
-              {/* Tab Content */}
-              <AnimatePresence mode="wait">
+              {/* Tab Content: Ask the Seer outside viral blur; hydrate loading does not block chat */}
+              {activeTab === 'ask_seer' ? (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key="ask_seer"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-6"
+                  >
+                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
+                      <HorarySeerChatInterface
+                        horaryData={horaryData}
+                        userId={user?.uid}
+                        userProfile={userProfile ?? undefined}
+                        sessionId={user?.uid ? `horary_${user.uid}` : undefined}
+                      />
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              ) : showHoraryViral && !viralUnlock.hydrated ? (
+                <div className="py-12 text-center text-slate-600">Loading report…</div>
+              ) : (
+                <div className="relative min-h-[320px]">
+                  {horaryLocked && (
+                    <ViralLockOverlay
+                      onUnlockClick={handleShareToUnlock}
+                      onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                      continueDisabled={waitingLite}
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      horaryLocked &&
+                        'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                    )}
+                  >
+                    <AnimatePresence mode="wait">
                 {activeTab === "chart_images" && (
                   <motion.div
                     key="chart_images"
@@ -887,25 +1018,6 @@ export default function HoraryAstrologyPage() {
                   </motion.div>
                 )}
 
-                {activeTab === "ask_seer" && (
-                  <motion.div
-                    key="ask_seer"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="space-y-6"
-                  >
-                    <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
-                      <HorarySeerChatInterface
-                        horaryData={horaryData}
-                        userId={user?.uid}
-                        userProfile={userProfile ?? undefined}
-                        sessionId={user?.uid ? `horary_${user.uid}` : undefined}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-
                 {activeTab === "current_transits" && (
                   <motion.div
                     key="current_transits"
@@ -1016,7 +1128,10 @@ export default function HoraryAstrologyPage() {
                     )}
                   </motion.div>
                 )}
-              </AnimatePresence>
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

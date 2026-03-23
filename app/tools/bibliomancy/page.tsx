@@ -1,15 +1,23 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useToolReport, useComprehensiveMysticalProfile } from '@/hooks/useComprehensiveMysticalProfile';
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock';
+import { useViralReportBypass } from '@/hooks/useViralReportBypass';
+import { TeaserView } from '@/components/report-viral/TeaserView';
+import { ShareCard } from '@/components/report-viral/ShareCard';
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView';
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser';
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath';
+import { cn } from '@/lib/utils';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
-import { Eye, Sparkles, MessageCircle } from 'lucide-react';
+import { Eye, Sparkles, MessageCircle, Users } from 'lucide-react';
 import { BibliomancyReportView } from '@/components/BibliomancyReportView';
 import { BibliomancySeerChatInterface } from '@/components/BibliomancySeerChatInterface';
 
@@ -18,6 +26,10 @@ type TabValue = 'introduction' | 'report' | 'ask-the-seer';
 function BibliomancyPageContent() {
   const { user, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabValue>('introduction');
+  const viralUnlock = useToolReportUnlock('bibliomancy');
+  const bypassViral = useViralReportBypass();
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [waitingLite, setWaitingLite] = useState(false);
   const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('bibliomancy');
   const { profile } = useComprehensiveMysticalProfile();
 
@@ -33,6 +45,57 @@ function BibliomancyPageContent() {
   const bibliomancyFailed = Boolean(
     userProfile?.mysticalProfileGenerated && toolReports?.bibliomancy?.status === 'failed'
   );
+
+  const showBibliomancyViral = Boolean(bibliomancyReport) && !bypassViral;
+  const bibliomancyTeaser = useMemo(() => buildToolTeaser('bibliomancy', bibliomancyReport), [bibliomancyReport]);
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true);
+  }, []);
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl);
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull();
+    setShowShareCard(false);
+  }, [viralUnlock]);
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${bibliomancyTeaser.archetypeName}: ${bibliomancyTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        });
+        viralUnlock.unlockFull();
+        setShowShareCard(false);
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink();
+  }, [copyLink, viralUnlock, bibliomancyTeaser.archetypeName, bibliomancyTeaser.hookLine]);
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true);
+    window.setTimeout(() => {
+      viralUnlock.unlockLite();
+      setWaitingLite(false);
+    }, 4000);
+  }, [viralUnlock]);
+
+  const bibliomancyCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('bibliomancy')}?friend=compare&ref=share`,
+    []
+  );
+
+  const bibliomancyLocked =
+    showBibliomancyViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral;
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false;
@@ -69,6 +132,36 @@ function BibliomancyPageContent() {
             </p>
           </div>
 
+          {showBibliomancyViral && !bypassViral && (
+            <div className="mb-6 space-y-4">
+              <TeaserView teaser={bibliomancyTeaser} />
+              {showShareCard && (
+                <ShareCard
+                  archetypeName={bibliomancyTeaser.archetypeName}
+                  hookLine={bibliomancyTeaser.hookLine}
+                  shareUrl={viralUnlock.shareUrl}
+                  onCopy={copyLink}
+                  onShare={nativeShare}
+                />
+              )}
+              {waitingLite && (
+                <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+              )}
+            </div>
+          )}
+
+          {showBibliomancyViral && viralUnlock.isUnlocked && !bypassViral && (
+            <div className="mb-4 flex justify-center">
+              <Link
+                href={bibliomancyCompareHref}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+              >
+                <Users className="h-4 w-4" />
+                Compare with a friend
+              </Link>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
             <Tabs
               value={activeTab}
@@ -101,135 +194,157 @@ function BibliomancyPageContent() {
                 ))}
               </TabsList>
 
-              <AnimatePresence mode="wait">
-                {activeTab === 'introduction' && (
-                  <motion.div
-                    key="introduction"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                  >
-                    <TabsContent
-                      value="introduction"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+              {activeTab === 'ask-the-seer' ? (
+                <AnimatePresence mode="wait">
+                  {activeTab === 'ask-the-seer' && (
+                    <motion.div
+                      key="ask-the-seer"
+                      initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                      animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                      exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                      transition={motionConfig}
                     >
-                      <ToolIntroductionTab toolSlug="bibliomancy" />
-                    </TabsContent>
-                  </motion.div>
-                )}
-
-                {activeTab === 'report' && (
-                  <motion.div
-                    key="report"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
-                    className="bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]"
-                  >
-                    <TabsContent
-                      value="report"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 border-0 bg-transparent"
-                    >
-                      {isLoading ? (
-                        <div className="text-center py-12">
-                          <div className="w-12 h-12 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                          <p className="text-slate-200">Loading your bibliomancy report…</p>
-                        </div>
-                      ) : !hasReport || !bibliomancyReport ? (
-                        <div className="text-center py-12">
-                          <Eye className="w-14 h-14 text-amber-400/70 mx-auto mb-4" />
-                          {bibliomancyFailed ? (
-                            <>
-                              <p className="text-slate-300 mb-4">
-                                Bibliomancy couldn&apos;t be generated in the last run. Generate your mystical profile again from your Profile page to include it.
-                              </p>
-                              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                                <Link href="/profile">
-                                  <Sparkles className="w-4 h-4 mr-2" />
-                                  Regenerate mystical profile
-                                </Link>
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-slate-300 mb-4">
-                                Generate your mystical profile to unlock your Bibliomancy report. Your
-                                personalized sacred-text reading will appear here.
-                              </p>
-                              <div className="flex flex-wrap gap-3 justify-center">
+                      <TabsContent
+                        value="ask-the-seer"
+                        className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                      >
+                        {!hasReport || !bibliomancyReport ? (
+                          <div className="text-center py-12">
+                            <MessageCircle className="w-14 h-14 text-amber-400/70 mx-auto mb-4" />
+                            {bibliomancyFailed ? (
+                              <>
+                                <p className="text-slate-300 mb-4">
+                                  Bibliomancy couldn&apos;t be generated in the last run. Generate your mystical profile again from your Profile page.
+                                </p>
+                                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                                  <Link href="/profile">
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                    Regenerate mystical profile
+                                  </Link>
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-slate-300 mb-4">
+                                  Generate your mystical profile once from your Profile page to unlock Bibliomancy and use Ask the Seer.
+                                </p>
                                 <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
                                   <Link href="/profile">
                                     <Sparkles className="w-4 h-4 mr-2" />
                                     Generate your mystical profile
                                   </Link>
                                 </Button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        <BibliomancyReportView report={bibliomancyReport} />
-                      )}
-                    </TabsContent>
-                  </motion.div>
-                )}
-
-                {activeTab === 'ask-the-seer' && (
-                  <motion.div
-                    key="ask-the-seer"
-                    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-                    animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
-                    exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
-                    transition={motionConfig}
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-[800px] min-h-0">
+                            <BibliomancySeerChatInterface
+                              report={bibliomancyReport}
+                              userProfile={userProfile as unknown as Record<string, unknown>}
+                              userId={user?.uid}
+                            />
+                          </div>
+                        )}
+                      </TabsContent>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              ) : showBibliomancyViral && !viralUnlock.hydrated ? (
+                <div className="py-12 text-center text-slate-400">Loading report…</div>
+              ) : (
+                <div className="relative min-h-[320px]">
+                  {bibliomancyLocked && (
+                    <ViralLockOverlay
+                      onUnlockClick={handleShareToUnlock}
+                      onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                      continueDisabled={waitingLite}
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      bibliomancyLocked &&
+                        'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                    )}
                   >
-                    <TabsContent
-                      value="ask-the-seer"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
-                    >
-                      {!hasReport || !bibliomancyReport ? (
-                        <div className="text-center py-12">
-                          <MessageCircle className="w-14 h-14 text-amber-400/70 mx-auto mb-4" />
-                          {bibliomancyFailed ? (
-                            <>
-                              <p className="text-slate-300 mb-4">
-                                Bibliomancy couldn&apos;t be generated in the last run. Generate your mystical profile again from your Profile page.
-                              </p>
-                              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                                <Link href="/profile">
-                                  <Sparkles className="w-4 h-4 mr-2" />
-                                  Regenerate mystical profile
-                                </Link>
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <p className="text-slate-300 mb-4">
-                                Generate your mystical profile once from your Profile page to unlock Bibliomancy and use Ask the Seer.
-                              </p>
-                              <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                                <Link href="/profile">
-                                  <Sparkles className="w-4 h-4 mr-2" />
-                                  Generate your mystical profile
-                                </Link>
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="h-[800px] min-h-0">
-                          <BibliomancySeerChatInterface
-                            report={bibliomancyReport}
-                            userProfile={userProfile as unknown as Record<string, unknown>}
-                            userId={user?.uid}
-                          />
-                        </div>
+                    <AnimatePresence mode="wait">
+                      {activeTab === 'introduction' && (
+                        <motion.div
+                          key="introduction"
+                          initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                          animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                          exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                          transition={motionConfig}
+                        >
+                          <TabsContent
+                            value="introduction"
+                            className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                          >
+                            <ToolIntroductionTab toolSlug="bibliomancy" />
+                          </TabsContent>
+                        </motion.div>
                       )}
-                    </TabsContent>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+
+                      {activeTab === 'report' && (
+                        <motion.div
+                          key="report"
+                          initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+                          animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+                          exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
+                          transition={motionConfig}
+                          className="bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]"
+                        >
+                          <TabsContent
+                            value="report"
+                            className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 border-0 bg-transparent"
+                          >
+                            {isLoading ? (
+                              <div className="text-center py-12">
+                                <div className="w-12 h-12 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                                <p className="text-slate-200">Loading your bibliomancy report…</p>
+                              </div>
+                            ) : !hasReport || !bibliomancyReport ? (
+                              <div className="text-center py-12">
+                                <Eye className="w-14 h-14 text-amber-400/70 mx-auto mb-4" />
+                                {bibliomancyFailed ? (
+                                  <>
+                                    <p className="text-slate-300 mb-4">
+                                      Bibliomancy couldn&apos;t be generated in the last run. Generate your mystical profile again from your Profile page to include it.
+                                    </p>
+                                    <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                                      <Link href="/profile">
+                                        <Sparkles className="w-4 h-4 mr-2" />
+                                        Regenerate mystical profile
+                                      </Link>
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="text-slate-300 mb-4">
+                                      Generate your mystical profile to unlock your Bibliomancy report. Your
+                                      personalized sacred-text reading will appear here.
+                                    </p>
+                                    <div className="flex flex-wrap gap-3 justify-center">
+                                      <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                                        <Link href="/profile">
+                                          <Sparkles className="w-4 h-4 mr-2" />
+                                          Generate your mystical profile
+                                        </Link>
+                                      </Button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            ) : (
+                              <BibliomancyReportView report={bibliomancyReport} />
+                            )}
+                          </TabsContent>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
             </Tabs>
           </div>
 

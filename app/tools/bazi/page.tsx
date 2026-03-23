@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useMemo, useEffect, useRef } from 'react';
+import { Suspense, useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { devLog } from '@/lib/devLogger';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -28,7 +28,16 @@ import {
   Compass,
   Hash,
   Leaf,
+  Users,
 } from 'lucide-react';
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock';
+import { useViralReportBypass } from '@/hooks/useViralReportBypass';
+import { TeaserView } from '@/components/report-viral/TeaserView';
+import { ShareCard } from '@/components/report-viral/ShareCard';
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView';
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser';
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath';
+import { cn } from '@/lib/utils';
 
 type TabValue = 'introduction' | 'report' | 'ask-the-seer';
 
@@ -68,6 +77,65 @@ function BaziPageContent() {
     if ((raw as Record<string, unknown>).placeholder === true && !(raw as Record<string, unknown>).chart && !(raw as Record<string, unknown>).elements) return null;
     return raw as unknown as BaziReading;
   }, [effectivePipelineReport]);
+
+  const viralUnlock = useToolReportUnlock('bazi');
+  const bypassViral = useViralReportBypass();
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [waitingLite, setWaitingLite] = useState(false);
+
+  const showBaziViral = Boolean(baziReport) && !bypassViral;
+  const baziTeaser = useMemo(
+    () => buildToolTeaser('bazi', baziReport ?? effectivePipelineReport),
+    [baziReport, effectivePipelineReport]
+  );
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true);
+  }, []);
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl);
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull();
+    setShowShareCard(false);
+  }, [viralUnlock]);
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${baziTeaser.archetypeName}: ${baziTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        });
+        viralUnlock.unlockFull();
+        setShowShareCard(false);
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink();
+  }, [copyLink, viralUnlock, baziTeaser.archetypeName, baziTeaser.hookLine]);
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true);
+    window.setTimeout(() => {
+      viralUnlock.unlockLite();
+      setWaitingLite(false);
+    }, 4000);
+  }, [viralUnlock]);
+
+  const baziCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('bazi')}?friend=compare&ref=share`,
+    []
+  );
+
+  const baziLocked =
+    showBaziViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral;
 
   /** True if the user has already generated a mystical profile (returning user). Don't show "generate your mystical profile" as main CTA in that case. */
   const hasAnyGeneratedProfile = useMemo(() => {
@@ -222,17 +290,12 @@ function BaziPageContent() {
         if (!cancelled) setIsLoadingComprehensive(false);
       });
     return () => { cancelled = true; };
-  }, [user?.uid, user, baziReport, comprehensiveAnalysis, refreshProfile]);
+  }, [user?.uid, user, baziReport, comprehensiveAnalysis, refreshProfile, userProfile]);
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
-
-  const motionConfig = useMemo(
-    () => (prefersReducedMotion ? {} : { duration: 0.3, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }),
-    [prefersReducedMotion]
-  );
 
   const tabsConfig: { value: TabValue; label: string }[] = [
     { value: 'introduction', label: 'Introduction' },
@@ -282,6 +345,36 @@ function BaziPageContent() {
             </p>
           </div>
 
+          {showBaziViral && !bypassViral && (
+            <div className="mb-6 space-y-4">
+              <TeaserView teaser={baziTeaser} />
+              {showShareCard && (
+                <ShareCard
+                  archetypeName={baziTeaser.archetypeName}
+                  hookLine={baziTeaser.hookLine}
+                  shareUrl={viralUnlock.shareUrl}
+                  onCopy={copyLink}
+                  onShare={nativeShare}
+                />
+              )}
+              {waitingLite && (
+                <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+              )}
+            </div>
+          )}
+
+          {showBaziViral && viralUnlock.isUnlocked && !bypassViral && (
+            <div className="mb-4 flex justify-center">
+              <Link
+                href={baziCompareHref}
+                className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+              >
+                <Users className="h-4 w-4" />
+                Compare with a friend
+              </Link>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
             <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="w-full min-w-0">
               <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -296,6 +389,72 @@ function BaziPageContent() {
                 ))}
               </TabsList>
 
+              {activeTab === 'ask-the-seer' ? (
+              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                      {baziReport ? (
+                        <div className="h-[800px] min-h-0">
+                          <BaZiCoachInterface reading={baziReport} />
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-slate-300">
+                          {hasAnyGeneratedProfile ? (
+                            <>
+                              <p className="mb-4">Your BaZi report is not available yet. Generate it below to use Ask the Seer for BaZi.</p>
+                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <Button
+                                  type="button"
+                                  className="bg-amber-500 hover:bg-amber-600 text-white"
+                                  onClick={handleGenerateBaziReportNow}
+                                  disabled={isGeneratingBaziReport}
+                                >
+                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
+                                </Button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <p className="mb-4">Generate your mystical profile to use Ask the Seer for BaZi.</p>
+                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
+                                  <Link href="/profile">Generate your mystical profile</Link>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="border-amber-500/60 text-amber-200 bg-slate-800/50 hover:bg-slate-700/50"
+                                  onClick={handleGenerateBaziReportNow}
+                                  disabled={isGeneratingBaziReport}
+                                >
+                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
+                                </Button>
+                              </div>
+                            </>
+                          )}
+                          {baziGenerateError && (
+                            <p className="mt-4 text-sm text-amber-200/90" role="alert">
+                              {baziGenerateError}
+                            </p>
+                          )}
+                        </div>
+                      )}
+              </TabsContent>
+              ) : showBaziViral && !viralUnlock.hydrated ? (
+              <div className="py-12 text-center text-slate-400">Loading report…</div>
+              ) : (
+              <div className="relative min-h-[320px]">
+                {baziLocked && (
+                  <ViralLockOverlay
+                    onUnlockClick={handleShareToUnlock}
+                    onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                    continueDisabled={waitingLite}
+                  />
+                )}
+                <div
+                  className={cn(
+                    baziLocked &&
+                      'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                  )}
+                >
               <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                 <ToolIntroductionTab toolSlug="bazi" />
               </TabsContent>
@@ -359,55 +518,9 @@ function BaziPageContent() {
                         />
                       )}
               </TabsContent>
-
-              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                      {baziReport ? (
-                        <div className="h-[800px] min-h-0">
-                          <BaZiCoachInterface reading={baziReport} />
-                        </div>
-                      ) : (
-                        <div className="text-center py-8 text-slate-300">
-                          {hasAnyGeneratedProfile ? (
-                            <>
-                              <p className="mb-4">Your BaZi report is not available yet. Generate it below to use Ask the Seer for BaZi.</p>
-                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                                <Button
-                                  type="button"
-                                  className="bg-amber-500 hover:bg-amber-600 text-white"
-                                  onClick={handleGenerateBaziReportNow}
-                                  disabled={isGeneratingBaziReport}
-                                >
-                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
-                                </Button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <p className="mb-4">Generate your mystical profile to use Ask the Seer for BaZi.</p>
-                              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                                <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white">
-                                  <Link href="/profile">Generate your mystical profile</Link>
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="border-amber-500/60 text-amber-200 bg-slate-800/50 hover:bg-slate-700/50"
-                                  onClick={handleGenerateBaziReportNow}
-                                  disabled={isGeneratingBaziReport}
-                                >
-                                  {isGeneratingBaziReport ? 'Generating…' : 'Generate BaZi report now'}
-                                </Button>
-                              </div>
-                            </>
-                          )}
-                          {baziGenerateError && (
-                            <p className="mt-4 text-sm text-amber-200/90" role="alert">
-                              {baziGenerateError}
-                            </p>
-                          )}
-                        </div>
-                      )}
-              </TabsContent>
+                </div>
+              </div>
+              )}
             </Tabs>
           </div>
         </div>
@@ -435,7 +548,6 @@ function ReportTabContent({
   const chart = report?.chart;
   const elements = report?.elements && typeof report.elements === 'object' ? report.elements : DEFAULT_ELEMENTS;
   const dayMaster = report?.dayMaster;
-  const personality = report?.personality;
   const career = report?.career;
   const wealth = report?.wealth;
   const relationships = report?.relationships;

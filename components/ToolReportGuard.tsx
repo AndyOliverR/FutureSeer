@@ -3,6 +3,16 @@
 import Link from 'next/link'
 import { AlertTriangle, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+
+export interface ToolReportViralConfig {
+  toolSlug: string
+  report: unknown
+  bypassViralRestrictions: boolean
+  /** Western report applies lite styling; most tools omit. */
+  applyLiteVisualStyling?: boolean
+}
 
 export interface ToolReportGuardProps {
   loading: boolean
@@ -14,14 +24,25 @@ export interface ToolReportGuardProps {
   errorCtaLabel?: string
   /** Custom CTA href when error is shown (default: "/profile") */
   errorCtaHref?: string
-  children: React.ReactNode
+  /** Optional viral gate: teaser → lock → unlock. Children may be a function receiving `{ lite }` when viral is set. */
+  viral?: ToolReportViralConfig | null
+  children: React.ReactNode | ((opts: { lite: boolean }) => React.ReactNode)
 }
 
 /**
  * Defensive guard: do not render tool content until profile/report loading is settled.
  * States: loading -> error -> no report -> ready (children).
  */
-export function ToolReportGuard({ loading, error, toolLabel, hasReport = true, errorCtaLabel = 'Generate your mystical profile', errorCtaHref = '/profile', children }: ToolReportGuardProps) {
+export function ToolReportGuard({
+  loading,
+  error,
+  toolLabel,
+  hasReport = true,
+  errorCtaLabel = 'Generate your mystical profile',
+  errorCtaHref = '/profile',
+  viral = null,
+  children,
+}: ToolReportGuardProps) {
   if (loading) {
     return (
       <div className="relative min-h-screen starfield-ultra-sharp">
@@ -79,5 +100,24 @@ export function ToolReportGuard({ loading, error, toolLabel, hasReport = true, e
     )
   }
 
-  return <>{children}</>
+  if (viral) {
+    const teaser = buildToolTeaser(viral.toolSlug, viral.report)
+    return (
+      <ToolReportViralGate
+        toolSlug={viral.toolSlug}
+        teaser={teaser}
+        bypassViralRestrictions={viral.bypassViralRestrictions}
+        applyLiteVisualStyling={viral.applyLiteVisualStyling ?? false}
+        renderReport={({ lite }) =>
+          typeof children === 'function' ? children({ lite }) : <>{children}</>
+        }
+      />
+    )
+  }
+
+  return (
+    <>
+      {typeof children === 'function' ? (children as (opts: { lite: boolean }) => React.ReactNode)({ lite: false }) : children}
+    </>
+  )
 }

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
 import { ToolReportGuard } from '@/components/ToolReportGuard'
+import { ToolReportViralShell } from '@/components/report-viral/ToolReportViralShell'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -303,6 +304,7 @@ export default function HellenisticAstrologyPage() {
                   </Card>
                 </motion.div>
               ) : effectiveReading ? (
+                <ToolReportViralShell toolSlug="hellenistic" reportForTeaser={pipelineReport ?? effectiveReading}>
                 <motion.div
                   key="chart"
                   initial={{ opacity: 0, y: 20 }}
@@ -359,6 +361,7 @@ export default function HellenisticAstrologyPage() {
                     </div>
                   </DashboardSection>
                 </motion.div>
+                </ToolReportViralShell>
               ) : null}
             </TabsContent>
           </AnimatePresence>

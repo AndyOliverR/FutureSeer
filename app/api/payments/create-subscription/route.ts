@@ -59,13 +59,13 @@ export async function POST(request: NextRequest) {
             const freeMonthsRemaining = userData?.freeMonthsRemaining || 0;
             
             if (freeMonthsRemaining > 0) {
-              // User has free months - skip charge and decrement counter
+              // Skip charge and decrement counter. Do not set subscriptionStatus to 'active' here:
+              // teaser-trial product keeps full report access for Razorpay-activated subscriptions only.
               const nextBillingDate = Date.now() + (30 * 24 * 60 * 60 * 1000); // +30 days
               
               await userRef.update({
                 freeMonthsRemaining: freeMonthsRemaining - 1,
                 nextBillingDate: nextBillingDate,
-                subscriptionStatus: 'active',
                 updatedAt: Date.now()
               });
               

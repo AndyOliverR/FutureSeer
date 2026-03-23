@@ -1,11 +1,21 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
 import IChingSeerChatInterface from "@/components/IChingSeerChatInterface"
 import { useIChing } from "@/hooks/use-iching"
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Users } from 'lucide-react'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
 
 export default function IChingPage() {
   const { user, userProfile } = useAuth()
@@ -21,6 +31,62 @@ export default function IChingPage() {
     performIChingReading,
     resetData
   } = useIChing()
+
+  const viralUnlock = useToolReportUnlock('iching')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showIChingViral = Boolean(analysis) && !bypassViral
+  const ichingTeaser = useMemo(() => buildToolTeaser('iching', analysis), [analysis])
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${ichingTeaser.archetypeName}: ${ichingTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, ichingTeaser.archetypeName, ichingTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const ichingCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('iching')}?friend=compare&ref=share`,
+    []
+  )
+
+  const ichingLocked =
+    showIChingViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const [activeTab, setActiveTab] = useState("overview")
 
@@ -309,6 +375,36 @@ export default function IChingPage() {
           </Card>
         </motion.div>
 
+        {showIChingViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={ichingTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={ichingTeaser.archetypeName}
+                hookLine={ichingTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showIChingViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={ichingCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Input Section */}
@@ -433,9 +529,29 @@ export default function IChingPage() {
                   analysis={analysis}
                   userId={user?.uid}
                   userProfile={userProfile}
-                  sessionId={analysis ? `iching_${analysis.id || Date.now()}` : undefined}
+                  sessionId={
+                    analysis
+                      ? `iching_${(analysis as { id?: string }).id ?? user?.uid ?? 'session'}`
+                      : undefined
+                  }
                 />
+              ) : showIChingViral && !viralUnlock.hydrated ? (
+                <div className="py-12 text-center text-slate-500">Loading report…</div>
               ) : (
+                <div className="relative min-h-[200px]">
+                  {ichingLocked && (
+                    <ViralLockOverlay
+                      onUnlockClick={handleShareToUnlock}
+                      onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                      continueDisabled={waitingLite}
+                    />
+                  )}
+                  <div
+                    className={cn(
+                      ichingLocked &&
+                        'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                    )}
+                  >
                 <AnimatePresence mode="wait">
                   {isLoading ? (
                     <motion.div
@@ -501,6 +617,8 @@ export default function IChingPage() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+                  </div>
+                </div>
               )}
               </CardContent>
             </Card>

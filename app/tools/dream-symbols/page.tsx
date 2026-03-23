@@ -1,23 +1,38 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { DreamSymbolsCoachInterface } from "@/components/DreamSymbolsCoachInterface"
 import { useDreamSymbols } from "@/hooks/use-dream-symbols"
 import { useAuth } from "@/hooks/use-auth"
+import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
+import { useViralReportBypass } from "@/hooks/useViralReportBypass"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToolIntroductionTab } from "@/components/ToolIntroductionTab"
 import DreamSymbolsSeerChatInterface from "@/components/DreamSymbolsSeerChatInterface"
-import { Moon, Sparkles, Loader2, ArrowLeft, MessageCircle } from "lucide-react"
+import { TeaserView } from "@/components/report-viral/TeaserView"
+import { ShareCard } from "@/components/report-viral/ShareCard"
+import { ViralLockOverlay } from "@/components/report-viral/LockedReportView"
+import { buildToolTeaser } from "@/lib/report-viral/buildToolTeaser"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
+import { cn } from "@/lib/utils"
+import { Moon, Sparkles, Loader2, ArrowLeft, MessageCircle, Users } from "lucide-react"
+
+type DreamTabKey =
+  | "introduction"
+  | "overview"
+  | "symbols"
+  | "meaning"
+  | "guidance"
+  | "archetypes"
+  | "ask-the-seer"
 
 export default function DreamSymbolsPage() {
   const { user, userProfile } = useAuth()
   const {
-    profileData,
-    profileLoading,
-    profileError,
     dreamDescription,
     symbols,
     analysis,
@@ -27,14 +42,72 @@ export default function DreamSymbolsPage() {
     setSymbols,
     performDreamAnalysis,
     resetData,
-    refetchProfile
   } = useDreamSymbols()
 
-  const [activeTab, setActiveTab] = useState<'introduction' | 'overview' | 'symbols' | 'meaning' | 'guidance' | 'archetypes' | 'ask-the-seer'>('introduction')
+  const [activeTab, setActiveTab] = useState<DreamTabKey>("introduction")
   const [patternType, setPatternType] = useState<'dreams' | 'tea-leaves' | 'bone-throwing'>('dreams')
   
   // Check if user has complete birth details (similar to tarot page pattern)
   const hasCompleteDetails = userProfile?.birthDate && userProfile?.birthPlace
+
+  const viralUnlock = useToolReportUnlock("dreamSymbols")
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showDreamViral = Boolean(analysis) && !bypassViral
+  const dreamTeaser = useMemo(
+    () => buildToolTeaser("dreamSymbols", analysis),
+    [analysis]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: "FutureSeer — my reading",
+          text: `${dreamTeaser.archetypeName}: ${dreamTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, dreamTeaser.archetypeName, dreamTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const dreamCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug("dreamSymbols")}?friend=compare&ref=share`,
+    []
+  )
+
+  const dreamLocked =
+    showDreamViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const tabTriggerClass =
     'shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all'
@@ -62,7 +135,7 @@ export default function DreamSymbolsPage() {
           <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl max-w-2xl mx-auto">
             <CardContent className="p-6">
               <p className="text-xl italic text-amber-900 font-serif mb-2">
-                "Dreams are the royal road to the unconscious, where symbols speak the language of the soul."
+                {'\u201cDreams are the royal road to the unconscious, where symbols speak the language of the soul.\u201d'}
               </p>
               <p className="text-slate-600 text-sm">— Carl Jung</p>
             </CardContent>
@@ -204,9 +277,39 @@ export default function DreamSymbolsPage() {
                   </div>
                 </div>
 
+                {showDreamViral && !bypassViral && (
+                  <div className="mb-4 space-y-4">
+                    <TeaserView teaser={dreamTeaser} />
+                    {showShareCard && (
+                      <ShareCard
+                        archetypeName={dreamTeaser.archetypeName}
+                        hookLine={dreamTeaser.hookLine}
+                        shareUrl={viralUnlock.shareUrl}
+                        onCopy={copyLink}
+                        onShare={nativeShare}
+                      />
+                    )}
+                    {waitingLite && (
+                      <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+                    )}
+                  </div>
+                )}
+
+                {showDreamViral && viralUnlock.isUnlocked && !bypassViral && (
+                  <div className="mb-4 flex justify-center">
+                    <Link
+                      href={dreamCompareHref}
+                      className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+                    >
+                      <Users className="h-4 w-4" />
+                      Compare with a friend
+                    </Link>
+                  </div>
+                )}
+
                 {/* Tabs — strip and content share px-4 sm:px-6 for alignment */}
                 <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="w-full min-w-0">
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DreamTabKey)} className="w-full min-w-0">
                   <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 px-4 sm:px-6 py-2 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                     <TabsTrigger value="introduction" className={tabTriggerClass}>
                       Introduction
@@ -231,6 +334,42 @@ export default function DreamSymbolsPage() {
                     </TabsTrigger>
                   </TabsList>
 
+                  {activeTab === "ask-the-seer" ? (
+                  <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    {user?.uid ? (
+                      <DreamSymbolsSeerChatInterface
+                        analysis={analysis ?? undefined}
+                        userId={user.uid}
+                        userProfile={userProfile}
+                        sessionId={undefined}
+                      />
+                    ) : (
+                      <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden">
+                        <CardContent className="bg-gradient-to-br from-amber-50 to-yellow-50 text-center py-12">
+                          <MessageCircle className="w-12 h-12 text-amber-700 mx-auto mb-4" />
+                          <p className="text-slate-700 mb-4">Please sign in to ask The Seer about your dreams</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </TabsContent>
+                  ) : showDreamViral && !viralUnlock.hydrated ? (
+                    <div className="py-12 text-center text-slate-400">Loading report…</div>
+                  ) : (
+                    <div className={cn(showDreamViral && "relative min-h-[320px]")}>
+                      {showDreamViral && dreamLocked && (
+                        <ViralLockOverlay
+                          onUnlockClick={handleShareToUnlock}
+                          onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                          continueDisabled={waitingLite}
+                        />
+                      )}
+                      <div
+                        className={cn(
+                          showDreamViral &&
+                            dreamLocked &&
+                            "pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none"
+                        )}
+                      >
                   {/* Introduction Tab */}
                   <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <ToolIntroductionTab toolSlug="dream-symbols" />
@@ -597,25 +736,9 @@ export default function DreamSymbolsPage() {
                       )}
                     </AnimatePresence>
                   </TabsContent>
-
-                  {/* Ask the Seer Tab */}
-                  <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                    {user?.uid ? (
-                      <DreamSymbolsSeerChatInterface
-                        analysis={analysis ?? undefined}
-                        userId={user.uid}
-                        userProfile={userProfile}
-                        sessionId={undefined}
-                      />
-                    ) : (
-                      <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg rounded-3xl overflow-hidden">
-                        <CardContent className="bg-gradient-to-br from-amber-50 to-yellow-50 text-center py-12">
-                          <MessageCircle className="w-12 h-12 text-amber-700 mx-auto mb-4" />
-                          <p className="text-slate-700 mb-4">Please sign in to ask The Seer about your dreams</p>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </TabsContent>
+                      </div>
+                    </div>
+                  )}
                 </Tabs>
                 </div>
               </CardContent>

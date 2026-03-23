@@ -1,14 +1,13 @@
 // Streamlined Numerology page: reads only from pipeline cache (useToolReport).
 "use client"
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
 import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab'
@@ -41,8 +40,17 @@ import {
   Star,
   Briefcase,
   ActivityIcon,
-  TrendingUp
+  TrendingUp,
+  Users,
 } from 'lucide-react'
+import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
+import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { TeaserView } from '@/components/report-viral/TeaserView'
+import { ShareCard } from '@/components/report-viral/ShareCard'
+import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
+import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { cn } from '@/lib/utils'
 import LoShuGrid from '@/components/numerology/LoShuGrid'
 import { LuckyEssentials } from '@/components/numerology/LuckyEssentials'
 import { NamePlanes } from '@/components/numerology/NamePlanes'
@@ -84,11 +92,81 @@ function numerologyDataFromReport(report: unknown): Record<string, unknown> | nu
   }
 }
 
+type NumerologyTabKey =
+  | 'introduction'
+  | 'overview'
+  | 'report'
+  | 'numbers'
+  | 'compatibility'
+  | 'guidance'
+  | 'remedies'
+  | 'ask-the-seer'
+
 export default function NumerologyPage() {
   const { user, userProfile } = useAuth()
-  const [activeTab, setActiveTab] = useState<'introduction' | 'overview' | 'report' | 'numbers' | 'compatibility' | 'guidance' | 'remedies' | 'ask-the-seer'>('introduction')
-  const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('numerology')
+  const [activeTab, setActiveTab] = useState<NumerologyTabKey>('introduction')
+  const { report: pipelineReport, loading: isLoading, error } = useToolReport('numerology')
   const numerologyData = useMemo(() => numerologyDataFromReport(pipelineReport), [pipelineReport])
+
+  const viralUnlock = useToolReportUnlock('numerology')
+  const bypassViral = useViralReportBypass()
+  const [showShareCard, setShowShareCard] = useState(false)
+  const [waitingLite, setWaitingLite] = useState(false)
+
+  const showNumerologyViral = Boolean(numerologyData) && !bypassViral
+  const numerologyTeaser = useMemo(
+    () => buildToolTeaser('numerology', pipelineReport ?? numerologyData),
+    [pipelineReport, numerologyData]
+  )
+
+  const handleShareToUnlock = useCallback(() => {
+    setShowShareCard(true)
+  }, [])
+
+  const copyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(viralUnlock.shareUrl)
+    } catch {
+      /* ignore */
+    }
+    viralUnlock.unlockFull()
+    setShowShareCard(false)
+  }, [viralUnlock])
+
+  const nativeShare = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'FutureSeer — my reading',
+          text: `${numerologyTeaser.archetypeName}: ${numerologyTeaser.hookLine.slice(0, 120)}…`,
+          url: viralUnlock.shareUrl,
+        })
+        viralUnlock.unlockFull()
+        setShowShareCard(false)
+        return
+      } catch {
+        /* cancelled */
+      }
+    }
+    await copyLink()
+  }, [copyLink, viralUnlock, numerologyTeaser.archetypeName, numerologyTeaser.hookLine])
+
+  const continueWithoutSharing = useCallback(() => {
+    setWaitingLite(true)
+    window.setTimeout(() => {
+      viralUnlock.unlockLite()
+      setWaitingLite(false)
+    }, 4000)
+  }, [viralUnlock])
+
+  const numerologyCompareHref = useMemo(
+    () => `/tools/${toolPathForSlug('numerology')}?friend=compare&ref=share`,
+    []
+  )
+
+  const numerologyLocked =
+    showNumerologyViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
+
   const comprehensiveReport = useMemo(() => {
     if (!pipelineReport || typeof pipelineReport !== 'object') return null
     const r = pipelineReport as Record<string, unknown>
@@ -124,12 +202,12 @@ export default function NumerologyPage() {
     if (!birthYear) return null
     const isMale = userProfile?.gender !== 'female'
     return getKuaResult(birthYear, isMale)
-  }, [userProfile?.birthDate, userProfile?.gender])
+  }, [userProfile])
 
   const luckyEssentials = useMemo(() => {
     const birthYear = userProfile?.birthDate ? parseInt(userProfile.birthDate.split('-')[0], 10) : undefined
     return { driver: driverConductor.driver.reduced, conductor: driverConductor.conductor.reduced, birthYear }
-  }, [driverConductor.driver.reduced, driverConductor.conductor.reduced, userProfile?.birthDate])
+  }, [driverConductor.driver.reduced, driverConductor.conductor.reduced, userProfile])
 
   const challengeCycles = useMemo(() => 
     calcChallengeCycles(userProfile?.birthDate), 
@@ -152,7 +230,7 @@ export default function NumerologyPage() {
     const birthYear = userProfile?.birthDate ? parseInt(userProfile.birthDate.split('-')[0], 10) : null
     if (!py || !birthYear) return []
     return generateMonthForecast(py, birthYear, currentMonth)
-  }, [personalYear, userProfile?.birthDate, currentMonth])
+  }, [personalYear, userProfile, currentMonth])
 
   const karmicDebts = useMemo(() => {
     return detectKarmicDebtNumbers([
@@ -220,9 +298,39 @@ export default function NumerologyPage() {
           {/* Debug info removed for production */}
         </div>
 
+        {showNumerologyViral && !bypassViral && (
+          <div className="mb-6 space-y-4">
+            <TeaserView teaser={numerologyTeaser} />
+            {showShareCard && (
+              <ShareCard
+                archetypeName={numerologyTeaser.archetypeName}
+                hookLine={numerologyTeaser.hookLine}
+                shareUrl={viralUnlock.shareUrl}
+                onCopy={copyLink}
+                onShare={nativeShare}
+              />
+            )}
+            {waitingLite && (
+              <p className="text-center text-sm text-amber-200/90">Unlocking lighter view in a few seconds…</p>
+            )}
+          </div>
+        )}
+
+        {showNumerologyViral && viralUnlock.isUnlocked && !bypassViral && (
+          <div className="mb-4 flex justify-center">
+            <Link
+              href={numerologyCompareHref}
+              className="inline-flex items-center gap-2 rounded-full border border-violet-500/40 bg-violet-950/40 px-4 py-2 text-sm font-medium text-violet-100 hover:bg-violet-900/50"
+            >
+              <Users className="h-4 w-4" />
+              Compare with a friend
+            </Link>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as NumerologyTabKey)} className="w-full min-w-0">
           <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="introduction" 
@@ -274,6 +382,69 @@ export default function NumerologyPage() {
             </TabsTrigger>
           </TabsList>
 
+          {activeTab === 'ask-the-seer' ? (
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+            >
+            {user?.uid && numerologyData ? (
+              <NumerologySeerChatInterface
+                userId={user.uid}
+                userProfile={userProfile}
+                numerologyData={{
+                  lifePathNumber: toIntegerOrUndefined(numerologyData.life_path_number ?? numerologyData.life_path),
+                  expressionNumber: toIntegerOrUndefined(numerologyData.expression_number),
+                  soulUrgeNumber: toIntegerOrUndefined(numerologyData.soul_number ?? numerologyData.soul_urge),
+                  personalityNumber: toIntegerOrUndefined(numerologyData.personality_number),
+                  destinyNumber: toIntegerOrUndefined(numerologyData.destiny_number),
+                  birthdayNumber: toIntegerOrUndefined(numerologyData.birthday_number),
+                  maturityNumber: toIntegerOrUndefined(numerologyData.maturity_number),
+                  personalYearNumber: toIntegerOrUndefined((numerologyData as Record<string, unknown>).personal_year_number)
+                }}
+                comprehensiveReport={comprehensiveReport}
+              />
+            ) : (
+              <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm rounded-xl" elevation={1}>
+                <CardHeader>
+                  <CardTitle className="m3-title-medium flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-amber-400" />
+                    <span className="text-amber-200">AI Numerology Coach</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-center py-8">
+                  <div className="space-y-4">
+                    <div className="w-16 h-16 backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-full flex items-center justify-center mx-auto">
+                      <Brain className="w-8 h-8 text-amber-300" />
+                    </div>
+                    <h3 className="m3-title-large font-serif text-amber-300">Ask the Seer</h3>
+                    <p className="m3-body-medium text-slate-300">
+                      Please wait while we load your numerology data...
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            </motion.div>
+          </TabsContent>
+          ) : showNumerologyViral && !viralUnlock.hydrated ? (
+            <div className="py-12 text-center text-slate-400">Loading report…</div>
+          ) : (
+            <div className="relative min-h-[320px]">
+              {numerologyLocked && (
+                <ViralLockOverlay
+                  onUnlockClick={handleShareToUnlock}
+                  onContinueWithoutSharing={waitingLite ? () => {} : continueWithoutSharing}
+                  continueDisabled={waitingLite}
+                />
+              )}
+              <div
+                className={cn(
+                  numerologyLocked &&
+                    'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
+                )}
+              >
           {/* Introduction Tab */}
           <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             <motion.div
@@ -323,7 +494,7 @@ export default function NumerologyPage() {
               <NumerologyRemedies 
                 numerologyData={numerologyData} 
                 birthDate={userProfile?.birthDate}
-                onNavigateToTab={(tab) => setActiveTab(tab as any)}
+                onNavigateToTab={(tab) => setActiveTab(tab as NumerologyTabKey)}
               />
             </motion.div>
           </TabsContent>
@@ -823,53 +994,9 @@ export default function NumerologyPage() {
             />
             </motion.div>
           </TabsContent>
-
-          {/* Ask the Seer Tab */}
-          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
-            >
-            {user?.uid && numerologyData ? (
-              <NumerologySeerChatInterface
-                userId={user.uid}
-                userProfile={userProfile}
-                numerologyData={{
-                  lifePathNumber: toIntegerOrUndefined(numerologyData.life_path_number ?? numerologyData.life_path),
-                  expressionNumber: toIntegerOrUndefined(numerologyData.expression_number),
-                  soulUrgeNumber: toIntegerOrUndefined(numerologyData.soul_number ?? numerologyData.soul_urge),
-                  personalityNumber: toIntegerOrUndefined(numerologyData.personality_number),
-                  destinyNumber: toIntegerOrUndefined(numerologyData.destiny_number),
-                  birthdayNumber: toIntegerOrUndefined(numerologyData.birthday_number),
-                  maturityNumber: toIntegerOrUndefined(numerologyData.maturity_number),
-                  personalYearNumber: toIntegerOrUndefined((numerologyData as Record<string, unknown>).personal_year_number)
-                }}
-                comprehensiveReport={comprehensiveReport}
-              />
-            ) : (
-              <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm rounded-xl" elevation={1}>
-                <CardHeader>
-                  <CardTitle className="m3-title-medium flex items-center gap-2">
-                    <MessageCircle className="w-5 h-5 text-amber-400" />
-                    <span className="text-amber-200">AI Numerology Coach</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-center py-8">
-                  <div className="space-y-4">
-                    <div className="w-16 h-16 backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-full flex items-center justify-center mx-auto">
-                      <Brain className="w-8 h-8 text-amber-300" />
-                    </div>
-                    <h3 className="m3-title-large font-serif text-amber-300">Ask the Seer</h3>
-                    <p className="m3-body-medium text-slate-300">
-                      Please wait while we load your numerology data...
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            </motion.div>
-          </TabsContent>
+              </div>
+            </div>
+          )}
         </Tabs>
         </div>
       </div>
