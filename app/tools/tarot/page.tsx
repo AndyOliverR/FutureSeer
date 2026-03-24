@@ -83,7 +83,6 @@ function TarotPage() {
   const [availableSpreads, setAvailableSpreads] = useState<SpreadType[]>([])
   const [allCards, setAllCards] = useState<TarotCard[]>([])
   
-  const [profileCardsError, setProfileCardsError] = useState<string | null>(null)
   const { report: pipelineReport, loading: isLoadingCombinedSystem, error: profileError } = useToolReport('tarot')
   const { report: westernReport } = useToolReport('western')
   const combinedSystemData = useMemo((): CombinedSystemData | null => {
@@ -201,23 +200,28 @@ function TarotPage() {
   }, [])
 
   // Calculate profile cards if birth date and name are available (memoized for performance)
-  const profileCards = useMemo((): ProfileCardsData | null => {
-    setProfileCardsError(null)
-    
-    if (!userProfile?.birthDate) return null
-    
-    // Use fullName if available, otherwise use displayName
+  const { profileCards, profileCardsError } = useMemo((): {
+    profileCards: ProfileCardsData | null
+    profileCardsError: string | null
+  } => {
+    if (!userProfile?.birthDate) return { profileCards: null, profileCardsError: null }
+
     const fullName = userProfile.fullName || userProfile.displayName || ''
-    if (!fullName) return null
-    
+    if (!fullName) return { profileCards: null, profileCardsError: null }
+
     try {
-      return tarotIntelligence.calculateProfileCards(userProfile.birthDate, fullName)
-    } catch (error) {
-      // Profile card calculation failed - set error state
-      setProfileCardsError('Unable to calculate your profile cards. Please check your birth date and name.')
-      return null
+      return {
+        profileCards: tarotIntelligence.calculateProfileCards(userProfile.birthDate, fullName),
+        profileCardsError: null,
+      }
+    } catch {
+      return {
+        profileCards: null,
+        profileCardsError:
+          'Unable to calculate your profile cards. Please check your birth date and name.',
+      }
     }
-  }, [userProfile?.birthDate, userProfile?.fullName, userProfile?.displayName])
+  }, [userProfile])
 
   // Check for reduced motion preference
   const prefersReducedMotion = useMemo(() => {

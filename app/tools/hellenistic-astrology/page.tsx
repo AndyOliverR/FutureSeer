@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
@@ -71,7 +71,9 @@ export default function HellenisticAstrologyPage() {
   )
 
   const refreshProfileRef = useRef(refreshProfile)
-  refreshProfileRef.current = refreshProfile
+  useLayoutEffect(() => {
+    refreshProfileRef.current = refreshProfile
+  }, [refreshProfile])
   const onDemandReadingRef = useRef<HellenisticAstrologyReading | null>(null)
 
   // When pipeline has no real report (missing or placeholder), fetch once and persist so returning visits load from profile
@@ -141,9 +143,7 @@ export default function HellenisticAstrologyPage() {
     return () => { cancelled = true }
   }, [user?.uid, userProfile, hasCompleteDetails, reading, isLoading, onDemandLoading])
 
-  // Use ref so we show content even after Strict Mode remount (ref survives, state may reset)
-  const effectiveReading = reading ?? onDemandReading ?? onDemandReadingRef.current
-  // Don't show loading once we have a reading (e.g. after on-demand fetch or refreshProfile)
+  const effectiveReading = reading ?? onDemandReading
   const effectiveLoading = !effectiveReading && (isLoading || (!!hasCompleteDetails && !reading && onDemandLoading))
   const effectiveError = error ?? (!!hasCompleteDetails && !reading && !onDemandLoading ? onDemandError : null)
 
@@ -186,7 +186,20 @@ export default function HellenisticAstrologyPage() {
         <div className="rounded-2xl border border-amber-500/25 border-t-stone-500/30 bg-slate-900/80 overflow-hidden">
         <Tabs 
           value={activeTab} 
-          onValueChange={(value) => setActiveTab(value as any)} 
+          onValueChange={(value) =>
+            setActiveTab(
+              value as
+                | 'introduction'
+                | 'chart'
+                | 'planets'
+                | 'houses'
+                | 'lots'
+                | 'sect'
+                | 'profections'
+                | 'interpretations'
+                | 'ask-the-seer'
+            )
+          } 
           className="w-full"
           aria-label="Hellenistic Astrology navigation tabs"
         >
@@ -716,7 +729,7 @@ export default function HellenisticAstrologyPage() {
                           <p className="text-slate-700 text-sm leading-relaxed">
                             In a {effectiveReading.sect.type} chart, the {effectiveReading.sect.sectLeader} is the primary light and guide. 
                             The {effectiveReading.sect.benefic} works more beneficially, while the {effectiveReading.sect.malefic} may present 
-                            more challenges. Understanding your sect helps you work with your chart's natural energies.
+                            more challenges. Understanding your sect helps you work with your chart&apos;s natural energies.
                           </p>
                         </div>
                       </CardContent>
@@ -798,7 +811,7 @@ export default function HellenisticAstrologyPage() {
                           <CardContent className="p-4">
                             <p className="text-slate-600 text-sm leading-relaxed">
                               Profections are an ancient timing technique where each year of life activates a different sign, 
-                              starting from the Ascendant. The sign's ruler becomes the time-lord for that year, activating 
+                              starting from the Ascendant. The sign&apos;s ruler becomes the time-lord for that year, activating 
                               themes related to the houses it rules.
                             </p>
                           </CardContent>
