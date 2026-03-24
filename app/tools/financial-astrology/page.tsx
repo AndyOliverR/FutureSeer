@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useMemo, useEffect, useRef } from 'react';
+import { Suspense, useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
@@ -14,7 +14,6 @@ import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
 import { DashboardSection } from '@/components/western/DashboardSection';
 import FinancialSeerChatInterface from '@/components/FinancialSeerChatInterface';
 import {
-  Star,
   AlertTriangle,
   TrendingUp,
   DollarSign,
@@ -38,7 +37,9 @@ function FinancialAstrologyPageContent() {
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
   const onDemandFetchedRef = useRef(false);
   const refreshProfileRef = useRef(refreshProfile);
-  refreshProfileRef.current = refreshProfile;
+  useLayoutEffect(() => {
+    refreshProfileRef.current = refreshProfile;
+  }, [refreshProfile]);
 
   const hasCompleteDetails = useMemo(
     () => !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace),

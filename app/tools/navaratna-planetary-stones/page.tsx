@@ -43,6 +43,7 @@ import {
 export default function NavaratnaPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
+  const [navaratnaSeerSessionFallback] = useState(() => String(Date.now()))
   const [activeTab, setActiveTab] = useState<'introduction' | 'analysis' | 'recommendations' | 'ask-seer'>('introduction')
   const [bodyWeightKg, setBodyWeightKg] = useState<number | undefined>(undefined)
   const { report: pipelineReport, loading: isLoading, error, hasReport } = useToolReport('navaratna')
@@ -269,7 +270,7 @@ export default function NavaratnaPage() {
                   analysis={analysis}
                   userId={user?.uid}
                   userProfile={userProfile}
-                  sessionId={analysis ? `navaratna_${analysis.userId || Date.now()}` : undefined}
+                  sessionId={analysis ? `navaratna_${analysis.userId ?? navaratnaSeerSessionFallback}` : undefined}
                 />
               </TabsContent>
             ) : showNavaratnaViral && !viralUnlock.hydrated ? (

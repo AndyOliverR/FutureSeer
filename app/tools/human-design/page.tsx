@@ -17,7 +17,6 @@ import {
   Heart,
   Brain,
   Info,
-  Loader2,
   Star,
   Users,
 } from 'lucide-react'
@@ -70,7 +69,7 @@ interface HumanDesignChart {
   centers: {
     defined: string[];
     undefined: string[];
-    details: Record<string, any>;
+    details: Record<string, unknown>;
   };
   gates: Array<{
     planet: string;
@@ -179,6 +178,7 @@ export default function HumanDesignPage() {
   const { user, userProfile } = useAuth()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
+  const [hdSeerSessionId] = useState(() => `human_design_${Date.now()}`)
   const { report: pipelineReport, loading: isLoading, error } = useToolReport('humanDesign')
   const chart = useMemo(() => (pipelineReport as Record<string, unknown> | undefined)?.chart as HumanDesignChart | undefined, [pipelineReport])
   const report = useMemo(() => (pipelineReport as Record<string, unknown> | undefined)?.report as HumanDesignReport | undefined, [pipelineReport])
@@ -390,7 +390,7 @@ export default function HumanDesignPage() {
                     userId={user?.uid ?? ''}
                     userProfile={userProfile}
                     humanDesignChart={chart}
-                    sessionId={`human_design_${Date.now()}`}
+                    sessionId={hdSeerSessionId}
                   />
                 </div>
               </TabsContent>
