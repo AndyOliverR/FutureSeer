@@ -19,6 +19,7 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 - Security commands: [SECURITY_CHECKS.md](./SECURITY_CHECKS.md)
 - Auth and routing: [AUTH_AND_ROUTING_SUMMARY.md](./AUTH_AND_ROUTING_SUMMARY.md)
 - Failure triage (layer mapping): [FAILURE_TRIAGE.md](./FAILURE_TRIAGE.md)
+- System design concepts → this app (gaps & prioritized fixes): [SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md](./SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md)
 
 ## External comparison (optional)
 

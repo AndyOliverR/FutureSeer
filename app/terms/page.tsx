@@ -29,8 +29,8 @@ export default function TermsPage() {
             </h2>
             <div className="space-y-4 text-white/80">
               <p>
-                These Terms and Conditions ("Terms") govern your use of FutureSeer ("Service"), 
-                operated by FutureSeer ("Company," "we," "us," or "our"). By accessing or using 
+                These Terms and Conditions (&quot;Terms&quot;) govern your use of FutureSeer (&quot;Service&quot;), 
+                operated by FutureSeer (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By accessing or using 
                 our Service, you agree to be bound by these Terms.
               </p>
               <p>
@@ -113,12 +113,18 @@ export default function TermsPage() {
           {/* Payment Terms & Auto-Mandate */}
           <section>
             <h2 className="text-2xl font-bold text-amber-400 mb-4">
-              5. Contribution Terms & Auto-Mandate Agreement
+              5. Membership, Contribution & Auto-Mandate Agreement
             </h2>
             <div className="space-y-4 text-white/80">
               <p>
+                <strong>Membership:</strong> Paid tiers (Coffee, Treat, and Hamper) are <strong>memberships</strong>—recurring
+                subscriptions that support the innovation experiment and grant ongoing access according to your selected
+                billing cycle (monthly, quarterly, or annual). We use the names Coffee, Treat, and Hamper for the same
+                tiers as the Buy Me a Coffee / Treat Me / Festive Hamper billing options described in checkout.
+              </p>
+              <p>
                 <strong>Innovation Experiment Participation:</strong> FutureSeer operates as an innovation experiment. 
-                When you join, you're contributing to making AI-powered divination accessible to all. Your participation 
+                When you join, you&apos;re contributing to making AI-powered divination accessible to all. Your participation 
                 helps improve accuracy, precision, and quality for everyone.
               </p>
               <p>
@@ -132,8 +138,8 @@ export default function TermsPage() {
               </p>
               <p>
                 <strong>Auto-Mandate Agreement:</strong> By joining the FutureSeer innovation experiment, you authorize 
-                FutureSeer to automatically charge your payment method for recurring contributions according to your selected 
-                contribution tier (Buy Me a Coffee for monthly, Treat Me for quarterly, or Festive Hamper for annual). 
+                FutureSeer to automatically charge your payment method for recurring membership billing according to your selected 
+                tier (Coffee / monthly, Treat / quarterly, or Hamper / annual). 
                 This authorization is required for regulatory compliance (RBI guidelines for recurring payments in India, 
                 similar regulations in other countries).
               </p>
@@ -160,7 +166,7 @@ export default function TermsPage() {
               </div>
               <p>
                 <strong>Price Changes:</strong> As the innovation experiment evolves, contribution levels may be adjusted. 
-                We will provide 30 days' notice of any changes. Existing contributors will be notified of any adjustments.
+                We will provide 30 days&apos; notice of any changes. Existing contributors will be notified of any adjustments.
               </p>
               <div>
                 <p><strong>Your Rights:</strong> You have the right to:</p>
