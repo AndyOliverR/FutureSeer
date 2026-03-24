@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Coffee, Gift, Sparkles, Check } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { getAttractivePrice, getCountryPricingConfig } from '@/lib/pricingConfig';
+import { getAttractivePrice, getCountryPricingConfig, getMembershipPricingComparison } from '@/lib/pricingConfig';
+import { MEMBERSHIP_TIER_FEATURES } from '@/lib/membershipTierCopy';
 
 interface PlanSelectionStepProps {
   selectedCountry: string;
@@ -38,6 +38,14 @@ export function PlanSelectionStep({
   >(initialPlan || 'power-user-trial');
 
   const config = getCountryPricingConfig(selectedCountry);
+  const comparison = getMembershipPricingComparison(selectedCountry);
+  const fmtEff = (n: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: comparison.currency,
+      minimumFractionDigits: config.currency === 'INR' || config.currency === 'PKR' || config.currency === 'BDT' ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(n);
 
   const getPriceInfo = (tier: ContributionTier) => {
     if (tier.contributionType === 'trial') {
@@ -67,81 +75,52 @@ export function PlanSelectionStep({
     {
       id: 'power-user-trial',
       name: 'Power User Trial',
-      description: 'Start Your Journey - 30 Days Free',
+      description: 'Start your journey — 30 days free',
       icon: <Sparkles className="w-6 h-6" />,
       color: 'bg-green-500',
       borderColor: 'border-green-500',
       contributionType: 'trial',
-      features: [
-        'Full access to all tools',
-        'Your usage helps improve accuracy',
-        'Early adopter status',
-        'Attribution on leaderboard',
-        'Part of the innovation team',
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['power-user-trial']],
       badge: 'Free Trial',
       badgeColor: 'bg-green-500',
     },
     {
       id: 'buy-coffee',
       name: 'Coffee',
-      description: 'Keep the innovation going',
+      description: 'Monthly membership',
       icon: <Coffee className="w-6 h-6" />,
       color: 'bg-amber-500',
       borderColor: 'border-amber-500',
       contributionType: 'monthly',
       pricingTier: 'allFeatures',
       popular: true,
-      features: [
-        'Your monthly contribution makes FutureSeer accessible',
-        'Recurring monthly support',
-        'All 60+ divination tools',
-        'Unlimited AI readings',
-        'Priority AI responses',
-        'Community participation',
-        'Forever on leaderboard',
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['buy-coffee']],
       badge: 'Monthly',
       badgeColor: 'bg-amber-500',
     },
     {
       id: 'treat-me',
       name: 'Treat',
-      description: 'Support the innovation for 3 months',
+      description: 'Quarterly membership',
       icon: <Gift className="w-6 h-6" />,
       color: 'bg-purple-500',
       borderColor: 'border-purple-500',
       contributionType: 'quarterly',
       pricingTier: 'quarterly',
-      features: [
-        'Quarterly contribution',
-        'Better value, same mission',
-        'All monthly benefits',
-        '3 months of innovation support',
-        'Early access to new features',
-        'Priority support',
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['treat-me']],
       badge: 'Quarterly',
       badgeColor: 'bg-purple-500',
     },
     {
       id: 'festive-hamper',
       name: 'Hamper',
-      description: 'Celebrate with us for a full year',
+      description: 'Annual membership',
       icon: <Sparkles className="w-6 h-6" />,
       color: 'bg-blue-600',
       borderColor: 'border-blue-600',
       contributionType: 'annual',
       pricingTier: 'annual',
-      features: [
-        'Annual contribution',
-        'Best value, maximum impact',
-        'All quarterly benefits',
-        '12 months of innovation support',
-        'Family account options',
-        'VIP community access',
-        'Influence on product roadmap',
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['festive-hamper']],
       badge: 'Best Value',
       badgeColor: 'bg-blue-600',
     },
@@ -160,9 +139,9 @@ export function PlanSelectionStep({
       className="w-full"
     >
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-2">Choose How You'd Like to Support the Innovation</h2>
+        <h2 className="text-3xl font-bold text-white mb-2">Choose your membership</h2>
         <p className="text-slate-300 font-serif">
-          Select your contribution tier. All plans include a 30-day free trial.
+          Coffee, Treat, and Hamper are recurring memberships. All options include a 30-day free trial where applicable.
         </p>
       </div>
 
@@ -228,17 +207,29 @@ export function PlanSelectionStep({
                             : '/month'}
                         </div>
                         <p className="text-white/60 text-sm mt-2">
-                          {tier.contributionType === 'monthly' && 'Your monthly contribution'}
-                          {tier.contributionType === 'quarterly' && 'Your quarterly contribution'}
-                          {tier.contributionType === 'annual' && 'Your annual contribution'}
+                          {tier.contributionType === 'monthly' && 'Billed every month · cancel anytime'}
+                          {tier.contributionType === 'quarterly' && 'Billed every 3 months · cancel anytime'}
+                          {tier.contributionType === 'annual' && 'Billed once per year · cancel anytime'}
                         </p>
+                        {tier.contributionType === 'quarterly' && (
+                          <p className="text-amber-300/90 text-xs mt-2 font-medium">
+                            ~{fmtEff(comparison.effectiveMonthlyFromQuarterly)}/mo avg · Save{' '}
+                            {comparison.quarterlySavingsPercentVsMonthly}% vs 3× monthly
+                          </p>
+                        )}
+                        {tier.contributionType === 'annual' && (
+                          <p className="text-amber-300/90 text-xs mt-2 font-medium">
+                            ~{fmtEff(comparison.effectiveMonthlyFromAnnual)}/mo avg · Save{' '}
+                            {comparison.annualSavingsPercentVsMonthly}% vs 12× monthly
+                          </p>
+                        )}
                       </div>
                     ) : null}
                   </div>
 
                   {/* Features */}
-                  <ul className="space-y-2 mb-6 text-left max-h-32 overflow-y-auto overflow-x-visible">
-                    {tier.features.slice(0, 4).map((feature, index) => (
+                  <ul className="space-y-2 mb-6 text-left max-h-48 overflow-y-auto overflow-x-visible">
+                    {tier.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-2 text-sm text-white/80">
                         <Check className="w-3 h-3 text-amber-400 mt-0.5 flex-shrink-0" />
                         <span>{feature}</span>

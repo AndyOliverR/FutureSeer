@@ -1,54 +1,59 @@
 "use client";
 
-import { Coffee, Gift, Sparkles, Check, Heart } from 'lucide-react';
+import { Coffee, Gift, Sparkles, Check } from 'lucide-react';
 import { TipJarCard } from '@/components/TipJarCard';
 import { AboutSection } from './AboutSection';
 import { motion } from 'framer-motion';
+import { getAttractivePrice, getMembershipPricingComparison } from '@/lib/pricingConfig';
 
 interface AboutPricingProps {
   countryCode?: string;
 }
 
-const pricingOptions = [
-  {
-    id: 'coffee',
-    name: 'Coffee',
-    icon: Coffee,
-    price: '₹99/month',
-    description: 'Monthly support',
-    features: [
-      'All 60+ divination tools',
-      'Unlimited AI readings',
-      'Cancel anytime'
-    ]
-  },
-  {
-    id: 'treat',
-    name: 'Treat',
-    icon: Gift,
-    price: '₹199/quarter',
-    description: 'Better value',
-    features: [
-      'All Coffee benefits',
-      'Save 33%',
-      'Quarterly billing'
-    ]
-  },
-  {
-    id: 'hamper',
-    name: 'Hamper',
-    icon: Sparkles,
-    price: '₹999/year',
-    description: 'Best value',
-    features: [
-      'All Treat benefits',
-      'Save 17%',
-      'VIP perks'
-    ]
-  }
-];
-
 export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
+  const m = getAttractivePrice('allFeatures', countryCode);
+  const q = getAttractivePrice('quarterly', countryCode);
+  const a = getAttractivePrice('annual', countryCode);
+  const cmp = getMembershipPricingComparison(countryCode);
+
+  const pricingOptions = [
+    {
+      id: 'coffee',
+      name: 'Coffee',
+      icon: Coffee,
+      price: `${m.formatted}/month`,
+      description: 'Monthly membership',
+      features: [
+        'All 60+ divination tools',
+        'Unlimited AI readings',
+        'Cancel anytime',
+      ],
+    },
+    {
+      id: 'treat',
+      name: 'Treat',
+      icon: Gift,
+      price: `${q.formatted}/quarter`,
+      description: 'Quarterly membership',
+      features: [
+        'All Coffee benefits',
+        `Save ${cmp.quarterlySavingsPercentVsMonthly}% vs 3× monthly`,
+        'Billed every 3 months',
+      ],
+    },
+    {
+      id: 'hamper',
+      name: 'Hamper',
+      icon: Sparkles,
+      price: `${a.formatted}/year`,
+      description: 'Annual membership',
+      features: [
+        'All Treat benefits',
+        `Save ${cmp.annualSavingsPercentVsMonthly}% vs 12× monthly`,
+        'Best long-term value',
+      ],
+    },
+  ];
   return (
     <AboutSection 
       title="Pricing & Support"

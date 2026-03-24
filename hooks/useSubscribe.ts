@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { getCountryPricingConfig, getAttractivePrice } from "@/lib/pricingConfig";
+import { MEMBERSHIP_TIER_FEATURES } from "@/lib/membershipTierCopy";
 import { initializeSubscriptionCheckout } from "@/lib/razorpayClient";
 import { updateUserProfile } from "@/lib/firebase";
 
@@ -76,13 +77,7 @@ export function useSubscribe() {
             interval: "forever",
             currencySymbol: cfg.currencySymbol,
             formatted: "Free",
-            features: [
-              "Teaser previews across tools (full reports unlock with Coffee, Treat, or Hamper)",
-              "Your usage helps improve accuracy",
-              "Early adopter status",
-              "Attribution on leaderboard",
-              "Part of the innovation team",
-            ],
+            features: [...MEMBERSHIP_TIER_FEATURES["power-user-trial"]],
             valueScore: 3,
             targetAudience: "New users, curious explorers",
           },
@@ -94,15 +89,7 @@ export function useSubscribe() {
             interval: "month",
             currencySymbol: priceAll.currencySymbol,
             formatted: priceAll.formatted,
-            features: [
-              "Your monthly contribution makes FutureSeer accessible",
-              "Recurring monthly support",
-              "All 60+ divination tools",
-              "Unlimited AI readings",
-              "Priority AI responses",
-              "Community participation",
-              "Forever on leaderboard",
-            ],
+            features: [...MEMBERSHIP_TIER_FEATURES["buy-coffee"]],
             popular: true,
             valueScore: 7,
             targetAudience: "Regular users, spiritual seekers",
@@ -134,15 +121,7 @@ export function useSubscribe() {
             interval: "year",
             currencySymbol: priceAnnual.currencySymbol,
             formatted: priceAnnual.formatted,
-            features: [
-              "Annual contribution",
-              "Best value, maximum impact",
-              "All quarterly benefits",
-              "12 months of innovation support",
-              "Family account options",
-              "VIP community access",
-              "Influence on product roadmap",
-            ],
+            features: [...MEMBERSHIP_TIER_FEATURES["festive-hamper"]],
             valueScore: 10,
             targetAudience: "Annual believers",
           },

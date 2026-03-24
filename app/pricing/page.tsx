@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { Shield, Clock } from 'lucide-react'
 import { InnovationInvitation } from '@/components/InnovationInvitation'
@@ -12,16 +11,16 @@ import { AttributionLeaderboard } from '@/components/AttributionLeaderboard'
 import { FeedbackImprovement } from '@/components/FeedbackImprovement'
 import { ContextualHelp } from '@/components/ContextualHelp'
 import { TipJarCard } from '@/components/TipJarCard'
+import { PricingReflectionPrompts } from '@/components/PricingReflectionPrompts'
 export default function PricingPage() {
   const { userProfile } = useAuth()
   const [isMounted, setIsMounted] = useState(false)
-  const { toast } = useToast()
-
   // Use country from user profile or default to India (no UI selector)
   const selectedCountry = userProfile?.country || 'IN'
 
   useEffect(() => {
-    setIsMounted(true)
+    const id = requestAnimationFrame(() => setIsMounted(true))
+    return () => cancelAnimationFrame(id)
   }, [])
 
   const handleContribute = (tierId: string) => {
@@ -46,12 +45,14 @@ export default function PricingPage() {
           <InnovationInvitation />
           <div className="absolute top-4 right-4">
             <ContextualHelp
-              title="Understanding Contributions"
-              content="Your contribution supports the innovation experiment. 'Buy Me a Coffee' is monthly, 'Treat Me' is quarterly, and 'Buy a Festive Hamper' is annual. You're not buying a subscription - you're supporting innovation that makes FutureSeer accessible to all."
+              title="Understanding memberships"
+              content="Coffee, Treat, and Hamper are membership tiers with recurring billing (monthly, quarterly, or annual). Your membership supports the innovation experiment and unlocks full access to tools and AI features. Cancel anytime; see Terms and Refund Policy."
               placement="left"
             />
           </div>
         </div>
+
+        <PricingReflectionPrompts />
 
         {/* Contribution Tiers */}
         <div className="space-y-8">
@@ -84,7 +85,7 @@ export default function PricingPage() {
         {/* Additional Info */}
         <div className="text-center text-white/80 space-y-4">
           <p className="text-sm">
-            🔒 Secure contributions • Join the experiment • Cancel anytime
+            Secure membership billing • Join the experiment • Cancel anytime
           </p>
           <div className="flex justify-center items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
