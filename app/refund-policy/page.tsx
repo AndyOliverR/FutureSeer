@@ -64,7 +64,7 @@ export default function RefundPolicyPage() {
             <div className="space-y-4 text-gray-300">
               <p>
                 <strong>30-Day Money-Back Guarantee:</strong> We offer a 30-day money-back guarantee 
-                for new subscriptions. If you're not satisfied with our service within 30 days of 
+                for new subscriptions. If you{"'"}re not satisfied with our service within 30 days of 
                 your initial purchase, you may request a full refund.
               </p>
               <p>
@@ -161,11 +161,11 @@ export default function RefundPolicyPage() {
                 you from using our service, we may offer a refund or service credit at our discretion.
               </p>
               <p>
-                <strong>Service Discontinuation:</strong> If we discontinue a service you've purchased, 
+                <strong>Service Discontinuation:</strong> If we discontinue a service you{"'"}ve purchased, 
                 we will provide a pro-rated refund or alternative service.
               </p>
               <p>
-                <strong>Billing Errors:</strong> If you're charged incorrectly or experience billing 
+                <strong>Billing Errors:</strong> If you{"'"}re charged incorrectly or experience billing 
                 issues, we will investigate and provide appropriate refunds or credits.
               </p>
               <p>
