@@ -597,7 +597,7 @@ function calculateAscendant(lst: number, latitude: number): number {
   const denominator = -cosObliquity * sinLST - sinObliquity * tanLat;
   
   // Calculate the arctangent and convert to degrees
-  let ascendantRad = Math.atan2(numerator, denominator);
+  const ascendantRad = Math.atan2(numerator, denominator);
   let ascendant = rad2deg(ascendantRad);
   
   // Normalize to 0-360 range
