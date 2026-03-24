@@ -59,9 +59,9 @@ const toJD_TT = (date: Date | string | number) => {
     const dayFraction = (h + min / 60 + s / 3600 + ms / 3600000) / 24;
     
     // Julian Day calculation (Meeus algorithm)
-    let a = Math.floor((14 - m) / 12);
-    let y2 = y + 4800 - a;
-    let m2 = m + 12 * a - 3;
+    const a = Math.floor((14 - m) / 12);
+    const y2 = y + 4800 - a;
+    const m2 = m + 12 * a - 3;
     
     jdUTC = d + Math.floor((153 * m2 + 2) / 5) + 365 * y2 + 
             Math.floor(y2 / 4) - Math.floor(y2 / 100) + 
@@ -113,7 +113,7 @@ const rectToEcl = (x: number, y: number, z: number) => {
 // Mean node formula (Meeus Ch. 47)
 const meanNodeLongitude = (jd: number) => {
   const T = (jd - 2451545.0) / 36525;
-  let L = 125.04452 - 1934.136261 * T + 0.0020708 * T ** 2 + (T ** 3) / 450000;
+  const L = 125.04452 - 1934.136261 * T + 0.0020708 * T ** 2 + (T ** 3) / 450000;
   return norm360(L);
 };
 
