@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getRazorpayClient, createPlan, createSubscription } from '@/lib/razorpay';
+import { createPlan, createSubscription } from '@/lib/razorpay';
 import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
 import { convertToUsdCents } from '@/lib/currencyConversion';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { getFirebaseDB } from '@/lib/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { getAuth, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { plan, amount, currency, email, name, country, userId } = body;
+    const { plan, amount, email, name, country, userId } = body;
 
     if (!plan || !email || !name || !country) {
       return NextResponse.json(
@@ -99,7 +98,6 @@ export async function POST(request: NextRequest) {
     }
 
     const config = getCountryPricingConfig(country);
-    const razorpay = getRazorpayClient();
 
     // Determine plan period and create Razorpay plan if needed
     let planPeriod: 'monthly' | 'quarterly' | 'yearly' = 'monthly';
@@ -163,9 +161,10 @@ export async function POST(request: NextRequest) {
         },
       });
       razorpayPlanId = createdPlan.id;
-    } catch (error: any) {
+    } catch (error: unknown) {
       devLog.error('Error creating plan:', error, 'route');
-      throw new Error(error.message || 'Failed to create subscription plan');
+      const message = error instanceof Error ? error.message : 'Failed to create subscription plan';
+      throw new Error(message);
     }
 
     // Trial: first charge delayed (start_at + 30 days). Paid plans: immediate start.
@@ -191,10 +190,11 @@ export async function POST(request: NextRequest) {
       razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
       ...(useFallbackCurrency ? { chargeCurrency: 'USD' as const } : {}),
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     devLog.error('Error creating subscription:', error, 'route');
+    const message = error instanceof Error ? error.message : 'Failed to create subscription';
     return NextResponse.json(
-      { error: error.message || 'Failed to create subscription' },
+      { error: message },
       { status: 500 }
     );
   }

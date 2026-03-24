@@ -98,6 +98,8 @@ npx eslint .
 
 An `eslint.config.mjs` (flat config) was added to bridge the existing `.eslintrc.json` config with ESLint 9.
 
+**ESLint phased cleanup:** For `app/tools`, `app/api`, `components`, `hooks`, and `lib`, some rules are set to **warn** (`@typescript-eslint/no-explicit-any`, `react-hooks/set-state-in-effect`, `react-hooks/set-state-in-render`, `react-hooks/refs`, `react-hooks/purity`, `react-hooks/preserve-manual-memoization`, `react/no-unescaped-entities`) so CI stays green while debt is paid down. When a subtree is cleaned up, narrow the `files` globs in `eslint.config.mjs` or add a **later** config object that sets those rules back to `error` for that path (flat config: last matching block wins).
+
 ### Security checks (free, in-repo)
 
 Run `pnpm run security` to run dependency audit then **always** lint (including security rules); see [`scripts/run-security.mjs`](scripts/run-security.mjs). See [docs/SECURITY_CHECKS.md](docs/SECURITY_CHECKS.md) for all commands.
