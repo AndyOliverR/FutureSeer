@@ -2,10 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Coffee, Gift, Sparkles, Check } from "lucide-react";
-import { getAttractivePrice, getCountryPricingConfig } from "@/lib/pricingConfig";
-import { useToast } from "@/components/ui/use-toast";
+import { getAttractivePrice, getMembershipPricingComparison } from "@/lib/pricingConfig";
+import { MEMBERSHIP_TIER_FEATURES } from "@/lib/membershipTierCopy";
 
 interface ContributionTier {
   id: string;
@@ -29,8 +28,6 @@ interface ContributionTiersProps {
 }
 
 export function ContributionTiers({ selectedCountry, onContribute }: ContributionTiersProps) {
-  const { toast } = useToast();
-
   const getPriceInfo = (tier: ContributionTier) => {
     if (tier.contributionType === 'trial') {
       return { price: 0, currency: 'INR', formatted: 'Free', currencySymbol: '₹' };
@@ -55,6 +52,15 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
     };
   };
 
+  const comparison = getMembershipPricingComparison(selectedCountry);
+  const fmtEff = (n: number) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: comparison.currency,
+      minimumFractionDigits: comparison.currency === 'INR' || comparison.currency === 'PKR' || comparison.currency === 'BDT' ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(n);
+
   const contributionTiers: ContributionTier[] = [
     {
       id: 'power-user-trial',
@@ -65,20 +71,14 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
       color: 'bg-green-500',
       borderColor: 'border-green-500',
       contributionType: 'trial',
-      features: [
-        'Teaser previews across tools (full reports with Coffee, Treat, or Hamper)',
-        'Your usage helps improve accuracy',
-        'Early adopter status',
-        'Attribution on leaderboard',
-        'Part of the innovation team'
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['power-user-trial']],
       badge: 'Free Trial',
       badgeColor: 'bg-green-500'
     },
     {
       id: 'buy-coffee',
       name: 'Coffee',
-      description: 'Keep the innovation going',
+      description: 'Monthly membership',
       icon: <Coffee className="w-6 h-6" />,
       visualIcon: <Coffee className="w-12 h-12" />,
       color: 'bg-amber-500',
@@ -86,58 +86,35 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
       contributionType: 'monthly',
       pricingTier: 'allFeatures',
       popular: true,
-      features: [
-        'Your monthly contribution makes FutureSeer accessible',
-        'Recurring monthly support',
-        'All 60+ divination tools',
-        'Unlimited AI readings',
-        'Priority AI responses',
-        'Community participation',
-        'Forever on leaderboard'
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['buy-coffee']],
       badge: 'Monthly',
       badgeColor: 'bg-amber-500'
     },
     {
       id: 'treat-me',
       name: 'Treat',
-      description: 'Support the innovation for 3 months',
+      description: 'Quarterly membership',
       icon: <Gift className="w-6 h-6" />,
       visualIcon: <Gift className="w-12 h-12" />,
       color: 'bg-purple-500',
       borderColor: 'border-purple-500',
       contributionType: 'quarterly',
       pricingTier: 'quarterly',
-      features: [
-        'Quarterly contribution',
-        'Better value, same mission',
-        'All monthly benefits',
-        '3 months of innovation support',
-        'Early access to new features',
-        'Priority support'
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['treat-me']],
       badge: 'Quarterly',
       badgeColor: 'bg-purple-500'
     },
     {
       id: 'festive-hamper',
       name: 'Hamper',
-      description: 'Celebrate with us for a full year',
+      description: 'Annual membership',
       icon: <Sparkles className="w-6 h-6" />,
       visualIcon: <Sparkles className="w-12 h-12" />,
       color: 'bg-blue-600',
       borderColor: 'border-blue-600',
       contributionType: 'annual',
       pricingTier: 'annual',
-      features: [
-        'Annual contribution',
-        'Best value, maximum impact',
-        'All quarterly benefits',
-        '12 months of innovation support',
-        'Family account options',
-        'VIP community access',
-        'Influence on product roadmap'
-      ],
+      features: [...MEMBERSHIP_TIER_FEATURES['festive-hamper']],
       badge: 'Best Value',
       badgeColor: 'bg-blue-600'
     }
@@ -193,10 +170,22 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
                       {tier.contributionType === 'annual' ? '/year' : tier.contributionType === 'quarterly' ? '/quarter' : '/month'}
                     </div>
                     <p className="text-white/80 text-xs mt-2">
-                      {tier.contributionType === 'monthly' && 'Your monthly contribution'}
-                      {tier.contributionType === 'quarterly' && 'Your quarterly contribution'}
-                      {tier.contributionType === 'annual' && 'Your annual contribution'}
+                      {tier.contributionType === 'monthly' && 'Billed every month · cancel anytime'}
+                      {tier.contributionType === 'quarterly' && 'Billed every 3 months · cancel anytime'}
+                      {tier.contributionType === 'annual' && 'Billed once per year · cancel anytime'}
                     </p>
+                    {tier.contributionType === 'quarterly' && (
+                      <p className="text-amber-300/90 text-xs mt-2 font-medium">
+                        ~{fmtEff(comparison.effectiveMonthlyFromQuarterly)}/mo avg · Save{' '}
+                        {comparison.quarterlySavingsPercentVsMonthly}% vs 3× monthly
+                      </p>
+                    )}
+                    {tier.contributionType === 'annual' && (
+                      <p className="text-amber-300/90 text-xs mt-2 font-medium">
+                        ~{fmtEff(comparison.effectiveMonthlyFromAnnual)}/mo avg · Save{' '}
+                        {comparison.annualSavingsPercentVsMonthly}% vs 12× monthly
+                      </p>
+                    )}
                   </div>
                 ) : null}
               </div>

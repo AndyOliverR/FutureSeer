@@ -539,6 +539,56 @@ export function getCountryPricingConfig(countryCode: string): CountryPricingConf
   return COUNTRY_PRICING_CONFIG[countryCode] || COUNTRY_PRICING_CONFIG['IN'];
 }
 
+/** Effective monthly cost and savings vs paying the monthly tier for the same period. */
+export interface MembershipPricingComparison {
+  currency: string;
+  monthly: number;
+  quarterly: number;
+  annual: number;
+  /** Quarterly price ÷ 3 */
+  effectiveMonthlyFromQuarterly: number;
+  /** Annual price ÷ 12 */
+  effectiveMonthlyFromAnnual: number;
+  /** 0–100: vs (3 × monthly) for the quarter */
+  quarterlySavingsPercentVsMonthly: number;
+  /** 0–100: vs (12 × monthly) for the year */
+  annualSavingsPercentVsMonthly: number;
+}
+
+/**
+ * Compare quarterly/annual tiers to paying month-by-month (same catalog prices).
+ */
+export function getMembershipPricingComparison(countryCode: string = 'IN'): MembershipPricingComparison {
+  const config = getCountryPricingConfig(countryCode);
+  const monthly = config.pricingTiers.allFeatures;
+  const quarterly = config.pricingTiers.quarterly;
+  const annual = config.pricingTiers.annual;
+
+  const threeMonthsAtMonthly = monthly * 3;
+  const twelveMonthsAtMonthly = monthly * 12;
+
+  const quarterlySavingsPercentVsMonthly =
+    threeMonthsAtMonthly > 0
+      ? Math.max(0, Math.round((100 * (threeMonthsAtMonthly - quarterly)) / threeMonthsAtMonthly))
+      : 0;
+
+  const annualSavingsPercentVsMonthly =
+    twelveMonthsAtMonthly > 0
+      ? Math.max(0, Math.round((100 * (twelveMonthsAtMonthly - annual)) / twelveMonthsAtMonthly))
+      : 0;
+
+  return {
+    currency: config.currency,
+    monthly,
+    quarterly,
+    annual,
+    effectiveMonthlyFromQuarterly: quarterly / 3,
+    effectiveMonthlyFromAnnual: annual / 12,
+    quarterlySavingsPercentVsMonthly,
+    annualSavingsPercentVsMonthly,
+  };
+}
+
 /**
  * Minimum plan amount in smallest currency unit for Razorpay (e.g. trial plans).
  * INR/USD/etc require at least 1 unit of major currency (100 paise/cents); IDR/VND have no sub-unit.

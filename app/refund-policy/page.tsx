@@ -25,7 +25,7 @@ export default function RefundPolicyPage() {
               ⚡ Important Information
             </h2>
             <p className="text-gray-300">
-              This policy applies to all FutureSeer subscriptions and services. Please read carefully 
+              This policy applies to all FutureSeer memberships (subscriptions) and services. Please read carefully 
               to understand your cancellation and refund rights.
             </p>
           </div>

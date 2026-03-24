@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { devLog } from '@/lib/devLogger';
+import { createAICompletion } from '@/lib/aiGateway';
+import { withRateLimit, rateLimiters, getClientIdentifier } from '@/lib/rateLimit';
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
@@ -81,7 +83,7 @@ function getToneMode(): ToneMode {
   return "elevated";
 }
 
-export async function POST(req: NextRequest) {
+async function handleSeerChatRequest(req: NextRequest) {
   try {
     const body = await req.json();
     const { message, thread = [], userId, birthProfile: clientBirthProfile, toneMode } = body;
@@ -130,49 +132,48 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 
     messages.push({ role: "user", content: message.trim() });
 
-    const apiKey = process.env.GROQ_API_KEY?.trim();
-    if (!apiKey) {
-      devLog.warn("[Seer] Missing API key. GROQ_API_KEY not set.", undefined, 'route');
+    if (!process.env.GROQ_API_KEY?.trim() && !process.env.AI_GATEWAY_API_KEY) {
+      devLog.warn("[Seer] Missing AI keys. Set GROQ_API_KEY and/or AI_GATEWAY_API_KEY.", undefined, 'route');
       return NextResponse.json(
         {
           error:
-            "Seer connection failed. Set GROQ_API_KEY in .env.local (then restart dev server) or in Vercel Environment Variables, then redeploy.",
+            "Seer connection failed. Set GROQ_API_KEY and/or AI_GATEWAY_API_KEY in .env.local (then restart dev server) or in Vercel Environment Variables, then redeploy.",
         },
         { status: 500 }
       );
     }
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
+    let reply: string;
+    try {
+      const data = await createAICompletion({
         model: "llama-3.3-70b-versatile",
         messages,
         temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: 500,
-        frequency_penalty: 0.3,
-        presence_penalty: 0.1,
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      devLog.warn('Groq API error', { status: response.status, err }, 'seer-chat');
+        topP: 0.9,
+        maxTokens: 500,
+        frequencyPenalty: 0.3,
+        presencePenalty: 0.1,
+      });
+      if (data.usage && userId) {
+        devLog.debug(
+          "[Seer] Token usage",
+          {
+            userId,
+            prompt_tokens: data.usage.promptTokens,
+            completion_tokens: data.usage.completionTokens,
+            total_tokens: data.usage.totalTokens,
+          },
+          "route"
+        );
+      }
+      reply = data.content?.trim() || "The vision is unclear. Ask again.";
+    } catch (aiErr) {
+      devLog.warn("Seer Groq/Gateway error", { err: aiErr }, "seer-chat");
       return NextResponse.json(
         { error: "The Seer could not respond. Try again." },
         { status: 502 }
       );
     }
-
-    const data = await response.json();
-    if (data.usage && userId) {
-      devLog.debug('[Seer] Token usage', { userId, ...data.usage }, 'route');
-    }
-    const reply = data.choices?.[0]?.message?.content?.trim() || "The vision is unclear. Ask again.";
 
     const updatedThread = [
       ...trimmedThread,
@@ -189,3 +190,6 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
     );
   }
 }
+
+/** Same AI budget as legacy OpenAI oracle route; IP-based id (body userId not available pre-parse). */
+export const POST = withRateLimit(handleSeerChatRequest, rateLimiters.ai, getClientIdentifier);
