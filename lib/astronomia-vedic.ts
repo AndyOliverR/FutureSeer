@@ -638,14 +638,16 @@ export const getHouseCusps = (
         });
       }
     } else {
-      // Placidus (simplified approximation)
-      // For true Placidus, we need complex spherical trigonometry
-      // Using Equal Houses as approximation for now
-      for (let i = 0; i < 12; i++) {
-        const cuspLonSid = norm360(ascendant.lonSidereal + (i * 30));
+      // Placidus: same tropical Placidus cusps as Western (`calculateTropicalHouses`), minus ayanamsha
+      const dateObj = date instanceof Date ? date : new Date(date);
+      const tropicalHouses = calculateTropicalHouses(dateObj, latitude, longitude);
+      const ay = ayanamshaValue(jd, ayanamshaType);
+      const sorted = [...tropicalHouses].sort((a, b) => a.number - b.number);
+      for (const h of sorted) {
+        const cuspLonSid = norm360(h.longitude - ay);
         const sign = Math.floor(cuspLonSid / 30);
         houses.push({
-          house: i + 1,
+          house: h.number,
           cuspLonSid,
           sign,
           signName: SIGNS[sign],

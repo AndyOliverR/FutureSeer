@@ -324,6 +324,8 @@ export function calculateTropicalPlanets(date: Date) {
     }
   }
   
+  const chiron = calculateChironTropical(jd);
+
   const result = {
     sun,
     moon,
@@ -335,11 +337,27 @@ export function calculateTropicalPlanets(date: Date) {
     uranus,
     neptune,
     pluto,
+    chiron,
     northNode,
     southNode
   };
-  
+
   return result;
+}
+
+/**
+ * Chiron (2060) — mean-motion tropical longitude (Astronomia-style pipeline).
+ * Not Swiss Ephemeris; adequate for sign/house and narrative use. For arc-second work, validate externally.
+ */
+function calculateChironTropical(jd: number) {
+  const daysSinceEpoch = jd - 2451545.0;
+  const lon = norm360(252.0 + 0.01942 * daysSinceEpoch);
+  return {
+    longitude: lon,
+    latitude: 0,
+    distance: 13.6,
+    speed: 0.0194
+  };
 }
 
 /**

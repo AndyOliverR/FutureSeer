@@ -53,6 +53,7 @@ When changing or adding astrology logic:
 - **Pipeline**: (1) Normalize birth time to 24h (`normalizeBirthTime` → `HH:mm:ss`). (2) Convert local birth time to UTC using place timezone or coordinates-based offset (`birthLocalToUTC`). (3) Use that UTC `Date` for all chart calculations. (4) Western = tropical; Vedic/KP = sidereal Lahiri.
 - **Preservation**: Do not delete working code or do large refactors. Prefer patching and small helpers. If a change could break other tools (Western, KP, Horary, etc.), propose instead of implementing blindly.
 - **Validation**: After computing Moon (or any planet) longitude, the assigned sign must match the longitude range (e.g. Libra 180–210°, Scorpio 210–240°). In development, a mismatch is logged as a warning.
+- **Depth snapshot:** Implementation map, gaps vs desktop ephemeris suites, and parity-test notes — [docs/ASTROLOGY_ENGINE_AUDIT.md](docs/ASTROLOGY_ENGINE_AUDIT.md).
 
 ## Cursor Cloud specific instructions
 
