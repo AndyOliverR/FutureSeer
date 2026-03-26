@@ -23,7 +23,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
-import { updateUserProfile } from '@/lib/firebase'
+import { updateUserProfile, type UserProfile } from '@/lib/firebase'
 import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
 import { useErrorLogger } from '@/hooks/useErrorLogger';
 import { compressImageFile } from '@/lib/imageCompression'
@@ -41,9 +41,20 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(fixed)} ${units[i]}`;
 }
 
-function toFriendlyUploadError(e: any): string {
-  const status: number | null = typeof e?.status === "number" ? e.status : null;
-  const detailStr = e?.detail ? JSON.stringify(e.detail) : "";
+function readUploadErrorFields(e: unknown): { status: number | null; detail: unknown; message: string } {
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>
+    const status = typeof o.status === "number" ? o.status : null
+    const detail = "detail" in o ? o.detail : undefined
+    const message = e instanceof Error ? e.message : String(o.message ?? "")
+    return { status, detail, message }
+  }
+  return { status: null, detail: undefined, message: e instanceof Error ? e.message : "" }
+}
+
+function toFriendlyUploadError(e: unknown): string {
+  const { status, detail, message } = readUploadErrorFields(e)
+  const detailStr = detail !== undefined ? JSON.stringify(detail) : ""
 
   if (status === 401) return "Your session expired. Please sign in again, then retry the upload.";
   if (status === 400) {
@@ -53,9 +64,15 @@ function toFriendlyUploadError(e: any): string {
   if (status === 415) return "Unsupported image type. Please use JPEG, PNG, WebP, or GIF.";
   if (status && status >= 500) return "Upload service had trouble. Please retry in a moment.";
 
-  const msg = String(e?.message ?? "");
-  if (msg.includes("Failed to fetch")) return "Network error while uploading. Check your connection and retry.";
+  if (message.includes("Failed to fetch")) return "Network error while uploading. Check your connection and retry.";
   return "Upload failed. Please retry (or try a smaller image).";
+}
+
+type ProfileSetupGender = '' | NonNullable<UserProfile['gender']>
+
+function genderFromSelectValue(raw: string): ProfileSetupGender {
+  if (raw === '' || raw === 'male' || raw === 'female' || raw === 'non-binary') return raw
+  return ''
 }
 
 export default function ProfileSetupPage() {
@@ -68,7 +85,7 @@ export default function ProfileSetupPage() {
   const { logError } = useErrorLogger({ area: "profile-setup" })
 
   const [profileData, setProfileData] = useState({
-    displayName: '', fullName: '', gender: '' as any,
+    displayName: '', fullName: '', gender: '' as ProfileSetupGender,
     birthDate: '', birthTime: '', birthPlace: '',
     facePhotoUrl: '', palmPhotoUrl: '',
     facePhoto: null as File | null, palmPhoto: null as File | null
@@ -124,9 +141,9 @@ export default function ProfileSetupPage() {
       } catch {
         // ignore
       }
-      const err = new Error(`Upload failed (${type})`)
-      ;(err as any).status = res.status
-      ;(err as any).detail = detail
+      const err = new Error(`Upload failed (${type})`) as Error & { status: number; detail: unknown }
+      err.status = res.status
+      err.detail = detail
       throw err
     }
 
@@ -158,8 +175,9 @@ export default function ProfileSetupPage() {
         [type]: { status: "success", error: null, uploadedUrl: url },
       }))
       return url
-    } catch (e: any) {
+    } catch (e: unknown) {
       const friendly = toFriendlyUploadError(e)
+      const { status: proxyStatus, detail: proxyDetail } = readUploadErrorFields(e)
       setUploadState(prev => ({
         ...prev,
         [type]: { status: "error", error: friendly, uploadedUrl: null },
@@ -172,8 +190,8 @@ export default function ProfileSetupPage() {
         originalBytes: compressed.originalBytes,
         finalBytes: compressed.finalBytes,
         didCompress: compressed.didCompress,
-        proxyStatus: e?.status ?? null,
-        proxyDetail: e?.detail ?? null,
+        proxyStatus,
+        proxyDetail,
       })
       return null
     }
@@ -190,8 +208,18 @@ export default function ProfileSetupPage() {
     if (!user?.uid) return;
     setIsLoading(true)
     try {
-      const updateData: any = { ...profileData };
-      delete updateData.facePhoto; delete updateData.palmPhoto;
+      const updateData: Partial<UserProfile> = {
+        displayName: profileData.displayName,
+        fullName: profileData.fullName,
+        birthDate: profileData.birthDate,
+        birthTime: profileData.birthTime,
+        birthPlace: profileData.birthPlace,
+        facePhotoUrl: profileData.facePhotoUrl,
+        palmPhotoUrl: profileData.palmPhotoUrl,
+      }
+      if (profileData.gender !== '') {
+        updateData.gender = profileData.gender
+      }
 
       setInlineError(null)
 
@@ -210,9 +238,10 @@ export default function ProfileSetupPage() {
       await refreshProfile()
       toast({ title: 'Cosmic Profile Set! 🌟' })
       router.push('/profile')
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({ title: 'Setup Failed', variant: 'destructive' })
-      const msg = e?.message || 'Profile setup failed'
+      const msg = e instanceof Error ? e.message : 'Profile setup failed'
+      const { status: proxyStatus, detail: proxyDetail } = readUploadErrorFields(e)
       setInlineError(toFriendlyUploadError(e))
       await logError("complete", msg, "error", {
         hasFacePhoto: !!profileData.facePhoto,
@@ -221,8 +250,8 @@ export default function ProfileSetupPage() {
         palmPhotoBytes: profileData.palmPhoto?.size ?? null,
         facePhotoType: profileData.facePhoto?.type ?? null,
         palmPhotoType: profileData.palmPhoto?.type ?? null,
-        proxyStatus: e?.status ?? null,
-        proxyDetail: e?.detail ?? null,
+        proxyStatus,
+        proxyDetail,
       })
     }
     finally { setIsLoading(false) }
@@ -284,7 +313,18 @@ export default function ProfileSetupPage() {
                 <div className="space-y-4">
                   <Input value={profileData.displayName} onChange={e => setProfileData({...profileData, displayName: e.target.value})} placeholder="Display Name (AnDY)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
                   <Input value={profileData.fullName} onChange={e => setProfileData({...profileData, fullName: e.target.value})} placeholder="Full Name (for calculations)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
-                  <select value={profileData.gender} onChange={e => setProfileData({...profileData, gender: e.target.value})} className="w-full h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white"><option value="">Select Gender</option><option value="male">Male</option><option value="female">Female</option></select>
+                  <select
+                    value={profileData.gender}
+                    onChange={e =>
+                      setProfileData({ ...profileData, gender: genderFromSelectValue(e.target.value) })
+                    }
+                    className="w-full h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="non-binary">Non-binary</option>
+                  </select>
                 </div>
               </motion.div>
             )}

@@ -61,85 +61,53 @@ let app: any = null;
 let firebaseAuth: any = null;
 let firebaseDB: any = null;
 let firebaseStorage: any = null;
-let adminApp: any = null;
-let adminDB: any = null;
-let isFirestoreConnected = false;
-let connectionRetryCount = 0;
-const MAX_RETRY_ATTEMPTS = 3;
-let isRecovering = false;
-let lastRecoveryAttempt = 0;
-const RECOVERY_COOLDOWN = 5000; // 5 seconds between recovery attempts
-let _adminInitLogged = false;
+/** When true, server path successfully resolved Firestore from lib/firebase-admin.ts */
+let serverAdminDbReady = false;
+let serverAdminDb: any = null;
 
 const initializeFirebase = (): { app: any; auth: any; db: any } => {
   // Check if we're on server-side
   if (typeof window === 'undefined') {
-    // Server-side: Initialize Firebase Admin SDK
-    if (!adminApp) {
-      try {
-        // Check if admin config is available
-        if (!adminConfig.projectId || !adminConfig.clientEmail || !adminConfig.privateKey) {
-          devLog.warn('⚠️ Firebase Admin SDK config incomplete. Using client SDK fallback.', undefined, 'firebase');
-          // Fallback to client SDK for server-side (less secure but functional)
-          if (!app) {
-            app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-          }
-          firebaseDB = getFirestore(app);
-          return { app, auth: null, db: firebaseDB };
-        }
+    if (serverAdminDbReady) {
+      return { app: null, auth: null, db: serverAdminDb };
+    }
 
-        // Initialize Firebase Admin SDK
-        const { initializeApp: initializeAdminApp, getApps: getAdminApps } = require('firebase-admin/app');
-        const { getFirestore: getAdminFirestore } = require('firebase-admin/firestore');
-
-        if (getAdminApps().length === 0) {
-          adminApp = initializeAdminApp({
-            credential: require('firebase-admin').credential.cert({
-              projectId: adminConfig.projectId,
-              clientEmail: adminConfig.clientEmail,
-              privateKey: adminConfig.privateKey,
-            }),
-          });
-        } else {
-          adminApp = getAdminApps()[0];
-        }
-
-        adminDB = getAdminFirestore(adminApp);
-
-        // Configure Firestore settings for server-side to prevent idle timeouts
-        try {
-          adminDB.settings({
-            ignoreUndefinedProperties: true,
-            cacheSizeBytes: 0, // Disable cache for server-side
-          });
-        } catch (error) {
-          // Settings already applied, ignore error
-          if (!_adminInitLogged) {
-            devLog.warn('Firestore settings already applied', undefined, 'firebase');
-            _adminInitLogged = true;
-          }
-        }
-
-        if (!_adminInitLogged) {
-          devLog.debug('✅ Firebase Admin SDK initialized for server-side');
-          _adminInitLogged = true;
-        }
-        return { app: adminApp, auth: null, db: adminDB };
-
-      } catch (adminError) {
-        devLog.error('❌ Firebase Admin SDK initialization failed:', adminError, 'firebase');
-        devLog.warn('⚠️ Falling back to client SDK for server-side operations', undefined, 'firebase');
-
-        // Fallback to client SDK
+    try {
+      if (!adminConfig.projectId || !adminConfig.clientEmail || !adminConfig.privateKey) {
+        devLog.warn('⚠️ Firebase Admin SDK config incomplete. Using client SDK fallback.', undefined, 'firebase');
         if (!app) {
           app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
         }
         firebaseDB = getFirestore(app);
         return { app, auth: null, db: firebaseDB };
       }
-    }
 
-    return { app: adminApp, auth: null, db: adminDB };
+      // Single bridge to canonical Admin module (require keeps firebase-admin out of client bundles)
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { adminDb } = require('./firebase-admin');
+      if (adminDb) {
+        serverAdminDb = adminDb;
+        serverAdminDbReady = true;
+        devLog.debug('✅ Server Firestore using lib/firebase-admin', undefined, 'firebase');
+        return { app: null, auth: null, db: adminDb };
+      }
+
+      devLog.warn('⚠️ Firebase Admin unavailable. Using client SDK for server-side operations', undefined, 'firebase');
+      if (!app) {
+        app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+      }
+      firebaseDB = getFirestore(app);
+      return { app, auth: null, db: firebaseDB };
+    } catch (adminError) {
+      devLog.error('❌ Firebase Admin bridge failed:', adminError, 'firebase');
+      devLog.warn('⚠️ Falling back to client SDK for server-side operations', undefined, 'firebase');
+
+      if (!app) {
+        app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+      }
+      firebaseDB = getFirestore(app);
+      return { app, auth: null, db: firebaseDB };
+    }
   }
 
   // Client-side: Use regular Firebase SDK

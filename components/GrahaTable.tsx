@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { PlanetLabel, Placements } from "@/lib/astrology";
+import { Placements } from "@/lib/astrology";
 import { getSignName, getHouseRuler } from "@/lib/vedic-core";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
@@ -12,6 +12,32 @@ interface GrahaTableProps {
 
 type SortField = 'name' | 'sign' | 'degree' | 'house' | 'nakshatra' | 'd9Sign' | 'd9House';
 type SortDirection = 'asc' | 'desc';
+
+type GrahaSortButtonProps = {
+  field: SortField;
+  children: React.ReactNode;
+  sortField: SortField;
+  sortDirection: SortDirection;
+  onSort: (field: SortField) => void;
+};
+
+function GrahaSortButton({ field, children, sortField, sortDirection, onSort }: GrahaSortButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      className="flex items-center space-x-1 text-left font-medium text-gray-900 hover:text-blue-600"
+    >
+      <span>{children}</span>
+      {sortField === field &&
+        (sortDirection === "asc" ? (
+          <ChevronUp className="w-4 h-4" aria-hidden />
+        ) : (
+          <ChevronDown className="w-4 h-4" aria-hidden />
+        ))}
+    </button>
+  );
+}
 
 export default function GrahaTable({ placements, className = "" }: GrahaTableProps) {
   const [sortField, setSortField] = useState<SortField>('name');
@@ -32,7 +58,8 @@ export default function GrahaTable({ placements, className = "" }: GrahaTablePro
   // Sort planets
   const sortedPlanets = useMemo(() => {
     return [...allPlanets].sort((a, b) => {
-      let aValue: any, bValue: any;
+      let aValue: string | number;
+      let bValue: string | number;
       
       switch (sortField) {
         case 'name':
@@ -83,22 +110,6 @@ export default function GrahaTable({ placements, className = "" }: GrahaTablePro
     }
   };
 
-  const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <button
-      onClick={() => handleSort(field)}
-      className="flex items-center space-x-1 text-left font-medium text-gray-900 hover:text-blue-600"
-    >
-      <span>{children}</span>
-      {sortField === field && (
-        sortDirection === 'asc' ? (
-          <ChevronUp className="w-4 h-4" aria-hidden />
-        ) : (
-          <ChevronDown className="w-4 h-4" aria-hidden />
-        )
-      )}
-    </button>
-  );
-
   return (
     <div className={`bg-white rounded-lg shadow-sm border ${className}`}>
       <div className="p-4 border-b">
@@ -111,25 +122,25 @@ export default function GrahaTable({ placements, className = "" }: GrahaTablePro
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left">
-                <SortButton field="name">Planet</SortButton>
+                <GrahaSortButton field="name" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Planet</GrahaSortButton>
               </th>
               <th className="px-4 py-3 text-left">
-                <SortButton field="sign">D1 Sign</SortButton>
+                <GrahaSortButton field="sign" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>D1 Sign</GrahaSortButton>
               </th>
               <th className="px-4 py-3 text-left">
-                <SortButton field="degree">Degree</SortButton>
+                <GrahaSortButton field="degree" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Degree</GrahaSortButton>
               </th>
               <th className="px-4 py-3 text-left">
-                <SortButton field="house">House</SortButton>
+                <GrahaSortButton field="house" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>House</GrahaSortButton>
               </th>
               <th className="px-4 py-3 text-left">
-                <SortButton field="nakshatra">Nakshatra</SortButton>
+                <GrahaSortButton field="nakshatra" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Nakshatra</GrahaSortButton>
               </th>
               <th className="px-4 py-3 text-left">
-                <SortButton field="d9Sign">D9 Sign</SortButton>
+                <GrahaSortButton field="d9Sign" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>D9 Sign</GrahaSortButton>
               </th>
               <th className="px-4 py-3 text-left">
-                <SortButton field="d9House">D9 House</SortButton>
+                <GrahaSortButton field="d9House" sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>D9 House</GrahaSortButton>
               </th>
             </tr>
           </thead>
