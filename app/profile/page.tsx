@@ -30,6 +30,17 @@ import { PROFILE_PLAN_PRICING_CTA_LABEL, PROFILE_PLAN_REQUIRED_BODY } from "@/li
 import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics"
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 
+function readUploadErrorFields(e: unknown): { status: number | null; detail: unknown; message: string } {
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>
+    const status = typeof o.status === "number" ? o.status : null
+    const detail = "detail" in o ? o.detail : undefined
+    const message = e instanceof Error ? e.message : String(o.message ?? "")
+    return { status, detail, message }
+  }
+  return { status: null, detail: undefined, message: e instanceof Error ? e.message : "" }
+}
+
 export default function ProfilePage() {
   const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
   const { applyGeneratedProfile, refreshProfile: refreshComprehensiveProfile, hasProfile, canViewFullProfile } = useComprehensiveMysticalProfile()
@@ -269,7 +280,9 @@ export default function ProfilePage() {
 
       setSuccess("Profile updated successfully!"); setIsEditing(false); setHasUnsavedChanges(false)
       setTimeout(() => refreshProfile(), 500)
-    } catch (e) { setError("Failed to save profile.") }
+    } catch {
+      setError("Failed to save profile.")
+    }
     finally { setIsLoading(false) }
   }
 
@@ -294,10 +307,13 @@ export default function ProfilePage() {
         body: formData,
       })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({} as any))
-        const err = new Error(data?.error || "Upload failed")
-        ;(err as any).status = res.status
-        ;(err as any).detail = data
+        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+        const err = new Error(typeof data.error === "string" ? data.error : "Upload failed") as Error & {
+          status: number
+          detail: Record<string, unknown>
+        }
+        err.status = res.status
+        err.detail = data
         throw err
       }
       const { url } = await res.json()
@@ -305,9 +321,9 @@ export default function ProfilePage() {
       setFormData((prev) => ({ ...prev, [key]: url }))
       await updateUserProfile(user.uid, { [key]: url })
       setTimeout(() => refreshProfile(), 300)
-    } catch (e: any) {
-      const status: number | null = typeof e?.status === "number" ? e.status : null
-      const detailStr = e?.detail ? JSON.stringify(e.detail) : ""
+    } catch (e: unknown) {
+      const { status, detail, message } = readUploadErrorFields(e)
+      const detailStr = detail !== undefined ? JSON.stringify(detail) : ""
       let msg = "Photo upload failed. Please try again."
       if (status === 401) msg = "Session expired. Please sign in again and retry."
       else if (status === 400) {
@@ -315,7 +331,7 @@ export default function ProfilePage() {
         else if (detailStr.includes("Invalid file type")) msg = "Unsupported image type. Please use JPEG, PNG, WebP, or GIF."
         else msg = "That photo couldn’t be uploaded. Please try a different image."
       } else if (status && status >= 500) msg = "Upload service had trouble. Please retry in a moment."
-      else if (String(e?.message ?? "").includes("Failed to fetch")) msg = "Network error while uploading. Check your connection and retry."
+      else if (String(message).includes("Failed to fetch")) msg = "Network error while uploading. Check your connection and retry."
 
       setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
       await logError("upload_photo", msg, "error", {
@@ -323,7 +339,7 @@ export default function ProfilePage() {
         bytes: file.size,
         mime: file.type,
         proxyStatus: status,
-        proxyDetail: e?.detail ?? null,
+        proxyDetail: detail ?? null,
       })
     } finally {
       setOptimizing(false)
@@ -338,7 +354,7 @@ export default function ProfilePage() {
       setFormData((prev) => ({ ...prev, [key]: "" }))
       await updateUserProfile(user.uid, { [key]: "" })
       setTimeout(() => refreshProfile(), 300)
-    } catch (e) {
+    } catch {
       setError(`Failed to remove ${type} photo.`)
     }
   }
@@ -612,9 +628,9 @@ export default function ProfilePage() {
                         /* ignore */
                       }
                       router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
-                    } catch(e: any) {
-                      if (e?.name === 'AbortError') return
-                      setError(e?.message || "Generation failed. Please check your connection and try again.")
+                    } catch (e: unknown) {
+                      if (e instanceof Error && e.name === "AbortError") return
+                      setError(e instanceof Error ? e.message : "Generation failed. Please check your connection and try again.")
                     } finally {
                       setIsGeneratingProfile(false)
                       setGenerationStatus("")
@@ -969,9 +985,9 @@ export default function ProfilePage() {
                           /* ignore */
                         }
                         router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
-                      } catch(e: any) {
-                        if (e?.name === 'AbortError') return
-                        setError(e?.message || "Generation failed. Please check your connection and try again.")
+                      } catch (e: unknown) {
+                        if (e instanceof Error && e.name === "AbortError") return
+                        setError(e instanceof Error ? e.message : "Generation failed. Please check your connection and try again.")
                       } finally {
                         setIsGeneratingProfile(false)
                         setGenerationStatus("")

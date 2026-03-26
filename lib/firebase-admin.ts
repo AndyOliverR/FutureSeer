@@ -1,48 +1,74 @@
-// Firebase Admin SDK Configuration
-// Server-side Firebase operations
+// Canonical server-side Firebase Admin entry. Prefer importing this module from API routes
+// and server-only code. Client bundles should not import this file (use lib/firebase.ts).
 
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { devLog } from '@/lib/devLogger';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 
-// Initialize Firebase Admin SDK
-let adminApp;
+const projectId =
+  process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+let adminApp: ReturnType<typeof initializeApp> | null = null;
+
 if (getApps().length === 0) {
-  try {
-    const storageBucket =
-      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
-      process.env.FIREBASE_ADMIN_STORAGE_BUCKET;
-    adminApp = initializeApp({
-      credential: cert({
-        projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-      ...(storageBucket ? { storageBucket } : {}),
-    });
-  } catch (error) {
-    devLog.error('❌ Firebase Admin initialization failed:', error, 'firebase-admin');
-    // Fallback to client-side Firebase for development
-    adminApp = null;
+  if (projectId && clientEmail && privateKey) {
+    try {
+      const storageBucket =
+        process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+        process.env.FIREBASE_ADMIN_STORAGE_BUCKET;
+      adminApp = initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+        projectId,
+        ...(storageBucket ? { storageBucket } : {}),
+      });
+    } catch (error) {
+      devLog.error('❌ Firebase Admin initialization failed:', error, 'firebase-admin');
+      adminApp = null;
+    }
   }
 } else {
   adminApp = getApps()[0];
 }
 
-// Get Firestore instance
-export const adminDb = adminApp ? getFirestore(adminApp) : null;
+let _firestoreSettingsLogged = false;
 
-// Firebase Admin Auth (uses default app; for verifyIdToken, listUsers, setCustomUserClaims, createCustomToken)
+function getAdminFirestoreInstance(): Firestore | null {
+  if (!adminApp) return null;
+  const fs = getFirestore(adminApp);
+  try {
+    fs.settings({
+      ignoreUndefinedProperties: true,
+      cacheSizeBytes: 0,
+    });
+  } catch {
+    if (!_firestoreSettingsLogged) {
+      devLog.warn('Firestore settings already applied', undefined, 'firebase-admin');
+      _firestoreSettingsLogged = true;
+    }
+  }
+  if (!_firestoreSettingsLogged) {
+    devLog.debug('✅ Firebase Admin Firestore ready for server', undefined, 'firebase-admin');
+    _firestoreSettingsLogged = true;
+  }
+  return fs;
+}
+
+export const adminDb = getAdminFirestoreInstance();
+
+// Firebase Admin Auth (verifyIdToken, listUsers, setCustomUserClaims, createCustomToken)
 export { getAuth };
 
-// Helper function to check if admin is available
 export function isAdminAvailable(): boolean {
   return adminDb !== null;
 }
 
-// Fallback functions for when admin is not available
 export async function getDocument(collection: string, docId: string) {
   if (adminDb) {
     const docRef = adminDb.collection(collection).doc(docId);
