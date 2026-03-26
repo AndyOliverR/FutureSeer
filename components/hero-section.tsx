@@ -20,12 +20,16 @@ export function HeroSection() {
           Ask the Seer
         </h1>
 
+        <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-primary/85 font-normal leading-relaxed tracking-normal normal-case px-2">
+          Fifty-plus divination systems in one profile—AI answers from your chart and stored reports, not generic horoscopes.
+        </p>
+
         {/* Quote Section */}
         <div className="max-w-xl mx-auto space-y-4">
           <p className="text-base md:text-2xl font-quote leading-relaxed gold-glow font-light not-italic">
             "Millionaires don't use astrology, billionaires do."
           </p>
-          <p className="text-[10px] md:text-sm font-normal text-primary/80 uppercase tracking-[0.2em]">
+          <p className="text-xs md:text-sm font-normal text-primary/80 uppercase tracking-[0.2em]">
             — J.P. Morgan
           </p>
         </div>
@@ -43,6 +47,16 @@ export function HeroSection() {
             Join the Experiment
             <ArrowRight className="ml-2 w-4 h-4 hidden md:block" />
           </Button>
+          <p className="text-xs text-primary/65 max-w-md mx-auto">
+            No spam. Read our{" "}
+            <Link
+              href="/privacy"
+              className="text-amber-400/90 hover:text-amber-400 underline-offset-2 hover:underline"
+            >
+              Privacy
+            </Link>{" "}
+            policy.
+          </p>
           <Link
             href="/signin"
             className="text-sm font-medium text-amber-400/80 hover:text-amber-400 transition-colors uppercase tracking-wider"

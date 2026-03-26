@@ -152,9 +152,9 @@ export default function TermsPage() {
                 payment gateway. Your payment information is encrypted and securely stored.
               </p>
               <p>
-                <strong>Cancel Anytime:</strong> You can cancel your contribution at any time through your profile settings. 
-                Cancellation will take effect at the end of your current billing cycle. No charges will be made after 
-                cancellation. You can rejoin the innovation experiment anytime.
+                <strong>Cancel Anytime:</strong> You can cancel your membership at any time through your profile settings.
+                When you cancel, recurring billing stops when our payment provider (Razorpay) confirms cancellation; access
+                to paid features may end at that time. You can resubscribe anytime.
               </p>
               <div>
                 <p><strong>Billing Cycle:</strong> Contributions are processed according to your selected tier:</p>

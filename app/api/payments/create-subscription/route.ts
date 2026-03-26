@@ -7,6 +7,7 @@ import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { getFirebaseDB } from '@/lib/firebase';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { getAuth, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
+import { CHECKOUT_DISPLAY_NAME } from '@/lib/checkoutBranding';
 
 export async function POST(request: NextRequest) {
   try {
@@ -128,8 +129,8 @@ export async function POST(request: NextRequest) {
 
     // Trial is used for both signup and dashboard first-signin (RBI) payment-method capture.
     // Create or get Razorpay plan
-    const planName = `FutureSeer ${plan === 'buy-coffee' ? 'Monthly' : plan === 'treat-me' ? 'Quarterly' : plan === 'festive-hamper' ? 'Annual' : 'Trial'} Contribution`;
-    const planDescription = `FutureSeer Innovation Experiment - ${planName}`;
+    const planName = `${plan === 'buy-coffee' ? 'Monthly' : plan === 'treat-me' ? 'Quarterly' : plan === 'festive-hamper' ? 'Annual' : 'Trial'} membership`;
+    const planDescription = `${CHECKOUT_DISPLAY_NAME} — ${planName}`;
 
     // For trial, use subscription minimum so gateway shows "charge ₹99 every month" (or equivalent). Paid plans use request amount.
     const noSubUnit = config.currency === 'IDR' || config.currency === 'VND';

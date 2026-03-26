@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { DashaPeriod } from "@/types/mystical";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface VimshottariPanelProps {
   dasha: DashaPeriod[];
@@ -127,9 +127,9 @@ export default function VimshottariPanel({ dasha, currentDasha, className = "" }
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       {isExpanded ? (
-                        <ChevronDownIcon className="w-4 h-4 text-gray-500" />
+                        <ChevronDown className="w-4 h-4 text-gray-500" aria-hidden />
                       ) : (
-                        <ChevronRightIcon className="w-4 h-4 text-gray-500" />
+                        <ChevronRight className="w-4 h-4 text-gray-500" aria-hidden />
                       )}
                       
                       <span className="text-lg">{getDashaIcon(period.planet)}</span>

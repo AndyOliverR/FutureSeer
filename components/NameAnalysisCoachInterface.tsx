@@ -301,7 +301,7 @@ export function NameAnalysisCoachInterface({
             <CardContent>
               <div className="space-y-3">
                 {nameMeanings.map((nameData, idx) => (
-                  <div key={idx} className="p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                  <div key={idx} className="p-3 bg-white/60 border border-amber-200 rounded-xl">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -359,17 +359,17 @@ export function NameAnalysisCoachInterface({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="text-center p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <p className="text-slate-600 text-sm mb-1">First Name</p>
                 <p className="text-amber-900 text-lg font-semibold">{analysis.firstName}</p>
               </div>
               {analysis.middleName && (
-                <div className="text-center p-4 bg-white/60 border border-amber-200 rounded-2xl">
+                <div className="text-center p-4 bg-white/60 border border-amber-200 rounded-xl">
                   <p className="text-slate-600 text-sm mb-1">Middle Name</p>
                   <p className="text-amber-900 text-lg font-semibold">{analysis.middleName}</p>
                 </div>
               )}
-              <div className="text-center p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="text-center p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <p className="text-slate-600 text-sm mb-1">Last Name</p>
                 <p className="text-amber-900 text-lg font-semibold">{analysis.lastName}</p>
               </div>
@@ -480,14 +480,14 @@ export function NameAnalysisCoachInterface({
                 { name: "Water", value: analysis.elements.water, icon: Droplets, color: "text-blue-600" },
                 { name: "Ether", value: analysis.elements.ether || 0, icon: Sparkles, color: "text-purple-600" }
               ].map(({ name, value, icon: Icon, color }) => (
-                <div key={name} className="text-center p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                <div key={name} className="text-center p-3 bg-white/60 border border-amber-200 rounded-xl">
                   <Icon className={`w-6 h-6 ${color} mx-auto mb-2`} />
                   <div className="text-2xl font-bold text-amber-900 mb-1">{value}</div>
                   <p className="text-xs text-slate-600">{name}</p>
                 </div>
               ))}
             </div>
-            <div className="p-3 bg-white/60 border border-amber-200 rounded-2xl">
+            <div className="p-3 bg-white/60 border border-amber-200 rounded-xl">
               <p className="text-slate-700 text-sm">
                 <strong className="text-amber-900">Dominant Element:</strong> {analysis.dominantElement.charAt(0).toUpperCase() + analysis.dominantElement.slice(1)}
                 {analysis.missingElements.length > 0 && (
@@ -572,7 +572,7 @@ export function NameAnalysisCoachInterface({
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {combinedPersonality.strengths.map((strength, idx) => (
-                <div key={idx} className="p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                <div key={idx} className="p-3 bg-white/60 border border-amber-200 rounded-xl">
                   <p className="text-slate-700 text-sm flex items-start">
                     <span className="text-green-600 mr-2 mt-0.5">✓</span>
                     {strength}
@@ -594,7 +594,7 @@ export function NameAnalysisCoachInterface({
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {combinedPersonality.challenges.map((challenge, idx) => (
-                <div key={idx} className="p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                <div key={idx} className="p-3 bg-white/60 border border-amber-200 rounded-xl">
                   <p className="text-slate-700 text-sm flex items-start">
                     <span className="text-amber-700 mr-2 mt-0.5">•</span>
                     {challenge}
@@ -626,7 +626,7 @@ export function NameAnalysisCoachInterface({
                     ))}
                   </ul>
                   {numerologySynthesis.numberComparison && (
-                    <div className="mt-4 p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                    <div className="mt-4 p-3 bg-white/60 border border-amber-200 rounded-xl">
                       <p className="text-slate-600 text-xs mb-2">Number Comparison:</p>
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
@@ -668,7 +668,7 @@ export function NameAnalysisCoachInterface({
                     ))}
                   </ul>
                   {vedicSynthesis.elementalAlignment && (
-                    <div className="mt-4 p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                    <div className="mt-4 p-3 bg-white/60 border border-amber-200 rounded-xl">
                       <p className="text-slate-600 text-xs mb-1">Elemental Alignment:</p>
                       {vedicSynthesis.elementalAlignment.aligned.length > 0 && (
                         <p className="text-green-700 text-xs">
@@ -705,15 +705,15 @@ export function NameAnalysisCoachInterface({
                   </ul>
                   {westernSynthesis.sunSign && (
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                      <div className="p-2 bg-white/60 border border-amber-200 rounded-2xl">
+                      <div className="p-2 bg-white/60 border border-amber-200 rounded-xl">
                         <span className="text-slate-600">Sun:</span>
                         <span className="text-amber-900 ml-1 font-semibold">{westernSynthesis.sunSign}</span>
                       </div>
-                      <div className="p-2 bg-white/60 border border-amber-200 rounded-2xl">
+                      <div className="p-2 bg-white/60 border border-amber-200 rounded-xl">
                         <span className="text-slate-600">Moon:</span>
                         <span className="text-amber-900 ml-1 font-semibold">{westernSynthesis.moonSign}</span>
                       </div>
-                      <div className="p-2 bg-white/60 border border-amber-200 rounded-2xl">
+                      <div className="p-2 bg-white/60 border border-amber-200 rounded-xl">
                         <span className="text-slate-600">Rising:</span>
                         <span className="text-amber-900 ml-1 font-semibold">{westernSynthesis.risingSign}</span>
                       </div>
@@ -753,7 +753,7 @@ export function NameAnalysisCoachInterface({
                   { name: "Water", value: analysis.elements.water, icon: Droplets, color: "text-blue-600", bg: "bg-blue-100", border: "border-blue-300", meaning: "Emotion, intuition, flow" },
                   { name: "Ether", value: analysis.elements.ether || 0, icon: Sparkles, color: "text-purple-600", bg: "bg-purple-100", border: "border-purple-300", meaning: "Spirituality, transcendence" }
                 ].map(({ name, value, icon: Icon, color, bg, border, meaning }) => (
-                  <div key={name} className={`p-4 rounded-2xl border-2 ${bg} ${border}`}>
+                  <div key={name} className={`p-4 rounded-xl border-2 ${bg} ${border}`}>
                     <Icon className={`w-6 h-6 ${color} mx-auto mb-2`} />
                     <div className="text-2xl font-bold text-center text-amber-900 mb-1">{value}</div>
                     <p className="text-xs text-slate-600 text-center mb-1">{name}</p>
@@ -762,7 +762,7 @@ export function NameAnalysisCoachInterface({
                 ))}
               </div>
             </div>
-            <div className="p-4 bg-white/60 border border-amber-200 rounded-2xl">
+            <div className="p-4 bg-white/60 border border-amber-200 rounded-xl">
               <p className="text-slate-700 text-sm">
                 <strong className="text-amber-900">Dominant Element:</strong> {analysis.dominantElement.charAt(0).toUpperCase() + analysis.dominantElement.slice(1)}
               </p>
@@ -795,7 +795,7 @@ export function NameAnalysisCoachInterface({
                         const nameVal = synthesis.elementalComparison.nameElements[element];
                         const vedicVal = synthesis.elementalComparison.vedicElements![element];
                         return (
-                          <div key={element} className="p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                          <div key={element} className="p-3 bg-white/60 border border-amber-200 rounded-xl">
                             <p className="text-xs text-slate-600 mb-2 capitalize">{element}</p>
                             <div className="text-sm">
                               <div className="flex justify-between mb-1">
@@ -824,7 +824,7 @@ export function NameAnalysisCoachInterface({
                         const nameVal = synthesis.elementalComparison.nameElements[element];
                         const westernVal = synthesis.elementalComparison.westernElements![element];
                         return (
-                          <div key={element} className="p-3 bg-white/60 border border-amber-200 rounded-2xl">
+                          <div key={element} className="p-3 bg-white/60 border border-amber-200 rounded-xl">
                             <p className="text-xs text-slate-600 mb-2 capitalize">{element}</p>
                             <div className="text-sm">
                               <div className="flex justify-between mb-1">
@@ -867,13 +867,13 @@ export function NameAnalysisCoachInterface({
                 .sort(([, a], [, b]) => (b as number) - (a as number))
                 .slice(0, 16)
                 .map(([letter, frequency]) => (
-                  <div key={letter} className="p-2 bg-white/60 border border-amber-200 rounded-2xl text-center">
+                  <div key={letter} className="p-2 bg-white/60 border border-amber-200 rounded-xl text-center">
                     <div className="text-lg font-bold text-amber-900">{letter}</div>
                     <div className="text-xs text-slate-600">{frequency}x</div>
                   </div>
                 ))}
             </div>
-            <div className="mt-4 p-3 bg-white/60 border border-amber-200 rounded-2xl">
+            <div className="mt-4 p-3 bg-white/60 border border-amber-200 rounded-xl">
               <p className="text-slate-700 text-sm">
                 <strong className="text-amber-900">Most Frequent:</strong> {Object.entries(analysis.letterFrequency)
                   .sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] || 'N/A'}
@@ -928,7 +928,7 @@ export function NameAnalysisCoachInterface({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <h4 className="text-amber-900 font-semibold mb-3">Vowels (Soul Energy)</h4>
                 <p className="text-slate-600 text-xs mb-2">Letters: {analysis.vowels.join(", ") || "None"}</p>
                 <p className="text-slate-700 text-sm">
@@ -938,7 +938,7 @@ export function NameAnalysisCoachInterface({
                   Vowels represent your inner desires and soul's motivation.
                 </p>
               </div>
-              <div className="p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <h4 className="text-amber-900 font-semibold mb-3">Consonants (Personality Expression)</h4>
                 <p className="text-slate-600 text-xs mb-2">Letters: {analysis.consonants.slice(0, 10).join(", ")}{analysis.consonants.length > 10 ? "..." : ""}</p>
                 <p className="text-slate-700 text-sm">
@@ -984,7 +984,7 @@ export function NameAnalysisCoachInterface({
             
             {/* Enhanced with Astrology if available */}
             {vedicData && (
-              <div className="mt-4 p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="mt-4 p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <p className="text-amber-900 font-semibold mb-2 text-sm">Vedic Astrology Enhancement</p>
                 <p className="text-slate-700 text-sm">
                   {vedicData.personality_analysis?.career_guidance || 
@@ -993,7 +993,7 @@ export function NameAnalysisCoachInterface({
               </div>
             )}
             {westernData && (
-              <div className="mt-4 p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="mt-4 p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <p className="text-amber-900 font-semibold mb-2 text-sm">Western Astrology Enhancement</p>
                 <p className="text-slate-700 text-sm">
                   Your Midheaven sign and planetary positions align with your name's career vibration, suggesting specific professional paths.
@@ -1030,7 +1030,7 @@ export function NameAnalysisCoachInterface({
 
             {/* Enhanced with Astrology if available */}
             {vedicData && (
-              <div className="mt-4 p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="mt-4 p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <p className="text-amber-900 font-semibold mb-2 text-sm">Vedic Astrology Enhancement</p>
                 <p className="text-slate-700 text-sm">
                   {vedicData.personality_analysis?.relationshipInsights || 
@@ -1198,7 +1198,7 @@ export function NameAnalysisCoachInterface({
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Current Name Alignment */}
-              <div className="p-4 bg-white/60 border border-amber-200 rounded-2xl">
+              <div className="p-4 bg-white/60 border border-amber-200 rounded-xl">
                 <h4 className="text-amber-900 font-semibold mb-3 flex items-center gap-2">
                   <Info className="w-4 h-4" />
                   Current Name Alignment
@@ -1257,7 +1257,7 @@ export function NameAnalysisCoachInterface({
               </div>
 
               {/* Recommendation Summary */}
-              <div className="p-4 bg-amber-100 border border-amber-300 rounded-2xl">
+              <div className="p-4 bg-amber-100 border border-amber-300 rounded-xl">
                 <p className="text-amber-900 text-sm italic">{idealNameAnalysis.analysis.recommendationSummary}</p>
               </div>
 

@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, ChevronLeft, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { onboardingSteps, OnboardingStep } from '@/lib/onboardingSteps';
+import { onboardingSteps } from '@/lib/onboardingSteps';
 import { ModalPortal } from '@/components/ui/ModalPortal';
 
 export function OnboardingTour() {
-  const { isTourActive, shouldShowTour, startTour, markCompleted, markSkipped, setIsTourActive } = useOnboarding();
+  const { isTourActive, shouldShowTour, startTour, markCompleted, markSkipped } = useOnboarding();
   const [currentStep, setCurrentStep] = useState(0);
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -25,6 +25,18 @@ export function OnboardingTour() {
     }
   }, [shouldShowTour, isTourActive, startTour]);
 
+  useEffect(() => {
+    if (!isTourActive) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        markSkipped();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isTourActive, markSkipped]);
+
   // Find and highlight target element
   useEffect(() => {
     if (!isTourActive || currentStep >= onboardingSteps.length) return;
@@ -38,7 +50,7 @@ export function OnboardingTour() {
       element = document.querySelector(step.target) as HTMLElement;
     }
 
-    setTargetElement(element);
+    queueMicrotask(() => setTargetElement(element));
 
     // Scroll element into view if needed
     if (element && element !== document.body) {
@@ -134,6 +146,8 @@ export function OnboardingTour() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000]"
+            role="presentation"
+            aria-hidden
             onClick={(e) => {
               // Only close on overlay click, not tooltip
               if (e.target === overlayRef.current) {
@@ -169,13 +183,21 @@ export function OnboardingTour() {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed z-[10001] max-w-sm max-h-[min(90dvh,90vh)] overflow-y-auto"
             style={getTooltipPosition()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`onboarding-step-title-${step.id}`}
+            aria-describedby={`onboarding-step-desc-${step.id}`}
           >
             <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-400/50 rounded-xl p-6 shadow-2xl">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
-                  <p className="text-white/80 text-sm leading-relaxed">{step.content}</p>
+                  <h3 id={`onboarding-step-title-${step.id}`} className="text-xl font-bold text-white mb-2">
+                    {step.title}
+                  </h3>
+                  <p id={`onboarding-step-desc-${step.id}`} className="text-white/80 text-sm leading-relaxed">
+                    {step.content}
+                  </p>
                 </div>
                 <button
                   onClick={handleSkip}
@@ -188,7 +210,7 @@ export function OnboardingTour() {
 
               {/* Progress indicator */}
               <div className="mb-4">
-                <div className="flex gap-1">
+                <div className="flex gap-1" aria-hidden>
                   {onboardingSteps.map((_, index) => (
                     <div
                       key={index}

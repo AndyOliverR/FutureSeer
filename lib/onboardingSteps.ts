@@ -10,54 +10,66 @@ export interface OnboardingStep {
   };
 }
 
+/**
+ * Copy aligned with docs/AUTH_AND_ROUTING_FLOW.md:
+ * - New users: sign-up → /profile-setup → complete → /profile → generate mystical profile → /ask-the-seer
+ * - Returning users with reports often land on /ask-the-seer or /dashboard per auth routing
+ */
 export const onboardingSteps: OnboardingStep[] = [
   {
     id: 'welcome',
     target: 'body',
-    title: 'Welcome to FutureSeer!',
-    content: 'You\'re joining an innovation experiment to see into your future. Let\'s take a quick tour to get you started, or you can skip and explore on your own.',
+    title: 'Welcome to FutureSeer',
+    content:
+      'You have dozens of divination tools in one place, each following its own tradition. Take this short tour, or skip and explore—your profile and saved readings stay in your account.',
     placement: 'center',
   },
   {
     id: 'dashboard',
     target: '[data-onboarding="dashboard"]',
-    title: 'Your Cosmic Command Center',
-    content: 'This is your dashboard. Here you can track your readings, view insights, access your reading history, and see your personalized cosmic guidance. Everything you need is at your fingertips.',
+    title: 'Your hub',
+    content:
+      'From here you can open tools, review guidance, and jump back to what matters. If you already generated your mystical profile, you may arrive on Ask the Seer instead—same account, different entry point.',
     placement: 'bottom',
   },
   {
     id: 'tools',
     target: '[data-onboarding="tools"]',
-    title: '60+ Divination Tools',
-    content: 'Explore our collection of 60+ divination tools. From Vedic astrology to Tarot, Numerology to I Ching - each tool offers unique insights into your future using occult wisdom combined with AI forecasting.',
+    title: '50+ divination tools',
+    content:
+      'Each tool has its own methodology—Vedic and Western astrology, Tarot, numerology, I Ching, and more. Open a tool to read your generated report and use that tool’s Ask the Seer for domain-specific questions.',
     placement: 'bottom',
   },
   {
     id: 'ask-seer',
     target: '[data-onboarding="ask-seer"]',
     title: 'Ask the Seer',
-    content: 'Ask anything about your future. Our AI seer combines ancient occult wisdom with modern intelligence, hidden data patterns, and predictive analytics to provide genuine glimpses into what lies ahead.',
+    content:
+      'The main Seer weaves insights across your stored reports. Tool pages have their own experts (e.g. Tarot, Vedic) so answers stay faithful to each system.',
     placement: 'bottom',
   },
   {
     id: 'profile',
     target: '[data-onboarding="profile"]',
-    title: 'Complete Your Profile',
-    content: 'Add your birth details for personalized readings and accurate predictions. The more complete your profile, the more precise your future-seeing experience becomes.',
+    title: 'Profile and generation',
+    content:
+      'New accounts complete Profile Setup first, then Cosmic Profile (/profile). When you tap Generate mystical profile, all tools build reports together; afterward you are taken to Ask the Seer. Edit birth details here anytime—saved data drives every reading.',
     placement: 'bottom',
   },
   {
     id: 'feedback',
     target: '[data-onboarding="feedback"]',
-    title: 'Your Feedback Shapes FutureSeer',
-    content: 'Click the feedback button anytime to share suggestions. Your feedback is implemented within 24-48 hours. You\'re part of the innovation team, and your voice matters.',
+    title: 'Feedback',
+    content:
+      'Share bugs or ideas from the feedback control when you see it. We read submissions regularly—timelines vary by complexity.',
     placement: 'left',
   },
   {
     id: 'pricing',
     target: '[data-onboarding="pricing"]',
-    title: 'Join the Innovation Experiment',
-    content: 'Your contribution makes FutureSeer accessible to all. Choose to "Buy Me a Coffee" (monthly), "Treat Me" (quarterly), or "Buy a Festive Hamper" (annual). You\'re not buying a subscription - you\'re supporting innovation.',
+    title: 'Support the project',
+    content:
+      'Contribution tiers help keep FutureSeer running. Pick what fits you on the pricing page.',
     placement: 'bottom',
   },
 ];

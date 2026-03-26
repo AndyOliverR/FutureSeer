@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { X } from 'lucide-react';
+import { GiphyPicker } from '@/components/integrations/GiphyPicker';
 
 interface DiscussionFormProps {
   onSubmit: (data: {
@@ -110,9 +111,15 @@ export function DiscussionForm({ onSubmit, onCancel, initialData }: DiscussionFo
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">
-              Content *
-            </label>
+            <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+              <label className="text-sm font-medium text-gray-300 block">
+                Content *
+              </label>
+              <GiphyPicker
+                disabled={submitting}
+                onInsert={(snippet) => setContent((prev) => `${prev}${snippet}`)}
+              />
+            </div>
             <Textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}

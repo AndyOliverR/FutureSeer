@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { EnhancedFooter } from "@/components/enhanced-footer";
+import { EmailCapture } from "@/components/email-capture";
 import { PersonalNote } from "@/components/about/PersonalNote";
 import { AboutSectionSkeleton } from "@/components/about/AboutSectionSkeleton";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,8 @@ export default function AboutPage() {
           <AboutFeedback />
           <AboutStandards />
           <AboutFAQ />
+
+          <EmailCapture />
           
           {/* CTA Section */}
           <section className="text-center py-12 px-3 sm:px-4 md:px-6">

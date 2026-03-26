@@ -218,10 +218,10 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
                   </div>
 
                   <div className="flex gap-3 pt-2">
-                    <Button type="button" variant="outline" onClick={() => setIsExpanded(false)} className="flex-1 h-12 rounded-2xl border-outline-variant font-bold">
+                    <Button type="button" variant="outline" size="compact" onClick={() => setIsExpanded(false)} className="flex-1 border-outline-variant">
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={!rating || isSubmitting} className="flex-1 h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-lg shadow-amber-500/20">
+                    <Button type="submit" disabled={!rating || isSubmitting} size="compact" className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 shadow-lg shadow-amber-500/20">
                       {isSubmitting ? "Sending..." : "Submit"}
                     </Button>
                   </div>

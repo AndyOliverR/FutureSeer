@@ -7,7 +7,8 @@ export function InnovationInvitation() {
     <div className="text-center mb-16 space-y-6">
       {/* Main Title */}
       <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-        Join the <span className="text-amber-400">FutureSeer Innovation Experiment</span>
+        <span className="text-amber-400">FutureSeer</span>
+        <span className="text-white"> — one membership, every tool</span>
       </h1>
       
       {/* Subtitle */}
@@ -16,8 +17,7 @@ export function InnovationInvitation() {
       </p>
       <p className="text-base md:text-lg text-white/70 max-w-2xl mx-auto leading-relaxed">
         Start with a 30-day trial. Paid plans are <strong className="text-amber-400/90">memberships</strong> (recurring
-        billing monthly, quarterly, or annually) that support the innovation experiment and unlock full tool access
-        after your trial.
+        billing monthly, quarterly, or annually) that unlock full tool access after your trial.
       </p>
 
       {/* Key Message */}

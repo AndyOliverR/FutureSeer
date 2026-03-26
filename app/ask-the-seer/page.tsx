@@ -3,11 +3,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import MainSeerChatInterface from "@/components/MainSeerChatInterface";
+import { SeqEaseMicroSurvey } from "@/components/metrics/SeqEaseMicroSurvey";
 import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting";
 
 export default function AskTheSeerPage() {
   const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin } = useAuth();
+  const { streakDays } = useDashboardData();
   const router = useRouter();
 
   useEffect(() => {
@@ -56,6 +59,7 @@ export default function AskTheSeerPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] text-white flex flex-col relative">
+      <SeqEaseMicroSurvey userId={user?.uid ?? null} />
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -66,6 +70,7 @@ export default function AskTheSeerPage() {
         <div className="w-full max-w-2xl h-[85vh] min-h-[50vh]">
           <MainSeerChatInterface
             userId={user?.uid}
+            streakDays={streakDays}
             userProfile={
               userProfile
                 ? {

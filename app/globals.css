@@ -27,6 +27,7 @@
   /* DEFAULT WEB VARIABLES (Desktop Look) */
   --m3-surface: transparent;
   --m3-primary: var(--gold-primary);
+  /* WCAG: #1c1917 on #fbbf24 ≈ 10.5:1 (AAA normal text). Primary stays gold; do not swap to tutorial blues. */
   --m3-on-primary: #1c1917;
   --m3-on-primary-container: #1c1917;
   --m3-on-surface: #FFFFFF;
