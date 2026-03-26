@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirebaseDB } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { getAuth } from 'firebase-admin/auth';
+import type { Query } from 'firebase-admin/firestore';
 
 export const dynamic = 'force-static'
 import { 
@@ -45,14 +46,14 @@ export async function GET(request: NextRequest) {
     const lastDocId = searchParams.get('lastDocId');
     const status = searchParams.get('status') || 'active';
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
     if (typeof window === 'undefined') {
       // Server-side: Use Admin SDK
-      let query = db.collection('communityDiscussions');
+      let query: Query = db.collection('communityDiscussions');
       
       // Try to apply status filter, but handle missing index gracefully
       try {
@@ -95,7 +96,7 @@ export async function GET(request: NextRequest) {
         if (error.code === 9 || error.message?.includes('index')) {
           devLog.warn('Query index missing, falling back to basic query', undefined, 'community');
           // Fallback: query without status filter
-          let fallbackQuery = db.collection('communityDiscussions');
+          let fallbackQuery: Query = db.collection('communityDiscussions');
           
           if (category && category !== 'all') {
             fallbackQuery = fallbackQuery.where('category', '==', category);
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
     }
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }

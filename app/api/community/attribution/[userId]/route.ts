@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirebaseDB } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { devLog } from '@/lib/devLogger';
 
 export const dynamic = 'force-static'
@@ -23,7 +23,7 @@ export async function GET(
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
@@ -98,7 +98,7 @@ export async function GET(
       }
 
       // Fetch referral statistics
-      let referralStats = {
+      const referralStats = {
         totalInvites: 0,
         successfulSignups: 0,
         pendingInvites: 0,

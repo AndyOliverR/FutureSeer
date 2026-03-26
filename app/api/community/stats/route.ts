@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { calculateCommunityStats } from '@/lib/firestore/communityHelpers';
 
 export const dynamic = 'force-static'
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
