@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { PlanetLabel, Placements } from "@/lib/astrology";
 import { getSignName, getHouseRuler } from "@/lib/vedic-core";
-import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface GrahaTableProps {
   placements: Placements;
@@ -91,9 +91,9 @@ export default function GrahaTable({ placements, className = "" }: GrahaTablePro
       <span>{children}</span>
       {sortField === field && (
         sortDirection === 'asc' ? (
-          <ChevronUpIcon className="w-4 h-4" />
+          <ChevronUp className="w-4 h-4" aria-hidden />
         ) : (
-          <ChevronDownIcon className="w-4 h-4" />
+          <ChevronDown className="w-4 h-4" aria-hidden />
         )
       )}
     </button>

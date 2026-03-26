@@ -285,12 +285,24 @@ export default function TarotSeerChatInterface({
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4"
+          role="region"
+          aria-label="Tarot Seer conversation"
+        >
           {messages.length === 0 && !isLoading ? (
-            <div className="text-center py-8">
-              <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
-              <p className="text-amber-900 font-medium mb-2">Ask me anything about Tarot…</p>
-              <p className="text-slate-700 text-sm mt-1 mb-2">I'll interpret your cards to reveal guidance, direction, and what phase you're in.</p>
+            <motion.div
+              className="text-center py-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" aria-hidden />
+              <p className="text-amber-900 font-semibold mb-2 font-serif tracking-tight">Your Tarot guide is listening.</p>
+              <p className="text-slate-700 text-sm mt-1 mb-2 max-w-md mx-auto leading-relaxed">
+                Ask about spreads, timing, and card meanings. Answers stay in Tarot&apos;s language and your
+                profile—not generic fortune-telling.
+              </p>
               <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
               <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
                 <li>Current situations and decisions</li>
@@ -312,8 +324,8 @@ export default function TarotSeerChatInterface({
                   </Button>
                 ))}
               </div>
-              <p className="text-slate-600 text-xs mt-4">Best for: understanding what's unfolding now and how to respond.</p>
-            </div>
+              <p className="text-slate-600 text-xs mt-4">Best for: clarity on your reading and the next step.</p>
+            </motion.div>
           ) : (
             <div className="space-y-4">
               <AnimatePresence>
@@ -322,10 +334,10 @@ export default function TarotSeerChatInterface({
                 ))}
               </AnimatePresence>
               {isLoading && (
-                <div className="flex justify-start">
+                <div className="flex justify-start" role="status" aria-live="polite">
                   <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-700">
-                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" aria-hidden />
                       Consulting the cards...
                     </div>
                   </div>
@@ -351,11 +363,13 @@ export default function TarotSeerChatInterface({
               placeholder="Ask about your cards, spreads, or a reading..."
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+              aria-label="Your question for the Tarot Seer"
             />
             <Button
               type="submit"
               disabled={isLoading || !question.trim()}
               className="bg-amber-600 hover:bg-amber-700 text-white"
+              aria-label={isLoading ? 'Sending message' : 'Send message to Tarot Seer'}
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

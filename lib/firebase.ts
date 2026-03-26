@@ -746,6 +746,8 @@ export interface UserProfile {
     communityUpdates?: boolean;
     newFeatures?: boolean;
   };
+  /** When true, main Seer may receive optional same-day headline titles as world context (server-side only). */
+  seerIncludeNewsHeadlines?: boolean;
   timezone?: number | string;
 }
 

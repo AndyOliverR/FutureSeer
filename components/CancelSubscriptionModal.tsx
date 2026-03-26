@@ -49,14 +49,14 @@ export function CancelSubscriptionModal({
             We're Sorry to See You Go
           </DialogTitle>
           <DialogDescription className="text-slate-300 font-serif">
-            You can always come back and rejoin the innovation experiment anytime!
+            You can always come back and resubscribe anytime.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
           <p className="text-sm text-slate-300">
-            Your contribution cancellation will take effect at the end of your current billing cycle.
-            You'll continue to have access until then.
+            Cancellation takes effect when our payment provider confirms it: recurring billing stops and your
+            membership access ends at that point (not at the end of a grace period unless your bank shows otherwise).
           </p>
 
           <div className="space-y-2">

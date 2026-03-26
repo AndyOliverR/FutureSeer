@@ -43,7 +43,7 @@ flowchart LR
 | **Signup** | Sign-up page Email | Success → `/profile-setup` | [app/signup/page.tsx](../app/signup/page.tsx) after SignupFlow: `router.push("/profile-setup")` |
 | **Profile completion** | Profile-setup "Complete" | Save + optional AstroApp → `/profile` | [app/profile-setup/page.tsx](../app/profile-setup/page.tsx) `handleComplete`: `router.push('/profile')` |
 | **Profile edit** | Profile "Save" | No route change | Stays on `/profile` |
-| **Profile edit** | Profile "Generate mystical profile" OK | After 2s → `/ask-the-seer` | [app/profile/page.tsx](../app/profile/page.tsx) `setTimeout(() => router.push('/ask-the-seer'), 2000)` |
+| **Profile edit** | Profile "Generate mystical profile" OK | → `/ask-the-seer` (canonical default from [lib/authRouting.ts](../lib/authRouting.ts)) | [app/profile/page.tsx](../app/profile/page.tsx) `router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)` on success |
 | **Logout** | Profile or UserMenuDropdown "Sign out" | Full reload → `/` | [lib/firebase.ts](../lib/firebase.ts) `signOutUser`: `window.location.href = '/'` |
 
 ---
@@ -55,7 +55,7 @@ flowchart LR
 | **Returning** (Google) | Sign-in or sign-up → `/dashboard`; if reports exist (`mysticalProfileGenerated`) → redirect to canonical default `/ask-the-seer` (see [lib/authRouting.ts](../lib/authRouting.ts)). |
 | **New** (Google) | Sign-in or sign-up → `/profile-setup` → complete → `/profile`. |
 | **New** (Email) | Sign-up → `/profile-setup` → complete → `/profile`. |
-| **Edited** | `/profile` → Save → stay on `/profile`; or Generate mystical profile success → 2s → `/ask-the-seer`. |
+| **Edited** | `/profile` → Save → stay on `/profile`; or Generate mystical profile success → `/ask-the-seer`. |
 
 ---
 

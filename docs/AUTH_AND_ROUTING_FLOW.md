@@ -72,7 +72,7 @@ flowchart LR
 - **Route**: [app/profile/page.tsx](../app/profile/page.tsx).
 - **Guard**: `useEffect`: if `!authLoading && !user` → `router.push("/signin")` (lines 281–284). If `!user` after loading, render returns `null` (lines 711–713) while the effect performs the redirect.
 - **Save**: `handleSave` updates profile and stays on `/profile` (no navigation).
-- **Generate mystical profile**: On success, after 2s → `router.push('/ask-the-seer')` (line 652).
+- **Generate mystical profile**: On success → `router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)` (typically `/ask-the-seer`; see [lib/authRouting.ts](../lib/authRouting.ts)).
 
 ---
 

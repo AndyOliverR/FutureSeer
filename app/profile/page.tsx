@@ -22,9 +22,13 @@ import { SubscriptionStatus } from "@/components/SubscriptionStatus"
 import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
+import { SEQ_PROMPT_AFTER_PROFILE_GEN } from "@/lib/metricsSession"
 import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 import { compressImageFile } from "@/lib/imageCompression"
+import { PROFILE_PLAN_PRICING_CTA_LABEL, PROFILE_PLAN_REQUIRED_BODY } from "@/lib/accessGatingCopy"
+import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics"
+import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 
 export default function ProfilePage() {
   const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
@@ -367,10 +371,43 @@ export default function ProfilePage() {
           {user && <div className="mt-4 border-t border-outline-variant pt-4"><ReferralCodeCard userId={user.uid} /></div>}
         </div>
 
+        {user?.uid && (
+          <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary-container rounded-xl">
+                <Sparkles className="w-5 h-5 text-on-primary-container" />
+              </div>
+              <h2 className="font-bold text-white uppercase text-sm tracking-widest">The Seer</h2>
+            </div>
+            <SeerNewsHeadlinesToggle
+              userId={user.uid}
+              enabled={!!userProfile?.seerIncludeNewsHeadlines}
+              onUpdated={() => refreshProfile()}
+            />
+          </div>
+        )}
+
         {hasProfile && !canViewFullProfile && (
           <Alert className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
-            <AlertDescription className="text-amber-200 text-sm">
-              Your mystical profile is ready. Select a plan above to view your full reports in Tools.
+            <AlertDescription className="text-amber-200 text-sm space-y-3">
+              <p>{PROFILE_PLAN_REQUIRED_BODY}</p>
+              <Button
+                asChild
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold hover:from-amber-600 hover:to-yellow-600"
+              >
+                <Link
+                  href="/pricing"
+                  onClick={() =>
+                    analytics.trackEvent(ANALYTICS_EVENTS.PROFILE_PLAN_CTA_CLICKED, {
+                      destination: "/pricing",
+                      surface: "profile_plan_alert",
+                      layout: "mobile",
+                    })
+                  }
+                >
+                  {PROFILE_PLAN_PRICING_CTA_LABEL}
+                </Link>
+              </Button>
             </AlertDescription>
           </Alert>
         )}
@@ -410,17 +447,17 @@ export default function ProfilePage() {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Display Name</Label>
+              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Display Name</Label>
               {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
+              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
               {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
             </div>
 
             <div className="space-y-2 relative z-20 overflow-visible">
-              <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
+              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
               {isEditing ? (
                 <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
                   <option value="">Not set</option>
@@ -435,18 +472,18 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Date</Label>
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Date</Label>
                 {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthDate || "Not set"}</p>}
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Place</Label>
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Place</Label>
                 {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthPlace || "Not set"}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Time of Birth</Label>
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Time of Birth</Label>
                 {isEditing ? (
                   <div className="flex gap-2 items-center">
                     <Input type="time" value={formData.birthTime} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark] flex-1" />
@@ -460,7 +497,7 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest ml-1">Current residence</Label>
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Current residence</Label>
                 {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="City, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
               </div>
             </div>
@@ -475,7 +512,7 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 text-center">
-                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
                 <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
                   {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
                   {uploadingFace && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
@@ -498,8 +535,8 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="space-y-2 text-center">
-                <Label className="text-[10px] uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
-                <p className="text-[10px] text-white/70">Upload left palm (female) or right palm (male).</p>
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                <p className="text-sm text-white/70">Upload left palm (female) or right palm (male).</p>
                 <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
                   {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
                   {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
@@ -567,6 +604,13 @@ export default function ProfilePage() {
                         await refreshComprehensiveProfile()
                       }
                       setSuccess("Mystical Profile Generated!")
+                      try {
+                        if (typeof window !== "undefined") {
+                          sessionStorage.setItem(SEQ_PROMPT_AFTER_PROFILE_GEN, "1")
+                        }
+                      } catch {
+                        /* ignore */
+                      }
                       router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
                     } catch(e: any) {
                       if (e?.name === 'AbortError') return
@@ -604,7 +648,7 @@ export default function ProfilePage() {
         <div className="fixed left-0 right-0 z-[150] bottom-[calc(env(safe-area-inset-bottom)+76px)] px-4">
           <div className="max-w-md mx-auto w-full rounded-2xl border border-outline-variant bg-surface-container-high/95 backdrop-blur px-3 py-3 shadow-2xl">
             {isUploadBusy ? (
-              <div className="mb-2 text-[11px] font-medium text-amber-200/90">
+              <div className="mb-2 text-xs font-medium text-amber-200/90">
                 Finishing upload… you can save once uploads complete.
               </div>
             ) : null}
@@ -661,10 +705,48 @@ export default function ProfilePage() {
             {user && <div className="mt-4 border-t border-amber-400/20 pt-4"><ReferralCodeCard userId={user.uid} /></div>}
           </motion.div>
 
+          {user?.uid && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.02 }}
+              className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-3"
+            >
+              <div className="flex items-center gap-3 mb-1">
+                <div className="p-2 bg-amber-500/20 rounded-xl">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                </div>
+                <h2 className="font-bold text-amber-400 uppercase text-sm tracking-widest">The Seer</h2>
+              </div>
+              <SeerNewsHeadlinesToggle
+                userId={user.uid}
+                enabled={!!userProfile?.seerIncludeNewsHeadlines}
+                onUpdated={() => refreshProfile()}
+              />
+            </motion.div>
+          )}
+
           {hasProfile && !canViewFullProfile && (
             <Alert className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
-              <AlertDescription className="text-amber-200">
-                Your mystical profile is ready. Select a plan above to view your full reports in Tools.
+              <AlertDescription className="text-amber-200 space-y-3">
+                <p>{PROFILE_PLAN_REQUIRED_BODY}</p>
+                <Button
+                  asChild
+                  className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold hover:from-amber-600 hover:to-yellow-600"
+                >
+                  <Link
+                    href="/pricing"
+                    onClick={() =>
+                      analytics.trackEvent(ANALYTICS_EVENTS.PROFILE_PLAN_CTA_CLICKED, {
+                        destination: "/pricing",
+                        surface: "profile_plan_alert",
+                        layout: "web",
+                      })
+                    }
+                  >
+                    {PROFILE_PLAN_PRICING_CTA_LABEL}
+                  </Link>
+                </Button>
               </AlertDescription>
             </Alert>
           )}
@@ -879,6 +961,13 @@ export default function ProfilePage() {
                           await refreshComprehensiveProfile()
                         }
                         setSuccess("Mystical Profile Generated!")
+                        try {
+                          if (typeof window !== "undefined") {
+                            sessionStorage.setItem(SEQ_PROMPT_AFTER_PROFILE_GEN, "1")
+                          }
+                        } catch {
+                          /* ignore */
+                        }
                         router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
                       } catch(e: any) {
                         if (e?.name === 'AbortError') return

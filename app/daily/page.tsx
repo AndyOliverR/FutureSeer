@@ -1,11 +1,27 @@
-"use client"
+﻿"use client"
 
 import Link from "next/link"
 import { useDailyGuidance } from "@/hooks/useDailyGuidance"
 import { CosmicLoader } from "@/components/cosmic-loader"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/hooks/use-auth"
+import { DailyWeatherCard } from "@/components/integrations/DailyWeatherCard"
+
 export default function DailyPage() {
   const { loading, error, dailyData } = useDailyGuidance()
+  const { userProfile } = useAuth();
+  const lat =
+    typeof userProfile?.birthLatitude === "number"
+      ? userProfile.birthLatitude
+      : typeof userProfile?.latitude === "number"
+        ? userProfile.latitude
+        : undefined;
+  const lon =
+    typeof userProfile?.birthLongitude === "number"
+      ? userProfile.birthLongitude
+      : typeof userProfile?.longitude === "number"
+        ? userProfile.longitude
+        : undefined;
 
   if (loading) {
     return (
@@ -30,6 +46,10 @@ export default function DailyPage() {
           <h1 className="text-4xl font-semibold gold-glow mb-4">Daily Cosmic Guidance</h1>
           <p className="text-soft leading-relaxed">AI-generated celestial wisdom • {new Date().toLocaleDateString()}</p>
         </div>
+
+        {lat != null && lon != null && !Number.isNaN(lat) && !Number.isNaN(lon) && (
+          <DailyWeatherCard lat={lat} lon={lon} />
+        )}
 
         {/* Symbol of the Day */}
         <AnimatePresence>
@@ -68,7 +88,7 @@ export default function DailyPage() {
         {/* Daily Themes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
           <AnimatePresence>
-            {dailyData?.themes && dailyData.themes.map((theme: any, i: number) => (
+            {dailyData?.themes && dailyData.themes.map((theme: { icon?: string; title?: string; forecast?: string; energy?: string }, i: number) => (
               <motion.div
                 key={i}
                 className="glass-card rounded-2xl p-6"
