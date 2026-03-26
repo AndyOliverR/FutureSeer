@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-static'
 
@@ -19,7 +19,7 @@ export async function GET(
   try {
     const { userId } = await params;
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
@@ -76,7 +76,7 @@ export async function GET(
       const recentActivity: any[] = [];
       
       // Recent discussions
-      discussions.slice(0, 10).forEach((discussion: { id: string; title: string; createdAt: string | undefined }) => {
+      discussions.slice(0, 10).forEach((discussion) => {
         recentActivity.push({
           type: 'discussion',
           id: discussion.id,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { calculateKarmaForAction } from '@/lib/firestore/communityHelpers';
 
 export const dynamic = 'force-static'
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
@@ -309,7 +309,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
