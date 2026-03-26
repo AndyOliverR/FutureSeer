@@ -21,6 +21,7 @@ import {
   BookOpen,
   BarChart3,
 } from 'lucide-react';
+import { NewsHeadlinesStrip } from '@/components/integrations/NewsHeadlinesStrip';
 
 type TabValue = 'introduction' | 'report' | 'ask-the-seer';
 
@@ -155,6 +156,12 @@ function MundaneAstrologyPageContent() {
     [prefersReducedMotion]
   );
 
+  const newsCountry = useMemo(() => {
+    const c = (userProfile?.country || '').trim().toUpperCase();
+    if (c === 'IN' || c === 'INDIA') return 'in';
+    return 'us';
+  }, [userProfile?.country]);
+
   const tabsConfig: { value: TabValue; label: string }[] = [
     { value: 'introduction', label: 'Introduction' },
     { value: 'report', label: 'Your Report' },
@@ -225,6 +232,8 @@ function MundaneAstrologyPageContent() {
               Political and national astrology — cyclical geopolitical modeling, not prediction
             </p>
           </div>
+
+          <NewsHeadlinesStrip country={newsCountry} />
 
           <div className="rounded-2xl border border-purple-500/40 bg-slate-900/80 overflow-hidden shadow-[0_0_30px_rgba(139,92,246,0.15)]">
             <Tabs

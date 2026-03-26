@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { loadRazorpayScript } from '@/lib/razorpayClient';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
+import { analytics } from '@/lib/analytics';
+import { CHECKOUT_DISPLAY_NAME } from '@/lib/checkoutBranding';
 
 declare global {
   interface Window {
@@ -92,17 +94,17 @@ export function PaymentMethodCapture({
 
       if (selectedPlan === 'buy-coffee') {
         amount = config.pricingTiers.allFeatures;
-        planDescription = 'Monthly contribution to support the innovation';
+        planDescription = 'Coffee — monthly membership';
       } else if (selectedPlan === 'treat-me') {
         amount = config.pricingTiers.quarterly;
-        planDescription = 'Quarterly contribution to support the innovation';
+        planDescription = 'Treat — quarterly membership';
       } else if (selectedPlan === 'festive-hamper') {
         amount = config.pricingTiers.annual;
-        planDescription = 'Annual contribution to support the innovation';
+        planDescription = 'Hamper — annual membership';
       } else {
         // Trial - no charge, but still need payment method
         amount = 0;
-        planDescription = 'Secure your spot in the innovation experiment';
+        planDescription = 'Trial — membership setup';
       }
 
       // Razorpay expects smallest currency unit (paise for INR, cents for USD, etc.)
@@ -150,7 +152,7 @@ export function PaymentMethodCapture({
       const options = {
         key: razorpayKeyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '',
         subscription_id: subscriptionId,
-        name: 'FutureSeer Innovation Experiment',
+        name: CHECKOUT_DISPLAY_NAME,
         description: planDescription,
         prefill: {
           name: userName,
@@ -175,7 +177,16 @@ export function PaymentMethodCapture({
             }
 
             const { paymentMethodId } = await verifyResponse.json();
-            onPaymentMethodCaptured(paymentMethodId, response.razorpay_subscription_id || subscriptionId);
+            const resolvedSubId = response.razorpay_subscription_id || subscriptionId;
+            analytics.trackSubscriptionStart(selectedPlan, amount, {
+              currency: config.currency,
+              surface: 'payment_method_capture',
+            });
+            analytics.trackPaymentCompleted(selectedPlan, resolvedSubId, {
+              surface: 'payment_method_capture',
+              razorpay_payment_id: response.razorpay_payment_id,
+            });
+            onPaymentMethodCaptured(paymentMethodId, resolvedSubId);
           } catch (error: any) {
             if (onError) {
               onError(error.message || 'Failed to verify payment method');
@@ -225,7 +236,7 @@ export function PaymentMethodCapture({
             </div>
           </div>
           <CardTitle className="text-2xl font-serif text-white mb-2">
-            Secure Your Spot in the Innovation Experiment
+            Secure your membership
           </CardTitle>
           {chargeInUsdFallback && (
             <p className="text-sm text-amber-200/90 mb-2">

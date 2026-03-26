@@ -52,6 +52,12 @@ export const ANALYTICS_EVENTS = {
   
   // Conversion
   PRICING_VIEWED: 'pricing_viewed',
+  /** Funnel: user clicked upgrade CTA from profile when full tools require a plan */
+  PROFILE_PLAN_CTA_CLICKED: 'profile_plan_cta_clicked',
+  /** Subscribe page: user committed to a plan (before checkout opens) */
+  PLAN_SELECTED: 'plan_selected',
+  /** Subscribe page: plan row hover (intent signal) */
+  PLAN_HOVERED: 'plan_hovered',
   SUBSCRIPTION_STARTED: 'subscription_started',
   PAYMENT_COMPLETED: 'payment_completed',
   
@@ -226,6 +232,19 @@ export class AnalyticsService {
     this.trackEvent(ANALYTICS_EVENTS.SUBSCRIPTION_STARTED, {
       subscription_tier: tier,
       amount: amount,
+      ...properties,
+    })
+  }
+
+  /** After Razorpay verify-payment succeeds (client-confirmed payment). */
+  trackPaymentCompleted(
+    tier: string,
+    subscriptionId: string,
+    properties?: Record<string, unknown>
+  ) {
+    this.trackEvent(ANALYTICS_EVENTS.PAYMENT_COMPLETED, {
+      subscription_tier: tier,
+      subscription_id: subscriptionId,
       ...properties,
     })
   }

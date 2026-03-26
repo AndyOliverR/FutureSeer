@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SlowRevealText } from '@/components/chat/SlowRevealText';
 
 interface MainSeerChatInterfaceProps {
   userId: string | undefined;
   userProfile: { birthDate?: string; birthTime?: string; birthPlace?: string } | null;
+  /** Consecutive days with Seer activity; optional, calm banner when >= 2 */
+  streakDays?: number;
 }
 
 type ThreadMessage = { role: 'user' | 'seer'; content: string };
@@ -40,7 +41,11 @@ function threadToMessages(thread: ThreadMessage[]): Message[] {
   }));
 }
 
-export default function MainSeerChatInterface({ userId, userProfile }: MainSeerChatInterfaceProps) {
+export default function MainSeerChatInterface({
+  userId,
+  userProfile,
+  streakDays = 0,
+}: MainSeerChatInterfaceProps) {
   const [thread, setThread] = useState<ThreadMessage[]>([]);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -61,10 +66,6 @@ export default function MainSeerChatInterface({ userId, userProfile }: MainSeerC
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   const sendMessage = async (questionText?: string) => {
     const messageToSend = questionText ?? question.trim();
@@ -187,7 +188,16 @@ export default function MainSeerChatInterface({ userId, userProfile }: MainSeerC
   };
 
   return (
-    <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
+    <>
+      {streakDays >= 2 ? (
+        <div
+          className="mb-3 rounded-lg border border-amber-300/40 bg-amber-950/40 px-3 py-2 text-center text-xs text-amber-100/90"
+          role="status"
+        >
+          You have consulted the Seer on {streakDays} consecutive days—steady practice builds clarity.
+        </div>
+      ) : null}
+      <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
       <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
         <CardTitle className="text-amber-900 flex items-center gap-2">
           <span className="text-2xl" aria-hidden>🔮</span>
@@ -208,13 +218,25 @@ export default function MainSeerChatInterface({ userId, userProfile }: MainSeerC
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4"
+          role="region"
+          aria-label="Conversation with the Seer"
+        >
           {messages.length === 0 && !isLoading ? (
-            <div className="text-center py-8">
+            <motion.div
+              className="text-center py-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
               <span className="text-6xl mx-auto mb-4 block" aria-hidden>🔮</span>
-              <p className="text-amber-900 font-medium mb-2">Ask me anything about your life and future…</p>
-              <p className="text-slate-700 text-sm mt-1 mb-2">
-                I draw on Western and Vedic astrology, tarot, numerology, and many other systems to offer guidance.
+              <p className="text-amber-900 font-semibold mb-2 font-serif tracking-tight">
+                Welcome. The Seer speaks across your full profile.
+              </p>
+              <p className="text-slate-700 text-sm mt-1 mb-2 max-w-md mx-auto leading-relaxed">
+                Guidance draws on Western and Vedic astrology, tarot, numerology, and more—grounded in your saved
+                readings, not generic predictions.
               </p>
               <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
               <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
@@ -238,7 +260,7 @@ export default function MainSeerChatInterface({ userId, userProfile }: MainSeerC
                 ))}
               </div>
               <p className="text-slate-600 text-xs mt-4">Best for: clarity, direction, and grounded insight.</p>
-            </div>
+            </motion.div>
           ) : (
             <div className="space-y-4">
               <AnimatePresence>
@@ -247,10 +269,10 @@ export default function MainSeerChatInterface({ userId, userProfile }: MainSeerC
                 ))}
               </AnimatePresence>
               {isLoading && (
-                <div className="flex justify-start">
+                <div className="flex justify-start" role="status" aria-live="polite">
                   <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4">
                     <div className="flex items-center gap-2 text-slate-700">
-                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" />
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-700" aria-hidden />
                       Consulting the mystical forces...
                     </div>
                   </div>
@@ -276,11 +298,13 @@ export default function MainSeerChatInterface({ userId, userProfile }: MainSeerC
               placeholder="Ask about life, purpose, relationships, career, or future..."
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
+              aria-label="Your question for the Seer"
             />
             <Button
               type="submit"
               disabled={isLoading || !question.trim()}
               className="bg-amber-600 hover:bg-amber-700 text-white"
+              aria-label={isLoading ? 'Sending message' : 'Send message to the Seer'}
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -292,5 +316,6 @@ export default function MainSeerChatInterface({ userId, userProfile }: MainSeerC
         </div>
       </CardContent>
     </Card>
+    </>
   );
 }

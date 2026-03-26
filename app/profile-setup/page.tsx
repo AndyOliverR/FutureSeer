@@ -419,9 +419,9 @@ export default function ProfileSetupPage() {
         ) : null}
 
         <div className="flex gap-4">
-          <Button variant="ghost" disabled={currentStep === 1} onClick={() => setCurrentStep(currentStep - 1)} className="flex-1 h-14 rounded-2xl text-white font-bold">Back</Button>
+          <Button variant="ghost" disabled={currentStep === 1} onClick={() => setCurrentStep(currentStep - 1)} size="xl" className="flex-1 text-white font-bold">Back</Button>
           {currentStep < 3 ? (
-            <Button onClick={() => setCurrentStep(currentStep + 1)} className="flex-1 h-14 bg-amber-500 text-slate-900 rounded-2xl font-bold shadow-lg">Next</Button>
+            <Button onClick={() => setCurrentStep(currentStep + 1)} size="xl" className="flex-1 bg-amber-500 text-slate-900 font-bold shadow-lg">Next</Button>
           ) : (
             <Button
               onClick={handleComplete}

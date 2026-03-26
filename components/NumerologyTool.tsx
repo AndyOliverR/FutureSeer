@@ -19,6 +19,7 @@ import {
   Sparkles,
   RefreshCw
 } from 'lucide-react'
+import { MysticalLoadingState } from '@/components/MysticalLoadingState'
 
 export function NumerologyTool() {
   const { numerologyData, loading, error, refresh, isStale } = useNumerologyData()
@@ -27,10 +28,11 @@ export function NumerologyTool() {
     return (
       <Card className="bg-slate-800/50 border-slate-600">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
-            <span className="ml-3 text-slate-300">Calculating your numerology profile...</span>
-          </div>
+          <MysticalLoadingState
+            variant="card"
+            message="Calculating your numerology profile…"
+            subline="Numbers from your birth name and date."
+          />
         </CardContent>
       </Card>
     )

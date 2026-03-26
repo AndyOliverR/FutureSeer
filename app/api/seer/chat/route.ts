@@ -3,6 +3,7 @@ import { devLog } from '@/lib/devLogger';
 import { createAICompletion } from '@/lib/aiGateway';
 import { withRateLimit, rateLimiters, getClientIdentifier } from '@/lib/rateLimit';
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
+import { fetchTopHeadlines, newsCountryFromProfile } from "@/lib/server/newsHeadlines";
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
   if (!profile) return null;
@@ -123,6 +124,23 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
         role: "system",
         content: `User Birth Data:\n${JSON.stringify(birthProfile)}`,
       });
+    }
+
+    if (profile?.seerIncludeNewsHeadlines && process.env.NEWS_API_KEY?.trim()) {
+      try {
+        const headlines = await fetchTopHeadlines({
+          country: newsCountryFromProfile(profile),
+          pageSize: 5,
+        });
+        if (headlines.length > 0) {
+          messages.push({
+            role: "system",
+            content: `Optional same-day headlines (not predictions; use only if relevant to collective mood or timing):\n${headlines.map((h) => `- ${h.title}`).join("\n")}`,
+          });
+        }
+      } catch {
+        // Best-effort; Seer works without headlines
+      }
     }
 
     for (const m of trimmedThread) {

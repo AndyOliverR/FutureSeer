@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import { AlertTriangle, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { MysticalLoadingState } from '@/components/MysticalLoadingState'
 import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
+import { toolReportMissingBody } from '@/lib/accessGatingCopy'
 
 export interface ToolReportViralConfig {
   toolSlug: string
@@ -45,18 +47,10 @@ export function ToolReportGuard({
 }: ToolReportGuardProps) {
   if (loading) {
     return (
-      <div className="relative min-h-screen starfield-ultra-sharp">
-        <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4" aria-hidden />
-              <p className="text-slate-300">
-                {toolLabel ? `Loading ${toolLabel}...` : 'Loading...'}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MysticalLoadingState
+        variant="fullscreen"
+        message={toolLabel ? `Loading ${toolLabel}…` : 'Preparing your reading…'}
+      />
     )
   }
 
@@ -64,7 +58,10 @@ export function ToolReportGuard({
     return (
       <div className="relative min-h-screen starfield-ultra-sharp">
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
-          <div className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center max-w-2xl mx-auto">
+          <div
+            className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center max-w-2xl mx-auto"
+            role="alert"
+          >
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" aria-hidden />
             <h3 className="text-lg font-semibold text-red-300 mb-2">
               {toolLabel ? `Error loading ${toolLabel}` : 'Error loading data'}
@@ -88,9 +85,7 @@ export function ToolReportGuard({
             <h3 className="text-xl font-serif font-semibold text-amber-300 mb-2">
               {toolLabel ? `Your ${toolLabel} reading awaits` : 'Your mystical reading awaits'}
             </h3>
-            <p className="text-slate-400 mb-6">
-              Generate your mystical profile to unlock personalized {toolLabel ? toolLabel.toLowerCase() : ''} insights based on your birth chart.
-            </p>
+            <p className="text-slate-400 mb-6">{toolReportMissingBody(toolLabel)}</p>
             <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-bold">
               <Link href={errorCtaHref}>{errorCtaLabel}</Link>
             </Button>

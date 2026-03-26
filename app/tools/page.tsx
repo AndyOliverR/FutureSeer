@@ -114,7 +114,7 @@ function ToolsPageContent() {
                       onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
                       className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", tool.isComingSoon ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
                     >
-                      <div className="shrink-0 w-16 h-16 rounded-2xl bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
+                      <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                       <div className="flex-1 min-w-0 pr-6">
                         <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
                         <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
@@ -133,7 +133,7 @@ function ToolsPageContent() {
                   onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
                   className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", tool.isComingSoon ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
                 >
-                  <div className="shrink-0 w-16 h-16 rounded-2xl bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
+                  <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                   <div className="flex-1 min-w-0 pr-6">
                     <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
                     <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>

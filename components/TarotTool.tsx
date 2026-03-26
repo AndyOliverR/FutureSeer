@@ -20,6 +20,7 @@ import {
   Clock,
   Target
 } from 'lucide-react'
+import { MysticalLoadingState } from '@/components/MysticalLoadingState'
 
 export function TarotTool() {
   const { tarotData, loading, error, refresh, drawTarot } = useTarotData()
@@ -50,10 +51,11 @@ export function TarotTool() {
     return (
       <Card className="bg-slate-800/50 border-slate-600">
         <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
-            <span className="ml-3 text-slate-300">Shuffling the Tarot deck...</span>
-          </div>
+          <MysticalLoadingState
+            variant="card"
+            message="Shuffling the Tarot deck…"
+            subline="The cards align with your saved profile."
+          />
         </CardContent>
       </Card>
     )

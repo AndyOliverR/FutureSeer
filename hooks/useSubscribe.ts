@@ -7,6 +7,8 @@ import { getCountryPricingConfig, getAttractivePrice } from "@/lib/pricingConfig
 import { MEMBERSHIP_TIER_FEATURES } from "@/lib/membershipTierCopy";
 import { initializeSubscriptionCheckout } from "@/lib/razorpayClient";
 import { updateUserProfile } from "@/lib/firebase";
+import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics";
+import { CHECKOUT_DISPLAY_NAME } from "@/lib/checkoutBranding";
 
 interface SubscriptionConfig {
   available: boolean;
@@ -202,13 +204,13 @@ export function useSubscribe() {
 
     if (planId === 'buy-coffee') {
       amount = pricingConfig.pricingTiers.allFeatures;
-      planDescription = 'Monthly contribution to support the innovation';
+      planDescription = 'Coffee — monthly membership';
     } else if (planId === 'treat-me') {
       amount = pricingConfig.pricingTiers.quarterly;
-      planDescription = 'Quarterly contribution to support the innovation';
+      planDescription = 'Treat — quarterly membership';
     } else {
       amount = pricingConfig.pricingTiers.annual;
-      planDescription = 'Annual contribution to support the innovation';
+      planDescription = 'Hamper — annual membership';
     }
 
     // Razorpay expects smallest currency unit (paise for INR, cents for USD, etc.)
@@ -252,7 +254,7 @@ export function useSubscribe() {
       await initializeSubscriptionCheckout({
         key: razorpayKeyId,
         subscriptionId,
-        name: 'FutureSeer Innovation Experiment',
+        name: CHECKOUT_DISPLAY_NAME,
         description: planDescription,
         prefill: {
           name: user.displayName || undefined,
@@ -279,6 +281,14 @@ export function useSubscribe() {
               isSubscribed: true,
               subscriptionStatus: 'active',
             });
+            analytics.trackSubscriptionStart(planId, amount, {
+              currency: pricingConfig.currency,
+              surface: 'subscribe_checkout',
+            });
+            analytics.trackPaymentCompleted(planId, subscriptionId, {
+              surface: 'subscribe_checkout',
+              razorpay_payment_id: res.razorpay_payment_id,
+            });
             router.push('/tools');
           } catch (err) {
             console.error('Subscribe verify error:', err);
@@ -298,36 +308,24 @@ export function useSubscribe() {
       setLoading(false);
       throw err;
     }
-  }, [user, userProfile, router]);
-
-  const cancelSubscription = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // This will be replaced with your new payment system
-      console.log("Cancelling subscription");
-      
-      // Placeholder for new payment system integration
-      throw new Error("Payment system not yet implemented");
-      
-    } catch (err: any) {
-      console.error("Error cancelling subscription:", err);
-      setError(err.message || "Failed to cancel subscription");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  }, [user, userProfile, router, authLoading, isSpecialUser]);
 
   // Analytics and optimization functions
-  const trackPricingEvent = useCallback((event: string, planId: string, metadata?: any) => {
-    // Track pricing-related events for optimization
-    console.log(`Pricing Event: ${event}`, { planId, metadata });
-    // Integrate with your analytics system
+  const trackPricingEvent = useCallback((event: string, planId: string, metadata?: Record<string, unknown>) => {
+    const name =
+      event === 'plan_selected'
+        ? ANALYTICS_EVENTS.PLAN_SELECTED
+        : event === 'plan_hovered'
+          ? ANALYTICS_EVENTS.PLAN_HOVERED
+          : event;
+    analytics.trackEvent(name, { plan_id: planId, ...metadata });
   }, []);
 
-  const getRecommendedPlan = useCallback((userBehavior: any) => {
+  const getRecommendedPlan = useCallback((userBehavior: {
+    readingFrequency: number;
+    toolUsage: number;
+    communityEngagement: number;
+  }) => {
     const { readingFrequency, toolUsage, communityEngagement } = userBehavior;
     if (readingFrequency > 10 && communityEngagement > 0.7) {
       return 'festive-hamper';
@@ -342,7 +340,6 @@ export function useSubscribe() {
     error,
     subscriptionConfig,
     subscribeToPlan,
-    cancelSubscription,
     fetchSubscriptionConfig,
     trackPricingEvent,
     getRecommendedPlan,

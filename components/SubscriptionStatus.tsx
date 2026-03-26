@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import { devLog } from '@/lib/devLogger';
-import { motion } from 'framer-motion';
 import { Calendar, Clock, CreditCard, X, Coffee, Gift, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CancelSubscriptionModal } from './CancelSubscriptionModal';
 import { UserProfile } from '@/lib/firebase';
+import { useAuth } from '@/hooks/use-auth';
 
 interface SubscriptionStatusProps {
   userProfile: UserProfile | null;
@@ -17,6 +17,7 @@ interface SubscriptionStatusProps {
 }
 
 export function SubscriptionStatus({ userProfile, onCancel, onUpdatePaymentClick }: SubscriptionStatusProps) {
+  const { user } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   if (!userProfile) {
@@ -180,8 +181,8 @@ export function SubscriptionStatus({ userProfile, onCancel, onUpdatePaymentClick
           {/* Info */}
           <div className="m3-body-small text-center text-white/80 pt-2 border-t border-amber-500/30">
             <p>
-              You're part of the FutureSeer innovation experiment.{' '}
-              <span className="text-amber-400">Thank you for your support!</span>
+              Thank you for supporting FutureSeer.{' '}
+              <span className="text-amber-400">We appreciate you!</span>
             </p>
           </div>
         </CardContent>
@@ -191,30 +192,34 @@ export function SubscriptionStatus({ userProfile, onCancel, onUpdatePaymentClick
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
         onConfirm={async () => {
-          if (subscriptionId && userProfile?.uid) {
-            try {
-              const response = await fetch('/api/payments/cancel-subscription', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  subscriptionId,
-                  userId: userProfile.uid,
-                }),
-              });
+          if (!subscriptionId || !userProfile?.uid) return;
+          if (!user) {
+            devLog.error('Cancel subscription: not signed in', undefined, 'SubscriptionStatus');
+            return;
+          }
+          try {
+            const token = await user.getIdToken();
+            const response = await fetch('/api/payments/cancel-subscription', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                subscriptionId,
+                userId: userProfile.uid,
+              }),
+            });
 
-              if (!response.ok) {
-                throw new Error('Failed to cancel subscription');
-              }
-
-              setShowCancelModal(false);
-              if (onCancel) {
-                onCancel();
-              }
-            } catch (error: any) {
-              devLog.error('Error cancelling subscription:', error, 'SubscriptionStatus');
+            if (!response.ok) {
+              const errBody = await response.json().catch(() => ({}));
+              throw new Error(typeof errBody?.error === 'string' ? errBody.error : 'Failed to cancel subscription');
             }
+
+            setShowCancelModal(false);
+            onCancel?.();
+          } catch (error: unknown) {
+            devLog.error('Error cancelling subscription:', error, 'SubscriptionStatus');
           }
         }}
       />

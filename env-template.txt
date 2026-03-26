@@ -1,4 +1,4 @@
-# Environment Variables Template for FutureSeer
+﻿# Environment Variables Template for FutureSeer
 # Copy this to .env.local and fill in your actual API keys
 # ALL VARIABLES ARE PRIVATE - DO NOT EXPOSE TO CLIENT
 
@@ -99,3 +99,11 @@ NEXT_PUBLIC_AMAZON_DOMAIN=amazon.in
 
 # Certified gemstone seller - leave empty if no partner (GIA/IGI/GRS certified only, NOT Amazon)
 NEXT_PUBLIC_CERTIFIED_GEMSTONE_SELLER_URL=
+
+# Optional integrations (server-side only - never expose these as NEXT_PUBLIC_*)
+# OpenWeatherMap - current weather for birth coordinates (https://openweathermap.org/api)
+OPENWEATHER_API_KEY=
+# NewsAPI.org - top headlines for mundane context / Seer (https://newsapi.org)
+NEWS_API_KEY=
+# GIPHY - GIF search in community (https://developers.giphy.com)
+GIPHY_API_KEY=
