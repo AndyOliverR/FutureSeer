@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import { isHotDiscussion } from '@/lib/firestore/communityHelpers';
 
 export const dynamic = 'force-static'
@@ -20,7 +20,7 @@ export async function GET(
   try {
     const { id: discussionId } = await params;
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
@@ -79,7 +79,7 @@ export async function PATCH(
     const body = await request.json();
     const { title, content, category, priority, userId } = body;
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
@@ -94,9 +94,12 @@ export async function PATCH(
       }
 
       const discussionData = discussionDoc.data();
+      if (!discussionData) {
+        return NextResponse.json({ error: 'Discussion not found' }, { status: 404 });
+      }
 
       // Check if user is the author
-      if (discussionData?.authorId !== userId) {
+      if (discussionData.authorId !== userId) {
         return NextResponse.json({ error: 'Unauthorized: Only author can update' }, { status: 403 });
       }
 
@@ -158,7 +161,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
+import type { Query } from 'firebase-admin/firestore';
 import { getLevelFromKarma, getReputation, calculateBadges } from '@/lib/firestore/communityHelpers';
 
 export const dynamic = 'force-static'
@@ -46,14 +47,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20');
     const lastDocId = searchParams.get('lastDocId');
 
-    const db = getFirebaseDB();
+    const db = adminDb;
     if (!db) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
     if (typeof window === 'undefined') {
       // Server-side: Use Admin SDK
-      let query = db.collection('communityMembers');
+      let query: Query = db.collection('communityMembers');
 
       // Apply sorting
       if (sortBy === 'lastActive') {
