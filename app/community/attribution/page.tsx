@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Eye, EyeOff, Send, X, ArrowUp, ArrowDown, Award, Flame, Crown, Sparkles, Zap, Moon, Sun, Plus } from 'lucide-react';
+import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Send, X, Flame, Crown, Sparkles, Plus } from 'lucide-react';
 import { DiscussionCard } from '@/components/community/DiscussionCard';
 import { DiscussionForm } from '@/components/community/DiscussionForm';
 import { GuestDiscussionForm } from '@/components/community/GuestDiscussionForm';
@@ -72,16 +72,6 @@ export interface DiscussionThread {
   actionRequired?: boolean;
 }
 
-interface ConnectionRequest {
-  fromUserId: string;
-  fromUserName: string;
-  toUserId: string;
-  toUserName: string;
-  topic: string;
-  message: string;
-  status: 'pending' | 'accepted' | 'declined';
-  date: string;
-}
 
 interface UserAttribution {
   contributions: UserContribution[];
@@ -181,7 +171,7 @@ export default function CommunityAttributionPage() {
         }),
       }).catch((err) => {
         devLog.error('Error auto-joining community:', err, 'page');
-        return { __failed: true } as any;
+        return { __failed: true as const };
       });
 
       const membersPromise = fetch('/api/community/members?limit=50').then(async (r) => {
@@ -213,7 +203,7 @@ export default function CommunityAttributionPage() {
       ]);
 
       // Surface auto-join failures to the user
-      if (autoJoinResult && (autoJoinResult as any).__failed) {
+      if (autoJoinResult && typeof autoJoinResult === 'object' && '__failed' in autoJoinResult && (autoJoinResult as { __failed?: boolean }).__failed) {
         toast({ title: "Community", description: "Could not join community automatically. Some features may be limited.", variant: "destructive" });
       }
 
@@ -226,51 +216,51 @@ export default function CommunityAttributionPage() {
       }
 
       if (membersData?.length) {
-        setCommunityMembers(membersData.map((m: any) => ({
-          id: m.userId || m.id,
-          name: m.name,
-          contributions: m.contributions || 0,
-          impact: m.karma || 0,
-          joinDate: m.joinDate,
-          lastActive: m.lastActive,
-          interests: m.interests || [],
-          isOnline: m.isOnline || false,
-          karma: m.karma || 0,
-          flair: m.flair || '',
-          badges: m.badges || [],
-          level: m.level || 'Novice',
-          streak: m.streak || 0,
-          reputation: m.reputation || 'Respected',
+        setCommunityMembers(membersData.map((m: Record<string, unknown>) => ({
+          id: String(m.userId ?? m.id ?? ''),
+          name: String(m.name ?? ''),
+          contributions: Number(m.contributions) || 0,
+          impact: Number(m.karma) || 0,
+          joinDate: String(m.joinDate ?? ''),
+          lastActive: String(m.lastActive ?? ''),
+          interests: Array.isArray(m.interests) ? m.interests as string[] : [],
+          isOnline: Boolean(m.isOnline),
+          karma: Number(m.karma) || 0,
+          flair: String(m.flair ?? ''),
+          badges: Array.isArray(m.badges) ? m.badges as string[] : [],
+          level: (m.level as CommunityMember['level']) || 'Novice',
+          streak: Number(m.streak) || 0,
+          reputation: (m.reputation as CommunityMember['reputation']) || 'Respected',
           hideStats: m.hideStats === true,
         })));
       }
 
       if (discussionsData?.length) {
-        setDiscussionThreads(discussionsData.map((d: any) => ({
-          id: d.id,
-          title: d.title,
-          content: d.content,
-          author: d.authorName,
-          authorId: d.authorId,
-          date: d.createdAt,
-          upvotes: d.upvotes || 0,
-          downvotes: d.downvotes || 0,
-          comments: d.commentCount || 0,
-          category: d.category,
-          priority: d.priority || 'medium',
-          status: d.status,
-          isHot: d.isHot || false,
-          isSticky: d.isSticky || false,
+        setDiscussionThreads(discussionsData.map((d: Record<string, unknown>) => ({
+          id: String(d.id ?? ''),
+          title: String(d.title ?? ''),
+          content: String(d.content ?? ''),
+          author: String(d.authorName ?? ''),
+          authorId: String(d.authorId ?? ''),
+          date: String(d.createdAt ?? ''),
+          upvotes: Number(d.upvotes) || 0,
+          downvotes: Number(d.downvotes) || 0,
+          comments: Number(d.commentCount) || 0,
+          category: d.category as DiscussionThread['category'],
+          priority: (d.priority as DiscussionThread['priority']) || 'medium',
+          status: d.status as DiscussionThread['status'],
+          isHot: Boolean(d.isHot),
+          isSticky: Boolean(d.isSticky),
         })));
 
         // Load user votes in background so we don't block first paint
-        const votePromises = discussionsData.map(async (d: any) => {
+        const votePromises = discussionsData.map(async (d: Record<string, unknown>) => {
           try {
-            const voteResponse = await fetch(`/api/community/votes?userId=${uid}&discussionId=${d.id}`);
+            const voteResponse = await fetch(`/api/community/votes?userId=${uid}&discussionId=${String(d.id ?? '')}`);
             if (!voteResponse.ok) return null;
             const voteData = await voteResponse.json();
             if (voteData.success && voteData.hasVoted) {
-              return { discussionId: d.id, voteType: voteData.voteType };
+              return { discussionId: String(d.id ?? ''), voteType: voteData.voteType as 'up' | 'down' };
             }
           } catch {
             return null;
@@ -335,6 +325,7 @@ export default function CommunityAttributionPage() {
     } else {
       void loadGuestDiscussions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when auth gate or user id changes
   }, [user?.uid, authLoading]);
 
   const handleConnectionRequest = (member: CommunityMember) => {
@@ -381,11 +372,11 @@ export default function CommunityAttributionPage() {
       setShowConnectionModal(false);
       setConnectionRequest({ topic: '', message: '' });
       setSelectedMember(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       devLog.error('Error sending connection request:', error, 'page');
       toast({
         title: "Error",
-        description: error.message || "Failed to send connection request",
+        description: error instanceof Error ? error.message : "Failed to send connection request",
         variant: "destructive"
       });
     }
@@ -402,38 +393,43 @@ export default function CommunityAttributionPage() {
     }
 
     try {
-      // Optimistic update
-      setDiscussionThreads(prev => prev.map(thread => {
-        if (thread.id === threadId) {
-          const currentVote = (thread as any).userVote;
-          let upvoteDelta = 0;
-          let downvoteDelta = 0;
+      const currentVote = userVotes[threadId] ?? null;
+      let upvoteDelta = 0;
+      let downvoteDelta = 0;
 
-          if (currentVote === voteType) {
-            // Remove vote
-            upvoteDelta = voteType === 'up' ? -1 : 0;
-            downvoteDelta = voteType === 'down' ? -1 : 0;
-            (thread as any).userVote = null;
-          } else if (currentVote) {
-            // Switch vote
-            upvoteDelta = voteType === 'up' ? 1 : -1;
-            downvoteDelta = voteType === 'down' ? 1 : -1;
-            (thread as any).userVote = voteType;
-          } else {
-            // New vote
-            upvoteDelta = voteType === 'up' ? 1 : 0;
-            downvoteDelta = voteType === 'down' ? 1 : 0;
-            (thread as any).userVote = voteType;
-          }
+      if (currentVote === voteType) {
+        upvoteDelta = voteType === 'up' ? -1 : 0;
+        downvoteDelta = voteType === 'down' ? -1 : 0;
+      } else if (currentVote) {
+        upvoteDelta = voteType === 'up' ? 1 : -1;
+        downvoteDelta = voteType === 'down' ? 1 : -1;
+      } else {
+        upvoteDelta = voteType === 'up' ? 1 : 0;
+        downvoteDelta = voteType === 'down' ? 1 : 0;
+      }
 
-          return {
-            ...thread,
-            upvotes: Math.max(0, thread.upvotes + upvoteDelta),
-            downvotes: Math.max(0, thread.downvotes + downvoteDelta)
-          };
+      setDiscussionThreads((prev) =>
+        prev.map((thread) =>
+          thread.id === threadId
+            ? {
+                ...thread,
+                upvotes: Math.max(0, thread.upvotes + upvoteDelta),
+                downvotes: Math.max(0, thread.downvotes + downvoteDelta),
+              }
+            : thread
+        )
+      );
+
+      setUserVotes((prev) => {
+        const next = { ...prev };
+        const cur = prev[threadId];
+        if (cur === voteType) {
+          delete next[threadId];
+        } else {
+          next[threadId] = voteType;
         }
-        return thread;
-      }));
+        return next;
+      });
 
       // Send vote to API
       const response = await fetch('/api/community/votes', {
@@ -515,11 +511,11 @@ export default function CommunityAttributionPage() {
 
       setShowDiscussionForm(false);
       await loadCommunityData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       devLog.error('Error creating discussion:', error, 'page');
       toast({
         title: "Error",
-        description: error.message || "Failed to create discussion",
+        description: error instanceof Error ? error.message : "Failed to create discussion",
         variant: "destructive"
       });
       throw error;
@@ -588,17 +584,6 @@ export default function CommunityAttributionPage() {
       case 'high': return 'text-red-700';
       case 'medium': return 'text-amber-700';
       case 'low': return 'text-green-700';
-      default: return 'text-slate-700';
-    }
-  };
-
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Grandmaster': return 'text-purple-700';
-      case 'Master': return 'text-red-700';
-      case 'Adept': return 'text-blue-700';
-      case 'Apprentice': return 'text-green-700';
-      case 'Novice': return 'text-slate-700';
       default: return 'text-slate-700';
     }
   };

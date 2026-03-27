@@ -1,4 +1,4 @@
-import Link from "next/link"
+﻿import Link from "next/link"
 import { EnhancedFooter } from "@/components/enhanced-footer"
 
 export default function PrivacyPage() {
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-white/80">
               <p>
-                FutureSeer ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy 
+                FutureSeer (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is committed to protecting your privacy. This Privacy Policy 
                 explains how we collect, use, disclose, and safeguard your information when you use our 
                 AI-powered mystical insights platform.
               </p>
@@ -234,7 +234,7 @@ export default function PrivacyPage() {
           {/* Children's Privacy */}
           <section>
             <h2 className="text-2xl font-bold text-amber-400 mb-4">
-              10. Children's Privacy
+              10. Children&apos;s Privacy
             </h2>
             <div className="space-y-4 text-white/80">
               <p>
