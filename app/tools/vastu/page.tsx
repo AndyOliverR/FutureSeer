@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useVastu } from "@/hooks/use-vastu"
 import { calculatePersonalizedVastuDirections } from "@/lib/vastuPersonalization"
-import CompassHelper from "@/components/fengshui/CompassHelper"
+import CompassHelper, { type CompassMode } from "@/components/fengshui/CompassHelper"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { VastuLayoutInput } from "@/lib/vastuSeerState"
 import { VASTU_16_ZONES, VASTU_32_PADA_IDS } from "@/lib/vastuDirections"
 import { 
@@ -178,10 +179,24 @@ const DIRECTION_OPTIONS_16 = ['Unknown', ...VASTU_16_ZONES] as const
 const MAIN_DOOR_OPTIONS = ['Unknown', ...VASTU_32_PADA_IDS] as const
 const CENTER_OPTIONS = ['Open', 'Blocked', 'Partially blocked', 'Unknown'] as const
 
+/** Map 8-wind rose labels from CompassHelper to nearest Vastu 16-zone names for dropdowns. */
+const MAP_8_DIR_TO_16_ZONE: Record<string, string> = {
+  North: "North",
+  Northeast: "North-East",
+  East: "East",
+  Southeast: "South-East",
+  South: "South",
+  Southwest: "South-West",
+  West: "West",
+  Northwest: "North-West",
+}
+
 export default function VastuPage() {
   const { analysis, isLoading, error, userProfile, user } = useVastu()
 
   const [activeTab, setActiveTab] = useState<string>("overview")
+  /** Device compass precision: 8 winds, 16 Vastu zones, or 32 padas (main door). */
+  const [compassMode, setCompassMode] = useState<CompassMode>("16")
   const [facingDirection, setFacingDirection] = useState<string>('')
   const [layout, setLayout] = useState<VastuLayoutInput>({})
   const [personalizedDirections, setPersonalizedDirections] = useState<any>(null)
@@ -334,6 +349,32 @@ export default function VastuPage() {
             </p>
             <p className="text-slate-600 text-sm">— Vastu Shastra</p>
           </div>
+
+          {/* Quick navigation (same sections as tabs) */}
+          <nav
+            aria-label="Vastu tool sections"
+            className="max-w-4xl mx-auto mt-8 rounded-2xl border border-amber-500/25 bg-slate-900/60 p-4"
+          >
+            <p className="text-xs font-semibold uppercase tracking-widest text-amber-500/90 mb-3 text-center">
+              Jump to section
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`text-xs sm:text-sm px-3 py-1.5 rounded-full border transition-colors ${
+                    activeTab === tab.id
+                      ? "bg-amber-100 text-amber-950 border-amber-400 font-semibold"
+                      : "border-amber-500/30 text-amber-100/90 hover:bg-slate-800/80"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </nav>
         </motion.div>
 
         {/* Main Content */}
@@ -678,14 +719,55 @@ export default function VastuPage() {
                               </Select>
                             </div>
                           </div>
-                          <CompassHelper mode="16" onUseDirection={(d) => setFacingDirection(d)} />
-                          <div className="mt-4">
+                          <div className="mt-4 rounded-2xl border border-amber-200 bg-white/90 p-4 space-y-3">
+                            <div>
+                              <p className="text-sm font-semibold text-amber-900 mb-1">Device compass</p>
+                              <p className="text-xs text-slate-600 mb-3">
+                                One sensor; choose how to read it: <strong>8</strong> cardinal/intercardinal directions,{" "}
+                                <strong>16</strong> Vastu zones for plot facing, or <strong>32</strong> padas for the main entrance segment.
+                              </p>
+                              <ToggleGroup
+                                type="single"
+                                value={compassMode}
+                                onValueChange={(v) => {
+                                  if (v === "8" || v === "16" || v === "32") setCompassMode(v)
+                                }}
+                                className="flex flex-wrap justify-start gap-1"
+                              >
+                                <ToggleGroupItem value="8" aria-label="8 directions" className="text-xs px-3 data-[state=on]:bg-amber-200">
+                                  8 directions
+                                </ToggleGroupItem>
+                                <ToggleGroupItem value="16" aria-label="16 zones" className="text-xs px-3 data-[state=on]:bg-amber-200">
+                                  16 zones
+                                </ToggleGroupItem>
+                                <ToggleGroupItem value="32" aria-label="32 padas" className="text-xs px-3 data-[state=on]:bg-amber-200">
+                                  32 padas
+                                </ToggleGroupItem>
+                              </ToggleGroup>
+                            </div>
                             <CompassHelper
-                              mode="32"
-                              buttonLabel="Use as main door location (32 padas)"
-                              onUseDirection={(d) => setLayout((prev) => ({ ...prev, main_door: d }))}
-                              className="mt-2"
+                              mode={compassMode}
+                              buttonLabel={
+                                compassMode === "32"
+                                  ? "Set main door pada"
+                                  : "Set facing direction (16-zone)"
+                              }
+                              onUseDirection={(d) => {
+                                if (compassMode === "32") {
+                                  setLayout((prev) => ({ ...prev, main_door: d }))
+                                } else if (compassMode === "8") {
+                                  const z = MAP_8_DIR_TO_16_ZONE[d] ?? d
+                                  setFacingDirection(z)
+                                } else {
+                                  setFacingDirection(d)
+                                }
+                              }}
                             />
+                            {compassMode === "32" && (
+                              <p className="text-xs text-slate-600">
+                                For overall <strong>plot facing</strong>, switch to <strong>16 zones</strong> and apply facing to the dropdown above.
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>

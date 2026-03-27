@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 import { calculateKarmaForAction, calculateMemberStatsUpdate } from '@/lib/firestore/communityHelpers';
+import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
+import { consumeGuestCommunityWriteSlot, getCommunityGuestClientIp } from '@/lib/communityGuestRateLimit';
 
 interface CommentData {
   discussionId: string;
@@ -11,10 +14,106 @@ interface CommentData {
   authorName: string;
 }
 
+function sanitizeComment(s: unknown, max: number): string {
+  if (typeof s !== 'string') return '';
+  return s.trim().slice(0, max);
+}
+
 // POST - Create comment on discussion
 export async function POST(request: NextRequest) {
   try {
-    const body: CommentData = await request.json();
+    const body = await request.json() as CommentData & {
+      guestPost?: boolean;
+      captchaToken?: string;
+    };
+    const guestPost = body.guestPost === true;
+    const captchaToken = typeof body.captchaToken === 'string' ? body.captchaToken : undefined;
+
+    if (guestPost) {
+      const discussionId = sanitizeComment(body.discussionId, 128);
+      const content = sanitizeComment(body.content, 8000);
+      const authorName = sanitizeComment(body.authorName, 40);
+      const parentCommentId = body.parentCommentId
+        ? sanitizeComment(body.parentCommentId, 128)
+        : undefined;
+
+      if (!discussionId || !content || !authorName) {
+        return NextResponse.json(
+          { error: 'Missing required fields: discussionId, content, authorName' },
+          { status: 400 }
+        );
+      }
+
+      const ip = getCommunityGuestClientIp(request);
+      const rate = consumeGuestCommunityWriteSlot(ip);
+      if (!rate.allowed) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded. Try again later or sign in.', retryAfterSec: rate.retryAfterSec },
+          { status: 429 }
+        );
+      }
+
+      const captcha = await verifyRecaptchaEnterpriseToken(request, captchaToken, 'COMMUNITY_GUEST_COMMENT');
+      if (!captcha.ok) {
+        return NextResponse.json({ error: 'Captcha verification failed' }, { status: 403 });
+      }
+
+      const db = adminDb;
+      if (!db) {
+        return NextResponse.json({ error: 'Database not available' }, { status: 500 });
+      }
+
+      const discussionRef = db.collection('communityDiscussions').doc(discussionId);
+      const discussionDoc = await discussionRef.get();
+
+      if (!discussionDoc.exists) {
+        return NextResponse.json({ error: 'Discussion not found' }, { status: 404 });
+      }
+
+      if (parentCommentId) {
+        const parentCommentDoc = await discussionRef.collection('comments').doc(parentCommentId).get();
+        if (!parentCommentDoc.exists) {
+          return NextResponse.json({ error: 'Parent comment not found' }, { status: 404 });
+        }
+      }
+
+      const now = new Date();
+      const guestAuthorId = `guest_${randomUUID()}`;
+      const commentRef = discussionRef.collection('comments').doc();
+      const commentData = {
+        content,
+        authorId: guestAuthorId,
+        authorName,
+        discussionId,
+        parentCommentId: parentCommentId || null,
+        upvotes: 0,
+        downvotes: 0,
+        isGuest: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await commentRef.set(commentData);
+
+      await discussionRef.update({
+        commentCount: (discussionDoc.data()?.commentCount || 0) + 1,
+        lastActivityAt: now,
+        updatedAt: now,
+      });
+
+      await updateCommunityStats(db, { comments: 1 });
+
+      return NextResponse.json({
+        success: true,
+        comment: {
+          id: commentRef.id,
+          ...commentData,
+          createdAt: commentData.createdAt.toISOString(),
+          updatedAt: commentData.updatedAt.toISOString(),
+        },
+      });
+    }
+
     const { discussionId, content, parentCommentId, userId, authorName } = body;
 
     if (!discussionId || !content || !userId || !authorName) {

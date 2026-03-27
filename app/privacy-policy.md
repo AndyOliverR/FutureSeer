@@ -43,7 +43,7 @@ If you wish to delete your account or personal data, please email us at [andyoli
 
 ## 8. Children’s Privacy
 
-FutureSeer is not intended for children under 13. We do not knowingly collect data from children under 13.
+FutureSeer is not intended for children under 16. We do not knowingly collect data from children under 16.
 
 ## 9. Changes to This Policy
 
