@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Eye, EyeOff, Send, X, ArrowUp, ArrowDown, Award, Flame, Crown, Sparkles, Zap, Moon, Sun, Plus } from 'lucide-react';
 import { DiscussionCard } from '@/components/community/DiscussionCard';
 import { DiscussionForm } from '@/components/community/DiscussionForm';
+import { GuestDiscussionForm } from '@/components/community/GuestDiscussionForm';
 import { useToast } from '@/components/ui/use-toast';
 interface UserContribution {
   id: string;
@@ -89,7 +91,7 @@ interface UserAttribution {
 }
 
 export default function CommunityAttributionPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [attribution, setAttribution] = useState<UserAttribution | null>(null);
   const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>([]);
@@ -100,18 +102,58 @@ export default function CommunityAttributionPage() {
   const [activeTab, setActiveTab] = useState<'members' | 'discussions' | 'contributions'>('members');
   const [loading, setLoading] = useState(true);
   const [showDiscussionForm, setShowDiscussionForm] = useState(false);
+  const [showGuestDiscussionForm, setShowGuestDiscussionForm] = useState(false);
   const [userVotes, setUserVotes] = useState<Record<string, 'up' | 'down'>>({});
 
-  useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    loadCommunityData();
-  }, [user]);
-
   const LOAD_TIMEOUT_MS = 10000; // Don't block the page forever if a request hangs
+
+  const loadGuestDiscussions = async () => {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    try {
+      setLoading(true);
+      setActiveTab('discussions');
+      timeoutId = setTimeout(() => {
+        setLoading(false);
+        devLog.warn('Guest community load timed out.', undefined, 'page');
+      }, LOAD_TIMEOUT_MS);
+
+      const discussionsRes = await fetch('/api/community/discussions?status=active&limit=20');
+      if (!discussionsRes.ok) throw new Error('discussions fetch failed');
+      const data = await discussionsRes.json();
+      if (data.success && Array.isArray(data.discussions)) {
+        setDiscussionThreads(data.discussions.map((d: Record<string, unknown>) => ({
+          id: d.id as string,
+          title: d.title as string,
+          content: d.content as string,
+          author: d.authorName as string,
+          authorId: d.authorId as string,
+          date: d.createdAt as string,
+          upvotes: (d.upvotes as number) || 0,
+          downvotes: (d.downvotes as number) || 0,
+          comments: (d.commentCount as number) || 0,
+          category: d.category as DiscussionThread['category'],
+          priority: (d.priority as DiscussionThread['priority']) || 'medium',
+          status: d.status as DiscussionThread['status'],
+          isHot: Boolean(d.isHot),
+          isSticky: Boolean(d.isSticky),
+        })));
+      } else {
+        setDiscussionThreads([]);
+      }
+      setCommunityMembers([]);
+      setAttribution(null);
+    } catch (error) {
+      devLog.error('Error loading guest discussions:', error, 'page');
+      toast({
+        title: 'Error',
+        description: 'Could not load discussions',
+        variant: 'destructive',
+      });
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      setLoading(false);
+    }
+  };
 
   const loadCommunityData = async () => {
     if (!user?.uid) return;
@@ -285,6 +327,15 @@ export default function CommunityAttributionPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user?.uid) {
+      void loadCommunityData();
+    } else {
+      void loadGuestDiscussions();
+    }
+  }, [user?.uid, authLoading]);
 
   const handleConnectionRequest = (member: CommunityMember) => {
     setSelectedMember(member);
@@ -475,6 +526,53 @@ export default function CommunityAttributionPage() {
     }
   };
 
+  const handleCreateGuestDiscussion = async (data: {
+    title: string;
+    content: string;
+    category: string;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    authorName: string;
+    captchaToken: string;
+  }) => {
+    try {
+      const response = await fetch('/api/community/discussions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guestPost: true,
+          captchaToken: data.captchaToken,
+          title: data.title,
+          content: data.content,
+          category: data.category,
+          priority: data.priority,
+          authorName: data.authorName,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || 'Failed to create discussion');
+      }
+
+      toast({
+        title: "Posted",
+        description: "Your discussion is live. Sign in for full community features.",
+      });
+
+      setShowGuestDiscussionForm(false);
+      await loadGuestDiscussions();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create discussion";
+      devLog.error('Error creating guest discussion:', error, 'page');
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'implemented': return 'bg-green-100 text-green-800 border-green-500/40';
@@ -515,7 +613,7 @@ export default function CommunityAttributionPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="starfield-ultra-sharp min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -526,22 +624,7 @@ export default function CommunityAttributionPage() {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="starfield-ultra-sharp min-h-screen flex items-center justify-center">
-        <Card className="w-96 bg-slate-900/80 backdrop-blur-sm border-amber-500/20">
-          <CardContent className="p-6 text-center">
-            <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-amber-200 mb-2">Join the Community</h2>
-            <p className="text-gray-400 mb-4">Sign in to see your contributions and connect with others</p>
-            <Button className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const isGuest = !user?.uid;
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
@@ -556,7 +639,20 @@ export default function CommunityAttributionPage() {
           </p>
         </div>
 
-        {/* Stats Overview */}
+        {isGuest ? (
+          <Card className="mb-6 bg-slate-900/70 border-amber-500/25">
+            <CardContent className="p-4 text-sm text-amber-100/90">
+              You are browsing public discussions.{" "}
+              <Link href="/signin?redirect=/community/attribution" className="text-amber-400 font-medium underline underline-offset-2">
+                Sign in
+              </Link>{" "}
+              to vote, see members, track contributions, and use full community features.
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {/* Stats Overview — signed-in only (guest stats would be empty or misleading) */}
+        {!isGuest ? (
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card className="bg-amber-50/80 border-2 border-amber-300 shadow-sm">
             <CardContent className="p-6 text-center">
@@ -572,7 +668,7 @@ export default function CommunityAttributionPage() {
             <CardContent className="p-6 text-center">
               <Users className="w-8 h-8 text-blue-700 mx-auto mb-2" />
               <h3 className="text-2xl font-bold text-blue-800">
-                {attribution?.referralStats.successfulSignups || 0}
+                {attribution?.referralStats?.successfulSignups ?? 0}
               </h3>
               <p className="text-slate-700 text-sm font-medium">Successful Referrals</p>
             </CardContent>
@@ -582,7 +678,7 @@ export default function CommunityAttributionPage() {
             <CardContent className="p-6 text-center">
               <Star className="w-8 h-8 text-purple-700 mx-auto mb-2" />
               <h3 className="text-2xl font-bold text-purple-800">
-                {attribution?.contributions.filter(c => c.status === 'implemented').length || 0}
+                {(attribution?.contributions ?? []).filter(c => c.status === 'implemented').length}
               </h3>
               <p className="text-slate-700 text-sm font-medium">Implemented Suggestions</p>
             </CardContent>
@@ -598,6 +694,7 @@ export default function CommunityAttributionPage() {
             </CardContent>
           </Card>
         </div>
+        ) : null}
 
         {/* Tabs */}
         <div className="flex space-x-2 bg-transparent p-0 mb-8">
@@ -640,7 +737,26 @@ export default function CommunityAttributionPage() {
         </div>
 
         {/* Community Members Tab */}
-        {activeTab === 'members' && (
+        {activeTab === 'members' && isGuest && (
+          <Card className="bg-blue-50/80 border-2 border-blue-300 shadow-sm mb-8">
+            <CardHeader>
+              <CardTitle className="text-blue-800 flex items-center gap-2 font-bold">
+                <Users className="w-5 h-5 text-blue-700" />
+                Community Members
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-700 text-sm mb-4">
+                Member profiles and connections are available after you sign in.
+              </p>
+              <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
+                <Link href="/signin?redirect=/community/attribution">Sign in</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'members' && !isGuest && (
           <Card className="bg-blue-50/80 border-2 border-blue-300 shadow-sm mb-8">
             <CardHeader>
               <CardTitle className="text-blue-800 flex items-center gap-2 font-bold">
@@ -727,20 +843,45 @@ export default function CommunityAttributionPage() {
                   </div>
                   {user && (
                     <Button
-                      onClick={() => setShowDiscussionForm(!showDiscussionForm)}
+                      onClick={() => {
+                        setShowGuestDiscussionForm(false);
+                        setShowDiscussionForm(!showDiscussionForm);
+                      }}
                       className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       New Discussion
                     </Button>
                   )}
+                  {isGuest && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowDiscussionForm(false);
+                        setShowGuestDiscussionForm(!showGuestDiscussionForm);
+                      }}
+                      className="border-amber-500/50 text-amber-100"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Post as guest
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
-              {showDiscussionForm && (
+              {showDiscussionForm && user && (
                 <CardContent className="pt-0">
                   <DiscussionForm
                     onSubmit={handleCreateDiscussion}
                     onCancel={() => setShowDiscussionForm(false)}
+                  />
+                </CardContent>
+              )}
+              {showGuestDiscussionForm && isGuest && (
+                <CardContent className="pt-0">
+                  <GuestDiscussionForm
+                    onSubmit={handleCreateGuestDiscussion}
+                    onCancel={() => setShowGuestDiscussionForm(false)}
                   />
                 </CardContent>
               )}
@@ -771,7 +912,26 @@ export default function CommunityAttributionPage() {
         )}
 
         {/* Contributions Tab */}
-        {activeTab === 'contributions' && (
+        {activeTab === 'contributions' && isGuest && (
+          <Card className="bg-amber-50/80 border-2 border-amber-300 shadow-sm mb-8">
+            <CardHeader>
+              <CardTitle className="text-amber-800 flex items-center gap-2 font-bold">
+                <Star className="w-5 h-5 text-amber-700" />
+                Your Contributions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-700 text-sm mb-4">
+                Sign in to see your feedback history, referrals, and impact.
+              </p>
+              <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
+                <Link href="/signin?redirect=/community/attribution">Sign in</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'contributions' && !isGuest && (
           <div className="grid lg:grid-cols-2 gap-6">
             <Card className="bg-amber-50/80 border-2 border-amber-300 shadow-sm">
               <CardHeader>

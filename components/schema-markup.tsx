@@ -27,6 +27,23 @@ export function SchemaMarkup() {
     ]
   };
 
+  const webApplicationSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "FutureSeer",
+    url: "https://futureseer.app",
+    applicationCategory: "LifestyleApplication",
+    operatingSystem: "Web",
+    browserRequirements: "Requires JavaScript. Requires HTML5.",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    description:
+      "AI-assisted divination and astrology platform: Vedic and Western astrology, numerology, tarot, I Ching, Vastu, Feng Shui, and unified Ask the Seer chat.",
+  };
+
   const faqPageSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -88,6 +105,12 @@ export function SchemaMarkup() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(organizationSchema),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(webApplicationSchema),
         }}
       />
       <script

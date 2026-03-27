@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { adminDb } from '@/lib/firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
 import type { Query } from 'firebase-admin/firestore';
+import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
+import { consumeGuestCommunityWriteSlot, getCommunityGuestClientIp } from '@/lib/communityGuestRateLimit';
 
 export const dynamic = 'force-static'
 import { 
   calculateKarmaForAction, 
   calculateMemberStatsUpdate,
-  isHotDiscussion 
 } from '@/lib/firestore/communityHelpers';
 import { devLog } from '@/lib/devLogger';
-
-interface DiscussionData {
-  title: string;
-  content: string;
-  category: string;
-  priority?: 'low' | 'medium' | 'high' | 'critical';
-}
 
 /** Firestore doc data for community discussions; timestamp fields may be Timestamp or string */
 interface CommunityDiscussionDoc extends Record<string, unknown> {
@@ -154,6 +148,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function sanitizeStr(s: unknown, max: number): string {
+  if (typeof s !== 'string') return '';
+  return s.trim().slice(0, max);
+}
+
 // POST - Create new discussion
 export async function POST(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {
@@ -161,6 +160,91 @@ export async function POST(request: NextRequest) {
   }
   try {
     const body = await request.json();
+    const guestPost = body.guestPost === true;
+    const captchaToken = typeof body.captchaToken === 'string' ? body.captchaToken : undefined;
+
+    if (guestPost) {
+      const title = sanitizeStr(body.title, 200);
+      const content = sanitizeStr(body.content, 12000);
+      const category = sanitizeStr(body.category, 40);
+      const authorName = sanitizeStr(body.authorName, 40);
+      const priority = (['low', 'medium', 'high', 'critical'] as const).includes(body.priority)
+        ? body.priority
+        : 'medium';
+
+      if (!title || !content || !category || !authorName) {
+        return NextResponse.json(
+          { error: 'Missing required fields: title, content, category, authorName' },
+          { status: 400 }
+        );
+      }
+
+      const ip = getCommunityGuestClientIp(request);
+      const rate = consumeGuestCommunityWriteSlot(ip);
+      if (!rate.allowed) {
+        return NextResponse.json(
+          { error: 'Rate limit exceeded. Try again later or sign in.', retryAfterSec: rate.retryAfterSec },
+          { status: 429 }
+        );
+      }
+
+      const captcha = await verifyRecaptchaEnterpriseToken(request, captchaToken, 'COMMUNITY_GUEST_POST');
+      if (!captcha.ok) {
+        return NextResponse.json({ error: 'Captcha verification failed' }, { status: 403 });
+      }
+
+      const validCategories = [
+        'astrology', 'tarot', 'numerology', 'palmistry', 'dream-analysis',
+        'angel-numbers', 'vedic', 'western', 'kabbalah', 'iching', 'runes',
+        'lenormand', 'geomancy', 'horary', 'synastry', 'medical', 'financial',
+        'bazi', 'kp', 'vaastu', 'face-reading', 'general'
+      ];
+      if (!validCategories.includes(category)) {
+        return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
+      }
+
+      const db = adminDb;
+      if (!db) {
+        return NextResponse.json({ error: 'Database not available' }, { status: 500 });
+      }
+
+      const now = new Date();
+      const guestAuthorId = `guest_${randomUUID()}`;
+      const discussionRef = db.collection('communityDiscussions').doc();
+      const discussionData = {
+        title,
+        content,
+        authorId: guestAuthorId,
+        authorName,
+        category,
+        priority,
+        status: 'active',
+        upvotes: 0,
+        downvotes: 0,
+        commentCount: 0,
+        isHot: false,
+        isSticky: false,
+        isGuest: true,
+        createdAt: now,
+        updatedAt: now,
+        lastActivityAt: now,
+      };
+
+      await discussionRef.set(discussionData);
+      await updateCommunityStats(db, { discussions: 1 });
+
+      return NextResponse.json({
+        success: true,
+        discussion: {
+          id: discussionRef.id,
+          ...discussionData,
+          createdAt: discussionData.createdAt.toISOString(),
+          updatedAt: discussionData.updatedAt.toISOString(),
+          lastActivityAt: discussionData.lastActivityAt.toISOString(),
+        },
+      });
+    }
+
     const { title, content, category, priority = 'medium', userId, authorName } = body;
 
     if (!title || !content || !category || !userId || !authorName) {

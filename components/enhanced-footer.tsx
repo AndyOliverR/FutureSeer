@@ -42,6 +42,8 @@ export function EnhancedFooter() {
           <div className="flex items-center gap-4">
             <Link href="/tools" className="text-xs font-medium text-surface-on-variant hover:text-primary">Tools</Link>
             <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
+            <Link href="/learn" className="text-xs font-medium text-surface-on-variant hover:text-primary">Learn</Link>
+            <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
             <Link href="/pricing" className="text-xs font-medium text-surface-on-variant hover:text-primary">Pricing</Link>
             <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
             <Link href="/privacy" className="text-xs font-medium text-surface-on-variant hover:text-primary">Privacy</Link>
