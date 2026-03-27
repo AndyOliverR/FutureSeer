@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -74,9 +74,7 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
         );
         break;
       case "sms":
-        if (typeof window !== "undefined") {
-          window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
-        }
+        open(`sms:?&body=${encodeURIComponent(text)}`);
         break;
       default:
         break;
@@ -88,7 +86,6 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4">
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -97,7 +94,6 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
               onClick={onClose}
             />
 
-            {/* Modal Content - Matches Mystical Feedback style */}
             <motion.div
               ref={contentRef}
               initial={{ opacity: 0, y: 100 }}
@@ -109,7 +105,6 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative flex flex-col h-full">
-                {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b border-outline-variant">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-secondary-container rounded-xl">
