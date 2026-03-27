@@ -238,8 +238,8 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-white/80">
               <p>
-                Our Service is not intended for children under 18 years of age. We do not knowingly 
-                collect personal information from children under 18.
+                Our Service is not intended for children under 16 years of age. We do not knowingly 
+                collect personal information from children under 16.
               </p>
               <p>
                 If you are a parent or guardian and believe your child has provided us with personal 

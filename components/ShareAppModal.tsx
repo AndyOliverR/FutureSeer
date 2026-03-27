@@ -41,6 +41,48 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
     }
   };
 
+  const handleSharePlatform = (platformId: string) => {
+    const text = `${defaultShareMessage}\n\n${shareLink}`;
+    const encodedUrl = encodeURIComponent(shareLink);
+    const encodedText = encodeURIComponent(defaultShareMessage);
+
+    const open = (url: string) => {
+      if (typeof window === "undefined") return;
+      window.open(url, "_blank", "noopener,noreferrer");
+    };
+
+    switch (platformId) {
+      case "whatsapp":
+        open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+        break;
+      case "twitter":
+        open(
+          `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`
+        );
+        break;
+      case "facebook":
+        open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`);
+        break;
+      case "linkedin":
+        open(
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`
+        );
+        break;
+      case "email":
+        open(
+          `mailto:?subject=${encodeURIComponent("FutureSeer")}&body=${encodeURIComponent(text)}`
+        );
+        break;
+      case "sms":
+        if (typeof window !== "undefined") {
+          window.location.href = `sms:?&body=${encodeURIComponent(text)}`;
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <ModalPortal open={isOpen}>
       <AnimatePresence>
@@ -95,7 +137,9 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
                     ].map((platform) => (
                       <button
                         key={platform.id}
-                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-container-low border border-outline-variant hover:bg-primary-container transition-all group"
+                        type="button"
+                        onClick={() => handleSharePlatform(platform.id)}
+                        className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-container-low border border-outline-variant hover:bg-primary-container transition-all group cursor-pointer"
                       >
                         <platform.icon className="w-6 h-6 text-primary transition-transform" />
                         <span className="text-[10px] font-bold text-surface-on">{platform.label}</span>
