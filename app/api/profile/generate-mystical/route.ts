@@ -23,7 +23,6 @@ import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { devLog } from '@/lib/devLogger';
 import {
   getEditLimit,
-  getPeriodStartForReset,
   shouldResetPeriod,
   isPaidPlan,
 } from '@/lib/profileEditQuota';
@@ -117,7 +116,7 @@ export async function POST(request: NextRequest) {
       'currentLocation', 'fullName', 'displayName',
       'gender', 'facePhotoUrl', 'palmPhotoUrl',
     ] as const;
-    let profileWithUid: Record<string, unknown> = {
+    const profileWithUid: Record<string, unknown> = {
       ...userProfile,
       uid,
       birthDate: birthDate ?? userProfile.birthDate,
@@ -240,12 +239,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    const cleanData = (obj: any): any => {
+    const cleanData = (obj: unknown): unknown => {
       if (obj === null || obj === undefined) return null;
       if (typeof obj !== 'object') return obj;
-      if (Array.isArray(obj)) return obj.map(cleanData);
-      const cleaned: any = {};
-      for (const [key, value] of Object.entries(obj)) {
+      if (Array.isArray(obj)) return obj.map((item) => cleanData(item));
+      const cleaned: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
         if (value !== undefined) {
           cleaned[key] = cleanData(value);
         }

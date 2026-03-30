@@ -160,13 +160,19 @@ export function getUserIdentifier(userId?: string): string {
   return userId || 'anonymous';
 }
 
+/** Next.js App Router route handler compatible with `withRateLimit` wrapping. */
+export type RateLimitedRouteHandler = (
+  request: Request,
+  ...args: unknown[]
+) => Promise<Response | unknown> | Response | unknown;
+
 // Rate limiting middleware for Next.js API routes
 export function withRateLimit(
-  handler: Function,
+  handler: RateLimitedRouteHandler,
   limiter: RateLimiter = rateLimiters.api,
   getIdentifier: (request: Request) => string = getClientIdentifier
 ) {
-  return async (request: Request, ...args: any[]) => {
+  return async (request: Request, ...args: unknown[]) => {
     const identifier = getIdentifier(request);
     const result = limiter.check(identifier);
 
@@ -204,10 +210,10 @@ export function withRateLimit(
 
 // Rate limiting for specific user actions
 export function withUserRateLimit(
-  handler: Function,
+  handler: RateLimitedRouteHandler,
   limiter: RateLimiter = rateLimiters.user
 ) {
-  return async (request: Request, ...args: any[]) => {
+  return async (request: Request, ...args: unknown[]) => {
     // Extract user ID from request (you'll need to implement this based on your auth)
     const userId = 'user-id-from-request'; // Replace with actual user ID extraction
     const identifier = getUserIdentifier(userId);
