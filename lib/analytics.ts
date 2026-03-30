@@ -1,5 +1,6 @@
 import posthog from 'posthog-js'
 import { devLog } from '@/lib/devLogger';
+import { campaignPropsForPostHog } from '@/lib/campaignAttribution';
 
 // Track if PostHog is actually enabled and initialized
 let isPostHogEnabled = false
@@ -68,6 +69,12 @@ export const ANALYTICS_EVENTS = {
   // Performance
   PAGE_LOADED: 'page_loaded',
   TOOL_LOAD_TIME: 'tool_load_time',
+
+  // Growth / campaigns (additive; PostHog funnels)
+  CAMPAIGN_LANDING_VIEWED: 'campaign_landing_viewed',
+  SIGNUP_STARTED_FROM_CAMPAIGN: 'signup_started_from_campaign',
+  PROFILE_GENERATION_STARTED: 'profile_generation_started',
+  PROFILE_GENERATION_COMPLETED: 'profile_generation_completed',
 } as const
 
 // Analytics Properties
@@ -153,8 +160,10 @@ export class AnalyticsService {
     if (typeof window === 'undefined' || !isPostHogEnabled || !posthog) return
     
     try {
+      const campaign = campaignPropsForPostHog()
       posthog.identify(userId, {
         timestamp: new Date().toISOString(),
+        ...campaign,
         ...properties,
       })
     } catch (error) {
@@ -271,6 +280,36 @@ export class AnalyticsService {
     this.trackEvent(ANALYTICS_EVENTS.TOOL_LOAD_TIME, {
       [ANALYTICS_PROPERTIES.TOOL_NAME]: toolName,
       load_time_ms: loadTime,
+      ...properties,
+    })
+  }
+
+  trackCampaignLandingViewed(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.CAMPAIGN_LANDING_VIEWED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackSignupStartedFromCampaign(surface: string, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.SIGNUP_STARTED_FROM_CAMPAIGN, {
+      surface,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackProfileGenerationStarted(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.PROFILE_GENERATION_STARTED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackProfileGenerationCompleted(success: boolean, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.PROFILE_GENERATION_COMPLETED, {
+      success,
+      ...campaignPropsForPostHog(),
       ...properties,
     })
   }

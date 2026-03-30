@@ -28,6 +28,8 @@ import { useErrorLogger } from "@/hooks/useErrorLogger"
 import { compressImageFile } from "@/lib/imageCompression"
 import { PROFILE_PLAN_PRICING_CTA_LABEL, PROFILE_PLAN_REQUIRED_BODY } from "@/lib/accessGatingCopy"
 import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics"
+import { isGrowthProfileDraftEnabled } from "@/lib/growthFlags"
+import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/profileDraftStorage"
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 
 function readUploadErrorFields(e: unknown): { status: number | null; detail: unknown; message: string } {
@@ -56,6 +58,8 @@ export default function ProfilePage() {
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
   const [generationStatus, setGenerationStatus] = useState<string>("")
   const generationAbortRef = useRef<AbortController | null>(null)
+  const draftRestoreAttemptedRef = useRef(false)
+  const canPersistDraftRef = useRef(false)
   const isMobileLayout = useIsMobileLayout()
   const [uploadingFace, setUploadingFace] = useState(false)
   const [uploadingPalm, setUploadingPalm] = useState(false)
@@ -67,6 +71,11 @@ export default function ProfilePage() {
   const palmInputRef = useRef<HTMLInputElement>(null)
   const isUploadBusy = uploadingFace || uploadingPalm || optimizingFace || optimizingPalm
   const isSaveDisabled = isLoading || isUploadBusy
+
+  useEffect(() => {
+    draftRestoreAttemptedRef.current = false
+    canPersistDraftRef.current = false
+  }, [user?.uid])
 
   useEffect(() => {
     if (!isGeneratingProfile) return
@@ -111,6 +120,37 @@ export default function ProfilePage() {
   }, [user?.uid])
 
   useEffect(() => {
+    if (!isGrowthProfileDraftEnabled() || !user?.uid || !canPersistDraftRef.current) return
+    if (userProfile?.mysticalProfileGenerated) return
+    const t = window.setTimeout(() => {
+      saveProfileDraft(user.uid, {
+        displayName: formData.displayName,
+        fullName: formData.fullName,
+        birthDate: formData.birthDate,
+        birthTime: formData.birthTime,
+        birthTimeAMPM: formData.birthTimeAMPM,
+        birthTimeKnown: formData.birthTimeKnown,
+        birthPlace: formData.birthPlace,
+        currentLocation: formData.currentLocation,
+        birthTimeNote: formData.birthTimeNote,
+      })
+    }, 2000)
+    return () => window.clearTimeout(t)
+  }, [
+    formData.displayName,
+    formData.fullName,
+    formData.birthDate,
+    formData.birthTime,
+    formData.birthTimeAMPM,
+    formData.birthTimeKnown,
+    formData.birthPlace,
+    formData.currentLocation,
+    formData.birthTimeNote,
+    user?.uid,
+    userProfile?.mysticalProfileGenerated,
+  ])
+
+  useEffect(() => {
     if (userProfile && !isEditing) {
       const bt = String(userProfile.birthTime || ""); let btAMPM = "AM"
       if (bt && !/^\d{13,}$/.test(bt)) {
@@ -138,6 +178,31 @@ export default function ProfilePage() {
       })
     }
   }, [userProfile, isEditing, user])
+
+  useEffect(() => {
+    if (!isGrowthProfileDraftEnabled() || !user?.uid || !userProfile) return
+    if (userProfile.mysticalProfileGenerated) return
+    if (draftRestoreAttemptedRef.current) return
+    draftRestoreAttemptedRef.current = true
+    const d = loadProfileDraft(user.uid)
+    if (!d) {
+      canPersistDraftRef.current = true
+      return
+    }
+    setFormData((prev) => ({
+      ...prev,
+      displayName: prev.displayName || d.displayName,
+      fullName: prev.fullName || d.fullName,
+      birthDate: prev.birthDate || d.birthDate,
+      birthTime: prev.birthTime || d.birthTime,
+      birthTimeAMPM: prev.birthTimeAMPM || d.birthTimeAMPM,
+      birthTimeKnown: prev.birthTimeKnown || d.birthTimeKnown,
+      birthPlace: prev.birthPlace || d.birthPlace,
+      currentLocation: prev.currentLocation || d.currentLocation,
+      birthTimeNote: prev.birthTimeNote || d.birthTimeNote,
+    }))
+    canPersistDraftRef.current = true
+  }, [user?.uid, userProfile])
 
   const validateProfileData = (): string | null => {
     if (formData.birthDate) {
@@ -594,6 +659,7 @@ export default function ProfilePage() {
                     const abort = new AbortController()
                     generationAbortRef.current = abort
                     try {
+                      analytics.trackProfileGenerationStarted({ surface: 'profile_primary' })
                       setGenerationStatus("Connecting to the celestial realm...")
                       const t = await user?.getIdToken()
                       if (!t) throw new Error("Please sign in again to continue.")
@@ -619,6 +685,11 @@ export default function ProfilePage() {
                       } else if (data.success && data.alreadyGenerated) {
                         await refreshComprehensiveProfile()
                       }
+                      analytics.trackProfileGenerationCompleted(true, {
+                        surface: 'profile_primary',
+                        failed_tools_count: Array.isArray(data.failedTools) ? data.failedTools.length : 0,
+                      })
+                      if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
                       setSuccess("Mystical Profile Generated!")
                       try {
                         if (typeof window !== "undefined") {
@@ -630,6 +701,10 @@ export default function ProfilePage() {
                       router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
                     } catch (e: unknown) {
                       if (e instanceof Error && e.name === "AbortError") return
+                      analytics.trackProfileGenerationCompleted(false, {
+                        surface: 'profile_primary',
+                        error: e instanceof Error ? e.message : 'unknown',
+                      })
                       setError(e instanceof Error ? e.message : "Generation failed. Please check your connection and try again.")
                     } finally {
                       setIsGeneratingProfile(false)
@@ -951,6 +1026,7 @@ export default function ProfilePage() {
                       const abort = new AbortController()
                       generationAbortRef.current = abort
                       try {
+                        analytics.trackProfileGenerationStarted({ surface: 'profile_secondary' })
                         setGenerationStatus("Connecting to the celestial realm...")
                         const t = await user?.getIdToken()
                         if (!t) throw new Error("Please sign in again to continue.")
@@ -976,6 +1052,11 @@ export default function ProfilePage() {
                         } else if (data.success && data.alreadyGenerated) {
                           await refreshComprehensiveProfile()
                         }
+                        analytics.trackProfileGenerationCompleted(true, {
+                          surface: 'profile_secondary',
+                          failed_tools_count: Array.isArray(data.failedTools) ? data.failedTools.length : 0,
+                        })
+                        if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
                         setSuccess("Mystical Profile Generated!")
                         try {
                           if (typeof window !== "undefined") {
@@ -987,6 +1068,10 @@ export default function ProfilePage() {
                         router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
                       } catch (e: unknown) {
                         if (e instanceof Error && e.name === "AbortError") return
+                        analytics.trackProfileGenerationCompleted(false, {
+                          surface: 'profile_secondary',
+                          error: e instanceof Error ? e.message : 'unknown',
+                        })
                         setError(e instanceof Error ? e.message : "Generation failed. Please check your connection and try again.")
                       } finally {
                         setIsGeneratingProfile(false)

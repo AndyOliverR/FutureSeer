@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from 'firebase/auth';
 import { devLog } from '@/lib/devLogger';
+import { analytics } from '@/lib/analytics';
 import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile, ensureFirestoreConnection, getRedirectResult } from '@/lib/firebase';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 
@@ -142,6 +143,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         setUser(firebaseUser);
+
+        if (firebaseUser) {
+          try {
+            analytics.identifyUser(firebaseUser.uid, {
+              email: firebaseUser.email ?? undefined,
+            });
+          } catch {
+            /* non-blocking */
+          }
+        }
 
         // Sync lightweight auth cookie for middleware route protection
         if (typeof document !== 'undefined') {
