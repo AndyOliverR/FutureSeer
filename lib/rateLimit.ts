@@ -126,6 +126,22 @@ export const rateLimiters = {
     maxRequests: 50,
     message: 'Too many user actions. Please try again in 5 minutes.',
   }),
+
+  /**
+   * POST /api/profile/generate-mystical — expensive; keyed by uid in route handler.
+   * Tune with RATE_LIMIT_PROFILE_GEN_MAX_PER_HOUR or RATE_LIMIT_STRICT=1 (tighter cap).
+   */
+  profileGeneration: new RateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: (() => {
+      const strict = process.env.RATE_LIMIT_STRICT === '1';
+      const raw = process.env.RATE_LIMIT_PROFILE_GEN_MAX_PER_HOUR;
+      if (raw && /^\d+$/.test(raw)) return Math.max(1, parseInt(raw, 10));
+      return strict ? 4 : 12;
+    })(),
+    message:
+      'Too many profile generation requests in a short period. Please try again in about an hour.',
+  }),
 };
 
 // Helper function to get client identifier
