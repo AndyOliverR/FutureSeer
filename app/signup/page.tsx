@@ -17,6 +17,13 @@ import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser
 import { CountrySelector } from "@/components/CountrySelector"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
+import { analytics } from "@/lib/analytics"
+import {
+  getStoredCampaignAttribution,
+  hasCampaignSignal,
+  markSignupFunnelFromCampaignTracked,
+  wasSignupFunnelFromCampaignTracked,
+} from "@/lib/campaignAttribution"
 
 type SignupFlowCompleteData = {
   selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
@@ -62,6 +69,13 @@ function SignUpPageContent() {
   useEffect(() => {
     if (refParam) setReferralCode(refParam)
   }, [refParam])
+
+  useEffect(() => {
+    if (wasSignupFunnelFromCampaignTracked()) return
+    if (!hasCampaignSignal(getStoredCampaignAttribution())) return
+    analytics.trackSignupStartedFromCampaign("signup_page")
+    markSignupFunnelFromCampaignTracked()
+  }, [])
 
   // After Google redirect (or if already signed in), redirect away immediately.
   // Use full page replace so we don't rely on client router after OAuth redirect.

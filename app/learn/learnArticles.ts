@@ -350,6 +350,106 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       },
     ],
   },
+  "angel-numbers-why-you-keep-seeing-111": {
+    slug: "angel-numbers-why-you-keep-seeing-111",
+    title: "Angel numbers: why you might keep seeing 111 (and what to do next)",
+    description:
+      "A grounded look at repeating digits, pattern-seeking, and how to explore them in FutureSeer without hype.",
+    sections: [
+      {
+        body: [
+          "Many people notice **repeating numbers** on clocks, receipts, or license plates. Psychology research describes **selective attention** and **apophenia**—finding meaningful patterns in randomness. That does not erase personal meaning; it helps separate **curiosity** from **panic**.",
+          "Traditional **Angel Numbers** frameworks assign themes to sequences like **111** (often described as alignment or attention). FutureSeer includes an **Angel Numbers** tool that works with your profile so you can explore interpretations in one place.",
+        ],
+      },
+      {
+        heading: "Try in FutureSeer",
+        body: [
+          "Create your profile, generate your **mystical profile**, then open **Angel Numbers** under Tools. Use **Ask the Seer** for questions specific to that tool after sign-in.",
+        ],
+      },
+    ],
+  },
+  "synastry-relationship-patterns-intro": {
+    slug: "synastry-relationship-patterns-intro",
+    title: "Synastry: relationship charts and repeating patterns",
+    description:
+      "How compatibility charts are used in astrology and how FutureSeer supports reflection—not certainty about another person.",
+    sections: [
+      {
+        body: [
+          "**Synastry** compares two birth charts to describe dynamics, tensions, and harmonies. It is a **symbolic language**, not proof of behaviour. Ethical practice avoids diagnosing partners without consent.",
+          "FutureSeer’s **Synastry** experience is for **reflection and timing** with your saved data. Pair it with **Ask the Seer** for nuanced questions after your profile is complete.",
+        ],
+      },
+      {
+        heading: "Get started",
+        body: [
+          "Complete your birth details, generate your profile, then open **Synastry** from Mystical Tools.",
+        ],
+      },
+    ],
+  },
+  "vedic-birth-chart-what-to-expect": {
+    slug: "vedic-birth-chart-what-to-expect",
+    title: "Vedic astrology: what a birth chart reading usually includes",
+    description:
+      "Lahiri sidereal positions, houses, and how FutureSeer presents Vedic insights alongside other systems.",
+    sections: [
+      {
+        body: [
+          "**Vedic** (Jyotish) charts use **sidereal** zodiac positions and a rich set of techniques: houses, nakshatras, dashas, and more. Different teachers emphasise different layers.",
+          "FutureSeer runs **Vedic** analysis from your saved birth time and place. Your **mystical profile** generation includes Vedic alongside other tools so you don’t have to re-enter data.",
+        ],
+      },
+      {
+        heading: "Next step",
+        body: [
+          "Sign in, complete **Profile**, **Generate My Mystical Profile**, then visit **Vedic** under Tools.",
+        ],
+      },
+    ],
+  },
+  "tarot-reflection-and-questions": {
+    slug: "tarot-reflection-and-questions",
+    title: "Tarot: questions, spreads, and reflection (not a guarantee)",
+    description:
+      "How Tarot supports structured reflection in the app, aligned with traditional card meanings.",
+    sections: [
+      {
+        body: [
+          "Tarot uses **78 cards** with established symbolism. Many readers treat spreads as **conversation starters** for intuition and decision clarity—not fortune-telling with fixed outcomes.",
+          "FutureSeer’s **Tarot** tool respects traditional meanings and pairs with **Ask the Seer** for follow‑ups when you are signed in.",
+        ],
+      },
+      {
+        heading: "Try it",
+        body: [
+          "After your profile is generated, open **Tarot** from Mystical Tools and explore **Ask the Seer** on that page.",
+        ],
+      },
+    ],
+  },
+  "vastu-home-energy-quick-intro": {
+    slug: "vastu-home-energy-quick-intro",
+    title: "Vastu: directions, entrance, and home energy in brief",
+    description:
+      "A short intro to directional placement and how Vastu fits next to other tools in FutureSeer.",
+    sections: [
+      {
+        body: [
+          "**Vastu Shastra** maps directions, zones, and often **entrance padas** (fine compass segments). It is **not** interchangeable with Feng Shui; FutureSeer keeps them as **separate tools**.",
+          "Use the **Vastu** tool with your device compass for **8 / 16 / 32** precision where supported, and read **Learn** articles on compass basics for deeper context.",
+        ],
+      },
+      {
+        heading: "Open the tool",
+        body: [
+          "Sign in, complete your profile, generate your mystical profile, then choose **Vastu** under Mystical Tools.",
+        ],
+      },
+    ],
+  },
 }
 
 export const LEARN_SLUGS = Object.keys(LEARN_ARTICLES) as string[]

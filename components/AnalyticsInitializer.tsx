@@ -3,12 +3,30 @@
 import { useEffect } from 'react'
 import { devLog } from '@/lib/devLogger';
 import { analytics } from '@/lib/analytics'
+import {
+  captureCampaignFromCurrentUrl,
+  hasCampaignSignal,
+  markCampaignLandingTracked,
+  wasCampaignLandingTrackedThisSession,
+} from '@/lib/campaignAttribution'
 
 export function AnalyticsInitializer() {
   useEffect(() => {
     try {
-      // Initialize analytics
+      const captured = captureCampaignFromCurrentUrl()
+
+      // Initialize PostHog before campaign events (capture uses posthog).
       analytics.init()
+
+      if (
+        hasCampaignSignal(captured) &&
+        !wasCampaignLandingTrackedThisSession()
+      ) {
+        analytics.trackCampaignLandingViewed({
+          path: typeof window !== 'undefined' ? window.location.pathname : undefined,
+        })
+        markCampaignLandingTracked()
+      }
       
       // Track page view on route change
       const handleRouteChange = () => {

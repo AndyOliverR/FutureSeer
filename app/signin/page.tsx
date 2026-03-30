@@ -14,6 +14,13 @@ import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser, resetPassword } from "@/lib/firebase"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
+import { analytics } from "@/lib/analytics"
+import {
+  getStoredCampaignAttribution,
+  hasCampaignSignal,
+  markSigninFunnelFromCampaignTracked,
+  wasSigninFunnelFromCampaignTracked,
+} from "@/lib/campaignAttribution"
 
 // Declare grecaptcha for TypeScript (enterprise API)
 declare global {
@@ -59,6 +66,13 @@ function SignInContent() {
       hasRedirect: !!redirectTo,
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (wasSigninFunnelFromCampaignTracked()) return
+    if (!hasCampaignSignal(getStoredCampaignAttribution())) return
+    analytics.trackSignupStartedFromCampaign("signin_page")
+    markSigninFunnelFromCampaignTracked()
   }, [])
 
   // After Google redirect (or if already signed in), redirect away from signin immediately.
