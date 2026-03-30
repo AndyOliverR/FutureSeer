@@ -1,3 +1,5 @@
+import type { NextRequest } from 'next/server';
+
 // Rate limiting utility for API endpoints
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -162,17 +164,17 @@ export function getUserIdentifier(userId?: string): string {
 
 /** Next.js App Router route handler compatible with `withRateLimit` wrapping. */
 export type RateLimitedRouteHandler = (
-  request: Request,
+  request: NextRequest,
   ...args: unknown[]
-) => Promise<Response | unknown> | Response | unknown;
+) => Promise<Response> | Response;
 
 // Rate limiting middleware for Next.js API routes
 export function withRateLimit(
   handler: RateLimitedRouteHandler,
   limiter: RateLimiter = rateLimiters.api,
   getIdentifier: (request: Request) => string = getClientIdentifier
-) {
-  return async (request: Request, ...args: unknown[]) => {
+): (request: NextRequest, ...args: unknown[]) => Promise<Response> {
+  return async (request: NextRequest, ...args: unknown[]): Promise<Response> => {
     const identifier = getIdentifier(request);
     const result = limiter.check(identifier);
 
@@ -196,13 +198,11 @@ export function withRateLimit(
     }
 
     // Add rate limit headers to response
-    const response = await handler(request, ...args);
-    
-    if (response instanceof Response) {
-      response.headers.set('X-RateLimit-Limit', limiter.config.maxRequests.toString());
-      response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
-      response.headers.set('X-RateLimit-Reset', result.resetTime.toString());
-    }
+    const response: Response = await handler(request, ...args);
+
+    response.headers.set('X-RateLimit-Limit', limiter.config.maxRequests.toString());
+    response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
+    response.headers.set('X-RateLimit-Reset', result.resetTime.toString());
 
     return response;
   };
@@ -212,8 +212,8 @@ export function withRateLimit(
 export function withUserRateLimit(
   handler: RateLimitedRouteHandler,
   limiter: RateLimiter = rateLimiters.user
-) {
-  return async (request: Request, ...args: unknown[]) => {
+): (request: NextRequest, ...args: unknown[]) => Promise<Response> {
+  return async (request: NextRequest, ...args: unknown[]): Promise<Response> => {
     // Extract user ID from request (you'll need to implement this based on your auth)
     const userId = 'user-id-from-request'; // Replace with actual user ID extraction
     const identifier = getUserIdentifier(userId);
@@ -238,6 +238,6 @@ export function withUserRateLimit(
       );
     }
 
-    return handler(request, ...args);
+    return await handler(request, ...args);
   };
-} 
+}
