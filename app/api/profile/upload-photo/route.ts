@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
 import { logServerError } from '@/lib/serverErrorLogging';
 
 export const dynamic = 'force-dynamic';
@@ -61,7 +62,6 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-    const admin = require('firebase-admin');
     const buffer = Buffer.from(await file.arrayBuffer());
     const path = `users/${uid}/${type}_${Date.now()}`;
 
@@ -72,12 +72,17 @@ export async function POST(request: NextRequest) {
       bucketNames.push(envBucket.replace(/\.firebasestorage\.app$/, '.appspot.com'));
     }
 
-    let bucketFile: { save: (buf: Buffer, opts: object) => Promise<unknown>; getSignedUrl: (opts: object) => Promise<[string]> };
+    type GcsBucketFile = {
+      save: (buf: Buffer, opts: object) => Promise<unknown>;
+      getSignedUrl: (opts: { action: string; expires: string }) => Promise<[string]>;
+    };
+    let bucketFile: GcsBucketFile;
     let lastErr: unknown;
     for (const bucketName of bucketNames) {
       try {
-        const bucket = admin.storage().bucket(bucketName);
-        bucketFile = bucket.file(path);
+        const bucket = getStorage().bucket(bucketName);
+        // GCS File; DOM `File` in lib causes a name clash without assertion
+        bucketFile = bucket.file(path) as GcsBucketFile;
         await bucketFile.save(buffer, {
           metadata: {
             contentType,

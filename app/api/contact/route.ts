@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { collection, addDoc } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
@@ -66,7 +67,6 @@ export async function POST(request: NextRequest) {
       await db.collection('contactSubmissions').add(submission);
     } else {
       // Client-side: Use Client SDK (shouldn't happen in API route, but handle gracefully)
-      const { collection, addDoc } = require('firebase/firestore');
       await addDoc(collection(db, 'contactSubmissions'), submission);
     }
 
