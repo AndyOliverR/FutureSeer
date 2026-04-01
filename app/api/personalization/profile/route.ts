@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
@@ -30,7 +31,6 @@ export async function GET(request: NextRequest) {
       userDoc = await userRef.get();
     } else {
       // Client-side: Use Client SDK
-      const { doc, getDoc } = require('firebase/firestore');
       userDoc = await getDoc(doc(db, 'users', userId));
     }
     
@@ -91,7 +91,6 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Client-side: Use Client SDK
-      const { doc, updateDoc } = require('firebase/firestore');
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
         advancedProfile,
@@ -145,7 +144,6 @@ export async function PUT(request: NextRequest) {
       });
     } else {
       // Client-side: Use Client SDK
-      const { doc, updateDoc } = require('firebase/firestore');
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
         advancedProfile: {
