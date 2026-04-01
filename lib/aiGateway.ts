@@ -66,6 +66,9 @@ const mapModelToGateway = (model: string): string => {
   if (model === 'llama-3.3-70b-versatile') {
     return 'groq/llama-3.3-70b-versatile';
   }
+  if (model === 'llama-3.1-8b-instant') {
+    return 'groq/llama-3.1-8b-instant';
+  }
   if (model === 'gpt-4' || model === 'gpt-4o' || model === 'gpt-4-turbo') {
     return `openai/${model}`;
   }
@@ -215,7 +218,8 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
 }
 
 /**
- * Create a non-streaming AI completion using AI Gateway or direct SDK
+ * Create a non-streaming AI completion using AI Gateway or direct SDK.
+ * Do not add Firestore / Firebase Admin or other server-only usage logging here — this module is imported from client code paths; log in API routes instead.
  */
 export async function createAICompletion(options: AICompletionOptions): Promise<{
   content: string;
@@ -235,15 +239,18 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
         presencePenalty: options.presencePenalty,
       });
 
-      return {
+      const out = {
         content: result.text,
-        usage: result.usage ? {
-          promptTokens: result.usage.promptTokens,
-          completionTokens: result.usage.completionTokens,
-          totalTokens: result.usage.totalTokens,
-        } : undefined,
+        usage: result.usage
+          ? {
+              promptTokens: result.usage.promptTokens,
+              completionTokens: result.usage.completionTokens,
+              totalTokens: result.usage.totalTokens,
+            }
+          : undefined,
         finishReason: result.finishReason,
       };
+      return out;
     } catch (error) {
       devLog.error('AI Gateway error, falling back to direct SDK:', error, 'aiGateway');
       // Fall through to direct SDK
@@ -282,45 +289,54 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
     }), 'Groq completion');
 
     const content = completion.choices[0]?.message?.content || '';
-    return {
+    const out = {
       content,
-      usage: completion.usage ? {
-        promptTokens: completion.usage.prompt_tokens,
-        completionTokens: completion.usage.completion_tokens,
-        totalTokens: completion.usage.total_tokens,
-      } : undefined,
+      usage: completion.usage
+        ? {
+            promptTokens: completion.usage.prompt_tokens,
+            completionTokens: completion.usage.completion_tokens,
+            totalTokens: completion.usage.total_tokens,
+          }
+        : undefined,
       finishReason: completion.choices[0]?.finish_reason,
     };
-  } else {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('AI service is temporarily unavailable. Please try again later.');
-    }
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    const completion = await withRetry(() => openai.chat.completions.create({
-      model: modelName,
-      messages: options.messages as Parameters<typeof openai.chat.completions.create>[0]['messages'],
-      max_tokens: options.maxTokens,
-      temperature: options.temperature,
-      top_p: options.topP,
-      frequency_penalty: options.frequencyPenalty,
-      presence_penalty: options.presencePenalty,
-      response_format: options.responseFormat || options.response_format,
-    }), 'OpenAI completion');
-
-    const content = completion.choices[0]?.message?.content || '';
-    return {
-      content,
-      usage: completion.usage ? {
-        promptTokens: completion.usage.prompt_tokens,
-        completionTokens: completion.usage.completion_tokens,
-        totalTokens: completion.usage.total_tokens,
-      } : undefined,
-      finishReason: completion.choices[0]?.finish_reason,
-    };
+    return out;
   }
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('AI service is temporarily unavailable. Please try again later.');
+  }
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+
+  const openaiCompletion = await withRetry(
+    () =>
+      openai.chat.completions.create({
+        model: modelName,
+        messages: options.messages as Parameters<typeof openai.chat.completions.create>[0]['messages'],
+        max_tokens: options.maxTokens,
+        temperature: options.temperature,
+        top_p: options.topP,
+        frequency_penalty: options.frequencyPenalty,
+        presence_penalty: options.presencePenalty,
+        response_format: options.responseFormat || options.response_format,
+      }),
+    'OpenAI completion'
+  );
+
+  const openaiContent = openaiCompletion.choices[0]?.message?.content || '';
+  const openaiOut = {
+    content: openaiContent,
+    usage: openaiCompletion.usage
+      ? {
+          promptTokens: openaiCompletion.usage.prompt_tokens,
+          completionTokens: openaiCompletion.usage.completion_tokens,
+          totalTokens: openaiCompletion.usage.total_tokens,
+        }
+      : undefined,
+    finishReason: openaiCompletion.choices[0]?.finish_reason,
+  };
+  return openaiOut;
 }
 
 

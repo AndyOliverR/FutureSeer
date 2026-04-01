@@ -9,7 +9,7 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 | Order | Document | Purpose |
 |-------|----------|---------|
 | 1 | [AGENTS.md](../AGENTS.md) | Node 24, pnpm, dev server, env vars, lint, tests, architecture |
-| 2 | [CI_AND_STABILITY.md](./CI_AND_STABILITY.md) | What CI runs (lint, Jest, Playwright), branch protection, optional Sentry |
+| 2 | [CI_AND_STABILITY.md](./CI_AND_STABILITY.md) | What CI runs (lint, Jest, Playwright), branch protection, Firestore error capture |
 | 3 | [APP_STORE_PLAY_STORE_READINESS.md](./APP_STORE_PLAY_STORE_READINESS.md) | Capacitor static build (`out/`), `mobile:build`, sync, signing, store versioning |
 
 ## Related references

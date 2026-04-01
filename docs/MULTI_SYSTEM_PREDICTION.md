@@ -60,6 +60,20 @@ Goal: **a perspective from each system that has data, then a combined answer** (
 - **Probabilistic layers**: The codebase includes Markov and Bayesian modules (`lib/predictiveAlgorithms.ts`) and a unified **prediction engine** (`lib/prediction-engine.ts`) that coordinates many systems. The comprehensive Seer can optionally use these for combined timing (e.g. mapping "next 3 months" to a window in the target year) or for refining confidence.
 - **Transparency**: `timingDetail` and the "See more" section expose how the date was derived and which systems agreed, so the user sees both the headline (e.g. "88% Confidence, 15 June 2026") and the full reasoning.
 
+## Markov chain layer (LifePathMarkovChain)
+
+This is a **heuristic** discrete-time model: **states** are coarse life themes (e.g. `career_transition`, `relationship_seeking`). It is **not** a fitted industrial Markov chain on millions of rows; it combines:
+
+1. **Empirical transitions** per user when `recordTransition` has history (`users/{uid}/markovTransitions` in Firestore).
+2. **Default transition rows** from `getDefaultProbabilities(currentState)` when history is empty.
+3. **Cosmic / numerology multipliers** on outgoing mass, then **`normalizeProbabilities`** so each step is a proper distribution over states.
+4. **Privacy-safe behavior tokens** from `buildMarkovUserBehaviorSignals` (`lib/predictionUserSignals.ts`): `theme:*`, `focus:*`, `session:*`, `recent_tool:*` — no PII.
+5. **Displayed transitions**: After filtering small masses, **probabilities are renormalized** so the shown top transitions sum to **1** (auditable).
+
+**Vedic Seer**: `mapQuestionToState` maps `VedicQuestionType` (e.g. `career`, `marriage`, `remedies`) to Markov states. The optional **probabilistic resonance** block in `buildVedicSeerSystemPrompt` uses `formatPredictiveHintForVedicPrompt` — **dashas and chart slice remain authoritative**; the hint only nudges empathy and wording.
+
+**Offline evaluation**: See [PREDICTION_CALIBRATION.md](PREDICTION_CALIBRATION.md).
+
 ## Key files
 
 - **Engine**: `lib/comprehensiveSeerEngine.ts` – `answerTimingQuestion`, `getAdditionalTimingContributions`, aggregation and `timingDetail` / `supportSummaries`.
@@ -67,6 +81,7 @@ Goal: **a perspective from each system that has data, then a combined answer** (
 - **Data**: `lib/universalDataAggregator.ts` – Universal divination data; `app/api/seer/query/route.ts` – maps comprehensive profile to engine and returns `timing_window`, `timingDetail`, `supportSummaries`.
 - **Client**: `app/ask-the-seer/page.tsx` – Shows "Confidence + Date + See more" by default for timing responses; full narrative and sources inside "See more".
 - **Prediction stack**: `lib/prediction-engine.ts`, `lib/predictiveAlgorithms.ts` – Multi-system + Markov/Bayesian combination for possible future integration with Seer timing.
+- **User signals for Markov**: `lib/predictionUserSignals.ts` – `buildMarkovUserBehaviorSignals`, `formatPredictiveHintForVedicPrompt`.
 
 ## Optional: README or product copy
 

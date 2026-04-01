@@ -6,10 +6,12 @@ import { TipJarProvider } from "@/components/TipJarContext";
 import { ModalOpenProvider } from "@/components/ModalOpenContext";
 import { DesignSystemSync } from "@/components/DesignSystemSync";
 import { KonstaThemeProvider } from "@/components/KonstaThemeProvider";
+import { ClientErrorTelemetry } from "@/components/ClientErrorTelemetry";
 
 export default function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
+      <ClientErrorTelemetry />
       <DesignSystemSync />
       <KonstaThemeProvider>
         <MysticalProfileProvider>

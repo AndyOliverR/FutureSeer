@@ -4,19 +4,18 @@ const config: CapacitorConfig = {
   appId: 'com.futureseer.app',
   appName: 'FutureSeer',
   webDir: 'public',
+  // Production: WebView loads the live site on Vercel (same-origin /api routes).
+  // For local dev against the emulator, temporarily set url to http://10.0.2.2:3000,
+  // cleartext: true, androidScheme: 'http', and matching allowNavigation — then cap sync.
   server: {
-    // Explicitly point to your local machine for the emulator
-    url: 'http://10.0.2.2:3000',
-    cleartext: true,
-    androidScheme: 'http',
+    url: 'https://futureseer.app',
+    cleartext: false,
     allowNavigation: [
-      '10.0.2.2:3000',
-      'localhost:3000',
       'futureseer.app',
       '*.firebaseapp.com',
       '*.google.com',
-      'accounts.google.com'
-    ]
+      'accounts.google.com',
+    ],
   },
   plugins: {
     FirebaseAuthentication: {

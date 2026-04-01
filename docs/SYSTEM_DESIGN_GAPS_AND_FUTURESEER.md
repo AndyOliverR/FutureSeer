@@ -92,7 +92,7 @@ Work top to bottom within each priority band; adjust order if a security review 
 ### P2 — Observability and cost discipline
 
 7. **Structured metrics**  
-   - Centralize logging of Groq usage (already partially logged in Seer chat) and connect to Posthog/Sentry as described in [CI_AND_STABILITY.md](./CI_AND_STABILITY.md) for anomaly detection.
+   - Centralize logging of Groq usage (already partially logged in Seer chat) and connect to Posthog and Firestore `errorEvents` as described in [CI_AND_STABILITY.md](./CI_AND_STABILITY.md) for anomaly detection.
 
 8. **Firestore read reduction**  
    - Audit hot paths (profile load + tool pages) for redundant `getUserProfile` / collection reads; align with caching patterns from fundamentals material (CDN for static assets, short TTL for semi-static API responses where safe).

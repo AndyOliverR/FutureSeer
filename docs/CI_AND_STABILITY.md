@@ -39,21 +39,13 @@
      - `CI / Lint + Jest`
      - `CI / Playwright smoke`
 
-**How to enable monitoring (optional, free tier)**
+**Error capture (Firestore, no third-party APM)**
 
-- Client bootstrap: `lib/monitoring.ts` (used from `app/layout.tsx`).
-- Server helper: `lib/serverMonitoring.ts`.
+- Client: `components/ClientErrorTelemetry.tsx` (global `error` / `unhandledrejection` → `/api/log-client-error`), `components/ErrorBoundary.tsx` (React errors), and `lib/errorLogging.ts` (`logClientError`).
+- Server: `lib/serverMonitoring.ts` (`captureServerException`) writes the same `errorEvents` collection as the client API.
+- Storage: Firestore collection `errorEvents` (requires Firebase Admin env vars on the server). View events in Firebase Console or your admin tooling.
 
-To turn on monitoring:
-
-1. Create a free project in Sentry (or compatible service).
-2. Add environment variables:
-   - On Vercel and GitHub:
-     - `NEXT_PUBLIC_SENTRY_DSN=<frontend DSN>`
-     - `SENTRY_DSN=<server DSN>` (or `SENTRY_SERVER_DSN`)
-3. Redeploy. When DSNs are present:
-   - Client errors will start sending to Sentry.
-   - `captureServerException` can be used in API routes to log server errors.
+No Sentry or extra env vars are required for error capture.
 
 
 _PR flow check: 2026-03-19T13:15:12Z_
