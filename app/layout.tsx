@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next"
-import { devLog } from '@/lib/devLogger';
 import "./globals.css"
 import "@/lib/suppressSourceMapWarnings"
 import { Toaster } from "@/components/ui/toaster"
@@ -19,7 +18,6 @@ import {
   DeferredViewportHeightSync,
 } from "@/components/DeferredLayoutComponents"
 import { PlatformClassProvider } from "@/components/PlatformClassProvider"
-import { initClientMonitoring } from "@/lib/monitoring"
 
 export const metadata: Metadata = {
   title: "FutureSeer - AI-Powered Mystical Insights",
@@ -39,11 +37,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Fire-and-forget client monitoring bootstrap (no-op without DSN).
-  if (typeof window !== 'undefined') {
-    initClientMonitoring()
-  }
-
   return (
     <html lang="en" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>

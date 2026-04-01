@@ -31,6 +31,25 @@ interface LifeTransition {
   success: boolean
 }
 
+/** Row-normalize a probability mass (sums to 1); uniform if total mass is 0. Exported for unit tests. */
+export function normalizeMarkovProbabilityMap(probabilities: Map<string, number>): Map<string, number> {
+  const total = Array.from(probabilities.values()).reduce((sum, prob) => sum + prob, 0)
+  if (total === 0) {
+    const keys = [...probabilities.keys()]
+    if (keys.length === 0) return new Map(probabilities)
+    const u = 1 / keys.length
+    const uniform = new Map<string, number>()
+    keys.forEach((k) => uniform.set(k, u))
+    return uniform
+  }
+
+  const normalized = new Map<string, number>()
+  probabilities.forEach((prob, state) => {
+    normalized.set(state, prob / total)
+  })
+  return normalized
+}
+
 export class LifePathMarkovChain {
   private transitionMatrix: Map<string, Map<string, number>>
   private cosmicFactors: Map<string, number>
@@ -249,6 +268,14 @@ export class LifePathMarkovChain {
       }
     })
     
+    // Display probabilities sum to 1 over the top transitions (auditable "why this line")
+    const sum = transitions.reduce((s, t) => s + t.probability, 0)
+    if (sum > 0) {
+      transitions.forEach((t) => {
+        t.probability = t.probability / sum
+      })
+    }
+    
     // Sort by probability (highest first)
     return transitions.sort((a, b) => b.probability - a.probability)
   }
@@ -323,15 +350,7 @@ export class LifePathMarkovChain {
 
   // Helper methods
   private normalizeProbabilities(probabilities: Map<string, number>): Map<string, number> {
-    const total = Array.from(probabilities.values()).reduce((sum, prob) => sum + prob, 0)
-    if (total === 0) return probabilities
-    
-    const normalized = new Map<string, number>()
-    probabilities.forEach((prob, state) => {
-      normalized.set(state, prob / total)
-    })
-    
-    return normalized
+    return normalizeMarkovProbabilityMap(probabilities)
   }
 
   private stateMatchesTransit(state: string, transit: any): boolean {
@@ -379,23 +398,52 @@ export class LifePathMarkovChain {
   private analyzeBehaviorPatterns(behavior: string[]): Map<string, { strength: number; pattern: string }> {
     const patterns = new Map<string, { strength: number; pattern: string }>()
     
-    // Analyze behavior for patterns
+    const merge = (state: string, strength: number, pattern: string) => {
+      const prev = patterns.get(state)
+      if (!prev || strength > prev.strength) {
+        patterns.set(state, { strength, pattern })
+      }
+    }
+    
+    for (const token of behavior) {
+      const t = token.toLowerCase()
+      if (t.startsWith('theme:')) {
+        const th = t.slice(6)
+        if (th === 'career' || th === 'general') merge('career_growth', 1.12, `theme:${th}`)
+        if (th === 'marriage') merge('relationship', 1.15, 'theme:marriage')
+        if (th === 'health') merge('challenge', 1.1, 'theme:health')
+        if (th === 'dasha' || th === 'timing') merge('growth', 1.1, 'theme:timing')
+        if (th === 'remedies') merge('spiritual_awakening', 1.12, 'theme:remedies')
+      }
+      if (t.startsWith('focus:')) {
+        const f = t.slice(6)
+        if (f === 'career') merge('career_growth', 1.18, 'focus:career')
+        if (f === 'relationship') merge('relationship', 1.2, 'focus:relationship')
+        if (f === 'spiritual') merge('spiritual_awakening', 1.15, 'focus:spiritual')
+        if (f === 'health') merge('challenge', 1.12, 'focus:health')
+        if (f === 'wealth') merge('growth', 1.1, 'focus:wealth')
+        if (f === 'timing') merge('growth', 1.1, 'focus:timing')
+      }
+      if (t.startsWith('session:')) merge('growth', 1.06, t)
+      if (t.startsWith('recent_tool:')) merge('growth', 1.04, 'multi_tool_user')
+    }
+    
     const behaviorString = behavior.join(' ').toLowerCase()
     
     if (behaviorString.includes('meditation') || behaviorString.includes('spiritual')) {
-      patterns.set('spiritual_awakening', { strength: 1.3, pattern: 'spiritual_focus' })
+      merge('spiritual_awakening', 1.3, 'spiritual_focus')
     }
     
     if (behaviorString.includes('work') || behaviorString.includes('career')) {
-      patterns.set('career_growth', { strength: 1.2, pattern: 'career_focus' })
+      merge('career_growth', 1.2, 'career_focus')
     }
     
     if (behaviorString.includes('relationship') || behaviorString.includes('love')) {
-      patterns.set('relationship', { strength: 1.4, pattern: 'relationship_focus' })
+      merge('relationship', 1.4, 'relationship_focus')
     }
     
     if (behaviorString.includes('challenge') || behaviorString.includes('difficulty')) {
-      patterns.set('challenge', { strength: 1.3, pattern: 'challenge_focus' })
+      merge('challenge', 1.3, 'challenge_focus')
     }
     
     return patterns

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { adminDb } from '@/lib/firebase-admin';
 import type { ErrorSeverity } from '@/lib/errorLogging';
+import { getErrorEventEnvironment, writeErrorEventToFirestore } from '@/lib/errorEvents';
 import { devLog } from '@/lib/devLogger';
 
 export const dynamic = 'force-dynamic';
@@ -27,17 +27,6 @@ function truncate(value: unknown, max = 800): string | undefined {
   return value.slice(0, max) + '…';
 }
 
-function getEnvironment(): 'production' | 'preview' | 'development' | 'unknown' {
-  const env =
-    process.env.NEXT_PUBLIC_VERCEL_ENV ||
-    process.env.VERCEL_ENV ||
-    process.env.NODE_ENV;
-  if (env === 'production' || env === 'preview' || env === 'development') {
-    return env;
-  }
-  return 'unknown';
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as IncomingClientErrorBody;
@@ -58,11 +47,11 @@ export async function POST(request: NextRequest) {
       // If token is invalid, we still record the error but without userId
     }
 
-    const event = {
+    await writeErrorEventToFirestore({
       timestamp: new Date().toISOString(),
-      environment: getEnvironment(),
+      environment: getErrorEventEnvironment(),
       severity: normalizeSeverity(body.severity),
-      source: 'client' as const,
+      source: 'client',
       area,
       action,
       message: truncate(message, 800) || 'Unknown error',
@@ -70,11 +59,7 @@ export async function POST(request: NextRequest) {
       route: truncate(body.route, 400),
       browser: truncate(body.browser, 512),
       meta: body.meta && typeof body.meta === 'object' ? body.meta : undefined,
-    };
-
-    if (adminDb) {
-      await adminDb.collection('errorEvents').add(event);
-    }
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

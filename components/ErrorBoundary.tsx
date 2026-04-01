@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { devLog } from '@/lib/devLogger';
+import { logClientError } from '@/lib/errorLogging';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -68,6 +69,21 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       return;
     }
     devLog.error('ErrorBoundary caught an error', { error, errorInfo }, 'ErrorBoundary');
+    const browser =
+      typeof navigator !== 'undefined'
+        ? `${navigator.userAgent} | ${navigator.language || ''}`
+        : undefined;
+    void logClientError({
+      area: 'react',
+      action: 'error-boundary',
+      message: `${error.name}: ${error.message}`.slice(0, 800),
+      route: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      browser,
+      meta: {
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+      },
+    });
   }
 
   render() {

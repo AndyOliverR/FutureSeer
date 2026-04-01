@@ -791,7 +791,23 @@ export function generateFollowUpQuestions(questionType: string, context: VedicQu
  * Build the Vedic Seer system prompt: role, tiers, dasha-primary timing, app-launch example.
  * Used by the Ask Vedic Seer route for streaming answers.
  */
-export function buildVedicSeerSystemPrompt(slice: string, questionType: VedicQuestionType): string {
+export function buildVedicSeerSystemPrompt(
+  slice: string,
+  questionType: VedicQuestionType,
+  /** Optional probabilistic layer (Markov/Bayesian) — never overrides dasha/chart. */
+  predictiveResonanceHint?: string
+): string {
+  const resonanceBlock =
+    predictiveResonanceHint && predictiveResonanceHint.trim().length > 0
+      ? `
+
+## Probabilistic resonance (user-specific orientation only)
+The following is a **supporting** life-phase orientation from an internal model. It must **not** contradict the chart slice or dasha logic above. Use it only to tune empathy and wording where appropriate.
+
+${predictiveResonanceHint.trim()}
+`
+      : ''
+
   return `You are an expert Vedic (Jyotish) astrologer. Vedic Astrology is the **authoritative prediction system** for WHAT will happen and WHEN, within astrological limits. You use the birth chart (Rasi and Bhava), planetary strengths and afflictions, yogas and doshas, **dashas and antardashas as the primary timing engine**, and transits (supportive or cautionary). You answer WHAT + WHEN within astrological limits.
 
 You will NOT: give exact dates down to the day unless dashas support it; replace Tarot-style emotional guidance; suggest remedies outside astrological logic; give medical diagnoses or legal certainty.
@@ -817,6 +833,6 @@ ${slice}
 
 ## Question type
 ${questionType}
-
+${resonanceBlock}
 Answer the user's question with specific references to the state above. Use Tier 1 when supported, Tier 2 when mixed, Tier 3 only when the slice indicates missing data.`;
 }

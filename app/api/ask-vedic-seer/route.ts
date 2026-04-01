@@ -14,6 +14,10 @@ import {
   getVedicSliceForQuestionType,
   type VedicQuestionType,
 } from '@/lib/vedicSeerState';
+import {
+  buildMarkovUserBehaviorSignals,
+  formatPredictiveHintForVedicPrompt,
+} from '@/lib/predictionUserSignals';
 
 interface VedicSeerRequest {
   userId: string;
@@ -111,13 +115,32 @@ export async function POST(request: NextRequest) {
       .filter((item: any) => item !== null)
       .slice(-10);
 
+    const behaviorSignals = await buildMarkovUserBehaviorSignals({
+      userId,
+      question,
+      questionType,
+      recentExchanges: conversationHistory
+        .filter((h): h is NonNullable<typeof h> => h != null)
+        .map((h) => ({ question: h.question, answer: h.answer })),
+    });
+
+    const predictiveAnalysis = await generatePredictiveAnalysis(
+      vedicChartData,
+      question,
+      userId,
+      vedicNumerologyData,
+      behaviorSignals,
+      questionType
+    );
+    const predictiveHint = formatPredictiveHintForVedicPrompt(predictiveAnalysis);
+
     // Stream via AI Gateway with slice-based expert prompt (no full dump; no cache bypass)
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
-          content: buildVedicSeerSystemPrompt(chartSlice, questionType)
+          content: buildVedicSeerSystemPrompt(chartSlice, questionType, predictiveHint)
         },
         ...conversationHistory.flatMap((h) =>
           h ? [
@@ -255,13 +278,18 @@ async function calculateTimingAnalysis(vedicChartData: any, question: string, us
 }
 
 // Generate predictive analysis using Markov/Bayesian algorithms
-async function generatePredictiveAnalysis(vedicChartData: any, question: string, userId: string, numerologyData?: any): Promise<any> {
+async function generatePredictiveAnalysis(
+  vedicChartData: any,
+  question: string,
+  userId: string,
+  numerologyData: any | undefined,
+  userBehavior: string[],
+  vedicQuestionType: string
+): Promise<any> {
   try {
     const predictiveSystem = new PredictiveSystem();
     
-    // Determine current state based on question type
-    const questionType = analyzeQuestionType(question);
-    const currentState = mapQuestionToState(questionType);
+    const currentState = mapQuestionToState(vedicQuestionType);
     
     // Generate comprehensive prediction
     const prediction = await predictiveSystem.generateComprehensivePrediction(
@@ -269,8 +297,8 @@ async function generatePredictiveAnalysis(vedicChartData: any, question: string,
       currentState,
       vedicChartData,
       numerologyData || {}, // Use provided numerology data
-      [], // userBehavior - could be enhanced
-      { question, questionType } // evidence
+      userBehavior,
+      { question, questionType: vedicQuestionType } // evidence
     );
 
     return {
@@ -287,20 +315,23 @@ async function generatePredictiveAnalysis(vedicChartData: any, question: string,
   }
 }
 
-// Map question type to Markov state
+// Map Vedic slice question type to Markov state (see docs/MULTI_SYSTEM_PREDICTION.md)
 function mapQuestionToState(questionType: string): string {
   const stateMap: { [key: string]: string } = {
-    'marriage': 'relationship_seeking',
-    'career': 'career_transition',
-    'business': 'entrepreneurial_phase',
-    'wealth': 'financial_growth',
-    'health': 'health_concern',
-    'timing': 'life_timing',
-    'dasha': 'dasha_period',
-    'life_purpose': 'soul_seeking',
-    'existential': 'meaning_crisis',
-    'control': 'empowerment_seeking',
-    'transformation': 'personal_growth'
+    marriage: 'relationship_seeking',
+    career: 'career_transition',
+    business: 'entrepreneurial_phase',
+    wealth: 'financial_growth',
+    health: 'health_concern',
+    timing: 'life_timing',
+    dasha: 'dasha_period',
+    remedies: 'spiritual_support',
+    general: 'general_life',
+    event_confirmation: 'life_timing',
+    life_purpose: 'soul_seeking',
+    existential: 'meaning_crisis',
+    control: 'empowerment_seeking',
+    transformation: 'personal_growth',
   };
   return stateMap[questionType] || 'general_life';
 }

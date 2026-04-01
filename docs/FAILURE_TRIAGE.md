@@ -42,8 +42,8 @@ This section is updated when maintainers run the audit commands in CI or locally
 |---------|------|-------|--------|
 | `node -v` / `pnpm -v` | — | Web | v24.13.1 / 10.28.2 (matches AGENTS.md) |
 | `pnpm run lint` | **1** | Web | Fails: large backlog (e.g. `no-explicit-any`, `no-require-imports` in scripts/tests). **Not** a signal that `pnpm run build` is broken. |
-| `pnpm run build` | 0 | Web | Next.js production build succeeded (webpack warnings from Sentry/OpenTelemetry deps only). |
-| `pnpm run build:capacitor` | 0 | Static export | `out/index.html` present; same webpack warnings as above. |
+| `pnpm run build` | 0 | Web | Next.js production build succeeded (occasional webpack warnings from third-party deps). |
+| `pnpm run build:capacitor` | 0 | Static export | `out/index.html` present; same as web build. |
 | `pnpm test` | 0 | Web | 7 suites, 56 tests passed. |
 
 **Mapping:** Lint debt is **Web / quality**; treat it separately from Capacitor or native store steps. Use [APP_STORE_PLAY_STORE_READINESS.md](./APP_STORE_PLAY_STORE_READINESS.md) when `build:capacitor` fails or `out/` is missing.
