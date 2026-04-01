@@ -18,6 +18,7 @@ import {
   buildMarkovUserBehaviorSignals,
   formatPredictiveHintForVedicPrompt,
 } from '@/lib/predictionUserSignals';
+import { UniversalInterpretationEngine, type RemedyAnalysis } from '@/lib/universalInterpretationEngine';
 
 interface VedicSeerRequest {
   userId: string;
@@ -339,7 +340,6 @@ function mapQuestionToState(questionType: string): string {
 // Generate interpretation using YOUR intelligence
 async function generateVedicInterpretation(vedicChartData: any, questionType: string): Promise<any> {
   try {
-    const { UniversalInterpretationEngine } = require('@/lib/universalInterpretationEngine');
     const interpretationEngine = new UniversalInterpretationEngine();
     
     // Generate interpretation using existing system
@@ -571,6 +571,29 @@ function replaceTemplateVariables(text: string, vedicChart: any): string {
   return result;
 }
 
+function remedyAnalysisToStringList(remedies: RemedyAnalysis): string[] {
+  const lines: string[] = [];
+  const overview = remedies.overview?.trim();
+  if (overview) lines.push(overview);
+  for (const m of remedies.mantras ?? []) {
+    const t = m?.trim();
+    if (t) lines.push(`Mantra: ${t}`);
+  }
+  for (const g of remedies.gemstones ?? []) {
+    const t = g?.trim();
+    if (t) lines.push(`Gemstone: ${t}`);
+  }
+  for (const r of remedies.rituals ?? []) {
+    const t = r?.trim();
+    if (t) lines.push(`Ritual: ${t}`);
+  }
+  for (const l of remedies.lifestyle ?? []) {
+    const t = l?.trim();
+    if (t) lines.push(`Lifestyle: ${t}`);
+  }
+  return lines;
+}
+
 async function generateVedicResponse(question: string, context: any): Promise<VedicSeerResponse['data']> {
   try {
     // Validate context has required data
@@ -581,7 +604,6 @@ async function generateVedicResponse(question: string, context: any): Promise<Ve
     devLog.info('🔮 Generating Vedic response using FutureSeer intelligence for question:', question, 'vedic-seer');
 
     // Use existing UniversalInterpretationEngine instead of OpenAI
-    const { UniversalInterpretationEngine } = require('@/lib/universalInterpretationEngine');
     const interpretationEngine = new UniversalInterpretationEngine();
     
     // Generate interpretation using existing system
@@ -613,7 +635,7 @@ async function generateVedicResponse(question: string, context: any): Promise<Ve
         favorable: context.vedicChart.transits.favorable,
         challenging: context.vedicChart.transits.challenging
       },
-      remedies: interpretation.remedies || [],
+      remedies: remedyAnalysisToStringList(interpretation.remedies),
       followUpQuestions
     };
 

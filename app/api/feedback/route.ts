@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getStorage } from 'firebase-admin/storage'
 import { getFirebaseDB, getFirebaseStorage } from '@/lib/firebase'
 import { devLog } from '@/lib/devLogger'
 
@@ -57,9 +58,7 @@ async function uploadScreenshotToStorage(
     if (typeof window === 'undefined') {
       // Server-side: Use Admin SDK
       try {
-        const admin = require('firebase-admin');
-        const adminStorage = admin.storage();
-        const bucket = adminStorage.bucket();
+        const bucket = getStorage().bucket();
         const file = bucket.file(storagePath);
         
         const buffer = Buffer.from(await blob.arrayBuffer());

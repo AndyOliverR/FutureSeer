@@ -1,4 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  collection,
+  query,
+  where,
+  limit,
+  getDocs,
+  addDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 
@@ -54,7 +63,6 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Client-side: Use Client SDK (shouldn't happen in API route, but handle gracefully)
-      const { collection, query, where, limit, getDocs } = require('firebase/firestore');
       const q = query(
         collection(db, 'newsletterSubscriptions'),
         where('email', '==', normalizedEmail),
@@ -99,7 +107,6 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Client-side: Use Client SDK (shouldn't happen in API route, but handle gracefully)
-      const { collection, addDoc, query, where, limit, getDocs, updateDoc } = require('firebase/firestore');
       const q = query(
         collection(db, 'newsletterSubscriptions'),
         where('email', '==', normalizedEmail),
@@ -107,7 +114,11 @@ export async function POST(request: NextRequest) {
       );
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        await updateDoc(snapshot.docs[0].ref, subscription);
+        await updateDoc(snapshot.docs[0].ref, {
+          email: subscription.email,
+          subscribedAt: subscription.subscribedAt,
+          status: subscription.status,
+        });
       } else {
         await addDoc(collection(db, 'newsletterSubscriptions'), subscription);
       }
