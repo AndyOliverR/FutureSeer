@@ -19,13 +19,43 @@ jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({ verifyIdToken: mockVerifyIdToken }),
 }));
 
-jest.mock('@/lib/firebase-admin', () => ({
-  getDocument: (...args: unknown[]) => mockGetDocument(...args),
-  setDocument: (...args: unknown[]) => mockSetDocument(...args),
-  batchSetDocuments: (...args: unknown[]) => mockBatchSetDocuments(...args),
-  isAdminAvailable: () => true,
-  adminDb: {},
-}));
+jest.mock('@/lib/firebase-admin', () => {
+  /** Firestore admin: generationLock uses runTransaction; route logs profileGenerationUsage. */
+  const mockAdminDb = {
+    runTransaction: jest.fn(async (callback: (tx: { get: jest.Mock; set: jest.Mock }) => Promise<unknown>) => {
+      const tx = {
+        get: jest.fn().mockResolvedValue({
+          exists: false,
+          data: () => undefined,
+        }),
+        set: jest.fn(),
+      };
+      return callback(tx);
+    }),
+    collection: jest.fn((colName: string) => ({
+      doc: jest.fn((docId: string) => {
+        const ref: { path: string; collection?: jest.Mock } = {
+          path: `${colName}/${docId}`,
+        };
+        if (colName === 'profileGenerationUsage') {
+          ref.collection = jest.fn(() => ({
+            doc: jest.fn(() => ({
+              set: jest.fn().mockResolvedValue(undefined),
+            })),
+          }));
+        }
+        return ref;
+      }),
+    })),
+  };
+  return {
+    getDocument: (...args: unknown[]) => mockGetDocument(...args),
+    setDocument: (...args: unknown[]) => mockSetDocument(...args),
+    batchSetDocuments: (...args: unknown[]) => mockBatchSetDocuments(...args),
+    isAdminAvailable: () => true,
+    adminDb: mockAdminDb,
+  };
+});
 
 jest.mock('@/lib/reportGenerationService', () => ({
   generateAllReports: (...args: unknown[]) => mockGenerateAllReports(...args),

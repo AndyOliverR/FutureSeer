@@ -17,7 +17,7 @@ Baseline recorded from automated commands. Update this file when you re-run an a
 |------|---------|--------|
 | Install | `pnpm install --frozen-lockfile` | Pass |
 | Jest | `pnpm test` | Pass (7 suites, 56 tests) |
-| Production build | `pnpm run build` | Pass (webpack warnings Sentry/OpenTelemetry deps only) |
+| Production build | `pnpm run build` | Pass (occasional webpack warnings from third-party deps) |
 | E2E smoke | `pnpm run test:e2e:ci` | Pass (8 Playwright tests) |
 | Security script | `pnpm run security` | **Fail** — `pnpm audit --audit-level=high` still reports **48** vulnerabilities (6 low, 12 moderate, 29 high, **1 critical**); the script stops there so **`pnpm run lint` does not run** in that single command. See [SECURITY_CHECKS.md](./SECURITY_CHECKS.md). |
 
@@ -79,4 +79,4 @@ Complete these in a **real browser** (or production WebView) with a valid Fireba
 
 - [DEVELOPER_RUNBOOK.md](./DEVELOPER_RUNBOOK.md) — index of runbooks
 - [FAILURE_TRIAGE.md](./FAILURE_TRIAGE.md) — layer mapping for failures
-- [CI_AND_STABILITY.md](./CI_AND_STABILITY.md) — CI jobs and optional Sentry
+- [CI_AND_STABILITY.md](./CI_AND_STABILITY.md) — CI jobs and Firestore error capture

@@ -4,6 +4,13 @@ import { createAICompletion } from '@/lib/aiGateway';
 import { withRateLimit, rateLimiters, getClientIdentifier } from '@/lib/rateLimit';
 import { getUserProfile, type UserProfile } from "@/lib/firebase";
 import { fetchTopHeadlines, newsCountryFromProfile } from "@/lib/server/newsHeadlines";
+import {
+  checkSeerDailyTokenCap,
+  incrementSeerDailyTokens,
+  recordInferenceUsage,
+} from '@/lib/aiInferenceUsage';
+import { getSeerChatModel, getSeerMaxTokens } from '@/lib/seerModel';
+import { isPaidPlan } from '@/lib/profileEditQuota';
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
   if (!profile) return null;
@@ -161,22 +168,51 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
       );
     }
 
+    const paid = isPaidPlan(profile?.selectedPlan);
+    if (userId) {
+      const capError = await checkSeerDailyTokenCap(userId, paid);
+      if (capError) {
+        return NextResponse.json({ error: capError }, { status: 429 });
+      }
+    }
+
+    const seerModel = getSeerChatModel(profile?.selectedPlan);
+    const maxTokens = getSeerMaxTokens(paid);
+
     let reply: string;
     try {
       const data = await createAICompletion({
-        model: "llama-3.3-70b-versatile",
+        model: seerModel,
         messages,
         temperature: 0.7,
         topP: 0.9,
-        maxTokens: 500,
+        maxTokens,
         frequencyPenalty: 0.3,
         presencePenalty: 0.1,
       });
+      if (data.usage) {
+        try {
+          await recordInferenceUsage({
+            route: '/api/seer/chat',
+            model: seerModel,
+            userId: userId ?? null,
+            promptTokens: data.usage.promptTokens,
+            completionTokens: data.usage.completionTokens,
+            totalTokens: data.usage.totalTokens,
+          });
+          if (userId) {
+            await incrementSeerDailyTokens(userId, data.usage.totalTokens);
+          }
+        } catch (e) {
+          devLog.warn('[Seer] inference logging failed (non-blocking)', e, 'route');
+        }
+      }
       if (data.usage && userId) {
         devLog.debug(
           "[Seer] Token usage",
           {
             userId,
+            model: seerModel,
             prompt_tokens: data.usage.promptTokens,
             completion_tokens: data.usage.completionTokens,
             total_tokens: data.usage.totalTokens,

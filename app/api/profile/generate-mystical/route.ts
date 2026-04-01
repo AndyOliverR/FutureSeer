@@ -29,9 +29,15 @@ import {
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
+import { acquireMysticalGenerationLock } from '@/lib/generationLock';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
+
+/** Grace past `maxDuration` before treating a lock as stale (failed/crashed run). */
+function mysticalLockStaleMs(): number {
+  return maxDuration * 1000 + 90_000;
+}
 
 export async function POST(request: NextRequest) {
   let uid: string | undefined;
@@ -174,19 +180,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Server-side generation lock: prevent concurrent generation for the same user
-    const lockDoc = await getDocument('generationLocks', uid);
-    if (lockDoc) {
-      const lockData = lockDoc as Record<string, unknown>;
-      const lockedAt = lockData.lockedAt as number | undefined;
-      if (lockedAt && Date.now() - lockedAt < 180000) {
-        return NextResponse.json(
-          { error: 'Profile generation is already in progress. Please wait for it to complete.' },
-          { status: 409 }
-        );
-      }
+    const idempotencyKey =
+      request.headers.get('Idempotency-Key')?.trim() ||
+      request.headers.get('X-Idempotency-Key')?.trim() ||
+      undefined;
+
+    const lockResult = await acquireMysticalGenerationLock(uid, idempotencyKey, mysticalLockStaleMs());
+    if (lockResult === 'idempotent_in_progress') {
+      return NextResponse.json(
+        {
+          success: true,
+          inProgress: true,
+          message: 'Profile generation is already running for this request.',
+        },
+        { status: 202 }
+      );
     }
-    await setDocument('generationLocks', uid, { lockedAt: Date.now(), status: 'running' });
+    if (lockResult === 'concurrent') {
+      return NextResponse.json(
+        { error: 'Profile generation is already in progress. Please wait for it to complete.' },
+        { status: 409 }
+      );
+    }
 
     // Check for selective retry of failed tools via query param
     let retryOnly: string[] | null = null;
