@@ -21,7 +21,7 @@ export function PersonalNote() {
           <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-amber-500/20 shadow-lg">
             {imageError ? (
               <div className="w-full h-full bg-primary-container flex items-center justify-center">
-                <span className="text-on-primary-container text-4xl font-heading">A</span>
+                <span className="text-primary-on-container text-4xl font-heading">A</span>
               </div>
             ) : (
               <Image

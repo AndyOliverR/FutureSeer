@@ -40,10 +40,10 @@ const config: Config = {
           "on-container": "var(--m3-on-primary-container)",
         },
         secondary: {
-          DEFAULT: "var(--m3-secondary)",
-          foreground: "var(--m3-on-secondary)",
-          container: "var(--m3-secondary-container)",
-          "on-container": "var(--m3-on-secondary-container)",
+          DEFAULT: "rgb(226 232 240)",
+          foreground: "rgb(15 23 42)",
+          container: "rgb(241 245 249)",
+          "on-container": "rgb(15 23 42)",
         },
         tertiary: {
           DEFAULT: "var(--m3-tertiary)",
@@ -91,8 +91,8 @@ const config: Config = {
           foreground: "var(--m3-on-primary-container)",
         },
         destructive: {
-          DEFAULT: "var(--m3-secondary)",
-          foreground: "var(--m3-on-secondary)",
+          DEFAULT: "rgb(220 38 38)",
+          foreground: "#ffffff",
         },
         border: "var(--m3-outline-variant)",
         input: "var(--m3-outline-variant)",

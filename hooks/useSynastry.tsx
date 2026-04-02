@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { synastryIntelligence } from '@/lib/synastryIntelligence'
+import { normalizeBirthTime } from '@/lib/birthTimeUtils'
 
 export interface PersonData {
   name: string
@@ -96,9 +96,11 @@ export function useSynastry() {
       return
     }
     
-    // Validate time format (HH:MM)
+    // Normalize to HH:MM (profile/API often store HH:MM:SS from normalizeBirthTime)
+    const hm1 = normalizeBirthTime(birthData1.birthTime).slice(0, 5)
+    const hm2 = normalizeBirthTime(birthData2.birthTime).slice(0, 5)
     const timeRegex = /^\d{2}:\d{2}$/
-    if (!timeRegex.test(birthData1.birthTime) || !timeRegex.test(birthData2.birthTime)) {
+    if (!timeRegex.test(hm1) || !timeRegex.test(hm2)) {
       setError('Invalid time format. Please use HH:MM format (24-hour).')
       return
     }
@@ -118,13 +120,13 @@ export function useSynastry() {
       // Prepare PersonData objects
       const person1: PersonData = {
         name: birthData1.name,
-        birthTime: `${birthData1.birthDate} ${birthData1.birthTime}`, // Combine date and time
+        birthTime: `${birthData1.birthDate} ${hm1}`,
         birthPlace: birthData1.birthLocation
       }
       
       const person2: PersonData = {
         name: birthData2.name,
-        birthTime: `${birthData2.birthDate} ${birthData2.birthTime}`, // Combine date and time
+        birthTime: `${birthData2.birthDate} ${hm2}`,
         birthPlace: birthData2.birthLocation
       }
       

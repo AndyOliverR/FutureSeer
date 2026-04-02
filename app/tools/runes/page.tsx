@@ -222,7 +222,7 @@ export default function RunesPage() {
           {showRunesViral && !viralUnlock.hydrated ? (
             <div className="py-12 text-center text-slate-400">Loading report…</div>
           ) : (
-            <div className="relative min-h-[320px]">
+            <div className="relative">
               {runesLocked && (
                 <ViralLockOverlay
                   onUnlockClick={handleShareToUnlock}

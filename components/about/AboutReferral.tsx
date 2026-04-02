@@ -101,7 +101,7 @@ export function AboutReferral() {
               </div>
               <Button
                 onClick={handleCopyReferralCode}
-                className="h-12 px-6 bg-primary text-on-primary rounded-xl font-bold"
+                className="h-12 px-6 bg-primary text-primary-foreground rounded-xl font-bold"
                 disabled={!referralStats.referralCode || loading}
               >
                 {copiedCode ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
@@ -120,7 +120,7 @@ export function AboutReferral() {
                 "Stack unlimited free months!"
               ].map((text, i) => (
                 <div key={i} className="flex items-center gap-4">
-                  <div className="shrink-0 w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-xs font-bold">
+                  <div className="shrink-0 w-6 h-6 rounded-full bg-primary-container flex items-center justify-center text-primary-on-container text-xs font-bold">
                     {i + 1}
                   </div>
                   <span className="text-sm text-surface-on font-normal">{text}</span>

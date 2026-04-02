@@ -445,7 +445,7 @@ export default function ProfilePage() {
       <div className="max-w-md mx-auto w-full space-y-6">
         <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg">
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-primary-container rounded-xl"><Heart className="w-5 h-5 text-on-primary-container" /></div>
+            <div className="p-2 bg-primary-container rounded-xl"><Heart className="w-5 h-5 text-primary-on-container" /></div>
             <h2 className="font-bold text-white uppercase text-sm tracking-widest">Plan & Referral</h2>
           </div>
           {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
@@ -456,7 +456,7 @@ export default function ProfilePage() {
           <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg space-y-3">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary-container rounded-xl">
-                <Sparkles className="w-5 h-5 text-on-primary-container" />
+                <Sparkles className="w-5 h-5 text-primary-on-container" />
               </div>
               <h2 className="font-bold text-white uppercase text-sm tracking-widest">The Seer</h2>
             </div>

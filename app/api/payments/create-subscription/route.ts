@@ -6,8 +6,24 @@ import { convertToUsdCents } from '@/lib/currencyConversion';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { getFirebaseDB } from '@/lib/firebase';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
-import { getAuth, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
+import { getAuth, setDocument, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
 import { CHECKOUT_DISPLAY_NAME } from '@/lib/checkoutBranding';
+
+async function userIsSpecialForSubscription(uid: string): Promise<boolean> {
+  if (!isAdminAvailable()) return false;
+  try {
+    const authUser = await getAuth().getUser(uid);
+    if (authUser.customClaims?.specialUser === true) return true;
+  } catch {
+    /* ignore */
+  }
+  const data = await getDocument('users', uid);
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  return (
+    d.specialUser === true || d.special_user === true || d.isSpecialUser === true
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +55,31 @@ export async function POST(request: NextRequest) {
           updatedAt: Date.now(),
         });
         devLog.info(`[create-subscription] No-charge access granted for ${email}`, 'route');
+      }
+      return NextResponse.json({
+        success: true,
+        noSubscriptionRequired: true,
+      });
+    }
+
+    // Admin-granted special user (Firebase claim / Firestore): skip Razorpay
+    let uidForSpecial: string | null =
+      typeof userId === 'string' && userId.trim() ? userId.trim() : null;
+    if (!uidForSpecial && isAdminAvailable()) {
+      try {
+        uidForSpecial = (await getAuth().getUserByEmail(email.trim().toLowerCase())).uid;
+      } catch {
+        uidForSpecial = null;
+      }
+    }
+    if (uidForSpecial && (await userIsSpecialForSubscription(uidForSpecial))) {
+      if (isAdminAvailable()) {
+        await setDocument('users', uidForSpecial, {
+          subscriptionStatus: 'active',
+          noChargeAccount: true,
+          updatedAt: Date.now(),
+        });
+        devLog.info(`[create-subscription] Special user: skip Razorpay for ${email}`, 'route');
       }
       return NextResponse.json({
         success: true,

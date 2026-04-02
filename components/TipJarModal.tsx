@@ -52,7 +52,7 @@ export function TipJarModal({ isOpen, onClose, countryCode = "IN" }: TipJarModal
                 <div className="flex items-center justify-between p-5 border-b border-outline-variant">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-secondary-container rounded-xl">
-                      <Sparkles className="w-5 h-5 text-on-secondary-container" />
+                      <Sparkles className="w-5 h-5 text-secondary-on-container" />
                     </div>
                     <div>
                       <h3 className="text-xl font-heading font-bold text-surface-on uppercase tracking-tight">Tip Jar</h3>

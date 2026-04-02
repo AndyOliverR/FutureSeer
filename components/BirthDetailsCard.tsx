@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { BirthTimeDualFormatSelect } from "@/components/BirthTimeDualFormatSelect"
 import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -66,6 +67,7 @@ export function BirthDetailsCard({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [isLoadingPlace, setIsLoadingPlace] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
 
   // Debounced place search
   const searchPlaces = useCallback(async (query: string) => {
@@ -125,8 +127,8 @@ export function BirthDetailsCard({
       errors.birthPlace = "Birth place is required"
     }
     
-    if (!birthData.birthTime) {
-      errors.birthTime = "Birth time is required for accurate readings"
+    if (!birthTimeUnknown && !birthData.birthTime?.trim()) {
+      errors.birthTime = "Birth time is required for accurate readings (or check Unknown time)"
     }
     
     setValidationErrors(errors)
@@ -147,7 +149,8 @@ export function BirthDetailsCard({
 
   // Check if data is complete
   const isDataComplete = () => {
-    return birthData.name && birthData.birthDate && birthData.birthPlace && birthData.birthTime
+    const timeOk = birthTimeUnknown || !!birthData.birthTime?.trim()
+    return !!(birthData.name && birthData.birthDate && birthData.birthPlace && timeOk)
   }
 
   return (
@@ -208,19 +211,23 @@ export function BirthDetailsCard({
 
         {/* Birth Time Field */}
         <div className="space-y-2">
-          <Label htmlFor="birthTime" className="text-white flex items-center gap-2">
+          <Label className="text-white flex items-center gap-2">
             <Clock className="w-4 h-4" />
             Time of Birth *
           </Label>
-          <Input
-            id="birthTime"
-            type="time"
-            value={birthData.birthTime}
-            onChange={(e) => setBirthData({ ...birthData, birthTime: e.target.value })}
-            className="bg-white/5 border-white/20 text-white focus:border-yellow-400"
+          <BirthTimeDualFormatSelect
+            value={birthData.birthTime || "12:00"}
+            onChange={(next) => setBirthData({ ...birthData, birthTime: next })}
+            showUnknownCheckbox
+            unknownTime={birthTimeUnknown}
+            onUnknownTimeChange={(u) => {
+              setBirthTimeUnknown(u)
+              if (u) setBirthData({ ...birthData, birthTime: "12:00" })
+            }}
+            selectClassName="flex-1 min-w-0 min-h-11 bg-white/5 border border-white/20 rounded-lg px-2 text-white text-sm [color-scheme:dark]"
           />
           <p className="text-xs text-gray-400">
-            Required for accurate astrological readings. If unsure, ask family members or check birth records.
+            Required for houses and rising sign unless you choose Unknown time (uses noon local).
           </p>
           {validationErrors.birthTime && (
             <div className="flex items-center gap-1 text-red-400 text-sm">

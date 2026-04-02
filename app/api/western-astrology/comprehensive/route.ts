@@ -3,6 +3,11 @@ import { getFirebaseDB } from '@/lib/firebase';
 import { createAICompletion } from '@/lib/aiGateway';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { transformComprehensiveToChunks } from '@/lib/westernReportChunks';
+import {
+  elementModalityPolarityCounts,
+  partOfFortuneFromPlanets,
+  type PlanetLike,
+} from '@/lib/western/chartDerivedFacts';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -177,6 +182,12 @@ function buildGroqPrompt(chartData: ComprehensiveWesternRequest['chartData']): s
     return type.includes('conjunction') || type.includes('square') || type.includes('trine') || type.includes('opposition');
   }).slice(0, 5);
 
+  const pl = planets as PlanetLike[];
+  const derivedCounts = elementModalityPolarityCounts(pl);
+  const pof = partOfFortuneFromPlanets(pl);
+  const ephemerisLine =
+    (chartData as { ephemeris?: { planets?: string } }).ephemeris?.planets || '';
+
   // Calculate time periods for predictions
   const today = new Date();
   const currentYear = today.getFullYear();
@@ -206,6 +217,10 @@ Modern Western astrology focuses on psychological interpretation and counseling 
 - The primary "remedy" is the application of self-knowledge to consciously engage with life
 
 CHART DATA:
+
+${ephemerisLine ? `EPHEMERIS NOTE (for grounding; do not contradict):\n${ephemerisLine}\n\n` : ''}DERIVED_TABLES (deterministic — use as supporting context):
+- Element / modality / polarity counts (10 classical planets): ${JSON.stringify(derivedCounts)}
+- Part of Fortune (classic tropical): ${pof ? `${pof.sign} ~${pof.degreeInSign.toFixed(1)}° (${pof.isDayChart ? 'day' : 'night'} chart formula)` : 'unknown (need Asc/Sun/Moon longitudes)'}
 
 PLANETS:
 ${planetsText || 'No planetary data available'}
