@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { FieldValue } from 'firebase-admin/firestore';
 import { devLog } from '@/lib/devLogger';
-import { getAuth, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
+import { getAuth, setDocument, isAdminAvailable, adminDb, getDocument } from '@/lib/firebase-admin';
+import { cancelSubscription } from '@/lib/razorpay';
 import { writeAuditLog } from '@/lib/adminAudit';
 import { isAdminDecoded } from '@/lib/adminConfig';
 
@@ -44,6 +46,26 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       devLog.warn('Failed to persist specialUser to Firestore', e, 'set-claims');
+    }
+    // Stop recurring Razorpay charges when special user is enabled and a subscription exists
+    try {
+      const claimsSpecial = Boolean((claims as Record<string, unknown>).specialUser);
+      if (claimsSpecial && isAdminAvailable() && adminDb) {
+        const data = await getDocument('users', uid);
+        const subId = data && typeof data === 'object' ? (data as Record<string, unknown>).subscriptionId : undefined;
+        if (typeof subId === 'string' && subId.trim()) {
+          await cancelSubscription(subId.trim(), false);
+          await adminDb.collection('users').doc(uid).update({
+            subscriptionStatus: 'active',
+            subscriptionId: FieldValue.delete(),
+            noChargeAccount: true,
+            updatedAt: Date.now(),
+          });
+          devLog.info(`[set-claims] Cancelled Razorpay subscription for special user uid=${uid}`, 'route');
+        }
+      }
+    } catch (e) {
+      devLog.warn('Failed to cancel Razorpay subscription when enabling specialUser', e, 'set-claims');
     }
     await writeAuditLog({
       actorUid: auth.uid,

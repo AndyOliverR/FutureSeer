@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Eye, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
-import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser, resetPassword } from "@/lib/firebase"
+import { signInWithGoogle, signInWithEmail, getAuthErrorMessage, isReturningUser, resetPassword, isUserDismissedAuthError, isUnauthorizedDomainAuthError } from "@/lib/firebase"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 import { analytics } from "@/lib/analytics"
@@ -115,10 +115,23 @@ function SignInContent() {
       if (!err.message?.includes('Redirect initiated')) {
         const msg = getAuthErrorMessage(err)
         setError(msg)
-        await logError("auth_failed", msg, "error", {
-          method: "google",
-          code: err.code ?? null,
-        })
+        if (isUserDismissedAuthError(err)) {
+          await logError("signin_dismissed", msg, "info", {
+            method: "google",
+            code: err.code ?? null,
+          })
+        } else if (isUnauthorizedDomainAuthError(err)) {
+          await logError("auth_unauthorized_domain", msg, "warning", {
+            method: "google",
+            code: err.code ?? null,
+            hostname: typeof window !== "undefined" ? window.location.hostname : null,
+          })
+        } else {
+          await logError("auth_failed", msg, "error", {
+            method: "google",
+            code: err.code ?? null,
+          })
+        }
       }
     } finally {
       setIsLoading(false)

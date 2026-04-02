@@ -18,6 +18,13 @@ The following audit gaps were **implemented in code** (not only documented):
 
 **Still not implemented:** Swiss Ephemeris **binary** / **SE** file-grade accuracy; **native Koch**; **full asteroid** set; **fixed stars** (unchanged). **`lib/astrologyUnified.ts`** WASM path remains optional.
 
+## Updates (Western hybrid — 2026-04-02)
+
+- **`/api/occult/universal` (`system: western`):** When **`computeSwissNatalPlanets`** ([`lib/western/swissNatalChart.ts`](lib/western/swissNatalChart.ts)) initializes **`swisseph-wasm`**, natal **planet longitudes** use **Swiss Ephemeris WASM** with **Moshier** built-ins (`SEFLG_MOSEPH` + speed). **House cusps** remain **`calculateTropicalHouses`** (in-app Placidus). Response includes **`ephemeris`** metadata describing this **hybrid**. If WASM fails, the route falls back to **`calculateTropicalPlanets`** (Astronomia) as before.
+- **Nodes / Lilith:** Swiss path provides **true node** (`SE_TRUE_NODE`), **south node** (opposite), **mean Lilith** (`SE_MEAN_APOG`), and **Chiron** (`SE_CHIRON`) from the same WASM `calc_ut` pipeline.
+- **Regression:** [`tests/unit/westernBirthTimeAndFacts.test.ts`](../tests/unit/westernBirthTimeAndFacts.test.ts) checks Sun longitude band for the Mysore UTC sample when WASM is available.
+- **Legacy `/api/swiss-ephemeris/planets`:** Still **not** Swiss binary output; consider aligning metadata copy with the universal route over time.
+
 ---
 
 ## 1. Executive summary

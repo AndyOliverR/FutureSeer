@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -108,7 +108,7 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
                 <div className="flex items-center justify-between p-5 border-b border-outline-variant">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-secondary-container rounded-xl">
-                      <Share2 className="w-5 h-5 text-on-secondary-container" />
+                      <Share2 className="w-5 h-5 text-secondary-on-container" />
                     </div>
                     <div>
                       <h3 className="text-xl font-heading font-bold text-surface-on uppercase tracking-tight">Share FutureSeer</h3>
@@ -153,7 +153,7 @@ export function ShareAppModal({ isOpen, onClose }: ShareAppModalProps) {
                       <Button
                         onClick={handleCopyLink}
                         size="sm"
-                        className={`rounded-xl px-4 ${copied ? "bg-green-600" : "bg-primary text-on-primary"}`}
+                        className={`rounded-xl px-4 ${copied ? "bg-green-600" : "bg-primary text-primary-foreground"}`}
                       >
                         {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                       </Button>

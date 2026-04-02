@@ -27,6 +27,7 @@ import { updateUserProfile, type UserProfile } from '@/lib/firebase'
 import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
 import { useErrorLogger } from '@/hooks/useErrorLogger';
 import { compressImageFile } from '@/lib/imageCompression'
+import { BirthTimeDualFormatSelect } from '@/components/BirthTimeDualFormatSelect'
 
 type UploadPhotoType = "face" | "palm";
 type UploadStatus = "idle" | "ready" | "uploading" | "success" | "error";
@@ -84,6 +85,7 @@ export default function ProfileSetupPage() {
   const [inlineError, setInlineError] = useState<string | null>(null)
   const { logError } = useErrorLogger({ area: "profile-setup" })
 
+  const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
   const [profileData, setProfileData] = useState({
     displayName: '', fullName: '', gender: '' as ProfileSetupGender,
     birthDate: '', birthTime: '', birthPlace: '',
@@ -291,7 +293,7 @@ export default function ProfileSetupPage() {
             <Button
               onClick={handleComplete}
               disabled={!canComplete}
-              className="flex-1 h-12 bg-primary text-on-primary rounded-2xl font-bold shadow-lg"
+              className="flex-1 h-12 bg-primary text-primary-foreground rounded-2xl font-bold shadow-lg"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -334,7 +336,18 @@ export default function ProfileSetupPage() {
                 <div className="text-center py-4"><div className="text-5xl mb-2">📅</div><h2 className="text-xl font-bold text-white">Birth Details</h2></div>
                 <div className="space-y-4">
                   <Input type="date" value={profileData.birthDate} onChange={e => setProfileData({...profileData, birthDate: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4 [color-scheme:dark]" />
-                  <Input type="time" value={profileData.birthTime} onChange={e => setProfileData({...profileData, birthTime: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4 [color-scheme:dark]" />
+                  <div className="space-y-1">
+                    <Label className="text-white/80 text-sm">Birth time (local)</Label>
+                    <BirthTimeDualFormatSelect
+                      value={profileData.birthTime || "12:00"}
+                      onChange={(next) => setProfileData({ ...profileData, birthTime: next })}
+                      showUnknownCheckbox
+                      unknownTime={birthTimeUnknown}
+                      onUnknownTimeChange={setBirthTimeUnknown}
+                      showFooterHint={false}
+                      selectClassName="flex-1 min-w-0 h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white [color-scheme:dark]"
+                    />
+                  </div>
                   <Input value={profileData.birthPlace} onChange={e => setProfileData({...profileData, birthPlace: e.target.value})} placeholder="City, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
                 </div>
               </motion.div>
@@ -466,7 +479,7 @@ export default function ProfileSetupPage() {
             <Button
               onClick={handleComplete}
               disabled={!canComplete}
-              className="flex-1 h-14 bg-primary text-on-primary rounded-2xl font-bold shadow-lg"
+              className="flex-1 h-14 bg-primary text-primary-foreground rounded-2xl font-bold shadow-lg"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">

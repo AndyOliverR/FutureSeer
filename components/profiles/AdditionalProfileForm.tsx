@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AdditionalProfile, RelationshipType } from '@/lib/types/profileTypes'
 import { profileManager } from '@/lib/services/profileManager'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, UserPlus, Save, Sparkles, Calendar, Clock } from 'lucide-react'
+import { Loader2, UserPlus, Save, Sparkles, Calendar } from 'lucide-react'
+import { BirthTimeDualFormatSelect } from '@/components/BirthTimeDualFormatSelect'
 
 interface AdditionalProfileFormProps {
   isOpen: boolean
@@ -43,6 +44,7 @@ export function AdditionalProfileForm({
   onSaveAndGenerate
 }: AdditionalProfileFormProps) {
   const { toast } = useToast()
+  const [timeOfBirthUnknown, setTimeOfBirthUnknown] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -67,6 +69,7 @@ export function AdditionalProfileForm({
         relationshipNotes: editingProfile.relationshipNotes || '',
         notes: editingProfile.notes || ''
       })
+      setTimeOfBirthUnknown(false)
     } else {
       setFormData({
         name: '',
@@ -78,6 +81,7 @@ export function AdditionalProfileForm({
         relationshipNotes: '',
         notes: ''
       })
+      setTimeOfBirthUnknown(false)
     }
   }, [editingProfile, isOpen])
 
@@ -211,20 +215,18 @@ export function AdditionalProfileForm({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="timeOfBirth" className="text-amber-400">Time of Birth</Label>
-              <div className="relative">
-                <Input
-                  id="timeOfBirth"
-                  type="time"
-                  value={formData.timeOfBirth}
-                  onChange={(e) => setFormData({ ...formData, timeOfBirth: e.target.value })}
-                  className="bg-slate-800/50 border-amber-500/30 text-white pr-10 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                  placeholder="HH:MM"
-                />
-                <Clock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-200 pointer-events-none" aria-hidden />
-              </div>
-              <p className="text-xs text-slate-500">Optional - Required for some astrological tools. Use 24-hour (e.g. 14:30) or enter 2:30 PM as 14:30.</p>
+            <div className="space-y-2 md:col-span-2">
+              <Label className="text-amber-400">Time of Birth</Label>
+              <BirthTimeDualFormatSelect
+                value={formData.timeOfBirth || "12:00"}
+                onChange={(next) => setFormData({ ...formData, timeOfBirth: next })}
+                showUnknownCheckbox
+                unknownTime={timeOfBirthUnknown}
+                onUnknownTimeChange={setTimeOfBirthUnknown}
+                showFooterHint={false}
+                selectClassName="flex-1 min-w-0 min-h-11 bg-slate-800/50 border border-amber-500/30 rounded-lg px-2 text-white text-sm [color-scheme:dark]"
+              />
+              <p className="text-xs text-slate-500">Optional — needed for chart tools that use houses or exact Moon. Unknown uses 12:00 local.</p>
             </div>
 
             <div className="space-y-2">

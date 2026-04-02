@@ -9,6 +9,7 @@ import {
 import { devLog } from '@/lib/devLogger';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
+import { computeSwissNatalPlanets } from '@/lib/western/swissNatalChart';
 
 export const dynamic = 'force-static'
 
@@ -129,7 +130,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     if (calculationType === 'solar-return' || calculationType === 'lunar-return' || calculationType === 'progressions') {
       devLog.info(`🔮 Predictive calculation type: ${calculationType}`, undefined, 'occult');
       
-      // First calculate natal chart
+      // First calculate natal chart (Swiss WASM longitudes applied below when available)
       natalPlanets = calculateTropicalPlanets(birthDateTime);
       natalHouses = calculateTropicalHouses(
         birthDateTime, 
@@ -173,17 +174,30 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
         devLog.debug('🔮 Progressed date:', targetDateTime.toISOString(), 'occult');
       }
     }
+
+    const swissNatal = await computeSwissNatalPlanets(birthDateTime);
+    if (natalPlanets && swissNatal) {
+      natalPlanets = swissNatal.planets;
+    }
+
+    let ephemerisPlanetsLabel =
+      'Astronomia VSOP-style tropicalCalculator (fallback)';
+    if (swissNatal) {
+      ephemerisPlanetsLabel = `${swissNatal.engine} (hybrid: in-app Placidus houses)`;
+    }
     
     devLog.debug('🔮 Calculating TROPICAL positions (NO ayanamsha)...', undefined, 'occult');
     
-    // Use PURE TROPICAL calculator (NOT astronomia-vedic)
-    const planets = calculateTropicalPlanets(targetDateTime);
+    // Primary: Swiss WASM longitudes for natal; predictive event chart uses tropicalCalculator at targetDateTime
+    let planets = calculateTropicalPlanets(targetDateTime);
+    if (!calculationType && swissNatal) {
+      planets = swissNatal.planets;
+    }
     const houses = calculateTropicalHouses(
       targetDateTime, 
       birthData.latitude, 
       birthData.longitude
     );
-    const aspects = calculateTropicalAspects(planets);
     
     devLog.debug('🔮 Sun TROPICAL longitude:', planets.sun.longitude, 'occult');
     devLog.debug('🔮 Sun TROPICAL sign:', getTropicalSign(planets.sun.longitude), 'occult');
@@ -206,9 +220,15 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       devLog.warn('❌ Sun position is WRONG for Feb 24, 1983', `Expected: ~4° Pisces, Got: ${sunDegree}° ${sunSign}`, 'occult');
     }
 
+    const planetDisplayName = (key: string) => {
+      if (key === 'northNode') return 'North Node';
+      if (key === 'southNode') return 'South Node';
+      return capitalizeFirst(key);
+    };
+
     // Format planets for response
     const westernPlanets = Object.entries(planets).map(([name, data]: [string, any]) => ({
-      name: capitalizeFirst(name),
+      name: planetDisplayName(name),
       longitude: data.longitude, // PURE TROPICAL
       latitude: data.latitude,
       distance: data.distance,
@@ -260,7 +280,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     // calculateTropicalAspects expects an object keyed by planet name so aspect.planet1/planet2 are names, not indices.
     const planetsForAspects: Record<string, { longitude: number }> = {};
     for (const [key, data] of Object.entries(planets)) {
-      planetsForAspects[capitalizeFirst(key)] = { longitude: (data as { longitude: number }).longitude };
+      planetsForAspects[planetDisplayName(key)] = { longitude: (data as { longitude: number }).longitude };
     }
     planetsForAspects['Ascendant'] = { longitude: ascendantLongitude };
     planetsForAspects['MC'] = { longitude: mcLongitude };
@@ -330,7 +350,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
 
       devLog.debug('🔮 Transit planets calculated:', Object.keys(transitPlanets), 'occult');
       transits = Object.entries(transitPlanets).map(([name, planetData]: [string, any]) => ({
-        name: capitalizeFirst(name),
+        name: planetDisplayName(name),
         longitude: planetData.longitude,
         latitude: planetData.latitude,
         distance: planetData.distance,
@@ -347,7 +367,7 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
     let natalChartData = null;
     if (natalPlanets && natalHouses && calculationType) {
       const natalPlanetsFormatted = Object.entries(natalPlanets).map(([name, data]: [string, any]) => ({
-        name: capitalizeFirst(name),
+        name: planetDisplayName(name),
         longitude: data.longitude,
         latitude: data.latitude,
         distance: data.distance,
@@ -396,6 +416,11 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       chartImage: null, // Will be generated separately
       calculationType: calculationType || null,
       natalChart: natalChartData, // Include natal chart for predictive calculations
+      ephemeris: {
+        planets: ephemerisPlanetsLabel,
+        houses: 'Placidus (in-app tropicalCalculator; not Swiss swe_houses)',
+        julianDayUt: swissNatal?.julianDayUt ?? null,
+      },
       metadata: {
         source: 'FutureSeer Universal Occult API',
         version: '1.0.0',

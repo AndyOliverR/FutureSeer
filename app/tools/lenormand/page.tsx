@@ -214,7 +214,7 @@ export default function LenormandPage() {
           {showLenormandViral && !viralUnlock.hydrated ? (
             <div className="py-12 text-center text-slate-400">Loading report…</div>
           ) : (
-            <div className="relative min-h-[320px]">
+            <div className="relative">
               {lenormandLocked && (
                 <ViralLockOverlay
                   onUnlockClick={handleShareToUnlock}

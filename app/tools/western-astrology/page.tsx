@@ -17,6 +17,7 @@ import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
 import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab';
 import AstroNumerologyTab from '@/components/western/AstroNumerologyTab';
 import { WesternDashboardHero } from '@/components/western/WesternDashboardHero';
+import { WesternNatalReferenceTables } from '@/components/western/WesternNatalReferenceTables';
 import { DashboardSection } from '@/components/western/DashboardSection';
 import { AspectLegendPanel } from '@/components/western/AspectLegendPanel';
 import { PlanetaryDashboard } from '@/components/western/PlanetaryDashboard';
@@ -484,7 +485,9 @@ function WesternAstrologyPageContent() {
                   userProfile={userProfile}
                 />
 
-                {/* DASHBOARD SECTIONS - Factual blocks first (Astro-Charts scan order), then AI narrative */}
+                <WesternNatalReferenceTables chartData={analysis.data} />
+
+                {/* DASHBOARD SECTIONS - Factual blocks first, then AI narrative */}
                 <div className="space-y-6 mt-8">
                   
                   <WesternSpecialFeatures chartData={analysis.data} />

@@ -1,10 +1,11 @@
 /**
- * Deterministic, non-AI "special features" for Western charts (Astro-Charts-style bullets).
+ * Deterministic, non-AI "special features" for Western charts (concise bullet-style facts).
  */
 
 export interface PlanetLike {
   name: string
-  longitude: number
+  longitude?: number
+  degree?: number
   sign?: string | { signName: string }
   house?: number
   retrograde?: boolean
@@ -41,10 +42,126 @@ const RULERS: Record<string, string> = {
 export function getSunMoonElongationDeg(planets: PlanetLike[]): number | null {
   const sun = planets.find((p) => p.name === 'Sun')
   const moon = planets.find((p) => p.name === 'Moon')
-  if (!sun || moon == null) return null
+  if (!sun || moon == null || typeof sun.longitude !== 'number' || typeof moon.longitude !== 'number') return null
   let diff = moon.longitude - sun.longitude
   diff = ((diff % 360) + 360) % 360
   return diff
+}
+
+/** Sun–Saturn + Uranus, Neptune, Pluto (10 bodies) — Cafe-style element / modality / polarity counts. */
+export function elementModalityPolarityCounts(planets: PlanetLike[]): {
+  masculine: number
+  feminine: number
+  fire: number
+  earth: number
+  air: number
+  water: number
+  cardinal: number
+  fixed: number
+  mutable: number
+} {
+  const want = new Set([
+    'Sun',
+    'Moon',
+    'Mercury',
+    'Venus',
+    'Mars',
+    'Jupiter',
+    'Saturn',
+    'Uranus',
+    'Neptune',
+    'Pluto',
+  ])
+  const out = {
+    masculine: 0,
+    feminine: 0,
+    fire: 0,
+    earth: 0,
+    air: 0,
+    water: 0,
+    cardinal: 0,
+    fixed: 0,
+    mutable: 0,
+  }
+  for (const p of planets) {
+    if (!want.has(p.name)) continue
+    const s = signName(p)
+    if (MASCULINE_SIGNS.has(s)) out.masculine++
+    else out.feminine++
+    const el = ELEMENT_BY_SIGN[s]
+    if (el === 'Fire') out.fire++
+    else if (el === 'Earth') out.earth++
+    else if (el === 'Air') out.air++
+    else if (el === 'Water') out.water++
+    const mod = modalityOfSign(s)
+    if (mod === 'cardinal') out.cardinal++
+    else if (mod === 'fixed') out.fixed++
+    else if (mod === 'mutable') out.mutable++
+  }
+  return out
+}
+
+/**
+ * Classic Part of Fortune (tropical ecliptic longitudes): day chart Asc + Moon − Sun; night Asc + Sun − Moon.
+ * Day = Sun in houses 7–12 (above horizon); night = Sun in 1–6.
+ */
+export function partOfFortuneFromPlanets(planets: PlanetLike[]): {
+  longitude: number
+  sign: string
+  degreeInSign: number
+  isDayChart: boolean
+} | null {
+  const asc = planets.find((p) => p.name === 'Ascendant')
+  const sun = planets.find((p) => p.name === 'Sun')
+  const moon = planets.find((p) => p.name === 'Moon')
+  if (!asc || !sun || !moon) return null
+  const al = typeof asc.longitude === 'number' ? asc.longitude : null
+  const sl = typeof sun.longitude === 'number' ? sun.longitude : null
+  const ml = typeof moon.longitude === 'number' ? moon.longitude : null
+  if (al == null || sl == null || ml == null) return null
+  const sunH = sun.house
+  const isDay = sunH != null && sunH >= 7 && sunH <= 12
+  const lon = isDay ? normDeg(al + ml - sl) : normDeg(al + sl - ml)
+  const signs = [
+    'Aries',
+    'Taurus',
+    'Gemini',
+    'Cancer',
+    'Leo',
+    'Virgo',
+    'Libra',
+    'Scorpio',
+    'Sagittarius',
+    'Capricorn',
+    'Aquarius',
+    'Pisces',
+  ]
+  const idx = Math.floor(lon / 30) % 12
+  return {
+    longitude: lon,
+    sign: signs[idx] ?? 'Unknown',
+    degreeInSign: lon % 30,
+    isDayChart: isDay,
+  }
+}
+
+/**
+ * Relative aspect weight for display (not comparable to other sites' numeric scales).
+ * Negative ≈ more friction; positive ≈ more ease.
+ */
+export function aspectHarmonyScore(aspectType: string, orb: number): number {
+  const t = (aspectType || '').toLowerCase()
+  const o = Number.isFinite(orb) ? orb : 5
+  let base = 0
+  if (t.includes('conjunction')) base = 40
+  else if (t.includes('opposition')) base = -35
+  else if (t.includes('square')) base = -45
+  else if (t.includes('trine')) base = 45
+  else if (t.includes('sextile')) base = 25
+  else if (t.includes('quincunx')) base = -15
+  else base = 5
+  const orbPenalty = Math.min(30, o * 6)
+  return Math.round(base - orbPenalty)
 }
 
 export function getMoonPhaseLabel(planets: PlanetLike[]): string {
@@ -59,6 +176,10 @@ export function getMoonPhaseLabel(planets: PlanetLike[]): string {
   if (elong < 292.5) return 'The moon was a last quarter moon'
   return 'The moon was a waning crescent moon'
 }
+
+const normDeg = (x: number) => ((x % 360) + 360) % 360
+
+const MASCULINE_SIGNS = new Set(['Aries', 'Gemini', 'Leo', 'Libra', 'Sagittarius', 'Aquarius'])
 
 const ELEMENT_BY_SIGN: Record<string, 'Fire' | 'Earth' | 'Air' | 'Water'> = {
   Aries: 'Fire',
@@ -82,7 +203,7 @@ function modalityOfSign(sign: string): 'cardinal' | 'fixed' | 'mutable' | null {
   return null
 }
 
-/** Inner planets (Astro-Charts style): Sun–Jupiter plus Ascendant and MC when present. */
+/** Inner planets: Sun–Jupiter plus Ascendant and MC when present. */
 export function getInnerPlanets(planets: PlanetLike[]): PlanetLike[] {
   const want = new Set([
     'Sun',
@@ -182,7 +303,10 @@ export function eastWestHemisphereLabel(planets: PlanetLike[], inner: PlanetLike
 export function getBucketShapeHint(planets: PlanetLike[]): string | null {
   const bodies = planets
     .filter((p) => p.name !== 'North Node' && p.name !== 'South Node')
-    .map((p) => ({ name: p.name, lon: ((p.longitude % 360) + 360) % 360 }))
+    .map((p) => {
+      const lon = typeof p.longitude === 'number' ? p.longitude : 0
+      return { name: p.name, lon: ((lon % 360) + 360) % 360 }
+    })
     .sort((a, b) => a.lon - b.lon)
   if (bodies.length < 6) return null
 

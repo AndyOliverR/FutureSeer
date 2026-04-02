@@ -33,6 +33,7 @@ import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { cn } from '@/lib/utils'
 import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
+import { time24To12, time12To24 } from '@/lib/birthTime12h24hLabels'
 
 interface HoraryData {
   basicInfo: {
@@ -110,28 +111,6 @@ function normalizeTimePart(timePart: string): string {
   const m = pad(parts[1] || '0')
   const s = parts[2] != null ? pad(parts[2]) : null
   return s != null ? `${h}:${m}:${s}` : `${h}:${m}`
-}
-
-/** Parse 24h "HH:mm" to 12h hour (1-12), minute (0-59), and AM/PM */
-function time24To12(time24: string): { hour12: number; minute: number; ampm: "AM" | "PM" } {
-  const [h = "0", m = "0"] = (time24 || "").trim().split(":")
-  const hour = Math.min(23, Math.max(0, parseInt(h, 10) || 0))
-  const minute = Math.min(59, Math.max(0, parseInt(m, 10) || 0))
-  const hour12 = hour % 12 || 12
-  const ampm = hour < 12 ? "AM" : "PM"
-  return { hour12, minute, ampm }
-}
-
-/** Build 24h "HH:mm" from 12h hour (1-12), minute, and AM/PM */
-function time12To24(hour12: number, minute: number, ampm: "AM" | "PM"): string {
-  const m = Math.min(59, Math.max(0, minute))
-  let hour24: number
-  if (ampm === "AM") {
-    hour24 = hour12 === 12 ? 0 : hour12
-  } else {
-    hour24 = hour12 === 12 ? 12 : hour12 + 12
-  }
-  return `${String(hour24).padStart(2, "0")}:${String(m).padStart(2, "0")}`
 }
 
 export default function HoraryAstrologyPage() {

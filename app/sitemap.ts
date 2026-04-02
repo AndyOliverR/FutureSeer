@@ -6,6 +6,11 @@ const site = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
 /** High-value tool paths for discovery (subset of /tools/*). */
 const TOOL_PATHS = [
   "/tools/vastu",
+  "/tools/vastu/compass",
+  "/tools/vastu/compass/8",
+  "/tools/vastu/compass/16",
+  "/tools/vastu/compass/32",
+  "/tools/vastu/compass/45",
   "/tools/feng-shui",
   "/tools/vedic",
   "/tools/western-astrology",

@@ -8,31 +8,9 @@ import { useAuth } from "@/hooks/use-auth"
 import { SynastryCoachInterface } from "@/components/SynastryCoachInterface"
 import { SynastrySeerChatInterface } from "@/components/SynastrySeerChatInterface"
 import { useSynastry } from "@/hooks/useSynastry"
-import { AffiliateLink } from "@/components/AffiliateLink"
 import { ToolReportViralShell } from "@/components/report-viral/ToolReportViralShell"
-import { getSynastryChartUrl } from "@/lib/affiliateConfig"
-
-/** Parse 24h "HH:mm" to 12h hour (1-12), minute (0-59), and AM/PM */
-function time24To12(time24: string): { hour12: number; minute: number; ampm: "AM" | "PM" } {
-  const [h = "0", m = "0"] = (time24 || "").trim().split(":")
-  const hour = Math.min(23, Math.max(0, parseInt(h, 10) || 0))
-  const minute = Math.min(59, Math.max(0, parseInt(m, 10) || 0))
-  const hour12 = hour % 12 || 12
-  const ampm = hour < 12 ? "AM" : "PM"
-  return { hour12, minute, ampm }
-}
-
-/** Build 24h "HH:mm" from 12h hour (1-12), minute, and AM/PM */
-function time12To24(hour12: number, minute: number, ampm: "AM" | "PM"): string {
-  const m = Math.min(59, Math.max(0, minute))
-  let hour24: number
-  if (ampm === "AM") {
-    hour24 = hour12 === 12 ? 0 : hour12
-  } else {
-    hour24 = hour12 === 12 ? 12 : hour12 + 12
-  }
-  return `${String(hour24).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-}
+import { normalizeBirthTime } from "@/lib/birthTimeUtils"
+import { time24To12, time12To24 } from "@/lib/birthTime12h24hLabels"
 
 export default function SynastryPage() {
   const { userProfile, user } = useAuth()
@@ -60,7 +38,9 @@ export default function SynastryPage() {
       setBirthData1({
         name: userProfile?.displayName || userProfile?.fullName || '',
         birthDate: userProfile.birthDate || '',
-        birthTime: userProfile.birthTime || '',
+        birthTime: userProfile.birthTime
+          ? normalizeBirthTime(userProfile.birthTime).slice(0, 5)
+          : '',
         birthLocation: userProfile.birthPlace || ''
       })
     }
@@ -100,9 +80,6 @@ export default function SynastryPage() {
           </h1>
           <p className="text-slate-200 leading-relaxed text-xl font-light">
             Relationship compatibility analysis through astrological chart comparison
-          </p>
-          <p className="text-slate-400 text-sm mt-3">
-            <AffiliateLink href={getSynastryChartUrl()} label="Create synastry chart at Astro-Charts" className="text-amber-500/80 hover:text-amber-400" />
           </p>
           {hasCompleteDetails && !birthData1.name && (
             <motion.div

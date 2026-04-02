@@ -422,7 +422,7 @@ export default function SortilegePage() {
             {showSortilegeViral && !viralUnlock.hydrated ? (
               <div className="py-12 text-center text-slate-400">Loading report…</div>
             ) : (
-              <div className="relative min-h-[320px]">
+              <div className="relative">
                 {sortilegeLocked && (
                   <ViralLockOverlay
                     onUnlockClick={handleShareToUnlock}

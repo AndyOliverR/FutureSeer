@@ -332,12 +332,12 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
 
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--m3-secondary-container)] md:hover:bg-amber-500/20 m3-transition-standard group text-left rounded-lg"
+              className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-secondary-container md:hover:bg-amber-500/20 m3-transition-standard group text-left rounded-lg"
             >
               <span className="text-xl hidden md:inline shrink-0" aria-hidden>🚪</span>
-              <LogOut className="w-5 h-5 md:hidden text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-secondary)] m3-transition-standard shrink-0" />
+              <LogOut className="w-5 h-5 md:hidden text-[var(--m3-on-surface-variant)] group-hover:text-secondary m3-transition-standard shrink-0" />
               <div className="min-w-0">
-                <div className="m3-label-large text-[var(--m3-on-surface)] md:text-white md:group-hover:text-amber-400 group-hover:text-[var(--m3-secondary)] m3-transition-standard">Sign Out</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)] md:text-white md:group-hover:text-amber-400 group-hover:text-secondary m3-transition-standard">Sign Out</div>
                 <div className="m3-body-small text-[var(--m3-on-surface-variant)] md:text-slate-400">End your session</div>
               </div>
             </button>

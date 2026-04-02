@@ -128,9 +128,9 @@ export function useHistory() {
         };
       case 'Health':
         return { 
-          bg: 'bg-[var(--m3-secondary-container)]', 
-          text: 'text-[var(--m3-on-secondary-container)]', 
-          border: 'border-[var(--m3-secondary)]/50' 
+          bg: 'bg-secondary-container', 
+          text: 'text-secondary-on-container', 
+          border: 'border-secondary/50' 
         };
       case 'Travel':
         return { 
