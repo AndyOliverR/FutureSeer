@@ -165,7 +165,7 @@ export function TarotLifePathMap({ birthDate, profileCards, numerologyData }: Ta
                 <Card className={`bg-gradient-to-br ${colors.bg} border-2 ${colors.border} shadow-md rounded-2xl hover:shadow-lg transition-all`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="text-2xl font-bold ${colors.text}">
+                      <div className={`text-2xl font-bold ${colors.text}`}>
                         Age {milestone.age}
                       </div>
                       {!milestone.isMinor && (
@@ -176,7 +176,7 @@ export function TarotLifePathMap({ birthDate, profileCards, numerologyData }: Ta
                     </div>
                     
                     <div className="mb-3">
-                      <div className="font-bold ${colors.text} text-lg mb-1">
+                      <div className={`font-bold text-lg mb-1 ${colors.text}`}>
                         {milestone.card.name}
                       </div>
                       <div className="text-xs text-slate-600 mb-2">

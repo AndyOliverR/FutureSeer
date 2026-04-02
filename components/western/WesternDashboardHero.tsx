@@ -16,9 +16,6 @@ import {
   Wind,
   Droplets
 } from 'lucide-react'
-import { AffiliateLink } from '@/components/AffiliateLink'
-import { getBirthChartUrl } from '@/lib/affiliateConfig'
-
 export interface WesternDashboardHeroProps {
   chartData: any
   userProfile: any
@@ -141,9 +138,6 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
               <p className="text-slate-700 text-sm">
                 {userProfile?.birthPlace && `Born in ${userProfile.birthPlace}`}
                 {userProfile?.birthDate && ` • ${new Date(userProfile.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
-              </p>
-              <p className="text-slate-600 text-xs mt-2">
-                <AffiliateLink href={getBirthChartUrl()} label="Calculate your free natal chart at Astro-Charts" className="text-amber-700 hover:text-amber-800 font-medium" />
               </p>
             </div>
             

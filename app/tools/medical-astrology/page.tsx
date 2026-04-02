@@ -511,7 +511,7 @@ export default function MedicalAstrologyPage() {
           {showMedicalViral && !viralUnlock.hydrated ? (
             <div className="py-12 text-center text-slate-400">Loading report…</div>
           ) : (
-            <div className="relative min-h-[320px]">
+            <div className="relative">
               {medicalLocked && (
                 <ViralLockOverlay
                   onUnlockClick={handleShareToUnlock}
@@ -834,12 +834,25 @@ export default function MedicalAstrologyPage() {
                   title="Health-Relevant Aspects"
                 >
                   <div className="space-y-2">
-                    {data.planetaryAspects.slice(0, 8).map((aspect: any, index: number) => (
-                      <div key={index} className="p-2 bg-purple-50/80 border border-purple-200 rounded-lg text-xs">
-                        <span className="text-purple-900 font-medium">{aspect.planets}</span> — {aspect.aspect} ({aspect.orb}°)
-                        <p className="text-slate-700 mt-1">{aspect.healthInfluence}</p>
-                      </div>
-                    ))}
+                    {data.planetaryAspects.slice(0, 8).map((aspect: any, index: number) => {
+                      const orb =
+                        typeof aspect.orb === 'number'
+                          ? aspect.orb.toFixed(2)
+                          : String(aspect.orb ?? '')
+                      return (
+                        <div
+                          key={index}
+                          className="p-2 bg-purple-50/80 border border-purple-200 rounded-lg text-xs text-slate-800"
+                        >
+                          <span className="text-purple-900 font-medium">{aspect.planets}</span>
+                          <span className="text-slate-800">
+                            {' '}
+                            — {aspect.aspect} ({orb}°)
+                          </span>
+                          <p className="text-slate-700 mt-1">{aspect.healthInfluence}</p>
+                        </div>
+                      )
+                    })}
                   </div>
                 </DevotionistStyleCard>
               )}

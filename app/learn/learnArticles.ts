@@ -13,20 +13,20 @@ export type LearnArticle = {
 export const LEARN_ARTICLES: Record<string, LearnArticle> = {
   "vastu-compass-and-zones": {
     slug: "vastu-compass-and-zones",
-    title: "How to use a Vastu compass: 8 directions, 16 zones, and 32 padas",
+    title: "How to use a Vastu compass: 4 cardinals through 45 fields, 16 zones, and 32 padas",
     description:
-      "Understand cardinal directions versus Vastu’s 16 zones and 32 entrance padas, and how FutureSeer maps your phone’s compass to each.",
+      "Understand cardinal directions versus Vastu’s 16 zones, 32 entrance padas, and optional 45-field grid—and how FutureSeer maps your phone’s compass to each with a visual dial.",
     sections: [
       {
         body: [
           "Vastu Shastra often divides the compass into finer slices than “north, south, east, west.” Traditional practice uses **16 directional zones** (each 22.5°) for overall placement and **32 padas** (each 11.25°) for details such as the main entrance.",
-          "Your device’s magnetometer gives a heading in degrees. FutureSeer’s Vastu tool converts that heading into the precision you need: eight coarse directions, sixteen zones, or thirty-two padas—so you can align plot facing and main door with the same reading session.",
+          "Your device’s magnetometer gives a heading in degrees. FutureSeer’s Vastu tool converts that heading into the precision you need: **four cardinals**, **eight winds**, **sixteen zones**, **thirty-two padas**, or a **45-field** (8°) reference grid—with a **rotating compass dial** so you can align plot facing, main door, and optional Shakti-style fields in one session.",
         ],
       },
       {
         heading: "Try it in the app",
         body: [
-          "Open the **Vastu** tool, go to **Room Placement**, and use the compass controls with **8**, **16**, or **32** precision. Apply the reading to **facing direction** (16 zones) or **main door pada** (32) as labeled.",
+          "Open the **Vastu** tool, go to **Room Placement**, and use the compass controls with **4**, **8**, **16**, **32**, or **45** precision. Use **Open full-screen compass** for a dedicated view. Apply the reading to **facing direction** (16 zones), **main door pada** (32), or **45-field** label as shown.",
         ],
       },
     ],
@@ -345,7 +345,7 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       {
         heading: "Using FutureSeer’s Vastu tool",
         body: [
-          "Use the **device compass** in **8**, **16**, or **32** precision, **main entrance** guidance, and **room placement** tabs. **Ask the Vastu Seer** uses your saved inputs when you are signed in. For compass basics, see **vastu-compass-and-zones** and **purusha-mandala-overview**.",
+          "Use the **device compass** in **4**, **8**, **16**, **32**, or **45** precision (with a visual dial), **main entrance** guidance, and **room placement** tabs. **Ask the Vastu Seer** uses your saved inputs when you are signed in. For compass basics, see **vastu-compass-and-zones** and **purusha-mandala-overview**.",
         ],
       },
     ],
@@ -439,7 +439,7 @@ export const LEARN_ARTICLES: Record<string, LearnArticle> = {
       {
         body: [
           "**Vastu Shastra** maps directions, zones, and often **entrance padas** (fine compass segments). It is **not** interchangeable with Feng Shui; FutureSeer keeps them as **separate tools**.",
-          "Use the **Vastu** tool with your device compass for **8 / 16 / 32** precision where supported, and read **Learn** articles on compass basics for deeper context.",
+          "Use the **Vastu** tool with your device compass for **4 / 8 / 16 / 32 / 45** precision where supported (including the full-screen compass dial), and read **Learn** articles on compass basics for deeper context.",
         ],
       },
       {

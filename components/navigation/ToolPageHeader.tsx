@@ -78,7 +78,7 @@ export function ToolPageHeader({
       {(isPremium || isComingSoon) && (
         <div className="flex items-center gap-2 flex-wrap px-1">
           {isPremium && (
-            <Badge className="bg-primary-container text-on-primary-container border-none px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            <Badge className="bg-primary-container text-primary-on-container border-none px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
               ✨ Premium
             </Badge>
           )}

@@ -31,10 +31,10 @@ export const TOOL_SEO_BLOCKS: Record<PriorityToolSlug, ToolSeoBlock> = {
     path: "/tools/vastu",
     title: "Vastu Shastra Tool | Compass, 16 Zones & AI Guidance | FutureSeer",
     description:
-      "Explore Vastu for your home: device compass (8, 16, and 32-pada directions), main entrance guidance, room placement, remedies, and Ask the Seer—all in one AI-powered platform at FutureSeer.",
+      "Explore Vastu for your home: device compass with a visual dial (4, 8, 16, 32, and 45-field precision), main entrance guidance, room placement, remedies, and Ask the Seer—all in one AI-powered platform at FutureSeer.",
     introParagraphs: [
-      "Vastu Shastra maps directions, zones, and entrances to support harmony between your space and natural energies. FutureSeer combines traditional directional grids (16 zones, 32 padas) with your profile so you can study facing, main door placement, and room use in one place.",
-      "Use the compass on supported devices, fill in your layout, then open Ask the Vastu Seer for questions grounded in your inputs. Personalized reports and chat stay behind your account—this page introduces what the tool does.",
+      "Vastu Shastra maps directions, zones, and entrances to support harmony between your space and natural energies. FutureSeer combines traditional directional grids (16 zones, 32 padas, optional 45-field reference) with your profile so you can study facing, main door placement, and room use in one place.",
+      "Use the live compass dial on supported devices, fill in your layout, then open Ask the Vastu Seer for questions grounded in your inputs. Personalized reports and chat stay behind your account—this page introduces what the tool does.",
     ],
     learnSlug: "vastu-research-and-traditional-practice",
   },

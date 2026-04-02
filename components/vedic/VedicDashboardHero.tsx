@@ -15,9 +15,6 @@ import {
   Clock,
   Stars
 } from 'lucide-react'
-import { AffiliateLink } from '@/components/AffiliateLink'
-import { getBirthChartUrl } from '@/lib/affiliateConfig'
-
 export interface VedicDashboardHeroProps {
   chartData: any
   userProfile: any
@@ -139,9 +136,6 @@ export function VedicDashboardHero({
               </p>
               <p className="text-slate-500 text-xs mt-1">
                 Sidereal Zodiac • {ayanamsha} Ayanamsha
-              </p>
-              <p className="text-slate-500 text-xs mt-2">
-                <AffiliateLink href={getBirthChartUrl()} label="Calculate your free natal chart at Astro-Charts" className="text-amber-600 hover:text-amber-700" />
               </p>
             </div>
             

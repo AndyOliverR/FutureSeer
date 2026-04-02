@@ -140,7 +140,7 @@ export default function RemediesPage() {
                       )}
                       <CardTitle className={`text-lg truncate ${isMobileLayout ? 'text-amber-400 font-semibold' : 'text-amber-400'}`}>{gemstone.name}</CardTitle>
                     </div>
-                    <Badge variant="secondary" className={isMobileLayout ? 'bg-primary-container text-on-primary-container flex-shrink-0' : 'bg-blue-500 text-white flex-shrink-0'}>
+                    <Badge variant="secondary" className={isMobileLayout ? 'bg-primary-container text-primary-on-container flex-shrink-0' : 'bg-blue-500 text-white flex-shrink-0'}>
                       {gemstone.planetaryRuler}
                     </Badge>
                   </div>
@@ -438,7 +438,7 @@ export default function RemediesPage() {
         <div className="px-4 py-6 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-heading font-bold text-amber-400 uppercase tracking-tight">Remedies</h1>
-            <div className="p-2 bg-primary-container rounded-full text-on-primary-container">
+            <div className="p-2 bg-primary-container rounded-full text-primary-on-container">
               <Sparkles className="w-5 h-5" />
             </div>
           </div>
@@ -459,23 +459,23 @@ export default function RemediesPage() {
 
         <Tabs defaultValue="gemstones" className="flex-1 px-4 pb-6">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto bg-surface-container-low p-1 rounded-2xl gap-1 mb-8">
-            <TabsTrigger value="gemstones" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+            <TabsTrigger value="gemstones" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl text-sm font-medium">
               <Gem className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Gemstones</span>
             </TabsTrigger>
-            <TabsTrigger value="colors" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+            <TabsTrigger value="colors" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl text-sm font-medium">
               <Palette className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Colors</span>
             </TabsTrigger>
-            <TabsTrigger value="mantras" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+            <TabsTrigger value="mantras" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl text-sm font-medium">
               <BookOpen className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Mantras</span>
             </TabsTrigger>
-            <TabsTrigger value="mudras" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+            <TabsTrigger value="mudras" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl text-sm font-medium">
               <Heart className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Mudras</span>
             </TabsTrigger>
-            <TabsTrigger value="numerology" className="data-[state=active]:bg-primary data-[state=active]:text-on-primary rounded-xl text-sm font-medium">
+            <TabsTrigger value="numerology" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl text-sm font-medium">
               <Star className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Numerology</span>
             </TabsTrigger>
@@ -506,7 +506,7 @@ export default function RemediesPage() {
               </p>
               <Button
                 onClick={() => window.location.href = '/ask-the-seer'}
-                className="w-full bg-primary text-on-primary rounded-xl"
+                className="w-full bg-primary text-primary-foreground rounded-xl"
               >
                 Get Personalized Remedies
               </Button>

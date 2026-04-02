@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Eye, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
-import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser } from "@/lib/firebase"
+import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser, isUserDismissedAuthError, isUnauthorizedDomainAuthError } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
@@ -113,11 +113,24 @@ function SignUpPageContent() {
       const returning = isReturningUser(user)
       router.push(returning ? "/tools" : "/profile")
     } catch (error: unknown) {
-      const err = error as { message?: string };
+      const err = error as { message?: string; code?: string };
       if (err.message?.includes('Redirect initiated')) return;
       const msg = getAuthErrorMessage(err)
       setError(msg)
-      await logError("signup_google", msg, "error", { provider: "google" })
+      if (isUserDismissedAuthError(err)) {
+        await logError("signup_google_dismissed", msg, "info", {
+          provider: "google",
+          code: err.code ?? null,
+        })
+      } else if (isUnauthorizedDomainAuthError(err)) {
+        await logError("signup_google_unauthorized_domain", msg, "warning", {
+          provider: "google",
+          code: err.code ?? null,
+          hostname: typeof window !== "undefined" ? window.location.hostname : null,
+        })
+      } else {
+        await logError("signup_google", msg, "error", { provider: "google", code: err.code ?? null })
+      }
     } finally {
       setIsLoading(false); setActiveProvider(null)
     }

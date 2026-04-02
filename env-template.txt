@@ -91,9 +91,6 @@ CRON_SECRET=your-cron-secret
 # Affiliate - Amazon Associates tag (e.g. futureseer21-21 for Amazon.in)
 NEXT_PUBLIC_AMAZON_AFFILIATE_TAG=futureseer21-21
 
-# Affiliate - Astro-Charts birth chart calculator
-NEXT_PUBLIC_ASTRO_CHARTS_URL=https://astro-charts.com
-
 # Affiliate - region-specific Amazon domain (amazon.in for India, amazon.com, amazon.co.uk)
 NEXT_PUBLIC_AMAZON_DOMAIN=amazon.in
 

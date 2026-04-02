@@ -19,6 +19,8 @@ export interface VastuZones {
 /** User-provided layout: facing + room placements. Enables Ask the Seer without full analysis. */
 export interface VastuLayoutInput {
   facing_direction?: string;
+  /** Optional 45-field label (8° Mahavastu-style grid) when user sets compass to 45 mode. */
+  facing_45?: string;
   main_door?: string;
   kitchen?: string;
   bedroom?: string;
@@ -40,6 +42,8 @@ export interface VastuState {
   };
   /** Main door 32-pada when provided (e.g. N3, E4). */
   main_door_pada?: string;
+  /** Optional 45-field label from compass (8° grid). */
+  facing_45_field?: string;
 }
 
 export type VastuQuestionType =
@@ -178,7 +182,7 @@ export function buildVastuState(payload: VastuReadingPayload): VastuState {
 
   if (layoutOverride && (layoutOverride.kitchen || layoutOverride.bedroom || layoutOverride.toilet || layoutOverride.main_door || layoutOverride.living_room || layoutOverride.prayer_room || layoutOverride.center)) {
     for (const [roomKey, direction] of Object.entries(layoutOverride)) {
-      if (roomKey === 'facing_direction' || !direction || String(direction).toLowerCase() === 'unknown') continue;
+      if (roomKey === 'facing_direction' || roomKey === 'facing_45' || !direction || String(direction).toLowerCase() === 'unknown') continue;
       if (roomKey === 'center') {
         zones.center = String(direction);
         continue;
@@ -212,6 +216,7 @@ export function buildVastuState(payload: VastuReadingPayload): VastuState {
     typeof main_door_raw === 'string' && /^[NSEW][1-8]$/i.test(main_door_raw.trim())
       ? main_door_raw.trim().toUpperCase()
       : undefined;
+  const facing_45_field = layoutOverride?.facing_45?.trim() || undefined;
 
   return {
     property_type,
@@ -221,6 +226,7 @@ export function buildVastuState(payload: VastuReadingPayload): VastuState {
     zones,
     occupant_context,
     main_door_pada,
+    facing_45_field,
   };
 }
 
@@ -304,12 +310,15 @@ export function getVastuSliceForQuestionType(
 
   const z = state.zones;
   const mainDoorLine = state.main_door_pada ? `- Main door pada: ${state.main_door_pada} (32-pada system)\n` : '';
+  const field45Line = state.facing_45_field
+    ? `- 45-field compass bearing (reference grid): ${state.facing_45_field}\n`
+    : '';
   const stateBlock = `
 VASTU STATE (use this only):
 - Property type: ${state.property_type}; Usage: ${state.usage}
 - Orientation: ${state.orientation}
 - Construction stage: ${state.construction_stage}
-${mainDoorLine}- Zones: North=${z.north || 'unset'}, North-East=${z.north_east || 'unset'}, East=${z.east || 'unset'}, South-East=${z.south_east || 'unset'}, South=${z.south || 'unset'}, South-West=${z.south_west || 'unset'}, West=${z.west || 'unset'}, North-West=${z.north_west || 'unset'}, Center=${z.center || 'open'}
+${mainDoorLine}${field45Line}- Zones: North=${z.north || 'unset'}, North-East=${z.north_east || 'unset'}, East=${z.east || 'unset'}, South-East=${z.south_east || 'unset'}, South=${z.south || 'unset'}, South-West=${z.south_west || 'unset'}, West=${z.west || 'unset'}, North-West=${z.north_west || 'unset'}, Center=${z.center || 'open'}
 - Occupant: family=${state.occupant_context.family ?? 'unknown'}, work_from_home=${state.occupant_context.work_from_home ?? 'unknown'}
 `.trim();
 

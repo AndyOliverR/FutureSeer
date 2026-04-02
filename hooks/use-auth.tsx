@@ -21,6 +21,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function profileIndicatesSpecialUser(profile: UserProfile | null): boolean {
+  if (!profile) return false;
+  return (
+    profile.specialUser === true ||
+    profile.special_user === true ||
+    profile.isSpecialUser === true
+  );
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -83,6 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fetch first, then update - don't clear existing profile to prevent UI flash
         const profile = await getUserProfile(user.uid);
         setUserProfile(profile);
+        const token = await getIdTokenResult(user, true);
+        const adminRoles = checkAdminRoles(user.email);
+        setIsSpecialUser(
+          adminRoles.isSpecialUser ||
+            token.claims.specialUser === true ||
+            profileIndicatesSpecialUser(profile)
+        );
       } catch (error) {
         console.error('Error refreshing profile:', error);
         throw error;
@@ -165,13 +181,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         try {
           if (firebaseUser) {
+            let idTokenResult: Awaited<ReturnType<typeof getIdTokenResult>> | null = null;
             try {
               const adminRoles = checkAdminRoles(firebaseUser.email);
               setIsSuperadmin(adminRoles.isSuperadmin);
               setIsAdmin(adminRoles.isAdmin);
               setIsSpecialUser(adminRoles.isSpecialUser);
               
-              const token = await getIdTokenResult(firebaseUser, true);
+              idTokenResult = await getIdTokenResult(firebaseUser, true);
+              const token = idTokenResult;
               if (token.claims.superadmin) {
                 setIsSuperadmin(true);
               }
@@ -181,7 +199,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               if (token.claims.role === 'admin') {
                 setIsAdmin(true);
               }
-            } catch (e) {
+              if (token.claims.specialUser === true) {
+                setIsSpecialUser(true);
+              }
+            } catch {
               const adminRoles = checkAdminRoles(firebaseUser.email);
               setIsSuperadmin(adminRoles.isSuperadmin);
               setIsAdmin(adminRoles.isAdmin);
@@ -190,6 +211,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             const profile = await loadProfileWithRetry(firebaseUser.uid);
             setUserProfile(profile);
+            const roles = checkAdminRoles(firebaseUser.email);
+            const claimSpecial = idTokenResult?.claims?.specialUser === true;
+            setIsSpecialUser(
+              roles.isSpecialUser || claimSpecial || profileIndicatesSpecialUser(profile)
+            );
           } else {
             setUserProfile(null);
             setIsSuperadmin(false);

@@ -332,7 +332,8 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/popup-closed-by-user': return 'Sign-in cancelled.';
     case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
     case 'auth/cancelled-popup-request': return 'Sign-in cancelled.';
-    case 'auth/unauthorized-domain': return 'This domain is not authorized. Please contact support.';
+    case 'auth/unauthorized-domain':
+      return 'Google sign-in is not available from this web address. Try signing in with email and password, or open the app from the main FutureSeer website.';
     case 'auth/requires-recent-login': return 'Please sign in again to complete this action.';
     case 'auth/credential-already-in-use': return 'These credentials are already linked to another account.';
     default:
@@ -342,6 +343,21 @@ export const getAuthErrorMessage = (error: any): string => {
       return 'Something went wrong. Please try again.';
   }
 };
+
+/** Firebase codes when the user closed the OAuth popup or cancelled — not app failures. */
+const USER_DISMISSED_AUTH_CODES = new Set([
+  'auth/popup-closed-by-user',
+  'auth/cancelled-popup-request',
+]);
+
+export function isUserDismissedAuthError(error: { code?: string } | null | undefined): boolean {
+  const code = error?.code;
+  return typeof code === 'string' && USER_DISMISSED_AUTH_CODES.has(code);
+}
+
+export function isUnauthorizedDomainAuthError(error: { code?: string } | null | undefined): boolean {
+  return error?.code === 'auth/unauthorized-domain';
+}
 
 export const isReturningUser = (user: User): boolean => {
   const ct = user.metadata?.creationTime ? new Date(user.metadata.creationTime).getTime() : 0;
@@ -717,6 +733,10 @@ export interface UserProfile {
   /** When true, main Seer may receive optional same-day headline titles as world context (server-side only). */
   seerIncludeNewsHeadlines?: boolean;
   timezone?: number | string;
+  /** Admin-granted; synced from custom claims via set-claims. */
+  specialUser?: boolean;
+  special_user?: boolean;
+  isSpecialUser?: boolean;
 }
 
 export interface Note {

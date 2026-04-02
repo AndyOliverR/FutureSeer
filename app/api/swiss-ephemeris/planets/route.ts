@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
       planets,
       metadata: {
         generatedAt: new Date().toISOString(),
-        engine: 'FutureSeer tropical (Astronomia / VSOP-style; includes Chiron approximation)',
+        engine:
+          'FutureSeer tropical (Astronomia / VSOP-style; includes Chiron approximation). For Swiss WASM longitudes, use POST /api/occult/universal with system: western.',
         version: '2.0.0',
         calculationTime,
         targetDate: targetDate.toISOString(),

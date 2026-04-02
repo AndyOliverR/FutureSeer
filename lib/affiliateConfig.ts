@@ -8,7 +8,6 @@
 
 const AMAZON_TAG = process.env.NEXT_PUBLIC_AMAZON_AFFILIATE_TAG || ''
 const AMAZON_DOMAIN = process.env.NEXT_PUBLIC_AMAZON_DOMAIN || 'amazon.com'
-const ASTRO_CHARTS_URL = process.env.NEXT_PUBLIC_ASTRO_CHARTS_URL || 'https://astro-charts.com'
 const CERTIFIED_GEMSTONE_URL =
   process.env.NEXT_PUBLIC_CERTIFIED_GEMSTONE_SELLER_URL?.trim() || ''
 
@@ -76,23 +75,8 @@ export function getBookAffiliateUrl(bookTitle: string): string {
 }
 
 /**
- * Astro-Charts - free birth chart calculator.
- * Add affiliate param when available from their program.
- */
-export function getBirthChartUrl(): string {
-  return ASTRO_CHARTS_URL
-}
-
-/**
- * Astro-Charts - synastry chart tool.
- */
-export function getSynastryChartUrl(): string {
-  return `${ASTRO_CHARTS_URL}/synastry-chart/`
-}
-
-/**
- * Check if affiliate links are configured (Amazon tag or Astro-Charts).
+ * Check if affiliate links are configured (Amazon tag or certified gemstone base URL).
  */
 export function hasAffiliateConfig(): boolean {
-  return !!(AMAZON_TAG || ASTRO_CHARTS_URL)
+  return !!(AMAZON_TAG || CERTIFIED_GEMSTONE_URL)
 }

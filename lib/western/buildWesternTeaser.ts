@@ -37,7 +37,8 @@ function signName(p: PlanetLike): string {
 function computeRarityPercent(planets: PlanetLike[], aspects: { orb?: number }[]): number {
   let h = 0
   for (const p of planets.slice(0, 12)) {
-    h = (h * 31 + Math.round(p.longitude * 100)) % 997
+    const lon = typeof p.longitude === 'number' ? p.longitude : 0
+    h = (h * 31 + Math.round(lon * 100)) % 997
   }
   h = (h + aspects.length * 17) % 997
   const tight = aspects.filter((a) => typeof a.orb === 'number' && a.orb <= 1).length

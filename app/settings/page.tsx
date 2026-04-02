@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { User, LogOut, Trash2, CheckCircle, XCircle, Moon, Sun, Bell, Globe, Mic, Mail, Heart, Users, Sparkles } from "lucide-react"
 import { Label } from "@/components/ui/label"
+import { BirthTimeDualFormatSelect } from "@/components/BirthTimeDualFormatSelect"
+
 export default function SettingsPage() {
   const { t } = useTranslation('common')
   const { user, refreshProfile, signOut } = useAuth()
@@ -36,6 +38,7 @@ export default function SettingsPage() {
   } = useSettings()
 
   const [showDelete, setShowDelete] = useState(false)
+  const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
 
   // Memoized formatting functions for performance
   const formattedBirthDate = useMemo(
@@ -139,11 +142,13 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label className="block text-white/80 text-sm font-semibold mb-1">Birth Time</label>
-                    <Input
-                      type="time"
-                      value={profileData.birthTime}
-                      onChange={e => setProfileData({ ...profileData, birthTime: e.target.value })}
-                      className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard [color-scheme:dark]"
+                    <BirthTimeDualFormatSelect
+                      value={profileData.birthTime || "12:00"}
+                      onChange={(next) => setProfileData({ ...profileData, birthTime: next })}
+                      showUnknownCheckbox
+                      unknownTime={birthTimeUnknown}
+                      onUnknownTimeChange={setBirthTimeUnknown}
+                      selectClassName="flex-1 min-w-0 min-h-12 bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] rounded-xl px-3 text-[var(--m3-on-surface)] [color-scheme:dark]"
                     />
                   </div>
                   <div className="md:col-span-2">

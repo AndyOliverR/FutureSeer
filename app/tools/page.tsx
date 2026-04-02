@@ -71,7 +71,7 @@ function ToolsPageContent() {
         <div className="px-4 py-6 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-heading font-bold text-amber-400 uppercase tracking-tight">Mystical Tools</h1>
-            <div className="p-2 bg-primary-container rounded-full text-on-primary-container animate-pulse">
+            <div className="p-2 bg-primary-container rounded-full text-primary-on-container animate-pulse">
               <Sparkles className="w-6 h-6" />
             </div>
           </div>
@@ -95,9 +95,9 @@ function ToolsPageContent() {
         )}
 
         <div className="flex overflow-x-auto gap-2 px-4 pb-4 no-scrollbar">
-          <Link href="/tools" className={cn("h-10 px-5 rounded-full border flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-all", !categoryParam ? "bg-primary text-on-primary border-primary shadow-lg shadow-amber-500/20" : "bg-surface-container-low border-outline-variant text-surface-on-variant")}>All</Link>
+          <Link href="/tools" className={cn("h-10 px-5 rounded-full border flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-all", !categoryParam ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-amber-500/20" : "bg-surface-container-low border-outline-variant text-surface-on-variant")}>All</Link>
           {CATEGORY_ORDER.map(cat => (
-            <Link key={cat} href={`/tools?category=${encodeURIComponent(cat)}`} className={cn("h-10 px-5 rounded-full border flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-all", categoryParam === cat ? "bg-primary text-on-primary border-primary shadow-lg shadow-amber-500/20" : "bg-surface-container-low border-outline-variant text-surface-on-variant")}>{cat}</Link>
+            <Link key={cat} href={`/tools?category=${encodeURIComponent(cat)}`} className={cn("h-10 px-5 rounded-full border flex items-center justify-center text-xs font-bold uppercase tracking-widest transition-all", categoryParam === cat ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-amber-500/20" : "bg-surface-container-low border-outline-variant text-surface-on-variant")}>{cat}</Link>
           ))}
         </div>
 
