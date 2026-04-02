@@ -30,8 +30,6 @@ import {
   MUDRA_DATABASE 
 } from '@/lib/remedyDatabase'
 import { getGemstonePhotoPath } from '@/lib/gemstoneImageMap'
-import { AffiliateLink } from '@/components/AffiliateLink'
-import { getGemstoneAffiliateUrl } from '@/lib/affiliateConfig'
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 
 export default function RemediesPage() {
@@ -179,10 +177,9 @@ export default function RemediesPage() {
                     <Badge variant="outline" className={`text-xs border ${badgeOutline}`}>
                       {gemstone.planetaryRuler}
                     </Badge>
-                    {(() => {
-                      const gemUrl = getGemstoneAffiliateUrl(gemstone.name)
-                      return gemUrl ? <AffiliateLink href={gemUrl} label="See options" className="ml-auto text-amber-400" /> : null
-                    })()}
+                    <span className="ml-auto text-xs text-amber-500/80 font-medium">
+                      Suggested source: local trusted seller
+                    </span>
                   </div>
                 </CardContent>
               </Card>

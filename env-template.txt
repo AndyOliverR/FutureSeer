@@ -88,15 +88,6 @@ SUPPORT_FORWARD_EMAIL=
 # Cron secret (secure the cron route; set in Vercel env and send as Authorization: Bearer CRON_SECRET)
 CRON_SECRET=your-cron-secret
 
-# Affiliate - Amazon Associates tag (e.g. futureseer21-21 for Amazon.in)
-NEXT_PUBLIC_AMAZON_AFFILIATE_TAG=futureseer21-21
-
-# Affiliate - region-specific Amazon domain (amazon.in for India, amazon.com, amazon.co.uk)
-NEXT_PUBLIC_AMAZON_DOMAIN=amazon.in
-
-# Certified gemstone seller - leave empty if no partner (GIA/IGI/GRS certified only, NOT Amazon)
-NEXT_PUBLIC_CERTIFIED_GEMSTONE_SELLER_URL=
-
 # Optional integrations (server-side only - never expose these as NEXT_PUBLIC_*)
 # OpenWeatherMap - current weather for birth coordinates (https://openweathermap.org/api)
 OPENWEATHER_API_KEY=

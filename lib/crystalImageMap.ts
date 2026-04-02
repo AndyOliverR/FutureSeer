@@ -34,6 +34,7 @@ const CRYSTAL_PHOTO_MAP: Record<string, string> = {
   Sodalite: '/crystals/photos/sodalite.png',
   Turquoise: '/crystals/photos/turquoise.png',
   Fluorite: '/crystals/photos/fluorite.png',
+  Bloodstone: '/crystals/photos/bloodstone.png',
   Diamond: '/crystals/photos/diamond.png',
   Labradorite: '/crystals/photos/labradorite.png',
 };
