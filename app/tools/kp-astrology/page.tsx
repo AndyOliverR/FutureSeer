@@ -26,8 +26,6 @@ import {
   Users,
 } from "lucide-react"
 import { Button } from '@/components/ui/button'
-import { AffiliateLink } from '@/components/AffiliateLink'
-import { getGemstoneAffiliateUrl } from '@/lib/affiliateConfig'
 import NorthIndianVedicChart from "@/components/NorthIndianVedicChart"
 import VedicSouthChart from "@/components/VedicSouthChart"
 import { KPAstrologyCoachInterface } from "@/components/KPAstrologyCoachInterface"
@@ -2129,14 +2127,11 @@ export default function KPAstrologyPage() {
                                 )}
                               </div>
                             )}
-                            {remedy.type === 'gemstone' && (() => {
-                              const url = getGemstoneAffiliateUrl(remedy.name || 'gemstone')
-                              return url ? (
-                                <div className="mt-3">
-                                  <AffiliateLink href={url} label="Buy here" className="text-amber-600" />
-                                </div>
-                              ) : null
-                            })()}
+                            {remedy.type === 'gemstone' && (
+                              <div className="mt-3 text-xs text-amber-700/80 font-medium">
+                                Suggested source: local trusted seller
+                              </div>
+                            )}
                           </motion.div>
                         )
                       }).filter(Boolean)}

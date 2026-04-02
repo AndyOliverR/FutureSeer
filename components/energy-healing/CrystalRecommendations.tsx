@@ -6,8 +6,6 @@ import { CRYSTAL_DATABASE } from '@/lib/energyHealing/energyHealingData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Gem, Star, Sparkles, Zap } from 'lucide-react';
-import { AffiliateLink } from '@/components/AffiliateLink';
-import { getCrystalAffiliateUrl } from '@/lib/affiliateConfig';
 import { getCrystalPhotoPath } from '@/lib/crystalImageMap';
 
 interface CrystalRecommendationsProps {
@@ -56,7 +54,7 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
                   {CRYSTAL_DATABASE[recommendation.primaryCrystal]?.metaphysicalProperties || 
                    'Recommended for your energy healing journey'}
                 </p>
-                <AffiliateLink href={getCrystalAffiliateUrl(recommendation.primaryCrystal)} label="Buy here" className="mt-2 text-amber-800 font-medium" />
+                <p className="mt-2 text-amber-800/80 text-xs font-medium">Suggested source: local trusted seller</p>
               </div>
             </div>
           </CardContent>
@@ -171,8 +169,8 @@ export function CrystalRecommendations({ recommendation }: CrystalRecommendation
                           </ul>
                         </div>
                       )}
-                      <div className="mt-3 pt-2">
-                        <AffiliateLink href={getCrystalAffiliateUrl(crystalName)} label="Buy here" className="text-amber-800 font-medium" />
+                      <div className="mt-3 pt-2 text-amber-800/80 text-xs font-medium">
+                        Suggested source: local trusted seller
                       </div>
                     </CardContent>
                   </Card>

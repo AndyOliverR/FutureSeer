@@ -6,8 +6,6 @@ import { CHAKRA_DATA } from '@/lib/energyHealing/energyHealingData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Zap, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from 'lucide-react';
-import { AffiliateLink } from '@/components/AffiliateLink';
-import { getCrystalAffiliateUrl } from '@/lib/affiliateConfig';
 import { getCrystalPhotoPath } from '@/lib/crystalImageMap';
 
 interface ChakraVisualizationProps {
@@ -156,7 +154,7 @@ export function ChakraVisualization({ analysis }: ChakraVisualizationProps) {
                           </Badge>
                         );
                       })}
-                      <AffiliateLink href={getCrystalAffiliateUrl(chakraData?.associatedCrystals?.[0] || `${chakra.name} crystal`)} label="Shop crystals" className="text-amber-800 font-medium text-xs" />
+                      <span className="text-amber-800 font-medium text-xs">Suggested source: local trusted seller</span>
                     </div>
                   </div>
                 </CardContent>
