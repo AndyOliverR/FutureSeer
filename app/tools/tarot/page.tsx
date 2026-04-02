@@ -52,8 +52,6 @@ import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
 import { cn } from '@/lib/utils'
-import { AffiliateLink } from '@/components/AffiliateLink'
-import { getTarotDeckAffiliateUrl } from '@/lib/affiliateConfig'
 import {
   calculateLifePathNumber,
   calculateDestinyNumber,
@@ -258,9 +256,7 @@ function TarotPage() {
           <p className="text-slate-200 leading-relaxed text-xl font-light">
             Ancient wisdom through the sacred art of Tarot card reading
           </p>
-          <p className="text-slate-400 text-sm mt-3">
-            <AffiliateLink href={getTarotDeckAffiliateUrl()} label="Shop tarot decks" className="text-amber-500/80 hover:text-amber-400" />
-          </p>
+          <p className="text-slate-400 text-sm mt-3">Deck tip: use a trusted local or official deck source.</p>
         </div>
 
         {showTarotViral && !bypassViral && (
