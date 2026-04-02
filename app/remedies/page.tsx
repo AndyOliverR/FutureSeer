@@ -655,7 +655,7 @@ export default function RemediesPage() {
             <CardContent className="p-6">
               <p className="text-white/80 mb-4">
                 💫 <strong>Important Note:</strong> These remedies are based on ancient wisdom and spiritual traditions. 
-                For personalized recommendations, use our "Ask the Seer" feature which analyzes your unique 
+                For personalized recommendations, use our &quot;Ask the Seer&quot; feature which analyzes your unique 
                 astrological and numerological profile.
               </p>
               <Button 
