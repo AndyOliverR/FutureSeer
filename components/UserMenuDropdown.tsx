@@ -305,8 +305,8 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
               <span className="text-xl hidden md:inline shrink-0" aria-hidden>🛡️</span>
               <Shield className="w-5 h-5 md:hidden text-[var(--m3-on-surface-variant)] group-hover:text-[var(--m3-primary)] m3-transition-standard shrink-0" />
               <div className="min-w-0">
-                <div className="m3-label-large text-[var(--m3-on-surface)] md:text-white md:group-hover:text-amber-400">Privacy Policy</div>
-                <div className="m3-body-small text-[var(--m3-on-surface-variant)] md:text-slate-400">Your data protection</div>
+                <div className="m3-label-large text-[var(--m3-on-surface)] md:text-white md:group-hover:text-amber-400">Data & Privacy</div>
+                <div className="m3-body-small text-[var(--m3-on-surface-variant)] md:text-slate-400">How your data is used</div>
               </div>
             </Link>
 

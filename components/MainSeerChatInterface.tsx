@@ -6,15 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { analytics } from '@/lib/analytics';
 
 interface MainSeerChatInterfaceProps {
   userId: string | undefined;
+  /** Matches profile CTA pattern: mobile layout vs web (breakpoint 768px). */
+  layout?: 'mobile' | 'web';
   userProfile: { birthDate?: string; birthTime?: string; birthPlace?: string } | null;
   /** Consecutive days with Seer activity; optional, calm banner when >= 2 */
   streakDays?: number;
 }
 
 type ThreadMessage = { role: 'user' | 'seer'; content: string };
+type ResponseStyle = 'concise' | 'balanced' | 'deep';
 
 interface Message {
   id: string;
@@ -43,6 +47,7 @@ function threadToMessages(thread: ThreadMessage[]): Message[] {
 
 export default function MainSeerChatInterface({
   userId,
+  layout = 'web',
   userProfile,
   streakDays = 0,
 }: MainSeerChatInterfaceProps) {
@@ -50,6 +55,7 @@ export default function MainSeerChatInterface({
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(new Set());
+  const [responseStyle, setResponseStyle] = useState<ResponseStyle>('balanced');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const messages = useMemo(() => threadToMessages(thread), [thread]);
@@ -74,6 +80,12 @@ export default function MainSeerChatInterface({
     setQuestion(questionText ? question : '');
     setIsLoading(true);
 
+    analytics.trackMainSeerChat({
+      layout,
+      responseStyle: responseStyle,
+      interaction: 'message_sent',
+    });
+
     try {
       const res = await fetch('/api/seer/chat', {
         method: 'POST',
@@ -81,6 +93,7 @@ export default function MainSeerChatInterface({
         body: JSON.stringify({
           message: messageToSend,
           thread,
+          responseStyle,
           userId: userId ?? undefined,
           birthProfile: userProfile
             ? {
@@ -95,6 +108,13 @@ export default function MainSeerChatInterface({
       const data = await res.json();
 
       if (!res.ok) {
+        analytics.trackMainSeerChat({
+          layout,
+          responseStyle: responseStyle,
+          interaction: 'response_error',
+          httpStatus: res.status,
+          error: typeof data?.error === 'string' ? data.error : 'request_failed',
+        });
         setThread((prev) => [
           ...prev,
           { role: 'user', content: messageToSend },
@@ -102,8 +122,20 @@ export default function MainSeerChatInterface({
         ]);
         return;
       }
+      analytics.trackMainSeerChat({
+        layout,
+        responseStyle: responseStyle,
+        interaction: 'response_ok',
+        httpStatus: res.status,
+      });
       setThread(data.thread ?? []);
     } catch {
+      analytics.trackMainSeerChat({
+        layout,
+        responseStyle: responseStyle,
+        interaction: 'response_error',
+        error: 'network_or_parse',
+      });
       setThread((prev) => [
         ...prev,
         { role: 'user', content: messageToSend },
@@ -199,10 +231,28 @@ export default function MainSeerChatInterface({
       ) : null}
       <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
       <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
-        <CardTitle className="text-amber-900 flex items-center gap-2">
-          <span className="text-2xl" aria-hidden>🔮</span>
-          Ask the Seer
-        </CardTitle>
+        <div className="flex-1 min-w-0">
+          <CardTitle className="text-amber-900 flex items-center gap-2">
+            <span className="text-2xl" aria-hidden>🔮</span>
+            Ask the Seer
+          </CardTitle>
+          <div className="mt-2 flex items-center gap-2 text-xs">
+            <label htmlFor="seer-response-style" className="text-slate-600">
+              Response style
+            </label>
+            <select
+              id="seer-response-style"
+              value={responseStyle}
+              onChange={(e) => setResponseStyle(e.target.value as ResponseStyle)}
+              className="h-8 rounded-md border border-amber-200 bg-white px-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              aria-label="Response style"
+            >
+              <option value="balanced">Balanced</option>
+              <option value="concise">Concise</option>
+              <option value="deep">Deep</option>
+            </select>
+          </div>
+        </div>
         {messages.length > 0 && (
           <Button
             type="button"
