@@ -3,14 +3,8 @@
 import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
-import { 
-  ArrowRight, 
-  CheckCircle, 
-  AlertCircle, 
-  Info, 
-  Sparkles,
-  Circle
-} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { CheckCircle, AlertCircle, Circle } from 'lucide-react'
 
 export interface DevotionistStyleCardProps {
   icon: ReactNode
@@ -122,15 +116,22 @@ export function DevotionistStyleCard({
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className={`rounded-xl border-2 ${colors.border} ${colors.bg} ${colors.hoverBorder} transition-all duration-300 p-4 ${className}`}
+        className={cn(
+          'rounded-2xl border-2 shadow-sm',
+          colors.border,
+          colors.bg,
+          colors.hoverBorder,
+          'transition-all duration-300 p-5 sm:p-6',
+          className
+        )}
       >
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-3">
           <div className={`${colors.iconBg} rounded-lg p-2 flex-shrink-0`}>
             <div className={colors.iconColor}>
               {icon}
             </div>
           </div>
-          <div className="flex-1">
+          <div className="min-w-0 w-full flex-1">
             <h4 className={`${colors.titleColor} font-semibold text-lg mb-1`}>{title}</h4>
             {subtitle && (
               <p className="text-slate-600 text-sm mb-2">{subtitle}</p>
@@ -182,7 +183,7 @@ export function DevotionistStyleCard({
         </div>
         
         {/* Content */}
-        <div className={`rounded-xl border-2 ${colors.border} ${colors.bg} p-4 mb-4 shadow-sm`}>
+        <div className={`rounded-2xl border-2 ${colors.border} ${colors.bg} p-5 sm:p-6 mb-4 shadow-sm`}>
           <h4 className={`${colors.titleColor} font-semibold text-base mb-1`}>{title}</h4>
           {subtitle && (
             <p className="text-slate-600 text-xs mb-2">{subtitle}</p>
@@ -209,23 +210,31 @@ export function DevotionistStyleCard({
     )
   }
 
-  // Default variant - pass className e.g. h-full so cards in a grid align height
+  // Default variant - pass className e.g. h-full on the wrapper so cards in a grid align height
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={className}
+      className={cn('flex flex-col min-h-0', className)}
     >
-      <Card className={`border-2 ${colors.border} ${colors.bg} ${colors.hoverBorder} transition-all duration-300 rounded-xl shadow-sm flex flex-col ${className ?? ''}`}>
-        <CardContent className="p-4 flex flex-col flex-1 min-h-0">
-          <div className="flex items-start gap-3 mb-3 flex-shrink-0">
+      <Card
+        className={cn(
+          'border-2',
+          colors.border,
+          colors.bg,
+          colors.hoverBorder,
+          'transition-all duration-300 rounded-2xl shadow-sm flex flex-col flex-1 min-h-0'
+        )}
+      >
+        <CardContent className="flex flex-col flex-1 min-h-0 p-5 sm:p-6">
+          <div className="flex items-center gap-3 mb-3 flex-shrink-0">
             <div className={`${colors.iconBg} rounded-lg p-2 flex-shrink-0`}>
               <div className={colors.iconColor}>
                 {icon}
               </div>
             </div>
-            <div className="flex-1">
+            <div className="min-w-0 w-full flex-1">
               <h4 className={`${colors.titleColor} font-semibold text-base mb-1`}>{title}</h4>
               {subtitle && (
                 <p className="text-slate-600 text-xs mb-2">{subtitle}</p>
@@ -234,7 +243,7 @@ export function DevotionistStyleCard({
           </div>
           
           {summary && (
-            <p className="text-slate-700 text-sm leading-relaxed mb-3 flex-1 min-h-0">{summary}</p>
+            <p className="text-slate-700 text-sm leading-relaxed mb-3">{summary}</p>
           )}
           
           {items && items.length > 0 && (
