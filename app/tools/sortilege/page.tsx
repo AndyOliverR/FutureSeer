@@ -632,22 +632,22 @@ export default function SortilegePage() {
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="overview" className="space-y-6">
+                  <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <SortilegeReport reading={displayReading} activeTab="overview" />
                   </TabsContent>
-                  <TabsContent value="interpretation" className="space-y-6">
+                  <TabsContent value="interpretation" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <SortilegeReport reading={displayReading} activeTab="interpretation" />
                   </TabsContent>
-                  <TabsContent value="insights" className="space-y-6">
+                  <TabsContent value="insights" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <SortilegeReport reading={displayReading} activeTab="insights" />
                   </TabsContent>
-                  <TabsContent value="guidance" className="space-y-6">
+                  <TabsContent value="guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <SortilegeReport reading={displayReading} activeTab="guidance" />
                   </TabsContent>
-                  <TabsContent value="remedies" className="space-y-6">
+                  <TabsContent value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <SortilegeReport reading={displayReading} activeTab="remedies" />
                   </TabsContent>
-                  <TabsContent value="history" className="space-y-6">
+                  <TabsContent value="history" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <SortilegeReport reading={displayReading} activeTab="history" />
                   </TabsContent>
                 </Tabs>
