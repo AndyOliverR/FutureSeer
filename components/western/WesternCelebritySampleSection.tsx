@@ -14,7 +14,7 @@ export function WesternCelebritySampleSection() {
   const samples = CELEBRITY_DATABASE.slice(0, SAMPLE_LIMIT)
 
   return (
-    <Card className="border-2 border-slate-200 bg-slate-50/80 rounded-2xl shadow-sm">
+    <Card className="border-2 border-slate-200 bg-slate-50/80 rounded-2xl shadow-sm text-slate-900">
       <CardHeader className="px-5 pt-5 pb-2 sm:px-6 sm:pt-6">
         <CardTitle className="flex items-center gap-2 text-lg font-serif text-slate-900">
           <Star className="w-5 h-5 text-amber-600 shrink-0" />

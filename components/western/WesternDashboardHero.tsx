@@ -129,7 +129,7 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6 }}
       >
-        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg rounded-2xl overflow-hidden">
+        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg rounded-2xl overflow-hidden text-slate-900">
           <CardContent className="p-6">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-amber-900 mb-2">
@@ -266,7 +266,7 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.4 }}
       >
-        <Card className="bg-gradient-to-r from-slate-100 to-slate-50 border-2 border-slate-300 shadow-lg rounded-3xl">
+        <Card className="bg-gradient-to-r from-slate-100 to-slate-50 border-2 border-slate-300 shadow-lg rounded-3xl text-slate-900">
           <CardContent className="p-4">
             <div className="flex flex-wrap items-center gap-4 justify-center">
               <div className="flex items-center gap-2">
