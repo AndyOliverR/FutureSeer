@@ -18,6 +18,11 @@ GOOGLE_PLACES_API_KEY=your-google-places-api-key
 # Timezone API (Optional) - For accurate timezone resolution
 TIMEZONE_API_KEY=your-timezone-api-key
 
+# Consultant client workspace (God / Mary): optional comma-separated email overrides.
+# Defaults match admin accounts; server uses CLIENT_WORKSPACE_EMAILS, UI uses NEXT_PUBLIC_*.
+# CLIENT_WORKSPACE_EMAILS=
+# NEXT_PUBLIC_CLIENT_WORKSPACE_EMAILS=
+
 # Firebase Configuration (Client-side public keys)
 NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Loader2, ArrowLeft, User, Clock, MapPin, Edit3, Save, X, LogOut, Sparkles, Heart, Camera, Calendar } from "lucide-react"
+import { Loader2, ArrowLeft, User, Clock, MapPin, Edit3, Save, X, LogOut, Sparkles, Heart, Camera, Calendar, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
 import { updateUserProfile, type UserProfile } from "@/lib/firebase"
@@ -31,6 +31,7 @@ import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics"
 import { isGrowthProfileDraftEnabled } from "@/lib/growthFlags"
 import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/profileDraftStorage"
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
+import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
 
 function readUploadErrorFields(e: unknown): { status: number | null; detail: unknown; message: string } {
   if (e && typeof e === "object") {
@@ -49,6 +50,11 @@ export default function ProfilePage() {
   const router = useRouter()
   const { t } = useTranslation('common')
 
+  const isConsultantWorkspace = useMemo(
+    () => isClientWorkspaceEmail(user?.email ?? null),
+    [user?.email]
+  )
+
   const [isEditing, setIsEditing] = useState(false)
   const [isGeneratingProfile, setIsGeneratingProfile] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -66,6 +72,7 @@ export default function ProfilePage() {
   const [optimizingFace, setOptimizingFace] = useState(false)
   const [optimizingPalm, setOptimizingPalm] = useState(false)
   const [canGenerateMysticalProfile, setCanGenerateMysticalProfile] = useState(true)
+  const [isClearingWorkspace, setIsClearingWorkspace] = useState(false)
   const { logError } = useErrorLogger({ area: "profile" })
   const faceInputRef = useRef<HTMLInputElement>(null)
   const palmInputRef = useRef<HTMLInputElement>(null)
@@ -120,6 +127,7 @@ export default function ProfilePage() {
   }, [user?.uid])
 
   useEffect(() => {
+    if (isConsultantWorkspace) return
     if (!isGrowthProfileDraftEnabled() || !user?.uid || !canPersistDraftRef.current) return
     if (userProfile?.mysticalProfileGenerated) return
     const t = window.setTimeout(() => {
@@ -148,6 +156,7 @@ export default function ProfilePage() {
     formData.birthTimeNote,
     user?.uid,
     userProfile?.mysticalProfileGenerated,
+    isConsultantWorkspace,
   ])
 
   useEffect(() => {
@@ -161,7 +170,7 @@ export default function ProfilePage() {
         }
       }
       setFormData({
-        displayName: userProfile.displayName || "AnDY",
+        displayName: userProfile.displayName || (isConsultantWorkspace ? "" : "AnDY"),
         fullName: userProfile.fullName || "",
         email: user?.email || userProfile.email || "",
         gender: userProfile.gender,
@@ -177,9 +186,10 @@ export default function ProfilePage() {
         palmPhotoUrl: userProfile.palmPhotoUrl || ""
       })
     }
-  }, [userProfile, isEditing, user])
+  }, [userProfile, isEditing, user, isConsultantWorkspace])
 
   useEffect(() => {
+    if (isConsultantWorkspace) return
     if (!isGrowthProfileDraftEnabled() || !user?.uid || !userProfile) return
     if (userProfile.mysticalProfileGenerated) return
     if (draftRestoreAttemptedRef.current) return
@@ -202,7 +212,62 @@ export default function ProfilePage() {
       birthTimeNote: prev.birthTimeNote || d.birthTimeNote,
     }))
     canPersistDraftRef.current = true
-  }, [user?.uid, userProfile])
+  }, [user?.uid, userProfile, isConsultantWorkspace])
+
+  const handleClearWorkspace = async () => {
+    if (!user?.uid || !isConsultantWorkspace) return
+    if (
+      !window.confirm(
+        "Clear this client session? This removes their profile fields and generated reports from your workspace so you can enter the next client."
+      )
+    ) {
+      return
+    }
+    setIsClearingWorkspace(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      const token = await user.getIdToken()
+      const res = await fetch("/api/admin/client-workspace/clear", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const body = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        throw new Error(typeof body.error === "string" ? body.error : "Failed to clear workspace")
+      }
+      if (user.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
+      clearComprehensiveMysticalProfileCache(user.uid)
+      clearPersistentProfileCache(user.uid)
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("futureSeer:profileInvalidated", { detail: { userId: user.uid } }))
+      }
+      setIsEditing(true)
+      setFormData({
+        displayName: "",
+        fullName: "",
+        email: user.email || "",
+        gender: undefined,
+        birthDate: "",
+        birthTime: "",
+        birthTimeAMPM: "AM",
+        birthTimeKnown: false,
+        birthTimePeriod: undefined,
+        birthTimeNote: "",
+        birthPlace: "",
+        currentLocation: "",
+        facePhotoUrl: "",
+        palmPhotoUrl: "",
+      })
+      await refreshProfile()
+      await refreshComprehensiveProfile()
+      setSuccess("Workspace cleared. Enter the next client’s details.")
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to clear workspace")
+    } finally {
+      setIsClearingWorkspace(false)
+    }
+  }
 
   const validateProfileData = (): string | null => {
     if (formData.birthDate) {
@@ -443,6 +508,34 @@ export default function ProfilePage() {
       </div>
 
       <div className="max-w-md mx-auto w-full space-y-6">
+        {isConsultantWorkspace && (
+          <Alert className="border-violet-500/40 bg-violet-950/40 rounded-2xl">
+            <AlertDescription className="text-violet-100 text-sm space-y-3">
+              <p className="font-semibold text-white">Consultant client workspace</p>
+              <p>
+                Enter your client’s birth details and photos here, then generate the full mystical profile like any new user.
+                When you are done sharing their report, clear the workspace before the next client.
+              </p>
+              <p className="text-violet-200/90 text-xs">
+                Tip: introduce clients to futureseer.app alongside your in-person offerings.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-violet-400/50 text-violet-100 hover:bg-violet-900/40"
+                onClick={handleClearWorkspace}
+                disabled={isClearingWorkspace || isGeneratingProfile}
+              >
+                {isClearingWorkspace ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2 inline" />
+                )}
+                Clear client workspace
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-primary-container rounded-xl"><Heart className="w-5 h-5 text-primary-on-container" /></div>
@@ -497,7 +590,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between border-b border-outline-variant pb-4">
             <div className="flex items-center gap-3">
               <User className="w-6 h-6 text-amber-400" />
-              <h2 className="text-xl font-bold text-white">Personal Data</h2>
+              <h2 className="text-xl font-bold text-white">{isConsultantWorkspace ? "Client details" : "Personal Data"}</h2>
             </div>
             {!isEditing ? (
               <Button onClick={() => setIsEditing(true)} variant="ghost" className="text-amber-400 font-bold uppercase text-xs tracking-widest px-4 h-10 bg-amber-500/10 rounded-full">Edit</Button>
@@ -727,7 +820,11 @@ export default function ProfilePage() {
                   <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                 )}
                 {formData.birthDate && formData.birthPlace && canGenerateMysticalProfile && !isGeneratingProfile && (
-                  <p className="text-center text-amber-400/50 text-xs mt-2">Your current birth details above will be used for generation.</p>
+                  <p className="text-center text-amber-400/50 text-xs mt-2">
+                    {isConsultantWorkspace
+                      ? "The client’s birth details above will be used for generation."
+                      : "Your current birth details above will be used for generation."}
+                  </p>
                 )}
               </div>
             )}
@@ -787,6 +884,34 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-6">
+          {isConsultantWorkspace && (
+            <Alert className="border-violet-500/40 bg-violet-950/30 rounded-2xl">
+              <AlertDescription className="text-violet-100 text-sm space-y-3">
+                <p className="font-semibold text-white">Consultant client workspace</p>
+                <p>
+                  Enter your client’s birth details and photos here, then generate the full mystical profile like any new user.
+                  When you are done sharing their report, clear the workspace before the next client.
+                </p>
+                <p className="text-violet-200/90 text-xs">
+                  Tip: introduce clients to futureseer.app alongside your in-person offerings.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto border-violet-400/50 text-violet-100 hover:bg-violet-900/40"
+                  onClick={handleClearWorkspace}
+                  disabled={isClearingWorkspace || isGeneratingProfile}
+                >
+                  {isClearingWorkspace ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2 inline" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2 inline" />
+                  )}
+                  Clear client workspace
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 bg-amber-500/20 rounded-xl"><Heart className="w-5 h-5 text-amber-400" /></div>
@@ -846,7 +971,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between border-b border-amber-400/20 pb-4">
               <div className="flex items-center gap-3">
                 <User className="w-6 h-6 text-amber-400" />
-                <h2 className="text-xl font-bold text-white">Personal Data</h2>
+                <h2 className="text-xl font-bold text-white">{isConsultantWorkspace ? "Client details" : "Personal Data"}</h2>
               </div>
               {!isEditing ? (
                 <Button onClick={() => setIsEditing(true)} variant="ghost" className="text-amber-400 font-bold uppercase text-xs tracking-widest px-4 h-10 bg-amber-500/10 rounded-full hover:bg-amber-500/20">Edit</Button>
@@ -1094,7 +1219,11 @@ export default function ProfilePage() {
                     <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                   )}
                   {formData.birthDate && formData.birthPlace && canGenerateMysticalProfile && !isGeneratingProfile && (
-                    <p className="text-center text-amber-200/60 text-xs mt-2">Your current birth details above will be used for generation.</p>
+                    <p className="text-center text-amber-200/60 text-xs mt-2">
+                      {isConsultantWorkspace
+                        ? "The client’s birth details above will be used for generation."
+                        : "Your current birth details above will be used for generation."}
+                    </p>
                   )}
                 </div>
               )}
