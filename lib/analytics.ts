@@ -222,6 +222,21 @@ export class AnalyticsService {
     })
   }
 
+  /** Main Seer (/ask-the-seer): task parity + layout segmentation (mobile vs web). */
+  trackMainSeerChat(properties: {
+    layout: 'mobile' | 'web'
+    responseStyle: string
+    interaction: 'message_sent' | 'response_ok' | 'response_error'
+    httpStatus?: number
+    error?: string
+  }) {
+    this.trackEvent(ANALYTICS_EVENTS.ASK_THE_SEER_USED, {
+      question_type: 'main_chat',
+      surface: 'ask_the_seer_main',
+      ...properties,
+    })
+  }
+
   trackDailyGuidance(guidanceType: string, properties?: Record<string, any>) {
     this.trackEvent(ANALYTICS_EVENTS.DAILY_GUIDANCE_VIEWED, {
       guidance_type: guidanceType,
@@ -351,6 +366,7 @@ export function useAnalytics() {
     trackToolAccess: analytics.trackToolAccess.bind(analytics),
     trackToolAnalysis: analytics.trackToolAnalysis.bind(analytics),
     trackAskTheSeer: analytics.trackAskTheSeer.bind(analytics),
+    trackMainSeerChat: analytics.trackMainSeerChat.bind(analytics),
     trackError: analytics.trackError.bind(analytics),
     trackLoadTime: analytics.trackLoadTime.bind(analytics),
   }

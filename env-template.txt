@@ -93,8 +93,6 @@ CRON_SECRET=your-cron-secret
 OPENWEATHER_API_KEY=
 # NewsAPI.org - top headlines for mundane context / Seer (https://newsapi.org)
 NEWS_API_KEY=
-# GIPHY - GIF search in community (https://developers.giphy.com)
-GIPHY_API_KEY=
 
 # Growth layers (optional; omit or use 0/false — default off)
 # Short URLs /l/angel-numbers → Learn (see lib/campaignShortLinks.ts)

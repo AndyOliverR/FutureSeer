@@ -16,6 +16,22 @@ export default function PrivacyPage() {
             </p>
           </div>
 
+          {/* Data and Privacy at a glance */}
+          <section className="mb-8 rounded-2xl bg-slate-900/70 border border-amber-500/30 p-6 space-y-4">
+            <h2 className="text-xl font-bold text-amber-400">Data and Privacy at a glance</h2>
+            <ul className="list-disc list-inside space-y-2 text-white/85">
+              <li>We store account, profile, and reading data so your reports persist across sessions.</li>
+              <li>We do not sell your personal data.</li>
+              <li>You can request data access, export, correction, or deletion via our privacy support channel.</li>
+            </ul>
+            <p className="text-sm text-white/75">
+              Need help with a privacy request?{" "}
+              <Link href="/contact?type=privacy" className="text-amber-400 hover:underline">
+                Submit a privacy query
+              </Link>.
+            </p>
+          </section>
+
           {/* Main Content */}
           <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 p-8 transition-all duration-300 space-y-8">
           

@@ -6,8 +6,10 @@ import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
 import { useSettings } from "@/hooks/useSettings"
 import { useAuth } from "@/hooks/use-auth"
+import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { updateUserProfile, type UserProfile } from "@/lib/firebase"
 import { formatBirthDate, formatBirthTime, formatBirthPlace } from "@/lib/formatUtils"
+import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
@@ -23,7 +25,6 @@ export default function SettingsPage() {
   const { user, refreshProfile, signOut } = useAuth()
   const {
     settings,
-    loading,
     error,
     success,
     isEditingProfile,
@@ -56,6 +57,77 @@ export default function SettingsPage() {
     [userProfile?.birthPlace]
   )
 
+  const isMobileLayout = useIsMobileLayout()
+
+  const {
+    cardClass,
+    sectionTitleClass,
+    pageTitleClass,
+    pageSubtitleClass,
+    alertSuccessClass,
+    alertErrorClass,
+    btnPrimaryClass,
+    btnOutlineClass,
+    prefRowTileClass,
+    notifRowTileClass,
+    interestChipClass,
+    labelAccentClass,
+    sublabelClass,
+    themeSelectedClass,
+    themeUnselectedClass,
+    notifTitleClass,
+    notifDescClass,
+  } = useMemo(() => {
+    const m = isMobileLayout
+    return {
+      cardClass: m
+        ? "bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] shadow-sm mb-6 rounded-2xl"
+        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl",
+      sectionTitleClass: m
+        ? "flex items-center gap-2 text-amber-400 font-sans text-lg font-medium tracking-normal"
+        : "flex items-center gap-2 text-amber-400 font-serif text-xl font-bold",
+      pageTitleClass: m
+        ? "text-3xl font-medium font-sans text-amber-400 mb-4 tracking-normal normal-case"
+        : "text-3xl md:text-4xl font-bold font-serif text-amber-400 mb-4",
+      pageSubtitleClass: m
+        ? "text-base text-[var(--m3-on-surface-variant)] leading-relaxed"
+        : "text-base text-white/80 leading-relaxed",
+      alertSuccessClass: m
+        ? "mb-6 p-4 bg-[var(--m3-surface-container-high)] border border-[var(--m3-outline-variant)] rounded-2xl text-amber-400 text-center text-sm flex items-center justify-center gap-2"
+        : "mb-6 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-2xl text-amber-400 text-center text-sm flex items-center justify-center gap-2",
+      alertErrorClass: m
+        ? "mb-6 p-4 bg-[var(--m3-surface-container-high)] border border-red-500/40 rounded-2xl text-red-400 text-center text-sm flex items-center justify-center gap-2"
+        : "mb-6 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 rounded-2xl text-red-400 text-center text-sm flex items-center justify-center gap-2",
+      btnPrimaryClass: m
+        ? "bg-[var(--m3-primary)] text-[var(--m3-on-primary)] hover:opacity-90 font-semibold text-sm rounded-xl border-0"
+        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 font-semibold text-sm transition-all duration-300 rounded-xl",
+      btnOutlineClass: m
+        ? "border border-[var(--m3-outline-variant)] bg-[var(--m3-surface-container)] text-[var(--m3-on-surface)] hover:bg-[var(--m3-surface-container-high)] text-sm rounded-xl"
+        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white/80 hover:text-amber-400 text-sm transition-all duration-300 rounded-xl",
+      prefRowTileClass: m
+        ? "rounded-2xl bg-[var(--m3-surface-container)] border border-[var(--m3-outline-variant)] p-3"
+        : "",
+      notifRowTileClass: m
+        ? "flex items-center justify-between p-3 rounded-2xl bg-[var(--m3-surface-container)] border border-[var(--m3-outline-variant)]"
+        : "flex items-center justify-between p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg",
+      interestChipClass: m
+        ? "flex items-center space-x-2 p-3 rounded-xl bg-[var(--m3-surface-container)] border border-[var(--m3-outline-variant)] cursor-pointer"
+        : "flex items-center space-x-2 p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg hover:border-amber-500/50 transition-all duration-300 cursor-pointer",
+      labelAccentClass: m
+        ? "text-[var(--m3-on-surface)] text-base font-semibold"
+        : "text-amber-400 text-base font-semibold",
+      sublabelClass: m ? "text-[var(--m3-on-surface-variant)]" : "text-white/80",
+      themeSelectedClass: m
+        ? "bg-[var(--m3-surface-container-highest)] border-2 border-[var(--m3-primary)] text-amber-400"
+        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/50 text-amber-400",
+      themeUnselectedClass: m
+        ? "bg-[var(--m3-surface-container)] border-2 border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:border-[var(--m3-primary)]/40 hover:text-amber-400/90"
+        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/30 text-white/80 hover:border-amber-500/50 hover:text-amber-400",
+      notifTitleClass: m ? "text-[var(--m3-on-surface)] text-sm font-medium" : "text-white/80 text-sm font-medium",
+      notifDescClass: m ? "text-[var(--m3-on-surface-variant)] text-xs" : "text-white/60 text-xs",
+    }
+  }, [isMobileLayout])
+
   // Handle sign out
   const handleSignOut = async () => {
     try {
@@ -68,7 +140,7 @@ export default function SettingsPage() {
 
   return (
     <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="pt-20 px-4 pb-4 max-w-3xl mx-auto">
+      <div className={cn("pt-20 pb-4 max-w-3xl mx-auto", isMobileLayout ? "px-5" : "px-4")}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -76,8 +148,8 @@ export default function SettingsPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-10 pt-8"
         >
-          <h1 className="text-3xl md:text-4xl font-bold font-serif text-amber-400 mb-4">{t('navigation.settings')}</h1>
-          <p className="text-base text-white/80 leading-relaxed">{t('settings.managePreferences')}</p>
+          <h1 className={pageTitleClass}>{t('navigation.settings')}</h1>
+          <p className={pageSubtitleClass}>{t('settings.managePreferences')}</p>
         </motion.div>
 
         {/* Success/Error Messages */}
@@ -87,7 +159,7 @@ export default function SettingsPage() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-2xl text-amber-400 text-center text-sm flex items-center justify-center gap-2"
+              className={alertSuccessClass}
             >
               <CheckCircle className="w-5 h-5" /> {success}
               <button onClick={clearMessages} className="ml-2 text-white/80 hover:text-amber-400 transition-colors">✕</button>
@@ -98,7 +170,7 @@ export default function SettingsPage() {
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="mb-6 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 rounded-2xl text-red-400 text-center text-sm flex items-center justify-center gap-2"
+              className={alertErrorClass}
             >
               <XCircle className="w-5 h-5" /> {error}
               <button onClick={clearMessages} className="ml-2 text-red-400/80 hover:text-red-400 transition-colors">✕</button>
@@ -107,9 +179,9 @@ export default function SettingsPage() {
         </AnimatePresence>
 
         {/* Profile Card */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
+            <CardTitle className={sectionTitleClass}>
               <User className="w-6 h-6" /> Profile
             </CardTitle>
           </CardHeader>
@@ -123,7 +195,7 @@ export default function SettingsPage() {
                 }}
               >
                 <div>
-                  <label className="block text-white/80 text-sm font-semibold mb-1">Display Name</label>
+                  <label className={cn("block text-sm font-semibold mb-1", sublabelClass)}>Display Name</label>
                   <Input
                     value={profileData.displayName}
                     onChange={e => setProfileData({ ...profileData, displayName: e.target.value })}
@@ -132,7 +204,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-white/80 text-sm font-semibold mb-1">Birth Date</label>
+                    <label className={cn("block text-sm font-semibold mb-1", sublabelClass)}>Birth Date</label>
                     <Input
                       type="date"
                       value={profileData.birthDate}
@@ -141,7 +213,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-white/80 text-sm font-semibold mb-1">Birth Time</label>
+                    <label className={cn("block text-sm font-semibold mb-1", sublabelClass)}>Birth Time</label>
                     <BirthTimeDualFormatSelect
                       value={profileData.birthTime || "12:00"}
                       onChange={(next) => setProfileData({ ...profileData, birthTime: next })}
@@ -152,7 +224,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-white/80 text-sm font-semibold mb-1">Birth Place</label>
+                    <label className={cn("block text-sm font-semibold mb-1", sublabelClass)}>Birth Place</label>
                     <Input
                       value={profileData.birthPlace}
                       onChange={e => setProfileData({ ...profileData, birthPlace: e.target.value })}
@@ -161,47 +233,47 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="flex gap-4 mt-4">
-                  <Button type="submit" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 font-semibold text-sm transition-all duration-300 rounded-xl">Save</Button>
-                  <Button type="button" variant="outline" onClick={() => setIsEditingProfile(false)} className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white/80 hover:text-amber-400 text-sm transition-all duration-300 rounded-xl">Cancel</Button>
+                  <Button type="submit" className={btnPrimaryClass}>Save</Button>
+                  <Button type="button" variant="outline" onClick={() => setIsEditingProfile(false)} className={btnOutlineClass}>Cancel</Button>
                 </div>
               </form>
             ) : (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-white/80 text-sm">Name:</span>
+                  <span className={cn("text-sm", sublabelClass)}>Name:</span>
                   <span className="text-amber-400 text-sm font-semibold">{userProfile?.displayName || "-"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-white/80 text-sm">Birth Date:</span>
+                  <span className={cn("text-sm", sublabelClass)}>Birth Date:</span>
                   <span className="text-amber-400 text-sm font-semibold">{formattedBirthDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-white/80 text-sm">Birth Time:</span>
+                  <span className={cn("text-sm", sublabelClass)}>Birth Time:</span>
                   <span className="text-amber-400 text-sm font-semibold">{formattedBirthTime}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-white/80 text-sm">Birth Place:</span>
+                  <span className={cn("text-sm", sublabelClass)}>Birth Place:</span>
                   <span className="text-amber-400 text-sm font-semibold">{formattedBirthPlace}</span>
                 </div>
-                <Button onClick={() => setIsEditingProfile(true)} className="mt-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-amber-400 font-semibold text-sm transition-all duration-300 rounded-xl">Edit Profile</Button>
+                <Button onClick={() => setIsEditingProfile(true)} className={cn("mt-4", btnPrimaryClass)}>Edit Profile</Button>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Preferences Card */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
+            <CardTitle className={sectionTitleClass}>
               <Moon className="w-6 h-6" /> {t('settings.preferences')}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-3">
+            <div className={isMobileLayout ? "space-y-3" : "space-y-4"}>
+              <div className={cn("space-y-3", prefRowTileClass)}>
                 <div className="flex items-center gap-2">
                   <Sun className="w-5 h-5 text-amber-400" />
-                  <span className="text-amber-400 text-base font-semibold">Theme Preference</span>
+                  <span className={labelAccentClass}>Theme Preference</span>
                 </div>
                 <RadioGroup
                   value={settings.theme}
@@ -224,11 +296,9 @@ export default function SettingsPage() {
                         />
                         <label
                           htmlFor={`theme-${theme.value}`}
-                          className={`flex items-center justify-center gap-2 px-8 py-3 rounded-full text-sm font-medium cursor-pointer border-2 min-h-[48px] w-full min-w-[120px] transition-all duration-300 ${
-                            isSelected
-                              ? 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/50 text-amber-400'
-                              : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/30 text-white/80 hover:border-amber-500/50 hover:text-amber-400'
-                          } peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400 peer-focus-visible:ring-offset-2`}
+                          className={`flex items-center justify-center gap-2 px-2 py-3 md:px-8 rounded-full text-sm font-medium cursor-pointer border-2 min-h-[48px] w-full min-w-0 md:min-w-[120px] transition-all duration-300 ${
+                            isSelected ? themeSelectedClass : themeUnselectedClass
+                          } peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-slate-950`}
                         >
                           <span className="text-base">{theme.icon}</span>
                           <span>{theme.label}</span>
@@ -238,10 +308,10 @@ export default function SettingsPage() {
                   })}
                 </RadioGroup>
               </div>
-              <div className="flex items-center justify-between">
+              <div className={cn("flex items-center justify-between", prefRowTileClass)}>
                 <div className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-amber-400" />
-                  <span className="text-amber-400 text-base font-semibold">Notifications</span>
+                  <span className={labelAccentClass}>Notifications</span>
                 </div>
                 <Switch
                   checked={userProfile?.notificationsEnabled ?? settings.notifications}
@@ -258,10 +328,10 @@ export default function SettingsPage() {
                   }}
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className={cn("flex items-center justify-between", prefRowTileClass)}>
                 <div className="flex items-center gap-2">
                   <Mail className="w-5 h-5 text-amber-400" />
-                  <span className="text-amber-400 text-base font-semibold">Email Updates</span>
+                  <span className={labelAccentClass}>Email Updates</span>
                 </div>
                 <Switch
                   checked={userProfile?.emailUpdates ?? settings.emailUpdates}
@@ -278,17 +348,17 @@ export default function SettingsPage() {
                   }}
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className={cn("flex items-center justify-between", prefRowTileClass)}>
                 <div className="flex items-center gap-2">
                   <Mic className="w-5 h-5 text-amber-400" />
-                  <span className="text-amber-400 text-base font-semibold">Voice Guidance</span>
+                  <span className={labelAccentClass}>Voice Guidance</span>
                 </div>
                 <Switch checked={settings.voiceGuidance} onCheckedChange={v => updateSetting('voiceGuidance', v)} />
               </div>
-              <div className="flex items-center justify-between">
+              <div className={cn("flex items-center justify-between", prefRowTileClass)}>
                 <div className="flex items-center gap-2">
                   <Globe className="w-5 h-5 text-amber-400" />
-                  <span className="text-amber-400 text-base font-semibold">Language</span>
+                  <span className={labelAccentClass}>Language</span>
                 </div>
                 <select
                   value={settings.language}
@@ -307,17 +377,17 @@ export default function SettingsPage() {
         </Card>
 
         {/* Personal Context Section */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
+            <CardTitle className={sectionTitleClass}>
               <Heart className="w-6 h-6" /> Personal Context
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <div className={isMobileLayout ? "space-y-3" : "space-y-6"}>
               {/* Relationship Status */}
-              <div className="space-y-2">
-                <Label htmlFor="relationshipStatus" className="text-amber-400 text-base font-semibold flex items-center gap-2">
+              <div className={cn("space-y-2", prefRowTileClass)}>
+                <Label htmlFor="relationshipStatus" className={cn("text-base font-semibold flex items-center gap-2", labelAccentClass)}>
                   <Heart className="w-4 h-4 text-amber-400" />
                   Relationship Status
                 </Label>
@@ -348,8 +418,8 @@ export default function SettingsPage() {
               </div>
 
               {/* Children */}
-              <div className="space-y-2">
-                <Label htmlFor="hasChildren" className="text-amber-400 text-base font-semibold flex items-center gap-2">
+              <div className={cn("space-y-2", prefRowTileClass)}>
+                <Label htmlFor="hasChildren" className={cn("text-base font-semibold flex items-center gap-2", labelAccentClass)}>
                   <Users className="w-4 h-4 text-amber-400" />
                   Do you have children?
                 </Label>
@@ -378,7 +448,7 @@ export default function SettingsPage() {
                 </select>
                 {userProfile?.hasChildren && (
                   <div className="space-y-2 mt-3">
-                    <Label htmlFor="numberOfChildren" className="text-white/80 text-sm font-semibold">Number of children</Label>
+                    <Label htmlFor="numberOfChildren" className={cn("text-sm font-semibold", sublabelClass)}>Number of children</Label>
                     <Input
                       id="numberOfChildren"
                       type="number"
@@ -408,9 +478,9 @@ export default function SettingsPage() {
         </Card>
 
         {/* Divination Tool Interests Section */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
+            <CardTitle className={sectionTitleClass}>
               <Sparkles className="w-6 h-6" /> Divination Tool Interests
             </CardTitle>
           </CardHeader>
@@ -421,7 +491,7 @@ export default function SettingsPage() {
                 'Palmistry', 'Face Reading', 'I Ching', 'Runes', 
                 'Dream Analysis', 'Vastu', 'Feng Shui', 'Crystal Healing'
               ].map((tool) => (
-                <label key={tool} className="flex items-center space-x-2 p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg hover:border-amber-500/50 transition-all duration-300 cursor-pointer">
+                <label key={tool} className={cn(interestChipClass, !isMobileLayout && "hover:border-amber-500/50 transition-all duration-300")}>
                   <input
                     type="checkbox"
                     checked={userProfile?.divinationInterests?.includes(tool) || false}
@@ -441,7 +511,7 @@ export default function SettingsPage() {
                     }}
                     className="rounded border-amber-500/30 bg-slate-800 text-amber-400 focus:ring-amber-400 focus:ring-offset-0"
                   />
-                  <span className="text-white/80 text-xs">{tool}</span>
+                  <span className={cn("text-xs", sublabelClass)}>{tool}</span>
                 </label>
               ))}
             </div>
@@ -449,9 +519,9 @@ export default function SettingsPage() {
         </Card>
 
         {/* Notification Preferences Section */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
+            <CardTitle className={sectionTitleClass}>
               <Bell className="w-6 h-6" /> Notification Preferences
             </CardTitle>
           </CardHeader>
@@ -464,10 +534,10 @@ export default function SettingsPage() {
                 { key: 'communityUpdates', label: 'Community Updates', description: 'Updates about community features and discussions' },
                 { key: 'newFeatures', label: 'New Features', description: 'Announcements about new tools and features' }
               ].map((pref) => (
-                <div key={pref.key} className="flex items-center justify-between p-3 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-lg">
-                  <div className="flex-1">
-                    <div className="text-white/80 text-sm font-medium">{pref.label}</div>
-                    <div className="text-white/60 text-xs">{pref.description}</div>
+                <div key={pref.key} className={notifRowTileClass}>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <div className={notifTitleClass}>{pref.label}</div>
+                    <div className={notifDescClass}>{pref.description}</div>
                   </div>
                   <Switch
                     checked={userProfile?.notificationPreferences?.[pref.key as keyof NonNullable<UserProfile['notificationPreferences']>] ?? 
@@ -498,41 +568,43 @@ export default function SettingsPage() {
         </Card>
 
         {/* Trial/Subscription Status */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
+            <CardTitle className={sectionTitleClass}>
               <Badge className="bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs">Trial</Badge>
               Subscription
             </CardTitle>
           </CardHeader>
           <CardContent>
             {trialStatus ? (
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                 {trialStatus.isActive ? (
-                  <span className="text-white/80 text-sm">Active ({trialStatus.daysLeft} days left)</span>
+                  <span className={cn("text-sm", sublabelClass)}>Active ({trialStatus.daysLeft} days left)</span>
                 ) : (
                   <span className="text-red-400 text-sm">Expired</span>
                 )}
-                <span className="text-white/80 text-sm">Upgrade coming soon</span>
+                <span className={cn("text-sm", sublabelClass)}>Upgrade coming soon</span>
               </div>
             ) : (
-              <span className="text-white/80 text-sm">No trial info</span>
+              <span className={cn("text-sm", sublabelClass)}>No trial info</span>
             )}
           </CardContent>
         </Card>
 
         {/* Account Management */}
-        <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 transition-all duration-300 mb-8 rounded-2xl">
+        <Card className={cardClass}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-400 font-serif text-xl font-bold">
+            <CardTitle className={sectionTitleClass}>
               <LogOut className="w-6 h-6" /> Account
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-4">
+            <div className={cn("flex flex-col", isMobileLayout ? "gap-3" : "gap-4")}>
               <button 
                 onClick={handleSignOut}
-                className="flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors text-sm font-medium cursor-pointer"
+                className={cn(
+                  "flex items-center gap-2 text-amber-400 hover:text-amber-300 transition-colors text-sm font-medium cursor-pointer"
+                )}
               >
                 <LogOut className="w-5 h-5" /> Sign Out
               </button>
@@ -548,12 +620,17 @@ export default function SettingsPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="mt-4 p-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 rounded-2xl text-red-400 text-center text-sm"
+                    className={cn(
+                      "mt-4 p-4 border border-red-500/30 rounded-2xl text-red-400 text-center text-sm",
+                      isMobileLayout
+                        ? "bg-[var(--m3-surface-container-high)]"
+                        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+                    )}
                   >
                     <div className="mb-2">Are you sure you want to delete your account? This action cannot be undone.</div>
                     <div className="flex gap-4 justify-center mt-4">
-                      <Button variant="outline" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white/80 hover:text-amber-400 text-sm transition-all duration-300" onClick={() => setShowDelete(false)}>Cancel</Button>
-                      <Button variant="destructive" className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm transition-all duration-300" disabled>Delete (Coming Soon)</Button>
+                      <Button variant="outline" className={btnOutlineClass} onClick={() => setShowDelete(false)}>Cancel</Button>
+                      <Button variant="destructive" className={cn(isMobileLayout ? "border border-red-500/40 bg-[var(--m3-surface-container)] text-red-400 text-sm rounded-xl" : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm transition-all duration-300")} disabled>Delete (Coming Soon)</Button>
                     </div>
                   </motion.div>
                 )}

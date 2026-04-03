@@ -7,11 +7,14 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import MainSeerChatInterface from "@/components/MainSeerChatInterface";
 import { SeqEaseMicroSurvey } from "@/components/metrics/SeqEaseMicroSurvey";
 import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting";
+import { useIsMobileLayout } from "@/hooks/useIsMobileLayout";
 
 export default function AskTheSeerPage() {
   const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin } = useAuth();
   const { streakDays } = useDashboardData();
   const router = useRouter();
+  const isMobileLayout = useIsMobileLayout();
+  const layout = isMobileLayout ? "mobile" : "web";
 
   useEffect(() => {
     if (
@@ -70,6 +73,7 @@ export default function AskTheSeerPage() {
         <div className="w-full max-w-2xl h-[85vh] min-h-[50vh]">
           <MainSeerChatInterface
             userId={user?.uid}
+            layout={layout}
             streakDays={streakDays}
             userProfile={
               userProfile
