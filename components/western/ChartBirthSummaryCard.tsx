@@ -43,7 +43,7 @@ export function ChartBirthSummaryCard({
   const where = (birthPlace || '').trim() || 'Birth place not set'
 
   return (
-    <Card className="border-2 border-amber-300/80 bg-gradient-to-r from-amber-50 via-white to-amber-50/90 shadow-md rounded-2xl">
+    <Card className="border-2 border-amber-300/80 bg-gradient-to-r from-amber-50 via-white to-amber-50/90 shadow-md rounded-2xl text-slate-900">
       <CardContent className="p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">

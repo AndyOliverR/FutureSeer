@@ -29,7 +29,7 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
   const lilith = planets.find((p) => p.name === "Lilith")
 
   return (
-    <Card className="border-2 border-slate-200 bg-white/95 rounded-2xl shadow-md">
+    <Card className="border-2 border-slate-200 bg-white/95 rounded-2xl shadow-md text-slate-900">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-lg font-serif text-slate-900">
           <TableProperties className="w-5 h-5 text-amber-700" />
@@ -42,42 +42,42 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
           <p className="text-xs text-slate-500 leading-snug">{chartData.ephemeris.planets}</p>
         )}
       </CardHeader>
-      <CardContent className="space-y-6 pt-0">
+      <CardContent className="space-y-6 pt-0 text-slate-900">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div className="rounded-xl border border-slate-200 overflow-hidden">
             <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Polarity (10 classical planets)</div>
-            <table className="w-full text-left">
+            <table className="w-full text-left text-slate-800">
               <tbody>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2 text-slate-800">Masculine</td>
-                  <td className="px-3 py-2 tabular-nums">{counts.masculine}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-900">{counts.masculine}</td>
                 </tr>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2 text-slate-800">Feminine</td>
-                  <td className="px-3 py-2 tabular-nums">{counts.feminine}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-900">{counts.feminine}</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div className="rounded-xl border border-slate-200 overflow-hidden">
             <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Elements</div>
-            <table className="w-full text-left">
+            <table className="w-full text-left text-slate-800">
               <tbody>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Fire</td>
-                  <td className="px-3 py-2 tabular-nums">{counts.fire}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-900">{counts.fire}</td>
                 </tr>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Earth</td>
-                  <td className="px-3 py-2 tabular-nums">{counts.earth}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-900">{counts.earth}</td>
                 </tr>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Air</td>
-                  <td className="px-3 py-2 tabular-nums">{counts.air}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-900">{counts.air}</td>
                 </tr>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Water</td>
-                  <td className="px-3 py-2 tabular-nums">{counts.water}</td>
+                  <td className="px-3 py-2 tabular-nums text-slate-900">{counts.water}</td>
                 </tr>
               </tbody>
             </table>
@@ -86,19 +86,19 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
 
         <div className="rounded-xl border border-slate-200 overflow-hidden">
           <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Modalities</div>
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left text-slate-800">
             <tbody>
               <tr className="border-t border-slate-100">
                 <td className="px-3 py-2">Cardinal</td>
-                <td className="px-3 py-2 tabular-nums">{counts.cardinal}</td>
+                <td className="px-3 py-2 tabular-nums text-slate-900">{counts.cardinal}</td>
               </tr>
               <tr className="border-t border-slate-100">
                 <td className="px-3 py-2">Fixed</td>
-                <td className="px-3 py-2 tabular-nums">{counts.fixed}</td>
+                <td className="px-3 py-2 tabular-nums text-slate-900">{counts.fixed}</td>
               </tr>
               <tr className="border-t border-slate-100">
                 <td className="px-3 py-2">Mutable</td>
-                <td className="px-3 py-2 tabular-nums">{counts.mutable}</td>
+                <td className="px-3 py-2 tabular-nums text-slate-900">{counts.mutable}</td>
               </tr>
             </tbody>
           </table>
@@ -106,12 +106,12 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
 
         <div className="rounded-xl border border-slate-200 overflow-hidden">
           <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Lots &amp; nodes</div>
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-sm text-left text-slate-800">
             <tbody>
               {pof && (
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2 text-slate-800">Part of Fortune (classic)</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 text-slate-900">
                     {pof.sign} {formatDeg(pof.degreeInSign)} ({pof.isDayChart ? "day" : "night"} formula)
                   </td>
                 </tr>
@@ -119,7 +119,7 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
               {south && (
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">South Node</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 text-slate-900">
                     {typeof south.sign === "string" ? south.sign : (south.sign as { signName?: string })?.signName}{" "}
                     {typeof south.degree === "number"
                       ? `${south.degree.toFixed(1)}°`
@@ -132,7 +132,7 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
               {lilith && (
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Lilith (mean apogee)</td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 text-slate-900">
                     {typeof lilith.sign === "string" ? lilith.sign : (lilith.sign as { signName?: string })?.signName}{" "}
                     {typeof lilith.degree === "number"
                       ? `${lilith.degree.toFixed(1)}°`

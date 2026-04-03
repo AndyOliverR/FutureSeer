@@ -135,7 +135,7 @@ export function CosmicMetricCard({
       className={className}
     >
       <Card 
-        className={`bg-gradient-to-br ${colors.gradient} border-2 ${colors.border} shadow-lg rounded-3xl ${onClick ? 'cursor-pointer hover:shadow-xl transition-all duration-300' : ''} h-full`}
+        className={`bg-gradient-to-br ${colors.gradient} border-2 ${colors.border} shadow-lg rounded-3xl text-slate-900 ${onClick ? 'cursor-pointer hover:shadow-xl transition-all duration-300' : ''} h-full`}
         onClick={onClick}
         title={tooltip}
       >
