@@ -65,6 +65,7 @@ Rules:
 - Authority: No more than 4 sentences. First sentence must contain the conclusion. No filler intro. No mention of astrological mechanics.`;
 
 type ToneMode = "subtle" | "elevated" | "oracle";
+type ResponseStyle = "concise" | "balanced" | "deep";
 
 const TONE_DESCRIPTIONS: Record<ToneMode, string> = {
   subtle: "Calm, grounded, clear. No mystical exaggeration. Practical insight.",
@@ -85,6 +86,18 @@ const PRESENCE_BLOCK = `Presence:
 - Leave subtle pauses (line breaks when appropriate).
 - Never rush explanations.`;
 
+const RESPONSE_STYLE_BLOCKS: Record<ResponseStyle, string> = {
+  concise: `Response depth: concise.
+- Prefer 1–2 short sentences unless a clarifying question is required.
+- Give the direct answer first; keep details minimal.`,
+  balanced: `Response depth: balanced.
+- Keep the answer direct with brief supporting context.
+- Default to clear, practical guidance with no extra verbosity.`,
+  deep: `Response depth: deep.
+- Give direct guidance first, then add compact context.
+- Provide fuller nuance while staying concise and grounded.`,
+};
+
 function getToneMode(): ToneMode {
   const v = process.env.SEER_TONE_MODE?.toLowerCase();
   if (v === "subtle" || v === "elevated" || v === "oracle") return v;
@@ -94,7 +107,7 @@ function getToneMode(): ToneMode {
 async function handleSeerChatRequest(req: NextRequest) {
   try {
     const body = await req.json();
-    const { message, thread = [], userId, birthProfile: clientBirthProfile, toneMode } = body;
+    const { message, thread = [], userId, birthProfile: clientBirthProfile, toneMode, responseStyle } = body;
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "message is required." }, { status: 400 });
@@ -108,6 +121,10 @@ async function handleSeerChatRequest(req: NextRequest) {
     const trimmedThread = Array.isArray(thread) ? thread.slice(-6) : [];
     const tone: ToneMode =
       toneMode === "subtle" || toneMode === "elevated" || toneMode === "oracle" ? toneMode : getToneMode();
+    const style: ResponseStyle =
+      responseStyle === "concise" || responseStyle === "balanced" || responseStyle === "deep"
+        ? responseStyle
+        : "balanced";
 
     const addressName = getAddressName(profile ?? undefined);
     const useNamePause = (tone === "elevated" || tone === "oracle") && addressName;
@@ -121,6 +138,7 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
     const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "system", content: TONE_BLOCK(tone) },
+      { role: "system", content: RESPONSE_STYLE_BLOCKS[style] },
       { role: "system", content: PRESENCE_BLOCK },
     ];
     if (personalizationContext) {

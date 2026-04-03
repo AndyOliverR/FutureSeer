@@ -15,6 +15,7 @@ Short, actionable statements derived from [AGENTS.md](../AGENTS.md) and the dual
 
 4. **Persistence is a promise**  
    Generated reports live in Firestore under the user. Returning users must see prior work; changes must not corrupt or silently drop stored readings.
+   We explain storage and portability in plain language so users know how to access, export, or delete their data.
 
 5. **Clarity over spectacle**  
    Long operations (e.g. full mystical profile generation) set honest expectations about duration and what is / isn’t guaranteed. Prefer understandable states over vague cosmic copy.
