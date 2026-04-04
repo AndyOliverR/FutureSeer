@@ -19,10 +19,16 @@ import {
 } from "@/components/DeferredLayoutComponents"
 import { PlatformClassProvider } from "@/components/PlatformClassProvider"
 
+const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim()
+
 export const metadata: Metadata = {
+  applicationName: "FutureSeer",
   title: "FutureSeer - AI-Powered Mystical Insights",
   description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
   manifest: "/manifest.json",
+  ...(googleSiteVerification
+    ? { verification: { google: googleSiteVerification } }
+    : {}),
 }
 
 export const viewport: Viewport = {

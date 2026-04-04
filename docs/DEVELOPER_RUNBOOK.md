@@ -24,6 +24,15 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 - HEART metrics + SEQ survey: [HEART_AND_METRICS.md](./HEART_AND_METRICS.md)
 - Roadmap prioritization (impact–effort, second-order): [ROADMAP_PRIORITIZATION.md](./ROADMAP_PRIORITIZATION.md)
 - Marketing and asset workflow (message, channels, frequency, MJ/Firefly, optional Rive/Spline): [MARKETING_AND_ASSET_WORKFLOW.md](./MARKETING_AND_ASSET_WORKFLOW.md)
+- Google OAuth branding verification (Search Console + consent screen): [GOOGLE_OAUTH_BRANDING_VERIFICATION.md](./GOOGLE_OAUTH_BRANDING_VERIFICATION.md)
+
+## Firebase Auth domain: local dev vs production
+
+`NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` is passed to the Firebase client ([`lib/firebase.ts`](../lib/firebase.ts)). If it is your **custom domain** (e.g. `futureseer.app`), the Google **popup** loads `https://<authDomain>/__/auth/handler`—which is **not** served by `next dev` on localhost. The production site must **rewrite** `/__/auth/*` to `https://<projectId>.firebaseapp.com/__/auth/*` ([`next.config.mjs`](../next.config.mjs)).
+
+**Local development:** In `.env.local`, set `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=<yourProjectId>.firebaseapp.com` so the popup uses Firebase Hosting’s auth helper. Keep `futureseer.app` (or your custom domain) in Firebase **Authorized domains**; production on Vercel can still use `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=futureseer.app` once `/__/auth/*` returns a non-404.
+
+**Verify production:** `curl -sI https://your-domain/__/auth/handler` should not be a Next 404. If it is, ensure `NEXT_PUBLIC_FIREBASE_PROJECT_ID` (or `FIREBASE_ADMIN_PROJECT_ID`) is set at **build** time on Vercel so rewrites resolve; the config also falls back to the repo’s default project id if both are missing.
 
 ## External comparison (optional)
 
