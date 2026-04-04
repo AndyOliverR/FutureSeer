@@ -95,6 +95,23 @@ const nextConfig = {
     maxInactiveAge: 60 * 1000, // Keep pages in memory longer (60 seconds)
     pagesBufferLength: 5, // Increase buffer to reduce recompilations
   },
+  // Firebase Auth: when NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN is the production host (e.g. futureseer.app),
+  // OAuth and the auth helper must hit /__/auth/* on that host. Vercel serves the app, so proxy to the
+  // default Firebase Hosting origin (see plan: Firebase Console authorized domains + GCP redirect URIs).
+  async rewrites() {
+    // Prefer NEXT_PUBLIC_* (Vercel/client). Fallback to Admin project id at build time so /__/auth/*
+    // is never omitted if only server env vars are present. Last resort matches this repo's Firebase project.
+    const projectId =
+      (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '').trim() ||
+      (process.env.FIREBASE_ADMIN_PROJECT_ID || '').trim() ||
+      'futureseer-7abcd5';
+    return [
+      {
+        source: '/__/auth/:path*',
+        destination: `https://${projectId}.firebaseapp.com/__/auth/:path*`,
+      },
+    ];
+  },
   // I Ching: canonical URL is /tools/iching; redirect /tools/i-ching so both work (no duplicate page)
   async redirects() {
     return [

@@ -77,6 +77,8 @@ Full build, CI, and mobile/store steps are indexed in **[docs/DEVELOPER_RUNBOOK.
    
    # Firebase Configuration (Client-side public keys)
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key_here
+   # Local dev: use your_project.firebaseapp.com so Google sign-in popup hits Firebase's /__/auth.
+   # Production (custom domain): you may use your custom domain if /__/auth/* is rewritten (see next.config.mjs + docs/DEVELOPER_RUNBOOK.md).
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com

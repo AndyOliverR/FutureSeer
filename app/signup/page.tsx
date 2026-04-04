@@ -24,6 +24,7 @@ import {
   markSignupFunnelFromCampaignTracked,
   wasSignupFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
+import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
 
 type SignupFlowCompleteData = {
   selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
@@ -61,10 +62,12 @@ function SignUpPageContent() {
   const searchParams = useSearchParams()
   const planParam = searchParams?.get('plan') as 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper' | null
   const refParam = searchParams?.get('ref')
+  const redirectTo = getSafeAuthRedirectAfterSignIn(searchParams?.get("redirect") ?? null)
   const { user } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
   
   const RECAPTCHA_SITE_KEY = "6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz";
+  const didAutoRedirectRef = React.useRef(false)
 
   useEffect(() => {
     if (refParam) setReferralCode(refParam)
@@ -80,14 +83,16 @@ function SignUpPageContent() {
   // After Google redirect (or if already signed in), redirect away immediately.
   // Use full page replace so we don't rely on client router after OAuth redirect.
   useEffect(() => {
-    if (!user) return;
-    const destination = isReturningUser(user) ? "/tools" : "/profile";
+    if (!user) return
+    if (didAutoRedirectRef.current) return
+    didAutoRedirectRef.current = true
+    const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
     if (typeof window !== "undefined") {
-      window.location.replace(destination);
+      window.location.replace(destination)
     } else {
-      router.replace(destination);
+      router.replace(destination)
     }
-  }, [user, router]);
+  }, [user, router, redirectTo])
 
   // Show redirecting state as soon as user is set
   if (user) {
@@ -111,7 +116,7 @@ function SignUpPageContent() {
     try {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
-      router.push(returning ? "/tools" : "/profile")
+      router.push(redirectTo ?? (returning ? "/tools" : "/profile"))
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
       if (err.message?.includes('Redirect initiated')) return;
