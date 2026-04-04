@@ -1,9 +1,20 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const firebaseAdminStubDir = path.join(__dirname, 'lib', 'stubs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['firebase-admin'],
+  serverExternalPackages: [
+    'firebase-admin',
+    'firebase-admin/app',
+    'firebase-admin/firestore',
+    'firebase-admin/auth',
+  ],
   // Use webpack instead of Turbopack (project has custom webpack config)
   turbopack: {},
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev, isServer, webpack }) => {
     // In CI/sandbox, disable filesystem cache to avoid EPERM on rename
     if (process.env.CI === 'true' || process.env.DISABLE_WEBPACK_CACHE === '1') {
       config.cache = false;
@@ -44,7 +55,33 @@ const nextConfig = {
         util: false,
         buffer: false,
         process: false,
+        net: false,
+        http: false,
+        https: false,
+        tls: false,
       };
+
+      // lib/firebase.ts is imported from client code; webpack still traces require('firebase-admin/*').
+      // Replace with local shims (resolve.alias was unreliable with this graph; server unchanged).
+      config.plugins = config.plugins || [];
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /^firebase-admin\/app$/,
+          path.join(firebaseAdminStubDir, 'firebase-admin-app.stub.cjs')
+        ),
+        new webpack.NormalModuleReplacementPlugin(
+          /^firebase-admin\/firestore$/,
+          path.join(firebaseAdminStubDir, 'firebase-admin-firestore.stub.cjs')
+        ),
+        new webpack.NormalModuleReplacementPlugin(
+          /^firebase-admin\/auth$/,
+          path.join(firebaseAdminStubDir, 'firebase-admin-auth.stub.cjs')
+        ),
+        new webpack.NormalModuleReplacementPlugin(
+          /[\\/]lib[\\/]firebase-admin\.ts$/,
+          path.join(firebaseAdminStubDir, 'firebase-admin.client.ts')
+        )
+      );
     }
     
     // Optimize development builds for faster compilation

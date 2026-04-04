@@ -33,15 +33,174 @@ import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/pro
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
 
-function readUploadErrorFields(e: unknown): { status: number | null; detail: unknown; message: string } {
+const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
+const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
+
+function readUploadErrorFields(e: unknown): {
+  status: number | null
+  detail: unknown
+  message: string
+  firebaseCode: string | null
+  apiErrorCode: string | null
+} {
   if (e && typeof e === "object") {
     const o = e as Record<string, unknown>
     const status = typeof o.status === "number" ? o.status : null
     const detail = "detail" in o ? o.detail : undefined
     const message = e instanceof Error ? e.message : String(o.message ?? "")
-    return { status, detail, message }
+    const firebaseCode = typeof o.code === "string" ? o.code : null
+    let apiErrorCode: string | null = null
+    if (detail && typeof detail === "object" && typeof (detail as Record<string, unknown>).code === "string") {
+      apiErrorCode = (detail as Record<string, unknown>).code as string
+    }
+    return { status, detail, message, firebaseCode, apiErrorCode }
   }
-  return { status: null, detail: undefined, message: e instanceof Error ? e.message : "" }
+  return {
+    status: null,
+    detail: undefined,
+    message: e instanceof Error ? e.message : "",
+    firebaseCode: null,
+    apiErrorCode: null,
+  }
+}
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function errorHasHttpStatus(e: unknown): boolean {
+  return typeof (e as { status?: number })?.status === "number"
+}
+
+function isFetchNetworkFailure(e: unknown): boolean {
+  if (errorHasHttpStatus(e)) return false
+  if (e instanceof TypeError) return true
+  if (e instanceof Error && e.message.includes("Failed to fetch")) return true
+  return false
+}
+
+function isTransientFirestoreProfileError(e: unknown): boolean {
+  const code = (e as { code?: string })?.code
+  if (code === "unavailable" || code === "resource-exhausted" || code === "deadline-exceeded") return true
+  const msg = e instanceof Error ? e.message : String(e)
+  return msg.includes("offline") || msg.includes("Failed to get document")
+}
+
+function mapFirebaseCodeToPhotoMessage(firebaseCode: string | null): string | null {
+  if (!firebaseCode) return null
+  if (firebaseCode === "auth/network-request-failed") {
+    return "Network error while refreshing your session. Check your connection, try turning off VPN or ad blockers for this site, then retry."
+  }
+  if (
+    firebaseCode === "auth/user-token-expired" ||
+    firebaseCode === "auth/invalid-user-token" ||
+    firebaseCode === "auth/id-token-expired"
+  ) {
+    return "Session expired. Please sign in again and retry the upload."
+  }
+  if (firebaseCode === "permission-denied") {
+    return "Saving your profile was blocked. Please try again or sign out and back in. If this continues, contact support."
+  }
+  if (firebaseCode === "unavailable" || firebaseCode === "resource-exhausted") {
+    return "Our servers were busy. Please wait a moment and try again."
+  }
+  if (firebaseCode === "not-found") {
+    return "Your profile record was not found. Try signing out and signing in again, or contact support."
+  }
+  if (firebaseCode.startsWith("auth/")) {
+    return "Sign-in issue while uploading. Please sign in again and retry."
+  }
+  return null
+}
+
+function mapProfilePhotoProxyMessage(
+  status: number | null,
+  detailStr: string,
+  message: string,
+  apiErrorCode: string | null,
+): string {
+  if (status === 401) return "Session expired. Please sign in again and retry."
+  if (status === 400) {
+    if (detailStr.includes("File too large")) {
+      return "That image is too large. Please try again (we’ll optimize it) or choose a smaller photo."
+    }
+    if (detailStr.includes("Invalid file type")) {
+      return "That file type isn’t accepted by our servers. iPhone photos are often HEIC—if this keeps failing, open the image in Photos, export as JPEG, then try again. You can also use JPEG, PNG, WebP, or GIF."
+    }
+    return "That photo couldn’t be uploaded. Please try a different image."
+  }
+  if (status === 503 && apiErrorCode === "STORAGE_CONFIG") {
+    return "Photo storage is not configured on the server. Please try again later or contact support."
+  }
+  if (status && status >= 500) {
+    if (apiErrorCode === "SIGNED_URL") {
+      return "Upload succeeded but we could not create a view link. Please retry in a moment or contact support."
+    }
+    if (apiErrorCode === "STORAGE_WRITE") {
+      return "Could not store the photo. Please retry in a moment."
+    }
+    return "Upload service had trouble. Please retry in a moment."
+  }
+  if (String(message).includes("Failed to fetch")) {
+    return "Network error while uploading. Check your connection and retry."
+  }
+  return "Photo upload failed. Please try again."
+}
+
+async function fetchProfilePhotoUploadWithNetworkRetries(
+  token: string,
+  file: File,
+  photoType: "face" | "palm",
+): Promise<string> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt < PROFILE_PHOTO_FETCH_ATTEMPTS; attempt++) {
+    const multipart = new FormData()
+    multipart.append("file", file)
+    multipart.append("type", photoType)
+    try {
+      const res = await fetch("/api/profile/upload-photo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: multipart,
+      })
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+        const err = new Error(typeof data.error === "string" ? data.error : "Upload failed") as Error & {
+          status: number
+          detail: Record<string, unknown>
+        }
+        err.status = res.status
+        err.detail = data
+        throw err
+      }
+      const json = (await res.json()) as { url?: string }
+      if (!json.url) throw new Error("No URL returned")
+      return json.url
+    } catch (e) {
+      lastErr = e
+      if (errorHasHttpStatus(e)) throw e
+      if (isFetchNetworkFailure(e) && attempt < PROFILE_PHOTO_FETCH_ATTEMPTS - 1) {
+        await sleepMs(400 + attempt * 300 + Math.floor(Math.random() * 200))
+        continue
+      }
+      throw e
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Upload failed")
+}
+
+async function updateUserProfilePhotoWithRetries(uid: string, key: "facePhotoUrl" | "palmPhotoUrl", url: string): Promise<void> {
+  for (let attempt = 0; attempt < PROFILE_PHOTO_FIRESTORE_ATTEMPTS; attempt++) {
+    try {
+      await updateUserProfile(uid, { [key]: url })
+      return
+    } catch (e) {
+      if (!isTransientFirestoreProfileError(e) || attempt === PROFILE_PHOTO_FIRESTORE_ATTEMPTS - 1) {
+        throw e
+      }
+      await sleepMs(400 + attempt * 250 + Math.floor(Math.random() * 300))
+    }
+  }
 }
 
 export default function ProfilePage() {
@@ -427,50 +586,104 @@ export default function ProfilePage() {
       setOptimizing(true)
       const compressed = await compressImageFile(file, { maxDimension: 1600, quality: 0.82, mimeType: "image/jpeg" })
       setOptimizing(false)
-      const token = await user.getIdToken()
-      const formData = new FormData()
-      formData.append("file", compressed.file)
-      formData.append("type", type)
-      const res = await fetch("/api/profile/upload-photo", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      })
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
-        const err = new Error(typeof data.error === "string" ? data.error : "Upload failed") as Error & {
-          status: number
-          detail: Record<string, unknown>
-        }
-        err.status = res.status
-        err.detail = data
-        throw err
-      }
-      const { url } = await res.json()
-      if (!url) throw new Error("No URL returned")
-      setFormData((prev) => ({ ...prev, [key]: url }))
-      await updateUserProfile(user.uid, { [key]: url })
-      setTimeout(() => refreshProfile(), 300)
-    } catch (e: unknown) {
-      const { status, detail, message } = readUploadErrorFields(e)
-      const detailStr = detail !== undefined ? JSON.stringify(detail) : ""
-      let msg = "Photo upload failed. Please try again."
-      if (status === 401) msg = "Session expired. Please sign in again and retry."
-      else if (status === 400) {
-        if (detailStr.includes("File too large")) msg = "That image is too large. Please try again (we’ll optimize it) or choose a smaller photo."
-        else if (detailStr.includes("Invalid file type")) msg = "Unsupported image type. Please use JPEG, PNG, WebP, or GIF."
-        else msg = "That photo couldn’t be uploaded. Please try a different image."
-      } else if (status && status >= 500) msg = "Upload service had trouble. Please retry in a moment."
-      else if (String(message).includes("Failed to fetch")) msg = "Network error while uploading. Check your connection and retry."
 
-      setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
-      await logError("upload_photo", msg, "error", {
-        type,
-        bytes: file.size,
-        mime: file.type,
-        proxyStatus: status,
-        proxyDetail: detail ?? null,
-      })
+      let token: string
+      try {
+        token = await user.getIdToken()
+      } catch (authErr: unknown) {
+        const f = readUploadErrorFields(authErr)
+        const msg =
+          mapFirebaseCodeToPhotoMessage(f.firebaseCode) ??
+          "Session issue while preparing upload. Please sign in again and retry."
+        setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
+        await logError("upload_photo", msg, "error", {
+          type,
+          bytes: file.size,
+          mime: file.type,
+          phase: "auth_token",
+          proxyStatus: null,
+          proxyDetail: null,
+          firebaseCode: f.firebaseCode,
+          apiErrorCode: null,
+        })
+        return
+      }
+
+      let url: string
+      try {
+        url = await fetchProfilePhotoUploadWithNetworkRetries(token, compressed.file, type)
+      } catch (proxyErr: unknown) {
+        const f = readUploadErrorFields(proxyErr)
+        const detailStr = f.detail !== undefined ? JSON.stringify(f.detail) : ""
+        const msg = mapProfilePhotoProxyMessage(f.status, detailStr, f.message, f.apiErrorCode)
+        setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
+        await logError("upload_photo", typeof f.message === "string" && f.message ? f.message : msg, "error", {
+          type,
+          bytes: file.size,
+          mime: file.type,
+          phase: "proxy",
+          proxyStatus: f.status,
+          proxyDetail: f.detail ?? null,
+          firebaseCode: f.firebaseCode,
+          apiErrorCode: f.apiErrorCode,
+        })
+        return
+      }
+
+      try {
+        setFormData((prev) => ({ ...prev, [key]: url }))
+        await updateUserProfilePhotoWithRetries(user.uid, key, url)
+        setTimeout(() => refreshProfile(), 300)
+      } catch (fsErr: unknown) {
+        const f = readUploadErrorFields(fsErr)
+        const msg =
+          mapFirebaseCodeToPhotoMessage(f.firebaseCode) ??
+          "Your photo may have uploaded, but we could not update your profile. Try Save on your profile, or wait and upload again."
+        setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
+        await logError("upload_photo_firestore", f.message || msg, "error", {
+          type,
+          bytes: file.size,
+          mime: file.type,
+          phase: "firestore",
+          proxyStatus: null,
+          proxyDetail: null,
+          firebaseCode: f.firebaseCode,
+          apiErrorCode: null,
+        })
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error && /HEIC|iPhone or Mac photo/i.test(e.message)) {
+        const msg = e.message
+        setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
+        await logError("upload_photo", msg, "error", {
+          type,
+          bytes: file.size,
+          mime: file.type,
+          phase: "compress",
+          proxyStatus: null,
+          proxyDetail: null,
+          firebaseCode: null,
+          apiErrorCode: null,
+        })
+      } else {
+        const f = readUploadErrorFields(e)
+        const detailStr = f.detail !== undefined ? JSON.stringify(f.detail) : ""
+        const fromFirebase = mapFirebaseCodeToPhotoMessage(f.firebaseCode)
+        const msg =
+          fromFirebase ??
+          mapProfilePhotoProxyMessage(f.status, detailStr, f.message, f.apiErrorCode)
+        setError(type === "face" ? `Face: ${msg}` : `Palm: ${msg}`)
+        await logError("upload_photo", f.message || msg, "error", {
+          type,
+          bytes: file.size,
+          mime: file.type,
+          phase: "unknown",
+          proxyStatus: f.status,
+          proxyDetail: f.detail ?? null,
+          firebaseCode: f.firebaseCode,
+          apiErrorCode: f.apiErrorCode,
+        })
+      }
     } finally {
       setOptimizing(false)
       setUploading(false)

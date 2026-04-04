@@ -3,6 +3,8 @@
 # ALL VARIABLES ARE PRIVATE - DO NOT EXPOSE TO CLIENT
 
 # Firebase Admin SDK Configuration (Server-side only)
+# Firebase Console → Project settings → Service accounts → Generate new private key (JSON).
+# On Vercel: add the same three variables under Project Settings → Environment Variables, then redeploy.
 FIREBASE_ADMIN_PROJECT_ID="your-project-id"
 FIREBASE_ADMIN_CLIENT_EMAIL="your-service-account-email"
 FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----"

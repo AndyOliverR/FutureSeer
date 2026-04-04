@@ -32,6 +32,22 @@ export function FeatureBlocks() {
     <section className="py-8 sm:py-12 md:py-16 bg-transparent" aria-labelledby="features-heading">
       <h2 id="features-heading" className="sr-only">Features</h2>
       <div className="max-w-6xl mx-auto px-4">
+        <motion.div
+          className="text-center mb-8 md:mb-10 space-y-4 md:space-y-5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isVisible ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.35 }}
+        >
+          <p
+            className="text-sm md:text-base text-primary/80 font-medium tracking-[0.18em] uppercase"
+            id="product-name"
+          >
+            FutureSeer
+          </p>
+          <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-primary/85 font-normal leading-relaxed tracking-normal normal-case px-2">
+            Fifty-plus divination systems in one profile—AI answers from your chart and stored reports, not generic horoscopes.
+          </p>
+        </motion.div>
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8"
           initial="hidden"
