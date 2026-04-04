@@ -5,6 +5,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { devLog } from '@/lib/devLogger';
 import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import { setCachedServerAdminFirestore } from '@/lib/firebaseServerAdminCache';
 
 const projectId =
   process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -61,6 +62,7 @@ function getAdminFirestoreInstance(): Firestore | null {
 }
 
 export const adminDb = getAdminFirestoreInstance();
+setCachedServerAdminFirestore(adminDb);
 
 // Firebase Admin Auth (verifyIdToken, listUsers, setCustomUserClaims, createCustomToken)
 export { getAuth };

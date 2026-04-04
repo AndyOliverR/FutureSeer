@@ -42,30 +42,55 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(fixed)} ${units[i]}`;
 }
 
-function readUploadErrorFields(e: unknown): { status: number | null; detail: unknown; message: string } {
+function readUploadErrorFields(e: unknown): {
+  status: number | null
+  detail: unknown
+  message: string
+  firebaseCode: string | null
+} {
   if (e && typeof e === "object") {
     const o = e as Record<string, unknown>
     const status = typeof o.status === "number" ? o.status : null
     const detail = "detail" in o ? o.detail : undefined
     const message = e instanceof Error ? e.message : String(o.message ?? "")
-    return { status, detail, message }
+    const firebaseCode = typeof o.code === "string" ? o.code : null
+    return { status, detail, message, firebaseCode }
   }
-  return { status: null, detail: undefined, message: e instanceof Error ? e.message : "" }
+  return { status: null, detail: undefined, message: e instanceof Error ? e.message : "", firebaseCode: null }
 }
 
 function toFriendlyUploadError(e: unknown): string {
-  const { status, detail, message } = readUploadErrorFields(e)
+  const { status, detail, message, firebaseCode } = readUploadErrorFields(e)
   const detailStr = detail !== undefined ? JSON.stringify(detail) : ""
+
+  if (firebaseCode === "permission-denied") {
+    return "Saving your profile was blocked. Please try again or sign out and sign back in.";
+  }
+  if (
+    firebaseCode === "not-found" ||
+    message.includes("No document to update") ||
+    message.includes("not-found")
+  ) {
+    return "We couldn’t save your profile document. Tap Complete again, or sign out and sign back in.";
+  }
+  if (firebaseCode === "unavailable" || firebaseCode === "resource-exhausted") {
+    return "Service was busy. Please wait a moment and try again.";
+  }
+  if (firebaseCode === "auth/network-request-failed" || message.includes("Failed to fetch")) {
+    return "Network error. Check your connection and retry.";
+  }
 
   if (status === 401) return "Your session expired. Please sign in again, then retry the upload.";
   if (status === 400) {
     if (detailStr.includes("File too large")) return "That image is too large. Please choose a smaller photo (max 10 MB).";
+    if (detailStr.includes("Invalid file type")) {
+      return "That file type isn’t accepted by our servers. iPhone photos are often HEIC—if this keeps failing, open the image in Photos, export as JPEG, then try again. You can also use JPEG, PNG, WebP, or GIF.";
+    }
     return "That image couldn’t be uploaded. Please choose a different photo and try again.";
   }
   if (status === 415) return "Unsupported image type. Please use JPEG, PNG, WebP, or GIF.";
   if (status && status >= 500) return "Upload service had trouble. Please retry in a moment.";
 
-  if (message.includes("Failed to fetch")) return "Network error while uploading. Check your connection and retry.";
   return "Upload failed. Please retry (or try a smaller image).";
 }
 
@@ -159,7 +184,35 @@ export default function ProfileSetupPage() {
     if (!user?.uid || !originalFile) return null
 
     setOptimizingState(prev => ({ ...prev, [type]: true }))
-    const compressed = await compressImageFile(originalFile, { maxDimension: 1600, quality: 0.82, mimeType: "image/jpeg" })
+    let compressed: Awaited<ReturnType<typeof compressImageFile>>
+    try {
+      compressed = await compressImageFile(originalFile, {
+        maxDimension: 1600,
+        quality: 0.82,
+        mimeType: "image/jpeg",
+      })
+    } catch (compErr: unknown) {
+      setOptimizingState(prev => ({ ...prev, [type]: false }))
+      const msg =
+        compErr instanceof Error
+          ? compErr.message
+          : "Could not process this image. Try a JPEG or PNG, or export from Photos as JPEG."
+      setUploadState(prev => ({
+        ...prev,
+        [type]: { ...prev[type], status: "error", error: msg, uploadedUrl: null },
+      }))
+      setInlineError(msg)
+      await logError("upload_photo", msg, "error", {
+        type,
+        bytes: originalFile.size,
+        mime: originalFile.type,
+        phase: "compress",
+        proxyStatus: null,
+        proxyDetail: null,
+        firebaseCode: null,
+      })
+      return null
+    }
     setOptimizingState(prev => ({ ...prev, [type]: false }))
     const file = compressed.file
 
@@ -179,7 +232,7 @@ export default function ProfileSetupPage() {
       return url
     } catch (e: unknown) {
       const friendly = toFriendlyUploadError(e)
-      const { status: proxyStatus, detail: proxyDetail } = readUploadErrorFields(e)
+      const { status: proxyStatus, detail: proxyDetail, firebaseCode } = readUploadErrorFields(e)
       setUploadState(prev => ({
         ...prev,
         [type]: { status: "error", error: friendly, uploadedUrl: null },
@@ -194,6 +247,7 @@ export default function ProfileSetupPage() {
         didCompress: compressed.didCompress,
         proxyStatus,
         proxyDetail,
+        firebaseCode,
       })
       return null
     }
@@ -243,7 +297,7 @@ export default function ProfileSetupPage() {
     } catch (e: unknown) {
       toast({ title: 'Setup Failed', variant: 'destructive' })
       const msg = e instanceof Error ? e.message : 'Profile setup failed'
-      const { status: proxyStatus, detail: proxyDetail } = readUploadErrorFields(e)
+      const { status: proxyStatus, detail: proxyDetail, firebaseCode } = readUploadErrorFields(e)
       setInlineError(toFriendlyUploadError(e))
       await logError("complete", msg, "error", {
         hasFacePhoto: !!profileData.facePhoto,
@@ -254,6 +308,7 @@ export default function ProfileSetupPage() {
         palmPhotoType: profileData.palmPhoto?.type ?? null,
         proxyStatus,
         proxyDetail,
+        firebaseCode,
       })
     }
     finally { setIsLoading(false) }

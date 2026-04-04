@@ -1,5 +1,9 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { devLog } from '@/lib/devLogger';
+import {
+  getCachedServerAdminFirestore,
+  setCachedServerAdminFirestore,
+} from '@/lib/firebaseServerAdminCache';
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -64,22 +68,100 @@ let firebaseStorage: any = null;
 /** When true, server path successfully resolved Firestore from lib/firebase-admin.ts */
 let serverAdminDbReady = false;
 let serverAdminDb: any = null;
+/** Avoid duplicate warnings when parallel server handlers hit getFirebaseDB() before Admin is ready */
+let serverFirebaseAdminFallbackWarned = false;
+
+function warnServerFirebaseAdminFallbackOnce(message: string): void {
+  if (serverFirebaseAdminFallbackWarned) return;
+  serverFirebaseAdminFallbackWarned = true;
+  devLog.warn(message, undefined, 'firebase');
+}
+
+/**
+ * When require('./firebase-admin') returns null adminDb (stale duplicate chunk) but env is valid,
+ * initialize Admin once using process.env at call time.
+ */
+function tryRuntimeAdminFirestoreInit(): any {
+  const projectId =
+    process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  if (!projectId || !clientEmail || !privateKey) {
+    return null;
+  }
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const adminAppMod = require('firebase-admin/app');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getFirestore: getAdminFs } = require('firebase-admin/firestore');
+    const apps = adminAppMod.getApps();
+    if (apps.length > 0) {
+      return getAdminFs(apps[0]);
+    }
+    const storageBucket =
+      process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+      process.env.FIREBASE_ADMIN_STORAGE_BUCKET;
+    adminAppMod.initializeApp({
+      credential: adminAppMod.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+      projectId,
+      ...(storageBucket ? { storageBucket } : {}),
+    });
+    return getAdminFs(adminAppMod.getApps()[0]);
+  } catch (e) {
+    devLog.error('❌ Firebase Admin runtime init failed:', e, 'firebase');
+    return null;
+  }
+}
 
 const initializeFirebase = (): { app: any; auth: any; db: any } => {
   // Check if we're on server-side
   if (typeof window === 'undefined') {
+    const fromGlobal = getCachedServerAdminFirestore();
+    if (fromGlobal) {
+      serverAdminDb = fromGlobal;
+      serverAdminDbReady = true;
+      return { app: null, auth: null, db: serverAdminDb };
+    }
+
     if (serverAdminDbReady) {
       return { app: null, auth: null, db: serverAdminDb };
     }
 
     try {
       if (!adminConfig.projectId || !adminConfig.clientEmail || !adminConfig.privateKey) {
-        devLog.warn('⚠️ Firebase Admin SDK config incomplete. Using client SDK fallback.', undefined, 'firebase');
+        const missing: string[] = [];
+        if (!adminConfig.projectId) {
+          missing.push('FIREBASE_ADMIN_PROJECT_ID or NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+        }
+        if (!adminConfig.clientEmail) missing.push('FIREBASE_ADMIN_CLIENT_EMAIL');
+        if (!adminConfig.privateKey) missing.push('FIREBASE_ADMIN_PRIVATE_KEY');
+        warnServerFirebaseAdminFallbackOnce(
+          `⚠️ Firebase Admin SDK config incomplete (missing: ${missing.join(', ')}). Using client SDK fallback. Add service account fields to .env.local from Firebase Console → Service accounts, then restart pnpm dev (see env-template.txt).`
+        );
         if (!app) {
           app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
         }
         firebaseDB = getFirestore(app);
         return { app, auth: null, db: firebaseDB };
+      }
+
+      // Use global Admin app registry first: multiple webpack server chunks can each evaluate
+      // lib/firebase-admin.ts with stale null exports while another chunk already called initializeApp.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const adminAppMod = require('firebase-admin/app');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { getFirestore: getAdminFirestore } = require('firebase-admin/firestore');
+      const existingAdminApps = adminAppMod.getApps();
+      if (existingAdminApps.length > 0) {
+        serverAdminDb = getAdminFirestore(existingAdminApps[0]);
+        serverAdminDbReady = true;
+        setCachedServerAdminFirestore(serverAdminDb);
+        devLog.debug('✅ Server Firestore using firebase-admin (process-wide app)', undefined, 'firebase');
+        return { app: null, auth: null, db: serverAdminDb };
       }
 
       // Single bridge to canonical Admin module (require keeps firebase-admin out of client bundles)
@@ -88,11 +170,54 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       if (adminDb) {
         serverAdminDb = adminDb;
         serverAdminDbReady = true;
+        setCachedServerAdminFirestore(serverAdminDb);
         devLog.debug('✅ Server Firestore using lib/firebase-admin', undefined, 'firebase');
         return { app: null, auth: null, db: adminDb };
       }
 
-      devLog.warn('⚠️ Firebase Admin unavailable. Using client SDK for server-side operations', undefined, 'firebase');
+      // require('./firebase-admin') may have initialized Admin as a side effect while this
+      // webpack chunk still received a stale null export — getApps() is process-global.
+      const appsAfterBridge = adminAppMod.getApps();
+      if (appsAfterBridge.length > 0) {
+        serverAdminDb = getAdminFirestore(appsAfterBridge[0]);
+        serverAdminDbReady = true;
+        setCachedServerAdminFirestore(serverAdminDb);
+        devLog.debug(
+          '✅ Server Firestore using firebase-admin (after bridge; process-wide app)',
+          undefined,
+          'firebase'
+        );
+        return { app: null, auth: null, db: serverAdminDb };
+      }
+
+      const fromGlobalAfterBridge = getCachedServerAdminFirestore();
+      if (fromGlobalAfterBridge) {
+        serverAdminDb = fromGlobalAfterBridge;
+        serverAdminDbReady = true;
+        devLog.debug(
+          '✅ Server Firestore using firebase-admin (globalThis cache)',
+          undefined,
+          'firebase'
+        );
+        return { app: null, auth: null, db: serverAdminDb };
+      }
+
+      const runtimeAdminDb = tryRuntimeAdminFirestoreInit();
+      if (runtimeAdminDb) {
+        serverAdminDb = runtimeAdminDb;
+        serverAdminDbReady = true;
+        setCachedServerAdminFirestore(serverAdminDb);
+        devLog.debug(
+          '✅ Server Firestore using firebase-admin (runtime init)',
+          undefined,
+          'firebase'
+        );
+        return { app: null, auth: null, db: serverAdminDb };
+      }
+
+      warnServerFirebaseAdminFallbackOnce(
+        '⚠️ Firebase Admin unavailable (adminDb null after load). Using client SDK for server-side operations. If FIREBASE_ADMIN_* is set in .env.local, restart pnpm dev. Otherwise add credentials from Firebase Console → Service accounts. Check logs for "Firebase Admin initialization failed". See env-template.txt.'
+      );
       if (!app) {
         app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
       }
@@ -100,7 +225,9 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
       return { app, auth: null, db: firebaseDB };
     } catch (adminError) {
       devLog.error('❌ Firebase Admin bridge failed:', adminError, 'firebase');
-      devLog.warn('⚠️ Falling back to client SDK for server-side operations', undefined, 'firebase');
+      warnServerFirebaseAdminFallbackOnce(
+        '⚠️ Falling back to client SDK for server-side operations (Admin bridge threw). Fix FIREBASE_ADMIN_* or see env-template.txt.'
+      );
 
       if (!app) {
         app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
@@ -239,6 +366,32 @@ export const signInWithEmail = async (email: string, password: string): Promise<
   }
 };
 
+const SIGNUP_MAX_ATTEMPTS = 3;
+
+function sleepSignupBackoff(attemptIndex: number): Promise<void> {
+  const ms = 400 + attemptIndex * 250 + Math.floor(Math.random() * 400);
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientAuthNetworkError(error: unknown): boolean {
+  return (error as { code?: string })?.code === 'auth/network-request-failed';
+}
+
+function isTransientFirestoreWriteError(error: unknown): boolean {
+  const code = (error as { code?: string })?.code;
+  if (code === 'unavailable' || code === 'deadline-exceeded' || code === 'resource-exhausted') {
+    return true;
+  }
+  const msg =
+    error instanceof Error
+      ? error.message
+      : typeof (error as { message?: string })?.message === 'string'
+        ? (error as { message: string }).message
+        : '';
+  const s = String(error);
+  return msg.includes('offline') || s.includes('offline');
+}
+
 export const signUpWithEmail = async (
   email: string,
   password: string,
@@ -250,42 +403,76 @@ export const signUpWithEmail = async (
   subscriptionId?: string,
   referralCode?: string
 ): Promise<User> => {
-  try {
-    const auth = getFirebaseAuth();
-    if (!auth) throw new Error('Firebase not initialized');
-    const result: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = result.user;
-    await updateProfile(user, { displayName });
+  const auth = getFirebaseAuth();
+  if (!auth) throw new Error('Firebase not initialized');
 
-    const db = getFirebaseDB();
-    if (db) {
-      const userProfile: UserProfile = {
-        uid: user.uid,
-        email: user.email || '',
-        displayName: displayName,
-        photoURL: '',
-        country: country || 'IN',
-        isSubscribed: !!selectedPlan && selectedPlan !== 'power-user-trial',
-        isTipped: false,
-        createdAt: Date.now(),
-        lastLoginAt: Date.now(),
-        emailVerified: user.emailVerified,
-        providerData: user.providerData,
-        paymentMethodId,
-        subscriptionId,
-        selectedPlan,
-        autoMandateAccepted: !!autoMandateAccepted,
-        subscriptionStatus: 'trial',
-        referralCode: generateReferralCode(user.uid),
-        referralCount: 0,
-        freeMonthsRemaining: 1,
-      };
-      await setDoc(doc(db, 'users', user.uid), userProfile);
+  let result: UserCredential | null = null;
+  for (let attempt = 0; attempt < SIGNUP_MAX_ATTEMPTS; attempt++) {
+    try {
+      result = await createUserWithEmailAndPassword(auth, email, password);
+      break;
+    } catch (error: unknown) {
+      const retry = isTransientAuthNetworkError(error) && attempt < SIGNUP_MAX_ATTEMPTS - 1;
+      if (!retry) throw error;
+      devLog.warn('createUser network flake; retrying signup', undefined, 'firebase');
+      await sleepSignupBackoff(attempt);
     }
-    return user;
-  } catch (error: any) {
-    throw error;
   }
+  if (!result) throw new Error('Firebase not initialized');
+
+  const user = result.user;
+
+  for (let attempt = 0; attempt < SIGNUP_MAX_ATTEMPTS; attempt++) {
+    try {
+      await updateProfile(user, { displayName });
+      break;
+    } catch (error: unknown) {
+      const retry = isTransientAuthNetworkError(error) && attempt < SIGNUP_MAX_ATTEMPTS - 1;
+      if (!retry) throw error;
+      devLog.warn('updateProfile network flake; retrying', undefined, 'firebase');
+      await sleepSignupBackoff(attempt);
+    }
+  }
+
+  const db = getFirebaseDB();
+  if (db) {
+    await ensureFirestoreConnection();
+
+    const userProfile: UserProfile = {
+      uid: user.uid,
+      email: user.email || '',
+      displayName: displayName,
+      photoURL: '',
+      country: country || 'IN',
+      isSubscribed: !!selectedPlan && selectedPlan !== 'power-user-trial',
+      isTipped: false,
+      createdAt: Date.now(),
+      lastLoginAt: Date.now(),
+      emailVerified: user.emailVerified,
+      providerData: user.providerData,
+      paymentMethodId,
+      subscriptionId,
+      selectedPlan,
+      autoMandateAccepted: !!autoMandateAccepted,
+      subscriptionStatus: 'trial',
+      referralCode: generateReferralCode(user.uid),
+      referralCount: 0,
+      freeMonthsRemaining: 1,
+    };
+
+    for (let attempt = 0; attempt < SIGNUP_MAX_ATTEMPTS; attempt++) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), userProfile);
+        break;
+      } catch (error: unknown) {
+        const retry = isTransientFirestoreWriteError(error) && attempt < SIGNUP_MAX_ATTEMPTS - 1;
+        if (!retry) throw error;
+        devLog.warn('setDoc user profile flake; retrying', undefined, 'firebase');
+        await sleepSignupBackoff(attempt);
+      }
+    }
+  }
+  return user;
 };
 
 export const resetPassword = async (email: string): Promise<void> => {
@@ -328,7 +515,8 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/too-many-requests': return 'Too many attempts. Please wait a moment and try again.';
     case 'auth/user-disabled': return 'This account has been disabled. Please contact support.';
     case 'auth/operation-not-allowed': return 'This sign-in method is not enabled. Please contact support.';
-    case 'auth/network-request-failed': return 'Network error. Please check your connection and try again.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection and try again. If you use a VPN or ad blocker, try turning it off for this site or switch networks.';
     case 'auth/popup-closed-by-user': return 'Sign-in cancelled.';
     case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
     case 'auth/cancelled-popup-request': return 'Sign-in cancelled.';
@@ -409,14 +597,52 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
     const db = getFirebaseDB();
     if (!db) return;
     const userRef = doc(db, 'users', uid);
-    // Firestore updateDoc() does not accept undefined; omit undefined fields
+    // Firestore does not accept undefined; omit undefined fields
     const clean = Object.fromEntries(
       Object.entries(data).filter(([, v]) => v !== undefined)
     ) as Partial<UserProfile>;
-    await updateDoc(userRef, {
-      ...clean,
-      updatedAt: Date.now()
-    });
+    const now = Date.now();
+    const snap = await getDoc(userRef);
+
+    let payload: Record<string, unknown>;
+
+    if (!snap.exists()) {
+      const auth = getFirebaseAuth();
+      const cur = auth?.currentUser;
+      const authMatches = cur?.uid === uid;
+      const email = authMatches ? (cur?.email ?? '') : '';
+      const displayNameFromClean =
+        typeof clean.displayName === 'string' && clean.displayName.trim() !== ''
+          ? clean.displayName
+          : '';
+      const displayName =
+        displayNameFromClean || (authMatches ? (cur?.displayName ?? '').trim() : '') || '';
+
+      payload = {
+        uid,
+        email,
+        displayName,
+        photoURL: '',
+        country: 'IN',
+        createdAt: now,
+        lastLoginAt: now,
+        isSubscribed: false,
+        isTipped: false,
+        referralCode: generateReferralCode(uid),
+        referralCount: 0,
+        freeMonthsRemaining: 1,
+        subscriptionStatus: 'trial',
+        ...clean,
+        updatedAt: now,
+      };
+    } else {
+      payload = {
+        ...clean,
+        updatedAt: now,
+      };
+    }
+
+    await setDoc(userRef, payload as Partial<UserProfile>, { merge: true });
   } catch (error) {
     devLog.error('Error updating user profile:', error, 'firebase');
     throw error;

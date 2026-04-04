@@ -20,14 +20,6 @@ export function HeroSection() {
           Ask the Seer
         </h1>
 
-        <p className="text-sm md:text-base text-primary/80 font-medium tracking-[0.18em] uppercase" id="product-name">
-          FutureSeer
-        </p>
-
-        <p className="max-w-2xl mx-auto text-sm sm:text-base md:text-lg text-primary/85 font-normal leading-relaxed tracking-normal normal-case px-2">
-          Fifty-plus divination systems in one profile—AI answers from your chart and stored reports, not generic horoscopes.
-        </p>
-
         {/* Quote Section */}
         <div className="max-w-xl mx-auto space-y-4">
           <p className="text-base md:text-2xl font-quote leading-relaxed gold-glow font-light not-italic">
