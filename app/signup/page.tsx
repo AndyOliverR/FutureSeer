@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Eye, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
-import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, isReturningUser, isUserDismissedAuthError, isUnauthorizedDomainAuthError } from "@/lib/firebase"
+import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, getFirebaseAuth, isReturningUser, isUserDismissedAuthError, isUnauthorizedDomainAuthError } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
@@ -217,9 +217,23 @@ function SignUpPageContent() {
       await signUpWithEmail(email, password, displayName, selectedCountry, data.selectedPlan, data.paymentMethodId, data.autoMandateAccepted, data.subscriptionId, referralCode || undefined)
       router.push("/profile")
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : "Signup failed"
+      const err = error as { code?: string; message?: string }
+      const msg = getAuthErrorMessage(err)
       setError(msg)
-      await logError("signup_email", msg, "error", { selectedPlan: data.selectedPlan })
+      let authDomain: string | null = null
+      try {
+        const a = getFirebaseAuth()
+        const d = a?.config?.authDomain
+        authDomain = typeof d === "string" ? d : null
+      } catch {
+        /* ignore */
+      }
+      await logError("signup_email", typeof err.message === "string" ? err.message : msg, "error", {
+        selectedPlan: data.selectedPlan,
+        code: err.code ?? null,
+        authDomain,
+      })
+      throw error
     } finally {
       setIsLoading(false)
     }

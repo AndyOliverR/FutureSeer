@@ -58,8 +58,12 @@ export async function POST(request: NextRequest) {
       process.env.FIREBASE_ADMIN_STORAGE_BUCKET;
     if (!envBucket) {
       return NextResponse.json(
-        { error: 'Server storage not configured. Set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET or FIREBASE_ADMIN_STORAGE_BUCKET in .env.local (see docs/FIREBASE_STORAGE_CORS.md).' },
-        { status: 503 }
+        {
+          error:
+            'Server storage not configured. Set NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET or FIREBASE_ADMIN_STORAGE_BUCKET in .env.local (see docs/FIREBASE_STORAGE_CORS.md).',
+          code: 'STORAGE_CONFIG',
+        },
+        { status: 503 },
       );
     }
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -77,38 +81,76 @@ export async function POST(request: NextRequest) {
       getSignedUrl: (opts: { action: string; expires: string }) => Promise<[string]>;
     };
     let bucketFile: GcsBucketFile;
-    let lastErr: unknown;
-    for (const bucketName of bucketNames) {
-      try {
-        const bucket = getStorage().bucket(bucketName);
-        // GCS File; DOM `File` in lib causes a name clash without assertion
-        bucketFile = bucket.file(path) as GcsBucketFile;
-        await bucketFile.save(buffer, {
-          metadata: {
-            contentType,
-            metadata: { uploadedBy: uid },
-          },
-        });
-        lastErr = null;
-        break;
-      } catch (e) {
-        lastErr = e;
-        const msg = String((e as Error)?.message ?? '');
-        const is404 =
-          (e as { code?: number; status?: number })?.code === 404 ||
-          (e as { code?: number; status?: number })?.status === 404 ||
-          msg.includes('does not exist') ||
-          msg.includes('notFound') ||
-          JSON.stringify(e).includes('notFound');
-        if (!is404 || bucketNames.indexOf(bucketName) === bucketNames.length - 1) throw e;
-      }
-    }
-    if (lastErr) throw lastErr;
 
-    const [signedUrl] = await bucketFile!.getSignedUrl({
-      action: 'read',
-      expires: '03-01-2040',
-    });
+    try {
+      let lastErr: unknown;
+      for (const bucketName of bucketNames) {
+        try {
+          const bucket = getStorage().bucket(bucketName);
+          // GCS File; DOM `File` in lib causes a name clash without assertion
+          bucketFile = bucket.file(path) as GcsBucketFile;
+          await bucketFile.save(buffer, {
+            metadata: {
+              contentType,
+              metadata: { uploadedBy: uid },
+            },
+          });
+          lastErr = null;
+          break;
+        } catch (e) {
+          lastErr = e;
+          const msg = String((e as Error)?.message ?? '');
+          const is404 =
+            (e as { code?: number; status?: number })?.code === 404 ||
+            (e as { code?: number; status?: number })?.status === 404 ||
+            msg.includes('does not exist') ||
+            msg.includes('notFound') ||
+            JSON.stringify(e).includes('notFound');
+          if (!is404 || bucketNames.indexOf(bucketName) === bucketNames.length - 1) throw e;
+        }
+      }
+      if (lastErr) throw lastErr;
+    } catch (saveErr) {
+      console.error('[upload-photo] storage save', saveErr);
+      try {
+        await logServerError({
+          area: 'profile-setup',
+          action: 'upload_photo',
+          message: saveErr instanceof Error ? saveErr.message : 'Storage write failed',
+          route: request.nextUrl.pathname,
+          meta: { code: 'STORAGE_WRITE', hint: 'See server logs for full stack' },
+        });
+      } catch {
+        // ignore logging failures
+      }
+      return NextResponse.json({ error: 'Storage write failed', code: 'STORAGE_WRITE' }, { status: 500 });
+    }
+
+    let signedUrl: string;
+    try {
+      const [url] = await bucketFile!.getSignedUrl({
+        action: 'read',
+        expires: '03-01-2040',
+      });
+      signedUrl = url;
+    } catch (urlErr) {
+      console.error('[upload-photo] signedUrl', urlErr);
+      try {
+        await logServerError({
+          area: 'profile-setup',
+          action: 'upload_photo',
+          message: urlErr instanceof Error ? urlErr.message : 'Signed URL failed',
+          route: request.nextUrl.pathname,
+          meta: { code: 'SIGNED_URL', hint: 'See server logs for full stack' },
+        });
+      } catch {
+        // ignore logging failures
+      }
+      return NextResponse.json(
+        { error: 'Could not create download link for the photo', code: 'SIGNED_URL' },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ url: signedUrl });
   } catch (err) {
@@ -120,12 +162,13 @@ export async function POST(request: NextRequest) {
         message: err instanceof Error ? err.message : 'Unknown upload-photo error',
         route: request.nextUrl.pathname,
         meta: {
+          code: 'UPLOAD_FAILED',
           hint: 'See server logs for full stack',
         },
       });
     } catch {
       // ignore logging failures
     }
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Upload failed', code: 'UPLOAD_FAILED' }, { status: 500 });
   }
 }

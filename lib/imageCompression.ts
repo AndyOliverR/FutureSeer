@@ -80,35 +80,105 @@ async function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality
   });
 }
 
+function isHeicOrHeif(file: File): boolean {
+  const t = file.type.toLowerCase();
+  if (t === "image/heic" || t === "image/heif") return true;
+  const n = file.name.toLowerCase();
+  return n.endsWith(".heic") || n.endsWith(".heif");
+}
+
+/** Converts HEIC/HEIF to JPEG in the browser (dynamic import). Throws on failure — do not upload raw HEIC to APIs that only accept JPEG/PNG/WebP/GIF. */
+async function convertHeicToJpegFile(source: File): Promise<File> {
+  if (typeof window === "undefined") {
+    throw new Error(
+      "Could not read this iPhone or Mac photo (HEIC) in this environment. Export as JPEG from Photos and try again.",
+    );
+  }
+  const { default: heic2any } = await import("heic2any");
+  const result = await heic2any({
+    blob: source,
+    toType: "image/jpeg",
+    quality: 0.92,
+  });
+  const blobs = Array.isArray(result) ? result : [result];
+  const blob = blobs[0];
+  if (!(blob instanceof Blob)) {
+    throw new Error(
+      "Could not read this iPhone or Mac photo (HEIC). Open it in Photos, export as JPEG, and try again.",
+    );
+  }
+  return new File([blob], safeFileName(source.name, "jpg"), {
+    type: "image/jpeg",
+    lastModified: Date.now(),
+  });
+}
+
 /**
  * Best-effort compression for mobile camera photos to improve upload reliability.
- * If compression fails, returns the original file.
+ * HEIC/HEIF is converted to JPEG first (browser), then resized like other images.
+ * If compression fails for normal images, returns the original file. HEIC conversion failures throw.
  */
 export async function compressImageFile(
   file: File,
   options: Partial<ImageCompressionOptions> = {},
 ): Promise<{ file: File; didCompress: boolean; originalBytes: number; finalBytes: number }> {
   const originalBytes = file.size;
-  if (!file.type.startsWith("image/")) {
+  const looksLikeRaster =
+    file.type.startsWith("image/") || isHeicOrHeif(file);
+  if (!looksLikeRaster) {
     return { file, didCompress: false, originalBytes, finalBytes: originalBytes };
+  }
+
+  let workingFile = file;
+  let convertedFromHeic = false;
+  if (isHeicOrHeif(file)) {
+    try {
+      workingFile = await convertHeicToJpegFile(file);
+      convertedFromHeic = true;
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "Could not read this iPhone or Mac photo (HEIC). Export as JPEG from Photos and try again.";
+      throw new Error(msg);
+    }
   }
 
   const opts: ImageCompressionOptions = { ...DEFAULTS, ...options };
 
   try {
-    const { canvas } = await decodeToCanvas(file);
+    const { canvas } = await decodeToCanvas(workingFile);
     const scaled = downscale(canvas, opts.maxDimension);
     const blob = await canvasToBlob(scaled, opts.mimeType, opts.quality);
 
     const ext = opts.mimeType === "image/webp" ? "webp" : "jpg";
-    const outFile = new File([blob], safeFileName(file.name, ext), { type: opts.mimeType, lastModified: Date.now() });
+    const outFile = new File([blob], safeFileName(file.name, ext), {
+      type: opts.mimeType,
+      lastModified: Date.now(),
+    });
 
-    // If we somehow got bigger, keep original.
+    // If output is larger than original, keep original — unless we converted from HEIC (must not send HEIC to API).
     if (outFile.size >= originalBytes) {
+      if (convertedFromHeic) {
+        return {
+          file: outFile,
+          didCompress: true,
+          originalBytes,
+          finalBytes: outFile.size,
+        };
+      }
       return { file, didCompress: false, originalBytes, finalBytes: originalBytes };
     }
     return { file: outFile, didCompress: true, originalBytes, finalBytes: outFile.size };
   } catch {
+    if (convertedFromHeic && workingFile !== file) {
+      return {
+        file: workingFile,
+        didCompress: true,
+        originalBytes,
+        finalBytes: workingFile.size,
+      };
+    }
     return { file, didCompress: false, originalBytes, finalBytes: originalBytes };
   }
 }

@@ -20,13 +20,13 @@ interface SignupFlowProps {
   // URL params
   initialPlan?: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
   
-  // Callbacks
+  // Callbacks (onComplete may be async; must be awaited so loading state matches real work)
   onComplete: (data: {
     selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
     paymentMethodId: string;
     autoMandateAccepted: boolean;
     subscriptionId?: string;
-  }) => void;
+  }) => void | Promise<void>;
   onError?: (error: string) => void;
 }
 
@@ -109,16 +109,17 @@ export function SignupFlow({
 
     setIsProcessing(true);
     try {
-      onComplete({
-        selectedPlan,
-        paymentMethodId,
-        autoMandateAccepted,
-        subscriptionId,
-      });
-    } catch (error: any) {
-      if (onError) {
-        onError(error.message || 'Failed to complete signup');
-      }
+      await Promise.resolve(
+        onComplete({
+          selectedPlan,
+          paymentMethodId,
+          autoMandateAccepted,
+          subscriptionId,
+        }),
+      );
+    } catch {
+      // Parent onComplete handles setError / logging and rethrows; avoid onError here so we do not
+      // overwrite a friendly message with raw Firebase text when onError is the same as setError.
     } finally {
       setIsProcessing(false);
     }
