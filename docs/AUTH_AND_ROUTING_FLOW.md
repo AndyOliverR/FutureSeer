@@ -5,7 +5,7 @@ For a compact reference (traced flows table, route transitions by user type, nav
 ## 1. Architecture overview
 
 - **Auth provider**: [hooks/use-auth.tsx](../hooks/use-auth.tsx) wraps the app and exposes `user`, `userProfile`, `loading`, `signIn`, `signOut`, `refreshProfile`, and admin flags. It uses Firebase `onAuthStateChanged` and, on init, `getRedirectResult()` then loads profile via `getUserProfile(uid)`.
-- **No Next.js middleware**: There is no `middleware.ts`; protection is done **per-page** with `useEffect` guards that call `router.push(...)` when the user is missing.
+- **No `middleware.ts`**: Route protection uses [proxy.ts](../proxy.ts) (cookie hint + redirect to `/signin?redirect=`) plus **per-page** `useEffect` guards that call `router.push(...)` when the user is missing.
 - **Returning vs new user**: [lib/firebase.ts](../lib/firebase.ts) exports `isReturningUser(user)`: `lastSignInTime - creationTime > 60000` (ms) ⇒ returning user.
 
 ```mermaid
@@ -20,14 +20,14 @@ flowchart LR
     SignUp["/signup"]
     ProfileSetup["/profile-setup"]
     Profile["/profile"]
-    Dashboard["/dashboard"]
+    Tools["/tools"]
     Home["/"]
   end
   AuthProvider --> SignIn
   AuthProvider --> SignUp
   AuthProvider --> ProfileSetup
   AuthProvider --> Profile
-  AuthProvider --> Dashboard
+  AuthProvider --> Tools
 ```
 
 ---
@@ -37,13 +37,13 @@ flowchart LR
 | Entry | After success | Where |
 | ----- | ------------- | ----- |
 | **Sign-in page** ([app/signin/page.tsx](../app/signin/page.tsx)) | | |
-| Google | Returning → `/dashboard`, new → `/profile-setup`; or `?redirect=` if present (safe path only) | `handleGoogleSignIn`: uses `isReturningUser(user)`; `next = redirectTo ?? (returning ? "/dashboard" : "/profile-setup")`; `router.push(next)`. |
-| Email | `/dashboard` or `?redirect=` if present | `handleSubmit`: `next = redirectTo ?? "/dashboard"`; `router.push(next)`. |
+| Google | `getSafeAuthRedirectAfterSignIn(redirect) ?? (returning ? "/tools" : "/profile")` | `handleGoogleSignIn`: `isReturningUser(user)`; `router.push(destination)`. |
+| Email | Same formula | `handleSubmit`: `router.push(destination)`. |
 | **AuthModal** ([components/auth/AuthModal.tsx](../components/auth/AuthModal.tsx)) | | |
-| Google | Returning → `/dashboard`, new → `/profile-setup` | `router.push(returning ? '/dashboard' : '/profile-setup')` (line 57). Uses `isReturningUser(user)`. |
-| Email sign-in | Always → `/dashboard` | `router.push('/dashboard')` (line 102). |
+| Google | Returning → `/tools`, new → `/profile` | `router.push(returning ? '/tools' : '/profile')`. Uses `isReturningUser(user)`. |
+| Email sign-in | → `/tools` | `router.push('/tools')`. |
 
-**Note**: The sign-in page reads `redirect` from `useSearchParams()` and uses it when safe (path must start with `/` and not `//`). AuthModal is **not currently imported or used** anywhere else in the app; entry points use `/signin` and `/signup` (e.g. [hero-section.tsx](../components/hero-section.tsx)).
+**Note**: The sign-in page reads `redirect` from `useSearchParams()` and validates it with [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts) (allowlisted paths; unknown `/community/*` → `/community/attribution`). AuthModal is **not currently imported or used** anywhere else in the app; entry points use `/signin` and `/signup` (e.g. [hero-section.tsx](../components/hero-section.tsx)).
 
 ---
 
@@ -52,10 +52,10 @@ flowchart LR
 | Entry | After success | Where |
 | ----- | ------------- | ----- |
 | **Sign-up page** ([app/signup/page.tsx](../app/signup/page.tsx)) | | |
-| Google | Returning → `/dashboard`, new → `/profile-setup` | `router.push(returning ? "/dashboard" : "/profile-setup")` (line 69). Uses `isReturningUser(user)`. |
-| Email (SignupFlow) | Always → `/profile-setup` | `router.push("/profile-setup")` (line 176). |
+| Google | `redirectTo ?? (returning ? "/tools" : "/profile")` | `handleGoogleSignIn`: uses `getSafeAuthRedirectAfterSignIn` for `redirectTo`. |
+| Email (SignupFlow) | Always → `/profile` | After flow completes: `router.push("/profile")`. |
 | **AuthModal** | | |
-| Email sign-up | → `/profile-setup` | `router.push('/profile-setup')` (line 142). |
+| Email sign-up | → `/profile` | `router.push('/profile')`. |
 
 ---
 
@@ -72,7 +72,7 @@ flowchart LR
 - **Route**: [app/profile/page.tsx](../app/profile/page.tsx).
 - **Guard**: `useEffect`: if `!authLoading && !user` → `router.push("/signin")` (lines 281–284). If `!user` after loading, render returns `null` (lines 711–713) while the effect performs the redirect.
 - **Save**: `handleSave` updates profile and stays on `/profile` (no navigation).
-- **Generate mystical profile**: On success → `router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)` (typically `/ask-the-seer`; see [lib/authRouting.ts](../lib/authRouting.ts)).
+- **Generate mystical profile**: On success → `router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)` (currently `/tools`; see [lib/authRouting.ts](../lib/authRouting.ts)).
 
 ---
 
@@ -92,13 +92,13 @@ So logout **always** does a full page reload to `/`, not `router.push`.
 
 | User type | Typical path |
 | --------- | ------------- |
-| **Returning** (Google) | Sign-in or sign-up → `/dashboard`; if `userProfile.mysticalProfileGenerated` then immediate redirect to **canonical default** `/ask-the-seer` (or `?redirect=` target). |
-| **Returning** (with reports) | Dashboard or profile-setup → `router.replace` to canonical default ([lib/authRouting.ts](../lib/authRouting.ts) `RETURNING_USER_WITH_REPORTS_DESTINATION` = `/ask-the-seer`). |
-| **New** (Google) | Sign-in or sign-up or AuthModal → `/profile-setup` → complete → `/profile`. |
-| **New** (Email) | Sign-up → `/profile-setup` → complete → `/profile`. |
-| **Edited** (profile) | User edits on `/profile` → Save → remains on `/profile`; or "Generate mystical profile" success → after 2s → `/ask-the-seer`. |
+| **Returning** (Google) | Sign-in or sign-up → `/tools` by default; allowlisted `?redirect=` or proxy-provided redirect ([lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts)). If `userProfile.mysticalProfileGenerated`, profile-setup and similar send users to `RETURNING_USER_WITH_REPORTS_DESTINATION`. |
+| **Returning** (with reports) | profile-setup → `router.replace` to [lib/authRouting.ts](../lib/authRouting.ts) `RETURNING_USER_WITH_REPORTS_DESTINATION` (currently `/tools`). |
+| **New** (Google) | Sign-in or sign-up → `/profile` by default; may use `/profile-setup` for onboarding. |
+| **New** (Email) | Sign-up → `/profile` after SignupFlow. |
+| **Edited** (profile) | User edits on `/profile` → Save → remains on `/profile`; or "Generate mystical profile" success → `/tools` (same constant). |
 
-**Canonical default for returning users with reports**: When profile is complete and reports exist (`userProfile.mysticalProfileGenerated === true`), the app redirects to the destination in [lib/authRouting.ts](../lib/authRouting.ts) (`RETURNING_USER_WITH_REPORTS_DESTINATION`, currently `/ask-the-seer`). Dashboard (after payment capture) and profile-setup both enforce this.
+**Canonical default for returning users with reports**: When profile is complete and reports exist (`userProfile.mysticalProfileGenerated === true`), the app redirects to `RETURNING_USER_WITH_REPORTS_DESTINATION` in [lib/authRouting.ts](../lib/authRouting.ts) (currently `/tools`). Profile-setup enforces this.
 
 ---
 
@@ -106,18 +106,17 @@ So logout **always** does a full page reload to `/`, not `router.push`.
 
 ### 8.1 `router.push(...)` (client-side)
 
-- **Auth**: [app/signin/page.tsx](../app/signin/page.tsx) → `/dashboard`, `/profile-setup`, or safe `?redirect=` value. [app/signup/page.tsx](../app/signup/page.tsx) → `/dashboard` or `/profile-setup`. [AuthModal](../components/auth/AuthModal.tsx) → `/dashboard` or `/profile-setup`.
-- **Guarded pages**: [profile-setup](../app/profile-setup/page.tsx) → `/signin` when `!user`; if `mysticalProfileGenerated` → canonical default; on complete → `/profile`. [profile](../app/profile/page.tsx) → `/signin` when `!user`; after generate success → `/ask-the-seer`. [dashboard](../app/dashboard/page.tsx) → `/signin` when `!user`; when `userProfile.mysticalProfileGenerated === true` → `router.replace` to canonical default ([lib/authRouting.ts](../lib/authRouting.ts)).
+- **Auth**: [app/signin/page.tsx](../app/signin/page.tsx) → `/tools`, `/profile`, or allowlisted `?redirect=`. [app/signup/page.tsx](../app/signup/page.tsx) → same for Google; email → `/profile`. [AuthModal](../components/auth/AuthModal.tsx) → `/tools` or `/profile`.
+- **Guarded pages**: [profile-setup](../app/profile-setup/page.tsx) → `/signin` when `!user`; if `mysticalProfileGenerated` → canonical default; on complete → `/profile`. [profile](../app/profile/page.tsx) → `/signin` when `!user`; after generate success → `RETURNING_USER_WITH_REPORTS_DESTINATION` (`/tools`). There is no top-level [app/dashboard/page.tsx](../app/dashboard/page.tsx); admin overview is `/admin/dashboard`.
 - **Marketing / global**: [hero-section](../components/hero-section.tsx) → `/signup`, `/signin`. [how-it-works](../components/how-it-works.tsx), [sticky-cta](../components/sticky-cta.tsx) → `/signup`.
-- **Subscribe**: [useSubscribe](../hooks/useSubscribe.ts) → `/dashboard` (power-user-trial or after verify); when `!user` → `/signin?redirect=/subscribe` (sign-in page reads `redirect` and sends user to `/subscribe` after login).
+- **Subscribe**: [useSubscribe](../hooks/useSubscribe.ts); when `!user` → `/signin?redirect=/subscribe` (sign-in validates `redirect` via [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts)).
 - **Tools**: Many tool pages push `/profile-setup` or `/profile` or `/signin` when profile is missing or user wants to complete profile. Some use `router.push('/profile-setup')`, others `window.location.href = '/profile-setup'`.
-- **Other**: [toolRouting](../lib/utils/toolRouting.ts) `router.push(route)`; dashboard cards; [CompatibilityTab](../components/compatibility/CompatibilityTab.tsx) → `/subscribe?plan=...`.
+- **Other**: [toolRouting](../lib/utils/toolRouting.ts) `router.push(route)`; [CompatibilityTab](../components/compatibility/CompatibilityTab.tsx) → `/subscribe?plan=...`.
 
 ### 8.2 Guards (useEffect redirects)
 
 - **profile-setup**: `if (!user) router.push('/signin')`; if `userProfile?.mysticalProfileGenerated === true` → `router.replace` to canonical default.
 - **profile**: `if (!authLoading && !user) router.push("/signin")`; and when `!user`, component returns `null` so the redirect can run.
-- **dashboard**: `if (!authLoading && !user) router.push("/signin")`; when `!user` return `null`; when `userProfile?.mysticalProfileGenerated === true` → `router.replace(RETURNING_USER_WITH_REPORTS_DESTINATION)` and return `null`.
 
 ### 8.3 Full reload (effect)
 
@@ -128,7 +127,7 @@ So logout **always** does a full page reload to `/`, not `router.push`.
 ## 9. Notes
 
 - **AuthModal**: Not used anywhere in the app; entry points use dedicated `/signin` and `/signup` pages.
-- **Redirect param**: Sign-in page uses `?redirect=` (safe path only: must start with `/`, not `//`) so flows like subscribe can send users to `/signin?redirect=/subscribe` and land them on `/subscribe` after login.
+- **Redirect param**: Sign-in (and sign-up Google paths) use `?redirect=` validated by [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts) so flows like `/signin?redirect=/subscribe` land on real routes; invalid paths fall back to `/tools` or `/profile`.
 
 ---
 
@@ -143,6 +142,7 @@ So logout **always** does a full page reload to `/`, not `router.push`.
 | Auth modal (unused) | [components/auth/AuthModal.tsx](../components/auth/AuthModal.tsx) |
 | Profile setup | [app/profile-setup/page.tsx](../app/profile-setup/page.tsx) |
 | Profile (view/edit) | [app/profile/page.tsx](../app/profile/page.tsx) |
-| Dashboard | [app/dashboard/page.tsx](../app/dashboard/page.tsx) |
+| Post-login redirect allowlist | [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts) |
+| Route protection proxy | [proxy.ts](../proxy.ts) |
 | Canonical default (returning + reports) | [lib/authRouting.ts](../lib/authRouting.ts) |
 | Logout from UI | [components/UserMenuDropdown.tsx](../components/UserMenuDropdown.tsx) |

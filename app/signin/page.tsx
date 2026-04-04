@@ -21,6 +21,7 @@ import {
   markSigninFunnelFromCampaignTracked,
   wasSigninFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
+import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
 
 // Declare grecaptcha for TypeScript (enterprise API)
 declare global {
@@ -32,13 +33,6 @@ declare global {
       };
     };
   }
-}
-
-function getSafeRedirect(redirect: string | null): string | null {
-  if (!redirect || typeof redirect !== "string") return null
-  const trimmed = redirect.trim()
-  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed
-  return null
 }
 
 function SignInContent() {
@@ -54,7 +48,7 @@ function SignInContent() {
   
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = getSafeRedirect(searchParams?.get("redirect") ?? null)
+  const redirectTo = getSafeAuthRedirectAfterSignIn(searchParams?.get("redirect") ?? null)
   const { user } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
 
