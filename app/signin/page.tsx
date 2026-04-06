@@ -14,6 +14,7 @@ import {
   signInWithGoogle,
   signInWithApple,
   signInWithEmail,
+  waitForAuthenticatedSession,
   getAuthErrorMessage,
   isReturningUser,
   resetPassword,
@@ -74,6 +75,7 @@ function SignInContent() {
   // Use full page replace so we don't rely on client router after OAuth redirect.
   useEffect(() => {
     if (!user) return;
+    setError((prev) => (prev ? null : prev))
     if (didAutoRedirectRef.current) return;
     didAutoRedirectRef.current = true;
     const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile");
@@ -111,6 +113,16 @@ function SignInContent() {
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string }
       if (isAuthRedirectInitiatedError(error)) return
+      if (isUserDismissedAuthError(err)) {
+        const resolvedSession = await waitForAuthenticatedSession(1200)
+        if (resolvedSession) {
+          await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
+            method: "google",
+            code: err.code ?? null,
+          })
+          return
+        }
+      }
       const msg = getAuthErrorMessage(err)
       setError(msg)
       if (isUserDismissedAuthError(err)) {
@@ -150,6 +162,16 @@ function SignInContent() {
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string }
       if (isAuthRedirectInitiatedError(error)) return
+      if (isUserDismissedAuthError(err)) {
+        const resolvedSession = await waitForAuthenticatedSession(1200)
+        if (resolvedSession) {
+          await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
+            method: "apple",
+            code: err.code ?? null,
+          })
+          return
+        }
+      }
       const msg = getAuthErrorMessage(err)
       setError(msg)
       if (isUserDismissedAuthError(err)) {
@@ -258,6 +280,12 @@ function SignInContent() {
                 Sign In
               </Button>
             </form>
+            <p className="mt-4 text-center text-xs text-surface-on-variant/80">
+              By continuing, you agree to our{" "}
+              <Link href="/terms" className="text-amber-400 underline">Terms</Link>
+              {" "}and{" "}
+              <Link href="/privacy" className="text-amber-400 underline">Privacy Policy</Link>.
+            </p>
           </div>
           <div className="mt-8 text-center pt-6 border-t border-outline-variant/30">
             <p className="text-surface-on-variant text-sm font-medium">New to FutureSeer? <Link href="/signup" className="text-amber-400 font-bold hover:underline ml-1">Join the Experiment</Link></p>
@@ -321,6 +349,12 @@ function SignInContent() {
               Continue Journey
             </Button>
           </form>
+          <p className="text-center text-xs text-amber-200/70">
+            By continuing, you agree to our{" "}
+            <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">Terms</Link>
+            {" "}and{" "}
+            <Link href="/privacy" className="text-amber-400 underline hover:text-amber-300">Privacy Policy</Link>.
+          </p>
           <div className="text-center pt-4 border-t border-white/5">
             <p className="text-amber-200/80 text-sm font-light">New Seeker? <Link href="/signup" className="text-amber-400 font-bold hover:underline ml-1">Create Account</Link></p>
           </div>

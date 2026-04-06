@@ -1,6 +1,7 @@
 "use client"
 
-import { X, Instagram, Facebook, Youtube, Share2 } from 'lucide-react'
+import Link from "next/link"
+import { X, Instagram, Facebook, Youtube } from 'lucide-react'
 
 export function Footer() {
   return (
@@ -35,9 +36,9 @@ export function Footer() {
             <h4 className="text-lg font-semibold text-amber-300 mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <a href="/" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Home
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="/about" className="text-gray-400 hover:text-amber-400 transition-colors">
@@ -45,9 +46,9 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/tools" className="text-gray-400 hover:text-amber-400 transition-colors">
+                <Link href="/tools" className="text-gray-400 hover:text-amber-400 transition-colors">
                   Tools
-                </a>
+                </Link>
               </li>
               <li>
                 <a href="/subscribe" className="text-gray-400 hover:text-amber-400 transition-colors">
@@ -68,7 +69,12 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <a href="/terms" className="text-gray-400 hover:text-amber-400 transition-colors">
-                  Terms & Conditions
+                  Terms
+                </a>
+              </li>
+              <li>
+                <a href="/privacy" className="text-gray-400 hover:text-amber-400 transition-colors">
+                  Privacy
                 </a>
               </li>
               <li>

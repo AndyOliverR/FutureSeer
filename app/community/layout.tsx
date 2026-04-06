@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 
-const site = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
+const rawSite = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
+const site = rawSite.replace("://www.", "://")
 
 export const metadata: Metadata = {
   title: "Community | FutureSeer",

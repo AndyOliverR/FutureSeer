@@ -40,6 +40,20 @@ export function MinimalNav() {
         </motion.div>
         <span className="m3-label-medium">Home</span>
       </Link>
+      <div className="flex items-center gap-4 ml-4">
+        <Link
+          href="/terms"
+          className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-on-surface)] transition-colors m3-label-medium"
+        >
+          Terms
+        </Link>
+        <Link
+          href="/privacy"
+          className="text-[var(--m3-on-surface-variant)] hover:text-[var(--m3-on-surface)] transition-colors m3-label-medium"
+        >
+          Privacy
+        </Link>
+      </div>
     </nav>
   )
 }

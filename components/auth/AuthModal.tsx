@@ -16,6 +16,8 @@ import {
   isReturningUser,
   getAuthErrorMessage,
   isAuthRedirectInitiatedError,
+  isUserDismissedAuthError,
+  waitForAuthenticatedSession,
 } from '@/lib/firebase';
 import { isAppleSignInEnabledClient } from '@/lib/authFeatureFlags';
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
@@ -83,6 +85,13 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         devLog.debug('Redirect authentication initiated', undefined, 'AuthModal');
         return;
       }
+      if (isUserDismissedAuthError(error)) {
+        const resolvedSession = await waitForAuthenticatedSession(1200);
+        if (resolvedSession) {
+          devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
+          return;
+        }
+      }
       
       const msg = getAuthErrorMessage(error);
       setError(msg);
@@ -124,6 +133,13 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
       if (isAuthRedirectInitiatedError(error)) {
         devLog.debug('Redirect authentication initiated', undefined, 'AuthModal');
         return;
+      }
+      if (isUserDismissedAuthError(error)) {
+        const resolvedSession = await waitForAuthenticatedSession(1200);
+        if (resolvedSession) {
+          devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
+          return;
+        }
       }
 
       const msg = getAuthErrorMessage(error);

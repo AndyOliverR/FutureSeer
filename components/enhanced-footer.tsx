@@ -46,6 +46,8 @@ export function EnhancedFooter() {
             <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
             <Link href="/pricing" className="text-xs font-medium text-surface-on-variant hover:text-primary">Pricing</Link>
             <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
+            <Link href="/terms" className="text-xs font-medium text-surface-on-variant hover:text-primary">Terms</Link>
+            <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
             <Link href="/privacy" className="text-xs font-medium text-surface-on-variant hover:text-primary">Privacy</Link>
           </div>
           <div className="flex-1 min-w-[160px] max-w-xs flex flex-col gap-1">
@@ -89,6 +91,10 @@ export function EnhancedFooter() {
             )}
             <p className="text-[9px] text-surface-on-variant/85 leading-tight">
               No spam. Unsubscribe anytime.{" "}
+              <Link href="/terms" className="text-primary/90 hover:underline">
+                Terms
+              </Link>
+              {" · "}
               <Link href="/privacy" className="text-primary/90 hover:underline">
                 Privacy
               </Link>
