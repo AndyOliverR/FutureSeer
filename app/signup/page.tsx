@@ -16,6 +16,7 @@ import {
   signInWithGoogle,
   signInWithApple,
   signUpWithEmail,
+  waitForAuthenticatedSession,
   getAuthErrorMessage,
   getFirebaseAuth,
   isReturningUser,
@@ -97,6 +98,7 @@ function SignUpPageContent() {
   // Use full page replace so we don't rely on client router after OAuth redirect.
   useEffect(() => {
     if (!user) return
+    setError((prev) => (prev ? null : prev))
     if (didAutoRedirectRef.current) return
     didAutoRedirectRef.current = true
     const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
@@ -133,6 +135,16 @@ function SignUpPageContent() {
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
       if (isAuthRedirectInitiatedError(error)) return;
+      if (isUserDismissedAuthError(err)) {
+        const resolvedSession = await waitForAuthenticatedSession(1200)
+        if (resolvedSession) {
+          await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
+            provider: "google",
+            code: err.code ?? null,
+          })
+          return
+        }
+      }
       const msg = getAuthErrorMessage(err)
       setError(msg)
       if (isUserDismissedAuthError(err)) {
@@ -168,6 +180,16 @@ function SignUpPageContent() {
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
       if (isAuthRedirectInitiatedError(error)) return;
+      if (isUserDismissedAuthError(err)) {
+        const resolvedSession = await waitForAuthenticatedSession(1200)
+        if (resolvedSession) {
+          await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
+            provider: "apple",
+            code: err.code ?? null,
+          })
+          return
+        }
+      }
       const msg = getAuthErrorMessage(err)
       setError(msg)
       if (isUserDismissedAuthError(err)) {
@@ -277,7 +299,12 @@ function SignUpPageContent() {
               <>
                 <label className="flex items-start gap-3 cursor-pointer text-surface-on-variant text-sm mb-6">
                   <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-0.5 border-outline-variant rounded" />
-                  <span>I confirm I am at least 16 years old and agree to the <Link href="/terms" className="text-amber-400 underline">Terms</Link>.</span>
+                  <span>
+                    I confirm I am at least 16 years old and agree to the{" "}
+                    <Link href="/terms" className="text-amber-400 underline">Terms</Link>
+                    {" "}and{" "}
+                    <Link href="/privacy" className="text-amber-400 underline">Privacy Policy</Link>.
+                  </span>
                 </label>
                 <OAuthProviderButtons
                   variant="mobile"
@@ -351,7 +378,12 @@ function SignUpPageContent() {
             <div className="space-y-6">
               <label className="flex items-start gap-3 cursor-pointer text-white/90 text-sm font-light pb-2 border-b border-white/10">
                 <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-0.5 border-amber-500/40 rounded data-[state=checked]:bg-amber-500/20 shrink-0" />
-                <span>I confirm I am at least 16 years old and agree to the <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">Terms</Link>.</span>
+                <span>
+                  I confirm I am at least 16 years old and agree to the{" "}
+                  <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">Terms</Link>
+                  {" "}and{" "}
+                  <Link href="/privacy" className="text-amber-400 underline hover:text-amber-300">Privacy Policy</Link>.
+                </span>
               </label>
               <OAuthProviderButtons
                 variant="web"

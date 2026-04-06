@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next"
 import { LEARN_SLUGS } from "@/app/learn/learnArticles"
 
-const site = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
+const rawSite = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
+const site = rawSite.replace("://www.", "://")
 
 /** High-value tool paths for discovery (subset of /tools/*). */
 const TOOL_PATHS = [
@@ -35,7 +36,6 @@ const TOOL_PATHS = [
 const STATIC_PATHS = [
   "/",
   "/about",
-  "/community",
   "/community/attribution",
   "/contact",
   "/pricing",

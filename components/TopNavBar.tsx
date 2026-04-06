@@ -28,6 +28,8 @@ const navLinks = [
   { name: "Settings", href: "/settings", icon: "⚙️" },
   { name: "Pricing", href: "/pricing", icon: "💰" },
   { name: "About", href: "/about", icon: "ℹ️" },
+  { name: "Terms", href: "/terms", icon: "📄" },
+  { name: "Privacy", href: "/privacy", icon: "🔒" },
   // Admin-only entry visible only to isAdmin / isSuperadmin
   { name: "Admin Dashboard", href: "/admin/dashboard", icon: "🛡️", adminOnly: true as const },
 ];
