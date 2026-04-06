@@ -4,7 +4,16 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User } from 'firebase/auth';
 import { devLog } from '@/lib/devLogger';
 import { analytics } from '@/lib/analytics';
-import { getFirebaseAuth, signInWithGoogle, signOutUser, getUserProfile, UserProfile, ensureFirestoreConnection, getRedirectResult } from '@/lib/firebase';
+import {
+  getFirebaseAuth,
+  signInWithGoogle,
+  signOutUser,
+  getUserProfile,
+  UserProfile,
+  ensureFirestoreConnection,
+  getRedirectResult,
+  ensureUserDocumentFromAuth,
+} from '@/lib/firebase';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 
 interface AuthContextType {
@@ -118,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const redirectResult = await getRedirectResult();
         if (redirectResult?.user) {
           devLog.debug('Redirect authentication completed successfully', 'auth');
+          void ensureUserDocumentFromAuth(redirectResult.user).catch(() => {});
           setUser(redirectResult.user);
           setLoading(false);
           // Load profile in background so rest of app has it soon

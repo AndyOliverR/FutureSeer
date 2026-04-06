@@ -27,7 +27,7 @@ Google recommends securing API keys and service accounts. Here’s how FutureSee
 
 ### Already in place
 
-- **No keys in source control**: All secrets live in environment variables (`.env.local` is gitignored; Vercel uses Environment Variables). Firebase client config, Firebase Admin (`FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`), `GROQ_API_KEY`, `GOOGLE_PLACES_API_KEY`, `TIMEZONE_API_KEY`, `RECAPTCHA_ENTERPRISE_API_KEY`, etc. are read from `process.env` only.
+- **No keys in source control**: All secrets live in environment variables (`.env.local` is gitignored; Vercel uses Environment Variables). Firebase client config, Firebase Admin (`FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`), `GROQ_API_KEY`, `GOOGLE_PLACES_API_KEY`, `TIMEZONE_API_KEY`, reCAPTCHA (if re-enabled), etc. are read from `process.env` only.
 
 ### What to do in Google Cloud / Firebase Console
 

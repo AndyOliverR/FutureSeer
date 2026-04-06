@@ -7,9 +7,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, isReturningUser, getAuthErrorMessage } from '@/lib/firebase';
+import {
+  signInWithGoogle,
+  signInWithApple,
+  signInWithEmail,
+  signUpWithEmail,
+  resetPassword,
+  isReturningUser,
+  getAuthErrorMessage,
+  isAuthRedirectInitiatedError,
+} from '@/lib/firebase';
+import { isAppleSignInEnabledClient } from '@/lib/authFeatureFlags';
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
 import { useToast } from '@/hooks/use-toast';
+import { RecaptchaScript } from '@/components/RecaptchaScript';
+import { RECAPTCHA_ACTIONS } from '@/lib/recaptcha/actions';
+import { ensureRecaptchaVerifiedForWebAuth } from '@/lib/recaptchaClient';
 import { CountrySelector } from '@/components/CountrySelector';
 import { ModalPortal } from '@/components/ui/ModalPortal';
 import { devLog } from '@/lib/devLogger';
@@ -34,7 +47,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
   const [displayName, setDisplayName] = useState('');
   const [selectedCountry, setSelectedCountry] = useState<string>('');
   
-  const { signIn } = useAuth();
+  const showApple = isAppleSignInEnabledClient();
+  const isMobileLayout = useIsMobileLayout();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -65,11 +79,53 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         return;
       }
       
-      if (error.message && error.message.includes('Redirect initiated')) {
+      if (isAuthRedirectInitiatedError(error)) {
         devLog.debug('Redirect authentication initiated', undefined, 'AuthModal');
         return;
       }
       
+      const msg = getAuthErrorMessage(error);
+      setError(msg);
+      toast({
+        title: "Sign-in failed",
+        description: msg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    if (isLoading) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const user = await signInWithApple();
+      const returning = isReturningUser(user);
+      toast({
+        title: returning ? "Welcome back! 🌟" : "Welcome to FutureSeer! 🌟",
+        description: returning ? "Your mystical journey continues." : "Your mystical journey begins now.",
+      });
+      onClose();
+      router.push(returning ? '/tools' : '/profile');
+    } catch (error: any) {
+      if (error.message?.includes('Target ID already exists') ||
+          error.message?.includes('already exists') ||
+          error.message?.includes('Sign-in is already in progress')) {
+        devLog.debug('Sign-in already in progress', undefined, 'AuthModal');
+        return;
+      }
+
+      if (isAuthRedirectInitiatedError(error)) {
+        devLog.debug('Redirect authentication initiated', undefined, 'AuthModal');
+        return;
+      }
+
       const msg = getAuthErrorMessage(error);
       setError(msg);
       toast({
@@ -93,6 +149,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     setError(null);
     
     try {
+      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN);
       await signInWithEmail(email, password);
       toast({
         title: "Welcome back! 🌟",
@@ -134,6 +191,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     setError(null);
     
     try {
+      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.SIGNUP);
       await signUpWithEmail(email, password, displayName, selectedCountry);
       toast({
         title: "Welcome to FutureSeer! 🌟",
@@ -199,6 +257,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
 
   return (
     <ModalPortal open={isOpen}>
+      {isOpen ? <RecaptchaScript /> : null}
       <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[10000] flex items-center justify-center p-4 animate-in fade-in duration-300">
         <div className="w-full max-w-md max-h-[min(90dvh,90vh)] overflow-y-auto bg-slate-950/95 backdrop-blur-xl border border-amber-500/30 rounded-2xl shadow-2xl relative animate-in zoom-in-95 duration-300">
          {/* Animated mystical glow effect */}
@@ -252,8 +311,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                  </TabsTrigger>
                </TabsList>
 
-              {/* Google Sign In */}
-              <div className="mt-8">
+              <div className="mt-8 flex flex-col gap-3">
                 <Button
                   onClick={handleGoogleSignIn}
                   disabled={isLoading}
@@ -272,6 +330,26 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                   )}
                   Continue with Google
                 </Button>
+                {showApple ? (
+                  <Button
+                    onClick={handleAppleSignIn}
+                    disabled={isLoading}
+                    className="w-full bg-black text-white border border-white/10 hover:bg-black/90 font-medium py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3"
+                    variant="outline"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-white" />
+                    ) : (
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden>
+                        <path
+                          fill="currentColor"
+                          d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"
+                        />
+                      </svg>
+                    )}
+                    Continue with Apple
+                  </Button>
+                ) : null}
               </div>
 
                              <div className="relative my-8">
