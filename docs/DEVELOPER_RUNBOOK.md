@@ -34,6 +34,19 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 
 **Verify production:** `curl -sI https://your-domain/__/auth/handler` should not be a Next 404. If it is, ensure `NEXT_PUBLIC_FIREBASE_PROJECT_ID` (or `FIREBASE_ADMIN_PROJECT_ID`) is set at **build** time on Vercel so rewrites resolve; the config also falls back to the repo’s default project id if both are missing.
 
+### OAuth consistency checklist (quick)
+
+Use this when Google/Apple auth fails on Safari/iOS/macOS or shows `redirect_uri_mismatch` / `auth/unauthorized-domain`.
+
+1. `NEXT_PUBLIC_APP_URL` is canonical (`https://futureseer.app`) and `www` redirects to apex.
+2. `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` is intentional:
+   - local dev: `<projectId>.firebaseapp.com`
+   - production: canonical custom host (recommended) or documented firebaseapp fallback.
+3. Firebase Auth → Authorized domains includes the exact auth-domain host.
+4. Google OAuth Web client includes exact redirect URI: `https://<authDomain>/__/auth/handler`.
+5. Apple Sign in (if enabled) includes exact return URL: `https://<authDomain>/__/auth/handler`.
+6. Check `GET /api/diagnose` and inspect `services.oauth.checks` for pass/warn/fail hints.
+
 ## External comparison (optional)
 
 Community Next + Capacitor starters are useful to compare **config only** (static export, `webDir`, scripts)—not to replace this app’s stack. Prefer **[Capacitor Next.js](https://capacitorjs.com/docs/next)** and **[Next.js static exports](https://nextjs.org/docs/app/building-your-application/deploying/static-exports)** for correctness.

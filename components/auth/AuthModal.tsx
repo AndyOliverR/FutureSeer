@@ -15,6 +15,7 @@ import {
   resetPassword,
   isReturningUser,
   getAuthErrorMessage,
+  isInvalidCredentialAuthError,
   isAuthRedirectInitiatedError,
   isUserDismissedAuthError,
   waitForAuthenticatedSession,
@@ -176,6 +177,11 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
     } catch (error: any) {
       const msg = getAuthErrorMessage(error);
       setError(msg);
+      if (isInvalidCredentialAuthError(error)) {
+        devLog.warn('Expected invalid email/password attempt', { code: error?.code }, 'AuthModal');
+      } else {
+        devLog.error('Email sign-in failed', error, 'AuthModal');
+      }
       toast({
         title: "Sign-in failed",
         description: msg,

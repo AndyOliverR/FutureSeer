@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getAstroAppToken } from '@/lib/astroapp'
+import { getServerOAuthGuardrailReport } from '@/lib/oauthDomainGuardrails'
 
 export const dynamic = 'force-static'
 
@@ -29,6 +30,14 @@ export async function GET() {
   }
 
   diagnostics.services.environment = envVars
+
+  const oauthReport = getServerOAuthGuardrailReport()
+  diagnostics.services.oauth = {
+    appHost: oauthReport.appHost,
+    firebaseAuthDomain: oauthReport.firebaseAuthDomain,
+    expectedAuthHandlerUrl: oauthReport.expectedAuthHandlerUrl,
+    checks: oauthReport.checks,
+  }
 
   // Test OpenAI
   try {

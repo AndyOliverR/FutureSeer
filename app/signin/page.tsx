@@ -19,6 +19,7 @@ import {
   isReturningUser,
   resetPassword,
   isUserDismissedAuthError,
+  isInvalidCredentialAuthError,
   isUnauthorizedDomainAuthError,
   isAuthRedirectInitiatedError,
 } from "@/lib/firebase"
@@ -33,6 +34,7 @@ import {
   wasSigninFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
 import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
+import { getClientOAuthGuardrailReport } from "@/lib/oauthDomainGuardrails"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
 import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
@@ -55,6 +57,12 @@ function SignInContent() {
   const redirectTo = getSafeAuthRedirectAfterSignIn(searchParams?.get("redirect") ?? null)
   const { user } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
+  const oauthGuardrails = React.useMemo(() => getClientOAuthGuardrailReport(), [])
+
+  const isLikelyOAuthDomainMismatch = (code?: string) =>
+    code === "auth/unauthorized-domain" ||
+    code === "auth/invalid-continue-uri" ||
+    code === "auth/invalid-dynamic-link-domain"
 
   useEffect(() => {
     void logError("view_loaded", "Sign-in screen loaded", "info", {
@@ -135,11 +143,13 @@ function SignInContent() {
           method: "google",
           code: err.code ?? null,
           hostname: typeof window !== "undefined" ? window.location.hostname : null,
+          oauthGuardrails,
         })
       } else {
         await logError("auth_failed", msg, "error", {
           method: "google",
           code: err.code ?? null,
+          ...(isLikelyOAuthDomainMismatch(err.code) ? { oauthGuardrails } : {}),
         })
       }
     } finally {
@@ -184,11 +194,13 @@ function SignInContent() {
           method: "apple",
           code: err.code ?? null,
           hostname: typeof window !== "undefined" ? window.location.hostname : null,
+          oauthGuardrails,
         })
       } else {
         await logError("auth_failed", msg, "error", {
           method: "apple",
           code: err.code ?? null,
+          ...(isLikelyOAuthDomainMismatch(err.code) ? { oauthGuardrails } : {}),
         })
       }
     } finally {
@@ -212,10 +224,19 @@ function SignInContent() {
       const err = error as { code?: string };
       const msg = getAuthErrorMessage(err)
       setError(msg)
-      await logError("auth_failed", msg, "error", {
-        method: "email",
-        code: err.code ?? null,
-      })
+      if (isInvalidCredentialAuthError(err)) {
+        await logError("auth_failed", msg, "warning", {
+          method: "email",
+          code: err.code ?? null,
+          expectedUserInputError: true,
+        })
+      } else {
+        await logError("auth_failed", msg, "error", {
+          method: "email",
+          code: err.code ?? null,
+          ...(isLikelyOAuthDomainMismatch(err.code) ? { oauthGuardrails } : {}),
+        })
+      }
     } finally {
       setIsLoading(false)
     }
