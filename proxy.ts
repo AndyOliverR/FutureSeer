@@ -42,6 +42,13 @@ function isProtectedRoute(pathname: string): boolean {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get('host') ?? request.nextUrl.host;
+
+  if (host.toLowerCase() === 'www.futureseer.app') {
+    const apexUrl = new URL(request.url);
+    apexUrl.host = 'futureseer.app';
+    return NextResponse.redirect(apexUrl, 308);
+  }
 
   if (!isProtectedRoute(pathname)) {
     return NextResponse.next();

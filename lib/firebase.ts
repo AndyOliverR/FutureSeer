@@ -353,24 +353,43 @@ async function signInWithOAuthWeb(
   provider: FederatedOAuthProvider,
   label: 'google' | 'apple'
 ): Promise<User> {
+  const startedAtMs =
+    typeof performance !== 'undefined' && typeof performance.now === 'function'
+      ? performance.now()
+      : Date.now();
   const preferRedirect =
     typeof window !== 'undefined' && shouldPreferOAuthRedirect();
 
   if (preferRedirect) {
     devLog.debug(`OAuth ${label}: signInWithRedirect (WebKit-friendly)`);
     await signInWithRedirect(auth, provider);
+    const elapsedMs =
+      (typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now()) - startedAtMs;
+    devLog.debug(`OAuth ${label}: redirect initiated in ${Math.round(elapsedMs)}ms`, 'firebase');
     throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
   }
 
   try {
     devLog.debug(`OAuth ${label}: signInWithPopup`);
     const result = await signInWithPopup(auth, provider);
+    const elapsedMs =
+      (typeof performance !== 'undefined' && typeof performance.now === 'function'
+        ? performance.now()
+        : Date.now()) - startedAtMs;
+    devLog.debug(`OAuth ${label}: popup completed in ${Math.round(elapsedMs)}ms`, 'firebase');
     return result.user;
   } catch (error: unknown) {
     const code = (error as { code?: string })?.code;
     if (code === 'auth/popup-blocked') {
       devLog.warn(`OAuth ${label}: popup blocked; falling back to redirect`, undefined, 'firebase');
       await signInWithRedirect(auth, provider);
+      const elapsedMs =
+        (typeof performance !== 'undefined' && typeof performance.now === 'function'
+          ? performance.now()
+          : Date.now()) - startedAtMs;
+      devLog.debug(`OAuth ${label}: redirect fallback initiated in ${Math.round(elapsedMs)}ms`, 'firebase');
       throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
     }
     throw error;
@@ -437,6 +456,29 @@ export const signInWithApple = async (): Promise<User> => {
 
   return appleSignInPromise;
 };
+
+/**
+ * Small grace window to handle popup-cancel race where auth state still resolves successfully.
+ */
+export async function waitForAuthenticatedSession(timeoutMs = 1200): Promise<boolean> {
+  const auth = getFirebaseAuth();
+  if (!auth) return false;
+  if (auth.currentUser) return true;
+
+  return await new Promise<boolean>((resolve) => {
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      resolve(false);
+    }, timeoutMs);
+
+    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+      if (!nextUser) return;
+      clearTimeout(timeout);
+      unsubscribe();
+      resolve(true);
+    });
+  });
+}
 
 export const signInWithEmail = async (email: string, password: string): Promise<User> => {
   try {
