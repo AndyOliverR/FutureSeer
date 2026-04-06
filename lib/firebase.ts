@@ -630,11 +630,17 @@ export const signOutUser = async (): Promise<void> => {
 export const getAuthErrorMessage = (error: any): string => {
   const code = error?.code || '';
   const raw = typeof error?.message === 'string' ? error.message : '';
+  const appleEnabled =
+    process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED === 'true' ||
+    process.env.NEXT_PUBLIC_APPLE_SIGNIN_ENABLED === '1';
   switch (code) {
     case 'auth/user-not-found': return 'No account found with this email.';
     case 'auth/wrong-password': return 'Incorrect password.';
     case 'auth/email-already-in-use': return 'An account with this email already exists. Try signing in instead.';
-    case 'auth/invalid-credential': return 'Invalid email or password. Try "Forgot password?" or sign in with Google or Apple if you used those.';
+    case 'auth/invalid-credential':
+      return appleEnabled
+        ? 'Invalid email or password. Try "Forgot password?" or sign in with Google or Apple if you used those.'
+        : 'Invalid email or password. Try "Forgot password?" or sign in with Google if you used that.';
     case 'auth/invalid-email': return 'Please enter a valid email address.';
     case 'auth/weak-password': return 'Password is too weak. Please use at least 6 characters.';
     case 'auth/too-many-requests': return 'Too many attempts. Please wait a moment and try again.';
@@ -660,6 +666,10 @@ export const getAuthErrorMessage = (error: any): string => {
       return 'Something went wrong. Please try again.';
   }
 };
+
+export function isInvalidCredentialAuthError(error: { code?: string } | null | undefined): boolean {
+  return error?.code === 'auth/invalid-credential';
+}
 
 /** Firebase codes when the user closed the OAuth popup or cancelled — not app failures. */
 const USER_DISMISSED_AUTH_CODES = new Set([
