@@ -35,6 +35,12 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 # Firebase Console → Authentication → Sign-in method: enable Google; Apple optional (requires Apple Developer + Services ID / key / return URLs).
 # Show “Sign in with Apple” in the UI only after Firebase Apple is configured:
 # NEXT_PUBLIC_APPLE_SIGNIN_ENABLED=true
+# OAuth consistency checklist (production):
+# 1) Firebase Auth → Authorized domains includes futureseer.app (and www only if intentionally used)
+# 2) Google OAuth Web client redirect URI includes https://<NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN>/__/auth/handler
+# 3) Apple Sign in return URL includes https://<NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN>/__/auth/handler
+# 4) NEXT_PUBLIC_APP_URL uses canonical host (https://futureseer.app)
+# 5) Prefer matching NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN to canonical host in production
 
 # reCAPTCHA Enterprise (auth email flows + guest community writes)
 # Site key (public, starts with 6L…): Google Cloud → Security → reCAPTCHA → your key → integration.
