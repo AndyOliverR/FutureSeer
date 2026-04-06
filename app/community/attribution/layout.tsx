@@ -6,7 +6,7 @@ const site = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
 export const metadata: Metadata = {
   title: "Community Discussions | FutureSeer",
   description:
-    "Read and join discussions on astrology, tarot, numerology, and occult practice. Guests may post with reCAPTCHA; sign in for the full community.",
+    "Read and join discussions on astrology, tarot, numerology, and occult practice. Guests may post with reCAPTCHA and rate limits; sign in for the full community.",
   alternates: {
     canonical: `${site}/community/attribution`,
   },

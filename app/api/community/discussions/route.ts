@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { adminDb } from '@/lib/firebase-admin';
 import type { Query } from 'firebase-admin/firestore';
-import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
 import { consumeGuestCommunityWriteSlot, getCommunityGuestClientIp } from '@/lib/communityGuestRateLimit';
+import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
+import { RECAPTCHA_ACTIONS } from '@/lib/recaptcha/actions';
 
 export const dynamic = 'force-static'
 import { 
@@ -161,7 +162,6 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const guestPost = body.guestPost === true;
-    const captchaToken = typeof body.captchaToken === 'string' ? body.captchaToken : undefined;
 
     if (guestPost) {
       const title = sanitizeStr(body.title, 200);
@@ -179,6 +179,22 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const captchaToken =
+        typeof body.captchaToken === 'string' && body.captchaToken.length > 0
+          ? body.captchaToken
+          : undefined;
+      const captcha = await verifyRecaptchaEnterpriseToken(
+        request,
+        captchaToken,
+        RECAPTCHA_ACTIONS.COMMUNITY_DISCUSSION
+      );
+      if (!captcha.ok) {
+        return NextResponse.json(
+          { error: 'Security check failed. Refresh and try again.', reason: captcha.reason },
+          { status: 403 }
+        );
+      }
+
       const ip = getCommunityGuestClientIp(request);
       const rate = consumeGuestCommunityWriteSlot(ip);
       if (!rate.allowed) {
@@ -186,11 +202,6 @@ export async function POST(request: NextRequest) {
           { error: 'Rate limit exceeded. Try again later or sign in.', retryAfterSec: rate.retryAfterSec },
           { status: 429 }
         );
-      }
-
-      const captcha = await verifyRecaptchaEnterpriseToken(request, captchaToken, 'COMMUNITY_GUEST_POST');
-      if (!captcha.ok) {
-        return NextResponse.json({ error: 'Captcha verification failed' }, { status: 403 });
       }
 
       const validCategories = [

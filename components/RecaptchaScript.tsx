@@ -1,32 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 import Script from "next/script";
 
-const RECAPTCHA_ENTERPRISE_URL =
-  "https://www.google.com/recaptcha/enterprise.js?render=6Ld_vmMsAAAAAJzl7DmmVomD3G3BLkovwM0AB8Fz";
+function subscribeRecaptchaHost(): () => void {
+  return () => {};
+}
+
+function getRecaptchaHostSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host !== "localhost" && host !== "127.0.0.1";
+}
+
+function getRecaptchaHostServerSnapshot(): boolean {
+  return false;
+}
 
 /**
- * Loads reCAPTCHA Enterprise only on auth pages (signin/signup) to avoid
- * "preloaded but not used" warnings on the landing page.
- * Does not load on localhost so the "Localhost is not supported by this site key" popup never appears.
+ * Loads reCAPTCHA Enterprise on pages that need it (auth, guest community).
+ * Skips localhost so the site key domain warning does not appear in dev.
  */
 export function RecaptchaScript() {
-  const [shouldLoad, setShouldLoad] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const host = window.location.hostname;
-    if (host !== "localhost" && host !== "127.0.0.1") {
-      setShouldLoad(true);
-    }
-  }, []);
-
-  if (!shouldLoad) return null;
-  return (
-    <Script
-      src={RECAPTCHA_ENTERPRISE_URL}
-      strategy="afterInteractive"
-    />
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const shouldLoad = useSyncExternalStore(
+    subscribeRecaptchaHost,
+    getRecaptchaHostSnapshot,
+    getRecaptchaHostServerSnapshot
   );
+
+  if (!siteKey || !shouldLoad) return null;
+
+  const src = `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`;
+
+  return <Script src={src} strategy="afterInteractive" />;
 }

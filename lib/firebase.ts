@@ -8,6 +8,7 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   EmailAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   signInWithRedirect,
   signInWithEmailAndPassword,
@@ -42,6 +43,14 @@ import { clearAstroDataCache } from './astroDataService';
 import { generateReferralCode, trackReferralSignup } from './referralUtils';
 
 import { Capacitor } from '@capacitor/core';
+import { shouldPreferOAuthRedirect } from '@/lib/oauthWebView';
+
+/** Thrown after signInWithRedirect so callers can skip error UI; page navigates away. */
+export const AUTH_REDIRECT_INITIATED_MESSAGE = 'Redirect initiated';
+
+export function isAuthRedirectInitiatedError(error: unknown): boolean {
+  return error instanceof Error && error.message === AUTH_REDIRECT_INITIATED_MESSAGE;
+}
 
 // Client-side Firebase config (only public keys)
 const firebaseConfig = {
@@ -319,9 +328,54 @@ googleProvider.setCustomParameters({
 
 export const emailProvider = new EmailAuthProvider();
 
-// Global flag to prevent multiple simultaneous sign-in attempts
+/** Lazy so Node/Jest imports of this module (e.g. calculateProfileDataHash) do not require OAuthProvider. */
+function getAppleOAuthProvider(): OAuthProvider {
+  const p = new OAuthProvider('apple.com');
+  p.addScope('email');
+  p.addScope('name');
+  return p;
+}
+
+// Global flag to prevent multiple simultaneous OAuth attempts (same provider)
 let isSigningIn = false;
 let signInPromise: Promise<User> | null = null;
+let isAppleSigningIn = false;
+let appleSignInPromise: Promise<User> | null = null;
+
+type FederatedOAuthProvider = GoogleAuthProvider | OAuthProvider;
+
+/**
+ * Web: popup on Chromium-friendly browsers; full-page redirect on WebKit / iOS / macOS Safari.
+ * Popup-blocked → one redirect fallback.
+ */
+async function signInWithOAuthWeb(
+  auth: NonNullable<ReturnType<typeof getFirebaseAuth>>,
+  provider: FederatedOAuthProvider,
+  label: 'google' | 'apple'
+): Promise<User> {
+  const preferRedirect =
+    typeof window !== 'undefined' && shouldPreferOAuthRedirect();
+
+  if (preferRedirect) {
+    devLog.debug(`OAuth ${label}: signInWithRedirect (WebKit-friendly)`);
+    await signInWithRedirect(auth, provider);
+    throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
+  }
+
+  try {
+    devLog.debug(`OAuth ${label}: signInWithPopup`);
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (error: unknown) {
+    const code = (error as { code?: string })?.code;
+    if (code === 'auth/popup-blocked') {
+      devLog.warn(`OAuth ${label}: popup blocked; falling back to redirect`, undefined, 'firebase');
+      await signInWithRedirect(auth, provider);
+      throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
+    }
+    throw error;
+  }
+}
 
 export const signInWithGoogle = async (): Promise<User> => {
   if (isSigningIn && signInPromise) return signInPromise;
@@ -332,19 +386,18 @@ export const signInWithGoogle = async (): Promise<User> => {
       const auth = getFirebaseAuth();
       if (!auth) throw new Error('Firebase not initialized');
 
-      // NATIVE ANDROID/IOS FLOW
       if (Capacitor.isNativePlatform()) {
         const { signInWithGoogleNative } = await import('./firebase-mobile');
         return await signInWithGoogleNative();
       }
 
-      // WEB FLOW: use popup so we get the user in-page and can redirect reliably.
-      // (Redirect flow often leaves getRedirectResult() null due to storage/origin, causing signin loop.)
-      devLog.debug('🔄 Attempting Web Google sign-in (popup)...');
-      const result = await signInWithPopup(auth, googleProvider);
-      return result.user;
-    } catch (error: any) {
-      devLog.error('Error signing in with Google:', error, 'firebase');
+      const user = await signInWithOAuthWeb(auth, googleProvider, 'google');
+      await ensureUserDocumentFromAuth(user);
+      return user;
+    } catch (error: unknown) {
+      if (!isAuthRedirectInitiatedError(error)) {
+        devLog.error('Error signing in with Google:', error, 'firebase');
+      }
       throw error;
     } finally {
       isSigningIn = false;
@@ -353,6 +406,36 @@ export const signInWithGoogle = async (): Promise<User> => {
   })();
 
   return signInPromise;
+};
+
+export const signInWithApple = async (): Promise<User> => {
+  if (isAppleSigningIn && appleSignInPromise) return appleSignInPromise;
+
+  isAppleSigningIn = true;
+  appleSignInPromise = (async () => {
+    try {
+      const auth = getFirebaseAuth();
+      if (!auth) throw new Error('Firebase not initialized');
+
+      if (Capacitor.isNativePlatform()) {
+        throw Object.assign(new Error('Apple sign-in web only'), { code: 'fs/apple-web-only' });
+      }
+
+      const user = await signInWithOAuthWeb(auth, getAppleOAuthProvider(), 'apple');
+      await ensureUserDocumentFromAuth(user);
+      return user;
+    } catch (error: unknown) {
+      if (!isAuthRedirectInitiatedError(error)) {
+        devLog.error('Error signing in with Apple:', error, 'firebase');
+      }
+      throw error;
+    } finally {
+      isAppleSigningIn = false;
+      appleSignInPromise = null;
+    }
+  })();
+
+  return appleSignInPromise;
 };
 
 export const signInWithEmail = async (email: string, password: string): Promise<User> => {
@@ -509,7 +592,7 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/user-not-found': return 'No account found with this email.';
     case 'auth/wrong-password': return 'Incorrect password.';
     case 'auth/email-already-in-use': return 'An account with this email already exists. Try signing in instead.';
-    case 'auth/invalid-credential': return 'Invalid email or password. Try "Forgot password?" or sign in with Google if you used that.';
+    case 'auth/invalid-credential': return 'Invalid email or password. Try "Forgot password?" or sign in with Google or Apple if you used those.';
     case 'auth/invalid-email': return 'Please enter a valid email address.';
     case 'auth/weak-password': return 'Password is too weak. Please use at least 6 characters.';
     case 'auth/too-many-requests': return 'Too many attempts. Please wait a moment and try again.';
@@ -521,7 +604,11 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
     case 'auth/cancelled-popup-request': return 'Sign-in cancelled.';
     case 'auth/unauthorized-domain':
-      return 'Google sign-in is not available from this web address. Try signing in with email and password, or open the app from the main FutureSeer website.';
+      return 'Google or Apple sign-in is not available from this web address. Try email and password, or open the app from the main FutureSeer website.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists for this email with a different sign-in method. Try the original provider or email and password.';
+    case 'fs/apple-web-only':
+      return 'Sign in with Apple is available in your web browser. Open this site in Safari or Chrome to continue.';
     case 'auth/requires-recent-login': return 'Please sign in again to complete this action.';
     case 'auth/credential-already-in-use': return 'These credentials are already linked to another account.';
     default:
@@ -648,6 +735,15 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
     throw error;
   }
 };
+
+/** Ensure Firestore users/{uid} exists after OAuth (Google/Apple) without email signup path. */
+export async function ensureUserDocumentFromAuth(user: User): Promise<void> {
+  try {
+    await updateUserProfile(user.uid, {});
+  } catch (e) {
+    devLog.warn('ensureUserDocumentFromAuth failed (non-fatal)', e, 'firebase');
+  }
+}
 
 export const updateSubscriptionStatus = async (uid: string, isSubscribed: boolean): Promise<void> => {
   await updateUserProfile(uid, { isSubscribed });
