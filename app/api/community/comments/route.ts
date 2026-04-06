@@ -3,8 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 import { calculateKarmaForAction, calculateMemberStatsUpdate } from '@/lib/firestore/communityHelpers';
-import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
 import { consumeGuestCommunityWriteSlot, getCommunityGuestClientIp } from '@/lib/communityGuestRateLimit';
+import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
+import { RECAPTCHA_ACTIONS } from '@/lib/recaptcha/actions';
 
 interface CommentData {
   discussionId: string;
@@ -27,7 +28,6 @@ export async function POST(request: NextRequest) {
       captchaToken?: string;
     };
     const guestPost = body.guestPost === true;
-    const captchaToken = typeof body.captchaToken === 'string' ? body.captchaToken : undefined;
 
     if (guestPost) {
       const discussionId = sanitizeComment(body.discussionId, 128);
@@ -44,6 +44,22 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const captchaToken =
+        typeof body.captchaToken === 'string' && body.captchaToken.length > 0
+          ? body.captchaToken
+          : undefined;
+      const captcha = await verifyRecaptchaEnterpriseToken(
+        request,
+        captchaToken,
+        RECAPTCHA_ACTIONS.COMMUNITY_COMMENT
+      );
+      if (!captcha.ok) {
+        return NextResponse.json(
+          { error: 'Security check failed. Refresh and try again.', reason: captcha.reason },
+          { status: 403 }
+        );
+      }
+
       const ip = getCommunityGuestClientIp(request);
       const rate = consumeGuestCommunityWriteSlot(ip);
       if (!rate.allowed) {
@@ -51,11 +67,6 @@ export async function POST(request: NextRequest) {
           { error: 'Rate limit exceeded. Try again later or sign in.', retryAfterSec: rate.retryAfterSec },
           { status: 429 }
         );
-      }
-
-      const captcha = await verifyRecaptchaEnterpriseToken(request, captchaToken, 'COMMUNITY_GUEST_COMMENT');
-      if (!captcha.ok) {
-        return NextResponse.json({ error: 'Captcha verification failed' }, { status: 403 });
       }
 
       const db = adminDb;

@@ -13,6 +13,7 @@ import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Send, X, F
 import { DiscussionCard } from '@/components/community/DiscussionCard';
 import { DiscussionForm } from '@/components/community/DiscussionForm';
 import { GuestDiscussionForm } from '@/components/community/GuestDiscussionForm';
+import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { useToast } from '@/components/ui/use-toast';
 interface UserContribution {
   id: string;
@@ -528,7 +529,7 @@ export default function CommunityAttributionPage() {
     category: string;
     priority: 'low' | 'medium' | 'high' | 'critical';
     authorName: string;
-    captchaToken: string;
+    captchaToken?: string;
   }) => {
     try {
       const response = await fetch('/api/community/discussions', {
@@ -536,12 +537,12 @@ export default function CommunityAttributionPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           guestPost: true,
-          captchaToken: data.captchaToken,
           title: data.title,
           content: data.content,
           category: data.category,
           priority: data.priority,
           authorName: data.authorName,
+          captchaToken: data.captchaToken,
         }),
       });
 
@@ -612,7 +613,9 @@ export default function CommunityAttributionPage() {
   const isGuest = !user?.uid;
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
+    <>
+      <RecaptchaScript />
+      <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 pt-20 pb-8">
         {/* Header */}
         <div className="text-center mb-8 pt-4">
@@ -1098,5 +1101,6 @@ export default function CommunityAttributionPage() {
         </div>
       )}
     </div>
+    </>
   );
 } 

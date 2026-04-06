@@ -1,7 +1,6 @@
 "use client"
 
 import React, { Suspense, useState, useEffect } from "react"
-import { devLog } from '@/lib/devLogger';
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
@@ -13,9 +12,20 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Eye, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
-import { signInWithGoogle, signUpWithEmail, getAuthErrorMessage, getFirebaseAuth, isReturningUser, isUserDismissedAuthError, isUnauthorizedDomainAuthError } from "@/lib/firebase"
+import {
+  signInWithGoogle,
+  signInWithApple,
+  signUpWithEmail,
+  getAuthErrorMessage,
+  getFirebaseAuth,
+  isReturningUser,
+  isUserDismissedAuthError,
+  isUnauthorizedDomainAuthError,
+  isAuthRedirectInitiatedError,
+} from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
-import { RecaptchaScript } from "@/components/RecaptchaScript"
+import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons"
+import { isAppleSignInEnabledClient } from "@/lib/authFeatureFlags"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 import { analytics } from "@/lib/analytics"
 import {
@@ -25,6 +35,9 @@ import {
   wasSignupFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
 import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
+import { RecaptchaScript } from "@/components/RecaptchaScript"
+import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
+import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
 
 type SignupFlowCompleteData = {
   selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
@@ -52,7 +65,7 @@ function SignUpPageContent() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [displayName, setDisplayName] = useState("")
   const [selectedCountry, setSelectedCountry] = useState<string>("")
-  const [activeProvider, setActiveProvider] = useState<string | null>(null)
+  const [activeProvider, setActiveProvider] = useState<"google" | "apple" | null>(null)
   const [showSignupFlow, setShowSignupFlow] = useState(false)
   const [referralCode, setReferralCode] = useState("")
   const isMobileLayout = useIsMobileLayout()
@@ -66,8 +79,8 @@ function SignUpPageContent() {
   const { user } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
   
-  const RECAPTCHA_SITE_KEY = "REDACTED_RECAPTCHA_SITE_KEY";
   const didAutoRedirectRef = React.useRef(false)
+  const showApple = isAppleSignInEnabledClient()
 
   useEffect(() => {
     if (refParam) setReferralCode(refParam)
@@ -119,7 +132,7 @@ function SignUpPageContent() {
       router.push(redirectTo ?? (returning ? "/tools" : "/profile"))
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
-      if (err.message?.includes('Redirect initiated')) return;
+      if (isAuthRedirectInitiatedError(error)) return;
       const msg = getAuthErrorMessage(err)
       setError(msg)
       if (isUserDismissedAuthError(err)) {
@@ -135,6 +148,41 @@ function SignUpPageContent() {
         })
       } else {
         await logError("signup_google", msg, "error", { provider: "google", code: err.code ?? null })
+      }
+    } finally {
+      setIsLoading(false); setActiveProvider(null)
+    }
+  }
+
+  const handleAppleSignIn = async () => {
+    if (isLoading || activeProvider === "apple") return;
+    if (!confirmAge16) {
+      setError("You must confirm you are at least 16 years old to use FutureSeer");
+      return;
+    }
+    setIsLoading(true); setError(null); setActiveProvider("apple")
+    try {
+      const user = await signInWithApple()
+      const returning = isReturningUser(user)
+      router.push(redirectTo ?? (returning ? "/tools" : "/profile"))
+    } catch (error: unknown) {
+      const err = error as { message?: string; code?: string };
+      if (isAuthRedirectInitiatedError(error)) return;
+      const msg = getAuthErrorMessage(err)
+      setError(msg)
+      if (isUserDismissedAuthError(err)) {
+        await logError("signup_apple_dismissed", msg, "info", {
+          provider: "apple",
+          code: err.code ?? null,
+        })
+      } else if (isUnauthorizedDomainAuthError(err)) {
+        await logError("signup_apple_unauthorized_domain", msg, "warning", {
+          provider: "apple",
+          code: err.code ?? null,
+          hostname: typeof window !== "undefined" ? window.location.hostname : null,
+        })
+      } else {
+        await logError("signup_apple", msg, "error", { provider: "apple", code: err.code ?? null })
       }
     } finally {
       setIsLoading(false); setActiveProvider(null)
@@ -164,48 +212,11 @@ function SignUpPageContent() {
     setError(null)
 
     try {
-      let captchaToken = null;
-      const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-
-      // Skip reCAPTCHA on localhost (not in reCAPTCHA allowed domains); only run on web, not Android
-      if (!isMobileLayout && !isLocalhost && typeof window !== 'undefined') {
-        if (!window.grecaptcha) {
-          devLog.warn('reCAPTCHA script not loaded, proceeding without verification', 'signup');
-        } else {
-          captchaToken = await new Promise((resolve) => {
-            window.grecaptcha!.enterprise.ready(async () => {
-              try {
-                const token = await window.grecaptcha!.enterprise.execute(RECAPTCHA_SITE_KEY, {action: 'SIGNUP'});
-                resolve(token);
-              } catch (err) {
-                devLog.error('reCAPTCHA signup execution failed:', err, 'signup');
-                resolve(null);
-              }
-            });
-          });
-        }
-
-        // Verify the token with our backend
-        if (captchaToken) {
-          const verifyRes = await fetch('/api/auth/verify-captcha', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: captchaToken, action: 'SIGNUP' }),
-          });
-
-          if (!verifyRes.ok) {
-            const verifyData = await verifyRes.json();
-            throw new Error(verifyData.error || 'Security check failed. Please try again.');
-          }
-        }
-      }
-
-      // If captcha passes or we're on mobile, proceed to next step
       setShowSignupFlow(true)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "An unexpected error occurred during security check."
+      const msg = err instanceof Error ? err.message : "Something went wrong. Please try again."
       setError(msg)
-      await logError("signup_security_check", msg, "error")
+      await logError("signup_next_step", msg, "error")
     } finally {
       setIsLoading(false)
     }
@@ -214,6 +225,7 @@ function SignUpPageContent() {
   const handleSignupFlowComplete = async (data: SignupFlowCompleteData) => {
     setIsLoading(true); setError(null)
     try {
+      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.SIGNUP, logError)
       await signUpWithEmail(email, password, displayName, selectedCountry, data.selectedPlan, data.paymentMethodId, data.autoMandateAccepted, data.subscriptionId, referralCode || undefined)
       router.push("/profile")
     } catch (error: unknown) {
@@ -267,10 +279,18 @@ function SignUpPageContent() {
                   <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-0.5 border-outline-variant rounded" />
                   <span>I confirm I am at least 16 years old and agree to the <Link href="/terms" className="text-amber-400 underline">Terms</Link>.</span>
                 </label>
-                <Button type="button" size="xl" onClick={handleGoogleSignIn} disabled={isLoading || !confirmAge16} className="w-full gap-3 bg-white text-slate-900 shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                  <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                  Continue with Google
-                </Button>
+                <OAuthProviderButtons
+                  variant="mobile"
+                  onGoogle={handleGoogleSignIn}
+                  onApple={handleAppleSignIn}
+                  disabled={isLoading}
+                  activeProvider={activeProvider}
+                  showApple={showApple}
+                  requireAgeOk
+                  ageOk={confirmAge16}
+                  googleLabel="Continue with Google"
+                  appleLabel="Continue with Apple"
+                />
                 <div className="relative my-8 text-center"><span className="bg-surface-container-high px-4 text-xs uppercase tracking-widest text-surface-on-variant font-bold opacity-50">or email</span></div>
               </>
             )}
@@ -328,11 +348,27 @@ function SignUpPageContent() {
               <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} onComplete={handleSignupFlowComplete} onError={setError} />
             </>
           ) : (
-            <form onSubmit={handleBasicInfoSubmit} className="space-y-6">
+            <div className="space-y-6">
               <label className="flex items-start gap-3 cursor-pointer text-white/90 text-sm font-light pb-2 border-b border-white/10">
                 <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-0.5 border-amber-500/40 rounded data-[state=checked]:bg-amber-500/20 shrink-0" />
                 <span>I confirm I am at least 16 years old and agree to the <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">Terms</Link>.</span>
               </label>
+              <OAuthProviderButtons
+                variant="web"
+                onGoogle={handleGoogleSignIn}
+                onApple={handleAppleSignIn}
+                disabled={isLoading}
+                activeProvider={activeProvider}
+                showApple={showApple}
+                requireAgeOk
+                ageOk={confirmAge16}
+                googleLabel="Continue with Google"
+                appleLabel="Continue with Apple"
+              />
+              <div className="relative text-center">
+                <span className="bg-slate-900/80 px-4 text-xs uppercase tracking-widest text-amber-200/80 font-bold">or register with email</span>
+              </div>
+              <form onSubmit={handleBasicInfoSubmit} className="space-y-6">
               <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" autoComplete="name" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
               <CountrySelector value={selectedCountry} onChange={setSelectedCountry} autoDetect={true} />
               <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
@@ -342,6 +378,7 @@ function SignUpPageContent() {
                 {isLoading ? <Loader2 className="animate-spin" /> : "Begin Transformation"}
               </Button>
             </form>
+            </div>
           )}
           <div className="pt-6 mt-2 border-t border-white/5 text-center">
             <p className="text-amber-200/80 text-sm font-light">Already have an account? <Link href="/signin" className="text-amber-400 font-bold hover:underline ml-1">Sign In</Link></p>
@@ -365,11 +402,11 @@ function SignUpPageContent() {
 
 export default function SignUpPage() {
   return (
-    <>
-      <RecaptchaScript />
-      <Suspense fallback={<div className="min-h-screen bg-surface flex items-center justify-center"><Loader2 className="animate-spin text-amber-400" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-surface flex items-center justify-center"><Loader2 className="animate-spin text-amber-400" /></div>}>
+      <>
+        <RecaptchaScript />
         <SignUpPageContent />
-      </Suspense>
-    </>
+      </>
+    </Suspense>
   )
 }
