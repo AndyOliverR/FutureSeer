@@ -120,6 +120,37 @@ export function EnhancedFooter() {
           <p>© 2025 FutureSeer</p>
           <StandardsBadges variant="footer" showToolCount={false} />
         </div>
+        <div className="mt-4 rounded-xl border border-outline-variant/25 bg-surface-container-low px-4 py-4">
+          <p className="text-xs font-semibold tracking-wide text-surface-on">
+            Mobile apps coming soon
+          </p>
+          <p className="mt-1 text-xs text-surface-on-variant leading-relaxed">
+            For now, the best detailed experience is on desktop. You can still use the same web app on mobile today
+            because FutureSeer is platform-aware and adapts automatically.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/mobile-waitlist"
+              className="inline-flex items-center rounded-md border border-outline-variant/30 bg-[#101114] px-3 py-2 text-white hover:bg-[#16181d] transition-colors"
+              aria-label="Join iOS app waitlist"
+            >
+              <span className="leading-tight">
+                <span className="block text-[9px] uppercase tracking-wider text-white/75">Coming Soon to</span>
+                <span className="block text-sm font-semibold">App Store</span>
+              </span>
+            </Link>
+            <Link
+              href="/mobile-waitlist"
+              className="inline-flex items-center rounded-md border border-outline-variant/30 bg-[#101114] px-3 py-2 text-white hover:bg-[#16181d] transition-colors"
+              aria-label="Join Android app waitlist"
+            >
+              <span className="leading-tight">
+                <span className="block text-[9px] uppercase tracking-wider text-white/75">Coming Soon to</span>
+                <span className="block text-sm font-semibold">Google Play</span>
+              </span>
+            </Link>
+          </div>
+        </div>
       </div>
     </footer>
   );
