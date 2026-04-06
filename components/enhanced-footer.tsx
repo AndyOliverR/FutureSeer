@@ -1,7 +1,8 @@
 "use client";
 import { useState, FormEvent } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { Apple, Play, MessageCircle, Mailbox, Loader2 } from "lucide-react";
+import { MessageCircle, Mailbox, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StandardsBadges } from "./StandardsBadges";
@@ -131,31 +132,45 @@ export function EnhancedFooter() {
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               href="/mobile-waitlist"
-              className="inline-flex flex-col gap-1 rounded-md border border-outline-variant/30 px-0 py-0 text-white transition-colors"
+              className="inline-flex flex-col gap-1"
               aria-label="Join iOS app waitlist"
             >
               <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
-              <span className="inline-flex items-center gap-2 rounded-md bg-black px-3 py-2 hover:bg-zinc-900">
-                <Apple className="h-4 w-4" aria-hidden />
-                <span className="leading-tight">
-                  <span className="block text-[9px] text-white/80">Download on the</span>
-                  <span className="block text-xs font-semibold">App Store</span>
-                </span>
-              </span>
+              <Image
+                src="/badges/app-store-dark.svg"
+                alt="Download on the App Store"
+                width={124}
+                height={40}
+                className="block dark:hidden"
+              />
+              <Image
+                src="/badges/app-store-light.svg"
+                alt="Download on the App Store"
+                width={124}
+                height={40}
+                className="hidden dark:block"
+              />
             </Link>
             <Link
               href="/mobile-waitlist"
-              className="inline-flex flex-col gap-1 rounded-md border border-outline-variant/30 px-0 py-0 text-white transition-colors"
+              className="inline-flex flex-col gap-1"
               aria-label="Join Android app waitlist"
             >
               <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
-              <span className="inline-flex items-center gap-2 rounded-md bg-black px-3 py-2 hover:bg-zinc-900">
-                <Play className="h-4 w-4 fill-white" aria-hidden />
-                <span className="leading-tight">
-                  <span className="block text-[9px] text-white/80">Get it on</span>
-                  <span className="block text-xs font-semibold">Google Play</span>
-                </span>
-              </span>
+              <Image
+                src="/badges/google-play-dark.svg"
+                alt="Get it on Google Play"
+                width={135}
+                height={40}
+                className="block dark:hidden"
+              />
+              <Image
+                src="/badges/google-play-light.svg"
+                alt="Get it on Google Play"
+                width={135}
+                height={40}
+                className="hidden dark:block"
+              />
             </Link>
           </div>
         </div>
