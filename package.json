@@ -30,8 +30,8 @@
     "build:capacitor": "cross-env CAPACITOR_BUILD=1 next build --webpack",
     "cap:add:ios": "npx cap add ios",
     "cap:add:android": "npx cap add android",
-    "cap:sync": "npx cap sync",
-    "mobile:build": "pnpm run build:capacitor && npx cap sync"
+    "cap:sync": "node scripts/run-cap-sync-clean-env.mjs",
+    "mobile:build": "pnpm run build:capacitor && node scripts/run-cap-sync-clean-env.mjs"
   },
   "engines": {
     "node": "24.x"
