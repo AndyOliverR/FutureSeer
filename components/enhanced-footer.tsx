@@ -1,7 +1,7 @@
 "use client";
 import { useState, FormEvent } from "react";
 import Link from "next/link";
-import { MessageCircle, Mailbox, Loader2 } from "lucide-react";
+import { Apple, Play, MessageCircle, Mailbox, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StandardsBadges } from "./StandardsBadges";
@@ -131,22 +131,30 @@ export function EnhancedFooter() {
           <div className="mt-3 flex flex-wrap gap-2">
             <Link
               href="/mobile-waitlist"
-              className="inline-flex items-center rounded-md border border-outline-variant/30 bg-[#101114] px-3 py-2 text-white hover:bg-[#16181d] transition-colors"
+              className="inline-flex flex-col gap-1 rounded-md border border-outline-variant/30 px-0 py-0 text-white transition-colors"
               aria-label="Join iOS app waitlist"
             >
-              <span className="leading-tight">
-                <span className="block text-[9px] uppercase tracking-wider text-white/75">Coming Soon to</span>
-                <span className="block text-sm font-semibold">App Store</span>
+              <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
+              <span className="inline-flex items-center gap-2 rounded-md bg-black px-3 py-2 hover:bg-zinc-900">
+                <Apple className="h-4 w-4" aria-hidden />
+                <span className="leading-tight">
+                  <span className="block text-[9px] text-white/80">Download on the</span>
+                  <span className="block text-xs font-semibold">App Store</span>
+                </span>
               </span>
             </Link>
             <Link
               href="/mobile-waitlist"
-              className="inline-flex items-center rounded-md border border-outline-variant/30 bg-[#101114] px-3 py-2 text-white hover:bg-[#16181d] transition-colors"
+              className="inline-flex flex-col gap-1 rounded-md border border-outline-variant/30 px-0 py-0 text-white transition-colors"
               aria-label="Join Android app waitlist"
             >
-              <span className="leading-tight">
-                <span className="block text-[9px] uppercase tracking-wider text-white/75">Coming Soon to</span>
-                <span className="block text-sm font-semibold">Google Play</span>
+              <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
+              <span className="inline-flex items-center gap-2 rounded-md bg-black px-3 py-2 hover:bg-zinc-900">
+                <Play className="h-4 w-4 fill-white" aria-hidden />
+                <span className="leading-tight">
+                  <span className="block text-[9px] text-white/80">Get it on</span>
+                  <span className="block text-xs font-semibold">Google Play</span>
+                </span>
               </span>
             </Link>
           </div>
