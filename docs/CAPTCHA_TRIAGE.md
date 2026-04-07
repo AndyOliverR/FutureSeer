@@ -25,6 +25,10 @@ Use this guide when admin error events show `area: auth` and a `code` starting w
 4. If repeated, attach these fields to escalation:
    - `code`, `captchaReason`, `captchaStage`, `httpStatus`,
    - `browser`, `timestamp`, `environment`, `route`.
+5. If Service Worker errors are present, ask user to run stale SW recovery once:
+   - DevTools → Application → Service Workers → Unregister `sw.js`
+   - DevTools → Application → Clear storage → Clear site data
+   - Hard reload (`Ctrl+Shift+R`) and retry sign-in.
 
 ## Escalation Notes
 
