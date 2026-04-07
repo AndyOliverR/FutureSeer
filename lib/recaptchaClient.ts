@@ -35,6 +35,33 @@ type LogFn = (
   meta?: Record<string, unknown>
 ) => Promise<void>;
 
+type CaptchaErrorCode =
+  | "fs/captcha-no-site-key"
+  | "fs/captcha-missing-script"
+  | "fs/captcha-execute-failed"
+  | "fs/captcha-token-missing"
+  | "fs/captcha-verify-failed";
+
+interface CaptchaError extends Error {
+  code: CaptchaErrorCode;
+  stage?: "config" | "script" | "execute" | "token" | "verify";
+  status?: number;
+  reason?: string;
+}
+
+function createCaptchaError(
+  code: CaptchaErrorCode,
+  message: string,
+  extra?: Pick<CaptchaError, "stage" | "status" | "reason">
+): CaptchaError {
+  const error = new Error(message) as CaptchaError;
+  error.code = code;
+  if (extra?.stage) error.stage = extra.stage;
+  if (typeof extra?.status === "number") error.status = extra.status;
+  if (typeof extra?.reason === "string") error.reason = extra.reason;
+  return error;
+}
+
 /**
  * Runs enterprise.execute + POST /api/auth/verify-captcha. No-op when skipped or no site key.
  */
@@ -48,14 +75,22 @@ export async function ensureRecaptchaVerifiedForWebAuth(
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
   if (!siteKey) {
     await logError?.("captcha_no_site_key", "reCAPTCHA site key not configured", "warning");
-    throw new Error("Sign-in is temporarily unavailable. Please try again later.");
+    throw createCaptchaError(
+      "fs/captcha-no-site-key",
+      "Sign-in is temporarily unavailable. Please try again later.",
+      { stage: "config" }
+    );
   }
 
   const grecaptcha = window.grecaptcha;
   if (!grecaptcha) {
     devLog.warn("reCAPTCHA script not loaded", "recaptchaClient");
     await logError?.("captcha_missing_script", "Captcha script missing", "info");
-    throw new Error("Security check could not load. Refresh the page and try again.");
+    throw createCaptchaError(
+      "fs/captcha-missing-script",
+      "Security check could not load. Refresh the page and try again.",
+      { stage: "script" }
+    );
   }
 
   const token = await new Promise<string | null>((resolve) => {
@@ -74,7 +109,9 @@ export async function ensureRecaptchaVerifiedForWebAuth(
   });
 
   if (!token) {
-    throw new Error("Security check failed. Please try again.");
+    throw createCaptchaError("fs/captcha-token-missing", "Security check failed. Please try again.", {
+      stage: "execute",
+    });
   }
 
   const verifyRes = await fetch("/api/auth/verify-captcha", {
@@ -84,9 +121,21 @@ export async function ensureRecaptchaVerifiedForWebAuth(
   });
 
   if (!verifyRes.ok) {
-    const verifyData = (await verifyRes.json().catch(() => ({}))) as { error?: string };
+    const verifyData = (await verifyRes.json().catch(() => ({}))) as {
+      error?: string;
+      code?: string;
+      reason?: string;
+    };
     await logError?.("captcha_failed", "Captcha verification failed", "info", { status: verifyRes.status });
-    throw new Error(verifyData.error || "Security check failed. Please try again.");
+    throw createCaptchaError(
+      "fs/captcha-verify-failed",
+      verifyData.error || "Security check failed. Please try again.",
+      {
+        stage: "verify",
+        status: verifyRes.status,
+        reason: verifyData.code || verifyData.reason,
+      }
+    );
   }
 
   await logError?.("captcha_verified", "Captcha verified", "info");

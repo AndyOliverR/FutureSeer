@@ -659,6 +659,16 @@ export const getAuthErrorMessage = (error: any): string => {
       return 'Sign in with Apple is available in your web browser. Open this site in Safari or Chrome to continue.';
     case 'auth/requires-recent-login': return 'Please sign in again to complete this action.';
     case 'auth/credential-already-in-use': return 'These credentials are already linked to another account.';
+    case 'fs/captcha-no-site-key':
+    case 'fs/captcha-server-config':
+      return 'Sign-in is temporarily unavailable. Please try again shortly.';
+    case 'fs/captcha-missing-script':
+      return 'Security check could not load. Refresh the page and try again.';
+    case 'fs/captcha-token-missing':
+    case 'fs/captcha-verify-failed':
+      return 'Security check failed. Please try again.';
+    case 'fs/captcha-internal-error':
+      return 'Security check is temporarily unavailable. Please try again.';
     default:
       if (raw && (raw.includes('Firebase') || raw.includes('auth/'))) {
         return 'Sign-in failed. Please check your email and password and try again.';
