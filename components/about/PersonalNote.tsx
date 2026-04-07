@@ -49,28 +49,37 @@ export function PersonalNote() {
         <div className="space-y-10">
           <div className="space-y-5 font-sans text-sm sm:text-base leading-relaxed text-surface-on">
             <p>
-              I&apos;ve been drawn to the occult and divination for years—not out of superstition, but out of curiosity. Across cultures and civilizations, systems like Vedic Astrology, Bazi, Tarot, Numerology, Bibliomancy, Geomancy, and many others were treated as structured frameworks of knowledge. They were not casual novelties. They were consulted seriously, studied deeply, and refined over centuries.
+              I&apos;ve been drawn to the occult and divination for years, not out of superstition, but out of disciplined curiosity. Across cultures and civilizations, systems like Vedic Astrology, Bazi, Tarot, Numerology, Bibliomancy, and Geomancy were treated as structured frameworks of knowledge. They were consulted seriously, studied deeply, and refined over centuries.
             </p>
             <p>
-              What fascinated me wasn&apos;t mystery or secrecy. It was the depth. The intellectual architecture behind these systems is immense—layered symbolic logic, archetypal psychology, mathematical cycles, and cosmological models. Entire civilizations invested time in understanding these patterns. Yet today, most people only encounter fragmented or oversimplified versions.
+              What fascinates me is not secrecy. It&apos;s depth. The intellectual architecture behind these systems is immense: layered symbolic logic, archetypal psychology, mathematical cycles, and cosmological models. Entire civilizations invested in mapping patterns of meaning, while modern culture often reduces that legacy into fragments.
             </p>
             <p>
-              Futureseer exists to change that.
+              Futureseer exists to restore that depth in a modern form.
             </p>
             <p>
-              This platform is not about blind belief. It is about exploration. Think of it as entering a vast library of symbolic intelligence that few people fully explore. You do not need to accept everything you see. Experience it. Test it against your own life. Extract insight. Discard what doesn&apos;t resonate. Keep what sharpens your awareness.
+              This platform is not about blind belief. It is about exploration with discernment. Enter it like a vast library of symbolic intelligence. Test what you encounter against your own life. Keep what sharpens awareness. Let go of what does not.
             </p>
             <p>
-              Even when approached analytically, these systems function as structured reflection engines. They reveal patterns. They expose blind spots. They encourage better questions. Used thoughtfully, they become cognitive tools for deeper self-understanding and decision-making.
+              I come from a generation that learned to navigate hard transitions: analog to digital, certainty to volatility, old systems to new ones. That experience taught me to hold contradiction without paralysis, to adapt fast without abandoning first principles. That same mindset shapes this platform.
             </p>
             <p>
-              Futureseer brings together culturally significant, historically rich divination systems into one refined platform. Instead of scattered interpretations, you encounter depth. Instead of generic readings, you engage with structured frameworks.
+              Even when approached analytically, these traditions can function as structured reflection engines. They reveal patterns, expose blind spots, and force better questions. Used thoughtfully, they become cognitive tools for self-understanding, strategy, and decision-making.
             </p>
             <p>
-              If you&apos;re intellectually curious, ambitious, or simply exploring alternative models of insight and decision-making, you may find this compelling.
+              In a world moving quickly through technological waves, AI is powerful but still a phase. Enduring wisdom usually survives the cycle. Futureseer is built on that premise: combine contemporary intelligence with knowledge preserved by elders, scholars, and practitioners across centuries.
             </p>
             <p>
-              We&apos;re building something expansive. Over time, access may become more limited—not for hype, but to preserve quality, depth, and meaningful engagement.
+              Some people will look at the same signals and still miss what you see. That is not arrogance. It is perspective earned through study, pattern recognition, and lived experience. Futureseer is for people who take that perspective seriously.
+            </p>
+            <p>
+              Here, culturally significant divination systems live in one refined platform. Instead of scattered interpretations, you get depth. Instead of generic readings, you engage structured frameworks designed for meaningful inquiry.
+            </p>
+            <p>
+              If you are intellectually curious, ambitious, or exploring alternative models of insight, you may find this compelling.
+            </p>
+            <p>
+              We&apos;re building something expansive. Over time, access may become more limited, not for hype, but to preserve quality, depth, and meaningful engagement.
             </p>
             <p>
               If you&apos;re here early, you&apos;re ahead of the curve.
