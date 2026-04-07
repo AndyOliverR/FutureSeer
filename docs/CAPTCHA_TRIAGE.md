@@ -1,0 +1,32 @@
+# reCAPTCHA Triage (Support Quick Guide)
+
+Use this guide when admin error events show `area: auth` and a `code` starting with `fs/captcha-`.
+
+## Code Mapping
+
+| Code | What it means | Typical cause | Support action |
+|---|---|---|---|
+| `fs/captcha-no-site-key` | Client could not find public reCAPTCHA site key | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` missing in deployment env | Escalate to engineering to set env var, redeploy, and retest `/signin` |
+| `fs/captcha-server-config` | Server verify route is missing required reCAPTCHA config | `RECAPTCHA_ENTERPRISE_API_KEY`, `RECAPTCHA_ENTERPRISE_PROJECT_ID`, or `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` missing/mismatched | Escalate to engineering to validate env vars and project/site key alignment |
+| `fs/captcha-missing-script` | Browser did not load Google reCAPTCHA script | Network/ad blocker/content blocker, CSP/script blocking, temporary CDN issue | Ask user to hard refresh, disable blocker for site, try incognito/another network |
+| `fs/captcha-token-missing` | reCAPTCHA execute did not return a token | Script loaded but execution failed/blocked | Retry once, then collect browser + extensions + network details and escalate |
+| `fs/captcha-verify-failed` | Server rejected captcha assessment | Low risk score, invalid token/action mismatch, expired token | Ask user to retry without VPN/proxy, disable blockers, try clean browser session |
+| `fs/captcha-internal-error` | Verify endpoint threw unexpected server error | Transient backend/API issue | Retry after 1-2 minutes; if repeated, escalate with timestamp + event payload |
+
+## First-Response Checklist
+
+1. Confirm the event includes `route: /signin`, `method: email`, and the `code`.
+2. Check whether failures are isolated to one user/browser or broad across users.
+3. Ask user to retry with:
+   - hard refresh,
+   - no ad blocker/VPN,
+   - private window,
+   - alternate network.
+4. If repeated, attach these fields to escalation:
+   - `code`, `captchaReason`, `captchaStage`, `httpStatus`,
+   - `browser`, `timestamp`, `environment`, `route`.
+
+## Escalation Notes
+
+- If OAuth sign-in works but email sign-in fails with `fs/captcha-*`, issue is likely in captcha path, not core Firebase email/password auth.
+- Do not advise users to bypass security checks.
