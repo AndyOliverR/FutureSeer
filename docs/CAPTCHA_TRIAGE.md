@@ -29,4 +29,5 @@ Use this guide when admin error events show `area: auth` and a `code` starting w
 ## Escalation Notes
 
 - If OAuth sign-in works but email sign-in fails with `fs/captcha-*`, issue is likely in captcha path, not core Firebase email/password auth.
+- If browser console also shows Service Worker errors like `Response body is already used` or `FetchEvent ... network error`, treat this as a combined SW+caching contributor and escalate with both captcha and SW logs.
 - Do not advise users to bypass security checks.
