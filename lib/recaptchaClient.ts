@@ -84,8 +84,14 @@ export async function ensureRecaptchaVerifiedForWebAuth(
 
   const grecaptcha = window.grecaptcha;
   if (!grecaptcha) {
+    const scriptTagPresent =
+      typeof document !== "undefined" &&
+      !!document.querySelector('script[src*="google.com/recaptcha/enterprise.js"]');
     devLog.warn("reCAPTCHA script not loaded", "recaptchaClient");
-    await logError?.("captcha_missing_script", "Captcha script missing", "info");
+    await logError?.("captcha_missing_script", "Captcha script missing", "info", {
+      scriptTagPresent,
+      hostname: typeof window !== "undefined" ? window.location.hostname : null,
+    });
     throw createCaptchaError(
       "fs/captcha-missing-script",
       "Security check could not load. Refresh the page and try again.",
@@ -102,6 +108,7 @@ export async function ensureRecaptchaVerifiedForWebAuth(
         devLog.error("reCAPTCHA execution failed:", err, "recaptchaClient");
         await logError?.("captcha_failed", "Captcha execution failed", "info", {
           message: err instanceof Error ? err.message : null,
+          hostname: typeof window !== "undefined" ? window.location.hostname : null,
         });
         resolve(null);
       }

@@ -4,7 +4,7 @@
  */
 
 // Cache version - increment when SW logic or precache list changes so clients drop old caches
-const CACHE_VERSION = 'v1.0.2';
+const CACHE_VERSION = 'v1.0.3';
 const CACHE_NAME = `futureseer-${CACHE_VERSION}`;
 
 // Cache names for different strategies
@@ -96,6 +96,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Never proxy cross-origin requests via this SW (e.g. Google reCAPTCHA script).
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
   // Choose strategy based on request type
   if (isStaticAsset(url)) {
     event.respondWith(cacheFirst(request, CACHES.static));
@@ -138,10 +143,18 @@ async function cacheFirst(request, cacheName) {
 async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
+    // Do not cache navigations; always prefer fresh HTML/document responses.
+    if (request.mode === 'navigate') {
+      return response;
+    }
     if (response.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
-      limitCacheSize(cacheName, MAX_CACHE_SIZE.dynamic);
+      try {
+        const cache = await caches.open(cacheName);
+        await cache.put(request, response.clone());
+        limitCacheSize(cacheName, MAX_CACHE_SIZE.dynamic);
+      } catch (cacheError) {
+        console.warn('[SW] Cache write skipped:', cacheError);
+      }
     }
     return response;
   } catch (error) {
