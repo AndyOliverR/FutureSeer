@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { devLog } from '@/lib/devLogger';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -10,28 +10,24 @@ import { useToast } from '@/components/ui/use-toast';
 export function ServiceWorkerRegistration() {
   const { toast } = useToast();
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  useEffect(() => {
-    // Only register in production and if service workers are supported
-    if (
-      typeof window === 'undefined' ||
-      !('serviceWorker' in navigator) ||
-      process.env.NODE_ENV !== 'production'
-    ) {
-      return;
-    }
+  const showUpdateNotification = useCallback(() => {
+    toast({
+      title: "Update Available",
+      description: "A new version of FutureSeer is available. Refresh to update.",
+      action: (
+        <button
+          onClick={handleUpdate}
+          className="px-3 py-1 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-md transition-colors"
+        >
+          Refresh
+        </button>
+      ),
+      duration: 10000, // Show for 10 seconds
+    });
+  }, [toast, registration]);
 
-    // Register service worker
-    registerServiceWorker();
-
-    // Cleanup on unmount
-    return () => {
-      // Service worker continues to run even after unmount
-    };
-  }, []);
-
-  const registerServiceWorker = async () => {
+  const registerServiceWorker = useCallback(async () => {
     try {
       const reg = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
@@ -56,7 +52,6 @@ export function ServiceWorkerRegistration() {
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             // New service worker available
-            setUpdateAvailable(true);
             showUpdateNotification();
           }
         });
@@ -70,25 +65,28 @@ export function ServiceWorkerRegistration() {
     } catch (error) {
       devLog.error('[App] Service worker registration failed:', error, 'ServiceWorkerRegistration');
     }
-  };
+  }, [showUpdateNotification]);
 
-  const showUpdateNotification = () => {
-    toast({
-      title: "Update Available",
-      description: "A new version of FutureSeer is available. Refresh to update.",
-      action: (
-        <button
-          onClick={handleUpdate}
-          className="px-3 py-1 text-sm bg-amber-500 hover:bg-amber-600 text-white rounded-md transition-colors"
-        >
-          Refresh
-        </button>
-      ),
-      duration: 10000, // Show for 10 seconds
-    });
-  };
+  useEffect(() => {
+    // Only register in production and if service workers are supported
+    if (
+      typeof window === 'undefined' ||
+      !('serviceWorker' in navigator) ||
+      process.env.NODE_ENV !== 'production'
+    ) {
+      return;
+    }
 
-  const handleUpdate = () => {
+    // Register service worker
+    void registerServiceWorker();
+
+    // Cleanup on unmount
+    return () => {
+      // Service worker continues to run even after unmount
+    };
+  }, [registerServiceWorker]);
+
+  const handleUpdate = useCallback(() => {
     if (!registration || !registration.waiting) return;
 
     // Tell service worker to skip waiting
@@ -98,7 +96,7 @@ export function ServiceWorkerRegistration() {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
-  };
+  }, [registration]);
 
   // This component doesn't render anything visible
   return null;
