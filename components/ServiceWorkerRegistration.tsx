@@ -40,6 +40,14 @@ export function ServiceWorkerRegistration() {
       setRegistration(reg);
       devLog.debug('[App] Service worker registered successfully');
 
+      // Promptly check for a newer SW so hotfixes roll out quickly.
+      try {
+        await reg.update();
+        devLog.debug('[App] Service worker update check completed');
+      } catch (updateError) {
+        devLog.warn('[App] Service worker immediate update check failed', updateError, 'ServiceWorkerRegistration');
+      }
+
       // Check for updates
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;
