@@ -4,7 +4,7 @@
  */
 
 // Cache version - increment when SW logic or precache list changes so clients drop old caches
-const CACHE_VERSION = 'v1.0.3';
+const CACHE_VERSION = 'v1.0.4';
 const CACHE_NAME = `futureseer-${CACHE_VERSION}`;
 
 // Cache names for different strategies
@@ -126,8 +126,12 @@ async function cacheFirst(request, cacheName) {
 
     const response = await fetch(request);
     if (response.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
+      try {
+        const cache = await caches.open(cacheName);
+        await cache.put(request, response.clone());
+      } catch (cacheError) {
+        console.warn('[SW] Cache-first write skipped:', cacheError);
+      }
     }
     return response;
   } catch (error) {
@@ -164,7 +168,11 @@ async function networkFirst(request, cacheName) {
     }
     // Return offline page for navigation requests
     if (request.mode === 'navigate') {
-      return caches.match('/offline');
+      return (await caches.match('/offline')) || new Response('Offline', {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      });
     }
     throw error;
   }
@@ -177,16 +185,23 @@ async function networkFirst(request, cacheName) {
 async function staleWhileRevalidate(request, cacheName) {
   const cached = await caches.match(request);
   
-  const fetchPromise = fetch(request).then((response) => {
-    if (response.ok) {
-      const cache = caches.open(cacheName);
-      cache.then((c) => {
-        c.put(request, response.clone());
-        limitCacheSize(cacheName, MAX_CACHE_SIZE.images);
-      });
-    }
-    return response;
-  });
+  const fetchPromise = fetch(request)
+    .then(async (response) => {
+      if (response.ok) {
+        try {
+          const cache = await caches.open(cacheName);
+          await cache.put(request, response.clone());
+          limitCacheSize(cacheName, MAX_CACHE_SIZE.images);
+        } catch (cacheError) {
+          console.warn('[SW] Stale-while-revalidate write skipped:', cacheError);
+        }
+      }
+      return response;
+    })
+    .catch((fetchError) => {
+      if (cached) return cached;
+      throw fetchError;
+    });
 
   return cached || fetchPromise;
 }
