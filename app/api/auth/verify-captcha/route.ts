@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
     const { token, action } = (await request.json()) as { token?: string; action?: string };
 
     if (!token) {
-      return NextResponse.json({ error: "Missing token" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing token", code: "fs/captcha-missing-token", reason: "missing_token" },
+        { status: 400 }
+      );
     }
 
     const result = await verifyRecaptchaEnterpriseToken(request, token, action || "LOGIN");
@@ -27,7 +30,10 @@ export async function POST(request: NextRequest) {
 
     if (result.reason === "server_config") {
       console.error("reCAPTCHA: missing RECAPTCHA_ENTERPRISE_* or NEXT_PUBLIC_RECAPTCHA_SITE_KEY");
-      return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+      return NextResponse.json(
+        { error: "Server configuration error", code: "fs/captcha-server-config", reason: "server_config" },
+        { status: 500 }
+      );
     }
 
     if (nodeEnv === "development") {
@@ -37,6 +43,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: "Security check failed",
+        code: "fs/captcha-verify-failed",
         reason: result.reason || "Low score",
       },
       { status: 403 }
@@ -53,6 +60,9 @@ export async function POST(request: NextRequest) {
     } catch {
       // ignore logging failures
     }
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error", code: "fs/captcha-internal-error", reason: "internal_error" },
+      { status: 500 }
+    );
   }
 }

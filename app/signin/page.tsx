@@ -64,6 +64,12 @@ function SignInContent() {
     code === "auth/invalid-continue-uri" ||
     code === "auth/invalid-dynamic-link-domain"
 
+  const extractCaptchaMeta = (err: { code?: string; stage?: string; status?: number; reason?: string }) => ({
+    ...(typeof err.stage === "string" ? { captchaStage: err.stage } : {}),
+    ...(typeof err.status === "number" ? { httpStatus: err.status } : {}),
+    ...(typeof err.reason === "string" ? { captchaReason: err.reason } : {}),
+  })
+
   useEffect(() => {
     void logError("view_loaded", "Sign-in screen loaded", "info", {
       isMobileLayout,
@@ -221,19 +227,22 @@ function SignInContent() {
       await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {
-      const err = error as { code?: string };
+      const err = error as { code?: string; stage?: string; status?: number; reason?: string };
       const msg = getAuthErrorMessage(err)
       setError(msg)
+      const captchaMeta = extractCaptchaMeta(err)
       if (isInvalidCredentialAuthError(err)) {
         await logError("auth_failed", msg, "warning", {
           method: "email",
           code: err.code ?? null,
           expectedUserInputError: true,
+          ...captchaMeta,
         })
       } else {
         await logError("auth_failed", msg, "error", {
           method: "email",
           code: err.code ?? null,
+          ...captchaMeta,
           ...(isLikelyOAuthDomainMismatch(err.code) ? { oauthGuardrails } : {}),
         })
       }
