@@ -33,7 +33,8 @@ Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom 
 6. Check recent auth telemetry actions for captcha loader signals:
    - `captcha_script_loaded` (primary host success),
    - `captcha_script_fallback_attempt` and `captcha_script_fallback_loaded` (recaptcha.net recovery),
-   - `captcha_script_fallback_failed` (both hosts unavailable).
+   - `captcha_script_fallback_failed` (both hosts unavailable),
+   - `captcha_adaptive_bypass_used` (email sign-in allowed after script-unavailable retry when mode is adaptive).
 7. Runtime recovery telemetry hints:
    - `runtimeRecoveryAttempted: true` in `captcha_missing_script` metadata means the app attempted script reinjection before strict failure.
    - `captchaPreflight.primaryScriptTagPresent=false` and `captchaPreflight.fallbackScriptTagPresent=false` usually means script blocked before DOM insertion/retention.
@@ -51,4 +52,5 @@ Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom 
 - If OAuth sign-in works but email sign-in fails with `fs/captcha-*`, issue is likely in captcha path, not core Firebase email/password auth.
 - If browser console also shows Service Worker errors like `Response body is already used` or `FetchEvent ... network error`, treat this as a combined SW+caching contributor and escalate with both captcha and SW logs.
 - Strict-mode policy: if both captcha providers fail, email sign-in remains blocked by design.
+- Hybrid-mode policy (`NEXT_PUBLIC_AUTH_CAPTCHA_MODE=adaptive`): captcha is still attempted first; only `fs/captcha-missing-script` after retry can bypass for email sign-in.
 - Do not advise users to bypass security checks.
