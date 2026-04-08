@@ -58,7 +58,14 @@ function SignInContent() {
   const { user } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
   const oauthGuardrails = React.useMemo(() => getClientOAuthGuardrailReport(), [])
-  const authCaptchaMode = process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE === "adaptive" ? "adaptive" : "enforce"
+  const authCaptchaMode = React.useMemo(() => {
+    const explicit = process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE
+    if (explicit === "adaptive" || explicit === "enforce") return explicit
+    if (typeof window === "undefined") return "enforce"
+    const host = window.location.hostname
+    const isLocal = host === "localhost" || host === "127.0.0.1"
+    return isLocal ? "enforce" : "adaptive"
+  }, [])
 
   const isLikelyOAuthDomainMismatch = (code?: string) =>
     code === "auth/unauthorized-domain" ||
