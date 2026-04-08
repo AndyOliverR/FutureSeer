@@ -669,6 +669,8 @@ export const getAuthErrorMessage = (error: any): string => {
       return 'Security check failed. Please try again.';
     case 'fs/captcha-internal-error':
       return 'Security check is temporarily unavailable. Please try again.';
+    case 'fs/captcha-adaptive-bypass':
+      return 'Security checks are temporarily limited. You can continue signing in.';
     default:
       if (raw && (raw.includes('Firebase') || raw.includes('auth/'))) {
         return 'Sign-in failed. Please check your email and password and try again.';
