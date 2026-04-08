@@ -62,6 +62,15 @@ function createCaptchaError(
   return error;
 }
 
+async function waitForGrecaptchaReady(timeoutMs = 2500, intervalMs = 125): Promise<boolean> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (window.grecaptcha?.enterprise) return true;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  return !!window.grecaptcha?.enterprise;
+}
+
 /**
  * Runs enterprise.execute + POST /api/auth/verify-captcha. No-op when skipped or no site key.
  */
@@ -82,14 +91,28 @@ export async function ensureRecaptchaVerifiedForWebAuth(
     );
   }
 
-  const grecaptcha = window.grecaptcha;
+  let grecaptcha = window.grecaptcha;
+  if (!grecaptcha) {
+    const readyAfterWait = await waitForGrecaptchaReady();
+    if (readyAfterWait) {
+      grecaptcha = window.grecaptcha;
+    }
+  }
   if (!grecaptcha) {
     const scriptTagPresent =
       typeof document !== "undefined" &&
       !!document.querySelector('script[src*="google.com/recaptcha/enterprise.js"]');
+    const fallbackScriptTagPresent =
+      typeof document !== "undefined" &&
+      !!document.querySelector('script[src*="recaptcha.net/recaptcha/enterprise.js"]');
+    const fallbackAttempted =
+      typeof window !== "undefined" &&
+      !!(window as Window & { __fsRecaptchaFallbackAttempted?: boolean }).__fsRecaptchaFallbackAttempted;
     devLog.warn("reCAPTCHA script not loaded", "recaptchaClient");
     await logError?.("captcha_missing_script", "Captcha script missing", "info", {
       scriptTagPresent,
+      fallbackScriptTagPresent,
+      fallbackAttempted,
       hostname: typeof window !== "undefined" ? window.location.hostname : null,
     });
     throw createCaptchaError(

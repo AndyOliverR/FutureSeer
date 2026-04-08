@@ -29,9 +29,14 @@ Use this guide when admin error events show `area: auth` and a `code` starting w
    - DevTools → Application → Service Workers → Unregister `sw.js`
    - DevTools → Application → Clear storage → Clear site data
    - Hard reload (`Ctrl+Shift+R`) and retry sign-in.
+6. Check recent auth telemetry actions for captcha loader signals:
+   - `captcha_script_loaded` (primary host success),
+   - `captcha_script_fallback_attempt` and `captcha_script_fallback_loaded` (recaptcha.net recovery),
+   - `captcha_script_fallback_failed` (both hosts unavailable).
 
 ## Escalation Notes
 
 - If OAuth sign-in works but email sign-in fails with `fs/captcha-*`, issue is likely in captcha path, not core Firebase email/password auth.
 - If browser console also shows Service Worker errors like `Response body is already used` or `FetchEvent ... network error`, treat this as a combined SW+caching contributor and escalate with both captcha and SW logs.
+- Strict-mode policy: if both captcha providers fail, email sign-in remains blocked by design.
 - Do not advise users to bypass security checks.

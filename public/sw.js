@@ -4,7 +4,7 @@
  */
 
 // Cache version - increment when SW logic or precache list changes so clients drop old caches
-const CACHE_VERSION = 'v1.0.4';
+const CACHE_VERSION = 'v1.0.5';
 const CACHE_NAME = `futureseer-${CACHE_VERSION}`;
 
 // Cache names for different strategies
@@ -98,6 +98,11 @@ self.addEventListener('fetch', (event) => {
 
   // Never proxy cross-origin requests via this SW (e.g. Google reCAPTCHA script).
   if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // Never intercept navigation/document requests; let browser handle HTML documents directly.
+  if (request.mode === 'navigate' || request.destination === 'document') {
     return;
   }
 
