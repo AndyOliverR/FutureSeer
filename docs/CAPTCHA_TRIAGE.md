@@ -1,6 +1,7 @@
 # reCAPTCHA Triage (Support Quick Guide)
 
 Use this guide when admin error events show `area: auth` and a `code` starting with `fs/captcha-`.
+Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom domains, and Gmail all share the same captcha gate before credential validation.
 
 ## Code Mapping
 
@@ -33,6 +34,8 @@ Use this guide when admin error events show `area: auth` and a `code` starting w
    - `captcha_script_loaded` (primary host success),
    - `captcha_script_fallback_attempt` and `captcha_script_fallback_loaded` (recaptcha.net recovery),
    - `captcha_script_fallback_failed` (both hosts unavailable).
+7. Runtime recovery telemetry hints:
+   - `runtimeRecoveryAttempted: true` in `captcha_missing_script` metadata means the app attempted script reinjection before strict failure.
 
 ## Escalation Notes
 
