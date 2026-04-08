@@ -54,18 +54,22 @@ interface CaptchaError extends Error {
   stage?: "config" | "script" | "execute" | "token" | "verify";
   status?: number;
   reason?: string;
+  preflight?: Record<string, unknown>;
 }
 
 function createCaptchaError(
   code: CaptchaErrorCode,
   message: string,
-  extra?: Pick<CaptchaError, "stage" | "status" | "reason">
+  extra?: Pick<CaptchaError, "stage" | "status" | "reason" | "preflight">
 ): CaptchaError {
   const error = new Error(message) as CaptchaError;
   error.code = code;
   if (extra?.stage) error.stage = extra.stage;
   if (typeof extra?.status === "number") error.status = extra.status;
   if (typeof extra?.reason === "string") error.reason = extra.reason;
+  if (extra?.preflight && typeof extra.preflight === "object") {
+    error.preflight = extra.preflight;
+  }
   return error;
 }
 
@@ -115,6 +119,7 @@ export async function ensureRecaptchaVerifiedForWebAuth(
   }
 
   let grecaptcha = window.grecaptcha;
+  const recoveryStartedAt = Date.now();
   if (!grecaptcha) {
     const injectedGoogle = await injectRecaptchaScript(siteKey, "www.google.com");
     const readyAfterInjectGoogle = injectedGoogle ? await waitForGrecaptchaReady(1800, 120) : false;
@@ -139,18 +144,25 @@ export async function ensureRecaptchaVerifiedForWebAuth(
     const fallbackAttempted =
       typeof window !== "undefined" &&
       !!(window as Window & { __fsRecaptchaFallbackAttempted?: boolean }).__fsRecaptchaFallbackAttempted;
-    devLog.warn("reCAPTCHA script not loaded", "recaptchaClient");
-    await logError?.("captcha_missing_script", "Captcha script missing", "info", {
-      scriptTagPresent,
+    const preflight: Record<string, unknown> = {
+      primaryScriptTagPresent: scriptTagPresent,
       fallbackScriptTagPresent,
       fallbackAttempted,
+      hasGrecaptchaGlobal: !!window.grecaptcha,
+      hasGrecaptchaEnterprise: !!window.grecaptcha?.enterprise,
       runtimeRecoveryAttempted: true,
+      recoveryWaitMs: Date.now() - recoveryStartedAt,
+      online: typeof navigator !== "undefined" ? navigator.onLine : null,
+      visibilityState: typeof document !== "undefined" ? document.visibilityState : null,
+      recaptchaReadyAt: typeof window !== "undefined" ? window.__fsRecaptchaReadyAt ?? null : null,
       hostname: typeof window !== "undefined" ? window.location.hostname : null,
-    });
+    };
+    devLog.warn("reCAPTCHA script not loaded", "recaptchaClient");
+    await logError?.("captcha_missing_script", "Captcha script missing", "info", preflight);
     throw createCaptchaError(
       "fs/captcha-missing-script",
       "Security check could not load. Refresh the page and try again.",
-      { stage: "script" }
+      { stage: "script", preflight }
     );
   }
 

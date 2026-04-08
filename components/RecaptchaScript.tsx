@@ -57,6 +57,17 @@ export function RecaptchaScript() {
       fallbackAttempted;
   }, [fallbackAttempted]);
 
+  useEffect(() => {
+    if (!siteKey || !shouldLoad) return;
+    const host = provider === "google" ? "www.google.com" : "www.recaptcha.net";
+    const src = `https://${host}/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`;
+    logRecaptchaScriptEvent("captcha_loader_host_selected", "reCAPTCHA loader host selected", {
+      provider,
+      src,
+      fallbackAttempted,
+    });
+  }, [provider, fallbackAttempted, siteKey, shouldLoad]);
+
   if (!siteKey || !shouldLoad) return null;
 
   const host = provider === "google" ? "www.google.com" : "www.recaptcha.net";
