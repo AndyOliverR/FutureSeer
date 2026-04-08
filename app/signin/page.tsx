@@ -64,10 +64,17 @@ function SignInContent() {
     code === "auth/invalid-continue-uri" ||
     code === "auth/invalid-dynamic-link-domain"
 
-  const extractCaptchaMeta = (err: { code?: string; stage?: string; status?: number; reason?: string }) => ({
+  const extractCaptchaMeta = (err: {
+    code?: string
+    stage?: string
+    status?: number
+    reason?: string
+    preflight?: Record<string, unknown>
+  }) => ({
     ...(typeof err.stage === "string" ? { captchaStage: err.stage } : {}),
     ...(typeof err.status === "number" ? { httpStatus: err.status } : {}),
     ...(typeof err.reason === "string" ? { captchaReason: err.reason } : {}),
+    ...(err.preflight && typeof err.preflight === "object" ? { captchaPreflight: err.preflight } : {}),
   })
 
   useEffect(() => {
@@ -238,7 +245,13 @@ function SignInContent() {
       await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {
-      const err = error as { code?: string; stage?: string; status?: number; reason?: string };
+      const err = error as {
+        code?: string
+        stage?: string
+        status?: number
+        reason?: string
+        preflight?: Record<string, unknown>
+      };
       const msg = getAuthErrorMessage(err)
       setError(msg)
       const captchaMeta = extractCaptchaMeta(err)

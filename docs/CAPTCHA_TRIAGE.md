@@ -36,6 +36,10 @@ Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom 
    - `captcha_script_fallback_failed` (both hosts unavailable).
 7. Runtime recovery telemetry hints:
    - `runtimeRecoveryAttempted: true` in `captcha_missing_script` metadata means the app attempted script reinjection before strict failure.
+   - `captchaPreflight.primaryScriptTagPresent=false` and `captchaPreflight.fallbackScriptTagPresent=false` usually means script blocked before DOM insertion/retention.
+   - `captchaPreflight.primaryScriptTagPresent=true` and `hasGrecaptchaEnterprise=false` suggests load/execution race or blocked script response.
+   - `captchaPreflight.recoveryWaitMs` shows how long client waited for readiness before strict fail.
+   - `captchaPreflight.online=false` points to offline/transport conditions rather than domain/provider issues.
 8. Service worker decommission check:
    - Web SW is intentionally decommissioned.
    - Ask user to hard reload once (`Ctrl+Shift+R`).
