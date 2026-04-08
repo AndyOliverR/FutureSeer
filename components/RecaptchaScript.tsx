@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import Script from "next/script";
 
 function logRecaptchaScriptEvent(action: string, message: string, meta?: Record<string, unknown>) {
@@ -43,33 +43,60 @@ function getRecaptchaHostServerSnapshot(): boolean {
  */
 export function RecaptchaScript() {
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+  const [provider, setProvider] = useState<"google" | "recaptcha_net">("google");
+  const [fallbackAttempted, setFallbackAttempted] = useState(false);
   const shouldLoad = useSyncExternalStore(
     subscribeRecaptchaHost,
     getRecaptchaHostSnapshot,
     getRecaptchaHostServerSnapshot
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    (window as Window & { __fsRecaptchaFallbackAttempted?: boolean }).__fsRecaptchaFallbackAttempted =
+      fallbackAttempted;
+  }, [fallbackAttempted]);
+
   if (!siteKey || !shouldLoad) return null;
 
-  const src = `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`;
+  const host = provider === "google" ? "www.google.com" : "www.recaptcha.net";
+  const src = `https://${host}/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`;
 
   return (
     <Script
+      key={`${provider}-${siteKey}`}
       src={src}
       strategy="afterInteractive"
       onLoad={() => {
         const hasGrecaptcha = typeof window !== "undefined" && !!window.grecaptcha?.enterprise;
         logRecaptchaScriptEvent(
-          hasGrecaptcha ? "captcha_script_loaded" : "captcha_script_loaded_without_global",
+          hasGrecaptcha
+            ? (provider === "google" ? "captcha_script_loaded" : "captcha_script_fallback_loaded")
+            : "captcha_script_loaded_without_global",
           hasGrecaptcha ? "reCAPTCHA script loaded" : "reCAPTCHA script loaded but global missing",
-          { hasGrecaptcha }
+          { hasGrecaptcha, provider, fallbackAttempted }
         );
       }}
       onError={() => {
         logRecaptchaScriptEvent("captcha_script_failed", "reCAPTCHA script failed to load", {
           siteKeyConfigured: !!siteKey,
+          provider,
+          fallbackAttempted,
           hostname: typeof window !== "undefined" ? window.location.hostname : null,
         });
+        if (provider === "google" && !fallbackAttempted) {
+          setFallbackAttempted(true);
+          logRecaptchaScriptEvent("captcha_script_fallback_attempt", "Trying recaptcha.net fallback", {
+            fromProvider: "google",
+            toProvider: "recaptcha_net",
+          });
+          setProvider("recaptcha_net");
+        } else if (provider === "recaptcha_net") {
+          logRecaptchaScriptEvent("captcha_script_fallback_failed", "Fallback script also failed", {
+            provider,
+            fallbackAttempted,
+          });
+        }
       }}
     />
   );
