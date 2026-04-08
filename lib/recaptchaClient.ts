@@ -35,6 +35,13 @@ type LogFn = (
   meta?: Record<string, unknown>
 ) => Promise<void>;
 
+declare global {
+  interface Window {
+    __fsRecaptchaFallbackAttempted?: boolean;
+    __fsRecaptchaReadyAt?: number;
+  }
+}
+
 type CaptchaErrorCode =
   | "fs/captcha-no-site-key"
   | "fs/captcha-missing-script"
@@ -71,6 +78,22 @@ async function waitForGrecaptchaReady(timeoutMs = 2500, intervalMs = 125): Promi
   return !!window.grecaptcha?.enterprise;
 }
 
+async function injectRecaptchaScript(siteKey: string, host: "www.google.com" | "www.recaptcha.net"): Promise<boolean> {
+  if (typeof document === "undefined") return false;
+  const src = `https://${host}/recaptcha/enterprise.js?render=${encodeURIComponent(siteKey)}`;
+  const existing = document.querySelector(`script[src="${src}"]`) as HTMLScriptElement | null;
+  if (existing) return true;
+  return await new Promise<boolean>((resolve) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+}
+
 /**
  * Runs enterprise.execute + POST /api/auth/verify-captcha. No-op when skipped or no site key.
  */
@@ -93,6 +116,14 @@ export async function ensureRecaptchaVerifiedForWebAuth(
 
   let grecaptcha = window.grecaptcha;
   if (!grecaptcha) {
+    const injectedGoogle = await injectRecaptchaScript(siteKey, "www.google.com");
+    const readyAfterInjectGoogle = injectedGoogle ? await waitForGrecaptchaReady(1800, 120) : false;
+    if (!readyAfterInjectGoogle) {
+      if (typeof window !== "undefined") window.__fsRecaptchaFallbackAttempted = true;
+      await injectRecaptchaScript(siteKey, "www.recaptcha.net");
+      await waitForGrecaptchaReady(1800, 120);
+    }
+
     const readyAfterWait = await waitForGrecaptchaReady();
     if (readyAfterWait) {
       grecaptcha = window.grecaptcha;
@@ -113,6 +144,7 @@ export async function ensureRecaptchaVerifiedForWebAuth(
       scriptTagPresent,
       fallbackScriptTagPresent,
       fallbackAttempted,
+      runtimeRecoveryAttempted: true,
       hostname: typeof window !== "undefined" ? window.location.hostname : null,
     });
     throw createCaptchaError(

@@ -221,7 +221,18 @@ function SignInContent() {
 
     try {
       await logError("email_submit_clicked", "Email sign-in submitted", "info", { hasRedirect: !!redirectTo })
-      await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
+      try {
+        await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
+      } catch (captchaError: unknown) {
+        const ce = captchaError as { code?: string }
+        if (ce?.code === "fs/captcha-missing-script") {
+          // One short retry for slow-network script readiness races.
+          await new Promise((resolve) => setTimeout(resolve, 900))
+          await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
+        } else {
+          throw captchaError
+        }
+      }
       const user = await signInWithEmail(email, password)
       const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
       await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })
