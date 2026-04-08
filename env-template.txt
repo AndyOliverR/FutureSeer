@@ -54,6 +54,10 @@ RECAPTCHA_ENTERPRISE_API_KEY=
 # RECAPTCHA_MIN_SCORE_LOGIN=0.45
 # RECAPTCHA_MIN_SCORE_SIGNUP=0.45
 # RECAPTCHA_MIN_SCORE_COMMUNITY=0.45
+# Auth captcha mode (client):
+# enforce = block sign-in when captcha is unavailable (default)
+# adaptive = allow email sign-in only when captcha script init fails after retry
+# NEXT_PUBLIC_AUTH_CAPTCHA_MODE=enforce
 
 # OpenAI API (if you have it)
 OPENAI_API_KEY=your-openai-api-key

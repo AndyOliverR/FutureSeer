@@ -58,6 +58,7 @@ function SignInContent() {
   const { user } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
   const oauthGuardrails = React.useMemo(() => getClientOAuthGuardrailReport(), [])
+  const authCaptchaMode = process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE === "adaptive" ? "adaptive" : "enforce"
 
   const isLikelyOAuthDomainMismatch = (code?: string) =>
     code === "auth/unauthorized-domain" ||
@@ -231,11 +232,36 @@ function SignInContent() {
       try {
         await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
       } catch (captchaError: unknown) {
-        const ce = captchaError as { code?: string }
+        const ce = captchaError as {
+          code?: string
+          stage?: string
+          status?: number
+          reason?: string
+          preflight?: Record<string, unknown>
+        }
         if (ce?.code === "fs/captcha-missing-script") {
           // One short retry for slow-network script readiness races.
           await new Promise((resolve) => setTimeout(resolve, 900))
-          await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
+          try {
+            await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
+          } catch (retryError: unknown) {
+            const re = retryError as {
+              code?: string
+              stage?: string
+              status?: number
+              reason?: string
+              preflight?: Record<string, unknown>
+            }
+            if (authCaptchaMode === "adaptive" && re?.code === "fs/captcha-missing-script") {
+              await logError("captcha_adaptive_bypass_used", "Captcha unavailable; adaptive bypass used", "warning", {
+                mode: authCaptchaMode,
+                reason: "script_unavailable_after_retry",
+                ...extractCaptchaMeta(re),
+              })
+            } else {
+              throw retryError
+            }
+          }
         } else {
           throw captchaError
         }
