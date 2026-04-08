@@ -41,7 +41,8 @@
       "swisseph"
     ],
     "overrides": {
-      "baseline-browser-mapping": "latest"
+      "baseline-browser-mapping": "latest",
+      "zustand": "^5.0.12"
     }
   },
   "dependencies": {
@@ -82,7 +83,7 @@
     "@radix-ui/react-tooltip": "latest",
     "@react-pdf/renderer": "^4.3.0",
     "@rrweb/types": "latest",
-    "@xyflow/react": "^12.10.0",
+    "@xyflow/react": "^12.10.2",
     "ai": "^4.0.0",
     "astronomia": "^4.2.0",
     "autoprefixer": "^10.4.20",
