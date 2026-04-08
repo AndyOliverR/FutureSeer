@@ -3,6 +3,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { devLog } from '@/lib/devLogger';
 import { useToast } from '@/components/ui/use-toast';
 
+const ENABLE_SERVICE_WORKER = false;
+
 /**
  * Service Worker Registration Component
  * Registers the service worker and handles updates
@@ -28,6 +30,10 @@ export function ServiceWorkerRegistration() {
   }, [toast, registration]);
 
   const registerServiceWorker = useCallback(async () => {
+    if (!ENABLE_SERVICE_WORKER) {
+      devLog.info('[App] Service worker registration disabled by kill switch', undefined, 'ServiceWorkerRegistration');
+      return;
+    }
     try {
       const reg = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
@@ -68,6 +74,7 @@ export function ServiceWorkerRegistration() {
   }, [showUpdateNotification]);
 
   useEffect(() => {
+    if (!ENABLE_SERVICE_WORKER) return;
     // Only register in production and if service workers are supported
     if (
       typeof window === 'undefined' ||

@@ -14,7 +14,6 @@ import { MysticalFeedback } from "@/components/MysticalFeedback"
 import {
   DeferredAnalyticsInitializer,
   DeferredFirestoreErrorSuppressor,
-  DeferredServiceWorkerRegistration,
   DeferredViewportHeightSync,
 } from "@/components/DeferredLayoutComponents"
 import { PlatformClassProvider } from "@/components/PlatformClassProvider"
@@ -63,6 +62,11 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){var w=typeof window!=='undefined'?window.innerWidth:0;var ua=typeof navigator!=='undefined'&&navigator.userAgent?navigator.userAgent:'';var ds='material';if(w>=768){document.body.classList.add('platform-web');document.documentElement.setAttribute('data-platform','web');document.documentElement.setAttribute('data-mobile-os','desktop');var isMac=!/iPhone|iPad|iPod/i.test(ua)&&/Macintosh|Mac OS X/i.test(ua);ds=isMac?'konsta-ios':'devotionist';document.documentElement.setAttribute('data-design-system',ds);document.body.classList.remove('k-ios','k-material');if(ds==='konsta-ios')document.body.classList.add('k-ios');else if(ds==='material')document.body.classList.add('k-material');return;}var mq=typeof window.matchMedia!=='undefined'&&window.matchMedia('(max-width: 767px)').matches;var vv=window.visualViewport&&window.visualViewport.width>0&&window.visualViewport.width<768;var isSmall=(w>0&&w<768)||mq||!!vv;var cls=isSmall?'platform-android':'platform-web';document.body.classList.add(cls);document.documentElement.setAttribute('data-platform',cls==='platform-android'?'android':'web');var os=isSmall?(/iPhone|iPad|iPod/i.test(ua)?'ios':/Android/i.test(ua)?'android':'desktop'):'desktop';document.documentElement.setAttribute('data-mobile-os',os);ds=isSmall?(os==='ios'?'konsta-ios':os==='android'?'material':'material'):'devotionist';document.documentElement.setAttribute('data-design-system',ds);document.body.classList.remove('k-ios','k-material');if(ds==='konsta-ios')document.body.classList.add('k-ios');else if(ds==='material')document.body.classList.add('k-material');})();`,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(typeof window==='undefined')return;if(!('serviceWorker' in navigator))return;var isProd=window.location.hostname!=='localhost'&&window.location.hostname!=='127.0.0.1';if(!isProd)return;navigator.serviceWorker.getRegistrations().then(function(regs){return Promise.all((regs||[]).map(function(r){return r.unregister();}));}).catch(function(){});if('caches' in window){caches.keys().then(function(keys){return Promise.all((keys||[]).filter(function(k){return k.indexOf('futureseer-')===0;}).map(function(k){return caches.delete(k);}));}).catch(function(){});} })();`,
           }}
         />
         <DeferredViewportHeightSync />

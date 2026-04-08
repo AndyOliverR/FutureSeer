@@ -36,6 +36,10 @@ Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom 
    - `captcha_script_fallback_failed` (both hosts unavailable).
 7. Runtime recovery telemetry hints:
    - `runtimeRecoveryAttempted: true` in `captcha_missing_script` metadata means the app attempted script reinjection before strict failure.
+8. Service worker decommission check:
+   - Web SW is intentionally decommissioned.
+   - Ask user to hard reload once (`Ctrl+Shift+R`).
+   - If needed, confirm `navigator.serviceWorker.getRegistrations()` returns `[]` on `/signin`.
 
 ## Escalation Notes
 
