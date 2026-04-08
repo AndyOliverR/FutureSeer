@@ -28,6 +28,7 @@ export const DeferredServiceWorkerRegistration = dynamic(
   () => import("@/components/ServiceWorkerRegistration").then((mod) => ({ default: mod.ServiceWorkerRegistration })),
   { ssr: false }
 );
+// Deprecated: Service worker is intentionally decommissioned on web.
 
 export const DeferredViewportHeightSync = dynamic(
   () => import("@/components/ViewportHeightSync").then((mod) => ({ default: mod.ViewportHeightSync })),
