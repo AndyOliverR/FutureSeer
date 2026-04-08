@@ -8,13 +8,35 @@ import { useEffect } from "react";
  */
 export function ViewportHeightSync() {
   useEffect(() => {
+    let rafId: number | null = null;
+    let lastVhPx: string | null = null;
+
     const setVh = () => {
       const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty("--vh", `${vh}px`);
+      const nextVhPx = `${vh}px`;
+      if (nextVhPx === lastVhPx) return;
+      lastVhPx = nextVhPx;
+      document.documentElement.style.setProperty("--vh", nextVhPx);
     };
-    setVh();
-    window.addEventListener("resize", setVh);
-    return () => window.removeEventListener("resize", setVh);
+
+    const scheduleSetVh = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        setVh();
+      });
+    };
+
+    scheduleSetVh();
+    window.addEventListener("resize", scheduleSetVh);
+    window.addEventListener("orientationchange", scheduleSetVh);
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener("resize", scheduleSetVh);
+      window.removeEventListener("orientationchange", scheduleSetVh);
+    };
   }, []);
   return null;
 }

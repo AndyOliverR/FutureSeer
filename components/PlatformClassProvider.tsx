@@ -47,15 +47,28 @@ function applyPlatformClass() {
 
 export function PlatformClassProvider() {
   useEffect(() => {
-    applyPlatformClass();
+    let rafId: number | null = null;
 
-    const t1 = window.setTimeout(applyPlatformClass, 100);
-    const t2 = window.setTimeout(applyPlatformClass, 400);
+    const scheduleApply = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        applyPlatformClass();
+      });
+    };
 
-    const onResizeOrOrientation = () => applyPlatformClass();
+    scheduleApply();
+
+    const t1 = window.setTimeout(scheduleApply, 100);
+    const t2 = window.setTimeout(scheduleApply, 400);
+
+    const onResizeOrOrientation = () => scheduleApply();
     window.addEventListener("resize", onResizeOrOrientation);
     window.addEventListener("orientationchange", onResizeOrOrientation);
     return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
       window.clearTimeout(t1);
       window.clearTimeout(t2);
       window.removeEventListener("resize", onResizeOrOrientation);
