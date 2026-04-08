@@ -69,6 +69,9 @@ export function RecaptchaScript() {
       strategy="afterInteractive"
       onLoad={() => {
         const hasGrecaptcha = typeof window !== "undefined" && !!window.grecaptcha?.enterprise;
+        if (typeof window !== "undefined" && hasGrecaptcha) {
+          (window as Window & { __fsRecaptchaReadyAt?: number }).__fsRecaptchaReadyAt = Date.now();
+        }
         logRecaptchaScriptEvent(
           hasGrecaptcha
             ? (provider === "google" ? "captcha_script_loaded" : "captcha_script_fallback_loaded")

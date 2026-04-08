@@ -4,7 +4,7 @@
  */
 
 // Cache version - increment when SW logic or precache list changes so clients drop old caches
-const CACHE_VERSION = 'v1.0.5';
+const CACHE_VERSION = 'v1.0.6';
 const CACHE_NAME = `futureseer-${CACHE_VERSION}`;
 
 // Cache names for different strategies
@@ -108,15 +108,34 @@ self.addEventListener('fetch', (event) => {
 
   // Choose strategy based on request type
   if (isStaticAsset(url)) {
-    event.respondWith(cacheFirst(request, CACHES.static));
+    event.respondWith(safeRespond(cacheFirst(request, CACHES.static)));
   } else if (isImage(url)) {
-    event.respondWith(staleWhileRevalidate(request, CACHES.images));
+    event.respondWith(safeRespond(staleWhileRevalidate(request, CACHES.images)));
   } else if (isAPIRequest(url)) {
-    event.respondWith(networkFirst(request, CACHES.dynamic));
+    event.respondWith(safeRespond(networkFirst(request, CACHES.dynamic)));
   } else {
-    event.respondWith(networkFirst(request, CACHES.dynamic));
+    event.respondWith(safeRespond(networkFirst(request, CACHES.dynamic)));
   }
 });
+
+function networkFailureResponse() {
+  return new Response(
+    JSON.stringify({ error: 'Network unavailable. Please retry.' }),
+    {
+      status: 503,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    }
+  );
+}
+
+async function safeRespond(promise) {
+  try {
+    return await promise;
+  } catch (error) {
+    console.warn('[SW] Safe response fallback triggered:', error);
+    return networkFailureResponse();
+  }
+}
 
 /**
  * Cache First Strategy
@@ -179,7 +198,7 @@ async function networkFirst(request, cacheName) {
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
       });
     }
-    throw error;
+    return networkFailureResponse();
   }
 }
 
@@ -205,7 +224,7 @@ async function staleWhileRevalidate(request, cacheName) {
     })
     .catch((fetchError) => {
       if (cached) return cached;
-      throw fetchError;
+      return networkFailureResponse();
     });
 
   return cached || fetchPromise;
