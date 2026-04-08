@@ -40,6 +40,7 @@ Email domain is not a gating factor here: Microsoft, Apple relay, Yahoo, custom 
    - Web SW is intentionally decommissioned.
    - Ask user to hard reload once (`Ctrl+Shift+R`).
    - If needed, confirm `navigator.serviceWorker.getRegistrations()` returns `[]` on `/signin`.
+   - If this still returns registrations immediately after deploy, wait 1-2 minutes for CDN propagation and hard reload again.
 
 ## Escalation Notes
 
