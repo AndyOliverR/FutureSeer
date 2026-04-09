@@ -1,5 +1,6 @@
 import type { KabbalisticQuestionType } from '@/lib/kabbalisticNumerologySeerState';
 import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
+import { NUMEROLOGY_PRACTICAL_SLICE_BULLETS } from '@/lib/numerology/practicalGuides';
 
 /**
  * Builds the system prompt for the Kabbalistic Numerology Ask the Seer flow.
@@ -39,6 +40,9 @@ User: "Does my soul path support launching this app?" Correct: "Kabbalistic nume
 
 ## STRUCTURED KABBALISTIC STATE (use this only)
 ${slice}
+
+## Practical guidance themes (implementation, not guarantees)
+${NUMEROLOGY_PRACTICAL_SLICE_BULLETS}
 
 Answer the user's question using the state above. Keep language reflective, calm, and inward-focused. No markdown headers.`;
 

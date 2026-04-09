@@ -3,9 +3,14 @@
 
 import { generateAngelNumbersProfile, validateAngelNumbersData } from './angelNumbersCalculations'
 import { devLog } from '@/lib/devLogger';
-import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
 import { CACHE_TTL } from './cacheConstants';
+import {
+  powerWordByNumber,
+  wealthAttractionByNumber,
+  practicalChecklistByNumber,
+} from '@/lib/numerology/practicalGuides';
 
 interface AngelNumbersData {
   userId: string
@@ -26,8 +31,8 @@ interface AngelNumbersData {
   personalDayAngel: number
   
   // Angel Number Analysis
-  frequentNumbers: any[]
-  masterNumbers: any[]
+  frequentNumbers: Array<number | string | Record<string, unknown>>
+  masterNumbers: Array<{ number: number } & Record<string, unknown>>
   repeatingPatterns: string[]
   angelicGuidance: {
     primaryMessage: string
@@ -53,6 +58,9 @@ interface AngelNumbersData {
     systemConfidence?: number
     learningApplied?: boolean
   }
+  powerWord?: string
+  wealthTips?: string[]
+  practicalChecklist?: string[]
 }
 
 interface AngelNumbersCoachingContext {
@@ -90,8 +98,7 @@ class AngelNumbersIntelligence {
   async calculateAngelNumbersData(
     userId: string,
     fullName: string,
-    birthDate: string,
-    forceExternal: boolean = false
+    birthDate: string
   ): Promise<AngelNumbersData> {
     if (process.env.NODE_ENV === 'development') {
       devLog.debug('👼 AngelNumbersIntelligence: Starting intelligent calculation...')
@@ -161,8 +168,8 @@ class AngelNumbersIntelligence {
       personalMonthAngel: internalProfile.personalMonthAngel,
       personalDayAngel: internalProfile.personalDayAngel,
       
-      frequentNumbers: internalProfile.frequentNumbers,
-      masterNumbers: internalProfile.masterNumbers,
+      frequentNumbers: internalProfile.frequentNumbers as unknown as Array<number | string | Record<string, unknown>>,
+      masterNumbers: internalProfile.masterNumbers as unknown as Array<{ number: number } & Record<string, unknown>>,
       repeatingPatterns: internalProfile.repeatingPatterns,
       angelicGuidance: internalProfile.angelicGuidance,
       synchronicities: internalProfile.synchronicities,
@@ -174,7 +181,10 @@ class AngelNumbersIntelligence {
         isComprehensive: true,
         systemConfidence: this.systemMetrics.confidence,
         learningApplied: false
-      }
+      },
+      powerWord: powerWordByNumber(internalProfile.lifePathAngel),
+      wealthTips: wealthAttractionByNumber(internalProfile.lifePathAngel),
+      practicalChecklist: practicalChecklistByNumber(internalProfile.lifePathAngel),
     }
 
     // Store in Firebase
@@ -203,9 +213,6 @@ class AngelNumbersIntelligence {
     if (process.env.NODE_ENV === 'development') {
       devLog.debug('👼 AngelNumbersIntelligence: Providing personalized coaching...')
     }
-    
-    const { angelNumbersData, userQuery } = context
-    const query = userQuery.toLowerCase()
     
     // Generate personalized response based on angel numbers profile
     const response = await this.generatePersonalizedResponse(context)
@@ -299,7 +306,7 @@ class AngelNumbersIntelligence {
   }
 
   // Generate personalized insights
-  private generateInsights(query: string, data: AngelNumbersData): string[] {
+  private generateInsights(_query: string, data: AngelNumbersData): string[] {
     const insights: string[] = []
     
     insights.push(`Your Life Path Angel ${data.lifePathAngel} reveals your spiritual purpose: ${data.angelicGuidance.primaryMessage}`)
@@ -319,7 +326,7 @@ class AngelNumbersIntelligence {
   }
 
   // Generate actionable steps
-  private generateActionableSteps(query: string, data: AngelNumbersData): string[] {
+  private generateActionableSteps(_query: string, data: AngelNumbersData): string[] {
     const steps: string[] = []
     
     steps.push(`Meditate on your Life Path Angel ${data.lifePathAngel} daily`)
@@ -340,7 +347,7 @@ class AngelNumbersIntelligence {
   }
 
   // Generate related numbers
-  private generateRelatedNumbers(query: string, data: AngelNumbersData): number[] {
+  private generateRelatedNumbers(_query: string, data: AngelNumbersData): number[] {
     const numbers: number[] = []
     
     numbers.push(data.lifePathAngel)

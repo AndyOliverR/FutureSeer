@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { createAIStream } from '@/lib/aiGateway';
@@ -11,6 +12,46 @@ import { buildChartState, getChartSliceForQuestionType } from '@/lib/westernChar
 import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
 import { getWesternReportChunksForUser, getSectionsForIntent, formatChunksForPrompt } from '@/lib/westernSeerRetrieval';
 import { buildWesternRetrievalSystemPrompt } from '@/lib/westernSeerPrompts';
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-western-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
 
 interface WesternSeerRequest {
   userId: string;
@@ -51,14 +92,14 @@ export async function POST(request: NextRequest) {
     const { userId, question, userProfile, westernChartData, astroNumerologyData, sessionId }: WesternSeerRequest = await request.json();
 
     if (!userId || !question || !userProfile) {
-      return NextResponse.json({
+      return jsonWithRobots({
         success: false,
         error: 'Missing required parameters: userId, question, or userProfile'
       }, { status: 400 });
     }
 
     if (!westernChartData) {
-      return NextResponse.json({
+      return jsonWithRobots({
         success: false,
         error: 'Missing Western chart data. Please ensure you are accessing this from the Western astrology page.'
       }, { status: 400 });
@@ -218,10 +259,11 @@ export async function POST(request: NextRequest) {
     const synastryRefusalMessage = "Relationship comparison (synastry) requires a partner's birth data. Please use the Synastry tool with both birth details to get insights into compatibility.";
     if (questionType === 'synastry') {
       devLog.info('🔮 Western Seer: Refusing synastry question (no partner chart)', undefined, 'ask-western-seer');
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode(synastryRefusalMessage));
+            appendAttributionTail(controller);
             controller.close();
           }
         }),
@@ -278,7 +320,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Return streaming response (500+ tokens/second!)
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           let fullResponse = '';
@@ -331,8 +373,9 @@ export async function POST(request: NextRequest) {
             
           } catch (error) {
             devLog.error('Error during streaming:', error);
-            controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
+            controller.enqueue(new TextEncoder().encode(stampText('I apologize, but I encountered an error. Please try again.')));
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         }
@@ -348,7 +391,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     devLog.error('Error in Western Seer API:', error);
-    return NextResponse.json({
+    return jsonWithRobots({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });

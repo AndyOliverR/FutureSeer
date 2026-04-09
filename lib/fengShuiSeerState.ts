@@ -5,6 +5,7 @@
  */
 
 import type { FengShuiAnalysis } from '@/lib/fengshui/fengShuiService';
+import { PRACTICAL_GUIDE_SLICE_BULLETS } from '@/lib/fengshui/practicalGuides';
 
 export interface FengShuiState {
   property_type: string;
@@ -211,6 +212,11 @@ DISCIPLINE (non-negotiable):
     ? '\n\nSpatial data is incomplete; offer general principles, not specific placements.'
     : '';
 
+  const practicalBlock = `
+ON-PAGE PRACTICAL GUIDES (align answers with these themes when relevant; still no guarantees):
+${PRACTICAL_GUIDE_SLICE_BULLETS}
+`.trim();
+
   return `${stateBlock}
 
 ${formSchoolBlock}
@@ -221,5 +227,7 @@ ${cureBlock}
 
 ${schoolBlock}
 
-${disciplineBlock}${caveat}`;
+${disciplineBlock}
+
+${practicalBlock}${caveat}`;
 }

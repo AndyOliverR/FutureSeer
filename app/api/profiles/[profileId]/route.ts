@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger';
 import { profileManager } from '@/lib/services/profileManager'
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-static'
 
@@ -16,18 +17,24 @@ export async function GET(
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'profiles-id-route');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { profileId } = await params
     const searchParams = request.nextUrl.searchParams
     const userId = searchParams.get('userId')
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!userId) {
+    if (!ownedUserId) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'User ID is required and must match authenticated user' },
+        { status: 403 }
       )
     }
 
-    const profile = await profileManager.getAdditionalProfile(userId, profileId)
+    const profile = await profileManager.getAdditionalProfile(ownedUserId, profileId)
     
     if (!profile) {
       return NextResponse.json(
@@ -51,18 +58,24 @@ export async function PUT(
   { params }: { params: Promise<{ profileId: string }> }
 ) {
   try {
+    const auth = await verifyUserRequest(request, 'profiles-id-route');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { profileId } = await params
     const body = await request.json()
     const { userId, ...updates } = body
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!userId) {
+    if (!ownedUserId) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'User ID is required and must match authenticated user' },
+        { status: 403 }
       )
     }
 
-    const profile = await profileManager.updateAdditionalProfile(userId, profileId, updates)
+    const profile = await profileManager.updateAdditionalProfile(ownedUserId, profileId, updates)
     
     if (!profile) {
       return NextResponse.json(
@@ -86,18 +99,24 @@ export async function DELETE(
   { params }: { params: Promise<{ profileId: string }> }
 ) {
   try {
+    const auth = await verifyUserRequest(request, 'profiles-id-route');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { profileId } = await params
     const searchParams = request.nextUrl.searchParams
     const userId = searchParams.get('userId')
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!userId) {
+    if (!ownedUserId) {
       return NextResponse.json(
-        { error: 'User ID is required' },
-        { status: 400 }
+        { error: 'User ID is required and must match authenticated user' },
+        { status: 403 }
       )
     }
 
-    const success = await profileManager.deleteAdditionalProfile(userId, profileId)
+    const success = await profileManager.deleteAdditionalProfile(ownedUserId, profileId)
     
     if (!success) {
       return NextResponse.json(

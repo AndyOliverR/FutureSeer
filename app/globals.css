@@ -56,12 +56,26 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   body {
     background-color: var(--bg-deep-space);
     @apply text-white antialiased overflow-x-hidden;
     font-family: 'Inter', sans-serif;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
   }
 
   /* Headlines: Consistent Sophistication */

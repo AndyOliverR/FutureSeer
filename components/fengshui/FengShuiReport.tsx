@@ -3,7 +3,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { FengShuiReading } from '@/lib/fengshui/fengShuiIntelligence'
-import { FileText, Sparkles, CheckCircle, Clock } from 'lucide-react'
+import { FileText, Sparkles, CheckCircle, Clock, Coins, ClipboardList } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 
 interface FengShuiReportProps {
@@ -88,6 +88,57 @@ export default function FengShuiReport({ reading }: FengShuiReportProps) {
                   </div>
                 ))}
               </div>
+            </motion.div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Wealth & home checklist (practical guides) */}
+      {reading.wealthTips.length > 0 && (
+        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
+          <CardContent className="p-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <Coins className="w-6 h-6 text-amber-700" />
+                <h3 className="text-xl font-bold text-amber-900">Wealth & abundance pointers</h3>
+              </div>
+              <ul className="space-y-2">
+                {reading.wealthTips.map((tip, i) => (
+                  <li key={i} className="flex items-start gap-2 text-slate-700 text-sm">
+                    <CheckCircle className="w-4 h-4 text-amber-700 mt-0.5 flex-shrink-0" />
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </CardContent>
+        </Card>
+      )}
+
+      {reading.practicalChecklist.length > 0 && (
+        <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
+          <CardContent className="p-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.38 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <ClipboardList className="w-6 h-6 text-amber-700" />
+                <h3 className="text-xl font-bold text-amber-900">Home checklist</h3>
+              </div>
+              <ul className="space-y-2">
+                {reading.practicalChecklist.map((line, i) => (
+                  <li key={i} className="flex items-start gap-2 text-slate-700 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
             </motion.div>
           </CardContent>
         </Card>

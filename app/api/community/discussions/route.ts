@@ -12,6 +12,7 @@ import {
   calculateMemberStatsUpdate,
 } from '@/lib/firestore/communityHelpers';
 import { devLog } from '@/lib/devLogger';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 /** Firestore doc data for community discussions; timestamp fields may be Timestamp or string */
 interface CommunityDiscussionDoc extends Record<string, unknown> {
@@ -160,6 +161,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'community-discussions');
     const body = await request.json();
     const guestPost = body.guestPost === true;
 
@@ -257,11 +259,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { title, content, category, priority = 'medium', userId, authorName } = body;
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!title || !content || !category || !userId || !authorName) {
+    if (!title || !content || !category || !ownedUserId || !authorName) {
       return NextResponse.json(
-        { error: 'Missing required fields: title, content, category, userId, authorName' },
-        { status: 400 }
+        { error: 'Missing required fields: title, content, category, userId, authorName (userId must match authenticated user)' },
+        { status: 403 }
       );
     }
 
@@ -290,7 +296,7 @@ export async function POST(request: NextRequest) {
       const discussionData = {
         title,
         content,
-        authorId: userId,
+        authorId: ownedUserId,
         authorName,
         category,
         priority,
@@ -308,10 +314,10 @@ export async function POST(request: NextRequest) {
       await discussionRef.set(discussionData);
 
       // Update member stats (karma, contributions)
-      await updateMemberStats(db, userId, 'createDiscussion');
+      await updateMemberStats(db, ownedUserId, 'createDiscussion');
 
       // Update or create member profile if needed
-      await ensureMemberProfile(db, userId, authorName);
+      await ensureMemberProfile(db, ownedUserId, authorName);
 
       // Update community stats
       await updateCommunityStats(db, { discussions: 1 });

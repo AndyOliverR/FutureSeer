@@ -21,9 +21,31 @@ import { PlatformClassProvider } from "@/components/PlatformClassProvider"
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim()
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://futureseer.app"),
   applicationName: "FutureSeer",
   title: "FutureSeer - AI-Powered Mystical Insights",
   description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
+  alternates: { canonical: "https://futureseer.app" },
+  creator: "FutureSeer",
+  publisher: "FutureSeer",
+  authors: [{ name: "FutureSeer", url: "https://futureseer.app" }],
+  openGraph: {
+    title: "FutureSeer - AI-Powered Mystical Insights",
+    description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
+    url: "https://futureseer.app",
+    siteName: "FutureSeer",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FutureSeer - AI-Powered Mystical Insights",
+    description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
+    site: "@futureseerapp",
+    creator: "@futureseerapp",
+  },
+  other: {
+    copyright: "FutureSeer (futureseer.app)",
+  },
   manifest: "/manifest.json",
   ...(googleSiteVerification
     ? { verification: { google: googleSiteVerification } }

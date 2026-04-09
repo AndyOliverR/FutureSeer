@@ -1,14 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
   buildDailyDecisionState,
   classifyDailyDecisionQuestion,
   getDailyDecisionSliceForQuestionType,
-  type DailyDecisionQuestionType,
 } from '@/lib/dailyDecisionsSeerState';
 import type { DailyDecisionsAnalysis } from '@/lib/dailyDecisionsIntelligence';
 import { buildDailyDecisionSeerSystemPrompt } from '@/lib/dailyDecisionsSeerPrompts';
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-daily-decisions-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
 
 interface AskDailyDecisionsSeerRequest {
   userId?: string;
@@ -27,14 +67,14 @@ export async function POST(request: NextRequest) {
     const { question, dailyDecisionsAnalysis, selectedDate } = body;
 
     if (!question || !question.trim()) {
-      return NextResponse.json(
+      return jsonWithRobots(
         { success: false, error: 'Question is required' },
         { status: 400 }
       );
     }
 
     if (!dailyDecisionsAnalysis) {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error:
@@ -47,10 +87,11 @@ export async function POST(request: NextRequest) {
     const questionType = classifyDailyDecisionQuestion(question.trim());
 
     if (questionType === 'refusal') {
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode(REFUSAL_MESSAGE));
+            controller.enqueue(new TextEncoder().encode(stampText(REFUSAL_MESSAGE)));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -83,7 +124,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 600,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -101,6 +142,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -122,7 +164,7 @@ export async function POST(request: NextRequest) {
       message.includes('rate limit') ||
       message.includes('Rate limit');
     if (isRateLimit) {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error:
@@ -131,7 +173,7 @@ export async function POST(request: NextRequest) {
         { status: 503 }
       );
     }
-    return NextResponse.json(
+    return jsonWithRobots(
       {
         success: false,
         error:

@@ -1,14 +1,24 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getAstroAppToken } from '@/lib/astroapp'
 import { getServerOAuthGuardrailReport } from '@/lib/oauthDomainGuardrails'
+import { verifyAdminRequest } from '@/lib/adminApiAuth'
 
 export const dynamic = 'force-static'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
-  const diagnostics: any = {
+  const adminAuth = await verifyAdminRequest(request, 'diagnose-route');
+  if (!adminAuth.ok) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const diagnostics: {
+    timestamp: string;
+    environment: string | undefined;
+    services: Record<string, unknown>;
+  } = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
     services: {}
@@ -52,17 +62,17 @@ export async function GET() {
         error: 'Missing OpenAI API key'
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     diagnostics.services.openai = {
       status: '❌ Error',
-      error: error.message
+      error: error instanceof Error ? error.message : 'unknown_error'
     }
   }
 
   // Test AstroApp
   try {
     if (process.env.ASTROAPP_EMAIL && process.env.ASTROAPP_PASSWORD && process.env.ASTROAPP_API_KEY) {
-      const token = await getAstroAppToken();
+      await getAstroAppToken();
       diagnostics.services.astroapp = {
         status: '✅ Working',
         type: 'JWT Token obtained'
@@ -73,10 +83,10 @@ export async function GET() {
         error: 'Missing AstroApp credentials'
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     diagnostics.services.astroapp = {
       status: '❌ Error',
-      error: error.message
+      error: error instanceof Error ? error.message : 'unknown_error'
     }
   }
 
@@ -113,10 +123,10 @@ export async function GET() {
         fix: 'Database naming conflict resolved - using explicit connection'
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     diagnostics.services.firebase = {
       status: '❌ Error',
-      error: error.message
+      error: error instanceof Error ? error.message : 'unknown_error'
     }
   }
 

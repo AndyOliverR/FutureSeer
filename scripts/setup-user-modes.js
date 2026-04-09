@@ -1,10 +1,9 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const admin = require('firebase-admin');
+const { ensureAdminInitialized } = require('./firebase-admin-env');
 
 // Initialize Firebase Admin SDK
-const serviceAccount = require('../firebaseadminscripts/serviceAccountKey.json');
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+ensureAdminInitialized();
 
 async function setupUserModes() {
   try {

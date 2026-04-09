@@ -246,8 +246,8 @@ function TarotPage() {
 
   return (
     <ToolReportGuard loading={isLoadingCombinedSystem} error={profileError ?? null} toolLabel="tarot">
-    <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
-      <div className="relative z-10 max-w-7xl mx-auto py-8">
+    <div className="starfield-ultra-sharp min-h-screen w-full min-w-0 max-w-full p-4 overflow-x-hidden">
+      <div className="relative z-10 max-w-7xl mx-auto py-8 w-full min-w-0">
         <div className="text-center mb-8 pt-4">
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-purple-300">🔮</span>{' '}
@@ -290,9 +290,9 @@ function TarotPage() {
         )}
 
         {/* Main Content */}
-        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden w-full min-w-0">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
-          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+          <TabsList className="flex w-full min-w-0 flex-nowrap overflow-x-auto no-scrollbar gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             {tabsConfig.map((tab) => {
               const IconComponent = tab.icon
               return (

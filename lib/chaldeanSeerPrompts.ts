@@ -6,6 +6,7 @@
 
 import { SEER_GOVERNING_SENTENCE } from './askTheSeerDiscipline';
 import type { ChaldeanQuestionType } from './chaldeanSeerState';
+import { NUMEROLOGY_PRACTICAL_SLICE_BULLETS } from '@/lib/numerology/practicalGuides';
 
 /** Builds the Chaldean Seer system prompt with role, tiers, and date-giving rules. */
 export function buildChaldeanSeerSystemPrompt(
@@ -41,6 +42,9 @@ ${chartSlice}
 
 ## Question type
 ${questionType}
+
+## PRACTICAL GUIDANCE THEMES (align where relevant)
+${NUMEROLOGY_PRACTICAL_SLICE_BULLETS}
 
 Answer with specific references to the numbers, favorable dates, and favorable days above. Keep answers concise; lead with the recommendation or dates.`;
 }

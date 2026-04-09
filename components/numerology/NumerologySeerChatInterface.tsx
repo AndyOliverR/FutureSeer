@@ -6,12 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 
 interface NumerologySeerChatInterfaceProps {
   userId: string;
-  userProfile: any;
+  userProfile: Record<string, unknown>;
   numerologyData: {
     lifePathNumber?: number;
     expressionNumber?: number;
@@ -22,7 +21,7 @@ interface NumerologySeerChatInterfaceProps {
     maturityNumber?: number;
     personalYearNumber?: number;
   };
-  comprehensiveReport?: any;
+  comprehensiveReport?: Record<string, unknown>;
   sessionId?: string;
 }
 
@@ -34,9 +33,9 @@ interface Message {
 }
 
 const NUMEROLOGY_STARTER_QUESTIONS = [
-  'What does my life path number suggest?',
-  'How do my cycles align this year?',
-  'Which dates are favorable for starting something new?',
+  'What is my best power word this week and how should I use it daily?',
+  'Which wealth habits fit my life path number without overcomplicating things?',
+  'What practical block should I watch this month, and what is the remedy?',
 ];
 
 export default function NumerologySeerChatInterface({ 
@@ -49,7 +48,7 @@ export default function NumerologySeerChatInterface({
   const [messages, setMessages] = useState<Message[]>([]);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
+  const [currentSessionId] = useState(sessionId);
   const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(new Set());
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [streamingDisplayLength, setStreamingDisplayLength] = useState(0);
@@ -284,7 +283,7 @@ export default function NumerologySeerChatInterface({
               <div className="text-center py-8">
                 <Sparkles className="w-12 h-12 mx-auto mb-4 text-amber-700" />
                 <p className="text-amber-900 font-medium mb-2">Ask me anything about your numerology…</p>
-                <p className="text-slate-700 text-sm mt-1 mb-2">I'll interpret your numbers, cycles, and vibrations to guide timing and alignment.</p>
+                <p className="text-slate-700 text-sm mt-1 mb-2">I&apos;ll interpret your numbers, cycles, and vibrations to guide timing and alignment.</p>
                 <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
                 <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
                   <li>Life path and core numbers</li>

@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { AngelNumbersLookup } from "@/components/angel-numbers/AngelNumbersLookup"
 import { AngelNumbersAnalysis } from "@/components/angel-numbers/AngelNumbersAnalysis"
+import { NumerologyPracticalGuidance } from "@/components/numerology/NumerologyPracticalGuidance"
 import { ANGEL_NUMBERS_CONSTANTS, MATERIAL3_EASING } from "@/components/angel-numbers/constants"
 import { lookupAngelNumber } from "@/lib/angelNumbersLookup"
 import { TeaserView } from "@/components/report-viral/TeaserView"
@@ -36,7 +37,7 @@ export default function AngelNumbersPage() {
   const [showShareCard, setShowShareCard] = useState(false)
   const [waitingLite, setWaitingLite] = useState(false)
 
-  const [activeTab, setActiveTab] = useState<'introduction' | 'lookup' | 'analysis' | 'ask-the-seer'>('introduction')
+  const [activeTab, setActiveTab] = useState<'introduction' | 'lookup' | 'analysis' | 'quick-guidance' | 'ask-the-seer'>('introduction')
   const [lastLookupResult, setLastLookupResult] = useState<ReturnType<typeof lookupAngelNumber> | null>(null)
 
   const showAngelViral = Boolean(angelNumbersData) && !bypassViral
@@ -94,7 +95,7 @@ export default function AngelNumbersPage() {
     showAngelViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const handleTabChange = useCallback((value: string) => {
-    setActiveTab(value as 'introduction' | 'lookup' | 'analysis' | 'ask-the-seer')
+    setActiveTab(value as 'introduction' | 'lookup' | 'analysis' | 'quick-guidance' | 'ask-the-seer')
   }, [])
 
   const handleLookupComplete = useCallback((result: ReturnType<typeof lookupAngelNumber>) => {
@@ -102,11 +103,11 @@ export default function AngelNumbersPage() {
   }, [])
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen p-4 pt-4 overflow-hidden">
+    <div className="starfield-ultra-sharp min-h-screen w-full min-w-0 max-w-full p-4 pt-4 overflow-x-hidden">
       {/* Softening overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/10 via-slate-900/30 to-slate-900/40 pointer-events-none"></div>
       
-      <div className="relative z-10 max-w-7xl mx-auto py-8">
+      <div className="relative z-10 max-w-7xl mx-auto py-8 w-full min-w-0">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
@@ -149,9 +150,9 @@ export default function AngelNumbersPage() {
         )}
 
         {/* Tabs */}
-        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden w-full min-w-0">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full min-w-0">
-          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+          <TabsList className="flex w-full min-w-0 flex-nowrap overflow-x-auto no-scrollbar gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="introduction" 
               className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
@@ -169,6 +170,12 @@ export default function AngelNumbersPage() {
               className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Your Analysis
+            </TabsTrigger>
+            <TabsTrigger 
+              value="quick-guidance" 
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+            >
+              Quick guidance
             </TabsTrigger>
             <TabsTrigger 
               value="ask-the-seer" 
@@ -255,6 +262,13 @@ export default function AngelNumbersPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="quick-guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <NumerologyPracticalGuidance
+              anchorNumber={angelNumbersData?.lifePathAngel}
+              heading="Angel number practical guidance"
+            />
           </TabsContent>
               </div>
             </div>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * One-time script: Cancel Razorpay subscriptions for no-charge accounts
  * (god mode, mary mode, special test admin) and set their Firestore status to active
@@ -18,6 +19,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
 const admin = require('firebase-admin');
 const { FieldValue } = require('firebase-admin/firestore');
 const Razorpay = require('razorpay');
+const { ensureAdminInitialized } = require('./firebase-admin-env');
 
 const NO_CHARGE_EMAILS = [
   'andyrozario@hotmail.com',
@@ -33,17 +35,7 @@ async function main() {
     process.exit(1);
   }
 
-  const serviceAccountPath = path.resolve(__dirname, '../firebaseadminscripts/serviceAccountKey.json');
-  try {
-    require.resolve(serviceAccountPath);
-  } catch {
-    console.error('firebaseadminscripts/serviceAccountKey.json not found.');
-    process.exit(1);
-  }
-  const serviceAccount = require(serviceAccountPath);
-  if (!admin.apps.length) {
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-  }
+  ensureAdminInitialized();
   const db = admin.firestore();
   const auth = admin.auth();
 

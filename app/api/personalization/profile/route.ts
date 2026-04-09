@@ -2,16 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-static'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'personalization-profile');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = resolveOwnedUserId(searchParams.get('userId'), auth.uid);
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'User ID is required and must match authenticated user' }, { status: 403 });
     }
 
     const db = getFirebaseDB();
@@ -62,8 +68,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'personalization-profile');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { userId, advancedProfile } = body;
+    const userId = resolveOwnedUserId(body?.userId, auth.uid);
+    const advancedProfile = body?.advancedProfile;
 
     if (!userId || !advancedProfile) {
       return NextResponse.json(
@@ -114,8 +126,14 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'personalization-profile');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { userId, advancedProfile } = body;
+    const userId = resolveOwnedUserId(body?.userId, auth.uid);
+    const advancedProfile = body?.advancedProfile;
 
     if (!userId || !advancedProfile) {
       return NextResponse.json(

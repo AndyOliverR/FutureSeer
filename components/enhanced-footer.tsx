@@ -32,9 +32,9 @@ export function EnhancedFooter() {
   }
 
   return (
-    <footer className="relative border-t border-outline-variant bg-surface-dim/90 backdrop-blur-xl mt-auto py-4 px-4 pb-24 md:pb-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <footer className="relative w-full min-w-0 max-w-full overflow-x-hidden border-t border-outline-variant bg-surface-dim/90 backdrop-blur-xl mt-auto py-4 px-4 pb-24 md:pb-6">
+      <div className="max-w-7xl mx-auto min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-4 min-w-0">
           <div className="flex items-center gap-3 shrink-0">
             <h3 className="text-base text-amber-400 font-bold tracking-tighter">FutureSeer</h3>
             <div className="h-4 w-[1px] bg-outline-variant/30 hidden sm:block" />
@@ -51,7 +51,7 @@ export function EnhancedFooter() {
             <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
             <Link href="/privacy" className="text-xs font-medium text-surface-on-variant hover:text-primary">Privacy</Link>
           </div>
-          <div className="flex-1 min-w-[160px] max-w-xs flex flex-col gap-1">
+          <div className="flex-1 min-w-0 md:min-w-[160px] max-w-xs flex flex-col gap-1">
             {status === "success" ? (
               <p
                 className="text-xs text-primary font-medium py-1 px-2 rounded-full bg-surface-container-low border border-outline-variant/20"

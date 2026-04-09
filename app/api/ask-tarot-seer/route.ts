@@ -1,23 +1,36 @@
 import { NextRequest } from 'next/server'
+import { appendAttribution } from '@/lib/attribution/attributionStamp'
 import { createAIStream } from '@/lib/aiGateway'
 import { devLog } from '@/lib/devLogger'
 import {
   buildTarotState,
   classifyTarotQuestion,
-  getTarotSliceForQuestionType,
-  type TarotQuestionType
+  getTarotSliceForQuestionType
 } from '@/lib/tarotSeerState'
 import { buildTarotSeerSystemPrompt } from '@/lib/tarotSeerPrompts'
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet'
+const SEER_MARKER_FAMILY = 'ask-tarot-seer'
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY })
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers)
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG)
+  return new Response(body ?? null, { ...init, headers })
+}
 
 interface TarotSeerRequest {
   userId: string
   question: string
-  userProfile: any
-  tarotProfileData?: any
-  westernAstrologyData?: any
-  numerologyData?: any
-  combinedSystemData?: any
-  currentReading?: any
+  userProfile: Record<string, unknown>
+  tarotProfileData?: Record<string, unknown>
+  westernAstrologyData?: Record<string, unknown>
+  numerologyData?: Record<string, unknown>
+  combinedSystemData?: { tarotProfile?: Record<string, unknown> }
+  currentReading?: Record<string, unknown>
   sessionId?: string
 }
 
@@ -29,15 +42,12 @@ export async function POST(request: NextRequest) {
       question,
       userProfile,
       tarotProfileData,
-      westernAstrologyData,
-      numerologyData,
       combinedSystemData,
-      currentReading,
-      sessionId
+      currentReading
     }: TarotSeerRequest = body
 
     if (!userId || !question || !userProfile) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: 'Missing required parameters: userId, question, or userProfile'
@@ -54,10 +64,11 @@ export async function POST(request: NextRequest) {
     if (questionType === 'refusal') {
       const refusalMessage =
         "Tarot is not designed to answer this precisely (e.g. medical diagnosis, legal verdict, or exact numeric outcomes). Would you like a spread for situational guidance or readiness instead? Do a reading in the Reading tab, then ask about it here."
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode(refusalMessage))
+            controller.enqueue(new TextEncoder().encode(stampText(refusalMessage)))
+            controller.enqueue(new TextEncoder().encode(stampText('')))
             controller.close()
           }
         }),
@@ -86,7 +97,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 1000
     })
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -97,9 +108,10 @@ export async function POST(request: NextRequest) {
           } catch (error) {
             devLog.error('Error during Tarot Seer streaming', error, 'ask-tarot-seer')
             controller.enqueue(
-              new TextEncoder().encode('I apologize, but I encountered an error. Please try again.')
+              new TextEncoder().encode(stampText('I apologize, but I encountered an error. Please try again.'))
             )
           } finally {
+            controller.enqueue(new TextEncoder().encode(stampText('')))
             controller.close()
           }
         }
@@ -112,12 +124,12 @@ export async function POST(request: NextRequest) {
         }
       }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     devLog.error('❌ Error in Tarot Seer API:', error, 'ask-tarot-seer')
-    return new Response(
+    return withRobotsResponse(
       JSON.stringify({
         success: false,
-        error: error?.message || 'Failed to process question'
+        error: error instanceof Error ? error.message : 'Failed to process question'
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     )

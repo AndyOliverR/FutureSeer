@@ -315,8 +315,8 @@ export default function HoraryAstrologyPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 pb-8 starfield-ultra-sharp">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen w-full min-w-0 max-w-full p-4 pb-8 starfield-ultra-sharp overflow-x-hidden">
+      <div className="max-w-7xl mx-auto w-full min-w-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -367,8 +367,8 @@ export default function HoraryAstrologyPage() {
                     <span className="mr-2">⏰</span>
                     When did you ask this question?
                   </label>
-                  <div className="flex flex-wrap gap-3 items-end">
-                    <div className="flex-1 min-w-[140px]">
+                  <div className="flex flex-wrap gap-3 items-end min-w-0">
+                    <div className="flex-1 min-w-[120px] md:min-w-[140px]">
                       <label className="block text-slate-600 text-xs mb-1">Date</label>
                       <input
                         type="date"
@@ -391,7 +391,7 @@ export default function HoraryAstrologyPage() {
                             const { minute, ampm } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
                             setQuestionTime(`${datePart}T${time12To24(Number(e.target.value), minute, ampm)}`)
                           }}
-                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[72px]"
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[64px] md:min-w-[72px]"
                         >
                           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                             <option key={n} value={n}>{n}</option>
@@ -407,7 +407,7 @@ export default function HoraryAstrologyPage() {
                             const { hour12, ampm } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
                             setQuestionTime(`${datePart}T${time12To24(hour12, Number(e.target.value), ampm)}`)
                           }}
-                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[72px]"
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[64px] md:min-w-[72px]"
                         >
                           {Array.from({ length: 60 }, (_, i) => (
                             <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
@@ -423,7 +423,7 @@ export default function HoraryAstrologyPage() {
                             const { hour12, minute } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
                             setQuestionTime(`${datePart}T${time12To24(hour12, minute, e.target.value as "AM" | "PM")}`)
                           }}
-                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[80px]"
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[72px] md:min-w-[80px]"
                         >
                           <option value="AM">AM</option>
                           <option value="PM">PM</option>

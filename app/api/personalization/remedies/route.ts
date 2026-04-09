@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
 import { generateAdvancedPersonalizedRemedies } from '@/lib/comprehensiveRemedyGenerator';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-static'
 
@@ -10,8 +11,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'personalization-remedies');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { userId, question, systemData } = body;
+    const userId = resolveOwnedUserId(body?.userId, auth.uid);
+    const question = body?.question;
+    const systemData = body?.systemData;
 
     if (!userId || !question) {
       return NextResponse.json(
@@ -68,8 +76,13 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'personalization-remedies');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = resolveOwnedUserId(searchParams.get('userId'), auth.uid);
     const category = searchParams.get('category');
 
     if (!userId) {
@@ -96,7 +109,7 @@ export async function GET(request: NextRequest) {
     
     // Filter by category if specified
     const filteredRemedies = category 
-      ? savedRemedies.filter((remedy: any) => remedy.category === category)
+      ? savedRemedies.filter((remedy: { category?: string }) => remedy.category === category)
       : savedRemedies;
 
     return NextResponse.json({

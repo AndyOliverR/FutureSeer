@@ -1,6 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { log } from '@/lib/consoleLogger';
 import { getServerBaseUrl } from '@/lib/serverBaseUrl';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-the-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
 
 /**
  * Proxy to the simplified Seer chat API.
@@ -8,6 +39,11 @@ import { getServerBaseUrl } from '@/lib/serverBaseUrl';
  */
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'ask-the-seer');
+    if (!auth.ok) {
+      return jsonWithRobots({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       userId,
@@ -16,9 +52,10 @@ export async function POST(request: NextRequest) {
       conversationHistory = [],
     } = body;
 
-    if (!userId || !question) {
-      return NextResponse.json(
-        { success: false, error: 'Missing userId or question' },
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
+    if (!ownedUserId || !question) {
+      return jsonWithRobots(
+        { success: false, error: 'Missing/invalid userId or question' },
         { status: 400 }
       );
     }
@@ -33,11 +70,14 @@ export async function POST(request: NextRequest) {
     const baseUrl = getServerBaseUrl();
     const chatRes = await fetch(`${baseUrl}/api/seer/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: request.headers.get('Authorization') ?? '',
+      },
       body: JSON.stringify({
         message: String(question).trim(),
         thread,
-        userId,
+        userId: ownedUserId,
         birthProfile: profile
           ? {
               birthDate: profile.birthDate,
@@ -52,7 +92,7 @@ export async function POST(request: NextRequest) {
 
     if (!chatRes.ok) {
       log.error('Seer chat error', { status: chatRes.status, error: chatData.error }, 'ask-the-seer-api');
-      return NextResponse.json(
+      return jsonWithRobots(
         { success: false, error: chatData.error || 'Seer connection failed.' },
         { status: chatRes.status >= 400 ? chatRes.status : 500 }
       );
@@ -60,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     const reply = chatData.reply ?? 'The vision is unclear. Ask again.';
 
-    return NextResponse.json({
+    return jsonWithRobots({
       success: true,
       data: {
         answer: reply,
@@ -71,7 +111,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     log.error('Ask the Seer error', error, 'ask-the-seer-api');
-    return NextResponse.json(
+    return jsonWithRobots(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to process question',

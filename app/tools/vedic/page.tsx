@@ -312,9 +312,9 @@ function VedicAstrologyPageContent() {
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen p-4 pb-24 md:pb-8 overflow-hidden bg-[var(--m3-surface)] md:bg-transparent">
+      <div className="min-h-screen w-full min-w-0 max-w-full p-4 pb-24 md:pb-8 overflow-x-hidden bg-[var(--m3-surface)] md:bg-transparent">
         <div className="fixed inset-0 -z-10 hidden md:block starfield-ultra-sharp" aria-hidden />
-        <div className="relative z-10 max-w-7xl mx-auto py-4 md:py-8">
+        <div className="relative z-10 max-w-7xl mx-auto py-4 md:py-8 w-full min-w-0">
           <div className="md:hidden px-1">
             <ToolPageHeader toolName="Vedic Astrology" toolSlug="vedic" toolCategory="Astrology" toolDescription="Loading…" />
           </div>
@@ -390,9 +390,9 @@ function VedicAstrologyPageContent() {
             </div>
           )}
 
-          <div className="rounded-2xl border border-[var(--m3-outline-variant)] md:border-amber-500/30 bg-[var(--m3-surface-container)] md:bg-slate-900/80 overflow-hidden">
+          <div className="rounded-2xl border border-[var(--m3-outline-variant)] md:border-amber-500/30 bg-[var(--m3-surface-container)] md:bg-slate-900/80 overflow-hidden w-full min-w-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
-            <TabsList className="flex w-full flex-nowrap overflow-x-auto no-scrollbar md:overflow-x-auto gap-1 sm:gap-2 p-1.5 md:p-2 md:p-3 rounded-2xl md:rounded-none h-auto min-h-0 justify-start mb-4 md:mb-0 border border-[var(--m3-outline-variant)] md:border-0 bg-[var(--m3-surface-container-high)] md:bg-slate-800/50 md:border-b md:border-amber-500/20 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+            <TabsList className="flex w-full min-w-0 flex-nowrap overflow-x-auto no-scrollbar md:overflow-x-auto gap-1 sm:gap-2 p-1.5 md:p-2 md:p-3 rounded-2xl md:rounded-none h-auto min-h-0 justify-start mb-4 md:mb-0 border border-[var(--m3-outline-variant)] md:border-0 bg-[var(--m3-surface-container-high)] md:bg-slate-800/50 md:border-b md:border-amber-500/20 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
               {tabsConfig.map((tab) => (
                 <motion.div
                   key={tab.value}

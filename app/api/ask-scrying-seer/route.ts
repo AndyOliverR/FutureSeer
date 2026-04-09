@@ -1,6 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-scrying-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
 
 const SCRYING_REFUSAL_DATA = 'Scrying report is required. Generate your mystical profile to unlock your Scrying report, then ask again.';
 
@@ -39,12 +80,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!question?.trim()) {
-      return NextResponse.json({ error: 'Question is required' }, { status: 400 });
+      return jsonWithRobots({ error: 'Question is required' }, { status: 400 });
     }
 
     const reportData = scryingReport?.data ?? scryingReport;
     if (!reportData || typeof reportData !== 'object') {
-      return NextResponse.json({ error: SCRYING_REFUSAL_DATA }, { status: 400 });
+      return jsonWithRobots({ error: SCRYING_REFUSAL_DATA }, { status: 400 });
     }
 
     const context = buildScryingContext(reportData as Record<string, unknown>);
@@ -65,7 +106,7 @@ Answer the user's question in 2–4 short paragraphs, referencing the report whe
       maxTokens: 800,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -76,9 +117,10 @@ Answer the user's question in 2–4 short paragraphs, referencing the report whe
           } catch (error) {
             devLog.error('Error during Scrying seer streaming:', error, 'route');
             controller.enqueue(
-              new TextEncoder().encode('I encountered an error. Please try again.')
+              new TextEncoder().encode(stampText('I encountered an error. Please try again.'))
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -93,7 +135,7 @@ Answer the user's question in 2–4 short paragraphs, referencing the report whe
     );
   } catch (error: unknown) {
     devLog.error('Scrying Seer API error:', error, 'route');
-    return NextResponse.json(
+    return jsonWithRobots(
       { error: error instanceof Error ? error.message : 'Failed to generate response' },
       { status: 500 }
     );

@@ -66,7 +66,7 @@ export function TopNavBar() {
   return (
     <>
     <TooltipProvider>
-      <nav className="w-full bg-[var(--m3-surface)]/95 backdrop-blur-xl border-b border-[var(--m3-outline-variant)] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border select-none" role="navigation">
+      <nav className="w-full min-w-0 max-w-full overflow-x-clip bg-[var(--m3-surface)]/95 backdrop-blur-xl border-b border-[var(--m3-outline-variant)] pt-[env(safe-area-inset-top)] px-4 flex items-center justify-between z-[100] sticky top-0 left-0 right-0 box-border select-none" role="navigation">
         <Link 
           href="/" 
           className="futureseer-logo gold-glow text-xl font-bold tracking-tighter transition-transform text-amber-400 flex items-center h-14"
@@ -121,7 +121,7 @@ export function TopNavBar() {
           {showMenu && (
             <motion.div
               ref={menuRef}
-              className="absolute right-4 top-14 flex flex-col items-end z-[9999] bg-surface-container-high border border-outline-variant rounded-2xl p-2 min-w-[220px] shadow-2xl"
+              className="absolute right-2 sm:right-4 top-14 flex flex-col items-end z-[9999] w-[min(22rem,calc(100vw-1rem))] sm:w-auto bg-surface-container-high border border-outline-variant rounded-2xl p-2 shadow-2xl"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}

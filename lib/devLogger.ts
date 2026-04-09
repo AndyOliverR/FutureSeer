@@ -72,6 +72,11 @@ export const devLog = {
       const prefix = source ? `[${source.toUpperCase()}]` : '';
       devLog.debug(`${prefix} ${msg}`, data !== undefined ? data : '');
     }
+  },
+  security: (msg: string, data?: any) => {
+    const prefix = '[SECURITY]';
+    // Keep enabled in production for abuse and misuse investigations.
+    console.warn(`${prefix} ${msg}`, data !== undefined ? data : '');
   }
 };
 

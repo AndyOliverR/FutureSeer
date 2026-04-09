@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { createAIStream } from '@/lib/aiGateway';
@@ -14,6 +15,46 @@ import {
   type VastuReadingPayload,
   type VastuLayoutInput,
 } from '@/lib/vastuSeerState';
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-vastu-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
 
 /** Normalize Vastu reading/analysis from request to VastuReadingPayload. */
 function normalizeToVastuPayload(reading: any): VastuReadingPayload {
@@ -83,7 +124,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!userId || !question || !userProfile) {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error: 'Missing required parameters: userId, question, or userProfile',
@@ -100,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     const questionType = classifyVastuQuestion(question);
     if (questionType === 'refusal') {
-      return NextResponse.json({
+      return jsonWithRobots({
         response: VASTU_REFUSAL_OUTCOME_PHRASE,
         refused: true,
       });
@@ -123,7 +164,7 @@ export async function POST(request: NextRequest) {
         );
       }
     } catch (err) {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error:
@@ -139,7 +180,7 @@ export async function POST(request: NextRequest) {
     try {
       state = buildVastuState(payload);
     } catch {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error:
@@ -189,7 +230,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 800,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           let fullResponse = '';
@@ -255,6 +296,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -269,7 +311,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     devLog.error('Error in Vastu Seer API:', error);
-    return NextResponse.json(
+    return jsonWithRobots(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred',

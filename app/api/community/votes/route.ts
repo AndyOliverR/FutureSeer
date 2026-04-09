@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 import { calculateKarmaForAction } from '@/lib/firestore/communityHelpers';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-static'
 
@@ -18,13 +19,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   }
   try {
+    const auth = await verifyUserRequest(request, 'community-votes');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body: VoteData = await request.json();
     const { userId, discussionId, commentId, voteType } = body;
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!userId || !voteType) {
+    if (!ownedUserId || !voteType) {
       return NextResponse.json(
-        { error: 'Missing required fields: userId, voteType' },
-        { status: 400 }
+        { error: 'Missing required fields: userId, voteType (userId must match authenticated user)' },
+        { status: 403 }
       );
     }
 
@@ -61,7 +68,7 @@ export async function POST(request: NextRequest) {
 
       // Check if user has already voted
       const voteQuery = db.collection('communityVotes')
-        .where('userId', '==', userId)
+        .where('userId', '==', ownedUserId)
         .where(isDiscussion ? 'discussionId' : 'commentId', '==', targetId);
 
       const existingVotes = await voteQuery.get();
@@ -169,7 +176,7 @@ export async function POST(request: NextRequest) {
       // Create new vote
       const voteRef = db.collection('communityVotes').doc();
       await voteRef.set({
-        userId,
+        userId: ownedUserId,
         [isDiscussion ? 'discussionId' : 'commentId']: targetId,
         voteType,
         createdAt: new Date(),
@@ -190,7 +197,7 @@ export async function POST(request: NextRequest) {
           if (discussionDoc.exists) {
             const discussionData = discussionDoc.data();
             // Only update karma if voting on someone else's discussion
-            if (discussionData!.authorId !== userId) {
+            if (discussionData!.authorId !== ownedUserId) {
               await updateAuthorKarma(db, discussionData!.authorId, voteType === 'up' ? 1 : -1);
             }
           }
@@ -202,7 +209,7 @@ export async function POST(request: NextRequest) {
             if (commentDoc.exists) {
               const commentData = commentDoc.data();
               // Only update karma if voting on someone else's comment
-              if (commentData!.authorId !== userId) {
+              if (commentData!.authorId !== ownedUserId) {
                 await updateAuthorKarma(db, commentData!.authorId, voteType === 'up' ? 1 : -1);
               }
               // Update comment vote counts
@@ -293,13 +300,18 @@ async function updateAuthorKarma(db: any, authorId: string, karmaDelta: number, 
 // GET - Check if user has voted on a discussion or comment
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'community-votes');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = resolveOwnedUserId(searchParams.get('userId'), auth.uid);
     const discussionId = searchParams.get('discussionId');
     const commentId = searchParams.get('commentId');
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'User ID is required and must match authenticated user' }, { status: 403 });
     }
 
     if (!discussionId && !commentId) {

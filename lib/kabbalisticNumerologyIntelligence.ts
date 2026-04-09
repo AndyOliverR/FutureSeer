@@ -1,4 +1,9 @@
 import { devLog } from '@/lib/devLogger';
+import {
+  powerWordByNumber,
+  wealthAttractionByNumber,
+  practicalChecklistByNumber,
+} from '@/lib/numerology/practicalGuides';
 
 export interface KabbalisticData {
   fullName: string
@@ -1243,6 +1248,9 @@ export interface SimplifiedKabbalisticAnalysis {
   career?: any
   currentCycle?: any
   remedies?: Array<{ title: string; description: string; instructions: string[]; benefits: string[] }>
+  powerWord?: string
+  wealthTips?: string[]
+  practicalChecklist?: string[]
 }
 
 export async function getKabbalisticAnalysis(
@@ -1324,6 +1332,9 @@ export async function getKabbalisticAnalysis(
     relationships: fullAnalysis.relationships,
     career: fullAnalysis.career,
     currentCycle: fullAnalysis.currentCycle,
-    remedies: fullAnalysis.remedies
+    remedies: fullAnalysis.remedies,
+    powerWord: powerWordByNumber(nameAnalysis.soulNumber),
+    wealthTips: wealthAttractionByNumber(nameAnalysis.soulNumber),
+    practicalChecklist: practicalChecklistByNumber(nameAnalysis.soulNumber),
   }
-} 
+}

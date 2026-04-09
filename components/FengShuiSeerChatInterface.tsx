@@ -51,10 +51,10 @@ const UNAVAILABLE_MESSAGE =
 const RETRY_DELAY_MS = 1500;
 
 const FENGSHUI_STARTER_QUESTIONS = [
-  'Is my workspace supporting productivity?',
-  'What changes can improve energy in my home?',
-  'Which area of my space needs attention?',
-  'How can I balance the energy for focus or calm?',
+  'How can I support wealth and abundance energy in my home without overdoing symbols?',
+  'What commonly blocks qi at the entrance, and how do I fix it?',
+  'Is my workspace layout supporting focus and a clear view of the door?',
+  'What practical steps reduce “stuck” feeling from clutter, lighting, or neglected items?',
 ];
 
 export default function FengShuiSeerChatInterface({
