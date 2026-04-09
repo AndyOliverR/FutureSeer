@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import { buildAkashicSeerSystemPrompt } from '@/lib/akashicSeerPrompts';
@@ -11,12 +12,52 @@ import {
   type AkashicQuestionType,
 } from '@/lib/akashicSeerState';
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-akashic-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
+
 export async function POST(request: NextRequest) {
   try {
     const { question, reading: readingInput, userProfile, comprehensiveProfile } = await request.json();
 
     if (!question?.trim()) {
-      return NextResponse.json(
+      return jsonWithRobots(
         { error: 'Question is required' },
         { status: 400 }
       );
@@ -33,7 +74,7 @@ export async function POST(request: NextRequest) {
     try {
       state = buildAkashicState(readingData);
     } catch {
-      return NextResponse.json(
+      return jsonWithRobots(
         { error: AKASHIC_REFUSAL_DATA_PHRASE },
         { status: 400 }
       );
@@ -42,12 +83,13 @@ export async function POST(request: NextRequest) {
     const questionType = classifyAkashicQuestion(question.trim()) as AkashicQuestionType;
 
     if (questionType === 'refusal') {
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(
-              new TextEncoder().encode(AKASHIC_REFUSAL_SAFETY_PHRASE)
+              new TextEncoder().encode(stampText(AKASHIC_REFUSAL_SAFETY_PHRASE))
             );
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -74,7 +116,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 800,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -92,6 +134,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -106,7 +149,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: unknown) {
     devLog.error('Akashic Seer API error:', error, 'route');
-    return NextResponse.json(
+    return jsonWithRobots(
       {
         error:
           error instanceof Error ? error.message : 'Failed to generate response',

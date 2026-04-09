@@ -39,8 +39,9 @@ import { NumberDisplay } from "@/components/kabbalistic/NumberDisplay"
 import { HebrewLetterGrid } from "@/components/kabbalistic/HebrewLetterGrid"
 import { GematriaVisualization } from "@/components/kabbalistic/GematriaVisualization"
 import { KabbalisticNumerologyCoachInterface } from "@/components/KabbalisticNumerologyCoachInterface"
+import { NumerologyPracticalGuidance } from "@/components/numerology/NumerologyPracticalGuidance"
 
-type TabId = "overview" | "gematria" | "soul" | "destiny" | "personality" | "hebrew" | "guidance" | "ask-the-seer"
+type TabId = "overview" | "gematria" | "soul" | "destiny" | "personality" | "hebrew" | "guidance" | "quick-guidance" | "ask-the-seer"
 
 export default function KabbalisticNumerologyPage() {
   const { user, userProfile } = useAuth()
@@ -203,6 +204,7 @@ export default function KabbalisticNumerologyPage() {
     { id: "personality" as const, label: "Personality", icon: Brain },
     { id: "hebrew" as const, label: "Hebrew", icon: BookOpen },
     { id: "guidance" as const, label: "Guidance", icon: Compass },
+    { id: "quick-guidance" as const, label: "Quick guidance", icon: Sparkles },
     { id: "ask-the-seer" as const, label: "Ask the Seer", icon: MessageCircle },
   ]
 
@@ -297,7 +299,7 @@ export default function KabbalisticNumerologyPage() {
                     Ask me anything about your Kabbalistic Numerology analysis. I&apos;ll provide personalized answers based on your soul number, destiny number, Hebrew letters, and Gematria values.
                   </p>
                 </Card>
-                <KabbalisticNumerologyCoachInterface analysis={analysis} variant="light" userProfile={userProfile} />
+                <KabbalisticNumerologyCoachInterface analysis={analysis} variant="light" userProfile={userProfile ? (userProfile as unknown as Record<string, unknown>) : undefined} />
               </div>
             </div>
           ) : showKabViral && !viralUnlock.hydrated ? (
@@ -568,6 +570,13 @@ export default function KabbalisticNumerologyPage() {
                   )}
                 </div>
               </div>
+            )}
+
+            {activeTab === "quick-guidance" && (
+              <NumerologyPracticalGuidance
+                anchorNumber={analysis.soulNumber}
+                heading="Kabbalistic practical guidance"
+              />
             )}
             </motion.div>
           </AnimatePresence>

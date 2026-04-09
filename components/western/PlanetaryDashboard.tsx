@@ -99,17 +99,17 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
               <Card className="border-2 border-slate-200 hover:border-slate-300 transition-all duration-300 rounded-2xl overflow-hidden">
                 {/* Planet Row */}
                 <div 
-                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                  className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors min-w-0"
                   onClick={() => analysis && toggleExpand(planet.name)}
                 >
-                  <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0 overflow-x-auto">
                     {/* Planet Icon */}
                     <div className="w-12 h-12 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center flex-shrink-0">
                       <PlanetIcon planet={planet.name} size={24} />
                     </div>
                     
                     {/* Planet Name */}
-                    <div className="min-w-[100px]">
+                    <div className="min-w-[84px] md:min-w-[100px]">
                       <div className="font-bold text-slate-800 text-lg">{planet.name}</div>
                       {planet.isRetrograde && (
                         <Badge variant="secondary" className="bg-red-200 text-red-900 text-xs mt-1">
@@ -119,7 +119,7 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
                     </div>
                     
                     {/* Sign */}
-                    <div className="flex items-center gap-2 min-w-[140px]">
+                    <div className="flex items-center gap-2 min-w-[120px] md:min-w-[140px]">
                       <ZodiacIcon sign={planet.sign?.signName || planet.sign} size={20} />
                       <span className="font-semibold text-slate-700">
                         {planet.sign?.signName || planet.sign}
@@ -130,14 +130,14 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
                     </div>
                     
                     {/* House */}
-                    <div className="min-w-[80px]">
+                    <div className="min-w-[72px] md:min-w-[80px]">
                       <Badge variant="outline" className="text-slate-700">
                         House {planet.house || 'N/A'}
                       </Badge>
                     </div>
                     
                     {/* Dignity */}
-                    <div className="min-w-[120px]">
+                    <div className="min-w-[96px] md:min-w-[120px]">
                       {dignity ? (
                         <Badge className="bg-purple-200 text-purple-900">
                           {dignity}
@@ -148,7 +148,7 @@ export function PlanetaryDashboard({ planets, planetaryAnalysis }: PlanetaryDash
                     </div>
                     
                     {/* Key Traits Summary */}
-                    <div className="flex-1 min-w-[200px]">
+                    <div className="flex-1 min-w-[140px] md:min-w-[200px]">
                       <p className="text-sm text-slate-700 line-clamp-1">
                         {analysis ? extractKeyTraits(analysis.analysis) : 'Analysis will appear once your full report is ready.'}
                       </p>

@@ -5,6 +5,10 @@
  * Runs ALL tools, stores each report separately, builds Master Seer Database.
  * Rule: Generation is one-time. Interpretation is continuous.
  * Do not add partial or subset regeneration; edited-profile flow requires full pipeline only.
+ *
+ * Feng Shui practical guides (wealthTips, practicalChecklist from lib/fengshui/practicalGuides.ts)
+ * are computed on the Feng Shui tool page for v1; they are not added to stored Firestore payloads
+ * unless the feng-shui tool API and schema are extended deliberately.
  */
 
 import { UserProfile } from './firebase';

@@ -11,6 +11,7 @@ import {
 } from '@/lib/aiInferenceUsage';
 import { getSeerChatModel, getSeerMaxTokens } from '@/lib/seerModel';
 import { isPaidPlan } from '@/lib/profileEditQuota';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 function getAddressName(profile: UserProfile | null | undefined): string | null {
   if (!profile) return null;
@@ -106,11 +107,27 @@ function getToneMode(): ToneMode {
 
 async function handleSeerChatRequest(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { message, thread = [], userId, birthProfile: clientBirthProfile, toneMode, responseStyle } = body;
+    const auth = await verifyUserRequest(req, 'seer-chat');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!message || typeof message !== "string") {
+    const body = (await req.json()) as Record<string, unknown>;
+    const message = typeof body.message === 'string' ? body.message : '';
+    const thread = Array.isArray(body.thread) ? body.thread : [];
+    const userId = resolveOwnedUserId(body.userId, auth.uid);
+    const clientBirthProfile = body.birthProfile as Record<string, unknown> | undefined;
+    const toneMode = body.toneMode;
+    const responseStyle = body.responseStyle;
+
+    if (!message) {
       return NextResponse.json({ error: "message is required." }, { status: 400 });
+    }
+    if (message.length > 4000) {
+      return NextResponse.json({ error: "message too long." }, { status: 400 });
+    }
+    if (!userId) {
+      return NextResponse.json({ error: "userId must match authenticated user." }, { status: 403 });
     }
 
     const profile = userId ? await getUserProfile(userId) : null;
@@ -118,7 +135,7 @@ async function handleSeerChatRequest(req: NextRequest) {
       clientBirthProfile ??
       (profile ? { birthDate: profile.birthDate, birthTime: profile.birthTime, birthPlace: profile.birthPlace } : null);
 
-    const trimmedThread = Array.isArray(thread) ? thread.slice(-6) : [];
+    const trimmedThread = thread.slice(-6);
     const tone: ToneMode =
       toneMode === "subtle" || toneMode === "elevated" || toneMode === "oracle" ? toneMode : getToneMode();
     const style: ResponseStyle =
@@ -169,8 +186,11 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
     }
 
     for (const m of trimmedThread) {
-      const role = m.role === "seer" ? "assistant" : m.role === "user" ? "user" : null;
-      if (role && m.content) messages.push({ role, content: m.content });
+      if (!m || typeof m !== 'object') continue;
+      const item = m as Record<string, unknown>;
+      const role = item.role === "seer" ? "assistant" : item.role === "user" ? "user" : null;
+      const content = typeof item.content === 'string' ? item.content : '';
+      if (role && content) messages.push({ role, content: content.slice(0, 2000) });
     }
 
     messages.push({ role: "user", content: message.trim() });

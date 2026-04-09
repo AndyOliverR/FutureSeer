@@ -16,6 +16,8 @@ export function SchemaMarkup() {
       "url": "https://futureseer.app/contact"
     },
     "areaServed": "Worldwide",
+    "sameAs": ["https://futureseer.app"],
+    "copyrightNotice": "FutureSeer (futureseer.app)",
     "knowsAbout": [
       "Astrology",
       "Numerology",
@@ -42,6 +44,12 @@ export function SchemaMarkup() {
     },
     description:
       "AI-assisted divination and astrology platform: Vedic and Western astrology, numerology, tarot, I Ching, Vastu, Feng Shui, and unified Ask the Seer chat.",
+    publisher: {
+      "@type": "Organization",
+      name: "FutureSeer",
+      url: "https://futureseer.app",
+    },
+    copyrightNotice: "FutureSeer (futureseer.app)",
   };
 
   const faqPageSchema = {

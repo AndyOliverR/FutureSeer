@@ -223,6 +223,14 @@ export default function TermsPage() {
                 <strong>AI Insights:</strong> AI-generated insights and interpretations are provided for 
                 your personal use and may not be reproduced or distributed without permission.
               </p>
+              <p>
+                <strong>Attribution Requirement:</strong> If FutureSeer content is quoted, republished, or reused
+                under approved use, visible attribution to <strong>futureseer.app</strong> is required.
+              </p>
+              <p>
+                <strong>Automated Extraction:</strong> Bulk scraping, automated extraction, or systematic
+                republishing of FutureSeer content without written permission and attribution is prohibited.
+              </p>
             </div>
           </section>
 

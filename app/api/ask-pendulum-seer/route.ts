@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { pendulumIntelligence } from '@/lib/pendulumIntelligence';
 import {
@@ -9,6 +10,35 @@ import {
   PENDULUM_REFUSAL_PHRASE,
   PENDULUM_DEPENDENCY_PHRASE,
 } from '@/lib/pendulumSeerState';
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-pendulum-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
 
 function normalizeForDependencyCheck(text: string): string {
   return text
@@ -45,16 +75,13 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      userId,
       question,
-      userProfile,
       pendulumAnalysis,
       conversationHistory,
-      sessionId,
     } = body;
 
     if (!question || typeof question !== 'string') {
-      return NextResponse.json(
+      return jsonWithRobots(
         { success: false, error: 'Question is required' },
         { status: 400 }
       );
@@ -62,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     const trimmed = question.trim();
     if (!trimmed) {
-      return NextResponse.json(
+      return jsonWithRobots(
         { success: false, error: 'Question is required' },
         { status: 400 }
       );
@@ -70,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     const questionType = classifyPendulumQuestion(trimmed);
     if (questionType === 'refusal') {
-      return NextResponse.json({
+      return jsonWithRobots({
         response: PENDULUM_REFUSAL_PHRASE,
         refused: true,
         confidence: 0,
@@ -84,7 +111,7 @@ export async function POST(request: NextRequest) {
       .map((h: { content: string }) => h.content)
       .slice(-10);
     if (recentUserQuestions.length > 0 && isSameOrSimilarQuestion(trimmed, recentUserQuestions)) {
-      return NextResponse.json({
+      return jsonWithRobots({
         response: PENDULUM_DEPENDENCY_PHRASE,
         refused: true,
         confidence: 0,
@@ -127,7 +154,7 @@ export async function POST(request: NextRequest) {
     const state = buildPendulumState(analysis);
     const response = formatPendulumResponse(state);
 
-    return NextResponse.json({
+    return jsonWithRobots({
       response,
       confidence: analysis.confidence,
       refused: false,
@@ -135,7 +162,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     devLog.error('Ask Pendulum Seer API error:', error, 'route');
-    return NextResponse.json(
+    return jsonWithRobots(
       {
         success: false,
         error:

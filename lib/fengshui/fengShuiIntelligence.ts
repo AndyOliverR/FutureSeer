@@ -4,6 +4,10 @@
  */
 
 import { UserProfile } from '@/lib/firebase'
+import {
+  buildPersonalizedWealthLines,
+  buildPracticalChecklistForReading,
+} from '@/lib/fengshui/practicalGuides'
 import { generateFengShuiAnalysis, FengShuiAnalysis, getBaguaAreaByDirection } from './fengShuiService'
 
 export interface RoomGuidance {
@@ -39,6 +43,10 @@ export interface FengShuiReading {
   baguaRecommendations: Record<string, string[]>
   generalRecommendations: string[]
   timingAdvice: string[]
+  /** Personalized wealth-sector and Kua-aligned hints (no guarantees). */
+  wealthTips: string[]
+  /** Actionable home checklist derived from practical guides + analysis. */
+  practicalChecklist: string[]
 }
 
 const CACHE_VERSION = '1.0'
@@ -81,6 +89,9 @@ export async function generateFengShuiReading(
   // Generate timing advice
   const timingAdvice = generateTimingAdvice()
 
+  const wealthTips = buildPersonalizedWealthLines(analysis)
+  const practicalChecklist = buildPracticalChecklistForReading(analysis)
+
   return {
     overview,
     kuaSummary,
@@ -89,7 +100,9 @@ export async function generateFengShuiReading(
     cures,
     baguaRecommendations,
     generalRecommendations,
-    timingAdvice
+    timingAdvice,
+    wealthTips,
+    practicalChecklist,
   }
 }
 
@@ -540,7 +553,9 @@ function getDefaultReading(): FengShuiReading {
       'Balance the five elements',
       'Remove broken items and dead plants'
     ],
-    timingAdvice: []
+    timingAdvice: [],
+    wealthTips: [],
+    practicalChecklist: buildPracticalChecklistForReading(null),
   }
 }
 

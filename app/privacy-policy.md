@@ -52,3 +52,13 @@ We may update this Privacy Policy from time to time. Changes will be posted on t
 ## 10. Contact Us
 
 If you have any questions or concerns about this Privacy Policy or your data, please contact us at [andyoliverrozario2@gmail.com](mailto:andyoliverrozario2@gmail.com). 
+
+## 11. Content Attribution and Reuse
+
+FutureSeer publishes original, collated interpretations and product copy across occult and divination systems.
+
+- This content is protected by applicable intellectual property laws.
+- Reuse, republication, or redistribution of FutureSeer content requires visible attribution to `futureseer.app`.
+- Automated extraction or republishing of content without attribution is prohibited.
+
+If you need permission for reuse, please submit a legal request via [futureseer.app/contact?type=legal](https://futureseer.app/contact?type=legal).

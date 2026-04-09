@@ -3,8 +3,13 @@
 
 import { generateNumerologyProfile, validateNumerologyData } from './numerologyCalculations'
 import { devLog } from '@/lib/devLogger';
-import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
+import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
+import {
+  powerWordByNumber,
+  wealthAttractionByNumber,
+  practicalChecklistByNumber,
+} from '@/lib/numerology/practicalGuides';
 
 interface NumerologyData {
   userId: string
@@ -51,6 +56,9 @@ interface NumerologyData {
     systemConfidence?: number
     learningApplied?: boolean
   }
+  powerWord?: string
+  wealthTips?: string[]
+  practicalChecklist?: string[]
 }
 
 interface NumerologyCoachingContext {
@@ -88,8 +96,7 @@ class NumerologyIntelligence {
   async calculateNumerologyData(
     userId: string,
     fullName: string,
-    birthDate: string,
-    forceExternal: boolean = false
+    birthDate: string
   ): Promise<NumerologyData> {
     devLog.debug('🔢 NumerologyIntelligence: Starting intelligent calculation...')
     
@@ -165,7 +172,10 @@ class NumerologyIntelligence {
         isComprehensive: true,
         systemConfidence: this.systemMetrics.confidence,
         learningApplied: false
-      }
+      },
+      powerWord: powerWordByNumber(internalProfile.lifePathNumber),
+      wealthTips: wealthAttractionByNumber(internalProfile.lifePathNumber),
+      practicalChecklist: practicalChecklistByNumber(internalProfile.lifePathNumber),
     }
 
     // Store in Firebase
@@ -188,10 +198,7 @@ class NumerologyIntelligence {
   // Provide personalized numerology coaching
   async provideCoaching(context: NumerologyCoachingContext): Promise<NumerologyCoachingResponse> {
     devLog.debug('🔢 NumerologyIntelligence: Providing personalized coaching...')
-    
-    const { numerologyData, userQuery } = context
-    const query = userQuery.toLowerCase()
-    
+
     // Generate personalized response based on numerology profile
     const response = await this.generatePersonalizedResponse(context)
     
@@ -283,7 +290,7 @@ class NumerologyIntelligence {
   }
 
   // Generate personalized insights
-  private generateInsights(query: string, data: NumerologyData): string[] {
+  private generateInsights(_query: string, data: NumerologyData): string[] {
     const insights: string[] = []
     
     insights.push(`Your Life Path ${data.lifePathNumber} reveals your core purpose: ${data.insights.lifePurpose}`)
@@ -303,7 +310,7 @@ class NumerologyIntelligence {
   }
 
   // Generate actionable steps
-  private generateActionableSteps(query: string, data: NumerologyData): string[] {
+  private generateActionableSteps(_query: string, data: NumerologyData): string[] {
     const steps: string[] = []
     
     steps.push(`Focus on your Life Path ${data.lifePathNumber} strengths this week`)
@@ -324,7 +331,7 @@ class NumerologyIntelligence {
   }
 
   // Generate related numbers
-  private generateRelatedNumbers(query: string, data: NumerologyData): number[] {
+  private generateRelatedNumbers(_query: string, data: NumerologyData): number[] {
     const numbers: number[] = []
     
     numbers.push(data.lifePathNumber)

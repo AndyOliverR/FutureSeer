@@ -366,11 +366,11 @@ export function GotraTab({ moonNakshatra, moonLongitude, userProfile, chartData 
                 </p>
               </div>
               
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 min-w-0">
                 {gotraResult.alternativeGotras.map((gotra) => {
                   const altGotraInfo = getGotraInfo(gotra)
                   return (
-                    <div key={gotra} className="bg-cyan-100 rounded-xl p-3 border border-cyan-300 flex-1 min-w-[200px]">
+                    <div key={gotra} className="bg-cyan-100 rounded-xl p-3 border border-cyan-300 flex-1 min-w-[140px] md:min-w-[200px]">
                       <p className="font-semibold text-cyan-900">{gotra}</p>
                       {altGotraInfo && (
                         <p className="text-xs text-cyan-700 mt-1">{altGotraInfo.sage}</p>

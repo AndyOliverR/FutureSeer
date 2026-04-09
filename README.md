@@ -42,6 +42,7 @@ Tooling matches [AGENTS.md](AGENTS.md) and `packageManager` in `package.json`:
 - AstroApp API key (optional)
 
 Full build, CI, and mobile/store steps are indexed in **[docs/DEVELOPER_RUNBOOK.md](docs/DEVELOPER_RUNBOOK.md)**.
+Security baseline and incident workflow live in **[docs/SECURITY_BASELINE_RUNBOOK.md](docs/SECURITY_BASELINE_RUNBOOK.md)**.
 
 ### Installation
 

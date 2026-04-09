@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
@@ -14,12 +15,52 @@ import {
   type GeomancyState,
 } from '@/lib/geomancySeerState';
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-geomancy-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
+
 interface GeomancySeerRequest {
   userId: string;
   question: string;
-  userProfile: any;
-  geomancyAnalysis?: any;
-  comprehensiveProfile?: any;
+  userProfile: Record<string, unknown>;
+  geomancyAnalysis?: GeomancyAnalysisData;
+  comprehensiveProfile?: Record<string, unknown>;
   sessionId?: string;
 }
 
@@ -41,18 +82,42 @@ interface GeomancySeerResponse {
   error?: string;
 }
 
+interface GeomancyFigureLike {
+  name?: string;
+  element?: string;
+  planet?: string;
+}
+
+interface GeomancyHouseLike {
+  house?: number;
+}
+
+interface GeomancyAnalysisData {
+  figures?: unknown[];
+  houses?: unknown[];
+  timing?: { optimalPeriods?: string[] };
+  advice?: { immediate?: string[] };
+}
+
+function isGeomancyAnalysisData(value: unknown): value is GeomancyAnalysisData {
+  return typeof value === 'object' && value !== null;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body: GeomancySeerRequest = await request.json();
     const { userId, question, userProfile, sessionId } = body;
     let geomancyAnalysis = body.geomancyAnalysis;
     if (!geomancyAnalysis && body.comprehensiveProfile) {
-      geomancyAnalysis =
+      const fallbackAnalysis =
         body.comprehensiveProfile.geomancy ?? body.comprehensiveProfile?.Geomancy;
+      if (isGeomancyAnalysisData(fallbackAnalysis)) {
+        geomancyAnalysis = fallbackAnalysis;
+      }
     }
 
     if (!userId || !question || !userProfile) {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error: 'Missing required parameters: userId, question, or userProfile',
@@ -62,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!geomancyAnalysis || !Array.isArray(geomancyAnalysis.figures) || geomancyAnalysis.figures.length < 15) {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error: GEOMANCY_REFUSAL_DATA_PHRASE,
@@ -75,10 +140,11 @@ export async function POST(request: NextRequest) {
 
     const questionType = classifyGeomancyQuestion(question.trim()) as GeomancyQuestionType;
     if (questionType === 'refusal') {
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode(GEOMANCY_REFUSAL_OUTCOME_PHRASE));
+            controller.enqueue(new TextEncoder().encode(stampText(GEOMANCY_REFUSAL_OUTCOME_PHRASE)));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -95,10 +161,11 @@ export async function POST(request: NextRequest) {
     const cachedResponse = await checkCachedQuestions(userId, question);
     if (cachedResponse) {
       devLog.info('🎯 Returning cached response for similar question', undefined, 'ask-geomancy-seer');
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode(cachedResponse.answer));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -116,7 +183,7 @@ export async function POST(request: NextRequest) {
     try {
       state = buildGeomancyState(geomancyAnalysis, question.trim());
     } catch {
-      return NextResponse.json(
+      return jsonWithRobots(
         { success: false, error: GEOMANCY_REFUSAL_DATA_PHRASE },
         { status: 400 }
       );
@@ -143,7 +210,7 @@ export async function POST(request: NextRequest) {
       .filter((item: unknown): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -174,10 +241,47 @@ export async function POST(request: NextRequest) {
               answer: fullResponse,
               confidence: 0.85,
               figureReferences: {
-                primaryFigures: geomancyAnalysis.figures?.slice(0, 4).map((f: any) => f.name ?? f) || [],
-                houses: geomancyAnalysis.houses?.map((h: any) => h.house ?? h) || [],
-                elements: [...new Set(geomancyAnalysis.figures?.map((f: any) => f.element ?? '') || [])].filter(Boolean) as string[],
-                planets: [...new Set(geomancyAnalysis.figures?.map((f: any) => f.planet ?? '') || [])].filter(Boolean) as string[],
+                primaryFigures:
+                  geomancyAnalysis.figures
+                    ?.slice(0, 4)
+                    .map((f: unknown) => {
+                      if (typeof f === 'string') return f;
+                      if (f && typeof f === 'object' && typeof (f as GeomancyFigureLike).name === 'string') {
+                        return (f as GeomancyFigureLike).name as string;
+                      }
+                      return '';
+                    })
+                    .filter(Boolean) || [],
+                houses:
+                  geomancyAnalysis.houses
+                    ?.map((h: unknown) => {
+                      if (typeof h === 'number') return h;
+                      if (h && typeof h === 'object' && typeof (h as GeomancyHouseLike).house === 'number') {
+                        return (h as GeomancyHouseLike).house as number;
+                      }
+                      return undefined;
+                    })
+                    .filter((house): house is number => house !== undefined) || [],
+                elements:
+                  [...new Set(
+                    geomancyAnalysis.figures
+                      ?.map((f: unknown) => {
+                        if (f && typeof f === 'object' && typeof (f as GeomancyFigureLike).element === 'string') {
+                          return (f as GeomancyFigureLike).element as string;
+                        }
+                        return '';
+                      }) || []
+                  )].filter(Boolean) as string[],
+                planets:
+                  [...new Set(
+                    geomancyAnalysis.figures
+                      ?.map((f: unknown) => {
+                        if (f && typeof f === 'object' && typeof (f as GeomancyFigureLike).planet === 'string') {
+                          return (f as GeomancyFigureLike).planet as string;
+                        }
+                        return '';
+                      }) || []
+                  )].filter(Boolean) as string[],
               },
               timing: geomancyAnalysis.timing?.optimalPeriods || [],
               guidance: geomancyAnalysis.advice?.immediate || [],
@@ -211,9 +315,10 @@ export async function POST(request: NextRequest) {
           } catch (error) {
             devLog.error('Error during Geomancy Seer streaming:', error);
             controller.enqueue(
-              new TextEncoder().encode('I encountered an error. Please try again.')
+              new TextEncoder().encode(stampText('I encountered an error. Please try again.'))
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -228,7 +333,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     devLog.error('Error in Geomancy Seer API:', error);
-    return NextResponse.json(
+    return jsonWithRobots(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred',

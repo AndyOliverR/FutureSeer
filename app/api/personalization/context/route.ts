@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-static'
 
 export async function POST(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
   try {
+    const auth = await verifyUserRequest(request, 'personalization-context');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { userId, context } = body;
+    const userId = resolveOwnedUserId(body?.userId, auth.uid);
+    const context = body?.context;
 
     if (!userId || !context) {
       return NextResponse.json(
@@ -52,8 +59,13 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'personalization-context');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = resolveOwnedUserId(searchParams.get('userId'), auth.uid);
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -95,8 +107,14 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'personalization-context');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
-    const { userId, contextUpdate } = body;
+    const userId = resolveOwnedUserId(body?.userId, auth.uid);
+    const contextUpdate = body?.contextUpdate;
 
     if (!userId || !contextUpdate) {
       return NextResponse.json(

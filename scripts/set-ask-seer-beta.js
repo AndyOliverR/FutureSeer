@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Grant askSeerBeta custom claim to users for 72-hour internal rollout.
  * Merges with existing claims (setCustomUserClaims replaces all claims).
@@ -7,20 +8,8 @@
  *   node scripts/set-ask-seer-beta.js uid1 uid2 uid3
  */
 const admin = require('firebase-admin');
-const path = require('path');
-
-const serviceAccountPath = path.join(__dirname, '../firebaseadminscripts/serviceAccountKey.json');
-let serviceAccount;
-try {
-  serviceAccount = require(serviceAccountPath);
-} catch {
-  console.error('❌ firebaseadminscripts/serviceAccountKey.json not found');
-  process.exit(1);
-}
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+const { ensureAdminInitialized } = require('./firebase-admin-env');
+ensureAdminInitialized();
 
 async function setAskSeerBeta() {
   const uids = process.env.ASKS_BETA_UIDS?.split(',').map((s) => s.trim()).filter(Boolean)

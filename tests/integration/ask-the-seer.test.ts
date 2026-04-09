@@ -17,6 +17,13 @@ jest.mock('@/lib/consoleLogger', () => ({
   log: { error: jest.fn(), warn: jest.fn(), debug: jest.fn(), info: jest.fn() },
 }));
 
+jest.mock('@/lib/userApiAuth', () => ({
+  verifyUserRequest: jest.fn(async () => ({ ok: true, uid: 'user-123' })),
+  resolveOwnedUserId: jest.fn((requested: unknown, authUid: string) =>
+    typeof requested === 'string' && requested === authUid ? requested : null
+  ),
+}));
+
 describe('Ask the Seer API', () => {
   beforeAll(() => {
     globalThis.fetch = mockFetch;
@@ -34,14 +41,14 @@ describe('Ask the Seer API', () => {
     const { POST } = await import('@/app/api/ask-the-seer/route');
     const req = new NextRequest('http://localhost:3000/api/ask-the-seer', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
       body: JSON.stringify(body),
     });
     return POST(req) as Promise<Response>;
   }
 
   it('returns 400 when userId or question is missing', async () => {
-    const res = await postAskTheSeer({ userId: 'u1', question: '' });
+    const res = await postAskTheSeer({ userId: 'user-123', question: '' });
     const data = await res.json();
     expect(res.status).toBe(400);
     expect(data.success).toBe(false);
@@ -62,13 +69,13 @@ describe('Ask the Seer API', () => {
 
     expect(res.status).toBe(200);
     expect(data.success).toBe(true);
-    expect(data.data.answer).toBe('Test reply from Seer');
+    expect(data.data.answer).toContain('Test reply from Seer');
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(mockFetch).toHaveBeenCalledWith(
       'http://localhost:3000/api/seer/chat',
       expect.objectContaining({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
       })
     );
     const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -83,11 +90,18 @@ describe('Ask the Seer API', () => {
       json: async () => ({ error: 'AI unavailable' }),
     });
 
-    const res = await postAskTheSeer({ userId: 'u1', question: 'Hello?' });
+    const res = await postAskTheSeer({ userId: 'user-123', question: 'Hello?' });
     const data = await res.json();
 
     expect(res.status).toBe(500);
     expect(data.success).toBe(false);
     expect(data.error).toBeDefined();
+  });
+
+  it('rejects when userId does not match authenticated user', async () => {
+    const res = await postAskTheSeer({ userId: 'other-user', question: 'Hello?' });
+    const data = await res.json();
+    expect(res.status).toBe(400);
+    expect(data.success).toBe(false);
   });
 });
