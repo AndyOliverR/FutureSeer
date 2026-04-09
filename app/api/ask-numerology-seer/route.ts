@@ -1,23 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
-import { doc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, setDoc, collection } from 'firebase/firestore';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
-import { calcPersonalYear } from '@/lib/numerology/personalYear';
-import { calcDriver, calcConductor } from '@/lib/numerology/driverConductor';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import {
   buildChaldeanState,
   classifyChaldeanQuestion,
   getChaldeanSliceForQuestionType,
-  type ChaldeanQuestionType,
 } from '@/lib/chaldeanSeerState';
 import { buildChaldeanSeerSystemPrompt } from '@/lib/chaldeanSeerPrompts';
+
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-numerology-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function stampAnswerFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stampAnswerFields);
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if ((k === 'answer' || k === 'response' || k === 'reply') && typeof v === 'string') {
+        out[k] = stampText(v);
+      } else {
+        out[k] = stampAnswerFields(v);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(stampAnswerFields(body), init);
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return response;
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
 
 interface NumerologySeerRequest {
   userId: string;
   question: string;
-  userProfile: any;
+  userProfile: Record<string, unknown>;
   numerologyData: {
     lifePathNumber?: number;
     expressionNumber?: number;
@@ -27,32 +65,10 @@ interface NumerologySeerRequest {
     birthdayNumber?: number;
     maturityNumber?: number;
     personalYearNumber?: number;
-    breakdown?: any;
+    breakdown?: Record<string, unknown>;
   };
-  comprehensiveReport?: any;
+  comprehensiveReport?: Record<string, unknown>;
   sessionId?: string;
-}
-
-// Get conversation history
-async function getConversationHistory(userId: string, sessionId?: string): Promise<Array<{ question: string; answer: string }>> {
-  try {
-    const db = getFirebaseDB();
-    if (!db) return [];
-
-    const session = sessionId || 'default';
-    const historyRef = collection(db, 'users', userId, 'numerologyConversations', session, 'messages');
-    const historyQuery = query(historyRef, orderBy('timestamp', 'desc'), limit(10));
-    const snapshot = await getDocs(historyQuery);
-    
-    return snapshot.docs
-      .reverse()
-      .map(doc => doc.data())
-      .filter(msg => msg.question && msg.answer)
-      .map(msg => ({ question: msg.question, answer: msg.answer }));
-  } catch (error) {
-    devLog.error('Error fetching conversation history:', error);
-    return [];
-  }
 }
 
 // Store conversation
@@ -80,105 +96,6 @@ async function storeConversation(
     devLog.error('Error storing conversation:', error);
   }
 }
-
-// Analyze numerology question type
-function analyzeNumerologyQuestionType(question: string): string {
-  const lowerQuestion = question.toLowerCase();
-  
-  if (/life.*path|life path|birth.*number|date.*number/.test(lowerQuestion)) {
-    return 'life_path';
-  }
-  
-  if (/expression|destiny.*number|name.*number|name.*value/.test(lowerQuestion)) {
-    return 'expression';
-  }
-  
-  if (/soul.*urge|soul urge|heart.*desire|inner.*desire/.test(lowerQuestion)) {
-    return 'soul_urge';
-  }
-  
-  if (/personality|how.*others.*see|outer.*self/.test(lowerQuestion)) {
-    return 'personality';
-  }
-  
-  if (/destiny|life.*purpose|ultimate.*purpose/.test(lowerQuestion)) {
-    return 'destiny';
-  }
-  
-  if (/personal.*year|current.*year|this.*year|year.*cycle/.test(lowerQuestion)) {
-    return 'personal_year';
-  }
-  
-  if (/career|job|work|profession|vocation/.test(lowerQuestion)) {
-    return 'career';
-  }
-  
-  if (/relationship|love|marriage|partner|romance/.test(lowerQuestion)) {
-    return 'relationships';
-  }
-  
-  if (/challenge|difficulty|struggle|obstacle/.test(lowerQuestion)) {
-    return 'challenges';
-  }
-  
-  if (/opportunity|strength|gift|talent/.test(lowerQuestion)) {
-    return 'opportunities';
-  }
-  
-  if (/remedy|remedies|solution|fix|improve/.test(lowerQuestion)) {
-    return 'remedies';
-  }
-  
-  return 'general';
-}
-
-// Build numerology context for AI
-function buildNumerologyContext(numerologyData: NumerologySeerRequest['numerologyData'], userProfile: any, comprehensiveReport?: any): string {
-  const lifePath = numerologyData.lifePathNumber || 0;
-  const expression = numerologyData.expressionNumber || numerologyData.destinyNumber || 0;
-  const soulUrge = numerologyData.soulUrgeNumber || 0;
-  const personality = numerologyData.personalityNumber || 0;
-  const destiny = numerologyData.destinyNumber || 0;
-  const personalYear = numerologyData.personalYearNumber || calcPersonalYear(userProfile?.birthDate || '');
-  
-  const driver = calcDriver(userProfile?.birthDate || '');
-  const conductor = calcConductor(userProfile?.birthDate || '');
-  
-  let context = `# Chaldean Numerology Profile
-
-## Core Numbers
-- **Life Path Number**: ${lifePath}${lifePath === 11 || lifePath === 22 || lifePath === 33 ? ' (Master Number)' : ''} - Your life's purpose and lessons
-- **Expression Number (Destiny)**: ${expression}${expression === 11 || expression === 22 || expression === 33 ? ' (Master Number)' : ''} - Your natural talents and abilities
-- **Soul Urge Number**: ${soulUrge}${soulUrge === 11 || soulUrge === 22 || soulUrge === 33 ? ' (Master Number)' : ''} - Your inner desires and motivations
-- **Personality Number**: ${personality}${personality === 11 || personality === 22 || personality === 33 ? ' (Master Number)' : ''} - How others perceive you
-- **Destiny Number**: ${destiny}${destiny === 11 || destiny === 22 || destiny === 33 ? ' (Master Number)' : ''} - Your ultimate life purpose
-
-## Current Cycles
-- **Personal Year**: ${personalYear}${personalYear === 11 || personalYear === 22 || personalYear === 33 ? ' (Master Number)' : ''} - Current year's themes and focus
-- **Driver (Day Number)**: ${driver.reduced || driver.master || 'N/A'}${driver.master ? ` (Master ${driver.master})` : ''} - Daily operating style
-- **Conductor (Full Date)**: ${conductor.reduced || conductor.master || 'N/A'}${conductor.master ? ` (Master ${conductor.master})` : ''} - Life's broader rhythm
-
-## Number Combinations
-The combination of Life Path ${lifePath}, Expression ${expression}, and Soul Urge ${soulUrge} creates a unique numerological signature that reveals your complete personality profile.
-`;
-
-  if (comprehensiveReport) {
-    if (comprehensiveReport.profileOverview) {
-      context += `\n## Profile Overview\n${comprehensiveReport.profileOverview}\n`;
-    }
-    if (comprehensiveReport.challengesAndOpportunities) {
-      if (comprehensiveReport.challengesAndOpportunities.challenges?.length > 0) {
-        context += `\n## Challenges\n${comprehensiveReport.challengesAndOpportunities.challenges.map((c: string) => `- ${c}`).join('\n')}\n`;
-      }
-      if (comprehensiveReport.challengesAndOpportunities.opportunities?.length > 0) {
-        context += `\n## Opportunities\n${comprehensiveReport.challengesAndOpportunities.opportunities.map((o: string) => `- ${o}`).join('\n')}\n`;
-      }
-    }
-  }
-
-  return context;
-}
-
 
 // Generate follow-up questions
 function generateNumerologyFollowUpQuestions(questionType: string, numerologyData: NumerologySeerRequest['numerologyData']): string[] {
@@ -210,7 +127,7 @@ export async function POST(request: NextRequest) {
     const { userId, question, userProfile, numerologyData, comprehensiveReport, sessionId }: NumerologySeerRequest = await request.json();
 
     if (!userId || !question || !userProfile || !numerologyData) {
-      return NextResponse.json({
+      return jsonWithRobots({
         success: false,
         error: 'Missing required parameters: userId, question, userProfile, or numerologyData'
       }, { status: 400 });
@@ -223,10 +140,11 @@ export async function POST(request: NextRequest) {
     if (questionType === 'refusal') {
       const refusalMessage =
         'Numerology describes alignment, not guarantees. It cannot give exact dates or deterministic outcomes. I can help with name vibration, cycles, and alignment instead.';
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode(refusalMessage));
+            controller.enqueue(new TextEncoder().encode(stampText(refusalMessage)));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -261,7 +179,7 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item: unknown): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
     // Stream conversational response via AI Gateway (slice-based prompt)
@@ -288,7 +206,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Return streaming response
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           let fullResponse = '';
@@ -335,8 +253,9 @@ export async function POST(request: NextRequest) {
             
           } catch (error) {
             devLog.error('Error during streaming:', error);
-            controller.enqueue(new TextEncoder().encode('I apologize, but I encountered an error. Please try again.'));
+            controller.enqueue(new TextEncoder().encode(stampText('I apologize, but I encountered an error. Please try again.')));
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         }
@@ -352,7 +271,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     devLog.error('Error in Numerology Seer API:', error);
-    return NextResponse.json({
+    return jsonWithRobots({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     }, { status: 500 });

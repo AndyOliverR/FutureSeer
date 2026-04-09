@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import type { FaceReadingAnalysis } from '@/lib/faceReadingIntelligence';
 import { buildFaceReadingSeerSystemPrompt } from '@/lib/faceReadingSeerPrompts';
 import {
   buildFaceReadingState,
@@ -9,35 +11,82 @@ import {
   type FaceReadingQuestionType,
 } from '@/lib/faceReadingSeerState';
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-face-reading-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
+
 interface FaceReadingSeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
-  faceReadingAnalysis?: any;
-  comprehensiveProfile?: any;
+  userProfile?: unknown;
+  faceReadingAnalysis?: unknown;
+  comprehensiveProfile?: Record<string, unknown>;
   sessionId?: string;
+}
+
+function getDisplayName(userProfile: unknown): string | undefined {
+  if (!userProfile || typeof userProfile !== 'object') return undefined;
+  const displayName = (userProfile as Record<string, unknown>).displayName;
+  if (typeof displayName !== 'string') return undefined;
+  const trimmed = displayName.trim();
+  return trimmed || undefined;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isFaceReadingAnalysis(value: unknown): value is FaceReadingAnalysis {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.faceShape === 'string'
+  );
 }
 
 const ANALYSIS_REQUIRED_MESSAGE =
   'Generate Face Reading analysis first to use Ask the Seer.';
 
-function getRefusalMessage(_question: string): string {
+function getRefusalMessage(): string {
   return 'Face reading reflects tendencies, not predictions. Face reading cannot determine this with certainty.';
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: FaceReadingSeerRequest = await request.json();
-    const { userId, question, userProfile, sessionId } = body;
-    let faceReadingAnalysis = body.faceReadingAnalysis;
+    const { userId, question, userProfile } = body;
+    let faceReadingAnalysis = isFaceReadingAnalysis(body.faceReadingAnalysis)
+      ? body.faceReadingAnalysis
+      : undefined;
     if (!faceReadingAnalysis && body.comprehensiveProfile) {
-      faceReadingAnalysis =
+      const fallbackAnalysis =
         body.comprehensiveProfile.faceReading ??
         body.comprehensiveProfile['Face Reading'];
+      if (isFaceReadingAnalysis(fallbackAnalysis)) {
+        faceReadingAnalysis = fallbackAnalysis;
+      }
     }
 
     if (!userId || !question) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: 'Missing required parameters: userId or question',
@@ -50,7 +99,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!faceReadingAnalysis || !faceReadingAnalysis.faceShape) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -66,7 +115,7 @@ export async function POST(request: NextRequest) {
     try {
       state = buildFaceReadingState(faceReadingAnalysis);
     } catch {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -86,11 +135,12 @@ export async function POST(request: NextRequest) {
     );
 
     if (questionType === 'refusal') {
-      const refusalText = getRefusalMessage(question);
-      return new Response(
+      const refusalText = getRefusalMessage();
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode(refusalText));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -116,9 +166,9 @@ export async function POST(request: NextRequest) {
       faceReadingAnalysis
     );
 
-    const displayName = (userProfile?.displayName ?? '').trim();
+    const displayName = getDisplayName(userProfile);
     const systemPrompt = buildFaceReadingSeerSystemPrompt(chartSlice, questionType, {
-      displayName: displayName || undefined,
+      displayName,
     });
 
     const userMessage = question.trim();
@@ -133,7 +183,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 1000,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -151,6 +201,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -163,16 +214,16 @@ export async function POST(request: NextRequest) {
         },
       }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     devLog.error(
       '❌ Error in Face Reading Seer API:',
       error,
       'ask-face-reading-seer'
     );
-    return new Response(
+    return withRobotsResponse(
       JSON.stringify({
         success: false,
-        error: error.message || 'Failed to process question',
+        error: getErrorMessage(error, 'Failed to process question'),
       }),
       {
         status: 500,

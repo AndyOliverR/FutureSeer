@@ -18,6 +18,19 @@ export default function robots(): MetadataRoute.Robots {
           "/support/tickets",
         ],
       },
+      {
+        userAgent: [
+          "GPTBot",
+          "ChatGPT-User",
+          "CCBot",
+          "ClaudeBot",
+          "anthropic-ai",
+          "PerplexityBot",
+          "Bytespider",
+          "Diffbot",
+        ],
+        disallow: ["/", "/api/"],
+      },
     ],
     sitemap: `${site}/sitemap.xml`,
   }

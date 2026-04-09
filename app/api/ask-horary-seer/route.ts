@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import {
@@ -11,12 +12,38 @@ import {
 } from '@/lib/horarySeerState';
 import { buildHorarySeerSystemPrompt } from '@/lib/horarySeerPrompts';
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-horary-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
+
 interface HorarySeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
+  userProfile?: unknown;
   horaryData?: HoraryChartPayload | null;
   sessionId?: string;
+}
+
+function getDisplayName(userProfile: unknown): string | undefined {
+  if (!userProfile || typeof userProfile !== 'object') return undefined;
+  const displayName = (userProfile as Record<string, unknown>).displayName;
+  if (typeof displayName !== 'string') return undefined;
+  const trimmed = displayName.trim();
+  return trimmed || undefined;
 }
 
 const ANALYSIS_REQUIRED_MESSAGE =
@@ -34,7 +61,7 @@ export async function POST(request: NextRequest) {
     const { userId, question, userProfile, horaryData } = body;
 
     if (!userId || !question?.trim()) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: 'Missing required parameters: userId or question',
@@ -53,7 +80,7 @@ export async function POST(request: NextRequest) {
     const hasSeerState = !!horaryData?.seerState?.ascendantSign;
 
     if (!horaryData || !hasBasicInfo || !hasSeerState) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -69,7 +96,7 @@ export async function POST(request: NextRequest) {
     try {
       state = buildHoraryState(horaryData);
     } catch {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -91,10 +118,11 @@ export async function POST(request: NextRequest) {
     );
 
     if (questionType === 'refusal') {
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode(REFUSAL_PHRASE));
+            controller.enqueue(new TextEncoder().encode(stampText(REFUSAL_PHRASE)));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -109,10 +137,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (verdict === 'refuse') {
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode(RADICALITY_REFUSAL_PHRASE));
+            controller.enqueue(new TextEncoder().encode(stampText(RADICALITY_REFUSAL_PHRASE)));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -128,9 +157,9 @@ export async function POST(request: NextRequest) {
 
     const slice = getHorarySliceForQuestionType(questionType, state, verdict);
 
-    const displayName = (userProfile?.displayName ?? '').trim();
+    const displayName = getDisplayName(userProfile);
     const systemPrompt = buildHorarySeerSystemPrompt(slice, questionType, {
-      displayName: displayName || undefined,
+      displayName,
     });
 
     const userMessage = question.trim();
@@ -145,7 +174,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 800,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -163,6 +192,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -181,7 +211,7 @@ export async function POST(request: NextRequest) {
       error,
       'ask-horary-seer'
     );
-    return new Response(
+    return withRobotsResponse(
       JSON.stringify({
         success: false,
         error:

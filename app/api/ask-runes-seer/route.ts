@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import { buildRunesSeerSystemPrompt } from '@/lib/runesSeerPrompts';
@@ -10,12 +11,38 @@ import {
 } from '@/lib/runesSeerState';
 import type { RuneReading } from '@/lib/runesIntelligence';
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-runes-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
+
 interface RunesSeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
+  userProfile?: unknown;
   runeReading?: RuneReading | null;
   sessionId?: string;
+}
+
+function getDisplayName(userProfile: unknown): string | undefined {
+  if (!userProfile || typeof userProfile !== 'object') return undefined;
+  const displayName = (userProfile as Record<string, unknown>).displayName;
+  if (typeof displayName !== 'string') return undefined;
+  const trimmed = displayName.trim();
+  return trimmed || undefined;
 }
 
 const READING_REQUIRED_MESSAGE =
@@ -31,7 +58,7 @@ export async function POST(request: NextRequest) {
     const { userId, question, userProfile, runeReading } = body;
 
     if (!userId || !question?.trim()) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: 'Missing required parameters: userId or question',
@@ -47,7 +74,7 @@ export async function POST(request: NextRequest) {
       Array.isArray(runeReading?.runes) && runeReading.runes.length > 0;
 
     if (!runeReading || !hasRunes) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: READING_REQUIRED_MESSAGE,
@@ -63,7 +90,7 @@ export async function POST(request: NextRequest) {
     try {
       state = buildRuneState(runeReading);
     } catch {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: READING_REQUIRED_MESSAGE,
@@ -84,10 +111,11 @@ export async function POST(request: NextRequest) {
 
     if (questionType === 'refusal') {
       const refusalText = getRefusalMessage();
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode(refusalText));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -107,9 +135,9 @@ export async function POST(request: NextRequest) {
       runeReading
     );
 
-    const displayName = (userProfile?.displayName ?? '').trim();
+    const displayName = getDisplayName(userProfile);
     const systemPrompt = buildRunesSeerSystemPrompt(chartSlice, questionType, {
-      displayName: displayName || undefined,
+      displayName,
     });
 
     const userMessage = question.trim();
@@ -124,7 +152,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 800,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -142,6 +170,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -156,7 +185,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: unknown) {
     devLog.error('❌ Error in Runes Seer API:', error, 'ask-runes-seer');
-    return new Response(
+    return withRobotsResponse(
       JSON.stringify({
         success: false,
         error:

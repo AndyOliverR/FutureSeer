@@ -31,7 +31,7 @@ export function AngelNumbersCoachInterface({
   angelNumbersContext,
 }: AngelNumbersCoachInterfaceProps = {}) {
   const { user } = useAuth();
-  const { angelNumbersData, loading: loadingData, error } = useAngelNumbersData();
+  const { angelNumbersData, loading: loadingData } = useAngelNumbersData();
   const [messages, setMessages] = useState<AngelNumbersMessage[]>([]);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,9 +45,9 @@ export function AngelNumbersCoachInterface({
   const PREVIEW_LENGTH = 320;
 
   const ANGEL_NUMBERS_STARTER_QUESTIONS = [
-    'Why do I keep seeing 111 or 444?',
-    'What does this number mean for me right now?',
-    'Is this number a sign to continue or pause?',
+    'Why do I keep seeing 111 or 444, and what practical habit should I reinforce?',
+    'What weekly power word fits my current angel-number pattern?',
+    'How can I support wealth with grounded action while staying aligned with this message?',
   ];
 
   const toggleExpanded = (id: string) => {
@@ -283,7 +283,7 @@ export function AngelNumbersCoachInterface({
                 Ask me anything about the numbers you keep seeing…
               </p>
               <p className="text-slate-700 text-sm mt-1 mb-2">
-                I'll interpret recurring number patterns as guidance, reassurance, and directional messages.
+                I&apos;ll interpret recurring number patterns as guidance, reassurance, and directional messages.
               </p>
               <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
               <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">

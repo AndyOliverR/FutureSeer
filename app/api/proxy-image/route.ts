@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { devLog } from '@/lib/devLogger'
 import { logger } from '@/lib/logger'
+import { validateProxyImageUrl } from '@/lib/security/proxyImageValidation';
 
 export const dynamic = 'force-static'
 
@@ -19,20 +20,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Image URL is required' }, { status: 400 })
     }
     
-    // Validate that it's an AstroApp URL for security
-    if (!imageUrl.includes('astroapp.com')) {
+    const validation = validateProxyImageUrl(imageUrl);
+    if (!validation.ok) {
       logger.error('❌ Invalid image source:', imageUrl)
-      return NextResponse.json({ error: 'Invalid image source' }, { status: 400 })
+      return NextResponse.json({ error: validation.error }, { status: 400 })
     }
     
     devLog.debug('🖼️ Proxying image:', imageUrl, 'proxy-image')
     
     // Fetch the image from AstroApp
-    const response = await fetch(imageUrl, {
+    const response = await fetch(validation.url.toString(), {
       headers: {
         'User-Agent': 'FutureSeer-App/1.0',
         'Accept': 'image/*',
       },
+      redirect: 'error',
     })
     
     if (!response.ok) {
@@ -43,6 +45,9 @@ export async function GET(request: NextRequest) {
     // Get the image data
     const imageBuffer = await response.arrayBuffer()
     const contentType = response.headers.get('content-type') || 'image/png'
+    if (!contentType.startsWith('image/')) {
+      return NextResponse.json({ error: 'Upstream did not return an image' }, { status: 400 });
+    }
     
     devLog.debug('✅ Successfully proxied image:', imageUrl, 'proxy-image')
     

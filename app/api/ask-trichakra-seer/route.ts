@@ -1,21 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { appendAttribution } from '@/lib/attribution/attributionStamp'
 import { createAIStream } from '@/lib/aiGateway'
 import { devLog } from '@/lib/devLogger'
 import {
   buildTrichakraState,
   classifyTrichakraQuestion,
-  getTrichakraSliceForQuestionType,
-  type TrichakraQuestionType
+  getTrichakraSliceForQuestionType
 } from '@/lib/trichakraSeerState'
 import type { TrichakraAnalysis } from '@/lib/trichakraIntelligence'
 import { buildTrichakraSeerSystemPrompt } from '@/lib/trichakraSeerPrompts'
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet'
+const SEER_MARKER_FAMILY = 'ask-trichakra-seer'
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY })
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers)
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG)
+  return new Response(body ?? null, { ...init, headers })
+}
+
+function jsonWithRobots(body: unknown, init?: ResponseInit): Response {
+  const response = NextResponse.json(body, init)
+  response.headers.set('X-Robots-Tag', X_ROBOTS_TAG)
+  return response
+}
+
 interface TrichakraSeerRequest {
   userId: string
   question: string
-  userProfile: any
-  trichakraAnalysis?: TrichakraAnalysis
-  comprehensiveProfile?: any
+  userProfile: Record<string, unknown>
+  trichakraAnalysis?: unknown
+  comprehensiveProfile?: Record<string, unknown>
   sessionId?: string
 }
 
@@ -27,25 +46,39 @@ function getRefusalMessage(question: string): string {
   return 'This question requires a predictive system, not a remedial one.'
 }
 
+function isTrichakraAnalysis(value: unknown): value is TrichakraAnalysis {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'userProfile' in value &&
+    'remedies' in value
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({})) as TrichakraSeerRequest
     const { userId, question, userProfile } = body
-    let trichakraAnalysis = body.trichakraAnalysis
+    let trichakraAnalysis = isTrichakraAnalysis(body.trichakraAnalysis)
+      ? body.trichakraAnalysis
+      : undefined
     if (!trichakraAnalysis && body.comprehensiveProfile) {
       const cp = body.comprehensiveProfile
-      trichakraAnalysis = cp.trichakraMethod ?? cp.trichakra ?? cp['Trichakra']
+      const fallbackAnalysis = cp.trichakraMethod ?? cp.trichakra ?? cp['Trichakra']
+      if (isTrichakraAnalysis(fallbackAnalysis)) {
+        trichakraAnalysis = fallbackAnalysis
+      }
     }
 
     if (!userId || !question || !userProfile) {
-      return NextResponse.json(
+      return jsonWithRobots(
         { success: false, error: 'Missing required parameters: userId, question, or userProfile' },
         { status: 400 }
       )
     }
 
     if (!trichakraAnalysis) {
-      return NextResponse.json(
+      return jsonWithRobots(
         {
           success: false,
           error: 'Your current Trichakra state is unavailable. Should I regenerate it?'
@@ -61,10 +94,11 @@ export async function POST(request: NextRequest) {
 
     if (questionType === 'refusal') {
       const refusalMessage = getRefusalMessage(question)
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
-            controller.enqueue(new TextEncoder().encode(refusalMessage))
+            controller.enqueue(new TextEncoder().encode(stampText(refusalMessage)))
+            controller.enqueue(new TextEncoder().encode(stampText('')))
             controller.close()
           }
         }),
@@ -91,7 +125,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 1000
     })
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -102,8 +136,10 @@ export async function POST(request: NextRequest) {
           } catch (error) {
             devLog.error('Error during Trichakra Seer streaming:', error)
             controller.enqueue(
-              new TextEncoder().encode('I apologize, but I encountered an error. Please try again.')
+              new TextEncoder().encode(stampText('I apologize, but I encountered an error. Please try again.'))
             )
+          } finally {
+            controller.enqueue(new TextEncoder().encode(stampText('')))
           }
           controller.close()
         }
@@ -118,7 +154,7 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     devLog.error('Error in Trichakra Seer API:', error)
-    return NextResponse.json(
+    return jsonWithRobots(
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'

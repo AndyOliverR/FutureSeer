@@ -17,6 +17,7 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 - End-to-end tests: [E2E_TESTS.md](./E2E_TESTS.md)
 - Android Studio issues: [ANDROID_STUDIO_ERRORS.md](./ANDROID_STUDIO_ERRORS.md)
 - Security commands: [SECURITY_CHECKS.md](./SECURITY_CHECKS.md)
+- Security baseline operations: [SECURITY_BASELINE_RUNBOOK.md](./SECURITY_BASELINE_RUNBOOK.md)
 - Auth and routing: [AUTH_AND_ROUTING_SUMMARY.md](./AUTH_AND_ROUTING_SUMMARY.md)
 - Failure triage (layer mapping): [FAILURE_TRIAGE.md](./FAILURE_TRIAGE.md)
 - reCAPTCHA support triage map: [CAPTCHA_TRIAGE.md](./CAPTCHA_TRIAGE.md)

@@ -1,14 +1,12 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Firebase Admin Script to Fix Birth Time Data
 // Updates incorrect timestamp to correct HH:MM format
 
 const admin = require('firebase-admin');
-const serviceAccount = require('../firebaseadminscripts/serviceAccountKey.json');
+const { ensureAdminInitialized } = require('./firebase-admin-env');
 
 // Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: "https://futureseer-7abcd5-default-rtdb.firebaseio.com"
-});
+ensureAdminInitialized();
 
 const db = admin.firestore();
 

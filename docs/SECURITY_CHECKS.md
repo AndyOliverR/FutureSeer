@@ -2,6 +2,8 @@
 
 FutureSeer runs security checks locally with no paid services. All tools are built-in or open-source and run in the repo.
 
+For recurring operations, route-level examples, and incident workflow, see the [Security Baseline Runbook](./SECURITY_BASELINE_RUNBOOK.md).
+
 ## Commands
 
 | Command | What it does |

@@ -54,6 +54,7 @@ import { cn } from '@/lib/utils'
 import LoShuGrid from '@/components/numerology/LoShuGrid'
 import { LuckyEssentials } from '@/components/numerology/LuckyEssentials'
 import { NamePlanes } from '@/components/numerology/NamePlanes'
+import { NumerologyPracticalGuidance } from '@/components/numerology/NumerologyPracticalGuidance'
 import { calcPersonalYear } from '@/lib/numerology/personalYear'
 import { calcDriver, calcConductor } from '@/lib/numerology/driverConductor'
 import { getZodiacFromDate } from '@/lib/numerology/zodiac'
@@ -99,6 +100,7 @@ type NumerologyTabKey =
   | 'numbers'
   | 'compatibility'
   | 'guidance'
+  | 'quick-guidance'
   | 'remedies'
   | 'ask-the-seer'
 
@@ -279,9 +281,9 @@ export default function NumerologyPage() {
           </div>
         </div>
       ) : (
-    <div className="relative min-h-screen">
+    <div className="relative min-h-screen w-full min-w-0 max-w-full overflow-x-hidden">
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+      <div className="relative z-10 container mx-auto w-full min-w-0 px-4 pt-4 pb-8">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="m3-headline-large mb-6 flex items-center justify-center gap-3">
@@ -329,9 +331,9 @@ export default function NumerologyPage() {
         )}
 
         {/* Main Content */}
-        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
+        <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden w-full min-w-0">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as NumerologyTabKey)} className="w-full min-w-0">
-          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+          <TabsList className="flex w-full min-w-0 flex-nowrap overflow-x-auto no-scrollbar gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="introduction" 
               className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
@@ -375,6 +377,12 @@ export default function NumerologyPage() {
               Guidance
             </TabsTrigger>
             <TabsTrigger 
+              value="quick-guidance" 
+              className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
+            >
+              Quick guidance
+            </TabsTrigger>
+            <TabsTrigger 
               value="ask-the-seer" 
               className="shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 transition-all flex items-center justify-center border border-transparent data-[state=inactive]:border-slate-600/50"
             >
@@ -392,7 +400,7 @@ export default function NumerologyPage() {
             {user?.uid && numerologyData ? (
               <NumerologySeerChatInterface
                 userId={user.uid}
-                userProfile={userProfile}
+                userProfile={userProfile as unknown as Record<string, unknown>}
                 numerologyData={{
                   lifePathNumber: toIntegerOrUndefined(numerologyData.life_path_number ?? numerologyData.life_path),
                   expressionNumber: toIntegerOrUndefined(numerologyData.expression_number),
@@ -403,7 +411,7 @@ export default function NumerologyPage() {
                   maturityNumber: toIntegerOrUndefined(numerologyData.maturity_number),
                   personalYearNumber: toIntegerOrUndefined((numerologyData as Record<string, unknown>).personal_year_number)
                 }}
-                comprehensiveReport={comprehensiveReport}
+                comprehensiveReport={comprehensiveReport ?? undefined}
               />
             ) : (
               <Card className="bg-slate-900/50 border-amber-500/50 backdrop-blur-sm rounded-xl" elevation={1}>
@@ -992,6 +1000,19 @@ export default function NumerologyPage() {
               colorScheme="cyan"
               variant="callout"
             />
+            </motion.div>
+          </TabsContent>
+
+          <TabsContent value="quick-guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+            >
+              <NumerologyPracticalGuidance
+                anchorNumber={toIntegerOrNull(numerologyData?.life_path_number ?? numerologyData?.life_path)}
+                heading="Numerology practical fixes"
+              />
             </motion.div>
           </TabsContent>
               </div>

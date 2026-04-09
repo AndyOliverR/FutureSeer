@@ -291,7 +291,7 @@ export function buildToolTeaser(toolSlug: string, report: unknown): ToolTeaserPa
       archetypeName: 'Qi Harmonizer',
       rarityLabel: `Top ${pct}%`,
       hookLine,
-      subLine: 'Unlock Bagua, room guidance, cures, full report, and Ask the Seer.',
+      subLine: 'Unlock Bagua, room guidance, cures, quick fixes, full report, and Ask the Seer.',
       patternName: null,
     }
   }

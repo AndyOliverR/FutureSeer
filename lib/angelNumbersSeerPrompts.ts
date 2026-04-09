@@ -4,6 +4,7 @@
  */
 
 import type { AngelNumberQuestionType } from '@/lib/angelNumbersSeerState';
+import { NUMEROLOGY_PRACTICAL_SLICE_BULLETS } from '@/lib/numerology/practicalGuides';
 
 /**
  * Build the Angel Numbers Seer system prompt: role, tiers, rules, app-launch example.
@@ -39,6 +40,9 @@ ${slice}
 
 ## Question type
 ${questionType}
+
+## Practical guidance themes (supportive only)
+${NUMEROLOGY_PRACTICAL_SLICE_BULLETS}
 
 Answer the user's question with specific references to the state above. Frame answers with meaning (theme), guidance, emotional_tone (reassurance/direction), and suggested_response when relevant.`;
 }

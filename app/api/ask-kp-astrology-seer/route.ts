@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import { buildKPSeerSystemPrompt } from '@/lib/kpSeerPrompts';
@@ -10,10 +11,28 @@ import {
 } from '@/lib/kpSeerState';
 import type { KPAnalysis } from '@/lib/kpAstrologyIntelligence';
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-kp-astrology-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
+
 interface KPSeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
+  userProfile?: unknown;
   kpAnalysis?: KPAnalysis | null;
   sessionId?: string;
 }
@@ -28,13 +47,21 @@ function getRefusalMessage(): string {
 const CLARIFICATION_TIMING_MESSAGE =
   "To give timing in KP astrology, I need the exact outcome you're asking about. For example: 'Will my app launch succeed, and when?'";
 
+function getDisplayName(userProfile: unknown): string | undefined {
+  if (!userProfile || typeof userProfile !== 'object') return undefined;
+  const displayName = (userProfile as Record<string, unknown>).displayName;
+  if (typeof displayName !== 'string') return undefined;
+  const trimmed = displayName.trim();
+  return trimmed || undefined;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: KPSeerRequest = await request.json();
     const { userId, question, userProfile, kpAnalysis } = body;
 
     if (!userId || !question?.trim()) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: 'Missing required parameters: userId or question',
@@ -51,7 +78,7 @@ export async function POST(request: NextRequest) {
     const hasTiming = !!kpAnalysis?.timingAnalysis;
 
     if (!kpAnalysis || !hasCusps || !hasTiming) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -67,7 +94,7 @@ export async function POST(request: NextRequest) {
     try {
       state = buildKPChartState(kpAnalysis, question.trim());
     } catch {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -88,10 +115,11 @@ export async function POST(request: NextRequest) {
 
     if (questionType === 'refusal') {
       const refusalText = getRefusalMessage();
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode(refusalText));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -106,10 +134,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (questionType === 'clarification_timing') {
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode(CLARIFICATION_TIMING_MESSAGE));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -129,9 +158,9 @@ export async function POST(request: NextRequest) {
       kpAnalysis
     );
 
-    const displayName = (userProfile?.displayName ?? '').trim();
+    const displayName = getDisplayName(userProfile);
     const systemPrompt = buildKPSeerSystemPrompt(chartSlice, questionType, {
-      displayName: displayName || undefined,
+      displayName,
     });
 
     const userMessage = question.trim();
@@ -146,7 +175,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 800,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -164,6 +193,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -182,7 +212,7 @@ export async function POST(request: NextRequest) {
       error,
       'ask-kp-astrology-seer'
     );
-    return new Response(
+    return withRobotsResponse(
       JSON.stringify({
         success: false,
         error:

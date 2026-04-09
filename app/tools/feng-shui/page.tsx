@@ -25,6 +25,7 @@ import {
   BookOpen,
   MessageCircle,
   Users,
+  ListChecks,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -38,6 +39,7 @@ import BaguaMap from "@/components/fengshui/BaguaMap"
 import RoomGuidance from "@/components/fengshui/RoomGuidance"
 import ElementBalance from "@/components/fengshui/ElementBalance"
 import FengShuiCures from "@/components/fengshui/FengShuiCures"
+import FengShuiPracticalGuides from "@/components/fengshui/FengShuiPracticalGuides"
 import FengShuiReport from "@/components/fengshui/FengShuiReport"
 import CompassHelper from "@/components/fengshui/CompassHelper"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -52,6 +54,7 @@ const tabs = [
   { id: 'elements', label: 'Element Balance', icon: Sparkles },
   { id: 'report', label: 'Full Report', icon: BookOpen },
   { id: 'cures', label: 'Cures & Remedies', icon: Shield },
+  { id: 'quick-fixes', label: 'Quick fixes', icon: ListChecks },
   { id: 'ask-seer', label: 'Ask The Seer', icon: MessageCircle }
 ]
 
@@ -562,6 +565,10 @@ export default function FengShuiPage() {
 
                   <TabsContent value="cures" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                     <FengShuiCures cures={reading.cures} />
+                  </TabsContent>
+
+                  <TabsContent value="quick-fixes" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <FengShuiPracticalGuides wealthTips={reading.wealthTips} />
                   </TabsContent>
                     </div>
                   </div>

@@ -18,14 +18,14 @@ interface KabbalisticMessage {
 interface KabbalisticNumerologyCoachInterfaceProps {
   analysis: SimplifiedKabbalisticAnalysis | null
   variant?: "dark" | "light"
-  userProfile?: any
+  userProfile?: Record<string, unknown>
 }
 
 const KABBALISTIC_STARTER_QUESTIONS = [
-  'What does my Kabbalistic numerology say about my soul path?',
-  'Why do I keep facing similar challenges?',
-  'What inner lesson am I meant to learn?',
-  'How does my name influence my life direction?',
+  'What practical power word best supports my soul number this week?',
+  'Which recurring block can I correct now based on my name vibration?',
+  'What grounded wealth habits align with my inner lesson?',
+  'How should I apply my Kabbalistic insights in a daily checklist?',
 ]
 
 export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark", userProfile }: KabbalisticNumerologyCoachInterfaceProps) {
@@ -204,7 +204,7 @@ export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark"
         <div>
           <h3 className={headerTitleClass}>Ask the Seer — Kabbalistic Numerology</h3>
           <p className={headerSubtitleClass}>
-            I'll interpret your name and numbers through Kabbalistic principles to reveal soul lessons, challenges, and spiritual strengths.
+            I&apos;ll interpret your name and numbers through Kabbalistic principles to reveal soul lessons, challenges, and spiritual strengths.
           </p>
         </div>
         {messages.length > 0 && (
@@ -230,7 +230,7 @@ export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark"
                 Ask me anything about your soul numbers and inner patterns…
               </p>
               <p className={isLight ? "text-slate-600 text-sm mb-4" : "text-slate-400 text-sm mb-4"}>
-                I'll interpret your name and numbers through Kabbalistic principles to reveal soul lessons, challenges, and spiritual strengths.
+                I&apos;ll interpret your name and numbers through Kabbalistic principles to reveal soul lessons, challenges, and spiritual strengths.
               </p>
               <p className={isLight ? "text-slate-700 text-sm font-medium mb-2" : "text-slate-300 text-sm font-medium mb-2"}>
                 You can ask about:

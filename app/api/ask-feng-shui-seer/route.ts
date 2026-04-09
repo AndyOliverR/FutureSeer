@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import { buildFengShuiSeerSystemPrompt } from '@/lib/fengShuiSeerPrompts';
@@ -10,12 +11,30 @@ import {
 } from '@/lib/fengShuiSeerState';
 import type { FengShuiAnalysis } from '@/lib/fengshui/fengShuiService';
 
+const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
+const SEER_MARKER_FAMILY = 'ask-feng-shui-seer';
+
+function stampText(text: string): string {
+  return appendAttribution(text, { markerFamily: SEER_MARKER_FAMILY });
+}
+
+function appendAttributionTail(controller: ReadableStreamDefaultController<Uint8Array>): void {
+  controller.enqueue(new TextEncoder().encode(stampText('')));
+}
+
+function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+  headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+  return new Response(body ?? null, { ...init, headers });
+}
+
+
 interface FengShuiSeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
+  userProfile?: unknown;
   fengShuiAnalysis?: FengShuiAnalysis | null;
-  comprehensiveProfile?: any;
+  comprehensiveProfile?: Record<string, unknown>;
   sessionId?: string;
   /** User-provided facing direction (e.g. North, East). Enables layout-aware advice. */
   facing_direction?: string;
@@ -23,6 +42,24 @@ interface FengShuiSeerRequest {
   layout?: { main_door?: string; bedroom?: string; kitchen?: string; toilet?: string };
   property_type?: string;
   usage?: string;
+}
+
+function getDisplayName(userProfile: unknown): string | undefined {
+  if (!userProfile || typeof userProfile !== 'object') return undefined;
+  const displayName = (userProfile as Record<string, unknown>).displayName;
+  if (typeof displayName !== 'string') return undefined;
+  const trimmed = displayName.trim();
+  return trimmed || undefined;
+}
+
+function isFengShuiAnalysis(value: unknown): value is FengShuiAnalysis {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'kua' in value &&
+    typeof (value as { kua?: unknown }).kua === 'object' &&
+    (value as { kua?: unknown }).kua !== null
+  );
 }
 
 const ANALYSIS_REQUIRED_MESSAGE =
@@ -39,20 +76,25 @@ export async function POST(request: NextRequest) {
       userId,
       question,
       userProfile,
-      fengShuiAnalysis: bodyAnalysis,
       facing_direction,
       layout,
       property_type,
       usage,
     } = body;
-    let fengShuiAnalysis = body.fengShuiAnalysis;
+    let fengShuiAnalysis = isFengShuiAnalysis(body.fengShuiAnalysis)
+      ? body.fengShuiAnalysis
+      : null;
     if (!fengShuiAnalysis && body.comprehensiveProfile) {
       const cp = body.comprehensiveProfile;
-      fengShuiAnalysis = cp.fengShui ?? cp['Feng Shui'] ?? cp.vastu ?? cp['Vastu'];
+      const fallbackAnalysis =
+        cp.fengShui ?? cp['Feng Shui'] ?? cp.vastu ?? cp['Vastu'];
+      if (isFengShuiAnalysis(fallbackAnalysis)) {
+        fengShuiAnalysis = fallbackAnalysis;
+      }
     }
 
     if (!userId || !question?.trim()) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: 'Missing required parameters: userId or question',
@@ -67,7 +109,7 @@ export async function POST(request: NextRequest) {
     const hasKua = fengShuiAnalysis?.kua != null;
 
     if (!fengShuiAnalysis || !hasKua) {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -88,7 +130,7 @@ export async function POST(request: NextRequest) {
         usage,
       });
     } catch {
-      return new Response(
+      return withRobotsResponse(
         JSON.stringify({
           success: false,
           error: ANALYSIS_REQUIRED_MESSAGE,
@@ -109,10 +151,11 @@ export async function POST(request: NextRequest) {
 
     if (questionType === 'refusal') {
       const refusalText = getRefusalMessage();
-      return new Response(
+      return withRobotsResponse(
         new ReadableStream({
           start(controller) {
             controller.enqueue(new TextEncoder().encode(refusalText));
+            appendAttributionTail(controller);
             controller.close();
           },
         }),
@@ -132,9 +175,9 @@ export async function POST(request: NextRequest) {
       fengShuiAnalysis
     );
 
-    const displayName = (userProfile?.displayName ?? '').trim();
+    const displayName = getDisplayName(userProfile);
     const systemPrompt = buildFengShuiSeerSystemPrompt(slice, questionType, {
-      displayName: displayName || undefined,
+      displayName,
     });
 
     const userMessage = question.trim();
@@ -149,7 +192,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 800,
     });
 
-    return new Response(
+    return withRobotsResponse(
       new ReadableStream({
         async start(controller) {
           try {
@@ -167,6 +210,7 @@ export async function POST(request: NextRequest) {
               )
             );
           } finally {
+            appendAttributionTail(controller);
             controller.close();
           }
         },
@@ -185,7 +229,7 @@ export async function POST(request: NextRequest) {
       error,
       'ask-feng-shui-seer'
     );
-    return new Response(
+    return withRobotsResponse(
       JSON.stringify({
         success: false,
         error:

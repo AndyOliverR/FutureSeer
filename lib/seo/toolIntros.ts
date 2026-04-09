@@ -118,6 +118,9 @@ export function buildToolMetadata(slug: PriorityToolSlug): Metadata {
   return {
     title: b.title,
     description: b.description,
+    creator: "FutureSeer",
+    publisher: "FutureSeer",
+    authors: [{ name: "FutureSeer", url: "https://futureseer.app" }],
     alternates: { canonical: `${site}${b.path}` },
     openGraph: {
       title: b.title.replace(" | FutureSeer", "") + " | FutureSeer",
@@ -125,6 +128,17 @@ export function buildToolMetadata(slug: PriorityToolSlug): Metadata {
       url: `${site}${b.path}`,
       siteName: "FutureSeer",
       type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: b.title.replace(" | FutureSeer", "") + " | FutureSeer",
+      description: b.description,
+      site: "@futureseerapp",
+      creator: "@futureseerapp",
+    },
+    other: {
+      copyright: "FutureSeer (futureseer.app)",
+      source: "futureseer.app",
     },
   }
 }
