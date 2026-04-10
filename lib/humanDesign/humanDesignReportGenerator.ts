@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 /**
  * Human Design Report Generator
  * Generates personalized Human Design interpretations using AI

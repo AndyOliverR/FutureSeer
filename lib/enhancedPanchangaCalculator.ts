@@ -421,8 +421,8 @@ function getAccurateSunriseSunset(date: string, latitude: number, longitude: num
   devLog.debug('  longitudeCorrection:', longitudeCorrection);
   
   // Normalize to 0-24 range and handle edge cases
-  let normalizeSunriseLocal = ((sunriseLocal % 24) + 24) % 24;
-  let normalizeSunsetLocal = ((sunsetLocal % 24) + 24) % 24;
+  const normalizeSunriseLocal = ((sunriseLocal % 24) + 24) % 24;
+  const normalizeSunsetLocal = ((sunsetLocal % 24) + 24) % 24;
   
   // Validate and clamp values to ensure they're in valid ranges
   const sunriseHour = Math.max(0, Math.min(23, Math.floor(normalizeSunriseLocal)));

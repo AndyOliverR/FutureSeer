@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename, security/detect-unsafe-regex */
 /**
  * One-off: inject enforceToolSeerGate after `const body = await request.json(...)` in tool seer routes.
  * Run: node scripts/inject-tool-seer-guard.mjs

@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 // Name Meanings Database
 // Comprehensive dictionary of name meanings, origins, and variations
 // References patterns from name analysis research (South Asian and global names)

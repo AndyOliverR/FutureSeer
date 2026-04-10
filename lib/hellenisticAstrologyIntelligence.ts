@@ -459,7 +459,7 @@ function calculatePartOfFortune(sunLongitude: number, moonLongitude: number, asc
                  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
   const ascIndex = signs.indexOf(getTropicalSign(ascendantLongitude));
   const partIndex = signs.indexOf(sign);
-  let house = ((partIndex - ascIndex + 12) % 12) + 1;
+  const house = ((partIndex - ascIndex + 12) % 12) + 1;
   
   return {
     name: 'Part of Fortune',
@@ -493,7 +493,7 @@ function calculatePartOfSpirit(sunLongitude: number, moonLongitude: number, asce
                  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
   const ascIndex = signs.indexOf(getTropicalSign(ascendantLongitude));
   const partIndex = signs.indexOf(sign);
-  let house = ((partIndex - ascIndex + 12) % 12) + 1;
+  const house = ((partIndex - ascIndex + 12) % 12) + 1;
   
   return {
     name: 'Part of Spirit',
@@ -515,7 +515,7 @@ function determineSect(sunLongitude: number, ascendantLongitude: number, latitud
   const sunIndex = signs.indexOf(getTropicalSign(sunLongitude));
   
   // Calculate approximate house of Sun
-  let sunHouse = ((sunIndex - ascIndex + 12) % 12) + 1;
+  const sunHouse = ((sunIndex - ascIndex + 12) % 12) + 1;
   
   // Day chart: Sun in houses 7-12 (above horizon)
   // Night chart: Sun in houses 1-6 (below horizon)

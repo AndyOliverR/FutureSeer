@@ -1236,9 +1236,9 @@ function generateCoachingInsights(
   let currentFocus = userProfile ?
     `Focus on maintaining harmony and balance in the space, aligned with birth chart` :
     'Focus on maintaining harmony and balance in the space';
-  let recommendations_list: string[] = [];
-  let affirmations: string[] = [];
-  let nextSteps: string[] = [];
+  const recommendations_list: string[] = [];
+  const affirmations: string[] = [];
+  const nextSteps: string[] = [];
   
   if (criticalIssues.length > 0) {
     currentFocus = userProfile ?

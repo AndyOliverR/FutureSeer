@@ -3418,7 +3418,7 @@ export interface UniversalDivinationData {
 
 
 
-  dreamSymbols: {
+  dreamSymbols: Record<string, unknown>,
 
 
 
@@ -3473,7 +3473,7 @@ export interface UniversalDivinationData {
 
 
 
-  },
+  
 
   // Low Priority Systems (Specialized insights)
 

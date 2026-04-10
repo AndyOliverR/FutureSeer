@@ -458,10 +458,12 @@ export const ENERGY_BALANCING_TECHNIQUES: EnergyBalancingTechnique[] = [
   }
 ];
 
-export default {
+const energyHealingData = {
   CHAKRA_DATA,
   AURA_LAYERS,
   REIKI_SYMBOLS,
   CRYSTAL_DATABASE,
   ENERGY_BALANCING_TECHNIQUES
 };
+
+export default energyHealingData;

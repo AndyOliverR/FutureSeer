@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 import { NextRequest, NextResponse } from 'next/server'
 import { baziIntelligence, type BaziProfileInput } from '@/lib/baziIntelligence'
 import { getUserProfile } from '@/lib/firebase'

@@ -313,7 +313,7 @@ export class TimingAnalyzer {
     const yearEnd = new Date(year, 11, 31);
     
     // Calculate all Antardashas that fall within this year
-    let currentDate = new Date(yearStart);
+    const currentDate = new Date(yearStart);
     
     while (currentDate <= yearEnd) {
       const antardasha = this.calculateAntardashaForDate(currentDate);

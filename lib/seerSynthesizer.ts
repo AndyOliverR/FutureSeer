@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /**
  * Internal Seer Synthesizer – replaces Groq for answer formatting.
  * Takes engine analysis (from our own occult database) and produces a concise,

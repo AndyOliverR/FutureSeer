@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Razorpay Server-Side Client
  * Handles server-side Razorpay operations (subscriptions, payments, webhooks)

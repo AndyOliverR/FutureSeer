@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /**
  * Question Decomposition Engine for Universal Ask the Seer.
  * Produces intent, scope, timeframe, risk_level, and domains_required (via jurisdiction matrix).

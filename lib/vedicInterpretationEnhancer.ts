@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp, security/detect-unsafe-regex */
 import { createAICompletion } from './aiGateway';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';

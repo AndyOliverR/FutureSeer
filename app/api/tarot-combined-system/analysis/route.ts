@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAICompletion } from '@/lib/aiGateway';

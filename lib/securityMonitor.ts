@@ -278,7 +278,7 @@ export const securityEvents = {
 
 // Middleware to automatically log security events
 export function withSecurityLogging(
-  handler: Function,
+  handler: (request: Request, ...args: any[]) => Promise<Response>,
   eventType: SecurityEvent['eventType'] = 'data_access'
 ) {
   return async (request: Request, ...args: any[]) => {
