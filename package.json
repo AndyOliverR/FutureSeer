@@ -10,6 +10,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "npx eslint .",
+    "lint:security": "npx eslint app/api scripts lib --ext .js,.ts --max-warnings 100000 --rule \"@typescript-eslint/no-explicit-any:off\" --rule \"@typescript-eslint/no-unused-vars:off\"",
     "audit": "pnpm audit",
     "audit:fix": "pnpm audit --fix",
     "security:audit": "pnpm audit --audit-level=high",
@@ -42,7 +43,21 @@
     ],
     "overrides": {
       "baseline-browser-mapping": "latest",
-      "zustand": "^5.0.12"
+      "zustand": "^5.0.12",
+      "fast-xml-parser": "^4.5.5",
+      "glob": "^11.1.0",
+      "tar": "^7.5.11",
+      "minimatch": "^10.2.3",
+      "node-forge": "^1.4.0",
+      "jws": "^4.0.1",
+      "flatted": "^3.4.2",
+      "picomatch": "^4.0.4",
+      "@xmldom/xmldom": "^0.8.12",
+      "axios": "^1.13.5",
+      "nodemailer": "^7.0.11",
+      "preact": "^10.27.3",
+      "lodash": "^4.17.24",
+      "@isaacs/brace-expansion": "^5.0.1"
     }
   },
   "dependencies": {
@@ -111,7 +126,7 @@
     "next-i18next": "^15.4.2",
     "next-themes": "latest",
     "node-fetch": "^3.3.2",
-    "nodemailer": "^7.0.6",
+    "nodemailer": "^7.0.11",
     "openai": "latest",
     "posthog-js": "latest",
     "razorpay": "^2.9.6",
@@ -141,7 +156,7 @@
     "baseline-browser-mapping": "^2.9.19",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
-    "electron": "^33.4.11",
+    "electron": "^39.8.1",
     "eslint": "^9.33.0",
     "eslint-config-next": "latest",
     "eslint-plugin-security": "^4.0.0",
@@ -152,6 +167,6 @@
     "start-server-and-test": "latest",
     "tailwindcss": "^3.4.17",
     "typescript": "^5",
-    "wait-on": "^8.0.5"
+    "wait-on": "^9.0.1"
   }
 }

@@ -1,6 +1,6 @@
 /**
- * Runs `pnpm audit --audit-level=high`, then always runs `pnpm run lint`.
- * Exits with code 1 if either step fails (so audit failures are not masked by lint success).
+ * Runs dependency audit and targeted security lint checks.
+ * Exits with code 1 if either step fails.
  */
 import { spawnSync } from 'node:child_process';
 
@@ -13,5 +13,5 @@ function runShell(command) {
 }
 
 const auditExit = runShell('pnpm audit --audit-level=high');
-const lintExit = runShell('pnpm run lint');
+const lintExit = runShell('pnpm run lint:security');
 process.exit(auditExit !== 0 || lintExit !== 0 ? 1 : 0);

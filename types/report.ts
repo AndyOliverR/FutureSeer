@@ -39,7 +39,7 @@ export interface ReportSchema {
   }[];
   panchang_snapshot?: { 
     dateISO: string; 
-    data: any 
+    data: unknown 
   }; // store last fetched panchang for UX
 }
 
@@ -55,16 +55,16 @@ export interface ChartGenerationRequest {
 }
 
 export interface FreeAstrologyAPIResponse {
-  planets?: any;
-  planetsExtended?: any;
+  planets?: unknown;
+  planetsExtended?: unknown;
   rasiSvg?: string;
   navamsaSvg?: string;
-  navamsaInfo?: any;
+  navamsaInfo?: unknown;
   vargaSvgs?: Record<string, string>;
-  shadbalaSummary?: any;
-  shadbalaBreakup?: any;
-  dashaMaha?: any;
-  dashaByDate?: any;
-  panchang?: any;
+  shadbalaSummary?: unknown;
+  shadbalaBreakup?: unknown;
+  dashaMaha?: unknown;
+  dashaByDate?: unknown;
+  panchang?: unknown;
 }
 

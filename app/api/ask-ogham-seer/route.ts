@@ -55,7 +55,7 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, question, userProfile, sessionId } = body;
+    const { question } = body;
     let oghamReport = body.oghamReport;
     if (!oghamReport && body.comprehensiveProfile) {
       oghamReport = body.comprehensiveProfile.ogham ?? body.comprehensiveProfile['Ogham'];

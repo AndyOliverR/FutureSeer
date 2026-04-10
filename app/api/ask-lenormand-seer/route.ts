@@ -55,21 +55,40 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 
 /** Normalize reading from request to LenormandReadingPayload. */
-function normalizeToLenormandPayload(reading: any): LenormandReadingPayload {
-  if (!reading?.question && !reading?.cards?.length) {
+function normalizeToLenormandPayload(reading: unknown): LenormandReadingPayload {
+  const r =
+    reading && typeof reading === 'object' && !Array.isArray(reading)
+      ? (reading as Record<string, unknown>)
+      : null;
+  if (!r) {
+    throw new Error(
+      'Lenormand requires a reading. Perform a reading first to use Ask the Seer.'
+    );
+  }
+  const cardsRaw = Array.isArray(r.cards) ? r.cards : [];
+  const q = r.question;
+  if ((!q || typeof q !== 'string' || !q.trim()) && cardsRaw.length === 0) {
     throw new Error(
       'Lenormand requires a reading. Perform a reading first to use Ask the Seer.'
     );
   }
   return {
-    question: reading.question ?? '',
-    spreadType: reading.spreadType ?? reading.spread_type ?? 'three',
-    cards: (reading.cards ?? []).map((c: any) => ({
-      name: c.name ?? '',
-      number: c.number,
-      keywords: c.keywords,
-    })),
-    positions: reading.positions ?? [],
+    question: typeof q === 'string' ? q : '',
+    spreadType: String(r.spreadType ?? r.spread_type ?? 'three'),
+    cards: cardsRaw.map((c) => {
+      const row = c && typeof c === 'object' && !Array.isArray(c) ? (c as Record<string, unknown>) : {};
+      const kw = row.keywords;
+      const keywords =
+        Array.isArray(kw) ? kw.filter((x): x is string => typeof x === 'string') : undefined;
+      return {
+        name: typeof row.name === 'string' ? row.name : '',
+        number: typeof row.number === 'number' ? row.number : undefined,
+        keywords,
+      };
+    }),
+    positions: Array.isArray(r.positions)
+      ? r.positions.filter((x): x is string => typeof x === 'string')
+      : [],
   };
 }
 
@@ -159,7 +178,7 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
     const stream = await createAIStream({

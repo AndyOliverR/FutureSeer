@@ -68,7 +68,6 @@ export async function GET(request: NextRequest) {
       if (!Number.isNaN(t)) list = list.filter((x) => (x.timestamp ?? 0) <= t);
     }
 
-    const total = list.length;
     const start = pageToken ? Math.max(0, list.findIndex((x) => x.id === pageToken) + 1) : 0;
     const sliceList = list.slice(start, start + limit);
     const nextPageToken = list[start + limit] ? (list[start + limit] as { id: string }).id : undefined;

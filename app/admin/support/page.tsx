@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, Loader2, Send, Star, Image, ExternalLink, ChevronLeft, Sparkles } from 'lucide-react'
+import { MessageSquare, Loader2, Send, Star, ImageIcon, ExternalLink, ChevronLeft, Sparkles } from 'lucide-react'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 
 function formatDate(ms?: number | null): string {
@@ -380,7 +381,7 @@ export default function AdminSupportPage() {
               {s.screenshots && s.screenshots.length > 0 && (
                 <div className="flex flex-col gap-2 pt-2">
                   <span className="text-xs text-slate-400 flex items-center gap-1">
-                    <Image className="w-3 h-3" /> Screenshots:
+                    <ImageIcon className="w-3 h-3" aria-hidden="true" /> Screenshots:
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {s.screenshots.map((url, i) => (
@@ -391,9 +392,12 @@ export default function AdminSupportPage() {
                         rel="noopener noreferrer"
                         className="block rounded border border-slate-600 overflow-hidden hover:border-slate-500 bg-slate-800/80"
                       >
-                        <img
+                        <Image
                           src={url}
                           alt={`Screenshot ${i + 1}`}
+                          width={200}
+                          height={150}
+                          unoptimized
                           className="max-w-[200px] max-h-[150px] object-contain rounded"
                           referrerPolicy="no-referrer"
                         />

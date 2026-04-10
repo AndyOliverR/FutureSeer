@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
-import { doc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { createAIStream } from '@/lib/aiGateway';
 import { parseDatesFromQuestion, formatDateForContext } from '@/lib/dateParser';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
@@ -53,38 +53,69 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 }
 
 
+type WesternChartPlanet = {
+  name?: string;
+  sign?: { signName?: string } | string;
+  house?: number | string;
+  degree?: number;
+  isRetrograde?: boolean;
+};
+
+type WesternChartData = Record<string, unknown> & {
+  planets?: WesternChartPlanet[];
+  houses?: Array<{
+    sign?: { signName?: string } | string;
+    signName?: string;
+    degree?: number;
+  }>;
+  aspects?: Array<{
+    strength?: number;
+    orb?: number;
+    type?: string;
+    planet1?: string;
+    planet2?: string;
+  }>;
+  transits?:
+    | Array<Record<string, unknown> & { name?: string; sign?: string; degree?: number; isRetrograde?: boolean; house?: number }>
+    | { favorable?: string[]; challenging?: string[] };
+};
+
+type WesternTransitRow = Record<string, unknown> & {
+  name?: string;
+  sign?: string;
+  degree?: number;
+  isRetrograde?: boolean;
+  house?: number;
+};
+
 interface WesternSeerRequest {
   userId: string;
   question: string;
-  userProfile: any;
-  westernChartData: any; // Accept pre-generated Western chart data
+  userProfile: Record<string, unknown>;
+  westernChartData: WesternChartData;
   astroNumerologyData?: {
     sunSign: string;
     lifePathNumber: number;
     nameNumber: number;
-    comprehensiveReport?: any; // Full comprehensive report if available
+    comprehensiveReport?: Record<string, unknown>;
   };
   sessionId?: string;
 }
 
-interface WesternSeerResponse {
-  success: boolean;
-  data: {
-    answer: string;
-    confidence: number;
-    chartReferences: {
-      planets: string[];
-      houses: number[];
-      aspects: string[];
-      signs: string[];
-    };
-    timing: {
-      favorable: string[];
-      challenging: string[];
-    };
-    followUpQuestions: string[];
+interface WesternSeerStoredPayload {
+  answer: string;
+  confidence: number;
+  chartReferences: {
+    planets: string[];
+    houses: number[];
+    aspects: string[];
+    signs: string[];
   };
-  error?: string;
+  timing: {
+    favorable: string[];
+    challenging: string[];
+  };
+  followUpQuestions: string[];
 }
 
 export async function POST(request: NextRequest) {
@@ -111,10 +142,18 @@ export async function POST(request: NextRequest) {
     let numerologyData = astroNumerologyData;
     if (!numerologyData && userProfile?.birthDate && userProfile?.displayName) {
       try {
-        const sunSign = westernChartData.planets?.find((p: any) => p.name === 'Sun')?.sign?.signName || 
-                       westernChartData.planets?.find((p: any) => p.name === 'Sun')?.sign || 'Unknown';
-        const lifePathNumber = calculateLifePathNumber(userProfile.birthDate);
-        const fullName = userProfile.displayName || userProfile.fullName || '';
+        const sunPlanet = westernChartData.planets?.find((p) => p.name === 'Sun');
+        const sunSignRaw = sunPlanet?.sign;
+        const sunSign =
+          typeof sunSignRaw === 'string'
+            ? sunSignRaw
+            : sunSignRaw && typeof sunSignRaw === 'object' && 'signName' in sunSignRaw
+              ? String((sunSignRaw as { signName?: string }).signName ?? 'Unknown')
+              : 'Unknown';
+        const lifePathNumber = calculateLifePathNumber(
+          typeof userProfile.birthDate === 'string' ? userProfile.birthDate : String(userProfile.birthDate ?? '')
+        );
+        const fullName = String(userProfile.displayName ?? userProfile.fullName ?? '');
         const nameNumber = calculateDestinyNumber(fullName);
         
         numerologyData = {
@@ -133,8 +172,8 @@ export async function POST(request: NextRequest) {
 
     // Parse dates from question for future transit calculations
     const parsedDates = parseDatesFromQuestion(question);
-    let futureTransits: any[] | null = null;
-    let futureTransitsByDate: Array<{ date: string; transits: any[] }> | null = null;
+    let futureTransits: WesternTransitRow[] | null = null;
+    let futureTransitsByDate: Array<{ date: string; transits: WesternTransitRow[] }> | null = null;
 
     const isFullYearRange = parsedDates?.endDate && parsedDates.isDateRange &&
       parsedDates.startDate.getUTCMonth() === 0 && parsedDates.startDate.getUTCDate() === 1 &&
@@ -146,11 +185,11 @@ export async function POST(request: NextRequest) {
       devLog.debug('📅 Start date:', formatDateForContext(parsedDates.startDate), 'ask-western-seer');
 
       const birthData: BirthData = {
-        birthDate: userProfile.birthDate || '',
-        birthTime: userProfile.birthTime || '',
-        birthPlace: userProfile.birthPlace || '',
-        latitude: userProfile.birthLatitude || 12.3051828,
-        longitude: userProfile.birthLongitude || 76.6553609
+        birthDate: String(userProfile.birthDate ?? ''),
+        birthTime: String(userProfile.birthTime ?? ''),
+        birthPlace: String(userProfile.birthPlace ?? ''),
+        latitude: Number(userProfile.birthLatitude) || 12.3051828,
+        longitude: Number(userProfile.birthLongitude) || 76.6553609
       };
 
       if (isFullYearRange) {
@@ -199,11 +238,11 @@ export async function POST(request: NextRequest) {
     } else if (!parsedDates && (questionType === 'timing' || questionType === 'career')) {
       // Default future transits for next 4 months when user asks about favorable period but does not specify a date
       const birthData: BirthData = {
-        birthDate: userProfile.birthDate || '',
-        birthTime: userProfile.birthTime || '',
-        birthPlace: userProfile.birthPlace || '',
-        latitude: userProfile.birthLatitude ?? 12.3051828,
-        longitude: userProfile.birthLongitude ?? 76.6553609
+        birthDate: String(userProfile.birthDate ?? ''),
+        birthTime: String(userProfile.birthTime ?? ''),
+        birthPlace: String(userProfile.birthPlace ?? ''),
+        latitude: Number(userProfile.birthLatitude) || 12.3051828,
+        longitude: Number(userProfile.birthLongitude) || 76.6553609
       };
       const now = new Date();
       const defaultDates = [
@@ -252,7 +291,7 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
     // Refusal: synastry requires partner chart — we only have the user's natal + transits
@@ -360,15 +399,21 @@ export async function POST(request: NextRequest) {
             await memory.saveAllMemory();
             
             // Also store in old format for backward compatibility
+            const transitSummary =
+              westernChartData.transits &&
+              typeof westernChartData.transits === 'object' &&
+              !Array.isArray(westernChartData.transits)
+                ? (westernChartData.transits as { favorable?: string[]; challenging?: string[] })
+                : null;
             await storeConversation(userId, sessionId, question, {
               answer: fullResponse,
               confidence: 0.90,
-              chartReferences: extractWesternChartReferences(fullResponse, westernChartData),
+              chartReferences: extractWesternChartReferences(fullResponse),
               timing: {
-                favorable: westernChartData.transits?.favorable || [],
-                challenging: westernChartData.transits?.challenging || []
+                favorable: transitSummary?.favorable ?? [],
+                challenging: transitSummary?.challenging ?? []
               },
-              followUpQuestions: generateWesternFollowUpQuestions(questionType, westernChartData, numerologyData)
+              followUpQuestions: generateWesternFollowUpQuestions(questionType, numerologyData)
             });
             
           } catch (error) {
@@ -495,87 +540,13 @@ function analyzeWesternQuestionType(question: string): string {
   return 'general';
 }
 
-// Build Western astrology context for AI
-function buildWesternAstrologyContext(westernChart: any, questionType: string, futureTransits?: any, parsedDates?: any): string {
-  const planets = westernChart.planets || [];
-  const houses = westernChart.houses || [];
-  const aspects = westernChart.aspects || [];
-  
-  // Extract key placements
-  const sunPlanet = planets.find((p: any) => p.name === 'Sun');
-  const moonPlanet = planets.find((p: any) => p.name === 'Moon');
-  const risingSign = houses[0]?.sign || houses[0]?.signName || 'Unknown';
-  
-  const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
-  const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
-  
-  let context = `# Western Astrology Chart Analysis
-
-## Core Identity (The Big Three)
-- **Sun Sign**: ${sunSign} (Core identity, ego, life purpose)
-- **Moon Sign**: ${moonSign} (Emotions, inner self, subconscious needs)
-- **Rising Sign (Ascendant)**: ${risingSign} (Outer personality, first impression, life approach)
-
-## Planetary Positions
-`;
-
-  // Add all planetary positions
-  planets.forEach((planet: any) => {
-    const sign = planet.sign?.signName || planet.sign || 'Unknown';
-    const house = planet.house || 'Unknown';
-    const degree = planet.degree?.toFixed(2) || '0';
-    const retrograde = planet.isRetrograde ? ' (Retrograde)' : '';
-    
-    context += `- **${planet.name}** in ${sign}, ${house}th house at ${degree}°${retrograde}\n`;
-  });
-
-  context += `\n## House Cusps\n`;
-  
-  // Add house information
-  houses.slice(0, 12).forEach((house: any, index: number) => {
-    const sign = house.sign?.signName || house.sign || 'Unknown';
-    const degree = house.degree?.toFixed(2) || '0';
-    
-    context += `- **House ${index + 1}**: ${sign} at ${degree}°\n`;
-  });
-
-  context += `\n## Major Aspects\n`;
-  
-  // Add significant aspects
-  const significantAspects = aspects.filter((a: any) => a.strength > 0.7 || a.orb < 3);
-  significantAspects.slice(0, 10).forEach((aspect: any) => {
-    const type = aspect.type || 'aspect';
-    const orb = aspect.orb?.toFixed(2) || '0';
-    
-    context += `- **${aspect.planet1} ${type} ${aspect.planet2}** (orb: ${orb}°)\n`;
-  });
-
-  // Add current transits if available
-  if (westernChart.transits && westernChart.transits.length > 0) {
-    context += `\n## Current Transits (Today)\n`;
-    westernChart.transits.slice(0, 5).forEach((transit: any) => {
-      const retrograde = transit.isRetrograde ? ' (Retrograde)' : '';
-      context += `- ${transit.name} in ${transit.sign} at ${transit.degree.toFixed(2)}°${retrograde}\n`;
-    });
-  }
-
-  // Add future transits if calculated
-  if (futureTransits && futureTransits.length > 0 && parsedDates) {
-    const futureDateStr = formatDateForContext(parsedDates.startDate);
-    context += `\n## Future Transits for ${futureDateStr}\n`;
-    context += `IMPORTANT: The user is asking about ${parsedDates.rawText}. Use these transits to answer their question.\n\n`;
-    
-    futureTransits.slice(0, 5).forEach((transit: any) => {
-      const retrograde = transit.isRetrograde ? ' (Retrograde)' : '';
-      context += `- ${transit.name} in ${transit.sign} at ${transit.degree.toFixed(2)}° (${transit.house}th house)${retrograde}\n`;
-    });
-  }
-
-  return context;
-}
-
 // Build Astro-Numerology context
-function buildAstroNumerologyContext(numerologyData: { sunSign: string; lifePathNumber: number; nameNumber: number; comprehensiveReport?: any }): string {
+function buildAstroNumerologyContext(numerologyData: {
+  sunSign: string;
+  lifePathNumber: number;
+  nameNumber: number;
+  comprehensiveReport?: Record<string, unknown>;
+}): string {
   const { sunSign, lifePathNumber, nameNumber, comprehensiveReport } = numerologyData;
   
   // Life Path Number meanings
@@ -625,27 +596,34 @@ The combination of your Sun Sign (${sunSign}), Life Path Number (${lifePathNumbe
 
   // Add comprehensive report sections if available
   if (comprehensiveReport) {
-    if (comprehensiveReport.personalitySynthesis) {
-      context += `\n## Personality Synthesis\n${comprehensiveReport.personalitySynthesis}\n`;
+    const str = (k: string) => {
+      const v = comprehensiveReport[k];
+      return typeof v === 'string' ? v : '';
+    };
+    const lines = (k: string) => {
+      const v = comprehensiveReport[k];
+      if (!Array.isArray(v)) return '';
+      return v.filter((x): x is string => typeof x === 'string').map((c) => `- ${c}`).join('\n');
+    };
+    if (str('personalitySynthesis')) {
+      context += `\n## Personality Synthesis\n${str('personalitySynthesis')}\n`;
     }
-    if (comprehensiveReport.careerGuidance) {
-      context += `\n## Career & Life Path Guidance\n${comprehensiveReport.careerGuidance}\n`;
+    if (str('careerGuidance')) {
+      context += `\n## Career & Life Path Guidance\n${str('careerGuidance')}\n`;
     }
-    if (comprehensiveReport.relationshipInsights) {
-      context += `\n## Relationship Dynamics\n${comprehensiveReport.relationshipInsights}\n`;
+    if (str('relationshipInsights')) {
+      context += `\n## Relationship Dynamics\n${str('relationshipInsights')}\n`;
     }
-    if (comprehensiveReport.lifePurpose) {
-      context += `\n## Life Purpose & Destiny\n${comprehensiveReport.lifePurpose}\n`;
+    if (str('lifePurpose')) {
+      context += `\n## Life Purpose & Destiny\n${str('lifePurpose')}\n`;
     }
-    if (comprehensiveReport.personalGrowth) {
-      context += `\n## Personal Growth Roadmap\n${comprehensiveReport.personalGrowth}\n`;
+    if (str('personalGrowth')) {
+      context += `\n## Personal Growth Roadmap\n${str('personalGrowth')}\n`;
     }
-    if (comprehensiveReport.challenges && comprehensiveReport.challenges.length > 0) {
-      context += `\n## Challenges\n${comprehensiveReport.challenges.map((c: string) => `- ${c}`).join('\\n')}\n`;
-    }
-    if (comprehensiveReport.opportunities && comprehensiveReport.opportunities.length > 0) {
-      context += `\n## Opportunities\n${comprehensiveReport.opportunities.map((o: string) => `- ${o}`).join('\\n')}\n`;
-    }
+    const ch = lines('challenges');
+    if (ch) context += `\n## Challenges\n${ch}\n`;
+    const op = lines('opportunities');
+    if (op) context += `\n## Opportunities\n${op}\n`;
   }
 
   return context;
@@ -717,8 +695,15 @@ ${hasNumerology ? `\n${numerologyContext}` : ''}
   return basePrompt + `\n## Question Type: ${questionType}\n${typeGuidance[questionType] || typeGuidance.general}`;
 }
 
+interface WesternChartRefExtraction {
+  planets: string[];
+  houses: number[];
+  aspects: string[];
+  signs: string[];
+}
+
 // Extract chart references from response
-function extractWesternChartReferences(response: string, westernChart: any): any {
+function extractWesternChartReferences(response: string): WesternChartRefExtraction {
   const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto'];
   const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
   const aspects = ['conjunction', 'square', 'trine', 'sextile', 'opposition'];
@@ -734,7 +719,10 @@ function extractWesternChartReferences(response: string, westernChart: any): any
 }
 
 // Generate follow-up questions
-function generateWesternFollowUpQuestions(questionType: string, westernChart: any, numerologyData?: any): string[] {
+function generateWesternFollowUpQuestions(
+  questionType: string,
+  numerologyData?: WesternSeerRequest['astroNumerologyData']
+): string[] {
   const hasNumerology = !!numerologyData;
   
   const followUps: Record<string, string[]> = {
@@ -808,25 +796,13 @@ function generateWesternFollowUpQuestions(questionType: string, westernChart: an
   return followUps[questionType] || followUps.general;
 }
 
-// Get conversation history
-async function getConversationHistory(userId: string, sessionId?: string): Promise<any[]> {
-  try {
-    const db = getFirebaseDB();
-    const session = sessionId || `session_${Date.now()}`;
-    
-    const messagesRef = collection(db, 'westernSeerConversations', userId, 'sessions', session, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(10));
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => doc.data()).reverse();
-  } catch (error) {
-    devLog.error('Error getting conversation history:', error);
-    return [];
-  }
-}
-
 // Store conversation
-async function storeConversation(userId: string, sessionId: string | undefined, question: string, response: any) {
+async function storeConversation(
+  userId: string,
+  sessionId: string | undefined,
+  question: string,
+  response: WesternSeerStoredPayload
+) {
   try {
     const db = getFirebaseDB();
     const session = sessionId || `session_${Date.now()}`;

@@ -6,7 +6,6 @@ const fs = require('fs');
 const path = require('path');
 
 const devLogImport = "import { devLog } from '@/lib/devLogger';";
-const devLogImportAlt = 'import { devLog } from "@/lib/devLogger";';
 
 function walk(dir, out) {
   try {
@@ -33,7 +32,7 @@ let changed = 0;
 for (const file of files) {
   let content = fs.readFileSync(file, 'utf8');
   const hasDevLog = content.includes("from '@/lib/devLogger'") || content.includes('from "@/lib/devLogger"');
-  let needImport = !hasDevLog;
+  const needImport = !hasDevLog;
 
   // Replace console.error( with devLog.error(
   content = content.replace(/console\.error\s*\(\s*([^,)]+)\s*,\s*([^)]+)\)/g, (_, msg, arg) => {
