@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
@@ -86,6 +87,9 @@ function buildBibliomancyContext(report: Record<string, unknown>): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_bibliomancy_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { question } = body;
     let bibliomancyReport = body.bibliomancyReport ?? body.bibliomancy;
     if (!bibliomancyReport && body.comprehensiveProfile) {

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
+import Link from "next/link"
 import { devLog } from '@/lib/devLogger';
 import { motion, AnimatePresence } from "framer-motion"
 import { useTranslation } from "react-i18next"
@@ -39,7 +40,39 @@ export default function SettingsPage() {
   } = useSettings()
 
   const [showDelete, setShowDelete] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
+
+  const handleDeleteAccount = useCallback(async () => {
+    if (!user) return
+    setDeleteError(null)
+    setDeleteBusy(true)
+    try {
+      const token = await user.getIdToken()
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ confirm: true }),
+      })
+      const data = (await res.json().catch(() => ({}))) as { error?: string }
+      if (!res.ok) {
+        setDeleteError(data.error || "Could not delete account. Please try again or contact support.")
+        setDeleteBusy(false)
+        return
+      }
+      setShowDelete(false)
+      await signOut()
+      window.location.href = "/"
+    } catch (e) {
+      devLog.error("Account delete failed:", e, "page")
+      setDeleteError("Something went wrong. Check your connection and try again.")
+      setDeleteBusy(false)
+    }
+  }, [user, signOut])
 
   // Memoized formatting functions for performance
   const formattedBirthDate = useMemo(
@@ -583,7 +616,12 @@ export default function SettingsPage() {
                 ) : (
                   <span className="text-red-400 text-sm">Expired</span>
                 )}
-                <span className={cn("text-sm", sublabelClass)}>Upgrade coming soon</span>
+                <Link
+                  href="/subscribe"
+                  className={cn("text-sm underline text-amber-400 hover:text-amber-300")}
+                >
+                  View plans & subscribe
+                </Link>
               </div>
             ) : (
               <span className={cn("text-sm", sublabelClass)}>No trial info</span>
@@ -627,10 +665,39 @@ export default function SettingsPage() {
                         : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
                     )}
                   >
-                    <div className="mb-2">Are you sure you want to delete your account? This action cannot be undone.</div>
-                    <div className="flex gap-4 justify-center mt-4">
-                      <Button variant="outline" className={btnOutlineClass} onClick={() => setShowDelete(false)}>Cancel</Button>
-                      <Button variant="destructive" className={cn(isMobileLayout ? "border border-red-500/40 bg-[var(--m3-surface-container)] text-red-400 text-sm rounded-xl" : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm transition-all duration-300")} disabled>Delete (Coming Soon)</Button>
+                    <div className="mb-2">
+                      Permanently delete your account, Firestore profile, community posts you authored, and sign-in access.
+                      This cannot be undone. Active subscriptions are cancelled when possible.
+                    </div>
+                    {deleteError && (
+                      <p className="text-red-300 text-xs mt-2" role="alert">
+                        {deleteError}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-4 justify-center mt-4">
+                      <Button
+                        variant="outline"
+                        className={btnOutlineClass}
+                        onClick={() => {
+                          setShowDelete(false)
+                          setDeleteError(null)
+                        }}
+                        disabled={deleteBusy}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        className={cn(
+                          isMobileLayout
+                            ? "border border-red-500/40 bg-[var(--m3-surface-container)] text-red-400 text-sm rounded-xl"
+                            : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm transition-all duration-300",
+                        )}
+                        disabled={deleteBusy}
+                        onClick={() => void handleDeleteAccount()}
+                      >
+                        {deleteBusy ? "Deleting…" : "Delete my account"}
+                      </Button>
                     </div>
                   </motion.div>
                 )}

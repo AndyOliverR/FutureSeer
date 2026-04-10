@@ -284,4 +284,9 @@ Do not force it if it sounds unnatural.${useNamePause ? "\nWhen using their name
 }
 
 /** Same AI budget as legacy OpenAI oracle route; IP-based id (body userId not available pre-parse). */
-export const POST = withRateLimit(handleSeerChatRequest, rateLimiters.ai, getClientIdentifier);
+export const POST = withRateLimit(
+  handleSeerChatRequest,
+  rateLimiters.ai,
+  'seer_chat_post',
+  getClientIdentifier,
+);

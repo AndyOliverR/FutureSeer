@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAIStream } from '@/lib/aiGateway';
@@ -106,6 +107,9 @@ function isGeomancyAnalysisData(value: unknown): value is GeomancyAnalysisData {
 export async function POST(request: NextRequest) {
   try {
     const body: GeomancySeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_geomancy_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, userProfile, sessionId } = body;
     let geomancyAnalysis = body.geomancyAnalysis;
     if (!geomancyAnalysis && body.comprehensiveProfile) {

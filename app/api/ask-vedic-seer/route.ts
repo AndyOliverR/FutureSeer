@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import {
@@ -103,8 +104,10 @@ function transitSummaryFromChart(
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, question, userProfile, vedicChartData, vedicNumerologyData, sessionId }: VedicSeerRequest =
-      await request.json();
+    const body = (await request.json()) as VedicSeerRequest;
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_vedic_seer');
+    if (__toolSeerGate) return __toolSeerGate;
+    const { userId, question, userProfile, vedicChartData, vedicNumerologyData, sessionId } = body;
 
     if (!userId || !question || !userProfile) {
       return jsonWithRobots(

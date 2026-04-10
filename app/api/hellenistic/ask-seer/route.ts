@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
 import {
@@ -22,8 +23,10 @@ const REFUSAL_MESSAGE =
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, question, userProfile, hellenisticContext, sessionId }: HellenisticSeerRequest =
-      await request.json();
+    const body = (await request.json()) as HellenisticSeerRequest;
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'hellenistic_ask_seer');
+    if (__toolSeerGate) return __toolSeerGate;
+    const { userId, question, userProfile, hellenisticContext, sessionId } = body;
 
     if (!question || !question.trim()) {
       return NextResponse.json(

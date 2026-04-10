@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAIStream } from '@/lib/aiGateway';
@@ -108,6 +109,9 @@ function getRefusalMessage(question: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body: NavaratnaSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_navaratna_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, sessionId } = body;
     let rawNavaratna: unknown = body.navaratnaAnalysis;
     if (!rawNavaratna && body.comprehensiveProfile) {

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
@@ -78,6 +79,9 @@ interface HumanDesignSeerRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: HumanDesignSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_human_design_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question: rawQuestion, userProfile } = body;
     let humanDesignChart = coerceHumanDesignChart(body.humanDesignChart);
     // Parse optional scope from question (injected by seer route after clarification)

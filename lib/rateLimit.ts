@@ -144,6 +144,13 @@ export const rateLimiters = {
     message:
       'Too many profile generation requests in a short period. Please try again in about an hour.',
   }),
+
+  /** POST /api/account/delete — destructive; per authenticated uid. */
+  accountDeletion: new RateLimiter({
+    windowMs: 24 * 60 * 60 * 1000,
+    maxRequests: 3,
+    message: 'Too many account deletion attempts. Try again tomorrow or contact support.',
+  }),
 };
 
 // Helper function to get client identifier
@@ -172,11 +179,13 @@ export type RateLimitedRouteHandler = (
 export function withRateLimit(
   handler: RateLimitedRouteHandler,
   limiter: RateLimiter = rateLimiters.api,
-  getIdentifier: (request: Request) => string = getClientIdentifier
+  firestoreBucketKey: string,
+  getIdentifier: (request: Request) => string = getClientIdentifier,
 ): (request: NextRequest, ...args: unknown[]) => Promise<Response> {
   return async (request: NextRequest, ...args: unknown[]): Promise<Response> => {
     const identifier = getIdentifier(request);
-    const result = limiter.check(identifier);
+    const { checkRateLimitWithOptionalFirestore } = await import('@/lib/rateLimitFirestore');
+    const result = await checkRateLimitWithOptionalFirestore(limiter, firestoreBucketKey, identifier);
 
     if (!result.allowed) {
       return new Response(

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -95,6 +96,9 @@ function normalizeToKabbalisticPayload(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_kabbalistic_numerology_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const {
       userId,
       question,

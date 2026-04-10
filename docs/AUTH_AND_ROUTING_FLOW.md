@@ -5,7 +5,7 @@ For a compact reference (traced flows table, route transitions by user type, nav
 ## 1. Architecture overview
 
 - **Auth provider**: [hooks/use-auth.tsx](../hooks/use-auth.tsx) wraps the app and exposes `user`, `userProfile`, `loading`, `signIn`, `signOut`, `refreshProfile`, and admin flags. It uses Firebase `onAuthStateChanged` and, on init, `getRedirectResult()` then loads profile via `getUserProfile(uid)`.
-- **No `middleware.ts`**: Route protection uses [proxy.ts](../proxy.ts) (cookie hint + redirect to `/signin?redirect=`) plus **per-page** `useEffect` guards that call `router.push(...)` when the user is missing.
+- **Proxy (edge)**: In Next.js 16, [proxy.ts](../proxy.ts) is the sole edge entry (not `middleware.ts`). It applies a lightweight `fs_auth` cookie hint and redirect to `/signin?redirect=` on protected prefixes. **Per-page** `useEffect` guards still call `router.push(...)` when the user is missing; APIs verify the Firebase ID token.
 - **Returning vs new user**: [lib/firebase.ts](../lib/firebase.ts) exports `isReturningUser(user)`: `lastSignInTime - creationTime > 60000` (ms) ⇒ returning user.
 
 ```mermaid

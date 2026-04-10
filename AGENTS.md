@@ -88,6 +88,7 @@ A `.env.local` file is needed with at minimum:
 - `NEXT_PUBLIC_FIREBASE_*` — Firebase client SDK config (6 vars)
 - `FIREBASE_ADMIN_*` — Firebase Admin SDK config (3 vars)
 - `GROQ_API_KEY` — primary AI provider
+- Optional: `RATE_LIMIT_STORE=firestore` — persist API rate counters in Firestore collection `_apiRateLimits` (requires Firebase Admin); default is in-memory per instance.
 
 The app starts and renders the landing page without real credentials, but auth/AI features require valid keys.
 

@@ -1,4 +1,5 @@
-import { NextRequest } from 'next/server';
+import { NextRequest } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
@@ -58,6 +59,9 @@ function getDisplayName(userProfile: unknown): string | undefined {
 export async function POST(request: NextRequest) {
   try {
     const body: KPSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_kp_astrology_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, userProfile, kpAnalysis } = body;
 
     if (!userId || !question?.trim()) {

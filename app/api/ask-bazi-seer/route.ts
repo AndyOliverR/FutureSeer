@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
@@ -63,6 +64,9 @@ const REFUSAL_MESSAGE =
 export async function POST(request: NextRequest) {
   try {
     const body: AskBaziSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_bazi_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { question, baziReading } = body;
 
     if (!question || !question.trim()) {

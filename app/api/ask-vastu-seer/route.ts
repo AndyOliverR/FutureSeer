@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -137,6 +138,9 @@ function payloadFromLayout(layoutInput: VastuLayoutInput): VastuReadingPayload {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_vastu_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const {
       userId,
       question,
