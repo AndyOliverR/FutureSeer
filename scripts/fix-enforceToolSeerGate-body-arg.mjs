@@ -17,7 +17,7 @@ function walkApiRoutes(dir, out = []) {
 
 let updated = 0;
 for (const f of walkApiRoutes(path.join(root, 'app', 'api'))) {
-  let s = fs.readFileSync(f, 'utf8');
+  const s = fs.readFileSync(f, 'utf8');
   if (!s.includes('body as Record<string, unknown>')) continue;
   const t = s.split(needle).join(', body, ');
   if (t !== s) {
