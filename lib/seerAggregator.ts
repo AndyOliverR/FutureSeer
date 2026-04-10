@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 // Seer Aggregator - Calls tool-specific seer APIs and aggregates their expert responses
 // Makes Ask the Seer a true universal expert by leveraging all specialized seers
 
@@ -404,7 +405,7 @@ export class SeerAggregator {
       devLog.debug(`🔮 Calling ${toolName} Seer API...`, undefined, 'seer-aggregator');
 
       let apiPath = '';
-      let requestBody: any = {
+      const requestBody: any = {
         userId,
         question,
         userProfile

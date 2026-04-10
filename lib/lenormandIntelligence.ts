@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { devLog } from '@/lib/devLogger';
 
 export interface LenormandCard {

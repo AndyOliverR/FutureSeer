@@ -461,7 +461,7 @@ export function getEntranceRecommendations(
   const avoidPadas = getInauspiciousPadas(houseFacing);
   
   let colorRecommendations = '';
-  let doorOpening = 'Clockwise from right side';
+  const doorOpening = 'Clockwise from right side';
   
   switch (houseFacing) {
     case 'north':

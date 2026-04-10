@@ -245,14 +245,13 @@ export class ProfessionalAstroEngine {
       const decimalDay = day + hour / 24 + minute / 1440 + second / 86400
       
       // Julian Day calculation (Meeus formula)
-      let a, b
       if (month <= 2) {
         year--
         month += 12
       }
       
-      a = Math.floor(year / 100)
-      b = 2 - a + Math.floor(a / 4)
+      const a = Math.floor(year / 100)
+      const b = 2 - a + Math.floor(a / 4)
       
       const julianDay = Math.floor(365.25 * (year + 4716)) + 
                        Math.floor(30.6001 * (month + 1)) + 

@@ -281,9 +281,9 @@ class BaziIntelligence {
     
     const dayFraction = day + hour / 24 + minute / 1440
     
-    let a = Math.floor((14 - month) / 12)
-    let y = year + 4800 - a
-    let m = month + 12 * a - 3
+    const a = Math.floor((14 - month) / 12)
+    const y = year + 4800 - a
+    const m = month + 12 * a - 3
     
     return Math.floor(365.25 * (y + 4716)) + 
            Math.floor(30.6001 * (m + 1)) + 

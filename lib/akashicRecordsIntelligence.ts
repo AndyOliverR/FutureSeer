@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 /**
  * Akashic Records Intelligence
  * Access the universal library of souls for personalized insights

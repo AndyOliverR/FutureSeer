@@ -504,8 +504,8 @@ class SynastryIntelligence {
     // Calculate composite Ascendant (midpoint of both ascendants)
     const asc1Lon = chart1.houses?.[0]?.longitude || chart1.ascendant || 0
     const asc2Lon = chart2.houses?.[0]?.longitude || chart2.ascendant || 0
-    let asc1Norm = ((asc1Lon % 360) + 360) % 360
-    let asc2Norm = ((asc2Lon % 360) + 360) % 360
+    const asc1Norm = ((asc1Lon % 360) + 360) % 360
+    const asc2Norm = ((asc2Lon % 360) + 360) % 360
     
     let ascMidpoint = (asc1Norm + asc2Norm) / 2
     if (Math.abs(asc1Norm - asc2Norm) > 180) {

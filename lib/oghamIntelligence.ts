@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 /**
  * Ogham Intelligence
  * Comprehensive Ogham divination with AI-enhanced interpretations

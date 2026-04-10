@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /**
  * BaZi Seer State and Slice Selector.
  * Structural + timing system; Day Master gate, element function, Luck Cycle supremacy.

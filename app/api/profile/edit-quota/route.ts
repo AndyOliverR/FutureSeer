@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     const isPaid = isPaidPlan(selectedPlan);
     const now = new Date();
     let count = typeof user.profileEditCount === 'number' ? user.profileEditCount : 0;
-    let periodStart = typeof user.profileEditPeriodStart === 'number' ? user.profileEditPeriodStart : undefined;
+    const periodStart = typeof user.profileEditPeriodStart === 'number' ? user.profileEditPeriodStart : undefined;
 
     if (shouldResetPeriod(periodStart, now, isPaid)) {
       count = 0;

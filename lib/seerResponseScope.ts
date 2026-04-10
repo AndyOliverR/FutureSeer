@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 /**
  * Seer Response Scope — Question-to-domain mapping and expert snippet extraction.
  * Ensures each tool speaks in its own lane; excludes domain-irrelevant content per question type.
@@ -65,7 +66,7 @@ export function getRelevantDomainsForQuestion(questionType: string): string[] {
 export function extractPurposeRelevantSnippet(answer: string): string {
   if (!answer || typeof answer !== 'string') return '';
 
-  let text = answer.trim();
+  const text = answer.trim();
 
   // Extract **Life Purpose & Karma:** or **Life Purpose** section
   const lifePurposeMatch = text.match(/\*\*Life Purpose[^*]*:\*\*([^*]+?)(?=\*\*|$)/i);

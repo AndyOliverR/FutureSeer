@@ -3683,7 +3683,7 @@ export function generateComprehensiveRemedies(
 
 export { MODERN_HOLISTIC_REMEDIES, LIFESTYLE_REMEDIES }
 
-export default {
+const comprehensiveRemedyDatabase = {
   ASTROLOGICAL_REMEDIES,
   NUMEROLOGY_REMEDIES,
   DIVINATION_REMEDIES,
@@ -3694,4 +3694,6 @@ export default {
   LAL_KITAB_REMEDIES,
   TRICHAKRA_REMEDIES,
   generateComprehensiveRemedies
-} 
+}
+
+export default comprehensiveRemedyDatabase

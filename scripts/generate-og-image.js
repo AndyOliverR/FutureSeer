@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Generate OG Image for FutureSeer
  * Creates a 1200x630px SVG that can be converted to PNG

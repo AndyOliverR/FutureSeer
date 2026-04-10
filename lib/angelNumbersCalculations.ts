@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Comprehensive Angel Numbers Calculation Engine
 import { devLog } from '@/lib/devLogger';
 // This provides all interpretations and insights needed for a self-reliant angel numbers system

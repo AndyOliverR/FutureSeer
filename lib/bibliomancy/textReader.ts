@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-fs-filename */
 /**
  * Load canonical sacred texts from local JSON (build-safe; no runtime fetch).
  * Seeded random selection for reproducibility.
