@@ -1,0 +1,18 @@
+# Gitleaks: extend defaults; allowlist non-server secrets and known false positives.
+# - google-services.json: Firebase Android client config (keys are app-restricted in console).
+# - Esoteric tool: DashboardSection storageKey props (localStorage IDs, not API keys).
+# - campaignAttribution: public sessionStorage key names.
+
+title = "FutureSeer"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Firebase Android JSON, UI storage keys, campaign key constants"
+paths = [
+  '''android/app/google-services\.json''',
+  '''android/app/src/google-services\.json''',
+  '''app/tools/esoteric-astrology/page\.tsx''',
+  '''lib/campaignAttribution\.ts''',
+]

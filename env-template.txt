@@ -12,7 +12,7 @@ FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n
 # AstroApp API (Server-side only) - Hybrid Engine: AstroApp + Custom Fallback
 ASTROAPP_EMAIL=your-astroapp-email
 ASTROAPP_PASSWORD=your-astroapp-password
-ASTROAPP_API_KEY=REDACTED_ASTROAPP_API_KEY
+ASTROAPP_API_KEY=your-astroapp-api-key
 
 # Google Places API (Optional) - For enhanced place lookup and geocoding
 GOOGLE_PLACES_API_KEY=your-google-places-api-key
