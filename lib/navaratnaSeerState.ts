@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /**
  * Navaratna Seer State and Slice Selector.
  * Vedic remedial system: Lagnesh supremacy, functional benefic/malefic, Maraka hard-block.

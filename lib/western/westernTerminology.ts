@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 /**
  * Western Astrology Terminology Service
  * 

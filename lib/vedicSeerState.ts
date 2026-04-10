@@ -187,7 +187,7 @@ export function buildVedicState(
     else planet_strength[name] = 'average';
   }
 
-  let transits: VedicState['transits'] = [];
+  const transits: VedicState['transits'] = [];
   const tr = vedicChartData.transits;
   if (tr && typeof tr === 'object') {
     if (Array.isArray(tr.favorable)) {

@@ -55,7 +55,7 @@ function getHouseForLongitude(planetLongitude: number, houses: { number: number;
     const cuspI = NORM360(sorted[i].longitude);
     const nextIdx = i + 1 < sorted.length ? i + 1 : 0;
     const cuspNext = NORM360(sorted[nextIdx].longitude);
-    let arcStart = cuspI;
+    const arcStart = cuspI;
     let arcEnd = cuspNext;
     if (arcEnd <= arcStart) arcEnd += 360;
     const lonAdj = lon < arcStart ? lon + 360 : lon;

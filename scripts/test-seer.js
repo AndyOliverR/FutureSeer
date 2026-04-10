@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // Test script for the Seer Chatbot
 const { testSeerChatbot } = require('../lib/seerChatbot/seerChatbot');
 

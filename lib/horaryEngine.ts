@@ -926,7 +926,7 @@ export class HoraryEngine {
     // Generate timing based on Moon's actual position
     let immediate = 'Within 1-3 days'
     let shortTerm = 'Within 1-2 weeks'
-    let longTerm = 'Within 1-3 months'
+    const longTerm = 'Within 1-3 months'
     
     // Adjust timing based on Moon's speed and position
     if (moonSpeed > 15) {

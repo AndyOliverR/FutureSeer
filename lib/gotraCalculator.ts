@@ -50,9 +50,9 @@ export function identifyGotra(
     : []
   
   // Determine primary Gotra
-  let primaryGotra = gotraFromNakshatra || DEFAULT_GOTRA
+  const primaryGotra = gotraFromNakshatra || DEFAULT_GOTRA
   let confidence: 'high' | 'medium' | 'low' = gotraFromNakshatra ? 'high' : 'low'
-  let method: 'nakshatra' | 'surname' | 'default' = gotraFromNakshatra ? 'nakshatra' : 'default'
+  const method: 'nakshatra' | 'surname' | 'default' = gotraFromNakshatra ? 'nakshatra' : 'default'
   
   // If surname suggests a different Gotra, mark as medium confidence
   if (gotraFromNakshatra && gotrasFromSurname.length > 0) {

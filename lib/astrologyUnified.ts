@@ -187,7 +187,7 @@ function tropicalToSidereal(tropicalLongitude: number, jd: number): number {
 // Calculate Greenwich Sidereal Time
 function calculateGST(jd: number): number {
   const T = (jd - 2451545.0) / 36525
-  let theta = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T - (T * T * T) / 38710000
+  const theta = 280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T - (T * T * T) / 38710000
   return ((theta % 360) + 360) % 360
 }
 

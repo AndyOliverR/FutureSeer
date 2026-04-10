@@ -793,7 +793,9 @@ function generateDreamRemedies(dreamData: any, question: string): ComprehensiveR
   return []
 }
 
-export default {
+const comprehensiveRemedyGenerator = {
   generateHolisticRemedies,
   generateAdvancedPersonalizedRemedies
-} 
+}
+
+export default comprehensiveRemedyGenerator

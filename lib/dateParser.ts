@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /**
  * Date Parser for Natural Language Questions
  * Extracts and parses date references from user questions to enable

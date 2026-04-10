@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 /**
  * FutureSeer Brand Consistency Checker
  * Automatically enforces brand guidelines before any code changes

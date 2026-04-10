@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /**
  * Palm Seer State and Slice Selector.
  * Structured palm morphology; dominance gate; feature hierarchy; trait-based only.

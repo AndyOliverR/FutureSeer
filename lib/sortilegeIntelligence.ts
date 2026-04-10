@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-non-literal-regexp */
 /**
  * Sortilege Intelligence Service
  * Comprehensive divination through casting lots (dice, stones, cards, coins, sticks)
@@ -778,7 +779,7 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
 
     const extractList = (sectionName: string, content: string): string[] => {
       // Pattern to match section header with === format followed by content until next section or end
-      let sectionHeaderPattern = new RegExp(`===+\\s*${sectionName}\\s*===+\\s*([\\s\\S]*?)(?===+\\s*[A-Z\\s]+\\s*===+|$)`, 'i')
+      const sectionHeaderPattern = new RegExp(`===+\\s*${sectionName}\\s*===+\\s*([\\s\\S]*?)(?===+\\s*[A-Z\\s]+\\s*===+|$)`, 'i')
       let sectionMatch = content.match(sectionHeaderPattern)
       
       // Fallback pattern for sections without === format

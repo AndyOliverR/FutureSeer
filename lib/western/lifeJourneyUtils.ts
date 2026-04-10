@@ -172,7 +172,7 @@ function getNextSolarReturn(birthDate: Date): LifeMilestone[] {
   const now = new Date()
   const currentYear = now.getFullYear()
   
-  let nextBirthday = new Date(birthDate)
+  const nextBirthday = new Date(birthDate)
   nextBirthday.setFullYear(currentYear)
   
   // If birthday has passed this year, get next year's

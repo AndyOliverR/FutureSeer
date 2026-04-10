@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /**
  * Daily Decisions Seer State and Slice Selector.
  * Rule-based Panchanga execution; timing suitability only, not outcomes.

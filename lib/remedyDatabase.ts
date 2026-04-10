@@ -905,11 +905,13 @@ function generateLifestyleRemedies(question: string, astroData: any, numerologyD
   return remedies
 }
 
-export default {
+const remedyDatabase = {
   generatePersonalizedRemedies,
   GEMSTONE_DATABASE,
   NUMEROLOGY_REMEDIES,
   COLOR_THERAPY,
   MANTRA_DATABASE,
   MUDRA_DATABASE
-} 
+}
+
+export default remedyDatabase

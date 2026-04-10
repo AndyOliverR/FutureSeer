@@ -14,7 +14,7 @@ import { devLog } from './devLogger';
 export function normalizeTimeString(birthTime: any): string {
   if (!birthTime) return '';
   
-  let timeString = String(birthTime);
+  const timeString = String(birthTime);
   
   // If birthTime is a timestamp (all digits, length > 10), convert to time string
   if (/^\d+$/.test(timeString) && timeString.length > 10) {
