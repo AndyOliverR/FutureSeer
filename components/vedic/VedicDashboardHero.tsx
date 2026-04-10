@@ -134,7 +134,7 @@ export function VedicDashboardHero({
                 {userProfile?.birthPlace && `Born in ${userProfile.birthPlace}`}
                 {userProfile?.birthDate && ` • ${new Date(userProfile.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
               </p>
-              <p className="text-slate-500 text-xs mt-1">
+              <p className="text-slate-600 text-xs mt-1">
                 Sidereal Zodiac • {ayanamsha} Ayanamsha
               </p>
             </div>
@@ -196,7 +196,7 @@ export function VedicDashboardHero({
             ) : (
               <div className="text-center py-12 text-slate-600">
                 <p>Loading chart visualization...</p>
-                <p className="text-xs text-slate-500 mt-2">
+                <p className="text-xs text-slate-600 mt-2">
                   {planets.length === 0 && 'Waiting for planetary data...'}
                   {planets.length > 0 && ascendantSignNumber === 0 && 'Calculating ascendant position...'}
                 </p>

@@ -209,7 +209,7 @@ export function DataSourceStatus() {
           </div>
         )}
         
-        <div className="text-xs text-slate-500">
+        <div className="text-xs text-slate-400">
           <p>• Last updated: {new Date(astroData.lastFetched).toLocaleString()}</p>
           <p>• Version: {astroData.metadata?.version || '2.0'}</p>
           <p>• AI-powered calculations</p>

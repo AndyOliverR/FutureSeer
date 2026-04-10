@@ -9,10 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Send, X, Flame, Crown, Sparkles, Plus } from 'lucide-react';
+import { Trophy, Users, Star, Heart, Share2, MessageCircle, UserPlus, Send, X, Flame, Crown, Sparkles, Plus, Bell, CalendarClock } from 'lucide-react';
 import { DiscussionCard } from '@/components/community/DiscussionCard';
 import { DiscussionForm } from '@/components/community/DiscussionForm';
 import { GuestDiscussionForm } from '@/components/community/GuestDiscussionForm';
+import { AttributionLeaderboard } from '@/components/AttributionLeaderboard';
 import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { useToast } from '@/components/ui/use-toast';
 interface UserContribution {
@@ -54,6 +55,24 @@ interface CommunityMember {
   hideStats?: boolean;
 }
 
+interface DiscussionComment {
+  id: string;
+  content: string;
+  authorName: string;
+  createdAt: string;
+}
+
+interface ConnectionRequestItem {
+  id: string;
+  fromUserName: string;
+  toUserName: string;
+  topic: string;
+  message: string;
+  status: 'pending' | 'accepted' | 'declined';
+  type: 'incoming' | 'outgoing';
+  createdAt: string;
+}
+
 export interface DiscussionThread {
   id: string;
   title: string;
@@ -90,11 +109,20 @@ export default function CommunityAttributionPage() {
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<CommunityMember | null>(null);
   const [connectionRequest, setConnectionRequest] = useState({ topic: '', message: '' });
-  const [activeTab, setActiveTab] = useState<'members' | 'discussions' | 'contributions'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'discussions' | 'requests' | 'contributions'>('members');
   const [loading, setLoading] = useState(true);
   const [showDiscussionForm, setShowDiscussionForm] = useState(false);
   const [showGuestDiscussionForm, setShowGuestDiscussionForm] = useState(false);
   const [userVotes, setUserVotes] = useState<Record<string, 'up' | 'down'>>({});
+  const [discussionSort, setDiscussionSort] = useState<'createdAt' | 'lastActivityAt' | 'upvotes'>('lastActivityAt');
+  const [selectedThread, setSelectedThread] = useState<DiscussionThread | null>(null);
+  const [threadComments, setThreadComments] = useState<DiscussionComment[]>([]);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [connectionRequests, setConnectionRequests] = useState<ConnectionRequestItem[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [pendingIncomingCount, setPendingIncomingCount] = useState(0);
+  const [newDiscussionCount, setNewDiscussionCount] = useState(0);
 
   const LOAD_TIMEOUT_MS = 10000; // Don't block the page forever if a request hangs
 
@@ -108,7 +136,7 @@ export default function CommunityAttributionPage() {
         devLog.warn('Guest community load timed out.', undefined, 'page');
       }, LOAD_TIMEOUT_MS);
 
-      const discussionsRes = await fetch('/api/community/discussions?status=active&limit=20');
+      const discussionsRes = await fetch(`/api/community/discussions?status=active&limit=20&sortBy=${discussionSort}`);
       if (!discussionsRes.ok) throw new Error('discussions fetch failed');
       const data = await discussionsRes.json();
       if (data.success && Array.isArray(data.discussions)) {
@@ -181,7 +209,7 @@ export default function CommunityAttributionPage() {
         return data.success ? data.members : null;
       }).catch(() => null);
 
-      const discussionsPromise = fetch('/api/community/discussions?status=active&limit=20').then(async (r) => {
+      const discussionsPromise = fetch(`/api/community/discussions?status=active&limit=20&sortBy=${discussionSort}`).then(async (r) => {
         if (!r.ok) return null;
         const data = await r.json();
         return data.success ? data.discussions : null;
@@ -196,11 +224,20 @@ export default function CommunityAttributionPage() {
         return null;
       });
 
-      const [autoJoinResult, membersData, discussionsData, attributionData] = await Promise.all([
+      const requestsPromise = fetch(`/api/community/connections?userId=${uid}&type=incoming`)
+        .then(async (r) => {
+          if (!r.ok) return null;
+          const data = await r.json();
+          return data.success ? data.requests : null;
+        })
+        .catch(() => null);
+
+      const [autoJoinResult, membersData, discussionsData, attributionData, incomingRequests] = await Promise.all([
         autoJoinPromise,
         membersPromise,
         discussionsPromise,
         attributionPromise,
+        requestsPromise,
       ]);
 
       // Surface auto-join failures to the user
@@ -237,6 +274,17 @@ export default function CommunityAttributionPage() {
       }
 
       if (discussionsData?.length) {
+        const lastSeenIso = localStorage.getItem('community_last_seen_discussion_at');
+        const lastSeenMs = lastSeenIso ? new Date(lastSeenIso).getTime() : 0;
+        const unseen = discussionsData.filter((d: Record<string, unknown>) => {
+          const createdAt = new Date(String(d.createdAt ?? '')).getTime();
+          return createdAt > lastSeenMs;
+        }).length;
+        setNewDiscussionCount(unseen);
+        if (!lastSeenIso) {
+          localStorage.setItem('community_last_seen_discussion_at', new Date().toISOString());
+        }
+
         setDiscussionThreads(discussionsData.map((d: Record<string, unknown>) => ({
           id: String(d.id ?? ''),
           title: String(d.title ?? ''),
@@ -275,6 +323,24 @@ export default function CommunityAttributionPage() {
           });
           setUserVotes(votesMap);
         });
+      }
+
+      if (Array.isArray(incomingRequests)) {
+        const mappedRequests = incomingRequests.map((request: Record<string, unknown>) => ({
+          id: String(request.id ?? ''),
+          fromUserName: String(request.fromUserName ?? ''),
+          toUserName: String(request.toUserName ?? ''),
+          topic: String(request.topic ?? ''),
+          message: String(request.message ?? ''),
+          status: (request.status as ConnectionRequestItem['status']) || 'pending',
+          type: (request.type as ConnectionRequestItem['type']) || 'incoming',
+          createdAt: String(request.createdAt ?? ''),
+        }));
+        setConnectionRequests(mappedRequests);
+        setPendingIncomingCount(mappedRequests.filter((r) => r.type === 'incoming' && r.status === 'pending').length);
+      } else {
+        setConnectionRequests([]);
+        setPendingIncomingCount(0);
       }
 
       if (attributionData) {
@@ -327,7 +393,126 @@ export default function CommunityAttributionPage() {
       void loadGuestDiscussions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when auth gate or user id changes
+  }, [user?.uid, authLoading, discussionSort]);
+
+  useEffect(() => {
+    if (!user?.uid || authLoading) return;
+    const interval = setInterval(() => {
+      void loadCommunityData();
+    }, 45000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keep polling tied to auth identity only
   }, [user?.uid, authLoading]);
+
+  const openThread = async (threadId: string) => {
+    setThreadLoading(true);
+    try {
+      const response = await fetch(`/api/community/discussions/${threadId}`);
+      if (!response.ok) throw new Error('Failed to load thread');
+      const data = await response.json();
+      if (!data.success) throw new Error('Failed to load thread');
+      setSelectedThread({
+        id: String(data.discussion.id ?? ''),
+        title: String(data.discussion.title ?? ''),
+        content: String(data.discussion.content ?? ''),
+        author: String(data.discussion.authorName ?? ''),
+        authorId: String(data.discussion.authorId ?? ''),
+        date: String(data.discussion.createdAt ?? ''),
+        upvotes: Number(data.discussion.upvotes) || 0,
+        downvotes: Number(data.discussion.downvotes) || 0,
+        comments: Number(data.discussion.commentCount) || 0,
+        category: data.discussion.category as DiscussionThread['category'],
+        priority: (data.discussion.priority as DiscussionThread['priority']) || 'medium',
+        status: data.discussion.status as DiscussionThread['status'],
+        isHot: Boolean(data.discussion.isHot),
+        isSticky: Boolean(data.discussion.isSticky),
+      });
+      setThreadComments(
+        (data.comments ?? []).map((c: Record<string, unknown>) => ({
+          id: String(c.id ?? ''),
+          content: String(c.content ?? ''),
+          authorName: String(c.authorName ?? ''),
+          createdAt: String(c.createdAt ?? ''),
+        }))
+      );
+    } catch (error) {
+      devLog.error('Error loading thread details:', error, 'page');
+      toast({ title: 'Error', description: 'Could not load thread details', variant: 'destructive' });
+    } finally {
+      setThreadLoading(false);
+    }
+  };
+
+  const handleCreateComment = async () => {
+    if (!selectedThread || !newComment.trim() || !user?.uid) return;
+    try {
+      const response = await fetch('/api/community/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discussionId: selectedThread.id,
+          content: newComment.trim(),
+          userId: user.uid,
+          authorName: user.displayName || user.email || 'Anonymous',
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to post reply');
+      setNewComment('');
+      await openThread(selectedThread.id);
+      await loadCommunityData();
+    } catch (error) {
+      devLog.error('Error creating comment:', error, 'page');
+      toast({ title: 'Error', description: 'Could not post your reply', variant: 'destructive' });
+    }
+  };
+
+  const refreshConnectionRequests = async () => {
+    if (!user?.uid) return;
+    setRequestsLoading(true);
+    try {
+      const response = await fetch(`/api/community/connections?userId=${user.uid}&type=all`);
+      if (!response.ok) throw new Error('Failed to load requests');
+      const data = await response.json();
+      const requests = (data.requests ?? []).map((request: Record<string, unknown>) => ({
+        id: String(request.id ?? ''),
+        fromUserName: String(request.fromUserName ?? ''),
+        toUserName: String(request.toUserName ?? ''),
+        topic: String(request.topic ?? ''),
+        message: String(request.message ?? ''),
+        status: (request.status as ConnectionRequestItem['status']) || 'pending',
+        type: (request.type as ConnectionRequestItem['type']) || 'incoming',
+        createdAt: String(request.createdAt ?? ''),
+      }));
+      setConnectionRequests(requests);
+      setPendingIncomingCount(requests.filter((r: ConnectionRequestItem) => r.type === 'incoming' && r.status === 'pending').length);
+    } catch (error) {
+      devLog.error('Error loading connection requests:', error, 'page');
+      toast({ title: 'Error', description: 'Could not load connection requests', variant: 'destructive' });
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const respondToConnectionRequest = async (requestId: string, action: 'accept' | 'decline') => {
+    if (!user?.uid) return;
+    try {
+      const response = await fetch(`/api/community/connections/${requestId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, userId: user.uid }),
+      });
+      if (!response.ok) throw new Error('Failed to update request');
+      await refreshConnectionRequests();
+      toast({
+        title: action === 'accept' ? 'Connection accepted' : 'Connection declined',
+        description: action === 'accept' ? 'You are now connected.' : 'Request declined.',
+      });
+    } catch (error) {
+      devLog.error('Error responding to connection request:', error, 'page');
+      toast({ title: 'Error', description: 'Could not update request', variant: 'destructive' });
+    }
+  };
 
   const handleConnectionRequest = (member: CommunityMember) => {
     setSelectedMember(member);
@@ -616,25 +801,33 @@ export default function CommunityAttributionPage() {
     <>
       <RecaptchaScript />
       <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4 pt-20 pb-8">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-16 sm:pt-20 pb-8">
         {/* Header */}
         <div className="text-center mb-8 pt-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
             Mystical Community
           </h1>
-          <p className="text-white text-lg">
-            Connect, share, and grow with fellow mystics
+          <p className="text-white text-base sm:text-lg">
+            Ask better questions, share insights, and build your mystical circle.
           </p>
+          {!isGuest ? (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/35 bg-slate-900/60 px-4 py-2 text-amber-200 text-sm">
+              <Bell className="w-4 h-4 text-amber-300" />
+              <span>{pendingIncomingCount} pending requests</span>
+              <span className="text-amber-400/70">|</span>
+              <span>{newDiscussionCount} new discussions</span>
+            </div>
+          ) : null}
         </div>
 
         {isGuest ? (
           <Card className="mb-6 bg-slate-900/70 border-amber-500/25">
-            <CardContent className="p-4 text-sm text-amber-100/90">
+            <CardContent className="p-4 sm:p-5 text-sm text-amber-100/90">
               You are browsing public discussions.{" "}
               <Link href="/signin?redirect=/community/attribution" className="text-amber-400 font-medium underline underline-offset-2">
                 Sign in
               </Link>{" "}
-              to vote, see members, track contributions, and use full community features.
+              to vote, reply, manage requests, and unlock full community features.
             </CardContent>
           </Card>
         ) : null}
@@ -685,11 +878,11 @@ export default function CommunityAttributionPage() {
         ) : null}
 
         {/* Tabs */}
-        <div className="flex space-x-2 bg-transparent p-0 mb-8">
+        <div className="flex flex-wrap gap-2 bg-transparent p-0 mb-8">
           <Button
             variant="ghost"
             onClick={() => setActiveTab('members')}
-            className={`flex-1 transition-all duration-300 rounded-xl px-4 py-2.5 text-sm font-medium relative overflow-hidden ${
+            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
               activeTab === 'members'
                 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
                 : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
@@ -700,8 +893,12 @@ export default function CommunityAttributionPage() {
           </Button>
           <Button
             variant="ghost"
-            onClick={() => setActiveTab('discussions')}
-            className={`flex-1 transition-all duration-300 rounded-xl px-4 py-2.5 text-sm font-medium relative overflow-hidden ${
+            onClick={() => {
+              setActiveTab('discussions');
+              setNewDiscussionCount(0);
+              localStorage.setItem('community_last_seen_discussion_at', new Date().toISOString());
+            }}
+            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
               activeTab === 'discussions'
                 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
                 : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
@@ -709,11 +906,32 @@ export default function CommunityAttributionPage() {
           >
             <MessageCircle className={`w-4 h-4 mr-2 ${activeTab === 'discussions' ? 'text-amber-900' : 'text-amber-200'}`} />
             Discussions
+            {!isGuest && newDiscussionCount > 0 ? (
+              <Badge className="ml-2 bg-amber-500 text-slate-900">{newDiscussionCount}</Badge>
+            ) : null}
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setActiveTab('requests');
+              void refreshConnectionRequests();
+            }}
+            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
+              activeTab === 'requests'
+                ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
+                : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
+            }`}
+          >
+            <Bell className={`w-4 h-4 mr-2 ${activeTab === 'requests' ? 'text-amber-900' : 'text-amber-200'}`} />
+            Requests
+            {!isGuest && pendingIncomingCount > 0 ? (
+              <Badge className="ml-2 bg-amber-500 text-slate-900">{pendingIncomingCount}</Badge>
+            ) : null}
           </Button>
           <Button
             variant="ghost"
             onClick={() => setActiveTab('contributions')}
-            className={`flex-1 transition-all duration-300 rounded-xl px-4 py-2.5 text-sm font-medium relative overflow-hidden ${
+            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
               activeTab === 'contributions'
                 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
                 : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
@@ -826,7 +1044,7 @@ export default function CommunityAttributionPage() {
                       Community Discussions
                     </CardTitle>
                     <p className="text-slate-700 text-sm mt-1">
-                      Share insights, ask questions, and learn from fellow mystics.
+                      Follow live conversations, jump into threads, and help others with practical insight.
                     </p>
                   </div>
                   {user && (
@@ -835,7 +1053,7 @@ export default function CommunityAttributionPage() {
                         setShowGuestDiscussionForm(false);
                         setShowDiscussionForm(!showDiscussionForm);
                       }}
-                      className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white"
+                      className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white active:scale-[0.98]"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       New Discussion
@@ -849,7 +1067,7 @@ export default function CommunityAttributionPage() {
                         setShowDiscussionForm(false);
                         setShowGuestDiscussionForm(!showGuestDiscussionForm);
                       }}
-                      className="border-amber-500/50 text-amber-100"
+                      className="border-amber-500/50 text-amber-100 active:scale-[0.98]"
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Post as guest
@@ -877,6 +1095,35 @@ export default function CommunityAttributionPage() {
 
             <Card className="bg-purple-50/80 border-2 border-purple-300 shadow-sm">
               <CardContent className="pt-6">
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={discussionSort === 'lastActivityAt' ? 'default' : 'outline'}
+                    onClick={() => setDiscussionSort('lastActivityAt')}
+                    className={discussionSort === 'lastActivityAt' ? 'bg-purple-700 text-white active:scale-[0.98]' : 'border-purple-300 text-purple-800 active:scale-[0.98]'}
+                  >
+                    Hot now
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={discussionSort === 'createdAt' ? 'default' : 'outline'}
+                    onClick={() => setDiscussionSort('createdAt')}
+                    className={discussionSort === 'createdAt' ? 'bg-purple-700 text-white active:scale-[0.98]' : 'border-purple-300 text-purple-800 active:scale-[0.98]'}
+                  >
+                    Newest
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={discussionSort === 'upvotes' ? 'default' : 'outline'}
+                    onClick={() => setDiscussionSort('upvotes')}
+                    className={discussionSort === 'upvotes' ? 'bg-purple-700 text-white active:scale-[0.98]' : 'border-purple-300 text-purple-800 active:scale-[0.98]'}
+                  >
+                    Top voted
+                  </Button>
+                </div>
                 <div className="space-y-4">
                   {discussionThreads.length === 0 ? (
                     <div className="text-center py-8">
@@ -890,13 +1137,164 @@ export default function CommunityAttributionPage() {
                         discussion={thread}
                         onVote={handleVote}
                         userVote={userVotes[thread.id] || null}
+                        onOpenThread={openThread}
                       />
                     ))
                   )}
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="bg-indigo-50/80 border-2 border-indigo-300 shadow-sm mt-4">
+              <CardHeader>
+                <CardTitle className="text-indigo-800 flex items-center gap-2 font-bold">
+                  <MessageCircle className="w-5 h-5 text-indigo-700" />
+                  Thread Detail
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {threadLoading ? (
+                  <p className="text-slate-700 text-sm">Loading thread...</p>
+                ) : selectedThread ? (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-100/60">
+                      <h3 className="font-semibold text-indigo-900 mb-2">{selectedThread.title}</h3>
+                      <p className="text-slate-700 text-sm mb-2">{selectedThread.content}</p>
+                      <p className="text-xs text-slate-600">
+                        by {selectedThread.author} on {new Date(selectedThread.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      {threadComments.length === 0 ? (
+                        <p className="text-sm text-slate-700">No replies yet. Be the first to respond.</p>
+                      ) : (
+                        threadComments.map((comment) => (
+                          <div key={comment.id} className="rounded-lg border border-indigo-200 bg-white/80 p-3">
+                            <p className="text-sm text-slate-800">{comment.content}</p>
+                            <p className="text-xs text-slate-600 mt-1">
+                              {comment.authorName} • {new Date(comment.createdAt).toLocaleString()}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {user?.uid ? (
+                      <div className="space-y-2">
+                        <Textarea
+                          value={newComment}
+                          onChange={(event) => setNewComment(event.target.value)}
+                          placeholder="Reply to this thread..."
+                          className="bg-white/80 border-2 border-indigo-300 text-slate-900 placeholder:text-slate-400"
+                          rows={3}
+                        />
+                        <div className="hidden sm:flex items-center justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setNewComment('')}
+                            className="border-indigo-300 text-indigo-800"
+                            disabled={!newComment.trim()}
+                          >
+                            Clear
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={handleCreateComment}
+                            className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                            disabled={!newComment.trim()}
+                          >
+                            Post Reply
+                          </Button>
+                        </div>
+                        <div className="sm:hidden sticky bottom-0 z-10 -mx-2 px-2 py-2 bg-indigo-50/95 border-t border-indigo-200 backdrop-blur supports-[backdrop-filter]:bg-indigo-50/80">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => setNewComment('')}
+                              className="flex-1 border-indigo-300 text-indigo-800 active:scale-[0.98]"
+                              disabled={!newComment.trim()}
+                            >
+                              Clear
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={handleCreateComment}
+                              className="flex-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white active:scale-[0.98]"
+                              disabled={!newComment.trim()}
+                            >
+                              Post Reply
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-700">
+                        Sign in to reply to discussions.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-700">Pick any discussion and tap "Open thread" to read and reply in one flow.</p>
+                )}
+              </CardContent>
+            </Card>
           </div>
+        )}
+
+        {activeTab === 'requests' && isGuest && (
+          <Card className="bg-blue-50/80 border-2 border-blue-300 shadow-sm mb-8">
+            <CardContent className="pt-6">
+              <p className="text-slate-700 text-sm mb-4">Sign in to manage incoming and outgoing connection requests.</p>
+              <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
+                <Link href="/signin?redirect=/community/attribution">Sign in</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {activeTab === 'requests' && !isGuest && (
+          <Card className="bg-cyan-50/80 border-2 border-cyan-300 shadow-sm mb-8">
+            <CardHeader>
+              <CardTitle className="text-cyan-800 flex items-center gap-2 font-bold">
+                <Bell className="w-5 h-5 text-cyan-700" />
+                Connection Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {requestsLoading ? (
+                <p className="text-sm text-slate-700">Loading requests...</p>
+              ) : connectionRequests.length === 0 ? (
+                <p className="text-sm text-slate-700">No requests yet. Your incoming and outgoing requests will appear here.</p>
+              ) : (
+                <div className="space-y-3">
+                  {connectionRequests.map((request) => (
+                    <div key={request.id} className="rounded-lg border border-cyan-200 bg-cyan-100/70 p-4">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <p className="text-sm font-semibold text-slate-800">
+                          {request.type === 'incoming' ? `${request.fromUserName} wants to connect` : `Request to ${request.toUserName}`}
+                        </p>
+                        <Badge className="bg-white text-cyan-800 border border-cyan-300">{request.status}</Badge>
+                      </div>
+                      <p className="text-sm text-slate-700 mb-1"><span className="font-medium">Topic:</span> {request.topic}</p>
+                      <p className="text-sm text-slate-700 mb-3">{request.message}</p>
+                      <p className="text-xs text-slate-600 mb-3">{new Date(request.createdAt).toLocaleString()}</p>
+                      {request.type === 'incoming' && request.status === 'pending' ? (
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => respondToConnectionRequest(request.id, 'accept')} className="bg-green-600 hover:bg-green-700 text-white active:scale-[0.98]">
+                            Accept
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => respondToConnectionRequest(request.id, 'decline')} className="active:scale-[0.98]">
+                            Decline
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Contributions Tab */}
@@ -1010,6 +1408,32 @@ export default function CommunityAttributionPage() {
         )}
 
         {/* Thank you */}
+        {!isGuest ? (
+          <AttributionLeaderboard
+            title="Community Karma Leaderboard"
+            subtitle="Track top contributors and your path to the next level."
+            showKarmaDelta
+          />
+        ) : null}
+
+        {!isGuest ? (
+          <Card className="bg-slate-900/70 border-amber-500/30 shadow-sm mt-8">
+            <CardHeader>
+              <CardTitle className="text-amber-200 flex items-center gap-2 font-bold">
+                <CalendarClock className="w-5 h-5 text-amber-300" />
+                Retention + KPI Checklist (2 weeks)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-amber-100/90 space-y-2">
+              <p>Daily nudge: reply to one active thread to keep your streak moving.</p>
+              <p>Track D1 return rate for community visitors.</p>
+              <p>Track comments per active user.</p>
+              <p>Track percentage of users with 2+ actions per session.</p>
+              <p>Track connection request acceptance rate.</p>
+            </CardContent>
+          </Card>
+        ) : null}
+
         <Card className="bg-pink-50/80 border-2 border-pink-300 shadow-sm mt-8 mb-8">
           <CardHeader>
             <CardTitle className="text-pink-800 flex items-center gap-2 font-bold">

@@ -202,7 +202,7 @@ export function HouseDashboard({ houses, houseAnalysis }: HouseDashboardProps) {
                                 {house.sign?.signName || house.sign}
                               </span>
                               {house.degree && (
-                                <span className="text-slate-500">
+                                <span className="text-slate-600">
                                   {house.degree.toFixed(2)}°
                                 </span>
                               )}
