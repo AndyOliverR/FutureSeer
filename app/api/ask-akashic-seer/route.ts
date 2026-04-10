@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
@@ -54,7 +55,10 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, reading: readingInput, comprehensiveProfile } = await request.json();
+    const body = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_akashic_seer');
+    if (__toolSeerGate) return __toolSeerGate;
+    const { question, reading: readingInput, comprehensiveProfile } = body;
 
     if (!question?.trim()) {
       return jsonWithRobots(

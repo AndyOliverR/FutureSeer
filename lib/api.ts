@@ -1,7 +1,8 @@
 import posthog from "posthog-js"
 import { devLog } from '@/lib/devLogger';
 
-// Initialize PostHog only if API key is provided
+// Initialize PostHog only if API key is provided.
+// iOS App Store: if analytics qualifies as "tracking", request ATT before enabling IDFA-linked features; see docs/MOBILE_APP_STORE_COMPLIANCE.md
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
   posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com",

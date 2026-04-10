@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
+
 import { appendAttribution } from '@/lib/attribution/attributionStamp'
 import { createAIStream } from '@/lib/aiGateway'
 import { devLog } from '@/lib/devLogger'
@@ -58,6 +60,9 @@ function isTrichakraAnalysis(value: unknown): value is TrichakraAnalysis {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({})) as TrichakraSeerRequest
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_trichakra_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, userProfile } = body
     let trichakraAnalysis = isTrichakraAnalysis(body.trichakraAnalysis)
       ? body.trichakraAnalysis

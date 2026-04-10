@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { devLog } from '@/lib/devLogger';
 import { createAICompletion } from '@/lib/aiGateway'
 import {
@@ -15,6 +16,8 @@ const REFUSAL_PHRASE = 'This question requires professional medical evaluation.'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'medical_astrology_seer')
+    if (__toolSeerGate) return __toolSeerGate
     const { question, analysis, chartData, comprehensiveProfile, userProfile } = body
 
     if (!question) {

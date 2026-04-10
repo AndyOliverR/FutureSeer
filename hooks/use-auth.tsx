@@ -180,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Sync lightweight auth cookie for middleware route protection
+        // Sync lightweight auth cookie for proxy.ts edge route hint (Next.js 16)
         if (typeof document !== 'undefined') {
           if (firebaseUser) {
             document.cookie = 'fs_auth=1; path=/; max-age=2592000; SameSite=Lax';

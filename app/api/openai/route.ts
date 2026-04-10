@@ -163,4 +163,4 @@ For comprehensive interpretations, provide detailed analysis covering all life a
 }
 
 // Export with rate limiting applied
-export const POST = withRateLimit(handleOpenAIRequest, rateLimiters.ai);
+export const POST = withRateLimit(handleOpenAIRequest, rateLimiters.ai, 'openai_compat_post');

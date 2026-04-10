@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
 import {
@@ -14,7 +15,10 @@ const REFUSAL_MESSAGE =
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, question, palmistryContext, sessionId, userProfile } = await request.json();
+    const body = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'palmistry_ask_seer');
+    if (__toolSeerGate) return __toolSeerGate;
+    const { question, palmistryContext, userProfile } = body;
 
     if (!question || !question.trim()) {
       return NextResponse.json(

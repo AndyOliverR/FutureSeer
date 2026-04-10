@@ -27,4 +27,9 @@ async function handleWeather(request: NextRequest) {
   return NextResponse.json({ enabled: true, data });
 }
 
-export const GET = withRateLimit(handleWeather, rateLimiters.api, getClientIdentifier);
+export const GET = withRateLimit(
+  handleWeather,
+  rateLimiters.api,
+  'integrations_weather',
+  getClientIdentifier,
+);

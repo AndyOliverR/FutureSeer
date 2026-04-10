@@ -29,6 +29,7 @@ import {
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
+import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
 import { acquireMysticalGenerationLock } from '@/lib/generationLock';
 
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
     }
 
-    const genLimit = rateLimiters.profileGeneration.check(`profile_gen:${uid}`);
+    const genLimit = await checkRateLimitWithOptionalFirestore(
+      rateLimiters.profileGeneration,
+      'profile_generate_mystical',
+      uid,
+    );
     if (!genLimit.allowed) {
       const retryAfter = Math.ceil((genLimit.resetTime - Date.now()) / 1000);
       return NextResponse.json(

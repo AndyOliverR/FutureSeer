@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
@@ -84,6 +85,9 @@ function formatChartSummary(chartData: AskShamanicSeerRequest['westernChartData'
 export async function POST(request: NextRequest) {
   try {
     const body: AskShamanicSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_shamanic_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, userProfile, westernChartData, shamanicReport } = body;
 
     if (!userId || !question?.trim() || !userProfile) {

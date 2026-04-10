@@ -111,6 +111,19 @@ export default function PrivacyPage() {
             </div>
           </section>
 
+          <section>
+            <h2 className="text-2xl font-bold text-amber-400 mb-4">
+              3a. Product analytics
+            </h2>
+            <div className="space-y-4 text-white/80">
+              <p>
+                We may use privacy-focused product analytics (for example PostHog) to understand feature usage and
+                reliability. Where required by platform rules (such as Apple&apos;s App Tracking Transparency), we will
+                request consent before enabling tracking that accesses advertising identifiers across apps or sites.
+              </p>
+            </div>
+          </section>
+
           {/* Information Sharing */}
           <section>
             <h2 className="text-2xl font-bold text-amber-400 mb-4">
