@@ -1,4 +1,6 @@
 import { NextRequest } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
+
 import { appendAttribution } from '@/lib/attribution/attributionStamp'
 import { createAIStream } from '@/lib/aiGateway'
 import { devLog } from '@/lib/devLogger'
@@ -37,6 +39,9 @@ interface TarotSeerRequest {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_tarot_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const {
       userId,
       question,

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAIStream } from '@/lib/aiGateway';
@@ -85,6 +86,9 @@ interface SortilegeSeerResponse {
 export async function POST(request: NextRequest) {
   try {
     const body: SortilegeSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_sortilege_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, userProfile, sessionId } = body;
     let sortilegeReading: SortilegeReading | undefined = body.sortilegeReading;
     if (!sortilegeReading && body.comprehensiveProfile) {

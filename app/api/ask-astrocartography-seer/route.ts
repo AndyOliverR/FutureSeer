@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
@@ -116,6 +117,9 @@ async function storeConversation(
 export async function POST(request: NextRequest) {
   try {
     const body: AstrocartographySeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_astrocartography_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, userProfile, astrocartographyData, sessionId } = body;
 
     if (!userId || !question?.trim()) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc, collection } from 'firebase/firestore';
@@ -124,7 +125,10 @@ function generateNumerologyFollowUpQuestions(questionType: string, numerologyDat
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, question, userProfile, numerologyData, comprehensiveReport, sessionId }: NumerologySeerRequest = await request.json();
+    const body = (await request.json()) as NumerologySeerRequest;
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_numerology_seer');
+    if (__toolSeerGate) return __toolSeerGate;
+    const { userId, question, userProfile, numerologyData, comprehensiveReport, sessionId } = body;
 
     if (!userId || !question || !userProfile || !numerologyData) {
       return jsonWithRobots({

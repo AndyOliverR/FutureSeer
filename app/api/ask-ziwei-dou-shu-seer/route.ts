@@ -3,7 +3,8 @@
  * Streaming Q&A: Zi Wei Dou Shu expert answers questions using the user's report.
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
@@ -59,6 +60,9 @@ function formatZiWeiReportContext(report: Record<string, unknown> | undefined): 
 export async function POST(request: NextRequest) {
   try {
     const body: AskZiWeiDouShuSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_ziwei_dou_shu_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, userProfile, ziweiReport } = body;
 
     if (!userId || !question?.trim() || !userProfile) {

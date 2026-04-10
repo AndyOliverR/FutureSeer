@@ -6,7 +6,7 @@ The full, file-level map lives in **[AUTH_AND_ROUTING_FLOW.md](AUTH_AND_ROUTING_
 
 ## 1. Architecture (current)
 
-- **Auth**: [hooks/use-auth.tsx](../hooks/use-auth.tsx) (Firebase `onAuthStateChanged` + `getUserProfile(uid)`). No Next.js middleware; guards are per-page `useEffect` + `router.push`.
+- **Auth**: [hooks/use-auth.tsx](../hooks/use-auth.tsx) (Firebase `onAuthStateChanged` + `getUserProfile(uid)`). **Edge hint (Next.js 16)**: [proxy.ts](../proxy.ts) runs at the edge to redirect likely-unauthenticated visitors away from protected paths when the `fs_auth` cookie is missing (set client-side after sign-in). Do not add a separate `middleware.ts` — Next.js 16 allows only `proxy.ts`. This is **not** cryptographic proof of identity; APIs must still verify the Firebase ID token. Per-page `useEffect` + `router.push` remain the definitive client guards.
 - **Returning vs new**: [lib/firebase.ts](../lib/firebase.ts) `isReturningUser(user)` = `lastSignInTime - creationTime > 60000` ms.
 
 ```mermaid

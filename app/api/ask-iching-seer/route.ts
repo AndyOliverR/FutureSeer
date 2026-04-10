@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { createAIStream } from '@/lib/aiGateway';
@@ -110,7 +111,10 @@ function getRefusalMessage(question: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, question, ichingAnalysis, sessionId }: IChingSeerRequest = await request.json();
+    const body = (await request.json()) as IChingSeerRequest;
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_iching_seer');
+    if (__toolSeerGate) return __toolSeerGate;
+    const { userId, question, ichingAnalysis, sessionId } = body;
 
     if (!userId || !question) {
       return jsonWithRobots({

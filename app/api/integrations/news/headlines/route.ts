@@ -20,4 +20,9 @@ async function handleNewsHeadlines(request: NextRequest) {
   return NextResponse.json({ enabled: true, items });
 }
 
-export const GET = withRateLimit(handleNewsHeadlines, rateLimiters.api, getClientIdentifier);
+export const GET = withRateLimit(
+  handleNewsHeadlines,
+  rateLimiters.api,
+  'integrations_news_headlines',
+  getClientIdentifier,
+);

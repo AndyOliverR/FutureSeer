@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
@@ -91,6 +92,9 @@ Instructions: Answer the user's question using only the report data above. If th
 export async function POST(request: NextRequest) {
   try {
     const body: AskMundaneSeerRequest = await request.json();
+    const __toolSeerGate = await enforceToolSeerGate(request, body, 'ask_mundane_seer')
+    if (__toolSeerGate) return __toolSeerGate
+
     const { userId, question, mundaneReport } = body;
 
     if (!userId || !question?.trim()) {
