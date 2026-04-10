@@ -329,7 +329,7 @@ export default function ProfilePage() {
         }
       }
       setFormData({
-        displayName: userProfile.displayName || (isConsultantWorkspace ? "" : "AnDY"),
+        displayName: userProfile.displayName || "",
         fullName: userProfile.fullName || "",
         email: user?.email || userProfile.email || "",
         gender: userProfile.gender,

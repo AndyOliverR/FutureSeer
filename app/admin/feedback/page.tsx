@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Star, ExternalLink, ImageIcon, Loader2, ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MessageSquare, Star, ExternalLink, ImageIcon, Loader2 } from 'lucide-react';
 function formatDate(ms?: number): string {
   if (ms == null) return '—';
   try {
@@ -89,13 +90,9 @@ export default function AdminFeedbackPage() {
   return (
     <div className="min-h-screen overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-20">
-        <Link
-          href="/admin/dashboard"
-          className="inline-flex items-center gap-1 text-slate-300 hover:text-slate-200 text-sm font-medium mb-6"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Admin Dashboard
-        </Link>
+        <Button asChild type="button" variant="outline" size="sm" className="mb-6 text-xs">
+          <Link href="/admin/dashboard">Back to Admin Dashboard</Link>
+        </Button>
         <h1 className="text-xl font-semibold text-slate-200 mb-2">User Feedback</h1>
         <p className="text-slate-400 text-sm mb-6">
           Review ratings, comments, and screenshots from the app

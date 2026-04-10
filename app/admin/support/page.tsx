@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
-import { MessageSquare, Loader2, Send, Star, ImageIcon, ExternalLink, ChevronLeft, Sparkles } from 'lucide-react'
+import { MessageSquare, Loader2, Send, Star, ImageIcon, ExternalLink, Sparkles } from 'lucide-react'
 import { Card, CardContent, CardTitle } from '@/components/ui/card'
 
 function formatDate(ms?: number | null): string {
@@ -173,13 +173,15 @@ export default function AdminSupportPage() {
   return (
     <div className="min-h-screen overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-20">
-        <Link
-          href="/admin/dashboard"
-          className="inline-flex items-center gap-1 text-slate-300 hover:text-slate-200 text-sm font-medium mb-6"
+        <Button
+          asChild
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mb-6 text-xs"
         >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Admin Dashboard
-        </Link>
+          <Link href="/admin/dashboard">Back to Admin Dashboard</Link>
+        </Button>
         <h1 className="text-xl font-semibold text-slate-200 mb-2">Support Desk</h1>
         <p className="text-slate-400 text-sm mb-6">
           Support, legal, and DPO queries, feedback, and tool interest from users
