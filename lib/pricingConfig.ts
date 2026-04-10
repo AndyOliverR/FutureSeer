@@ -1,3 +1,5 @@
+import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
+
 /**
  * Global Country-Based Pricing Configuration
  * 
@@ -555,6 +557,49 @@ export interface MembershipPricingComparison {
   annualSavingsPercentVsMonthly: number;
 }
 
+export type BillingTier = 'allFeatures' | 'quarterly' | 'annual';
+export type BillingChannel = 'web' | 'ios' | 'android';
+
+export interface PricingLadderValidation {
+  countryCode: string;
+  currency: string;
+  isValid: boolean;
+  issues: string[];
+}
+
+export interface NetRevenueEstimate {
+  countryCode: string;
+  currency: string;
+  tier: BillingTier;
+  channel: BillingChannel;
+  grossPrice: number;
+  storeOrProcessorFeeRate: number;
+  taxRate: number;
+  estimatedNetRevenue: number;
+}
+
+export interface CountryBillingConstraint {
+  countryCode: string;
+  currency: string;
+  supportsNativeRazorpayPlanCurrency: boolean;
+  fallbackToConvertedPlanCurrency: 'INR' | 'USD' | null;
+}
+
+const BILLING_FEE_RATES: Record<BillingChannel, number> = {
+  web: 0.03,
+  ios: 0.30,
+  android: 0.15,
+};
+
+const COUNTRY_TAX_RATE: Record<string, number> = {
+  IN: 0.18,
+  GB: 0.20,
+  EU: 0.20,
+  DE: 0.19,
+  FR: 0.20,
+  US: 0.0,
+};
+
 /**
  * Compare quarterly/annual tiers to paying month-by-month (same catalog prices).
  */
@@ -586,6 +631,100 @@ export function getMembershipPricingComparison(countryCode: string = 'IN'): Memb
     effectiveMonthlyFromAnnual: annual / 12,
     quarterlySavingsPercentVsMonthly,
     annualSavingsPercentVsMonthly,
+  };
+}
+
+/**
+ * Validate country ladder quality:
+ * - annual should be cheaper than 12x monthly
+ * - quarterly should be cheaper than 3x monthly
+ * - monotonic total prices (monthly <= quarterly <= annual)
+ */
+export function validateCountryPricingLadder(countryCode: string): PricingLadderValidation {
+  const config = getCountryPricingConfig(countryCode);
+  const monthly = config.pricingTiers.allFeatures;
+  const quarterly = config.pricingTiers.quarterly;
+  const annual = config.pricingTiers.annual;
+  const issues: string[] = [];
+
+  if (monthly > quarterly) {
+    issues.push("Quarterly price is lower than monthly list price.");
+  }
+  if (quarterly > annual) {
+    issues.push("Annual price is lower than quarterly list price.");
+  }
+  if (quarterly >= monthly * 3) {
+    issues.push("Quarterly tier has no savings versus 3 monthly payments.");
+  }
+  if (annual >= monthly * 12) {
+    issues.push("Annual tier has no savings versus 12 monthly payments.");
+  }
+
+  return {
+    countryCode: config.countryCode,
+    currency: config.currency,
+    isValid: issues.length === 0,
+    issues,
+  };
+}
+
+/**
+ * Estimate net revenue after channel fee and regional tax assumptions.
+ * Keeps pricing decisions aligned with margin targets by market/channel.
+ */
+export function estimateNetRevenue(
+  countryCode: string,
+  tier: BillingTier,
+  channel: BillingChannel = 'web'
+): NetRevenueEstimate {
+  const config = getCountryPricingConfig(countryCode);
+  const grossPrice = config.pricingTiers[tier];
+  const storeOrProcessorFeeRate = BILLING_FEE_RATES[channel];
+  const taxRate = COUNTRY_TAX_RATE[countryCode] ?? 0.1;
+  const netAfterFees = grossPrice * (1 - storeOrProcessorFeeRate);
+  const estimatedNetRevenue = Math.max(0, netAfterFees * (1 - taxRate));
+
+  return {
+    countryCode: config.countryCode,
+    currency: config.currency,
+    tier,
+    channel,
+    grossPrice,
+    storeOrProcessorFeeRate,
+    taxRate,
+    estimatedNetRevenue,
+  };
+}
+
+/**
+ * Bulk pricing health snapshot for analytics dashboards or admin checks.
+ */
+export function getPricingHealthSnapshot() {
+  return Object.keys(COUNTRY_PRICING_CONFIG).map((countryCode) => {
+    const validation = validateCountryPricingLadder(countryCode);
+    const monthlyWebNet = estimateNetRevenue(countryCode, 'allFeatures', 'web');
+    return {
+      countryCode,
+      currency: validation.currency,
+      isValid: validation.isValid,
+      issues: validation.issues,
+      monthlyWebNet: monthlyWebNet.estimatedNetRevenue,
+    };
+  });
+}
+
+/**
+ * Billing constraints by country based on Razorpay plan currency support.
+ * If unsupported, checkout should fallback to converted INR/USD plan pricing.
+ */
+export function getCountryBillingConstraint(countryCode: string): CountryBillingConstraint {
+  const config = getCountryPricingConfig(countryCode);
+  const supportsNativeRazorpayPlanCurrency = isRazorpayPlanCurrency(config.currency);
+  return {
+    countryCode: config.countryCode,
+    currency: config.currency,
+    supportsNativeRazorpayPlanCurrency,
+    fallbackToConvertedPlanCurrency: supportsNativeRazorpayPlanCurrency ? null : 'USD',
   };
 }
 

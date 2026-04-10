@@ -141,3 +141,4 @@ Use this as a **template**; edit channels to match your actual strategy.
 - [DESIGN_PRINCIPLES.md](./DESIGN_PRINCIPLES.md)  
 - [HEART_AND_METRICS.md](./HEART_AND_METRICS.md)  
 - [ROADMAP_PRIORITIZATION.md](./ROADMAP_PRIORITIZATION.md)
+- [ASO_LOCALIZATION_PIPELINE.md](./marketing/ASO_LOCALIZATION_PIPELINE.md)

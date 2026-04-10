@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next"
 import { LEARN_SLUGS } from "@/app/learn/learnArticles"
+import { SEO_LOCALES, localeSegment } from "@/lib/seo/locales"
 
 const rawSite = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
 const site = rawSite.replace("://www.", "://")
@@ -76,5 +77,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.72,
   }))
 
-  return [...staticEntries, ...learnEntries]
+  const localizedLandingEntries: MetadataRoute.Sitemap = SEO_LOCALES.map((locale) => ({
+    url: `${site}/${localeSegment(locale)}`,
+    lastModified: lastMod,
+    changeFrequency: "weekly" as const,
+    priority: 0.85,
+  }))
+
+  return [...staticEntries, ...learnEntries, ...localizedLandingEntries]
 }

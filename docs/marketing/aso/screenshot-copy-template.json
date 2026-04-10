@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "screens": [
+    {
+      "id": "value-prop",
+      "goal": "Problem and promise",
+      "copy": {
+        "en": "Get clarity across 50+ mystical systems",
+        "es": "Obtiene claridad en 50+ sistemas misticos",
+        "pt": "Tenha clareza em 50+ sistemas misticos",
+        "fr": "Obtenez de la clarte sur 50+ systemes mystiques",
+        "de": "Klarheit uber 50+ mystische Systeme",
+        "hi": "50+ mystical systems se spasht margdarshan",
+        "zh-Hans": "跨越 50+ 神秘体系获取清晰指引",
+        "zh-Hant": "跨越 50+ 神秘體系獲得清晰指引"
+      }
+    },
+    {
+      "id": "personalization",
+      "goal": "Personal profile value",
+      "copy": {
+        "en": "Generate your mystical profile once",
+        "es": "Genera tu perfil mistico una vez",
+        "pt": "Gere seu perfil mistico uma vez",
+        "fr": "Generez votre profil mystique en une fois",
+        "de": "Erstelle dein mystisches Profil einmal",
+        "hi": "Apna mystical profile ek baar banaiye",
+        "zh-Hans": "一次生成你的神秘档案",
+        "zh-Hant": "一次建立你的神秘檔案"
+      }
+    },
+    {
+      "id": "ask-seer",
+      "goal": "AI assistant value",
+      "copy": {
+        "en": "Ask one Seer across all traditions",
+        "es": "Consulta un Seer para todas las tradiciones",
+        "pt": "Pergunte a um Seer para todas as tradicoes",
+        "fr": "Interrogez un Seer pour toutes les traditions",
+        "de": "Frage einen Seer uber alle Traditionen hinweg",
+        "hi": "Sabhi traditions ke liye ek Seer se poochhiye",
+        "zh-Hans": "用一个 Seer 融合所有体系",
+        "zh-Hant": "用一個 Seer 融合所有體系"
+      }
+    },
+    {
+      "id": "retention",
+      "goal": "Persistence and return value",
+      "copy": {
+        "en": "Your reports stay saved and accessible",
+        "es": "Tus reportes quedan guardados y accesibles",
+        "pt": "Seus relatorios ficam salvos e acessiveis",
+        "fr": "Vos rapports restent enregistres et accessibles",
+        "de": "Deine Berichte bleiben gespeichert und verfugbar",
+        "hi": "Aapki reports saved aur accessible rehti hain",
+        "zh-Hans": "你的报告会持续保存并可随时查看",
+        "zh-Hant": "你的報告會持續保存並可隨時查看"
+      }
+    }
+  ]
+}

@@ -6,11 +6,23 @@ import { EmailCapture } from "@/components/email-capture";
 import { PersonalNote } from "@/components/about/PersonalNote";
 import { AboutSectionSkeleton } from "@/components/about/AboutSectionSkeleton";
 import { Button } from "@/components/ui/button";
+import { buildLocalizedKeywordSet } from "@/lib/seo/locales";
 
 export const metadata: Metadata = {
   title: "About FutureSeer - AI-Powered Mystical Insights",
   description: "Learn about FutureSeer, where ancient wisdom meets artificial intelligence. Discover our NASA-validated astronomical calculations, 60+ divination tools, and innovation experiment approach to mystical insights.",
-  keywords: "about FutureSeer, mystical AI, astrology app, NASA validated, Swiss Ephemeris, divination tools, innovation experiment",
+  keywords: buildLocalizedKeywordSet([
+    "about FutureSeer",
+    "mystical AI",
+    "astrology app",
+    "divination tools",
+    "innovation experiment",
+    "guia mistica",
+    "guide mystique",
+    "mystische app",
+    "jyotish ai",
+    "神秘 指引",
+  ]),
   openGraph: {
     title: "About FutureSeer - AI-Powered Mystical Insights",
     description: "Learn about FutureSeer, where ancient wisdom meets artificial intelligence. Discover our NASA-validated astronomical calculations, 60+ divination tools, and innovation experiment approach.",

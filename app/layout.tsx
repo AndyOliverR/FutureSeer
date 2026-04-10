@@ -17,15 +17,33 @@ import {
   DeferredViewportHeightSync,
 } from "@/components/DeferredLayoutComponents"
 import { PlatformClassProvider } from "@/components/PlatformClassProvider"
+import { OnboardingTour } from "@/components/OnboardingTour"
+import { buildLocaleAlternates, localizedOgImagePath } from "@/lib/seo/locales"
 
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim()
+const siteBase = (process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app").replace("://www.", "://")
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://futureseer.app"),
+  metadataBase: new URL(siteBase),
   applicationName: "FutureSeer",
   title: "FutureSeer - AI-Powered Mystical Insights",
   description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
-  alternates: { canonical: "https://futureseer.app" },
+  keywords: [
+    "AI astrology",
+    "tarot reading app",
+    "numerology insights",
+    "vedic astrology",
+    "western astrology",
+    "astrologie IA",
+    "tarot IA",
+    "horoscopo AI",
+    "占星 AI",
+    "mystical guidance app",
+  ],
+  alternates: {
+    canonical: `${siteBase}/`,
+    languages: buildLocaleAlternates(siteBase),
+  },
   creator: "FutureSeer",
   publisher: "FutureSeer",
   authors: [{ name: "FutureSeer", url: "https://futureseer.app" }],
@@ -35,6 +53,14 @@ export const metadata: Metadata = {
     url: "https://futureseer.app",
     siteName: "FutureSeer",
     type: "website",
+    images: [
+      {
+        url: localizedOgImagePath("en"),
+        width: 1200,
+        height: 630,
+        alt: "FutureSeer - AI-Powered Mystical Insights",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -42,6 +68,7 @@ export const metadata: Metadata = {
     description: "Discover your cosmic path with AI-powered astrology, numerology, tarot, and more mystical tools.",
     site: "@futureseerapp",
     creator: "@futureseerapp",
+    images: [localizedOgImagePath("en")],
   },
   other: {
     copyright: "FutureSeer (futureseer.app)",
@@ -109,6 +136,7 @@ export default function RootLayout({
                   <div className="fs-main-content min-w-0 pl-0">
                     {children}
                   </div>
+                  <OnboardingTour />
                   {/* BottomNavBar handles its own platform visibility internally */}
                   <BottomNavBar />
                   <Toaster />

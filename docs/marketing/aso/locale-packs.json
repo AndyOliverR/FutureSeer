@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "locales": {
+    "en": {
+      "markets": ["US", "GB", "CA", "AU"],
+      "title": "FutureSeer: AI Mystical Guide",
+      "subtitle": "Astrology, Tarot, Numerology",
+      "shortDescription": "Personalized mystical guidance across 50+ systems.",
+      "longDescription": "FutureSeer combines astrology, tarot, numerology, and more into one guided experience. Generate your mystical profile once, keep reports saved, and ask one unified Seer for cross-system insights.",
+      "keywords": [
+        "astrology app",
+        "tarot reading",
+        "numerology",
+        "birth chart",
+        "horoscope",
+        "spiritual guidance"
+      ]
+    },
+    "es": {
+      "markets": ["ES", "MX"],
+      "title": "FutureSeer: Guia Mistica IA",
+      "subtitle": "Astrologia, Tarot, Numerologia",
+      "shortDescription": "Guia mistica personalizada en mas de 50 sistemas.",
+      "longDescription": "FutureSeer combina astrologia, tarot, numerologia y mas en una sola experiencia guiada. Genera tu perfil mistico una vez, guarda tus reportes y consulta un Seer unificado.",
+      "keywords": [
+        "astrologia",
+        "tarot",
+        "numerologia",
+        "carta astral",
+        "horoscopo",
+        "guia espiritual"
+      ]
+    },
+    "pt": {
+      "markets": ["BR", "PT"],
+      "title": "FutureSeer: Guia Mistico IA",
+      "subtitle": "Astrologia, Tarot, Numerologia",
+      "shortDescription": "Guia mistico personalizado em mais de 50 sistemas.",
+      "longDescription": "FutureSeer combina astrologia, tarot, numerologia e mais em uma experiencia guiada. Gere seu perfil mistico uma vez, mantenha relatorios salvos e consulte um Seer unificado.",
+      "keywords": [
+        "astrologia",
+        "tarot",
+        "numerologia",
+        "mapa astral",
+        "horoscopo",
+        "orientacao espiritual"
+      ]
+    },
+    "fr": {
+      "markets": ["FR", "CA"],
+      "title": "FutureSeer: Guide Mystique IA",
+      "subtitle": "Astrologie, Tarot, Numerologie",
+      "shortDescription": "Guidance mystique personnalisee sur 50+ systemes.",
+      "longDescription": "FutureSeer combine astrologie, tarot, numerologie et plus dans une experience unique. Generez votre profil mystique, conservez vos rapports et consultez un Seer unifie.",
+      "keywords": [
+        "astrologie",
+        "tarot",
+        "numerologie",
+        "theme astral",
+        "horoscope",
+        "guidance spirituelle"
+      ]
+    },
+    "de": {
+      "markets": ["DE", "AT", "CH"],
+      "title": "FutureSeer: Mystik Guide KI",
+      "subtitle": "Astrologie, Tarot, Numerologie",
+      "shortDescription": "Personliche mystische Fuhrung uber 50+ Systeme.",
+      "longDescription": "FutureSeer kombiniert Astrologie, Tarot, Numerologie und mehr in einer gefuhrten Erfahrung. Erstelle dein mystisches Profil, speichere Berichte dauerhaft und frage einen einheitlichen Seer.",
+      "keywords": [
+        "astrologie",
+        "tarot",
+        "numerologie",
+        "geburtshoroskop",
+        "horoskop",
+        "spirituelle beratung"
+      ]
+    },
+    "hi": {
+      "markets": ["IN"],
+      "title": "FutureSeer: AI Jyotish Guide",
+      "subtitle": "Jyotish, Tarot, Numerology",
+      "shortDescription": "50+ systems ke saath personalized mystical guidance.",
+      "longDescription": "FutureSeer jyotish, tarot, numerology aur anya paramparao ko ek platform par laata hai. Ek baar profile banaiye, reports save rakhiye, aur unified Seer se sawal poochhiye.",
+      "keywords": [
+        "jyotish",
+        "kundli",
+        "tarot",
+        "numerology",
+        "rashifal",
+        "adhyatmik margdarshan"
+      ]
+    },
+    "zh-Hans": {
+      "markets": ["CN", "SG"],
+      "title": "FutureSeer: AI 神秘指引",
+      "subtitle": "占星 塔罗 数字命理",
+      "shortDescription": "覆盖 50+ 体系的个性化神秘指引。",
+      "longDescription": "FutureSeer 将占星、塔罗、数字命理等体系整合到一个应用。一次生成你的神秘档案，持续保存报告，并通过统一 Seer 获得跨体系洞察。",
+      "keywords": [
+        "占星",
+        "塔罗",
+        "星盘",
+        "运势",
+        "数字命理",
+        "灵性指引"
+      ]
+    },
+    "zh-Hant": {
+      "markets": ["HK", "TW"],
+      "title": "FutureSeer: AI 神秘指引",
+      "subtitle": "占星 塔羅 數字命理",
+      "shortDescription": "涵蓋 50+ 體系的個人化神秘指引。",
+      "longDescription": "FutureSeer 將占星、塔羅、數字命理等體系整合在同一體驗中。一次建立神秘檔案、長期保存報告，並透過統一 Seer 取得跨體系洞察。",
+      "keywords": [
+        "占星",
+        "塔羅",
+        "星盤",
+        "運勢",
+        "數字命理",
+        "靈性指引"
+      ]
+    }
+  }
+}

@@ -61,7 +61,7 @@ export default function AskTheSeerPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] text-white flex flex-col relative">
+    <div data-onboarding="ask-seer" className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] text-white flex flex-col relative">
       <SeqEaseMicroSurvey userId={user?.uid ?? null} />
       <div
         className="absolute inset-0 pointer-events-none"

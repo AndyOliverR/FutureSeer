@@ -67,7 +67,7 @@ function ToolsPageContent() {
   // RENDER MATERIAL 3 (mobile layout: small screen or native)
   if (isMobileLayout) {
     return (
-      <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 overflow-x-hidden">
+      <div data-onboarding="tools" className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 overflow-x-hidden">
         <div className="px-4 py-6 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-heading font-bold text-amber-400 uppercase tracking-tight">Mystical Tools</h1>
@@ -150,7 +150,7 @@ function ToolsPageContent() {
 
   // RENDER ORIGINAL WEB DESIGN
   return (
-    <div className="min-h-screen pt-24 pb-12 px-6">
+    <div data-onboarding="tools" className="min-h-screen pt-24 pb-12 px-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-heading font-light text-amber-400 mb-4 tracking-widest uppercase">Mystical Tools</h1>
