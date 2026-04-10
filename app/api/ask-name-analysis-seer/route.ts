@@ -56,27 +56,51 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 /** Normalize name analysis from request or comprehensiveProfile to NameAnalysisPayload. */
 function normalizeToNamePayload(
-  nameAnalysis: any,
-  comprehensiveProfile?: any
+  nameAnalysis: unknown,
+  comprehensiveProfile?: Record<string, unknown>
 ): NameAnalysisPayload {
-  const source = nameAnalysis ?? comprehensiveProfile?.nameAnalysis ?? comprehensiveProfile?.['Name Analysis'];
+  const raw =
+    nameAnalysis ??
+    comprehensiveProfile?.nameAnalysis ??
+    comprehensiveProfile?.['Name Analysis'];
+  const source =
+    raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null;
   if (!source) {
     throw new Error(
       'Name Analysis requires name data. Generate your name analysis first to use Ask the Seer.'
     );
   }
+  const str = (a: unknown, b: unknown): string | undefined => {
+    if (typeof a === 'string' && a) return a;
+    if (typeof b === 'string' && b) return b;
+    return undefined;
+  };
+  const num = (a: unknown, b: unknown): number | undefined => {
+    if (typeof a === 'number' && !Number.isNaN(a)) return a;
+    if (typeof b === 'number' && !Number.isNaN(b)) return b;
+    return undefined;
+  };
+  const miss =
+    Array.isArray(source.missingElements) ? source.missingElements :
+    Array.isArray(source.missing_elements) ? source.missing_elements :
+    undefined;
+  const pers =
+    source.personality && typeof source.personality === 'object' && !Array.isArray(source.personality)
+      ? (source.personality as NameAnalysisPayload['personality'])
+      : undefined;
+
   return {
-    fullName: source.fullName ?? source.full_name,
-    nameVibration: source.nameVibration ?? source.name_vibration,
-    lifePathNumber: source.lifePathNumber ?? source.life_path_number,
-    destinyNumber: source.destinyNumber ?? source.destiny_number,
-    soulNumber: source.soulNumber ?? source.soul_number,
-    personalityNumber: source.personalityNumber ?? source.personality_number,
-    nameHarmony: source.nameHarmony ?? source.name_harmony,
-    nameBalance: source.nameBalance ?? source.name_balance,
-    dominantElement: source.dominantElement ?? source.dominant_element,
-    personality: source.personality,
-    missingElements: source.missingElements ?? source.missing_elements,
+    fullName: str(source.fullName, source.full_name),
+    nameVibration: num(source.nameVibration, source.name_vibration),
+    lifePathNumber: num(source.lifePathNumber, source.life_path_number),
+    destinyNumber: num(source.destinyNumber, source.destiny_number),
+    soulNumber: num(source.soulNumber, source.soul_number),
+    personalityNumber: num(source.personalityNumber, source.personality_number),
+    nameHarmony: num(source.nameHarmony, source.name_harmony),
+    nameBalance: num(source.nameBalance, source.name_balance),
+    dominantElement: str(source.dominantElement, source.dominant_element),
+    personality: pers,
+    missingElements: miss as string[] | undefined,
   };
 }
 
@@ -163,7 +187,7 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
     const stream = await createAIStream({

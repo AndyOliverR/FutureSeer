@@ -10,6 +10,7 @@ import {
   getIChingSliceForQuestionType,
   type IChingQuestionType,
 } from '@/lib/ichingSeerState';
+import type { IChingAnalysis } from '@/lib/ichingIntelligence';
 import { buildIChingSeerSystemPrompt } from '@/lib/ichingSeerPrompts';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
@@ -55,8 +56,19 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 interface IChingSeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
-  ichingAnalysis: any;
+  userProfile?: unknown;
+  ichingAnalysis: Record<string, unknown> & {
+    hexagram?: {
+      number?: number;
+      name?: string;
+      lines?: Array<{ changing?: boolean; position?: number }>;
+      trigramUpper?: string;
+      trigramLower?: string;
+      elementUpper?: string;
+      elementLower?: string;
+    };
+    recommendations?: string[];
+  };
   sessionId?: string;
 }
 
@@ -98,7 +110,7 @@ function getRefusalMessage(question: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, question, userProfile, ichingAnalysis, sessionId }: IChingSeerRequest = await request.json();
+    const { userId, question, ichingAnalysis, sessionId }: IChingSeerRequest = await request.json();
 
     if (!userId || !question) {
       return jsonWithRobots({
@@ -114,10 +126,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    const ichingForLib = ichingAnalysis as unknown as IChingAnalysis;
+    const hex = ichingForLib.hexagram;
+
     let state;
     try {
-      state = buildIChingState(ichingAnalysis);
-    } catch (err) {
+      state = buildIChingState(ichingForLib);
+    } catch {
       return jsonWithRobots({
         success: false,
         error: 'Run an I Ching reading first to use Ask the Seer.'
@@ -185,10 +200,10 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
-    const chartSlice = getIChingSliceForQuestionType(questionType, state, ichingAnalysis);
+    const chartSlice = getIChingSliceForQuestionType(questionType, state, ichingForLib);
     const systemPrompt = buildIChingSeerSystemPrompt(chartSlice, questionType);
 
     return withRobotsResponse(
@@ -223,23 +238,17 @@ export async function POST(request: NextRequest) {
               answer: fullResponse,
               confidence: 0.85,
               hexagramReferences: {
-                hexagramNumber: ichingAnalysis.hexagram.number,
-                hexagramName: ichingAnalysis.hexagram.name,
-                changingLines: (ichingAnalysis.hexagram.lines || [])
-                  .filter((l: any) => l.changing)
-                  .map((l: any) => l.position) || [],
-                trigrams: [
-                  ichingAnalysis.hexagram.trigramUpper || '',
-                  ichingAnalysis.hexagram.trigramLower || ''
-                ].filter(Boolean),
-                elements: [
-                  ichingAnalysis.hexagram.elementUpper || '',
-                  ichingAnalysis.hexagram.elementLower || ''
-                ].filter(Boolean)
+                hexagramNumber: hex.number ?? 0,
+                hexagramName: hex.name ?? '',
+                changingLines: (hex.lines || [])
+                  .filter((l) => Boolean(l.changing))
+                  .map((l) => l.position ?? 0),
+                trigrams: [hex.trigramUpper || '', hex.trigramLower || ''].filter(Boolean),
+                elements: [hex.elementUpper || '', hex.elementLower || ''].filter(Boolean),
               },
               timing: [],
-              guidance: ichingAnalysis.recommendations || [],
-              followUpQuestions: generateFollowUpQuestions(questionType, { ichingAnalysis })
+              guidance: ichingForLib.recommendations || [],
+              followUpQuestions: generateFollowUpQuestions(questionType)
             };
 
             const userMessage: MemoryMessage = {
@@ -292,7 +301,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateFollowUpQuestions(questionType: IChingQuestionType, context: any): string[] {
+function generateFollowUpQuestions(questionType: IChingQuestionType): string[] {
   const followUps: { [key in IChingQuestionType]?: string[] } = {
     nature_of_situation: [
       'How should I approach this situation?',
@@ -325,24 +334,6 @@ function generateFollowUpQuestions(questionType: IChingQuestionType, context: an
     'How should I approach this?',
     'Should I advance, hold, or withdraw?'
   ];
-}
-
-async function getConversationHistory(userId: string, sessionId?: string): Promise<any[]> {
-  try {
-    const db = getFirebaseDB();
-    const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
-    const session = sessionId || `session_${Date.now()}`;
-    
-    // Use proper Firestore collection reference
-    const messagesRef = collection(db, 'ichingSeerConversations', userId, 'sessions', session, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(10));
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => doc.data()).reverse(); // Reverse to get chronological order
-  } catch (error) {
-    devLog.error('Error getting conversation history:', error);
-    return []; // Return empty array on error
-  }
 }
 
 async function storeConversation(userId: string, sessionId: string | undefined, question: string, response: IChingSeerResponse['data']) {
@@ -389,7 +380,7 @@ function calculateSimilarity(question1: string, question2: string): number {
 }
 
 // Check for cached similar questions
-async function checkCachedQuestions(userId: string, question: string): Promise<any | null> {
+async function checkCachedQuestions(userId: string, question: string): Promise<{ answer: string; question?: string } | null> {
   try {
     const db = getFirebaseDB();
     const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
@@ -399,12 +390,15 @@ async function checkCachedQuestions(userId: string, question: string): Promise<a
     const snapshot = await getDocs(q);
     
     for (const doc of snapshot.docs) {
-      const cachedQA = doc.data();
+      const cachedQA = doc.data() as { answer?: unknown; question?: unknown };
+      if (typeof cachedQA.question !== 'string' || typeof cachedQA.answer !== 'string') {
+        continue;
+      }
       const similarity = calculateSimilarity(question, cachedQA.question);
       
       if (similarity >= 5) { // Threshold for similarity
         devLog.debug(`🎯 Found similar I Ching question with similarity score: ${similarity}`, undefined, 'ask-iching-seer');
-        return cachedQA;
+        return { answer: cachedQA.answer, question: cachedQA.question };
       }
     }
     

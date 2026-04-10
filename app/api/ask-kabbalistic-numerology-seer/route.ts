@@ -56,31 +56,36 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 /** Normalize kabbalistic payload from request or comprehensiveProfile. */
 function normalizeToKabbalisticPayload(
-  kabbalisticAnalysis: any,
-  comprehensiveProfile?: any
+  kabbalisticAnalysis: unknown,
+  comprehensiveProfile?: Record<string, unknown>
 ): KabbalisticAnalysisPayload {
-  if (kabbalisticAnalysis?.chart?.nameAnalysis) {
-    return { chart: kabbalisticAnalysis.chart };
-  }
-  if (kabbalisticAnalysis?.nameAnalysis) {
-    return {
-      chart: { nameAnalysis: kabbalisticAnalysis.nameAnalysis },
-      nameAnalysis: kabbalisticAnalysis.nameAnalysis,
-    };
-  }
-  if (comprehensiveProfile) {
-    const kabbalistic =
-      comprehensiveProfile.kabbalisticNumerology ??
-      comprehensiveProfile['Kabbalistic Numerology'];
-    if (kabbalistic?.chart?.nameAnalysis) {
-      return { chart: kabbalistic.chart };
+  const asRoot = (v: unknown): Record<string, unknown> | undefined =>
+    v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : undefined;
+
+  const fromRoot = (root: Record<string, unknown> | undefined): KabbalisticAnalysisPayload | null => {
+    if (!root) return null;
+    const chart = asRoot(root.chart);
+    if (chart?.nameAnalysis) {
+      return { chart: chart as KabbalisticAnalysisPayload['chart'] };
     }
-    if (kabbalistic?.nameAnalysis) {
+    if (root.nameAnalysis) {
       return {
-        chart: { nameAnalysis: kabbalistic.nameAnalysis },
-        nameAnalysis: kabbalistic.nameAnalysis,
+        chart: { nameAnalysis: root.nameAnalysis as KabbalisticAnalysisPayload['nameAnalysis'] },
+        nameAnalysis: root.nameAnalysis as KabbalisticAnalysisPayload['nameAnalysis'],
       };
     }
+    return null;
+  };
+
+  const direct = fromRoot(asRoot(kabbalisticAnalysis));
+  if (direct) return direct;
+
+  if (comprehensiveProfile) {
+    const kabbalistic = asRoot(
+      comprehensiveProfile.kabbalisticNumerology ?? comprehensiveProfile['Kabbalistic Numerology']
+    );
+    const fromProfile = fromRoot(kabbalistic);
+    if (fromProfile) return fromProfile;
   }
   throw new Error(
     'Kabbalistic Numerology requires name analysis. Generate your Kabbalistic analysis first to use Ask the Seer.'
@@ -170,7 +175,7 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
     const stream = await createAIStream({

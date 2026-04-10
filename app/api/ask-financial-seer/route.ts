@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
+import { chartSignLabel } from '@/lib/chartSignLabel';
 import { createAIStream } from '@/lib/aiGateway';
 import { buildFinancialSeerSystemPrompt } from '@/lib/financialAstrology/financialAstrologyPrompts';
 
@@ -47,8 +48,11 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 interface AskFinancialSeerRequest {
   userId: string;
   question: string;
-  userProfile: any;
-  westernChartData?: any;
+  userProfile: Record<string, unknown>;
+  westernChartData?: {
+    planets?: Array<{ name?: string; sign?: { signName?: string } | string; house?: number }>;
+    houses?: Array<{ number?: number; sign?: { signName?: string } | string }>;
+  };
   financialReport?: Record<string, unknown>;
   sessionId?: string;
 }
@@ -84,21 +88,21 @@ function formatFinancialReportContext(report: Record<string, unknown> | undefine
   return lines.join('\n');
 }
 
-function formatChartSummary(chartData: any): string {
+function formatChartSummary(chartData: AskFinancialSeerRequest['westernChartData']): string {
   if (!chartData?.planets?.length) return '';
-  const sun = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'sun');
-  const moon = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'moon');
-  const venus = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'venus');
-  const jupiter = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'jupiter');
-  const saturn = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'saturn');
-  const rising = chartData.houses?.[0] || chartData.houses?.find((h: any) => (h.number || 1) === 1);
+  const sun = chartData.planets.find((p) => p.name?.toLowerCase() === 'sun');
+  const moon = chartData.planets.find((p) => p.name?.toLowerCase() === 'moon');
+  const venus = chartData.planets.find((p) => p.name?.toLowerCase() === 'venus');
+  const jupiter = chartData.planets.find((p) => p.name?.toLowerCase() === 'jupiter');
+  const saturn = chartData.planets.find((p) => p.name?.toLowerCase() === 'saturn');
+  const rising = chartData.houses?.[0] || chartData.houses?.find((h) => (h.number || 1) === 1);
   const parts: string[] = [];
-  if (sun) parts.push(`Sun: ${sun.sign?.signName || sun.sign} in House ${sun.house}`);
-  if (moon) parts.push(`Moon: ${moon.sign?.signName || moon.sign} in House ${moon.house}`);
-  if (venus) parts.push(`Venus: ${venus.sign?.signName || venus.sign} in House ${venus.house}`);
-  if (jupiter) parts.push(`Jupiter: ${jupiter?.sign?.signName || jupiter?.sign} in House ${jupiter?.house}`);
-  if (saturn) parts.push(`Saturn: ${saturn?.sign?.signName || saturn?.sign} in House ${saturn?.house}`);
-  if (rising) parts.push(`Rising: ${rising.sign?.signName || rising.sign}`);
+  if (sun) parts.push(`Sun: ${chartSignLabel(sun.sign)} in House ${sun.house}`);
+  if (moon) parts.push(`Moon: ${chartSignLabel(moon.sign)} in House ${moon.house}`);
+  if (venus) parts.push(`Venus: ${chartSignLabel(venus.sign)} in House ${venus.house}`);
+  if (jupiter) parts.push(`Jupiter: ${chartSignLabel(jupiter?.sign)} in House ${jupiter?.house}`);
+  if (saturn) parts.push(`Saturn: ${chartSignLabel(saturn?.sign)} in House ${saturn?.house}`);
+  if (rising) parts.push(`Rising: ${chartSignLabel(rising.sign)}`);
   return parts.join('; ');
 }
 

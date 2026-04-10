@@ -10,6 +10,7 @@ import {
   getNavaratnaSliceForQuestionType,
   type NavaratnaQuestionType,
 } from '@/lib/navaratnaSeerState';
+import type { NavaratnaAnalysis } from '@/lib/navaratnaIntelligence';
 import { buildNavaratnaSeerSystemPrompt } from '@/lib/navaratnaSeerPrompts';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
@@ -55,9 +56,22 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 interface NavaratnaSeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
-  navaratnaAnalysis?: any;
-  comprehensiveProfile?: any;
+  userProfile?: unknown;
+  navaratnaAnalysis?: Record<string, unknown> & {
+    chartSummary?: unknown;
+    recommendations?: {
+      lifeStone?: { gemstone?: { english?: string } };
+      beneficStones?: Array<{ gemstone?: { english?: string } }>;
+      avoidedStones?: Array<{ gemstone?: string }>;
+      dashaStone?: { gemstone?: { english?: string } };
+    };
+    planetaryAnalysis?: Array<{ planet?: string }>;
+    safetyWarnings?: string[];
+  };
+  comprehensiveProfile?: Record<string, unknown> & {
+    navaratna?: { analysis?: NavaratnaSeerRequest['navaratnaAnalysis'] } | NavaratnaSeerRequest['navaratnaAnalysis'];
+    navaratnaPlanetaryStones?: { analysis?: NavaratnaSeerRequest['navaratnaAnalysis'] } | NavaratnaSeerRequest['navaratnaAnalysis'];
+  };
   sessionId?: string;
 }
 
@@ -94,11 +108,15 @@ function getRefusalMessage(question: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body: NavaratnaSeerRequest = await request.json();
-    const { userId, question, userProfile, sessionId } = body;
-    let navaratnaAnalysis = body.navaratnaAnalysis;
-    if (!navaratnaAnalysis && body.comprehensiveProfile) {
+    const { userId, question, sessionId } = body;
+    let rawNavaratna: unknown = body.navaratnaAnalysis;
+    if (!rawNavaratna && body.comprehensiveProfile) {
       const cp = body.comprehensiveProfile;
-      navaratnaAnalysis = cp.navaratna?.analysis ?? cp.navaratna ?? cp.navaratnaPlanetaryStones?.analysis ?? cp.navaratnaPlanetaryStones;
+      rawNavaratna =
+        cp.navaratna?.analysis ??
+        cp.navaratna ??
+        cp.navaratnaPlanetaryStones?.analysis ??
+        cp.navaratnaPlanetaryStones;
     }
 
     if (!userId || !question) {
@@ -108,7 +126,15 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!navaratnaAnalysis || !navaratnaAnalysis.chartSummary) {
+    const navaratnaAnalysis =
+      rawNavaratna &&
+      typeof rawNavaratna === 'object' &&
+      !Array.isArray(rawNavaratna) &&
+      (rawNavaratna as Record<string, unknown>).chartSummary != null
+        ? (rawNavaratna as NavaratnaAnalysis)
+        : null;
+
+    if (!navaratnaAnalysis) {
       return jsonWithRobots({
         success: false,
         error: 'Gemstone recommendations cannot be made safely without full chart validation.'
@@ -118,7 +144,7 @@ export async function POST(request: NextRequest) {
     let state;
     try {
       state = buildNavaratnaGemstoneState(navaratnaAnalysis);
-    } catch (err) {
+    } catch {
       return jsonWithRobots({
         success: false,
         error: 'Gemstone recommendations cannot be made safely without full chart validation.'
@@ -186,7 +212,7 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
     const chartSlice = getNavaratnaSliceForQuestionType(questionType, state, navaratnaAnalysis);
@@ -224,14 +250,14 @@ export async function POST(request: NextRequest) {
               answer: fullResponse,
               confidence: 0.85,
               gemstoneReferences: {
-                lifeStone: navaratnaAnalysis.recommendations?.lifeStone?.gemstone.english || null,
-                beneficStones: navaratnaAnalysis.recommendations?.beneficStones?.map((s: any) => s.gemstone.english) || [],
-                avoidedStones: navaratnaAnalysis.recommendations?.avoidedStones?.map((s: any) => s.gemstone) || [],
-                dashaStone: navaratnaAnalysis.recommendations?.dashaStone?.gemstone.english || null
+                lifeStone: navaratnaAnalysis.recommendations?.lifeStone?.gemstone?.english ?? null,
+                beneficStones: navaratnaAnalysis.recommendations?.beneficStones?.map((s) => s.gemstone?.english ?? '')?.filter(Boolean) || [],
+                avoidedStones: navaratnaAnalysis.recommendations?.avoidedStones?.map((s) => s.gemstone ?? '')?.filter(Boolean) || [],
+                dashaStone: navaratnaAnalysis.recommendations?.dashaStone?.gemstone?.english ?? null,
               },
-              planetaryInfluences: navaratnaAnalysis.planetaryAnalysis?.map((p: any) => p.planet) || [],
+              planetaryInfluences: navaratnaAnalysis.planetaryAnalysis?.map((p) => p.planet ?? '')?.filter(Boolean) || [],
               guidance: navaratnaAnalysis.safetyWarnings || [],
-              followUpQuestions: generateFollowUpQuestions(questionType, { navaratnaAnalysis })
+              followUpQuestions: generateFollowUpQuestions(questionType)
             };
 
             const userMessage: MemoryMessage = {
@@ -284,7 +310,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateFollowUpQuestions(questionType: NavaratnaQuestionType, context: any): string[] {
+function generateFollowUpQuestions(questionType: NavaratnaQuestionType): string[] {
   const followUps: { [key in NavaratnaQuestionType]?: string[] } = {
     which_stone: [
       'What is my Life Stone and why?',
@@ -317,23 +343,6 @@ function generateFollowUpQuestions(questionType: NavaratnaQuestionType, context:
     'What is my Life Stone and why?',
     'How should I wear my Life Stone?'
   ];
-}
-
-async function getConversationHistory(userId: string, sessionId?: string): Promise<any[]> {
-  try {
-    const db = getFirebaseDB();
-    const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
-    const session = sessionId || `session_${Date.now()}`;
-    
-    const messagesRef = collection(db, 'navaratnaSeerConversations', userId, 'sessions', session, 'messages');
-    const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(10));
-    const snapshot = await getDocs(q);
-    
-    return snapshot.docs.map(doc => doc.data()).reverse();
-  } catch (error) {
-    devLog.error('Error getting conversation history:', error);
-    return [];
-  }
 }
 
 async function storeConversation(userId: string, sessionId: string | undefined, question: string, response: NavaratnaSeerResponse['data']) {
@@ -375,7 +384,7 @@ function calculateSimilarity(question1: string, question2: string): number {
   return matches;
 }
 
-async function checkCachedQuestions(userId: string, question: string): Promise<any | null> {
+async function checkCachedQuestions(userId: string, question: string): Promise<{ answer: string; question?: string } | null> {
   try {
     const db = getFirebaseDB();
     const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
@@ -385,12 +394,15 @@ async function checkCachedQuestions(userId: string, question: string): Promise<a
     const snapshot = await getDocs(q);
     
     for (const doc of snapshot.docs) {
-      const cachedQA = doc.data();
+      const cachedQA = doc.data() as { answer?: unknown; question?: unknown };
+      if (typeof cachedQA.question !== 'string' || typeof cachedQA.answer !== 'string') {
+        continue;
+      }
       const similarity = calculateSimilarity(question, cachedQA.question);
       
       if (similarity >= 5) {
         devLog.debug(`🎯 Found similar Navaratna question with similarity score: ${similarity}`, undefined, 'ask-navaratna-seer');
-        return cachedQA;
+        return { answer: cachedQA.answer, question: cachedQA.question };
       }
     }
     

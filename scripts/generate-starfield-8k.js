@@ -35,7 +35,7 @@ const NUM_GOLDEN_STARS = 1000; // ~1,000 subtle golden twinkling stars
 const seed = 12345; // Seed for reproducible randomness
 
 function seededRandom(seed) {
-  let x = Math.sin(seed++) * 10000;
+  const x = Math.sin(seed++) * 10000;
   return x - Math.floor(x);
 }
 

@@ -111,7 +111,7 @@ export default function AdminSecurityPage() {
               Security Recommendations
             </CardTitle>
             <CardDescription className="text-slate-400 text-sm">
-              Best practices to enhance your application's security
+              Best practices to enhance your application&apos;s security
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -192,7 +192,7 @@ export default function AdminSecurityPage() {
               </Alert>
 
               <div className="bg-slate-800/80 rounded-lg border border-slate-600 p-4 font-mono text-sm text-slate-300">
-                <div className="text-green-400 mb-2">// Current Security Rules Status:</div>
+                <div className="text-green-400 mb-2">{'// Current Security Rules Status:'}</div>
                 <div className="text-slate-300 space-y-1">
                   <div>✅ Authentication required for all operations</div>
                   <div>✅ User data isolation enforced</div>

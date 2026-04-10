@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    let { subscriptionId, userId } = body;
+    let { subscriptionId } = body;
+    const { userId } = body;
     if (!subscriptionId && userId) {
       if (!adminDb) {
         return NextResponse.json({ error: 'Database not available' }, { status: 500 });
