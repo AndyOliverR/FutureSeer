@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { SecurityDashboard } from '@/components/admin/SecurityDashboard';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield, AlertTriangle, CheckCircle, ChevronLeft } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 export default function AdminSecurityPage() {
   const { isAdmin, isSuperadmin, loading } = useAuth();
 
@@ -36,13 +37,9 @@ export default function AdminSecurityPage() {
   return (
     <div className="min-h-screen overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-20 space-y-6">
-        <Link
-          href="/admin/dashboard"
-          className="inline-flex items-center gap-1 text-slate-300 hover:text-slate-200 text-sm font-medium mb-6"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Admin Dashboard
-        </Link>
+        <Button asChild type="button" variant="outline" size="sm" className="mb-6 text-xs">
+          <Link href="/admin/dashboard">Back to Admin Dashboard</Link>
+        </Button>
         <h1 className="text-xl font-semibold text-slate-200 mb-2">Security Administration</h1>
         <p className="text-slate-400 text-sm max-w-2xl mb-6">
           Monitor and manage the security of your FutureSeer application. Track authentication events, suspicious activities, and system health.
