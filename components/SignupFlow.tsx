@@ -190,7 +190,7 @@ export function SignupFlow({
                   ? 'text-green-400'
                   : index === currentStep - 1
                   ? 'text-amber-400'
-                  : 'text-slate-500'
+                  : 'text-slate-400'
               }`}
             >
               <div

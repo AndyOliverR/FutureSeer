@@ -101,8 +101,9 @@ export function AboutReferral() {
               </div>
               <Button
                 onClick={handleCopyReferralCode}
-                className="h-12 px-6 bg-primary text-primary-foreground rounded-xl font-bold"
+                className="h-12 px-6 bg-primary-container text-primary-on-container rounded-xl font-bold"
                 disabled={!referralStats.referralCode || loading}
+                aria-label={copiedCode ? "Referral code copied" : "Copy referral code"}
               >
                 {copiedCode ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
               </Button>
@@ -111,7 +112,7 @@ export function AboutReferral() {
 
           {/* How It Works */}
           <div className="mb-8 space-y-4">
-            <h4 className="text-sm font-bold text-white uppercase tracking-widest opacity-70">How It Works</h4>
+            <h3 className="text-sm font-bold text-surface-on-variant uppercase tracking-widest">How It Works</h3>
             <div className="space-y-3">
               {[
                 "Share your code with friends",

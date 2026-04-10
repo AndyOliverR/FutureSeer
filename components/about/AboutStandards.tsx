@@ -26,7 +26,7 @@ export function AboutStandards() {
               className={`p-6 rounded-[32px] glass-effect border ${item.color} text-center shadow-xl transition-all duration-300`}
             >
               <div className="text-4xl mb-4">{item.emoji}</div>
-              <h4 className="text-lg font-heading font-bold gold-glow mb-2">{item.title}</h4>
+              <h3 className="text-lg font-heading font-bold gold-glow mb-2">{item.title}</h3>
               <p className="text-sm text-white/80 font-normal">{item.sub}</p>
               <p className="text-[10px] text-amber-400/70 mt-2 uppercase font-bold tracking-widest">{item.detail}</p>
             </motion.div>
@@ -39,7 +39,7 @@ export function AboutStandards() {
           viewport={{ once: true }}
           className="p-6 sm:p-8 rounded-[32px] glass-effect border border-amber-500/20 hover:border-amber-500/40 transition-all duration-300 shadow-xl"
         >
-          <h4 className="text-xl font-heading font-bold gold-glow mb-4 uppercase tracking-tight">Validated Wisdom</h4>
+          <h3 className="text-xl font-heading font-bold gold-glow mb-4 uppercase tracking-tight">Validated Wisdom</h3>
           <p className="text-base text-surface-on leading-relaxed font-normal opacity-90 mb-4">
             Astrology, numerology, divination, tarot, I Ching, Chinese & Indian systems, energy practices—all using validated traditional methods and modern astronomical data.
           </p>

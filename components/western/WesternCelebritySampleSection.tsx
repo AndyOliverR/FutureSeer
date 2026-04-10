@@ -34,7 +34,7 @@ export function WesternCelebritySampleSection() {
             >
               <span className="font-medium text-slate-900">{c.name}</span>
               <span className="text-amber-800 font-medium">{c.sunSign}</span>
-              <span className="text-slate-500 w-full sm:w-auto sm:text-right text-xs">
+              <span className="text-slate-600 w-full sm:w-auto sm:text-right text-xs">
                 {c.birthDate.replace(/-/g, ' · ')}
               </span>
             </li>

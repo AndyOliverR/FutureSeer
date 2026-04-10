@@ -71,7 +71,7 @@ export function AboutPricing({ countryCode = 'IN' }: AboutPricingProps) {
             <Sparkles className="w-8 h-8 text-amber-400" />
           </div>
           <h3 className="text-3xl font-heading font-bold gold-glow mb-2 uppercase tracking-widest">First Month FREE</h3>
-          <p className="text-white/70 text-sm font-medium uppercase tracking-widest">Unrestricted Access to All Tools</p>
+          <p className="text-surface-on text-sm font-medium uppercase tracking-widest">Unrestricted Access to All Tools</p>
         </motion.div>
 
         {/* Pricing Grid */}

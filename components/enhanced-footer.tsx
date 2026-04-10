@@ -83,7 +83,10 @@ export function EnhancedFooter() {
                   className="h-6 px-3 bg-primary text-xs rounded-full font-bold"
                 >
                   {loading ? (
-                    <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" aria-hidden />
+                      <span className="sr-only">Submitting</span>
+                    </>
                   ) : (
                     "Join"
                   )}
@@ -133,7 +136,7 @@ export function EnhancedFooter() {
             <Link
               href="/mobile-waitlist"
               className="inline-flex flex-col gap-1"
-              aria-label="Join iOS app waitlist"
+              aria-label="Coming Soon - Join iOS app waitlist"
             >
               <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
               <Image
@@ -154,7 +157,7 @@ export function EnhancedFooter() {
             <Link
               href="/mobile-waitlist"
               className="inline-flex flex-col gap-1"
-              aria-label="Join Android app waitlist"
+              aria-label="Coming Soon - Join Android app waitlist"
             >
               <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
               <Image

@@ -39,7 +39,7 @@ export function PersonalNote() {
               A Note From Me
             </h1>
             <p className="text-xl font-bold text-white tracking-wide">AnDY</p>
-            <p className="text-surface-on-variant text-sm font-medium uppercase tracking-widest opacity-70">
+            <p className="text-surface-on-variant text-sm font-medium uppercase tracking-widest">
               Founder, FutureSeer
             </p>
           </div>
