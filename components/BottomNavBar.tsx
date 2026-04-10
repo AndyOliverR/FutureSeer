@@ -61,6 +61,15 @@ export function BottomNavBar() {
             <Link
               key={item.href}
               href={item.href}
+              data-onboarding={
+                item.href === "/tools"
+                  ? "tools"
+                  : item.href === "/ask-the-seer"
+                  ? "ask-seer"
+                  : item.href === "/profile"
+                  ? "profile"
+                  : undefined
+              }
               className="flex flex-col items-center justify-center flex-1 min-w-0 h-full group"
             >
               <div className="relative flex flex-col items-center justify-center">

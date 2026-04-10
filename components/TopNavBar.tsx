@@ -144,6 +144,17 @@ export function TopNavBar() {
                   <Link
                     key={link.href}
                     href={link.href}
+                    data-onboarding={
+                      link.href === "/tools"
+                        ? "tools"
+                        : link.href === "/ask-the-seer"
+                        ? "ask-seer"
+                        : link.href === "/profile"
+                        ? "profile"
+                        : link.href === "/pricing"
+                        ? "pricing"
+                        : undefined
+                    }
                     className="flex items-center gap-4 w-full text-left px-4 py-3 rounded-xl text-white active:bg-amber-500/20 transition-colors"
                     onClick={() => setShowMenu(false)}
                   >

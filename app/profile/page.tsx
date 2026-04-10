@@ -713,7 +713,7 @@ export default function ProfilePage() {
   // Android / Mobile: Material 3 layout
   if (isMobileLayout) {
     return (
-    <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
+    <div data-onboarding="profile" className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
       <div className="flex items-center justify-between h-16 mb-6">
         <Link href="/tools" className="p-2 text-amber-400 active:scale-90 transition-transform"><ArrowLeft className="w-6 h-6" /></Link>
         <h1 className="text-xl font-heading font-bold text-amber-400 uppercase tracking-tight">Cosmic Profile</h1>
@@ -1088,7 +1088,7 @@ export default function ProfilePage() {
 
   // Web: devotionist layout (deep blue + golden yellow, starfield)
   return (
-    <div className="min-h-screen starfield-ultra-sharp flex flex-col pb-16 px-4 md:px-8 overflow-x-hidden">
+    <div data-onboarding="profile" className="min-h-screen starfield-ultra-sharp flex flex-col pb-16 px-4 md:px-8 overflow-x-hidden">
       <div className="max-w-2xl mx-auto w-full py-8">
         <div className="flex items-center justify-between h-14 mb-8">
           <Link href="/tools" className="text-amber-400 flex items-center gap-2 font-heading tracking-widest uppercase text-sm opacity-80 hover:opacity-100"><ArrowLeft className="w-5 h-5" /> Back</Link>

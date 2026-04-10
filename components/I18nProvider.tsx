@@ -148,6 +148,18 @@ interface I18nProviderProps {
   children: React.ReactNode
 }
 
+function detectPreferredLanguage(): string {
+  if (typeof navigator === "undefined") return "en";
+  const language = navigator.language?.toLowerCase() ?? "en";
+  if (language.startsWith("es")) return "es";
+  if (language.startsWith("pt")) return "pt";
+  if (language.startsWith("fr")) return "fr";
+  if (language.startsWith("de")) return "de";
+  if (language.startsWith("hi")) return "hi";
+  if (language.startsWith("zh")) return "zh";
+  return "en";
+}
+
 export function I18nProvider({ children }: I18nProviderProps) {
   useEffect(() => {
     const savedLanguage = localStorage.getItem('userSettings')
@@ -160,6 +172,12 @@ export function I18nProvider({ children }: I18nProviderProps) {
       } catch (error) {
         devLog.error('Failed to load language setting:', error, 'I18nProvider')
       }
+      return;
+    }
+
+    const autoLanguage = detectPreferredLanguage();
+    if (i18n.language !== autoLanguage) {
+      i18n.changeLanguage(autoLanguage);
     }
   }, [])
 

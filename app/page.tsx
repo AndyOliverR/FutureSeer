@@ -13,6 +13,7 @@ export default function HomePage() {
     <div
       className="min-h-screen w-full min-w-0 max-w-full flex flex-col starfield-ultra-sharp bg-surface md:bg-transparent pt-[env(safe-area-inset-top)] md:pt-0 pb-24 md:pb-0 overflow-x-hidden"
       data-page="landing"
+      data-onboarding="dashboard"
     >
       <div className="relative flex-1 z-20 bg-transparent flex flex-col w-full min-w-0 max-w-full">
         <HeroSection />

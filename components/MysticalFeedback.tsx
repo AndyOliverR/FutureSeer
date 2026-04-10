@@ -116,6 +116,7 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
             whileHover={{}}
             whileTap={{ scale: 0.9 }}
             className="pointer-events-auto w-14 h-14 bg-transparent border-none flex items-center justify-center relative"
+            data-onboarding="feedback"
             aria-label="Open feedback"
             tabIndex={isAnyModalOpen ? -1 : 0}
           >
