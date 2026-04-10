@@ -54,12 +54,15 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 interface EnergyHealingSeerRequest {
   question: string;
-  analysis?: any;
+  analysis?: unknown;
   conversationHistory?: Array<{ question: string; answer: string }>;
   /** Aggregator contract */
   userId?: string;
-  userProfile?: any;
-  comprehensiveProfile?: any;
+  userProfile?: unknown;
+  comprehensiveProfile?: Record<string, unknown> & {
+    energyHealing?: unknown;
+    'Energy & Healing'?: unknown;
+  };
 }
 
 export async function POST(request: NextRequest) {

@@ -57,29 +57,52 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 
 /** Normalize Vastu reading/analysis from request to VastuReadingPayload. */
-function normalizeToVastuPayload(reading: any): VastuReadingPayload {
-  if (!reading?.entranceDirection && !reading?.mainEntranceAnalysis?.houseFacing) {
+function normalizeToVastuPayload(reading: unknown): VastuReadingPayload {
+  const r =
+    reading && typeof reading === 'object' && !Array.isArray(reading)
+      ? (reading as Record<string, unknown>)
+      : null;
+  if (!r) {
     throw new Error(
       'Vastu requires orientation (entrance or facing direction). Complete your Vastu analysis or provide orientation to use Ask the Seer.'
     );
   }
-  const rooms = reading.rooms ?? [];
+  const mainEnt =
+    r.mainEntranceAnalysis && typeof r.mainEntranceAnalysis === 'object' && !Array.isArray(r.mainEntranceAnalysis)
+      ? (r.mainEntranceAnalysis as Record<string, unknown>)
+      : undefined;
+  const facingFromMain =
+    mainEnt && typeof mainEnt.houseFacing === 'string' ? mainEnt.houseFacing : undefined;
+  const entranceDir = typeof r.entranceDirection === 'string' ? r.entranceDirection : undefined;
+  if (!entranceDir?.trim() && !facingFromMain?.trim()) {
+    throw new Error(
+      'Vastu requires orientation (entrance or facing direction). Complete your Vastu analysis or provide orientation to use Ask the Seer.'
+    );
+  }
+  const roomsRaw = Array.isArray(r.rooms) ? r.rooms : [];
   return {
-    propertyType: reading.propertyType ?? 'residential',
-    plotShape: reading.plotShape,
-    entranceDirection:
-      reading.entranceDirection ??
-      reading.mainEntranceAnalysis?.houseFacing ??
-      '',
-    construction_stage: reading.construction_stage,
-    rooms: rooms.map((r: any) => ({
-      name: r.name ?? '',
-      currentDirection: r.currentDirection ?? r.idealDirection,
-      idealDirection: r.idealDirection ?? r.currentDirection,
-      status: r.status,
-    })),
-    mainEntranceAnalysis: reading.mainEntranceAnalysis,
-    occupant_context: reading.occupant_context,
+    propertyType: typeof r.propertyType === 'string' ? r.propertyType : 'residential',
+    plotShape: r.plotShape as VastuReadingPayload['plotShape'],
+    entranceDirection: entranceDir ?? facingFromMain ?? '',
+    construction_stage: r.construction_stage as VastuReadingPayload['construction_stage'],
+    rooms: roomsRaw.map((item) => {
+      const row =
+        item && typeof item === 'object' && !Array.isArray(item)
+          ? (item as Record<string, unknown>)
+          : {};
+      return {
+        name: typeof row.name === 'string' ? row.name : '',
+        currentDirection:
+          (typeof row.currentDirection === 'string' ? row.currentDirection : undefined) ??
+          (typeof row.idealDirection === 'string' ? row.idealDirection : undefined),
+        idealDirection:
+          (typeof row.idealDirection === 'string' ? row.idealDirection : undefined) ??
+          (typeof row.currentDirection === 'string' ? row.currentDirection : undefined),
+        status: row.status as string | undefined,
+      };
+    }),
+    mainEntranceAnalysis: r.mainEntranceAnalysis as VastuReadingPayload['mainEntranceAnalysis'],
+    occupant_context: r.occupant_context as VastuReadingPayload['occupant_context'],
   };
 }
 
@@ -211,7 +234,7 @@ export async function POST(request: NextRequest) {
         }
         return null;
       })
-      .filter((item: any) => item !== null)
+      .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
     const stream = await createAIStream({

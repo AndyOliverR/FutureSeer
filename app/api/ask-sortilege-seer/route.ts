@@ -59,9 +59,9 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 interface SortilegeSeerRequest {
   userId: string;
   question: string;
-  userProfile: any;
+  userProfile: Record<string, unknown>;
   sortilegeReading?: SortilegeReading;
-  comprehensiveProfile?: any; // When called by SeerAggregator: derive analysis from this slice
+  comprehensiveProfile?: Record<string, unknown>; // When called by SeerAggregator: derive analysis from this slice
   sessionId?: string;
 }
 
@@ -86,10 +86,13 @@ export async function POST(request: NextRequest) {
   try {
     const body: SortilegeSeerRequest = await request.json();
     const { userId, question, userProfile, sessionId } = body;
-    let sortilegeReading = body.sortilegeReading;
+    let sortilegeReading: SortilegeReading | undefined = body.sortilegeReading;
     if (!sortilegeReading && body.comprehensiveProfile) {
       const cp = body.comprehensiveProfile;
-      sortilegeReading = cp.sortilege ?? cp['Sortilege'];
+      const fromCp = cp.sortilege ?? cp['Sortilege'];
+      if (fromCp && typeof fromCp === 'object' && !Array.isArray(fromCp)) {
+        sortilegeReading = fromCp as SortilegeReading;
+      }
     }
 
     if (!userId || !question || !userProfile) {
@@ -202,14 +205,11 @@ export async function POST(request: NextRequest) {
             });
 
             let fullResponse = '';
-            let chunkCount = 0;
-
             for await (const chunk of stream) {
               const content = chunk.choices[0]?.delta?.content || '';
               if (content) {
                 fullResponse += content;
                 controller.enqueue(new TextEncoder().encode(content));
-                chunkCount++;
               }
             }
 
@@ -345,7 +345,7 @@ function calculateSimilarity(question1: string, question2: string): number {
   return matches;
 }
 
-async function checkCachedQuestions(userId: string, question: string): Promise<any | null> {
+async function checkCachedQuestions(userId: string, question: string): Promise<{ answer: string; question?: string } | null> {
   try {
     const db = getFirebaseDB();
     const { collection, query, orderBy, limit, getDocs } = await import('firebase/firestore');
@@ -355,12 +355,15 @@ async function checkCachedQuestions(userId: string, question: string): Promise<a
     const snapshot = await getDocs(q);
     
     for (const doc of snapshot.docs) {
-      const cachedQA = doc.data();
+      const cachedQA = doc.data() as { answer?: unknown; question?: unknown };
+      if (typeof cachedQA.question !== 'string' || typeof cachedQA.answer !== 'string') {
+        continue;
+      }
       const similarity = calculateSimilarity(question, cachedQA.question);
       
       if (similarity >= 5) {
         devLog.debug(`🎯 Found similar sortilege question with similarity score: ${similarity}`, undefined, 'ask-sortilege-seer');
-        return cachedQA;
+        return { answer: cachedQA.answer, question: cachedQA.question };
       }
     }
     

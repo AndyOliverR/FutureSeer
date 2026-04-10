@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, Star, ExternalLink, Image, Loader2, ChevronLeft } from 'lucide-react';
+import { MessageSquare, Star, ExternalLink, ImageIcon, Loader2, ChevronLeft } from 'lucide-react';
 function formatDate(ms?: number): string {
   if (ms == null) return '—';
   try {
@@ -154,7 +153,7 @@ export default function AdminFeedbackPage() {
                 {s.screenshots && s.screenshots.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-2">
                     <span className="text-xs text-slate-400 flex items-center gap-1">
-                      <Image className="w-3 h-3" /> Screenshots:
+                      <ImageIcon className="w-3 h-3" aria-hidden="true" /> Screenshots:
                     </span>
                     {s.screenshots.map((url, i) => (
                       <a

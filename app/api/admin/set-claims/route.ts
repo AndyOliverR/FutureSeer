@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // Best-effort: do not fail the request if Firestore is unavailable.
     try {
       if (isAdminAvailable() && Object.prototype.hasOwnProperty.call(claims, 'specialUser')) {
-        const raw = (claims as any).specialUser;
+        const raw = (claims as Record<string, unknown>).specialUser;
         const specialUser = Boolean(raw);
         await setDocument('users', uid, {
           specialUser,

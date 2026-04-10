@@ -51,13 +51,27 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
   return new Response(body ?? null, { ...init, headers });
 }
 
+type HumanDesignChartFields = Record<string, unknown> & { type?: string; authority?: string };
+
+function coerceHumanDesignChart(v: unknown): HumanDesignChartFields | undefined {
+  if (v && typeof v === 'object' && !Array.isArray(v)) {
+    return v as HumanDesignChartFields;
+  }
+  return undefined;
+}
 
 interface HumanDesignSeerRequest {
   userId: string;
   question: string;
-  userProfile: any;
-  humanDesignChart?: any;
-  comprehensiveProfile?: any;
+  userProfile: Record<string, unknown>;
+  humanDesignChart?: Record<string, unknown> & {
+    type?: string;
+    authority?: string;
+  };
+  comprehensiveProfile?: Record<string, unknown> & {
+    humanDesign?: (Record<string, unknown> & { type?: string; authority?: string }) | unknown;
+    'Human Design'?: (Record<string, unknown> & { type?: string; authority?: string }) | unknown;
+  };
   sessionId?: string;
 }
 
@@ -65,7 +79,7 @@ export async function POST(request: NextRequest) {
   try {
     const body: HumanDesignSeerRequest = await request.json();
     const { userId, question: rawQuestion, userProfile } = body;
-    let humanDesignChart = body.humanDesignChart;
+    let humanDesignChart = coerceHumanDesignChart(body.humanDesignChart);
     // Parse optional scope from question (injected by seer route after clarification)
     let question = (rawQuestion || '').trim();
     let scope: 'overview' | 'authority' | undefined;
@@ -75,9 +89,10 @@ export async function POST(request: NextRequest) {
       question = question.slice(scopeMatch[0].length).trim() || question;
     }
     if (!humanDesignChart && body.comprehensiveProfile) {
+      const cp = body.comprehensiveProfile;
       humanDesignChart =
-        body.comprehensiveProfile.humanDesign ??
-        body.comprehensiveProfile['Human Design'];
+        coerceHumanDesignChart(cp.humanDesign) ??
+        coerceHumanDesignChart(cp['Human Design']);
     }
 
     if (!userId || !question || !userProfile) {
@@ -145,8 +160,9 @@ export async function POST(request: NextRequest) {
     }
 
     const slice = getHumanDesignSliceForQuestionType(questionType, state);
+    const dnRaw = userProfile.displayName ?? userProfile.display_name;
     const displayName =
-      (userProfile?.displayName ?? userProfile?.display_name) ?? undefined;
+      typeof dnRaw === 'string' && dnRaw.trim() ? dnRaw.trim() : undefined;
     const systemPrompt = buildHumanDesignSeerSystemPrompt(slice, questionType, {
       displayName,
       scope,

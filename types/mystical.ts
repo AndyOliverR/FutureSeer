@@ -43,11 +43,11 @@ export interface VedicData {
   ascendantSign?: string
   planets: VedicPlanet[]
   houses: VedicHouse[]
-  nakshatras: any[]
+  nakshatras: unknown[]
   yogas: VedicYoga[]
   dasha: DashaPeriod[]
   currentDasha: DashaPeriod | null
-  vedicCharts?: any
+  vedicCharts?: unknown
 }
 
 export interface PersonalityInterpretation {

@@ -28,13 +28,6 @@ export default function QualityMonitor({
   const [isVisible, setIsVisible] = useState(false)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
-  useEffect(() => {
-    if (autoRefresh) {
-      const interval = setInterval(fetchQualityMetrics, refreshInterval)
-      return () => clearInterval(interval)
-    }
-  }, [autoRefresh, refreshInterval])
-
   const fetchQualityMetrics = async () => {
     try {
       // This would typically fetch from your quality API endpoint
@@ -58,6 +51,20 @@ export default function QualityMonitor({
       devLog.error('Failed to fetch quality metrics:', error, 'QualityMonitor')
     }
   }
+
+  useEffect(() => {
+    void fetchQualityMetrics()
+
+    if (!autoRefresh) {
+      return
+    }
+
+    const interval = setInterval(() => {
+      void fetchQualityMetrics()
+    }, refreshInterval)
+
+    return () => clearInterval(interval)
+  }, [autoRefresh, refreshInterval])
 
   const getScoreColor = (score: number): string => {
     if (score >= 90) return 'text-green-600'

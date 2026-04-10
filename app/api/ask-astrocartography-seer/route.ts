@@ -49,7 +49,7 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 interface AstrocartographySeerRequest {
   userId: string;
   question: string;
-  userProfile?: any;
+  userProfile?: Record<string, unknown>;
   astrocartographyData?: {
     comprehensiveAnalysis?: {
       overview?: string;
@@ -126,8 +126,14 @@ export async function POST(request: NextRequest) {
     }
 
     const reportContext = formatReportContext(astrocartographyData);
+    const displayNameFromProfile =
+      userProfile && typeof userProfile.displayName === 'string' && userProfile.displayName.trim()
+        ? userProfile.displayName.trim()
+        : userProfile && typeof userProfile.fullName === 'string' && userProfile.fullName.trim()
+          ? userProfile.fullName.trim()
+          : undefined;
     const systemPrompt = buildAstrocartographySeerSystemPrompt(reportContext, {
-      displayName: userProfile?.displayName || userProfile?.fullName,
+      displayName: displayNameFromProfile,
     });
 
     const conversationHistory = await getConversationHistory(userId, sessionId);

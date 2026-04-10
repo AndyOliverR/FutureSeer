@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { devLog } from '@/lib/devLogger';
 import { createAIStream } from '@/lib/aiGateway';
+import { chartSignLabel } from '@/lib/chartSignLabel';
 import { buildPsychologicalSeerSystemPrompt } from '@/lib/psychologicalSeerPrompts';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
@@ -47,8 +48,11 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 interface AskPsychologicalSeerRequest {
   userId: string;
   question: string;
-  userProfile: any;
-  westernChartData?: any;
+  userProfile: Record<string, unknown>;
+  westernChartData?: {
+    planets?: Array<{ name?: string; sign?: { signName?: string } | string; house?: number }>;
+    houses?: Array<{ number?: number; sign?: { signName?: string } | string }>;
+  };
   psychologicalReport?: Record<string, unknown>;
   sessionId?: string;
 }
@@ -102,15 +106,15 @@ function formatPsychologicalReportContext(report: Record<string, unknown> | unde
   return lines.join('\n');
 }
 
-function formatChartSummary(chartData: any): string {
+function formatChartSummary(chartData: AskPsychologicalSeerRequest['westernChartData']): string {
   if (!chartData?.planets?.length) return '';
-  const sun = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'sun');
-  const moon = chartData.planets.find((p: any) => p.name?.toLowerCase() === 'moon');
-  const rising = chartData.houses?.[0] || chartData.houses?.find((h: any) => (h.number || 1) === 1);
+  const sun = chartData.planets.find((p) => p.name?.toLowerCase() === 'sun');
+  const moon = chartData.planets.find((p) => p.name?.toLowerCase() === 'moon');
+  const rising = chartData.houses?.[0] || chartData.houses?.find((h) => (h.number || 1) === 1);
   const parts: string[] = [];
-  if (sun) parts.push(`Sun: ${sun.sign?.signName || sun.sign} in House ${sun.house}`);
-  if (moon) parts.push(`Moon: ${moon.sign?.signName || moon.sign} in House ${moon.house}`);
-  if (rising) parts.push(`Rising: ${rising.sign?.signName || rising.sign}`);
+  if (sun) parts.push(`Sun: ${chartSignLabel(sun.sign)} in House ${sun.house}`);
+  if (moon) parts.push(`Moon: ${chartSignLabel(moon.sign)} in House ${moon.house}`);
+  if (rising) parts.push(`Rising: ${chartSignLabel(rising.sign)}`);
   return parts.join('; ');
 }
 

@@ -73,7 +73,7 @@ function buildScryingContext(report: Record<string, unknown>): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { question, userProfile, userId } = body;
+    const { question } = body;
     let scryingReport = body.scryingReport ?? body.scrying;
     if (!scryingReport && body.comprehensiveProfile) {
       scryingReport = body.comprehensiveProfile.scrying ?? body.comprehensiveProfile.toolReports?.scrying?.data;

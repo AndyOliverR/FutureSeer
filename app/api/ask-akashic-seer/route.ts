@@ -54,7 +54,7 @@ function withRobotsResponse(body?: BodyInit | null, init?: ResponseInit): Respon
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, reading: readingInput, userProfile, comprehensiveProfile } = await request.json();
+    const { question, reading: readingInput, comprehensiveProfile } = await request.json();
 
     if (!question?.trim()) {
       return jsonWithRobots(
