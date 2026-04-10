@@ -27,7 +27,7 @@ export function ShareCard({ archetypeName, hookLine, shareUrl, onCopy, onShare }
           Share
         </Button>
       </div>
-      <p className="mt-4 truncate text-xs text-slate-500">{shareUrl}</p>
+      <p className="mt-4 truncate text-xs text-slate-400">{shareUrl}</p>
     </div>
   )
 }
