@@ -212,10 +212,10 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       } else {
         setProfile(null)
         clearPersistentProfileCache(userId)
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('📭 No comprehensive mystical profile found for user')
-        }
         if (noProfileLoggedForUserRef.current !== userId) {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('📭 No comprehensive mystical profile found for user')
+          }
           noProfileLoggedForUserRef.current = userId
           const browser = typeof navigator !== 'undefined' ? `${navigator.userAgent} | ${navigator.language || ''}` : undefined
           user?.getIdToken().then((idToken) => {

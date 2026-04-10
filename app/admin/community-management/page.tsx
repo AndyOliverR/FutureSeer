@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertTriangle, CheckCircle, TrendingUp, Users, MessageCircle, Zap, Filter, Search, Flag, Pin, ChevronLeft } from 'lucide-react';
+import { AlertTriangle, CheckCircle, TrendingUp, Users, MessageCircle, Zap, Filter, Search, Flag, Pin } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 interface DiscussionThread {
   id: string;
@@ -248,13 +248,9 @@ export default function CommunityManagementPage() {
   return (
     <div className="min-h-screen overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 pt-8 pb-8">
-        <Link
-          href="/admin/dashboard"
-          className="inline-flex items-center gap-1 text-slate-300 hover:text-slate-200 text-sm font-medium mb-6"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back to Admin Dashboard
-        </Link>
+        <Button asChild type="button" variant="outline" size="sm" className="mb-6 text-xs">
+          <Link href="/admin/dashboard">Back to Admin Dashboard</Link>
+        </Button>
         <h1 className="text-xl font-semibold text-slate-200 mb-2">Community Management Dashboard</h1>
         <p className="text-slate-400 text-sm mb-6">
           Monitor discussions, prioritize actions, and manage community engagement

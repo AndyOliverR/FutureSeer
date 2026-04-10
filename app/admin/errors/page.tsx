@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -396,6 +397,11 @@ export default function AdminErrorsPage() {
 
   return (
     <div className="min-h-screen px-4 py-8 max-w-6xl mx-auto">
+      <div className="mb-4">
+        <Button asChild type="button" variant="outline" size="sm" className="text-xs">
+          <Link href="/admin/dashboard">Back to Admin Dashboard</Link>
+        </Button>
+      </div>
       <Card className="admin-card mb-6 text-slate-200">
         <CardHeader>
           <CardTitle className="text-sm font-medium text-slate-200">Client &amp; server events</CardTitle>
