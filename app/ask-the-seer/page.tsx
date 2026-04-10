@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useDashboardData } from "@/hooks/useDashboardData";
@@ -44,7 +45,7 @@ export default function AskTheSeerPage() {
       <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] flex items-center justify-center px-4">
         <div className="text-center space-y-4">
           <p className="text-amber-400 text-lg font-serif">Please sign in to consult the Seer</p>
-          <a href="/signin" className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl">Sign In</a>
+          <Link href="/signin" className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl">Sign In</Link>
         </div>
       </div>
     );
