@@ -75,6 +75,15 @@ export const ANALYTICS_EVENTS = {
   SIGNUP_STARTED_FROM_CAMPAIGN: 'signup_started_from_campaign',
   PROFILE_GENERATION_STARTED: 'profile_generation_started',
   PROFILE_GENERATION_COMPLETED: 'profile_generation_completed',
+
+  // Onboarding funnel
+  ONBOARDING_STEP_VIEW: 'onboarding_step_view',
+  ONBOARDING_STEP_NEXT: 'onboarding_step_next',
+  ONBOARDING_STEP_BACK: 'onboarding_step_back',
+  ONBOARDING_ABANDON: 'onboarding_abandon',
+  ONBOARDING_COMPLETED: 'onboarding_completed',
+  PAYWALL_VIEW: 'paywall_view',
+  TRIAL_START: 'trial_start',
 } as const
 
 // Analytics Properties
@@ -324,6 +333,67 @@ export class AnalyticsService {
   trackProfileGenerationCompleted(success: boolean, properties?: Record<string, unknown>) {
     this.trackEvent(ANALYTICS_EVENTS.PROFILE_GENERATION_COMPLETED, {
       success,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackOnboardingStepView(stepId: string, stepIndex: number, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_VIEW, {
+      step_id: stepId,
+      step_index: stepIndex,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackOnboardingStepNext(stepId: string, stepIndex: number, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_NEXT, {
+      step_id: stepId,
+      step_index: stepIndex,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackOnboardingStepBack(stepId: string, stepIndex: number, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_BACK, {
+      step_id: stepId,
+      step_index: stepIndex,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackOnboardingAbandon(stepId: string, stepIndex: number, reason: 'skip' | 'close' | 'overlay_click' | 'escape' | 'unknown', properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.ONBOARDING_ABANDON, {
+      step_id: stepId,
+      step_index: stepIndex,
+      reason,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackOnboardingCompleted(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackPaywallView(surface: string, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.PAYWALL_VIEW, {
+      surface,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackTrialStart(surface: string, plan: string, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.TRIAL_START, {
+      surface,
+      plan,
       ...campaignPropsForPostHog(),
       ...properties,
     })

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { onboardingSteps } from '@/lib/onboardingSteps';
 import { ModalPortal } from '@/components/ui/ModalPortal';
+import { analytics } from '@/lib/analytics';
 
 export function OnboardingTour() {
   const { isTourActive, shouldShowTour, startTour, markCompleted, markSkipped } = useOnboarding();
@@ -56,6 +57,10 @@ export function OnboardingTour() {
     if (element && element !== document.body) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+
+    analytics.trackOnboardingStepView(step.id, currentStep + 1, {
+      surface: 'product_tour',
+    });
   }, [isTourActive, currentStep]);
 
   if (!isTourActive || currentStep >= onboardingSteps.length) {
@@ -67,7 +72,11 @@ export function OnboardingTour() {
   const isLastStep = currentStep === onboardingSteps.length - 1;
 
   const handleNext = () => {
+    analytics.trackOnboardingStepNext(step.id, currentStep + 1, {
+      surface: 'product_tour',
+    });
     if (isLastStep) {
+      analytics.trackOnboardingCompleted({ surface: 'product_tour' });
       markCompleted();
     } else {
       setCurrentStep(prev => prev + 1);
@@ -75,16 +84,23 @@ export function OnboardingTour() {
   };
 
   const handlePrevious = () => {
+    analytics.trackOnboardingStepBack(step.id, currentStep + 1, {
+      surface: 'product_tour',
+    });
     if (!isFirstStep) {
       setCurrentStep(prev => prev - 1);
     }
   };
 
   const handleSkip = () => {
+    analytics.trackOnboardingAbandon(step.id, currentStep + 1, 'skip', {
+      surface: 'product_tour',
+    });
     markSkipped();
   };
 
   const handleComplete = () => {
+    analytics.trackOnboardingCompleted({ surface: 'product_tour' });
     markCompleted();
   };
 

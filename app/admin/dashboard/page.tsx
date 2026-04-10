@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { Download, Search, Eye, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { getPricingHealthSnapshot } from '@/lib/pricingConfig';
 
 function getErrorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -869,6 +870,87 @@ function Billing({ adminToken, getToken }: { adminToken: string | null; getToken
   );
 }
 
+function PricingHealthPanel() {
+  const snapshot = getPricingHealthSnapshot();
+  const failing = snapshot.filter((row) => !row.isValid);
+  const { toast } = useToast();
+
+  const handleCopySnapshot = async () => {
+    const lines = snapshot.map((row) =>
+      [
+        row.countryCode,
+        row.currency,
+        row.monthlyWebNet.toFixed(2),
+        row.isValid ? "ok" : `review: ${row.issues.join(" | ")}`,
+      ].join("\t")
+    );
+    const payload = ["country\tcurrency\tmonthlyWebNet\tstatus", ...lines].join("\n");
+    try {
+      await navigator.clipboard.writeText(payload);
+      toast({ title: "Copied", description: "Pricing health snapshot copied to clipboard." });
+    } catch (error) {
+      toast({
+        title: "Copy failed",
+        description: error instanceof Error ? error.message : "Unable to copy pricing snapshot.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Card className="admin-card text-slate-200">
+      <CardHeader>
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="text-sm font-medium text-slate-200">Pricing Health Snapshot</CardTitle>
+          <Button
+            onClick={handleCopySnapshot}
+            size="sm"
+            variant="outline"
+            className="border-slate-500 text-slate-200 hover:bg-slate-800"
+          >
+            Copy snapshot
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-slate-300">
+          Countries checked: {snapshot.length} • Validation issues: {failing.length}
+        </p>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="bg-slate-800/80 text-slate-200">
+                <th className="p-2">Country</th>
+                <th className="p-2">Currency</th>
+                <th className="p-2">Monthly Net (Web)</th>
+                <th className="p-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {snapshot.map((row) => (
+                <tr key={row.countryCode} className="border-b border-slate-700/60">
+                  <td className="p-2">{row.countryCode}</td>
+                  <td className="p-2">{row.currency}</td>
+                  <td className="p-2">{row.monthlyWebNet.toFixed(2)}</td>
+                  <td className="p-2">
+                    {row.isValid ? (
+                      <Badge variant="outline" className="border-emerald-500/50 text-emerald-300">ok</Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-amber-500/50 text-amber-300" title={row.issues.join(' | ')}>
+                        review
+                      </Badge>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AdminDashboardPage() {
   const { user, isSuperadmin, isAdmin, loading } = useAuth();
   const [adminToken, setAdminToken] = useState<string | null>(null);
@@ -909,6 +991,7 @@ export default function AdminDashboardPage() {
             <TabsTrigger value="users" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Users</TabsTrigger>
             <TabsTrigger value="logs" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Logs</TabsTrigger>
             <TabsTrigger value="billing" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Billing</TabsTrigger>
+            <TabsTrigger value="pricing-health" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Pricing Health</TabsTrigger>
             <TabsTrigger value="support" className="text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">Support Tools</TabsTrigger>
             <TabsTrigger value="errors" className="flex items-center gap-1 text-sm text-slate-400 hover:text-slate-200 data-[state=active]:text-slate-100 data-[state=active]:bg-slate-800 data-[state=active]:border data-[state=active]:border-slate-600 data-[state=active]:rounded-md">
               <AlertTriangle className="w-3 h-3" />
@@ -918,6 +1001,7 @@ export default function AdminDashboardPage() {
           <TabsContent value="users"><UserManagement adminToken={adminToken} getToken={getToken} /></TabsContent>
           <TabsContent value="logs"><Logs adminToken={adminToken} getToken={getToken} /></TabsContent>
           <TabsContent value="billing"><Billing adminToken={adminToken} getToken={getToken} /></TabsContent>
+          <TabsContent value="pricing-health"><PricingHealthPanel /></TabsContent>
           <TabsContent value="support"><SupportTools /></TabsContent>
           <TabsContent value="errors">
             <Card className="admin-card text-slate-200">

@@ -9,6 +9,11 @@ import { PlanSelectionStep } from './PlanSelectionStep';
 import { PaymentMethodCapture } from './PaymentMethodCapture';
 import { AutoMandateAgreement } from './AutoMandateAgreement';
 import { useAuth } from '@/hooks/use-auth';
+import { analytics } from '@/lib/analytics';
+
+type SignupVariant = 'control' | 'story_first';
+
+type SignupFlowStep = 'pain' | 'empathy' | 'solution' | 'wow' | 'plan' | 'payment' | 'agreement';
 
 interface SignupFlowProps {
   // Step 1: Basic Info (handled by parent)
@@ -19,6 +24,7 @@ interface SignupFlowProps {
   
   // URL params
   initialPlan?: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
+  variant?: SignupVariant;
   
   // Callbacks (onComplete may be async; must be awaited so loading state matches real work)
   onComplete: (data: {
@@ -36,12 +42,19 @@ export function SignupFlow({
   displayName,
   selectedCountry,
   initialPlan,
+  variant = 'control',
   onComplete,
   onError,
 }: SignupFlowProps) {
   const { isSpecialUser } = useAuth();
 
+  const steps: SignupFlowStep[] =
+    variant === 'story_first'
+      ? ['pain', 'empathy', 'solution', 'wow', 'plan', 'payment', 'agreement']
+      : ['plan', 'payment', 'agreement'];
+  const totalSteps = steps.length;
   const [currentStep, setCurrentStep] = useState(1);
+  const currentStepKey = steps[currentStep - 1];
   const [selectedPlan, setSelectedPlan] = useState<
     'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper'
   >(initialPlan || 'power-user-trial');
@@ -49,7 +62,7 @@ export function SignupFlow({
   const [autoMandateAccepted, setAutoMandateAccepted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const totalSteps = 3; // Plan selection, Payment capture, Auto-mandate agreement
+  const isIntroStep = currentStepKey === 'pain' || currentStepKey === 'empathy' || currentStepKey === 'solution' || currentStepKey === 'wow';
 
   const handlePlanSelected = (planId: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper') => {
     setSelectedPlan(planId);
@@ -62,9 +75,11 @@ export function SignupFlow({
     if (subId) {
       setSubscriptionId(subId);
     }
+    analytics.trackTrialStart('signup_flow', selectedPlan, { variant });
     // Auto-advance to next step
     setTimeout(() => {
-      setCurrentStep(3);
+      const agreementIndex = steps.indexOf('agreement');
+      setCurrentStep(agreementIndex + 1);
     }, 500);
   };
 
@@ -73,15 +88,20 @@ export function SignupFlow({
   };
 
   const handleNext = () => {
-    if (currentStep === 1) {
-      // Plan selection - can proceed if plan is selected
+    analytics.trackOnboardingStepNext(currentStepKey, currentStep, {
+      surface: 'signup',
+      variant,
+    });
+    if (isIntroStep) {
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+    } else if (currentStepKey === 'plan') {
       if (selectedPlan) {
-        setCurrentStep(2);
+        const paymentIndex = steps.indexOf('payment');
+        setCurrentStep(paymentIndex + 1);
       }
-    } else if (currentStep === 2) {
-      // Payment capture - handled by PaymentMethodCapture component
-      // It will auto-advance when payment method is captured
-    } else if (currentStep === 3) {
+    } else if (currentStepKey === 'payment') {
+      // Payment capture auto-advances after callback
+    } else if (currentStepKey === 'agreement') {
       // Auto-mandate agreement - proceed if accepted
       if (autoMandateAccepted && paymentMethodId) {
         handleComplete();
@@ -95,6 +115,10 @@ export function SignupFlow({
 
   const handleBack = () => {
     if (currentStep > 1) {
+      analytics.trackOnboardingStepBack(currentStepKey, currentStep, {
+        surface: 'signup',
+        variant,
+      });
       setCurrentStep(currentStep - 1);
     }
   };
@@ -126,17 +150,32 @@ export function SignupFlow({
   };
 
   const canProceed = () => {
-    if (currentStep === 1) return selectedPlan !== null;
-    if (currentStep === 2) return paymentMethodId !== '';
-    if (currentStep === 3) return autoMandateAccepted && paymentMethodId !== '';
+    if (isIntroStep) return true;
+    if (currentStepKey === 'plan') return selectedPlan !== null;
+    if (currentStepKey === 'payment') return paymentMethodId !== '';
+    if (currentStepKey === 'agreement') return autoMandateAccepted && paymentMethodId !== '';
     return false;
   };
 
-  const stepTitles = [
-    'Choose Your Contribution Tier',
-    'Secure Your Spot',
-    'Join the Innovation Team',
-  ];
+  const stepTitles = steps.map((step) => {
+    if (step === 'pain') return 'Your Main Challenge';
+    if (step === 'empathy') return 'You Are Understood';
+    if (step === 'solution') return 'How We Help';
+    if (step === 'wow') return 'Your Breakthrough';
+    if (step === 'plan') return 'Choose Your Contribution Tier';
+    if (step === 'payment') return 'Secure Your Spot';
+    return 'Join the Innovation Team';
+  });
+
+  useEffect(() => {
+    analytics.trackOnboardingStepView(currentStepKey, currentStep, {
+      surface: 'signup',
+      variant,
+    });
+    if (currentStepKey === 'plan') {
+      analytics.trackPaywallView('signup_plan_selection', { variant });
+    }
+  }, [currentStep, currentStepKey, variant]);
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -185,7 +224,35 @@ export function SignupFlow({
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
         >
-          {currentStep === 1 && (
+          {currentStepKey === 'pain' && (
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/50 p-6">
+              <h3 className="text-xl font-semibold text-amber-300 mb-2">What is your biggest challenge right now?</h3>
+              <p className="text-white/80">Most users tell us they feel scattered, spiritually disconnected, or overwhelmed by conflicting guidance.</p>
+            </div>
+          )}
+
+          {currentStepKey === 'empathy' && (
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/50 p-6">
+              <h3 className="text-xl font-semibold text-amber-300 mb-2">You are not alone.</h3>
+              <p className="text-white/80">FutureSeer is designed for people who want grounded clarity without losing spiritual depth.</p>
+            </div>
+          )}
+
+          {currentStepKey === 'solution' && (
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/50 p-6">
+              <h3 className="text-xl font-semibold text-amber-300 mb-2">How FutureSeer helps</h3>
+              <p className="text-white/80">You get tool-specific experts plus one unified Seer that combines insights across traditions while preserving each method.</p>
+            </div>
+          )}
+
+          {currentStepKey === 'wow' && (
+            <div className="rounded-2xl border border-amber-500/30 bg-slate-900/50 p-6">
+              <h3 className="text-xl font-semibold text-amber-300 mb-2">Wow moment</h3>
+              <p className="text-white/80">Within minutes of profile completion, all major reports are generated and stored so your next session starts with personalized depth.</p>
+            </div>
+          )}
+
+          {currentStepKey === 'plan' && (
             <PlanSelectionStep
               selectedCountry={selectedCountry}
               initialPlan={selectedPlan}
@@ -193,7 +260,7 @@ export function SignupFlow({
             />
           )}
 
-          {currentStep === 2 && (
+          {currentStepKey === 'payment' && (
             <PaymentMethodCapture
               selectedPlan={selectedPlan}
               userEmail={email}
@@ -205,7 +272,7 @@ export function SignupFlow({
             />
           )}
 
-          {currentStep === 3 && (
+          {currentStepKey === 'agreement' && (
             <AutoMandateAgreement
               selectedPlan={selectedPlan}
               onAgreementAccepted={handleAgreementAccepted}

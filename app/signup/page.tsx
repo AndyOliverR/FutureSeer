@@ -57,6 +57,7 @@ const SignupFlow = dynamic(() => import("@/components/SignupFlow").then(mod => (
 })
 
 function SignUpPageContent() {
+  const SIGNUP_VARIANT_KEY = "fs_signup_variant_v1";
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -75,17 +76,40 @@ function SignUpPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const planParam = searchParams?.get('plan') as 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper' | null
+  const variantParam = searchParams?.get("variant")
   const refParam = searchParams?.get('ref')
   const redirectTo = getSafeAuthRedirectAfterSignIn(searchParams?.get("redirect") ?? null)
   const { user } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
   
   const didAutoRedirectRef = React.useRef(false)
+  const [signupVariant, setSignupVariant] = useState<'control' | 'story_first'>('control')
   const showApple = isAppleSignInEnabledClient()
 
   useEffect(() => {
     if (refParam) setReferralCode(refParam)
   }, [refParam])
+
+  useEffect(() => {
+    const fromUrl = variantParam === "story_first" || variantParam === "control" ? variantParam : null;
+    if (fromUrl) {
+      setSignupVariant(fromUrl);
+      try { sessionStorage.setItem(SIGNUP_VARIANT_KEY, fromUrl); } catch {}
+      return;
+    }
+    try {
+      const stored = sessionStorage.getItem(SIGNUP_VARIANT_KEY);
+      if (stored === "story_first" || stored === "control") {
+        setSignupVariant(stored);
+        return;
+      }
+      const assigned = Math.random() < 0.5 ? "control" : "story_first";
+      sessionStorage.setItem(SIGNUP_VARIANT_KEY, assigned);
+      setSignupVariant(assigned);
+    } catch {
+      setSignupVariant("control");
+    }
+  }, [variantParam]);
 
   useEffect(() => {
     if (wasSignupFunnelFromCampaignTracked()) return
@@ -325,7 +349,7 @@ function SignUpPageContent() {
             {error && <Alert className="mb-6 bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"><AlertDescription className="font-bold text-center">{error}</AlertDescription></Alert>}
 
             {showSignupFlow ? (
-              <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} onComplete={handleSignupFlowComplete} onError={setError} />
+              <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
             ) : (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-5">
                 <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Full Name" autoComplete="name" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
@@ -372,7 +396,7 @@ function SignUpPageContent() {
           {showSignupFlow ? (
             <>
               <h1 className="text-3xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your Journey</h1>
-              <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} onComplete={handleSignupFlowComplete} onError={setError} />
+              <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
             </>
           ) : (
             <div className="space-y-6">
