@@ -12,6 +12,7 @@ describe("getSafeAuthRedirectAfterSignIn", () => {
   it("allows known exact paths", () => {
     expect(getSafeAuthRedirectAfterSignIn("/profile")).toBe("/profile")
     expect(getSafeAuthRedirectAfterSignIn("/tools")).toBe("/tools")
+    expect(getSafeAuthRedirectAfterSignIn("/mystical-profile")).toBe("/mystical-profile")
     expect(getSafeAuthRedirectAfterSignIn("/community/attribution")).toBe("/community/attribution")
   })
 

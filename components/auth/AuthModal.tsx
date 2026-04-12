@@ -28,6 +28,7 @@ import { RECAPTCHA_ACTIONS } from '@/lib/recaptcha/actions';
 import { ensureRecaptchaVerifiedForWebAuth } from '@/lib/recaptchaClient';
 import { CountrySelector } from '@/components/CountrySelector';
 import { ModalPortal } from '@/components/ui/ModalPortal';
+import { getReturningUserWithReportsDestination } from '@/lib/authRouting';
 import { devLog } from '@/lib/devLogger';
 
 interface AuthModalProps {
@@ -72,7 +73,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: returning ? "Your mystical journey continues." : "Your mystical journey begins now.",
       });
       onClose();
-      router.push(returning ? '/tools' : '/profile');
+      router.push(returning ? getReturningUserWithReportsDestination() : '/profile');
     } catch (error: any) {
       // Handle "Target ID already exists" error gracefully
       if (error.message?.includes('Target ID already exists') || 
@@ -122,7 +123,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: returning ? "Your mystical journey continues." : "Your mystical journey begins now.",
       });
       onClose();
-      router.push(returning ? '/tools' : '/profile');
+      router.push(returning ? getReturningUserWithReportsDestination() : '/profile');
     } catch (error: any) {
       if (error.message?.includes('Target ID already exists') ||
           error.message?.includes('already exists') ||
@@ -173,7 +174,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         description: "Your mystical journey continues.",
       });
       onClose();
-      router.push('/tools');
+      router.push(getReturningUserWithReportsDestination());
     } catch (error: any) {
       const msg = getAuthErrorMessage(error);
       setError(msg);
