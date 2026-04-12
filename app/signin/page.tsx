@@ -34,6 +34,7 @@ import {
   wasSigninFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
 import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
+import { getReturningUserWithReportsDestination } from "@/lib/authRouting"
 import { getClientOAuthGuardrailReport } from "@/lib/oauthDomainGuardrails"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
@@ -107,7 +108,7 @@ function SignInContent() {
     setError((prev) => (prev ? null : prev))
     if (didAutoRedirectRef.current) return;
     didAutoRedirectRef.current = true;
-    const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile");
+    const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile");
     void logError("auth_success", "User signed in", "info", { method: "existing_session", redirectTo: destination })
     if (typeof window !== "undefined") {
       window.location.replace(destination);
@@ -136,7 +137,7 @@ function SignInContent() {
     try {
       await logError("google_clicked", "Google sign-in clicked", "info", { hasRedirect: !!redirectTo })
       const user = await signInWithGoogle()
-      const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
+      const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
       await logError("auth_success", "User signed in", "info", { method: "google", redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {
@@ -187,7 +188,7 @@ function SignInContent() {
     try {
       await logError("apple_clicked", "Apple sign-in clicked", "info", { hasRedirect: !!redirectTo })
       const user = await signInWithApple()
-      const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
+      const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
       await logError("auth_success", "User signed in", "info", { method: "apple", redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {
@@ -274,7 +275,7 @@ function SignInContent() {
         }
       }
       const user = await signInWithEmail(email, password)
-      const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
+      const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
       await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {

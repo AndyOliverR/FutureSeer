@@ -37,6 +37,7 @@ import {
   wasSignupFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
 import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
+import { getReturningUserWithReportsDestination } from "@/lib/authRouting"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
 import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
@@ -126,7 +127,7 @@ function SignUpPageContent() {
     setError((prev) => (prev ? null : prev))
     if (didAutoRedirectRef.current) return
     didAutoRedirectRef.current = true
-    const destination = redirectTo ?? (isReturningUser(user) ? "/tools" : "/profile")
+    const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
     if (typeof window !== "undefined") {
       window.location.replace(destination)
     } else {
@@ -156,7 +157,7 @@ function SignUpPageContent() {
     try {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
-      router.push(redirectTo ?? (returning ? "/tools" : "/profile"))
+      router.push(redirectTo ?? (returning ? getReturningUserWithReportsDestination() : "/profile"))
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
       if (isAuthRedirectInitiatedError(error)) return;
@@ -201,7 +202,7 @@ function SignUpPageContent() {
     try {
       const user = await signInWithApple()
       const returning = isReturningUser(user)
-      router.push(redirectTo ?? (returning ? "/tools" : "/profile"))
+      router.push(redirectTo ?? (returning ? getReturningUserWithReportsDestination() : "/profile"))
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
       if (isAuthRedirectInitiatedError(error)) return;

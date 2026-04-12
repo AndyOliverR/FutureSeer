@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useMemo, useRef } from "react"
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { devLog } from '@/lib/devLogger';
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -10,6 +10,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Loader2, ArrowLeft, User, Clock, MapPin, Edit3, Save, X, LogOut, Sparkles, Heart, Camera, Calendar, Trash2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { usePlan } from "@/hooks/usePlan"
@@ -232,6 +242,7 @@ export default function ProfilePage() {
   const [optimizingPalm, setOptimizingPalm] = useState(false)
   const [canGenerateMysticalProfile, setCanGenerateMysticalProfile] = useState(true)
   const [isClearingWorkspace, setIsClearingWorkspace] = useState(false)
+  const [clearWorkspaceConfirmOpen, setClearWorkspaceConfirmOpen] = useState(false)
   const { logError } = useErrorLogger({ area: "profile" })
   const faceInputRef = useRef<HTMLInputElement>(null)
   const palmInputRef = useRef<HTMLInputElement>(null)
@@ -373,15 +384,13 @@ export default function ProfilePage() {
     canPersistDraftRef.current = true
   }, [user?.uid, userProfile, isConsultantWorkspace])
 
-  const handleClearWorkspace = async () => {
+  const openClearWorkspaceConfirm = () => {
     if (!user?.uid || !isConsultantWorkspace) return
-    if (
-      !window.confirm(
-        "Clear this client session? This removes their profile fields and generated reports from your workspace so you can enter the next client."
-      )
-    ) {
-      return
-    }
+    setClearWorkspaceConfirmOpen(true)
+  }
+
+  const performClearWorkspace = useCallback(async () => {
+    if (!user?.uid || !isConsultantWorkspace) return
     setIsClearingWorkspace(true)
     setError(null)
     setSuccess(null)
@@ -426,7 +435,43 @@ export default function ProfilePage() {
     } finally {
       setIsClearingWorkspace(false)
     }
-  }
+  }, [user, isConsultantWorkspace, refreshProfile, refreshComprehensiveProfile])
+
+  const consultantClearWorkspaceDialog =
+    isConsultantWorkspace ? (
+      <AlertDialog open={clearWorkspaceConfirmOpen} onOpenChange={setClearWorkspaceConfirmOpen}>
+        <AlertDialogContent className="border-violet-500/40 bg-slate-950 text-violet-50 sm:rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Clear client workspace?</AlertDialogTitle>
+            <AlertDialogDescription className="text-violet-200/90">
+              This removes their profile fields and generated reports from your workspace so you can enter the next
+              client.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              type="button"
+              className="border-violet-400/50 text-violet-100 hover:bg-violet-900/40"
+              disabled={isClearingWorkspace}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              className="bg-violet-600 text-white hover:bg-violet-600/90 focus-visible:ring-violet-400"
+              disabled={isClearingWorkspace || isGeneratingProfile}
+              onClick={(e) => {
+                e.preventDefault()
+                setClearWorkspaceConfirmOpen(false)
+                void performClearWorkspace()
+              }}
+            >
+              Clear workspace
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    ) : null
 
   const validateProfileData = (): string | null => {
     if (formData.birthDate) {
@@ -713,6 +758,8 @@ export default function ProfilePage() {
   // Android / Mobile: Material 3 layout
   if (isMobileLayout) {
     return (
+    <>
+      {consultantClearWorkspaceDialog}
     <div data-onboarding="profile" className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
       <div className="flex items-center justify-between h-16 mb-6">
         <Link href="/tools" className="p-2 text-amber-400 active:scale-90 transition-transform"><ArrowLeft className="w-6 h-6" /></Link>
@@ -736,7 +783,7 @@ export default function ProfilePage() {
                 type="button"
                 variant="outline"
                 className="w-full border-violet-400/50 text-violet-100 hover:bg-violet-900/40"
-                onClick={handleClearWorkspace}
+                onClick={openClearWorkspaceConfirm}
                 disabled={isClearingWorkspace || isGeneratingProfile}
               >
                 {isClearingWorkspace ? (
@@ -1083,11 +1130,14 @@ export default function ProfilePage() {
         </div>
       )}
     </div>
+    </>
     )
   }
 
   // Web: devotionist layout (deep blue + golden yellow, starfield)
   return (
+    <>
+      {consultantClearWorkspaceDialog}
     <div data-onboarding="profile" className="min-h-screen starfield-ultra-sharp flex flex-col pb-16 px-4 md:px-8 overflow-x-hidden">
       <div className="max-w-2xl mx-auto w-full py-8">
         <div className="flex items-center justify-between h-14 mb-8">
@@ -1112,7 +1162,7 @@ export default function ProfilePage() {
                   type="button"
                   variant="outline"
                   className="w-full sm:w-auto border-violet-400/50 text-violet-100 hover:bg-violet-900/40"
-                  onClick={handleClearWorkspace}
+                  onClick={openClearWorkspaceConfirm}
                   disabled={isClearingWorkspace || isGeneratingProfile}
                 >
                   {isClearingWorkspace ? (
@@ -1445,5 +1495,6 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+    </>
   )
 }
