@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,7 +120,7 @@ export function EnergyHealingCoach({ analysis }: EnergyHealingCoachProps) {
           accumulatedContent += chunk;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }

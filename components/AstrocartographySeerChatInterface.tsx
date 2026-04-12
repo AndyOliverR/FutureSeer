@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
 interface AstrocartographySeerChatInterfaceProps {
   userId: string;
@@ -130,7 +131,7 @@ export default function AstrocartographySeerChatInterface({
           accumulatedContent += chunk;
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
-            prev.map((msg) => (msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg))
+            prev.map((msg) => (msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg))
           );
         }
       }

@@ -9,6 +9,7 @@ import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Moon, Trash2 } fr
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 import type { DreamAnalysis } from '@/lib/dreamSymbolsIntelligence';
 
 interface DreamSymbolsMessage {
@@ -196,7 +197,7 @@ export default function DreamSymbolsSeerChatInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }
@@ -224,7 +225,7 @@ export default function DreamSymbolsSeerChatInterface({
             streamingLengthRef.current = accumulatedContent.length;
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+                msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
               )
             );
           }
