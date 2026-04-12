@@ -21,6 +21,7 @@ flowchart LR
     SignUp["/signup"]
     ProfileSetup["/profile-setup"]
     Profile["/profile"]
+    MysticalProfile["/mystical-profile"]
     Tools["/tools"]
     Home["/"]
   end
@@ -28,6 +29,7 @@ flowchart LR
   AuthProvider --> SignUp
   AuthProvider --> ProfileSetup
   AuthProvider --> Profile
+  AuthProvider --> MysticalProfile
   AuthProvider --> Tools
 ```
 
@@ -37,13 +39,13 @@ flowchart LR
 
 | Flow | Trigger | Route transitions | Navigation source |
 |------|--------|-------------------|-------------------|
-| **Login** | Sign-in page Google | Success → `getSafeAuthRedirectAfterSignIn(redirect) ?? (returning ? "/tools" : "/profile")` | [app/signin/page.tsx](../app/signin/page.tsx) `handleGoogleSignIn`: `router.push(destination)` |
+| **Login** | Sign-in page Google | Success → `getSafeAuthRedirectAfterSignIn(redirect) ?? (returning ? getReturningUserWithReportsDestination() : "/profile")` | [app/signin/page.tsx](../app/signin/page.tsx) `handleGoogleSignIn`: `router.push(destination)` |
 | **Login** | Sign-in page Email | Same as Google | [app/signin/page.tsx](../app/signin/page.tsx) `handleSubmit`: `router.push(destination)` |
-| **Signup** | Sign-up page Google | Success → `redirectTo ?? (returning ? "/tools" : "/profile")` | [app/signup/page.tsx](../app/signup/page.tsx) `handleGoogleSignIn`: `router.push(...)` |
+| **Signup** | Sign-up page Google | Success → `redirectTo ?? (returning ? getReturningUserWithReportsDestination() : "/profile")` | [app/signup/page.tsx](../app/signup/page.tsx) `handleGoogleSignIn`: `router.push(...)` |
 | **Signup** | Sign-up page Email | Success → `/profile` | [app/signup/page.tsx](../app/signup/page.tsx) after SignupFlow: `router.push("/profile")` |
 | **Profile completion** | Profile-setup "Complete" | Save + optional AstroApp → `/profile` | [app/profile-setup/page.tsx](../app/profile-setup/page.tsx) `handleComplete`: `router.push('/profile')` |
 | **Profile edit** | Profile "Save" | No route change | Stays on `/profile` |
-| **Profile edit** | Profile "Generate mystical profile" OK | → `RETURNING_USER_WITH_REPORTS_DESTINATION` (currently `/tools` in [lib/authRouting.ts](../lib/authRouting.ts)) | [app/profile/page.tsx](../app/profile/page.tsx) `router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)` on success |
+| **Profile edit** | Profile "Generate mystical profile" OK | → `RETURNING_USER_WITH_REPORTS_DESTINATION` (currently `/mystical-profile` in [lib/authRouting.ts](../lib/authRouting.ts)) | [app/profile/page.tsx](../app/profile/page.tsx) `router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)` on success |
 | **Logout** | Profile or UserMenuDropdown "Sign out" | Full reload → `/` | [lib/firebase.ts](../lib/firebase.ts) `signOutUser`: `window.location.href = '/'` |
 
 ---
@@ -52,10 +54,10 @@ flowchart LR
 
 | User type | Path |
 |-----------|------|
-| **Returning** (Google) | Sign-in or sign-up → `/tools` by default; optional safe `?redirect=` (see [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts)). If reports exist (`mysticalProfileGenerated`), profile-setup and similar flows redirect to `RETURNING_USER_WITH_REPORTS_DESTINATION` (currently `/tools`). |
+| **Returning** (Google) | Sign-in or sign-up → `/mystical-profile` by default (`getReturningUserWithReportsDestination()`); optional safe `?redirect=` (see [lib/safeAuthRedirect.ts](../lib/safeAuthRedirect.ts)). If reports exist (`mysticalProfileGenerated`), profile-setup and similar flows redirect to `RETURNING_USER_WITH_REPORTS_DESTINATION` (currently `/mystical-profile`). |
 | **New** (Google) | Sign-in or sign-up → `/profile` by default; user may complete details on `/profile` or `/profile-setup` per product flow. |
 | **New** (Email) | Sign-up (SignupFlow) → `/profile`. |
-| **Edited** | `/profile` → Save → stay on `/profile`; or Generate mystical profile success → `/tools` (same constant as above). |
+| **Edited** | `/profile` → Save → stay on `/profile`; or Generate mystical profile success → `/mystical-profile` (same constant as above). |
 
 ---
 
@@ -73,5 +75,5 @@ For **deterministic auth → profile generation → cached reports → controlle
 
 - **Auth** is fixed per above (returning vs new, guards, redirect param).
 - **Profile generation** is triggered from `/profile` (Generate mystical profile) and post–profile-setup (AstroApp); outcomes and caching live in profile/API layer.
-- **Returning users with reports** are sent to `RETURNING_USER_WITH_REPORTS_DESTINATION` ([lib/authRouting.ts](../lib/authRouting.ts), currently `/tools`) from profile-setup and related guards when `userProfile.mysticalProfileGenerated === true`.
+- **Returning users with reports** are sent to `RETURNING_USER_WITH_REPORTS_DESTINATION` ([lib/authRouting.ts](../lib/authRouting.ts), currently `/mystical-profile`) from profile-setup and related guards when `userProfile.mysticalProfileGenerated === true`.
 - **Cached reports / API** and **deploy pipeline** are outside this auth/routing map; the full doc is the single place to look for "who goes where after login/signup/profile/logout."

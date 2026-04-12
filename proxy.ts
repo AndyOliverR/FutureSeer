@@ -12,6 +12,7 @@ import type { NextRequest } from 'next/server';
 
 const PROTECTED_PREFIXES = [
   '/profile',
+  '/mystical-profile',
   '/profile-setup',
   '/ask-the-seer',
   '/community',

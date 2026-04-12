@@ -27,6 +27,7 @@ const EXACT_ALLOWED = new Set([
   "/disclaimer",
   "/how-to-use",
   "/learn",
+  "/mystical-profile",
   "/notes",
   "/offline",
   "/pricing",
@@ -58,7 +59,7 @@ function isPrefixAllowed(canonical: string): boolean {
 }
 
 /**
- * Returns a safe in-app path, or null to use the default (/tools or /profile).
+ * Returns a safe in-app path, or null to use the default (returning-user destination or /profile).
  * Unknown `/community/*` (except index and attribution) maps to `/community/attribution`.
  */
 export function getSafeAuthRedirectAfterSignIn(redirect: string | null): string | null {
