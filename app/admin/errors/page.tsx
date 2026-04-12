@@ -50,7 +50,7 @@ function formatTimestamp(ts: string) {
 }
 
 function describeErrorSimple(event: ErrorEventDoc): string {
-  const { area, action, severity } = event;
+  const { area, action, severity, meta } = event;
 
   if (severity === "error") {
     if (area === "auth" && action.startsWith("sign_in")) {
@@ -91,6 +91,13 @@ function describeErrorSimple(event: ErrorEventDoc): string {
   }
   if (area === "profile" && action === "no_mystical_profile") {
     return "Diagnostic: no generated mystical profile for this user yet (expected for new accounts).";
+  }
+  if (
+    area === "auth" &&
+    meta?.expectedUserInputError === true &&
+    (action === "auth_failed" || action === "signup_email")
+  ) {
+    return "Email or password validation issue (e.g. invalid email format or weak password). Expected user mistake, not an application outage.";
   }
 
   if (severity === "info") {

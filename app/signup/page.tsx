@@ -23,6 +23,7 @@ import {
   isUserDismissedAuthError,
   isUnauthorizedDomainAuthError,
   isAuthRedirectInitiatedError,
+  isBenignAuthUserInputError,
 } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons"
@@ -286,11 +287,18 @@ function SignUpPageContent() {
       } catch {
         /* ignore */
       }
-      await logError("signup_email", typeof err.message === "string" ? err.message : msg, "error", {
-        selectedPlan: data.selectedPlan,
-        code: err.code ?? null,
-        authDomain,
-      })
+      const benign = isBenignAuthUserInputError(err)
+      await logError(
+        "signup_email",
+        typeof err.message === "string" ? err.message : msg,
+        benign ? "warning" : "error",
+        {
+          selectedPlan: data.selectedPlan,
+          code: err.code ?? null,
+          authDomain,
+          ...(benign ? { expectedUserInputError: true } : {}),
+        },
+      )
       throw error
     } finally {
       setIsLoading(false)
