@@ -10,6 +10,7 @@ import type { RuneReading } from '@/lib/runesIntelligence';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
 interface RunesSeerMessage {
   id: string;
@@ -189,7 +190,7 @@ export default function RunesSeerChatInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }
@@ -217,7 +218,7 @@ export default function RunesSeerChatInterface({
             streamingLengthRef.current = accumulatedContent.length;
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+                msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
               )
             );
           }

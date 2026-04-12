@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { stripAttributionForDisplay } from "@/lib/attribution/attributionStamp";
 
 export interface SlowRevealTextProps {
   content: string;
@@ -23,13 +24,14 @@ export function SlowRevealText({
   className = "",
   onComplete,
 }: SlowRevealTextProps) {
+  const cleaned = stripAttributionForDisplay(content);
   const [phase, setPhase] = useState<"thinking" | "revealing" | "done">("thinking");
   const [revealedText, setRevealedText] = useState("");
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
   useEffect(() => {
-    if (!content.trim()) {
+    if (!cleaned.trim()) {
       const t = setTimeout(() => {
         setPhase("done");
         setRevealedText("");
@@ -43,12 +45,12 @@ export function SlowRevealText({
     }, minThinkingMs);
 
     return () => clearTimeout(thinkingTimer);
-  }, [content, minThinkingMs]);
+  }, [cleaned, minThinkingMs]);
 
   useEffect(() => {
     if (phase !== "revealing") return;
 
-    const words = content.trim().split(/\s+/);
+    const words = cleaned.trim().split(/\s+/);
     if (words.length === 0) {
       setPhase("done");
       onCompleteRef.current?.();
@@ -69,7 +71,7 @@ export function SlowRevealText({
     }, delayPerWord);
 
     return () => clearInterval(interval);
-  }, [phase, content, delayPerWord]);
+  }, [phase, cleaned, delayPerWord]);
 
   if (phase === "thinking") {
     return (
@@ -82,7 +84,7 @@ export function SlowRevealText({
   if (phase === "revealing" || phase === "done") {
     return (
       <span className={className}>
-        {phase === "done" ? content : revealedText}
+        {phase === "done" ? cleaned : revealedText}
       </span>
     );
   }

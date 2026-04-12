@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
 interface WesternSeerChatInterfaceProps {
   userId: string;
@@ -158,7 +159,7 @@ export default function WesternSeerChatInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages(prev => prev.map(msg => 
             msg.id === aiMessageId 
-              ? { ...msg, content: accumulatedContent }
+              ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) }
               : msg
           ));
         }

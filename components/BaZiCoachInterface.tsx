@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
 interface BaZiMessage {
   id: string;
@@ -159,7 +160,7 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === aiMessageId
-                ? { ...msg, content: accumulatedContent }
+                ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) }
                 : msg
             )
           );

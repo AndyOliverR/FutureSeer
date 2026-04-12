@@ -12,6 +12,7 @@ import { isProfileComplete, getProfileCompletionStatus, type UserProfile } from 
 import Link from "next/link";
 import { devLog } from "@/lib/devLogger";
 import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch";
+import { stripAttributionForDisplay } from "@/lib/attribution/attributionStamp";
 import { 
   MessageCircle, 
   Send, 
@@ -341,7 +342,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
 
         const thinkingTimeoutId = window.setTimeout(() => {
           const intervalId = window.setInterval(() => {
-            const full = accumulatedRef.current;
+            const full = stripAttributionForDisplay(accumulatedRef.current);
             const words = full.trim() ? full.trim().split(/\s+/) : [];
             if (words.length === 0) return;
             displayedWordCountRef.current = Math.min(
@@ -355,7 +356,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
             if (streamDoneRef.current && displayedWordCountRef.current >= words.length) {
               window.clearInterval(intervalId);
               setMessages(prev => prev.map(msg =>
-                msg.id === aiMessageId ? { ...msg, content: accumulatedRef.current } : msg
+                msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedRef.current) } : msg
               ));
             }
           }, REVEAL_INTERVAL_MS);
@@ -375,7 +376,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
           if (accumulatedRef.current.trim() === '') {
             window.clearTimeout(thinkingTimeoutId);
             setMessages(prev => prev.map(msg =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedRef.current } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedRef.current) } : msg
             ));
           }
         } else {
@@ -406,10 +407,13 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
         const result = await response.json();
 
         if (result.success) {
+          const answerText = stripAttributionForDisplay(
+            result.data.answer || 'Response received',
+          );
           const seerMessage: Message = {
             id: `msg_${Date.now()}_seer`,
             type: 'seer',
-            content: result.data.answer || 'Response received',
+            content: answerText,
             timestamp: Date.now(),
             confidence: result.data.confidence,
             sources: result.data.sources,
@@ -424,7 +428,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
           conversationHistoryRef.current = [
             ...conversationHistoryRef.current,
             { type: 'user', content: question },
-            { type: 'seer', content: result.data.answer || 'Response received' },
+            { type: 'seer', content: answerText },
           ];
         } else {
           throw new Error(result.error || 'Failed to get response');
