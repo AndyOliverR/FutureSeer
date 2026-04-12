@@ -8,6 +8,7 @@ import { Send, Star, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { HellenisticAstrologyReading } from '@/lib/hellenisticAstrologyIntelligence';
 
 interface HellenisticSeerChatInterfaceProps {
@@ -108,7 +109,7 @@ export default function HellenisticSeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/hellenistic/ask-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/hellenistic/ask-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

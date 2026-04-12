@@ -8,6 +8,7 @@ import { Send, Trash2, MessageCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface PendulumSeerChatInterfaceProps {
   userId: string;
@@ -68,7 +69,7 @@ export default function PendulumSeerChatInterface({
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ask-pendulum-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-pendulum-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

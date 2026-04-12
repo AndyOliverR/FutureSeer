@@ -9,6 +9,7 @@ import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lu
 import type { RuneReading } from '@/lib/runesIntelligence';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface RunesSeerMessage {
   id: string;
@@ -129,7 +130,7 @@ export default function RunesSeerChatInterface({
     };
 
     const performFetch = () =>
-      fetch('/api/ask-runes-seer', {
+      fetchWithFirebaseAuthRequired('/api/ask-runes-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

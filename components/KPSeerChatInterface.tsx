@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Target, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import type { KPAnalysis } from '@/lib/kpAstrologyIntelligence';
 
 interface KPSeerMessage {
@@ -123,7 +124,7 @@ export default function KPSeerChatInterface({
     };
 
     const performFetch = () =>
-      fetch('/api/ask-kp-astrology-seer', {
+      fetchWithFirebaseAuthRequired('/api/ask-kp-astrology-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,7 @@ export function AkashicSeerChatInterface({ reading, userProfile }: AkashicSeerCh
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
-      const response = await fetch('/api/ask-akashic-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-akashic-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1314,6 +1314,10 @@ export async function runProfileGeneration(
       calculationTime: Date.now(),
       systemsUsed,
       interpretationType: 'universal_comprehensive',
+      ...(typeof process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE === 'string' &&
+      process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE.trim().length > 0
+        ? { pipelineRelease: process.env.NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE.trim() }
+        : {}),
     },
     userId,
     lastUpdated: Date.now(),
