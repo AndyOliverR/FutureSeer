@@ -24,6 +24,7 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 - System design concepts → this app (gaps & prioritized fixes): [SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md](./SYSTEM_DESIGN_GAPS_AND_FUTURESEER.md)
 - Design principles (dual DS, grounded AI, a11y): [DESIGN_PRINCIPLES.md](./DESIGN_PRINCIPLES.md)
 - HEART metrics + SEQ survey: [HEART_AND_METRICS.md](./HEART_AND_METRICS.md)
+- Industry mobile growth trends vs this repo (Adjust 2026 synthesis): [analytics/ADJUST_2026_MOBILE_TRENDS_SYNTHESIS.md](./analytics/ADJUST_2026_MOBILE_TRENDS_SYNTHESIS.md)
 - Roadmap prioritization (impact–effort, second-order): [ROADMAP_PRIORITIZATION.md](./ROADMAP_PRIORITIZATION.md)
 - Marketing and asset workflow (message, channels, frequency, MJ/Firefly, optional Rive/Spline): [MARKETING_AND_ASSET_WORKFLOW.md](./MARKETING_AND_ASSET_WORKFLOW.md)
 - Google OAuth branding verification (Search Console + consent screen): [GOOGLE_OAUTH_BRANDING_VERIFICATION.md](./GOOGLE_OAUTH_BRANDING_VERIFICATION.md)

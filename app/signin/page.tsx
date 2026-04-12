@@ -19,7 +19,7 @@ import {
   isReturningUser,
   resetPassword,
   isUserDismissedAuthError,
-  isInvalidCredentialAuthError,
+  isBenignAuthUserInputError,
   isUnauthorizedDomainAuthError,
   isAuthRedirectInitiatedError,
 } from "@/lib/firebase"
@@ -288,7 +288,7 @@ function SignInContent() {
       const msg = getAuthErrorMessage(err)
       setError(msg)
       const captchaMeta = extractCaptchaMeta(err)
-      if (isInvalidCredentialAuthError(err)) {
+      if (isBenignAuthUserInputError(err)) {
         await logError("auth_failed", msg, "warning", {
           method: "email",
           code: err.code ?? null,

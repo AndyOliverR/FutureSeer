@@ -683,6 +683,18 @@ export function isInvalidCredentialAuthError(error: { code?: string } | null | u
   return error?.code === 'auth/invalid-credential';
 }
 
+/** Firebase codes that almost always mean bad user input, not infra or app bugs. */
+const BENIGN_AUTH_USER_INPUT_CODES = new Set([
+  'auth/invalid-email',
+  'auth/weak-password',
+  'auth/invalid-credential',
+]);
+
+export function isBenignAuthUserInputError(error: { code?: string } | null | undefined): boolean {
+  const code = error?.code;
+  return typeof code === 'string' && BENIGN_AUTH_USER_INPUT_CODES.has(code);
+}
+
 /** Firebase codes when the user closed the OAuth popup or cancelled — not app failures. */
 const USER_DISMISSED_AUTH_CODES = new Set([
   'auth/popup-closed-by-user',
