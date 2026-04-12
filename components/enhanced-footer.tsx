@@ -52,6 +52,7 @@ export function EnhancedFooter() {
             <Link href="/privacy" className="text-xs font-medium text-surface-on-variant hover:text-primary">Privacy</Link>
           </div>
           <div className="flex-1 min-w-0 md:min-w-[160px] max-w-xs flex flex-col gap-1">
+            <div className="min-h-[2.75rem] flex flex-col justify-center">
             {status === "success" ? (
               <p
                 className="text-xs text-primary font-medium py-1 px-2 rounded-full bg-surface-container-low border border-outline-variant/20"
@@ -93,6 +94,7 @@ export function EnhancedFooter() {
                 </Button>
               </form>
             )}
+            </div>
             <p className="text-[9px] text-surface-on-variant/85 leading-tight">
               No spam. Unsubscribe anytime.{" "}
               <Link href="/terms" className="text-primary/90 hover:underline">
@@ -136,19 +138,19 @@ export function EnhancedFooter() {
             <Link
               href="/mobile-waitlist"
               className="inline-flex flex-col gap-1"
-              aria-label="Coming Soon - Join iOS app waitlist"
+              aria-label="Coming Soon — App Store badge — join the iOS app waitlist"
             >
               <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
               <Image
                 src="/badges/app-store-dark.svg"
-                alt="Download on the App Store"
+                alt=""
                 width={124}
                 height={40}
                 className="block dark:hidden"
               />
               <Image
                 src="/badges/app-store-light.svg"
-                alt="Download on the App Store"
+                alt=""
                 width={124}
                 height={40}
                 className="hidden dark:block"
@@ -157,19 +159,19 @@ export function EnhancedFooter() {
             <Link
               href="/mobile-waitlist"
               className="inline-flex flex-col gap-1"
-              aria-label="Coming Soon - Join Android app waitlist"
+              aria-label="Coming Soon — Google Play badge — join the Android app waitlist"
             >
               <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
               <Image
                 src="/badges/google-play-dark.svg"
-                alt="Get it on Google Play"
+                alt=""
                 width={135}
                 height={40}
                 className="block dark:hidden"
               />
               <Image
                 src="/badges/google-play-light.svg"
-                alt="Get it on Google Play"
+                alt=""
                 width={135}
                 height={40}
                 className="hidden dark:block"
