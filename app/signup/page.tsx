@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
+import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import {
   signInWithGoogle,
@@ -74,6 +76,7 @@ function SignUpPageContent() {
   const [referralCode, setReferralCode] = useState("")
   const isMobileLayout = useIsMobileLayout()
   const [confirmAge16, setConfirmAge16] = useState(false)
+  const [dismissAuthInfo, setDismissAuthInfo] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -81,12 +84,18 @@ function SignUpPageContent() {
   const variantParam = searchParams?.get("variant")
   const refParam = searchParams?.get('ref')
   const redirectTo = getSafeAuthRedirectAfterSignIn(searchParams?.get("redirect") ?? null)
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
+  const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
   
   const didAutoRedirectRef = React.useRef(false)
   const [signupVariant, setSignupVariant] = useState<'control' | 'story_first'>('control')
   const showApple = isAppleSignInEnabledClient()
+  const redirectStall = useOnboardingStallRecovery(!!user, {
+    surface: "signup_redirect",
+    logOnboarding: logOnboarding,
+    funnelNewUser: user ? !isReturningUser(user) : null,
+  })
 
   useEffect(() => {
     if (refParam) setReferralCode(refParam)
@@ -125,6 +134,7 @@ function SignUpPageContent() {
   useEffect(() => {
     if (!user) return
     setError((prev) => (prev ? null : prev))
+    setDismissAuthInfo(false)
     if (didAutoRedirectRef.current) return
     didAutoRedirectRef.current = true
     const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
@@ -138,10 +148,18 @@ function SignUpPageContent() {
   // Show redirecting state as soon as user is set
   if (user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <div className="text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-surface px-4 pb-12">
+        <div className="text-center max-w-md">
           <Loader2 className="w-10 h-10 animate-spin text-amber-400 mx-auto mb-4" />
           <p className="text-surface-on-variant font-medium">Redirecting...</p>
+          <p className="text-surface-on-variant/80 text-sm mt-2">Taking you to your profile to finish setup.</p>
+          <OnboardingStuckBanner
+            stuck={redirectStall}
+            variant="m3"
+            onSignOutTryAgain={async () => {
+              await signOut()
+            }}
+          />
         </div>
       </div>
     );
@@ -150,10 +168,11 @@ function SignUpPageContent() {
   const handleGoogleSignIn = async () => {
     if (isLoading || activeProvider === 'google') return;
     if (!confirmAge16) {
+      setDismissAuthInfo(false)
       setError("You must confirm you are at least 16 years old to use FutureSeer");
       return;
     }
-    setIsLoading(true); setError(null); setActiveProvider('google')
+    setIsLoading(true); setError(null); setDismissAuthInfo(false); setActiveProvider('google')
     try {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
@@ -172,10 +191,15 @@ function SignUpPageContent() {
         }
       }
       const msg = getAuthErrorMessage(err)
+      setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         await logError("signup_google_dismissed", msg, "info", {
           provider: "google",
+          code: err.code ?? null,
+        })
+        void logOnboarding("oauth_popup_dismissed", "User dismissed Google sign-up popup", "info", {
+          surface: "signup",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
@@ -195,10 +219,11 @@ function SignUpPageContent() {
   const handleAppleSignIn = async () => {
     if (isLoading || activeProvider === "apple") return;
     if (!confirmAge16) {
+      setDismissAuthInfo(false)
       setError("You must confirm you are at least 16 years old to use FutureSeer");
       return;
     }
-    setIsLoading(true); setError(null); setActiveProvider("apple")
+    setIsLoading(true); setError(null); setDismissAuthInfo(false); setActiveProvider("apple")
     try {
       const user = await signInWithApple()
       const returning = isReturningUser(user)
@@ -217,10 +242,15 @@ function SignUpPageContent() {
         }
       }
       const msg = getAuthErrorMessage(err)
+      setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         await logError("signup_apple_dismissed", msg, "info", {
           provider: "apple",
+          code: err.code ?? null,
+        })
+        void logOnboarding("oauth_popup_dismissed", "User dismissed Apple sign-up popup", "info", {
+          surface: "signup",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
@@ -240,24 +270,29 @@ function SignUpPageContent() {
   const handleBasicInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!email || !password || !confirmPassword || !displayName || !selectedCountry) {
+      setDismissAuthInfo(false)
       setError("Please fill in all fields")
       return
     }
     if (password !== confirmPassword) {
+      setDismissAuthInfo(false)
       setError("Passwords do not match")
       return
     }
     if (password.length < 6) {
+      setDismissAuthInfo(false)
       setError("Password must be at least 6 characters long")
       return
     }
     if (!confirmAge16) {
+      setDismissAuthInfo(false)
       setError("You must confirm you are at least 16 years old to use FutureSeer")
       return
     }
 
     setIsLoading(true)
     setError(null)
+    setDismissAuthInfo(false)
 
     try {
       setShowSignupFlow(true)
@@ -271,7 +306,7 @@ function SignUpPageContent() {
   }
 
   const handleSignupFlowComplete = async (data: SignupFlowCompleteData) => {
-    setIsLoading(true); setError(null)
+    setIsLoading(true); setError(null); setDismissAuthInfo(false)
     try {
       await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.SIGNUP, logError)
       await signUpWithEmail(email, password, displayName, selectedCountry, data.selectedPlan, data.paymentMethodId, data.autoMandateAccepted, data.subscriptionId, referralCode || undefined)
@@ -351,11 +386,26 @@ function SignUpPageContent() {
                   googleLabel="Continue with Google"
                   appleLabel="Continue with Apple"
                 />
+                {error && (
+                  <Alert
+                    className={
+                      dismissAuthInfo
+                        ? "mt-4 rounded-2xl border-amber-500/40 bg-amber-500/10 text-amber-100"
+                        : "mt-4 rounded-2xl bg-red-500/10 border-red-500/20 text-red-300"
+                    }
+                  >
+                    <AlertDescription className="text-sm font-medium text-center leading-relaxed">{error}</AlertDescription>
+                  </Alert>
+                )}
                 <div className="relative my-8 text-center"><span className="bg-surface-container-high px-4 text-xs uppercase tracking-widest text-surface-on-variant font-bold opacity-50">or email</span></div>
               </>
             )}
 
-            {error && <Alert className="mb-6 bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"><AlertDescription className="font-bold text-center">{error}</AlertDescription></Alert>}
+            {showSignupFlow && error && (
+              <Alert className="mb-6 bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl">
+                <AlertDescription className="font-bold text-center">{error}</AlertDescription>
+              </Alert>
+            )}
 
             {showSignupFlow ? (
               <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
@@ -416,11 +466,20 @@ function SignUpPageContent() {
             <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your <br/>Journey.</h1>
           )}
 
-          {error && <Alert className="bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"><AlertDescription className="font-bold">{error}</AlertDescription></Alert>}
-
           {showSignupFlow ? (
             <>
               <h1 className="text-3xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Start Your Journey</h1>
+              {error && (
+                <Alert
+                  className={
+                    dismissAuthInfo
+                      ? "rounded-2xl border-amber-500/40 bg-amber-500/10 text-amber-100"
+                      : "rounded-2xl bg-red-500/10 border-red-500/20 text-red-400"
+                  }
+                >
+                  <AlertDescription className="font-bold leading-relaxed">{error}</AlertDescription>
+                </Alert>
+              )}
               <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
             </>
           ) : (
@@ -446,6 +505,17 @@ function SignUpPageContent() {
                 googleLabel="Continue with Google"
                 appleLabel="Continue with Apple"
               />
+              {error && (
+                <Alert
+                  className={
+                    dismissAuthInfo
+                      ? "rounded-2xl border-amber-500/40 bg-amber-500/10 text-amber-100"
+                      : "rounded-2xl bg-red-500/10 border-red-500/20 text-red-400"
+                  }
+                >
+                  <AlertDescription className="font-bold leading-relaxed">{error}</AlertDescription>
+                </Alert>
+              )}
               <div className="relative text-center">
                 <span className="bg-slate-900/80 px-4 text-xs uppercase tracking-widest text-amber-200/80 font-bold">or register with email</span>
               </div>

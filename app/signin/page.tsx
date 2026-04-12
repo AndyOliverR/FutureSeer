@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
+import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import {
   signInWithGoogle,
@@ -49,6 +51,7 @@ function SignInContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [activeProvider, setActiveProvider] = useState<"google" | "apple" | null>(null)
+  const [dismissAuthInfo, setDismissAuthInfo] = useState(false)
   const showApple = isAppleSignInEnabledClient()
   const isMobileLayout = useIsMobileLayout()
   const didAutoRedirectRef = React.useRef(false)
@@ -56,9 +59,15 @@ function SignInContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = getSafeAuthRedirectAfterSignIn(searchParams?.get("redirect") ?? null)
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
+  const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
   const oauthGuardrails = React.useMemo(() => getClientOAuthGuardrailReport(), [])
+  const redirectStall = useOnboardingStallRecovery(!!user, {
+    surface: "signin_redirect",
+    logOnboarding: logOnboarding,
+    funnelNewUser: user ? !isReturningUser(user) : null,
+  })
   const authCaptchaMode = React.useMemo(() => {
     const explicit = process.env.NEXT_PUBLIC_AUTH_CAPTCHA_MODE
     if (explicit === "adaptive" || explicit === "enforce") return explicit
@@ -106,6 +115,7 @@ function SignInContent() {
   useEffect(() => {
     if (!user) return;
     setError((prev) => (prev ? null : prev))
+    setDismissAuthInfo(false)
     if (didAutoRedirectRef.current) return;
     didAutoRedirectRef.current = true;
     const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile");
@@ -120,10 +130,18 @@ function SignInContent() {
   // Show redirecting state as soon as user is set (don't wait for profile load)
   if (user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#020617]">
-        <div className="text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#020617] px-4 pb-12">
+        <div className="text-center max-w-md">
           <Loader2 className="w-10 h-10 animate-spin text-amber-400 mx-auto mb-4" />
           <p className="text-amber-200/90 font-medium">Redirecting...</p>
+          <p className="text-slate-400 text-sm mt-2">Taking you to your profile or home.</p>
+          <OnboardingStuckBanner
+            stuck={redirectStall}
+            variant="devotionist"
+            onSignOutTryAgain={async () => {
+              await signOut()
+            }}
+          />
         </div>
       </div>
     );
@@ -134,6 +152,7 @@ function SignInContent() {
     setIsLoading(true)
     setActiveProvider("google")
     setError(null)
+    setDismissAuthInfo(false)
     try {
       await logError("google_clicked", "Google sign-in clicked", "info", { hasRedirect: !!redirectTo })
       const user = await signInWithGoogle()
@@ -154,10 +173,15 @@ function SignInContent() {
         }
       }
       const msg = getAuthErrorMessage(err)
+      setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         await logError("signin_dismissed", msg, "info", {
           method: "google",
+          code: err.code ?? null,
+        })
+        void logOnboarding("oauth_popup_dismissed", "User dismissed Google sign-in popup", "info", {
+          surface: "signin",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
@@ -185,6 +209,7 @@ function SignInContent() {
     setIsLoading(true)
     setActiveProvider("apple")
     setError(null)
+    setDismissAuthInfo(false)
     try {
       await logError("apple_clicked", "Apple sign-in clicked", "info", { hasRedirect: !!redirectTo })
       const user = await signInWithApple()
@@ -205,10 +230,15 @@ function SignInContent() {
         }
       }
       const msg = getAuthErrorMessage(err)
+      setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         await logError("signin_dismissed", msg, "info", {
           method: "apple",
+          code: err.code ?? null,
+        })
+        void logOnboarding("oauth_popup_dismissed", "User dismissed Apple sign-in popup", "info", {
+          surface: "signin",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
@@ -233,7 +263,7 @@ function SignInContent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true); setError(null); setSuccess(null)
+    setIsLoading(true); setError(null); setSuccess(null); setDismissAuthInfo(false)
 
     try {
       await logError("email_submit_clicked", "Email sign-in submitted", "info", { hasRedirect: !!redirectTo })
@@ -287,6 +317,7 @@ function SignInContent() {
         preflight?: Record<string, unknown>
       };
       const msg = getAuthErrorMessage(err)
+      setDismissAuthInfo(false)
       setError(msg)
       const captchaMeta = extractCaptchaMeta(err)
       if (isBenignAuthUserInputError(err)) {
@@ -311,7 +342,7 @@ function SignInContent() {
 
   const handleForgotPassword = async () => {
     const trimmed = (email || "").trim()
-    setError(null); setSuccess(null)
+    setError(null); setSuccess(null); setDismissAuthInfo(false)
     if (!trimmed) {
       setError("Enter your email above, then tap “Forgot password?”")
       return
@@ -347,6 +378,22 @@ function SignInContent() {
             <p className="text-surface-on-variant text-sm font-medium opacity-70 uppercase tracking-widest leading-none">The cosmos awaits your return</p>
           </div>
           <div className="w-full bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl overflow-hidden glass-effect">
+            {error && (
+              <Alert
+                className={
+                  dismissAuthInfo
+                    ? "mb-4 rounded-2xl border-amber-500/40 bg-amber-500/10 text-amber-100"
+                    : "mb-4 rounded-2xl bg-red-500/10 border-red-500/20 text-red-300"
+                }
+              >
+                <AlertDescription className="text-sm font-medium leading-relaxed">{error}</AlertDescription>
+              </Alert>
+            )}
+            {success && (
+              <Alert className="mb-4 rounded-2xl bg-green-500/10 border-green-500/20 text-green-200">
+                <AlertDescription className="text-sm font-medium">{success}</AlertDescription>
+              </Alert>
+            )}
             <OAuthProviderButtons
               variant="mobile"
               onGoogle={handleGoogleSignIn}
@@ -399,7 +446,19 @@ function SignInContent() {
           <Link href="/" className="text-amber-400 flex items-center gap-2 font-heading tracking-widest uppercase text-sm mb-4 opacity-60 hover:opacity-100"><ArrowLeft className="w-4 h-4" /> Back to Home</Link>
           <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Welcome Back, <br/>Seeker.</h1>
 
-          {error && <Alert className="bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"><AlertDescription className="font-bold">{error}</AlertDescription></Alert>}
+          {error && (
+            <Alert
+              className={
+                dismissAuthInfo
+                  ? "rounded-2xl border-amber-500/40 bg-amber-500/10 text-amber-100"
+                  : "bg-red-500/10 border-red-500/20 text-red-400 rounded-2xl"
+              }
+            >
+              <AlertDescription className={dismissAuthInfo ? "text-sm font-medium leading-relaxed" : "font-bold"}>
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
           {success && <Alert className="bg-green-500/10 border-green-500/20 text-green-300 rounded-2xl"><AlertDescription className="font-bold">{success}</AlertDescription></Alert>}
 
           <OAuthProviderButtons
