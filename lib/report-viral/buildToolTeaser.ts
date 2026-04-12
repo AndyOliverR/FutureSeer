@@ -15,26 +15,98 @@ const GENERIC_ARCHETYPES = [
   'Threshold Walker',
 ]
 
+const SNIPPET_MAX = 140
+const MIN_PROSE_LEN = 12
+
+/** Reject JSON-like blobs and tiny tokens so teaser lines stay human-readable. */
+function isHumanSnippetText(s: string): boolean {
+  const t = s.trim()
+  if (t.length < MIN_PROSE_LEN) return false
+  if (/^\s*[\[{]/.test(t)) return false
+  if (/^\s*["']?\s*[\[{]/.test(t)) return false
+  return true
+}
+
+function sliceSnippet(s: string): string {
+  const t = s.trim()
+  return t.length > SNIPPET_MAX ? `${t.slice(0, SNIPPET_MAX - 1)}…` : t
+}
+
+function walkFirstHumanString(obj: unknown, depth: number, maxDepth: number): string {
+  if (depth > maxDepth || obj == null) return ''
+  if (typeof obj === 'string') {
+    return isHumanSnippetText(obj) ? sliceSnippet(obj) : ''
+  }
+  if (typeof obj !== 'object') return ''
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const s = walkFirstHumanString(item, depth + 1, maxDepth)
+      if (s) return s
+    }
+    return ''
+  }
+  const record = obj as Record<string, unknown>
+  const priorityKeys = [
+    'summarySnapshot',
+    'chartOverview',
+    'chartSummary',
+    'executiveSummary',
+    'overview',
+    'summary',
+    'title',
+    'headline',
+    'description',
+    'message',
+    'primaryLine',
+    'personalizedNote',
+  ]
+  for (const k of priorityKeys) {
+    if (!(k in record)) continue
+    const s = walkFirstHumanString(record[k], depth + 1, maxDepth)
+    if (s) return s
+  }
+  for (const v of Object.values(record)) {
+    const s = walkFirstHumanString(v, depth + 1, maxDepth)
+    if (s) return s
+  }
+  return ''
+}
+
+/**
+ * Short prose for teasers only — never returns JSON.stringify output (user-facing).
+ */
 function extractSnippet(report: unknown): string {
   if (report == null) return ''
-  if (typeof report === 'string') return report.slice(0, 160)
-  if (typeof report !== 'object') return String(report).slice(0, 160)
+  if (typeof report === 'string') {
+    return isHumanSnippetText(report) ? sliceSnippet(report) : ''
+  }
+  if (typeof report !== 'object') {
+    const raw = String(report).trim()
+    return isHumanSnippetText(raw) ? sliceSnippet(raw) : ''
+  }
   const r = report as Record<string, unknown>
-  const candidates = [
+  const data = (r.data && typeof r.data === 'object' ? r.data : null) as Record<string, unknown> | null
+  const comp = r.comprehensiveAnalysis as Record<string, unknown> | undefined
+  const candidates: unknown[] = [
     r.summary,
     r.overview,
     r.title,
-    (r.comprehensiveAnalysis as Record<string, unknown> | undefined)?.chartOverview,
-    (r.data as Record<string, unknown> | undefined)?.summary,
+    comp?.summarySnapshot,
+    comp?.chartOverview,
+    typeof comp?.chartSummary === 'string' ? comp.chartSummary : (comp?.chartSummary as { text?: string } | undefined)?.text,
+    data?.summary,
+    data?.overview,
   ]
   for (const c of candidates) {
-    if (typeof c === 'string' && c.trim()) return c.trim().slice(0, 140)
+    if (typeof c === 'string' && isHumanSnippetText(c)) return sliceSnippet(c)
   }
-  try {
-    return JSON.stringify(report).slice(0, 200)
-  } catch {
-    return ''
+  const walked = walkFirstHumanString(r, 0, 4)
+  if (walked) return walked
+  if (data) {
+    const fromData = walkFirstHumanString(data, 0, 3)
+    if (fromData) return fromData
   }
+  return ''
 }
 
 /**
@@ -77,6 +149,113 @@ export function buildToolTeaser(toolSlug: string, report: unknown): ToolTeaserPa
     }
   }
 
+  if (toolSlug === 'astrocartography' && report && typeof report === 'object') {
+    const o = report as Record<string, unknown>
+    const comp = o.comprehensiveAnalysis as Record<string, unknown> | undefined
+    const snap =
+      typeof comp?.summarySnapshot === 'string'
+        ? comp.summarySnapshot.trim()
+        : typeof comp?.chartOverview === 'string'
+          ? comp.chartOverview.trim()
+          : extractSnippet(report)
+    const seed = hashString(`astro:${snap.slice(0, 60)}`)
+    const pct = 5 + (seed % 18)
+    const hookLine =
+      snap.length > 0
+        ? `Astrocartography lines top ${pct}% — ${snap.slice(0, 100)}${snap.length > 100 ? '…' : ''}`
+        : `Your astrocartography map sits in a top ${pct}% band for relocation and line clarity.`
+    return {
+      archetypeName: 'Horizon Mapper',
+      rarityLabel: `Top ${pct}%`,
+      hookLine,
+      subLine: 'Unlock the full report to see every calculated line, timing note, and cross-reference tied to your profile.',
+      patternName: null,
+    }
+  }
+
+  if (toolSlug === 'mundaneAstrology' && report && typeof report === 'object') {
+    const o = report as Record<string, unknown>
+    const comp = o.comprehensiveAnalysis as Record<string, unknown> | undefined
+    const overview =
+      typeof comp?.chartOverview === 'string'
+        ? comp.chartOverview.trim()
+        : typeof comp?.summarySnapshot === 'string'
+          ? comp.summarySnapshot.trim()
+          : extractSnippet(report)
+    const seed = hashString(`mundane:${overview.slice(0, 60)}`)
+    const pct = 5 + (seed % 18)
+    const hookLine =
+      overview.length > 0
+        ? `Mundane astrology top ${pct}% — ${overview.slice(0, 100)}${overview.length > 100 ? '…' : ''}`
+        : `Your mundane astrology reading maps to a top ${pct}% band for ingress and world-pattern signal.`
+    return {
+      archetypeName: 'World Pattern Reader',
+      rarityLabel: `Top ${pct}%`,
+      hookLine,
+      subLine: 'Unlock the full report to see every calculated line, timing note, and cross-reference tied to your profile.',
+      patternName: null,
+    }
+  }
+
+  if (toolSlug === 'tarot' && report && typeof report === 'object') {
+    const o = report as Record<string, unknown>
+    const data = (o.data ?? o) as Record<string, unknown>
+    const profile = (data.profile ?? o.profile) as Record<string, unknown> | undefined
+    const cardName = (key: string): string => {
+      const block = profile?.[key] as Record<string, unknown> | undefined
+      return typeof block?.name === 'string' ? block.name.trim() : ''
+    }
+    const birth = cardName('birthCard')
+    const life = cardName('lifePathCard')
+    const soul = cardName('soulCard')
+    const personality = cardName('personalityCard')
+    const bits = [birth && `Birth ${birth}`, life && `Life path ${life}`, soul && `Soul ${soul}`, personality && `Personality ${personality}`].filter(
+      Boolean
+    ) as string[]
+    const joined = bits.join(' · ')
+    const seed = hashString(`tarot:${joined}`)
+    const pct = 5 + (seed % 18)
+    const hookLine =
+      bits.length > 0
+        ? `Tarot birth archetypes top ${pct}% — ${joined.slice(0, 120)}${joined.length > 120 ? '…' : ''}`
+        : `Your tarot profile maps to a top ${pct}% band for birth-card and path alignment.`
+    return {
+      archetypeName: 'Arcana Witness',
+      rarityLabel: `Top ${pct}%`,
+      hookLine,
+      subLine: 'Unlock the full spread, interpretation, and guidance for this reading.',
+      patternName: null,
+    }
+  }
+
+  if (toolSlug === 'bibliomancy' && report && typeof report === 'object') {
+    const o = report as Record<string, unknown>
+    const interp = o.interpretations as Record<string, unknown> | undefined
+    let first = ''
+    if (interp && typeof interp === 'object') {
+      for (const v of Object.values(interp)) {
+        if (typeof v === 'string' && isHumanSnippetText(v)) {
+          first = v.trim()
+          break
+        }
+      }
+    }
+    if (!first) first = extractSnippet(report)
+    const seed = hashString(`biblio:${first.slice(0, 60)}`)
+    const pct = 5 + (seed % 18)
+    const hookLine =
+      first.length > 0
+        ? `Bibliomancy top ${pct}% — ${first.slice(0, 100)}${first.length > 100 ? '…' : ''}`
+        : `Your bibliomancy reading sits in a top ${pct}% band for poetic resonance.`
+    return {
+      archetypeName: 'Verse Seeker',
+      rarityLabel: `Top ${pct}%`,
+      hookLine,
+      subLine: 'Unlock the full report to see every calculated line, timing note, and cross-reference tied to your profile.',
+      patternName: null,
+    }
+  }
+
   /** Live session / coach flows (no pipeline report shape). */
   if (
     ['runes', 'pendulum', 'lenormand', 'geomancy', 'iching'].includes(toolSlug) &&
@@ -86,7 +265,8 @@ export function buildToolTeaser(toolSlug: string, report: unknown): ToolTeaserPa
     const o = report as Record<string, unknown>
     const qRaw = o.question ?? o.userQuestion ?? o.prompt
     const q = typeof qRaw === 'string' ? qRaw.trim() : ''
-    const snippet = extractSnippet(report)
+    const rawSnippet = extractSnippet(report)
+    const snippet = isHumanSnippetText(rawSnippet) ? rawSnippet : ''
     const seed = hashString(`${toolSlug}:${q}:${snippet.slice(0, 60)}`)
     const pct = 5 + (seed % 18)
     const hookLine =
@@ -110,13 +290,16 @@ export function buildToolTeaser(toolSlug: string, report: unknown): ToolTeaserPa
     const data = (o.data ?? o) as Record<string, unknown>
     const numbers = (data.numbers ?? o.numbers) as Record<string, number> | undefined
     const lp = numbers?.lifePath ?? numbers?.life_path
-    const seed = hashString(`numerology:${lp}:${extractSnippet(report)}`)
+    const numSnip = extractSnippet(report)
+    const seed = hashString(`numerology:${lp}:${numSnip}`)
     const pct = 5 + (seed % 18)
     const hookLine =
       typeof lp === 'number'
-        ? `Life Path ${lp} clusters in the top ${pct}% band for Chaldean profiles like yours—${extractSnippet(report).slice(0, 72)}…`
-        : extractSnippet(report)
-          ? `Your numerology signature maps to a top ${pct}% band—${extractSnippet(report).slice(0, 80)}${extractSnippet(report).length > 80 ? '…' : ''}`
+        ? numSnip.length > 0
+          ? `Life Path ${lp} clusters in the top ${pct}% band for Chaldean profiles like yours — ${numSnip.slice(0, 72)}${numSnip.length > 72 ? '…' : ''}`
+          : `Life Path ${lp} clusters in the top ${pct}% band for Chaldean profiles like yours.`
+        : numSnip.length > 0
+          ? `Your numerology signature maps to a top ${pct}% band — ${numSnip.slice(0, 80)}${numSnip.length > 80 ? '…' : ''}`
           : `Your Chaldean numerology reading sits in a top ${pct}% rarity band for this system.`
     return {
       archetypeName: 'Number Weaver',
