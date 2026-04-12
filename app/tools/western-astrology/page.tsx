@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
+import { Suspense, useState, useEffect, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -107,18 +107,6 @@ function WesternAstrologyPageContent() {
     [analysis?.data]
   )
   const bypassViralRestrictions = useViralReportBypass()
-
-  const chartAutoOpenedRef = useRef(false)
-  // Chart-first: once chart data exists, open the Western dashboard tab (unless URL pins another tab)
-  useEffect(() => {
-    if (chartAutoOpenedRef.current) return
-    const t = searchParams.get('tab')
-    if (t === 'advanced' || t === 'introduction') return
-    if (activeTab !== 'introduction') return
-    if (!analysis?.data || !hasReport) return
-    setActiveTab('western-astrology')
-    chartAutoOpenedRef.current = true
-  }, [analysis?.data, hasReport, searchParams, activeTab])
 
   const [fetchedTransits, setFetchedTransits] = useState<unknown[] | null>(null)
   const [isLoadingTransits, setIsLoadingTransits] = useState(false)
