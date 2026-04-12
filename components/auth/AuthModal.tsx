@@ -395,7 +395,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
               )}
 
               {/* Sign In Tab */}
-              <TabsContent value="signin" className="space-y-4">
+              <TabsContent value="signin" className="space-y-4 min-h-[17rem]">
                 <form onSubmit={handleEmailSignIn} className="space-y-4">
                                      <div className="space-y-3">
                                            <Label htmlFor="signin-email" className="text-amber-300 font-medium text-sm">Email</Label>
@@ -432,11 +432,13 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                           size="sm"
                           className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] hover:bg-amber-500/10 text-amber-400 hover:text-amber-300 rounded-lg transition-all duration-200"
                           onClick={() => setShowPassword(!showPassword)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          aria-pressed={showPassword}
                         >
                          <span className="shrink-0">{showPassword ? (
-                           <EyeOff className="h-4 w-4" />
+                           <EyeOff className="h-4 w-4" aria-hidden />
                          ) : (
-                           <Eye className="h-4 w-4" />
+                           <Eye className="h-4 w-4" aria-hidden />
                          )}</span>
                        </Button>
                      </div>
@@ -461,7 +463,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
               </TabsContent>
 
               {/* Sign Up Tab */}
-              <TabsContent value="signup" className="space-y-4">
+              <TabsContent value="signup" className="space-y-4 min-h-[24rem]">
                 <form onSubmit={handleEmailSignUp} className="space-y-4">
                                      <div className="space-y-2">
                      <Label htmlFor="signup-name" className="text-amber-300">Display Name</Label>
@@ -519,11 +521,13 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                          size="sm"
                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-amber-400"
                          onClick={() => setShowPassword(!showPassword)}
+                         aria-label={showPassword ? "Hide password" : "Show password"}
+                         aria-pressed={showPassword}
                        >
                          {showPassword ? (
-                           <EyeOff className="h-4 w-4" />
+                           <EyeOff className="h-4 w-4" aria-hidden />
                          ) : (
-                           <Eye className="h-4 w-4" />
+                           <Eye className="h-4 w-4" aria-hidden />
                          )}
                        </Button>
                      </div>
@@ -548,11 +552,13 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                          size="sm"
                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-amber-400"
                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                         aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                         aria-pressed={showConfirmPassword}
                        >
                          {showConfirmPassword ? (
-                           <EyeOff className="h-4 w-4" />
+                           <EyeOff className="h-4 w-4" aria-hidden />
                          ) : (
-                           <Eye className="h-4 w-4" />
+                           <Eye className="h-4 w-4" aria-hidden />
                          )}
                        </Button>
                      </div>
@@ -568,7 +574,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
               </TabsContent>
 
                              {/* Password Reset Tab */}
-               <TabsContent value="reset" className="space-y-4">
+               <TabsContent value="reset" className="space-y-4 min-h-[8.5rem]">
                  <form onSubmit={handlePasswordReset} className="space-y-4">
                    <div className="space-y-2">
                      <Label htmlFor="reset-email" className="text-amber-300">Email</Label>
