@@ -18,6 +18,7 @@ import {
 import { TrichakraAnalysis } from '@/lib/trichakraIntelligence';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
 interface Message {
   id: string;
@@ -154,7 +155,7 @@ export function TrichakraMethodCoachInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages(prev =>
             prev.map(msg =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }

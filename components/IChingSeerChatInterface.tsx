@@ -9,6 +9,7 @@ import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lu
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
 interface IChingMessage {
   id: string;
@@ -170,7 +171,7 @@ export default function IChingSeerChatInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }

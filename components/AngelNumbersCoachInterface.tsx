@@ -10,6 +10,7 @@ import { Send, Feather, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 
 interface AngelNumbersMessage {
   id: string;
@@ -157,7 +158,7 @@ export function AngelNumbersCoachInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }

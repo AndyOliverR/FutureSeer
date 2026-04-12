@@ -9,6 +9,7 @@ import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2, Clock } f
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 import type { HoraryChartPayload } from '@/lib/horarySeerState';
 
 interface HorarySeerMessage {
@@ -193,7 +194,7 @@ export default function HorarySeerChatInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }
@@ -221,7 +222,7 @@ export default function HorarySeerChatInterface({
             streamingLengthRef.current = accumulatedContent.length;
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+                msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
               )
             );
           }

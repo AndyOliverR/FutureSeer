@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 import { HellenisticAstrologyReading } from '@/lib/hellenisticAstrologyIntelligence';
 
 interface HellenisticSeerChatInterfaceProps {
@@ -156,7 +157,7 @@ export default function HellenisticSeerChatInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }

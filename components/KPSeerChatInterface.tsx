@@ -9,6 +9,7 @@ import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Target, Trash2 } 
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
 import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
+import { stripAttributionForDisplay } from '@/lib/attribution/attributionStamp';
 import type { KPAnalysis } from '@/lib/kpAstrologyIntelligence';
 
 interface KPSeerMessage {
@@ -184,7 +185,7 @@ export default function KPSeerChatInterface({
           streamingLengthRef.current = accumulatedContent.length;
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+              msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
             )
           );
         }
@@ -212,7 +213,7 @@ export default function KPSeerChatInterface({
             streamingLengthRef.current = accumulatedContent.length;
             setMessages((prev) =>
               prev.map((msg) =>
-                msg.id === aiMessageId ? { ...msg, content: accumulatedContent } : msg
+                msg.id === aiMessageId ? { ...msg, content: stripAttributionForDisplay(accumulatedContent) } : msg
               )
             );
           }
