@@ -46,7 +46,7 @@ function signNameToIndex(name: string): number {
 function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
   const { profile: compProfile, loading: profileLoading, error: profileError } = useComprehensiveMysticalProfile();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('introduction');
 
   const hasVedicData = !!compProfile?.vedic;
 
