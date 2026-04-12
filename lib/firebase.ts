@@ -648,9 +648,11 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/operation-not-allowed': return 'This sign-in method is not enabled. Please contact support.';
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection and try again. If you use a VPN or ad blocker, try turning it off for this site or switch networks.';
-    case 'auth/popup-closed-by-user': return 'Sign-in cancelled.';
+    case 'auth/popup-closed-by-user':
+      return 'The Google sign-in window was closed before finishing. Nothing was changed on your account—you are still signed out. Tap Sign in with Google again, or use email and password below.';
     case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
-    case 'auth/cancelled-popup-request': return 'Sign-in cancelled.';
+    case 'auth/cancelled-popup-request':
+      return 'Sign-in was interrupted (another sign-in may have started). You are still signed out. Wait a moment, then tap Sign in with Google again, or use email and password.';
     case 'auth/unauthorized-domain':
       return 'Google or Apple sign-in is not available from this web address. Try email and password, or open the app from the main FutureSeer website.';
     case 'auth/account-exists-with-different-credential':

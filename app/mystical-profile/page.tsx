@@ -1,6 +1,9 @@
 "use client"
 
 import { useEffect, useMemo } from "react"
+import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
+import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
+import { useErrorLogger } from "@/hooks/useErrorLogger"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -45,12 +48,34 @@ function humanizePipelineSlug(slug: string): string {
 
 export default function MysticalProfilePage() {
   const router = useRouter()
-  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin } = useAuth()
+  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, signOut } = useAuth()
   const { profile, loading: profileLoading, error } = useComprehensiveMysticalProfile()
   const { material3: useMaterial3Layout, narrow: isNarrowViewport } =
     useIsPortraitNarrowLayout()
+  const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
 
   const p = profile as Record<string, unknown> | null
+
+  const showMysticalPageLoader = useMemo(() => {
+    if (authLoading) return true
+    if (user && !authLoading && userProfile === null && !isSuperadmin && !isAdmin) return true
+    if (
+      user &&
+      userProfile != null &&
+      hasRequiredProfileSetup(userProfile) &&
+      userProfile.mysticalProfileGenerated &&
+      profileLoading
+    ) {
+      return true
+    }
+    return false
+  }, [authLoading, user, userProfile, isSuperadmin, isAdmin, profileLoading])
+
+  const mysticalPageLoaderStall = useOnboardingStallRecovery(showMysticalPageLoader, {
+    surface: "mystical_profile_page_loader",
+    logOnboarding,
+    funnelNewUser: userProfile ? !userProfile.mysticalProfileGenerated : null,
+  })
 
   useEffect(() => {
     if (authLoading) return
@@ -133,24 +158,25 @@ export default function MysticalProfilePage() {
     return ordered
   }, [p])
 
-  if (
-    authLoading ||
-    (user &&
-      !authLoading &&
-      userProfile === null &&
-      !isSuperadmin &&
-      !isAdmin) ||
-    (user &&
-      userProfile != null &&
-      hasRequiredProfileSetup(userProfile) &&
-      userProfile.mysticalProfileGenerated &&
-      profileLoading)
-  ) {
+  if (showMysticalPageLoader) {
     return (
-      <MysticalLoadingState
-        variant="fullscreen"
-        message="Gathering your mystical highlights…"
-      />
+      <div className="relative min-h-screen">
+        <MysticalLoadingState
+          variant="fullscreen"
+          message="Gathering your mystical highlights…"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
+          <div className="pointer-events-auto w-full max-w-md">
+            <OnboardingStuckBanner
+              stuck={mysticalPageLoaderStall}
+              variant={useMaterial3Layout ? "m3" : "devotionist"}
+              onSignOutTryAgain={async () => {
+                await signOut()
+              }}
+            />
+          </div>
+        </div>
+      </div>
     )
   }
 
