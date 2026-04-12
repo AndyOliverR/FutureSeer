@@ -2,9 +2,9 @@
 
 import { motion } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
-import { TarotCard } from '@/lib/tarotIntelligence'
 import { ProfileCardsData } from '@/types/tarot'
 import { Sparkles, User, Target, Heart, Star } from 'lucide-react'
+import { applyTarotImageOnError, resolveTarotCardImageSrc } from '@/lib/tarotImageUrl'
 
 export interface TarotProfileDiagramProps {
   profileCards: ProfileCardsData | null
@@ -78,7 +78,8 @@ export function TarotProfileDiagram({ profileCards }: TarotProfileDiagramProps) 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6">
       {cards.map((item, index) => {
         if (!item.card) return null
-        
+        const card = item.card
+
         return (
           <motion.div
             key={item.label}
@@ -109,12 +110,12 @@ export function TarotProfileDiagram({ profileCards }: TarotProfileDiagramProps) 
                 <div className="mb-4 flex justify-center">
                   <div className="relative w-32 h-48 rounded-lg overflow-hidden border-2 border-white shadow-md bg-white">
                     <img
-                      src={item.card.image || '/tarot/major_00_the_fool.png.png'}
-                      alt={item.card.name}
+                      src={resolveTarotCardImageSrc(card)}
+                      alt={card.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
                       onError={(e) => {
-                        e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+                        applyTarotImageOnError(e.currentTarget, card)
                       }}
                     />
                   </div>
@@ -123,17 +124,17 @@ export function TarotProfileDiagram({ profileCards }: TarotProfileDiagramProps) 
                 {/* Card Details */}
                 <div className="text-center space-y-2">
                   <h3 className={`font-bold ${item.colors.text} text-lg`}>
-                    {item.card.name}
+                    {card.name}
                   </h3>
                   
-                  {item.card.arcana && (
+                  {card.arcana && (
                     <div className="text-xs text-slate-500 uppercase tracking-wide">
-                      {item.card.arcana === 'major' ? 'Major Arcana' : `${item.card.suit || ''} - Minor Arcana`}
+                      {card.arcana === 'major' ? 'Major Arcana' : `${card.suit || ''} - Minor Arcana`}
                     </div>
                   )}
 
                   <p className="text-sm text-slate-700 leading-relaxed">
-                    {item.card.upright}
+                    {card.upright}
                   </p>
                 </div>
               </CardContent>

@@ -52,6 +52,7 @@ import { ViralLockOverlay } from '@/components/report-viral/LockedReportView'
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
 import { cn } from '@/lib/utils'
+import { applyTarotImageOnError, resolveTarotCardImageSrc } from '@/lib/tarotImageUrl'
 import {
   calculateLifePathNumber,
   calculateDestinyNumber,
@@ -870,12 +871,12 @@ function TarotPage() {
                             <div className="mb-3 flex justify-center">
                               <div className={`relative w-32 h-48 rounded-lg overflow-hidden border-2 border-purple-300 shadow-md bg-white ${!card.isUpright ? 'transform rotate-180' : ''}`}>
                                 <img
-                                  src={card.image || '/tarot/major_00_the_fool.png.png'}
+                                  src={resolveTarotCardImageSrc({ name: card.name, image: card.image })}
                                   alt={card.name}
                                   className="w-full h-full object-cover"
                                   loading="lazy"
                                   onError={(e) => {
-                                    e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+                                    applyTarotImageOnError(e.currentTarget, { name: card.name, image: card.image })
                                   }}
                                 />
                               </div>
@@ -1135,12 +1136,12 @@ function TarotPage() {
                             <div className="mb-3 flex justify-center">
                               <div className="relative w-24 h-36 rounded-lg overflow-hidden border-2 border-purple-300 shadow-md bg-white">
                                 <img
-                                  src={card.image || '/tarot/major_00_the_fool.png.png'}
+                                  src={resolveTarotCardImageSrc(card)}
                                   alt={card.name}
                                   className="w-full h-full object-cover"
                                   loading="lazy"
                                   onError={(e) => {
-                                    e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+                                    applyTarotImageOnError(e.currentTarget, card)
                                   }}
                                 />
                               </div>
@@ -1203,11 +1204,11 @@ function TarotPage() {
                                 <div className="mb-2 flex justify-center">
                                   <div className={`relative w-20 h-28 rounded-lg overflow-hidden border-2 ${colors.border} shadow-md bg-white`}>
                                     <img
-                                      src={card.image || '/tarot/major_00_the_fool.png.png'}
+                                      src={resolveTarotCardImageSrc(card)}
                                       alt={card.name}
                                       className="w-full h-full object-cover"
                                       onError={(e) => {
-                                        e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+                                        applyTarotImageOnError(e.currentTarget, card)
                                       }}
                                     />
                                   </div>

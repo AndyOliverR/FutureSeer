@@ -21,6 +21,7 @@ import {
   Target
 } from 'lucide-react'
 import { MysticalLoadingState } from '@/components/MysticalLoadingState'
+import { applyTarotImageOnError, resolveTarotCardImageSrc } from '@/lib/tarotImageUrl'
 
 export function TarotTool() {
   const { tarotData, loading, error, refresh, drawTarot } = useTarotData()
@@ -236,12 +237,11 @@ export function TarotTool() {
                     <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-center">
                       <div className="w-24 h-36 flex-shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-yellow-200/80 to-yellow-500/80 flex items-center justify-center">
                         <img
-                          src={`/tarot/${card.image}`}
+                          src={resolveTarotCardImageSrc({ name: card.name, image: card.image })}
                           alt={card.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            const target = e.currentTarget as HTMLImageElement
-                            target.style.display = 'none'
+                            applyTarotImageOnError(e.currentTarget, { name: card.name, image: card.image })
                           }}
                         />
                       </div>

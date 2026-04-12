@@ -217,7 +217,7 @@ async function updateUserProfilePhotoWithRetries(uid: string, key: "facePhotoUrl
 }
 
 export default function ProfilePage() {
-  const { user, userProfile, signOut, loading: authLoading, refreshProfile } = useAuth()
+  const { user, userProfile, signOut, loading: authLoading, refreshProfile, isSuperadmin, isAdmin } = useAuth()
   const { applyGeneratedProfile, refreshProfile: refreshComprehensiveProfile, hasProfile, canViewFullProfile } = useComprehensiveMysticalProfile()
   const router = useRouter()
   const { t } = useTranslation('common')
@@ -864,7 +864,10 @@ export default function ProfilePage() {
           </Alert>
         )}
 
-        {userProfile && !userProfile.mysticalProfileGenerated && (
+        {userProfile &&
+          !userProfile.mysticalProfileGenerated &&
+          !isSuperadmin &&
+          !isAdmin && (
           <ProfileNextStepsBanner variant="m3" isConsultantWorkspace={isConsultantWorkspace} />
         )}
 
@@ -1252,7 +1255,10 @@ export default function ProfilePage() {
             </Alert>
           )}
 
-          {userProfile && !userProfile.mysticalProfileGenerated && (
+          {userProfile &&
+            !userProfile.mysticalProfileGenerated &&
+            !isSuperadmin &&
+            !isAdmin && (
             <ProfileNextStepsBanner variant="devotionist" isConsultantWorkspace={isConsultantWorkspace} />
           )}
 

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
 import { TarotCard } from '@/lib/tarotIntelligence'
+import { applyTarotImageOnError, resolveTarotCardImageSrc } from '@/lib/tarotImageUrl'
 
 export interface TarotCardDisplayProps {
   card: TarotCard
@@ -66,12 +67,12 @@ export function TarotCardDisplay({
     >
       <div className={`${sizes.container} relative rounded-lg overflow-hidden border-2 border-purple-300 shadow-md bg-white ${isClickable ? 'cursor-pointer' : ''} ${!isUpright ? 'transform rotate-180' : ''}`}>
         <img
-          src={card.image || '/tarot/major_00_the_fool.png.png'}
+          src={resolveTarotCardImageSrc(card)}
           alt={card.name}
           className={`${sizes.image} object-cover`}
           loading="lazy"
           onError={(e) => {
-            e.currentTarget.src = '/tarot/major_00_the_fool.png.png'
+            applyTarotImageOnError(e.currentTarget, card)
           }}
         />
         
