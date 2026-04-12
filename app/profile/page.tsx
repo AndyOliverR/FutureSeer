@@ -35,6 +35,9 @@ import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
 import { SEQ_PROMPT_AFTER_PROFILE_GEN } from "@/lib/metricsSession"
 import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
+import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
+import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
+import { ProfileNextStepsBanner } from "@/components/onboarding/ProfileNextStepsBanner"
 import { compressImageFile } from "@/lib/imageCompression"
 import { PROFILE_PLAN_PRICING_CTA_LABEL, PROFILE_PLAN_REQUIRED_BODY } from "@/lib/accessGatingCopy"
 import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics"
@@ -244,6 +247,11 @@ export default function ProfilePage() {
   const [isClearingWorkspace, setIsClearingWorkspace] = useState(false)
   const [clearWorkspaceConfirmOpen, setClearWorkspaceConfirmOpen] = useState(false)
   const { logError } = useErrorLogger({ area: "profile" })
+  const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
+  const authLoadingStall = useOnboardingStallRecovery(authLoading, {
+    surface: "profile_auth_loading",
+    logOnboarding,
+  })
   const faceInputRef = useRef<HTMLInputElement>(null)
   const palmInputRef = useRef<HTMLInputElement>(null)
   const isUploadBusy = uploadingFace || uploadingPalm || optimizingFace || optimizingPalm
@@ -749,8 +757,18 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isMobileLayout ? "bg-surface" : "starfield-ultra-sharp"}`}>
-        <Loader2 className="animate-spin text-amber-400" />
+      <div
+        className={`min-h-screen flex flex-col items-center justify-center px-4 pb-16 ${isMobileLayout ? "bg-surface" : "starfield-ultra-sharp"}`}
+      >
+        <Loader2 className="animate-spin text-amber-400 w-10 h-10" />
+        <p className="mt-4 text-sm text-amber-200/80 font-medium">Loading your profile…</p>
+        <OnboardingStuckBanner
+          stuck={authLoadingStall}
+          variant={isMobileLayout ? "m3" : "devotionist"}
+          onSignOutTryAgain={async () => {
+            await signOut()
+          }}
+        />
       </div>
     )
   }
@@ -846,7 +864,11 @@ export default function ProfilePage() {
           </Alert>
         )}
 
-        <div className="bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl space-y-8">
+        {userProfile && !userProfile.mysticalProfileGenerated && (
+          <ProfileNextStepsBanner variant="m3" isConsultantWorkspace={isConsultantWorkspace} />
+        )}
+
+        <div id="profile-personal-data" className="bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl space-y-8 scroll-mt-24">
           <div className="flex items-center justify-between border-b border-outline-variant pb-4">
             <div className="flex items-center gap-3">
               <User className="w-6 h-6 text-amber-400" />
@@ -995,7 +1017,7 @@ export default function ProfilePage() {
             </div>
 
             {!isEditing && (
-              <div className="pt-6 border-t border-outline-variant/30">
+              <div id="profile-generate-mystical" className="pt-6 border-t border-outline-variant/30 scroll-mt-24">
                 <Button
                   onClick={async () => {
                     if (isGeneratingProfile) return
@@ -1230,7 +1252,17 @@ export default function ProfilePage() {
             </Alert>
           )}
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-6">
+          {userProfile && !userProfile.mysticalProfileGenerated && (
+            <ProfileNextStepsBanner variant="devotionist" isConsultantWorkspace={isConsultantWorkspace} />
+          )}
+
+          <motion.div
+            id="profile-personal-data"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-6 scroll-mt-24"
+          >
             <div className="flex items-center justify-between border-b border-amber-400/20 pb-4">
               <div className="flex items-center gap-3">
                 <User className="w-6 h-6 text-amber-400" />
@@ -1397,7 +1429,7 @@ export default function ProfilePage() {
               )}
 
               {!isEditing && (
-                <div className="pt-6 border-t border-amber-400/20">
+                <div id="profile-generate-mystical" className="pt-6 border-t border-amber-400/20 scroll-mt-24">
                   <Button
                     onClick={async () => {
                       if (isGeneratingProfile) return
