@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 import { useFeedback } from '@/components/FeedbackContext';
 import { useModalOpen } from '@/components/ModalOpenContext';
+import { ModalPortal } from '@/components/ui/ModalPortal';
 import html2canvas from 'html2canvas';
 import { devLog } from '@/lib/devLogger';
 
@@ -101,6 +102,14 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
     }
   }, [isExpanded]);
 
+  useEffect(() => {
+    if (!isExpanded) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isExpanded]);
+
   if (!mounted) return null;
 
   return (
@@ -125,113 +134,118 @@ export function MysticalFeedback({ variant = 'floating' }: { variant?: 'floating
         </div>
       )}
 
-      <AnimatePresence>
-        {isExpanded && (
-          <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-              onClick={() => setIsExpanded(false)}
-            />
-            <motion.div
-              ref={modalRef}
-              initial={{ opacity: 0, y: 100 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 100 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-surface-container-high border-t sm:border border-outline-variant rounded-t-3xl sm:rounded-3xl m3-elevation-3 overflow-hidden shadow-2xl"
-              style={{ maxHeight: '90vh' }}
-              onClick={(e) => e.stopPropagation()}
+      <ModalPortal open={isExpanded}>
+        <AnimatePresence>
+          {isExpanded && (
+            <div
+              className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center p-0 sm:p-4"
+              data-feedback-widget="true"
             >
-              <div className="flex items-center justify-between p-5 border-b border-outline-variant">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  <h3 className="text-xl font-heading font-bold text-surface-on">Mystical Feedback</h3>
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                onClick={() => setIsExpanded(false)}
+              />
+              <motion.div
+                ref={modalRef}
+                initial={{ opacity: 0, y: 100 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 100 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-lg bg-surface-container-high border-t sm:border border-outline-variant rounded-t-3xl sm:rounded-3xl m3-elevation-3 overflow-hidden shadow-2xl"
+                style={{ maxHeight: '90vh' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between p-5 border-b border-outline-variant">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-500" />
+                    <h3 className="text-xl font-heading font-bold text-surface-on">Mystical Feedback</h3>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setIsExpanded(false)} className="rounded-full" aria-label="Close feedback">
+                    <X className="w-6 h-6" aria-hidden />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setIsExpanded(false)} className="rounded-full" aria-label="Close feedback">
-                  <X className="w-6 h-6" aria-hidden />
-                </Button>
-              </div>
 
-              <div className="p-5 overflow-y-auto custom-scrollbar space-y-6">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Rating */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-surface-on opacity-70 uppercase tracking-widest">Rate Experience</label>
-                    <div className="grid grid-cols-5 gap-2">
-                      {ratingOptions.map(opt => (
-                        <button
-                          key={opt.value} type="button" onClick={() => setRating(opt.value)}
-                          className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-1 ${rating === opt.value ? 'bg-primary-container border-amber-500' : 'bg-surface-container-low border-outline-variant'}`}
-                        >
-                          <Star className={`w-5 h-5 ${rating === opt.value ? 'fill-amber-500 text-amber-500' : 'text-surface-on-variant'}`} />
-                          <span className="text-[9px] font-bold text-center leading-none">{opt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Screenshots Area */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-bold text-surface-on opacity-70 uppercase tracking-widest">Context Captured</label>
-                      {screenshots.length < 3 && (
-                        <Button
-                          type="button" variant="ghost" size="sm"
-                          onClick={captureScreenshot} disabled={isCapturingScreenshot}
-                          className="text-amber-500 text-xs h-auto py-1 px-2"
-                        >
-                          <ImageIcon className="w-3 h-3 mr-1" />
-                          {isCapturingScreenshot ? "Capturing..." : "Add Screen"}
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                      {screenshots.length === 0 && !isCapturingScreenshot && (
-                        <div className="w-full py-8 border-2 border-dashed border-outline-variant rounded-2xl flex flex-col items-center justify-center opacity-40">
-                          <ImageIcon className="w-8 h-8 mb-2" />
-                          <span className="text-[10px]">Auto-capturing screen...</span>
-                        </div>
-                      )}
-                      {screenshots.map((s, idx) => (
-                        <div key={idx} className="relative flex-shrink-0 w-32 aspect-video bg-black rounded-xl overflow-hidden border border-outline-variant shadow-lg group">
-                          <img src={s} alt="Capture" className="w-full h-full object-cover" />
+                <div className="p-5 overflow-y-auto custom-scrollbar space-y-6">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Rating */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-surface-on opacity-70 uppercase tracking-widest">Rate Experience</label>
+                      <div className="grid grid-cols-5 gap-2">
+                        {ratingOptions.map(opt => (
                           <button
-                            type="button" onClick={() => setScreenshots(prev => prev.filter((_, i) => i !== idx))}
-                            className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            key={opt.value} type="button" onClick={() => setRating(opt.value)}
+                            className={`p-3 rounded-2xl border transition-all flex flex-col items-center gap-1 ${rating === opt.value ? 'bg-primary-container border-amber-500' : 'bg-surface-container-low border-outline-variant'}`}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Star className={`w-5 h-5 ${rating === opt.value ? 'fill-amber-500 text-amber-500' : 'text-surface-on-variant'}`} />
+                            <span className="text-[9px] font-bold text-center leading-none">{opt.label}</span>
                           </button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Feedback Text */}
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-surface-on opacity-70 uppercase tracking-widest">Your Insights</label>
-                    <Textarea
-                      value={feedback} onChange={e => setFeedback(e.target.value)}
-                      placeholder="What's on your mind? The Seer is listening..."
-                      className="min-h-[120px] bg-surface-container-low rounded-2xl border-outline-variant focus:border-amber-500 transition-all p-4"
-                    />
-                  </div>
+                    {/* Screenshots Area */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-bold text-surface-on opacity-70 uppercase tracking-widest">Context Captured</label>
+                        {screenshots.length < 3 && (
+                          <Button
+                            type="button" variant="ghost" size="sm"
+                            onClick={captureScreenshot} disabled={isCapturingScreenshot}
+                            className="text-amber-500 text-xs h-auto py-1 px-2"
+                          >
+                            <ImageIcon className="w-3 h-3 mr-1" />
+                            {isCapturingScreenshot ? "Capturing..." : "Add Screen"}
+                          </Button>
+                        )}
+                      </div>
 
-                  <div className="flex gap-3 pt-2">
-                    <Button type="button" variant="outline" size="compact" onClick={() => setIsExpanded(false)} className="flex-1 border-outline-variant">
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={!rating || isSubmitting} size="compact" className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 shadow-lg shadow-amber-500/20">
-                      {isSubmitting ? "Sending..." : "Submit"}
-                    </Button>
-                  </div>
-                </form>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                        {screenshots.length === 0 && !isCapturingScreenshot && (
+                          <div className="w-full py-8 border-2 border-dashed border-outline-variant rounded-2xl flex flex-col items-center justify-center opacity-40">
+                            <ImageIcon className="w-8 h-8 mb-2" />
+                            <span className="text-[10px]">Auto-capturing screen...</span>
+                          </div>
+                        )}
+                        {screenshots.map((s, idx) => (
+                          <div key={idx} className="relative flex-shrink-0 w-32 aspect-video bg-black rounded-xl overflow-hidden border border-outline-variant shadow-lg group">
+                            <img src={s} alt="Capture" className="w-full h-full object-cover" />
+                            <button
+                              type="button" onClick={() => setScreenshots(prev => prev.filter((_, i) => i !== idx))}
+                              className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Feedback Text */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-surface-on opacity-70 uppercase tracking-widest">Your Insights</label>
+                      <Textarea
+                        value={feedback} onChange={e => setFeedback(e.target.value)}
+                        placeholder="What's on your mind? The Seer is listening..."
+                        className="min-h-[120px] bg-surface-container-low rounded-2xl border-outline-variant focus:border-amber-500 transition-all p-4"
+                      />
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                      <Button type="button" variant="outline" size="compact" onClick={() => setIsExpanded(false)} className="flex-1 border-outline-variant">
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={!rating || isSubmitting} size="compact" className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 shadow-lg shadow-amber-500/20">
+                        {isSubmitting ? "Sending..." : "Submit"}
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </ModalPortal>
     </>
   );
 }
