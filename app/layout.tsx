@@ -122,14 +122,12 @@ export default function RootLayout({
         <PlatformClassProvider />
         <SchemaMarkup />
         <DeferredFirestoreErrorSuppressor />
-        <main role="main" id="main-content">
-          <ClientProviders>
-            <div className="sticky top-0 z-[200] flex-shrink-0 w-full min-h-[52px] bg-surface">
-              <Header />
-            </div>
-            <FeedbackProvider>
-              <FloatingTipJar />
-              <MysticalFeedback />
+        <ClientProviders>
+          <FeedbackProvider>
+            <main role="main" id="main-content">
+              <div className="sticky top-0 z-[200] flex-shrink-0 w-full min-h-[52px] bg-surface">
+                <Header />
+              </div>
               <ErrorBoundary>
                 <I18nProvider>
                   <DeferredAnalyticsInitializer />
@@ -142,9 +140,11 @@ export default function RootLayout({
                   <Toaster />
                 </I18nProvider>
               </ErrorBoundary>
-            </FeedbackProvider>
-          </ClientProviders>
-        </main>
+            </main>
+            <FloatingTipJar />
+            <MysticalFeedback />
+          </FeedbackProvider>
+        </ClientProviders>
       </body>
     </html>
   )
