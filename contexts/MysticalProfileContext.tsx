@@ -80,6 +80,8 @@ export interface ComprehensiveMysticalProfile {
     calculationTime: number
     systemsUsed: string[]
     interpretationType: string
+    /** Set at generation when NEXT_PUBLIC_MYSTICAL_PIPELINE_RELEASE is configured; used for refresh nudges. */
+    pipelineRelease?: string
   }
   userId?: string
   lastUpdated?: number

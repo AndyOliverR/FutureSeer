@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { isProfileComplete, getProfileCompletionStatus, type UserProfile } from "@/lib/firebase";
 import Link from "next/link";
 import { devLog } from "@/lib/devLogger";
+import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch";
 import { 
   MessageCircle, 
   Send, 
@@ -290,7 +291,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
       
       // Handle streaming response for specialized seers (similar to tarot seer)
       if (isFaceReading || isDreamSymbols || isFengShui || isHumanDesign || isOgham) {
-        const response = await fetch(apiEndpoint, {
+        const response = await fetchWithFirebaseAuthRequired(apiEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -383,7 +384,7 @@ export default function AskTheSeerChatInterface({ userId, userProfile, contextTy
         }
       } else {
         // Handle JSON response for general ask-the-seer (send session state + history for domain lock)
-        const response = await fetch(apiEndpoint, {
+        const response = await fetchWithFirebaseAuthRequired(apiEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

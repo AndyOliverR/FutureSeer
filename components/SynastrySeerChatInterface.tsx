@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface SynastryMessage {
   id: string;
@@ -118,7 +119,7 @@ export function SynastrySeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-synastry-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-synastry-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { TrichakraAnalysis } from '@/lib/trichakraIntelligence';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface Message {
   id: string;
@@ -110,7 +111,7 @@ export function TrichakraMethodCoachInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-trichakra-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-trichakra-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

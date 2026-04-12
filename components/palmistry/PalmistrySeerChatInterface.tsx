@@ -8,6 +8,7 @@ import { Send, Hand, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { PalmistryAnalysis } from '@/lib/palmistryIntelligence';
 
 interface PalmistrySeerChatInterfaceProps {
@@ -107,7 +108,7 @@ export default function PalmistrySeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/palmistry/ask-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/palmistry/ask-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

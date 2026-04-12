@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Gem, Trash2 } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface NavaratnaMessage {
   id: string;
@@ -117,7 +118,7 @@ export default function NavaratnaSeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-navaratna-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-navaratna-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

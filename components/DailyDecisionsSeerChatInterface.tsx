@@ -8,6 +8,7 @@ import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lu
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import type { DailyDecisionsAnalysis } from '@/lib/dailyDecisionsIntelligence';
 
 interface DailyDecisionsMessage {
@@ -111,7 +112,7 @@ export function DailyDecisionsSeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-daily-decisions-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-daily-decisions-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2, Clock } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import type { HoraryChartPayload } from '@/lib/horarySeerState';
 
 interface HorarySeerMessage {
@@ -132,7 +133,7 @@ export default function HorarySeerChatInterface({
     };
 
     const performFetch = () =>
-      fetch('/api/ask-horary-seer', {
+      fetchWithFirebaseAuthRequired('/api/ask-horary-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

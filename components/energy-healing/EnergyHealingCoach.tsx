@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,7 @@ export function EnergyHealingCoach({ analysis }: EnergyHealingCoachProps) {
         })
         .filter((item): item is { question: string; answer: string } => item !== null);
 
-      const response = await fetch("/api/ask-energy-healing-seer", {
+      const response = await fetchWithFirebaseAuthRequired("/api/ask-energy-healing-seer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

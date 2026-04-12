@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageCircle, Send, Loader2, ChevronDown, ChevronUp, Trash2, Compass } from 'lucide-react';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import type { FengShuiAnalysis } from '@/lib/fengshui/fengShuiService';
 
 interface FengShuiSeerMessage {
@@ -144,7 +145,7 @@ export default function FengShuiSeerChatInterface({
     };
 
     const performFetch = () =>
-      fetch('/api/ask-feng-shui-seer', {
+      fetchWithFirebaseAuthRequired('/api/ask-feng-shui-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

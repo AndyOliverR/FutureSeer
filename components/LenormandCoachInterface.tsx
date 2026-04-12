@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import type { LenormandReading } from '@/lib/lenormandIntelligence'
 import { devLog } from '@/lib/devLogger'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 
 interface LenormandMessage {
   id: string
@@ -80,7 +81,7 @@ export function LenormandCoachInterface({
     setMessages((prev) => [...prev, seerMessage])
 
     try {
-      const response = await fetch('/api/ask-lenormand-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-lenormand-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
