@@ -8,6 +8,7 @@ import { Send, User, Loader2, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { SlowRevealText } from '@/components/chat/SlowRevealText'
 import { devLog } from '@/lib/devLogger'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -48,7 +49,7 @@ export function MedicalSeerChat({ userProfile, analysis }: MedicalSeerChatProps)
 
     try {
       // Call Groq API
-      const response = await fetch('/api/chat/medical-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/chat/medical-seer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -8,6 +8,7 @@ import { Send, TrendingUp, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucid
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface FinancialSeerChatInterfaceProps {
   userId: string;
@@ -99,7 +100,7 @@ export default function FinancialSeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-financial-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-financial-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

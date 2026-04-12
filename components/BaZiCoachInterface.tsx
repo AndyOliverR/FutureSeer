@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, MessageCircle, Loader2, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface BaZiMessage {
   id: string;
@@ -102,7 +103,7 @@ export function BaZiCoachInterface({ reading }: BaZiCoachInterfaceProps) {
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-bazi-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-bazi-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -7,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { analytics } from '@/lib/analytics';
+import {
+  fetchWithFirebaseAuthRequired,
+  MissingFirebaseAuthError,
+} from '@/lib/clientFirebaseFetch';
 
 interface MainSeerChatInterfaceProps {
   userId: string | undefined;
@@ -87,7 +91,7 @@ export default function MainSeerChatInterface({
     });
 
     try {
-      const res = await fetch('/api/seer/chat', {
+      const res = await fetchWithFirebaseAuthRequired('/api/seer/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -129,17 +133,21 @@ export default function MainSeerChatInterface({
         httpStatus: res.status,
       });
       setThread(data.thread ?? []);
-    } catch {
+    } catch (e) {
       analytics.trackMainSeerChat({
         layout,
         responseStyle: responseStyle,
         interaction: 'response_error',
-        error: 'network_or_parse',
+        error: e instanceof MissingFirebaseAuthError ? 'missing_auth' : 'network_or_parse',
       });
+      const fallback =
+        e instanceof MissingFirebaseAuthError
+          ? e.message
+          : 'The vision is unclear. Try again.';
       setThread((prev) => [
         ...prev,
         { role: 'user', content: messageToSend },
-        { role: 'seer', content: 'The vision is unclear. Try again.' },
+        { role: 'seer', content: fallback },
       ]);
     } finally {
       setIsLoading(false);

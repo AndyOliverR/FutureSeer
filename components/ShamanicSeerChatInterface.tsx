@@ -8,6 +8,7 @@ import { Send, Sparkles, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface ShamanicSeerChatInterfaceProps {
   userId: string;
@@ -100,7 +101,7 @@ export default function ShamanicSeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-shamanic-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-shamanic-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

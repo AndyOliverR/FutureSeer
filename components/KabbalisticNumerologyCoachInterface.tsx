@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useRef, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
@@ -6,6 +8,7 @@ import { Card } from "@/components/ui/card"
 import { Send, MessageCircle, Brain, Trash2 } from "lucide-react"
 import type { SimplifiedKabbalisticAnalysis } from '@/lib/kabbalisticNumerologyIntelligence'
 import { devLog } from '@/lib/devLogger'
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch'
 
 interface KabbalisticMessage {
   id: string
@@ -72,7 +75,7 @@ export function KabbalisticNumerologyCoachInterface({ analysis, variant = "dark"
     setMessages(prev => [...prev, coachMessage])
 
     try {
-      const response = await fetch('/api/ask-kabbalistic-numerology-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-kabbalistic-numerology-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

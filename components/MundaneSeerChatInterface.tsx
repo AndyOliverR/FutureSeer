@@ -9,6 +9,7 @@ import { Send, Globe, Loader2, Trash2, ChevronDown, ChevronUp } from 'lucide-rea
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface MundaneSeerChatInterfaceProps {
   userId: string;
@@ -94,7 +95,7 @@ export default function MundaneSeerChatInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-mundane-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-mundane-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

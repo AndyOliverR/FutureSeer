@@ -5,6 +5,7 @@ import { ChatMessage } from '@/lib/seerChatbot/seerChatbot';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatInput } from './ChatInput';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface SeerChatInterfaceProps {
   userId: string;
@@ -39,7 +40,7 @@ export function SeerChatInterface({ userId }: SeerChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/seer/chat', {
+      const response = await fetchWithFirebaseAuthRequired('/api/seer/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: trimmed, thread, userId }),

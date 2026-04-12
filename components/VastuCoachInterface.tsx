@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,7 +105,7 @@ export function VastuCoachInterface({
     } : undefined;
 
     try {
-      const response = await fetch('/api/ask-vastu-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-vastu-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

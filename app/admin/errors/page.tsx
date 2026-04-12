@@ -71,6 +71,9 @@ function describeErrorSimple(event: ErrorEventDoc): string {
     if (area === "mystical-profile" && action === "generate") {
       return "A user tried to generate their mystical profile and the backend failed.";
     }
+    if (area === "seer" && action === "api_unauthorized") {
+      return "Ask the Seer or a tool Seer API returned 401/403 after a token refresh — check client Authorization headers, session expiry, or server auth rules.";
+    }
     return "Something went wrong while a user was using the app.";
   }
 
@@ -268,6 +271,7 @@ export default function AdminErrorsPage() {
 
   const areas = useMemo(() => {
     const set = new Set<string>();
+    set.add("seer");
     errors.forEach((e) => set.add(e.area));
     return Array.from(set).sort();
   }, [errors]);

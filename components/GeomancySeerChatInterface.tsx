@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,7 +94,7 @@ export default function GeomancySeerChatInterface({
     setMessages((prev) => [...prev, aiMessage]);
 
     try {
-      const response = await fetch('/api/ask-geomancy-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-geomancy-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

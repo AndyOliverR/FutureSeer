@@ -11,6 +11,7 @@ import { Send, User, Trash2, MessageCircle } from "lucide-react"
 import type { NameAnalysis } from "@/lib/nameAnalysisIntelligence"
 import { SlowRevealText } from "@/components/chat/SlowRevealText"
 import { devLog } from "@/lib/devLogger"
+import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch"
 
 interface NameAnalysisMessage {
   id: string
@@ -78,7 +79,7 @@ export function NameAnalysisSeerChatInterface({
     setMessages((prev) => [...prev, seerMessage])
 
     try {
-      const response = await fetch("/api/ask-name-analysis-seer", {
+      const response = await fetchWithFirebaseAuthRequired("/api/ask-name-analysis-seer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

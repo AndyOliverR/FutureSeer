@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Send, Feather, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface AngelNumbersMessage {
   id: string;
@@ -102,7 +103,7 @@ export function AngelNumbersCoachInterface({
     streamingLengthRef.current = 0;
 
     try {
-      const response = await fetch('/api/ask-angel-numbers-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-angel-numbers-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

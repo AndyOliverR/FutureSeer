@@ -8,6 +8,7 @@ import { Send, Trash2, Sparkles, Loader2, ChevronDown, ChevronUp } from 'lucide-
 import { motion, AnimatePresence } from 'framer-motion';
 import { SlowRevealText } from '@/components/chat/SlowRevealText';
 import { devLog } from '@/lib/devLogger';
+import { fetchWithFirebaseAuthRequired } from '@/lib/clientFirebaseFetch';
 
 interface HumanDesignSeerChatInterfaceProps {
   userId: string;
@@ -84,7 +85,7 @@ export default function HumanDesignSeerChatInterface({
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ask-human-design-seer', {
+      const response = await fetchWithFirebaseAuthRequired('/api/ask-human-design-seer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
