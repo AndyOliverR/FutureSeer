@@ -1039,7 +1039,10 @@ export default function ProfilePage() {
           <ProfileNextStepsBanner variant="m3" isConsultantWorkspace={isConsultantWorkspace} />
         )}
 
-        <div id="profile-personal-data" className="bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl space-y-8 scroll-mt-24">
+        <div
+          id="profile-personal-data"
+          className={`bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl space-y-8 scroll-mt-24 ${isEditing ? "pb-28" : ""}`}
+        >
           <div className="flex items-center justify-between border-b border-outline-variant pb-4">
             <div className="flex items-center gap-3">
               <User className="w-6 h-6 text-amber-400" />
@@ -1104,7 +1107,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Place</Label>
-                {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthPlace || "Not set"}</p>}
+                {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthPlace || "Not set"}</p>}
               </div>
             </div>
 
@@ -1125,7 +1128,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Current residence</Label>
-                {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="City, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
+                {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
               </div>
             </div>
 
@@ -1137,7 +1140,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid grid-cols-2 gap-4 ${isEditing ? "pb-20" : ""}`}>
               <div className="space-y-2 text-center">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
                 <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
@@ -1558,7 +1561,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Place</Label>
-                  {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.birthPlace || "Not set"}</p>}
+                  {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.birthPlace || "Not set"}</p>}
                 </div>
               </div>
 
@@ -1579,7 +1582,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Current residence</Label>
-                  {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="City, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.currentLocation || "Not set"}</p>}
+                  {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.currentLocation || "Not set"}</p>}
                 </div>
               </div>
 
