@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { createPlan, createSubscription } from '@/lib/razorpay';
 import { isRazorpayPlanCurrency } from '@/lib/razorpayPlanCurrencies';
-import { convertToUsdCents } from '@/lib/currencyConversion';
+import { convertToUsdCents, convertSmallestUnitToInrPaise } from '@/lib/currencyConversion';
 import { getCountryPricingConfig } from '@/lib/pricingConfig';
 import { getFirebaseDB } from '@/lib/firebase';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
@@ -190,7 +190,13 @@ export async function POST(request: NextRequest) {
       devLog.info(`[create-subscription] Using USD fallback for unsupported currency: ${config.currency}`, 'route');
     }
 
+    const isPlanCurrencyUnsupportedMessage = (msg: string): boolean => {
+      const m = msg.toLowerCase();
+      return m.includes('not supported') || m.includes('currency provided');
+    };
+
     let razorpayPlanId: string;
+    let chargeCurrency: 'INR' | 'USD' | undefined;
 
     try {
       const createdPlan = await createPlan({
@@ -203,10 +209,36 @@ export async function POST(request: NextRequest) {
         },
       });
       razorpayPlanId = createdPlan.id;
-    } catch (error: unknown) {
-      devLog.error('Error creating plan:', error, 'route');
-      const message = error instanceof Error ? error.message : 'Failed to create subscription plan';
-      throw new Error(message);
+      if (useFallbackCurrency && planCurrency === 'USD') {
+        chargeCurrency = 'USD';
+      }
+    } catch (firstError: unknown) {
+      const msg =
+        firstError instanceof Error ? firstError.message : 'Failed to create subscription plan';
+      const retryInr =
+        useFallbackCurrency &&
+        planCurrency === 'USD' &&
+        isPlanCurrencyUnsupportedMessage(msg);
+      if (!retryInr) {
+        devLog.error('Error creating plan:', firstError, 'route');
+        throw new Error(msg);
+      }
+      const inrPaise = convertSmallestUnitToInrPaise(planAmount, config.currency);
+      devLog.info(
+        `[create-subscription] USD plan rejected (${msg}); retrying with INR: ${inrPaise} paise (from ${config.currency})`,
+        'route'
+      );
+      const createdPlanInr = await createPlan({
+        period: planPeriod,
+        amount: inrPaise,
+        currency: 'INR',
+        item: {
+          name: planName,
+          description: planDescription,
+        },
+      });
+      razorpayPlanId = createdPlanInr.id;
+      chargeCurrency = 'INR';
     }
 
     // Trial: first charge delayed (start_at + 30 days). Paid plans: immediate start.
@@ -230,7 +262,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       subscriptionId: subscription.id,
       razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
-      ...(useFallbackCurrency ? { chargeCurrency: 'USD' as const } : {}),
+      ...(chargeCurrency ? { chargeCurrency } : {}),
     });
   } catch (error: unknown) {
     devLog.error('Error creating subscription:', error, 'route');
