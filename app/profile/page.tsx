@@ -529,7 +529,9 @@ export default function ProfilePage() {
         subscriptionStatus: "trial",
         autoMandateAccepted: false,
       })
-      setSuccess("Saved: no payment method for now. You can add it anytime from this section.")
+      setSuccess(
+        "Saved: you are on a free trial without a card on file. Add a payment method here before your trial ends if you want uninterrupted access."
+      )
       await refreshProfile()
     } catch {
       setError("Could not save your payment preference. Please try again.")
@@ -567,7 +569,7 @@ export default function ProfilePage() {
         <AlertDialogHeader>
           <AlertDialogTitle className="text-white">Verify payment method</AlertDialogTitle>
           <AlertDialogDescription className="text-amber-200/90">
-            Optional for now during your free month. You can also close this and choose none for now.
+            Optional for now during your free month. You can also close this and start with a free trial without a card.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <PaymentMethodCapture
@@ -934,7 +936,7 @@ export default function ProfilePage() {
           {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
           <div className="mt-4 border-t border-outline-variant pt-4 space-y-3">
             <p className="text-xs text-surface-on-variant">
-              Choose your payment path now: verify your payment method or pick none for now (free month still active).
+              Choose your payment path now: verify your payment method or start your free trial without a card (free month still active).
             </p>
             <select
               value={selectedPlanForProfile}
@@ -962,7 +964,7 @@ export default function ProfilePage() {
                 disabled={isSavingPaymentChoice}
                 className="w-full"
               >
-                None for now (1 month free)
+                Start free trial (add card later)
               </Button>
             </div>
           </div>
@@ -1380,7 +1382,7 @@ export default function ProfilePage() {
             {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
             <div className="mt-4 border-t border-amber-400/20 pt-4 space-y-3">
               <p className="text-xs text-amber-200/80">
-                Choose your payment path now: verify your payment method or select none for now (free month still active).
+                Choose your payment path now: verify your payment method or start your free trial without a card (free month still active).
               </p>
               <select
                 value={selectedPlanForProfile}
@@ -1408,7 +1410,7 @@ export default function ProfilePage() {
                   disabled={isSavingPaymentChoice}
                   className="border-amber-400/30 text-white"
                 >
-                  None for now (1 month free)
+                  Start free trial (add card later)
                 </Button>
               </div>
             </div>

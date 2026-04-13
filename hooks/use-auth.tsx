@@ -116,36 +116,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    let cancelled = false;
+    const unsubRef: { current: (() => void) | undefined } = { current: undefined };
+
     const initializeAuth = async () => {
-      // Ensure Firestore connection in the background so auth state is not blocked
       void ensureFirestoreConnection().catch((connectionError) => {
         console.warn('⚠️ Firestore connection check failed during auth initialization:', connectionError);
       });
 
-      // Check for redirect result first – set user and loading immediately so signin page can redirect
       try {
         const redirectResult = await getRedirectResult();
+        if (cancelled) return;
         if (redirectResult?.user) {
           devLog.debug('Redirect authentication completed successfully', 'auth');
           void ensureUserDocumentFromAuth(redirectResult.user).catch(() => {});
           setUser(redirectResult.user);
           setLoading(false);
-          // Load profile in background so rest of app has it soon
-          void getUserProfile(redirectResult.user.uid).then((profile) => {
-            setUserProfile(profile);
-          }).catch(() => setUserProfile(null));
+          void getUserProfile(redirectResult.user.uid)
+            .then((profile) => {
+              if (!cancelled) setUserProfile(profile);
+            })
+            .catch(() => {
+              if (!cancelled) setUserProfile(null);
+            });
         }
-      } catch (redirectError) {
+      } catch {
         devLog.debug('No redirect result or redirect error', 'auth');
       }
 
-      // Regular Firebase authentication (no longer blocked on Firestore)
+      if (cancelled) return;
+
       const auth = getFirebaseAuth();
       if (!auth) {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
         return;
       }
-      
+
       const PROFILE_LOAD_TIMEOUT_MS = 8000;
       const PROFILE_RETRY_DELAY_MS = 2000;
       const MAX_PROFILE_RETRIES = 2;
@@ -156,10 +162,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         try {
           return await Promise.race([getUserProfile(uid), timeoutPromise]);
-        } catch (err) {
+        } catch {
           if (attempt < MAX_PROFILE_RETRIES) {
             console.warn(`⚠️ Profile load attempt ${attempt + 1} failed, retrying in ${PROFILE_RETRY_DELAY_MS}ms...`);
             await new Promise(r => setTimeout(r, PROFILE_RETRY_DELAY_MS));
+            if (cancelled) return null;
             return loadProfileWithRetry(uid, attempt + 1);
           }
           console.warn('⚠️ Profile load failed after retries; continuing without profile.');
@@ -168,6 +175,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
 
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (cancelled) return;
+
         setUser(firebaseUser);
 
         if (firebaseUser) {
@@ -180,7 +189,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Sync lightweight auth cookie for proxy.ts edge route hint (Next.js 16)
         if (typeof document !== 'undefined') {
           if (firebaseUser) {
             document.cookie = 'fs_auth=1; path=/; max-age=2592000; SameSite=Lax';
@@ -188,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             document.cookie = 'fs_auth=; path=/; max-age=0; SameSite=Lax';
           }
         }
-        
+
         try {
           if (firebaseUser) {
             let idTokenResult: Awaited<ReturnType<typeof getIdTokenResult>> | null = null;
@@ -197,8 +205,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setIsSuperadmin(adminRoles.isSuperadmin);
               setIsAdmin(adminRoles.isAdmin);
               setIsSpecialUser(adminRoles.isSpecialUser);
-              
+
               idTokenResult = await getIdTokenResult(firebaseUser, true);
+              if (cancelled) return;
               const token = idTokenResult;
               if (token.claims.superadmin) {
                 setIsSuperadmin(true);
@@ -213,13 +222,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setIsSpecialUser(true);
               }
             } catch {
+              if (cancelled) return;
               const adminRoles = checkAdminRoles(firebaseUser.email);
               setIsSuperadmin(adminRoles.isSuperadmin);
               setIsAdmin(adminRoles.isAdmin);
               setIsSpecialUser(adminRoles.isSpecialUser);
             }
-            
+
             const profile = await loadProfileWithRetry(firebaseUser.uid);
+            if (cancelled) return;
             setUserProfile(profile);
             const roles = checkAdminRoles(firebaseUser.email);
             const claimSpecial = idTokenResult?.claims?.specialUser === true;
@@ -232,7 +243,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsAdmin(false);
             setIsSpecialUser(false);
           }
-        } catch (e) {
+        } catch {
+          if (cancelled) return;
           if (firebaseUser) {
             setUserProfile(null);
           } else {
@@ -242,14 +254,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setIsSpecialUser(false);
           }
         } finally {
-          setLoading(false);
+          if (!cancelled) setLoading(false);
         }
       });
 
-      return () => unsubscribe();
+      if (cancelled) {
+        unsubscribe();
+        return;
+      }
+      unsubRef.current = unsubscribe;
     };
 
-    initializeAuth();
+    void initializeAuth();
+
+    return () => {
+      cancelled = true;
+      unsubRef.current?.();
+    };
   }, []);
 
   const value = {

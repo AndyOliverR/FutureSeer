@@ -197,14 +197,16 @@ export function PlanSelectionStep({
                     {isTrial ? (
                       <div className="text-3xl font-bold text-green-400">Free</div>
                     ) : priceInfo ? (
-                      <div className="min-w-0">
-                        <div className="text-3xl font-bold text-amber-400 break-words">
-                          {priceInfo.formatted}
-                          {tier.contributionType === 'annual'
-                            ? '/year'
-                            : tier.contributionType === 'quarterly'
-                            ? '/quarter'
-                            : '/month'}
+                      <div className="min-w-0 px-1">
+                        <div className="text-xl sm:text-3xl font-bold text-amber-400 tabular-nums leading-tight">
+                          <span className="block sm:inline">{priceInfo.formatted}</span>
+                          <span className="block text-sm sm:text-2xl sm:inline sm:ml-1 text-amber-400/95 mt-0.5 sm:mt-0">
+                            {tier.contributionType === 'annual'
+                              ? '/ year'
+                              : tier.contributionType === 'quarterly'
+                                ? '/ quarter'
+                                : '/ month'}
+                          </span>
                         </div>
                         <p className="text-white/60 text-sm mt-2">
                           {tier.contributionType === 'monthly' && 'Billed every month · cancel anytime'}

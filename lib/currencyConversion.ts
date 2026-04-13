@@ -50,3 +50,20 @@ export function convertToUsdCents(
   const cents = Math.round(usdMajor * 100);
   return Math.max(100, cents);
 }
+
+/** Approximate USD→INR for plan-internal amounts (Razorpay India merchants often accept INR plans only). */
+const USD_TO_INR = 83;
+
+/**
+ * Convert amount in smallest unit of fromCurrency to INR paise for Razorpay Plans API.
+ * Reuses {@link convertToUsdCents} so rates stay consistent, then maps USD → INR.
+ */
+export function convertSmallestUnitToInrPaise(
+  amountInSmallestUnit: number,
+  fromCurrency: string
+): number {
+  const usdCents = convertToUsdCents(amountInSmallestUnit, fromCurrency);
+  const usdMajor = usdCents / 100;
+  const inrPaise = Math.round(usdMajor * USD_TO_INR * 100);
+  return Math.max(100, inrPaise);
+}
