@@ -12,7 +12,7 @@ type ProfileNextStepsBannerProps = {
 }
 
 /**
- * Top-of-profile CTA for users who have not yet generated their mystical profile.
+ * Top-of-profile checklist for users who have not yet generated their mystical profile.
  */
 export function ProfileNextStepsBanner({
   variant,
@@ -38,16 +38,19 @@ export function ProfileNextStepsBanner({
       </p>
       <p className={cn("text-sm leading-relaxed", isM3 ? "text-surface-on-variant" : "text-amber-200/90")}>
         {isConsultantWorkspace
-          ? "Confirm birth details, then generate the full mystical profile so every tool has a report for this client."
-          : "Confirm your birth details, then generate your mystical profile once. That unlocks every tool and your unified readings."}
+          ? "Work through the steps in order once, then generate the full mystical profile for this client."
+          : "Work through the steps in order once, then generate your mystical profile. That unlocks every tool and your unified readings."}
       </p>
       <ol
         className={cn(
-          "list-decimal pl-5 text-sm space-y-1",
+          "list-decimal pl-5 text-sm space-y-1.5",
           isM3 ? "text-on-surface" : "text-amber-100/90"
         )}
       >
-        <li>Review birth date, place, and time (optional photos).</li>
+        <li>Fill in birth details (tap Edit if needed) and save.</li>
+        <li>Choose your plan tier and how you want to continue after the free month (payment section).</li>
+        <li>Optional: add face and palm photos; adjust The Seer headline setting.</li>
+        <li>Optional: copy your referral code to share later.</li>
         <li>Tap Generate Mystical Profile — it runs all systems and may take a couple of minutes.</li>
       </ol>
       <div className="flex flex-wrap gap-2 pt-1">
@@ -63,6 +66,19 @@ export function ProfileNextStepsBanner({
           }
         >
           <a href="#profile-personal-data">Jump to birth details</a>
+        </Button>
+        <Button
+          asChild
+          type="button"
+          size="sm"
+          variant="outline"
+          className={
+            isM3
+              ? "border-outline-variant text-on-surface"
+              : "border-amber-500/50 text-amber-200 hover:bg-amber-500/10"
+          }
+        >
+          <a href="#profile-payment-path">Jump to payment &amp; plan</a>
         </Button>
         <Button
           asChild

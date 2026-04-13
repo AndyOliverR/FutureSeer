@@ -28,7 +28,6 @@ import { normalizeBirthTime } from "@/lib/birthTimeUtils"
 import { getOverQuotaMessage } from "@/lib/profileEditQuota"
 import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache, useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
 import { ReferralCodeCard } from "@/components/ReferralCodeCard"
-import { SubscriptionStatus } from "@/components/SubscriptionStatus"
 import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { RETURNING_USER_WITH_REPORTS_DESTINATION } from "@/lib/authRouting"
@@ -45,10 +44,10 @@ import { isGrowthProfileDraftEnabled } from "@/lib/growthFlags"
 import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/profileDraftStorage"
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
+import { ProfilePlanPaymentSection, type ProfilePlanId } from "@/components/profile/ProfilePlanPaymentSection"
 
 const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
 const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
-type ProfilePlanId = "power-user-trial" | "buy-coffee" | "treat-me" | "festive-hamper"
 
 function readUploadErrorFields(e: unknown): {
   status: number | null
@@ -303,6 +302,22 @@ export default function ProfilePage() {
     const isTrialLike = !status || status === "trial"
     return isTrialLike && !hasVerifiedPaymentMethod
   }, [userProfile, hasVerifiedPaymentMethod])
+
+  const isFirstTimeProfileSetup = useMemo(
+    () =>
+      Boolean(
+        userProfile &&
+          !userProfile.mysticalProfileGenerated &&
+          !isSuperadmin &&
+          !isAdmin
+      ),
+    [userProfile, isSuperadmin, isAdmin]
+  )
+
+  const deferTrialPrimaryCta = useMemo(
+    () => showPaymentReminder || (isFirstTimeProfileSetup && !hasVerifiedPaymentMethod),
+    [showPaymentReminder, isFirstTimeProfileSetup, hasVerifiedPaymentMethod]
+  )
 
   // Fetch edit quota on load so Generate button state is correct
   useEffect(() => {
@@ -928,48 +943,21 @@ export default function ProfilePage() {
             </AlertDescription>
           </Alert>
         )}
-        <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-primary-container rounded-xl"><Heart className="w-5 h-5 text-primary-on-container" /></div>
-            <h2 className="font-bold text-white uppercase text-sm tracking-widest">Plan & Referral</h2>
-          </div>
-          {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
-          <div className="mt-4 border-t border-outline-variant pt-4 space-y-3">
-            <p className="text-xs text-surface-on-variant">
-              Choose your payment path now: verify your payment method or start your free trial without a card (free month still active).
-            </p>
-            <select
-              value={selectedPlanForProfile}
-              onChange={(e) => setSelectedPlanForProfile(e.target.value as ProfilePlanId)}
-              className="h-11 w-full rounded-xl bg-surface-container-low border border-outline-variant px-3 text-white"
-            >
-              <option value="power-user-trial">Power User Trial</option>
-              <option value="buy-coffee">Coffee (Monthly)</option>
-              <option value="treat-me">Treat (Quarterly)</option>
-              <option value="festive-hamper">Hamper (Annual)</option>
-            </select>
-            <div className="grid grid-cols-1 gap-2">
-              <Button
-                type="button"
-                onClick={() => setShowUpdatePaymentModal(true)}
-                disabled={isSavingPaymentChoice}
-                className="w-full bg-amber-500 text-slate-900 font-semibold"
-              >
-                Verify payment now
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={saveDeferredPaymentChoice}
-                disabled={isSavingPaymentChoice}
-                className="w-full"
-              >
-                Start free trial (add card later)
-              </Button>
-            </div>
-          </div>
-          {user && <div className="mt-4 border-t border-outline-variant pt-4"><ReferralCodeCard userId={user.uid} /></div>}
-        </div>
+        {!isFirstTimeProfileSetup && (
+          <>
+            <ProfilePlanPaymentSection
+              variant="m3"
+              userProfile={userProfile}
+              user={user}
+              selectedPlanForProfile={selectedPlanForProfile}
+              onPlanChange={setSelectedPlanForProfile}
+              onVerifyPayment={() => setShowUpdatePaymentModal(true)}
+              onDeferredTrial={() => void saveDeferredPaymentChoice()}
+              isSavingPaymentChoice={isSavingPaymentChoice}
+              deferTrialPrimaryCta={deferTrialPrimaryCta}
+              showReferralInline
+              onSubscriptionRefresh={() => refreshProfile()}
+            />
 
         {showPaymentReminder && (
           <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
@@ -1038,6 +1026,12 @@ export default function ProfilePage() {
           !userProfile.mysticalProfileGenerated &&
           !isSuperadmin &&
           !isAdmin && (
+          <ProfileNextStepsBanner variant="m3" isConsultantWorkspace={isConsultantWorkspace} />
+        )}
+          </>
+        )}
+
+        {isFirstTimeProfileSetup && (
           <ProfileNextStepsBanner variant="m3" isConsultantWorkspace={isConsultantWorkspace} />
         )}
 
@@ -1142,6 +1136,8 @@ export default function ProfilePage() {
               </div>
             )}
 
+            {!isFirstTimeProfileSetup && (
+            <>
             <div className={`grid grid-cols-2 gap-4 ${isEditing ? "pb-20" : ""}`}>
               <div className="space-y-2 text-center">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
@@ -1286,8 +1282,279 @@ export default function ProfilePage() {
                 )}
               </div>
             )}
+            </>
+            )}
           </div>
         </div>
+
+        {isFirstTimeProfileSetup && (
+          <>
+            <ProfilePlanPaymentSection
+              variant="m3"
+              userProfile={userProfile}
+              user={user}
+              selectedPlanForProfile={selectedPlanForProfile}
+              onPlanChange={setSelectedPlanForProfile}
+              onVerifyPayment={() => setShowUpdatePaymentModal(true)}
+              onDeferredTrial={() => void saveDeferredPaymentChoice()}
+              isSavingPaymentChoice={isSavingPaymentChoice}
+              deferTrialPrimaryCta={deferTrialPrimaryCta}
+              showReferralInline={false}
+              onSubscriptionRefresh={() => refreshProfile()}
+              cardTitle="Plan & payment"
+            />
+
+            {showPaymentReminder && (
+              <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
+                <AlertDescription className="text-amber-100 text-sm space-y-2">
+                  <p className="font-semibold text-amber-200">Your free month is active.</p>
+                  <p>
+                    {trialDaysRemaining != null
+                      ? trialDaysRemaining <= 5
+                        ? `You have ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left. Add a payment method now so your access continues smoothly after trial.`
+                        : `You have ${trialDaysRemaining} days left. You can keep using FutureSeer now and add your payment method anytime before trial ends.`
+                      : "You can keep using FutureSeer now and add your payment method anytime before trial ends."}
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => setShowUpdatePaymentModal(true)}
+                    className="w-full bg-amber-500 text-slate-900 font-semibold"
+                  >
+                    Verify payment method
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {user?.uid && (
+              <div
+                id="profile-seer-settings"
+                className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg space-y-3 scroll-mt-24"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary-container rounded-xl">
+                    <Sparkles className="w-5 h-5 text-primary-on-container" />
+                  </div>
+                  <h2 className="font-bold text-white uppercase text-sm tracking-widest">The Seer</h2>
+                </div>
+                <SeerNewsHeadlinesToggle
+                  userId={user.uid}
+                  enabled={!!userProfile?.seerIncludeNewsHeadlines}
+                  onUpdated={() => refreshProfile()}
+                />
+              </div>
+            )}
+
+            {hasProfile && !canViewFullProfile && (
+              <Alert className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
+                <AlertDescription className="text-amber-200 text-sm space-y-3">
+                  <p>{PROFILE_PLAN_REQUIRED_BODY}</p>
+                  <Button
+                    asChild
+                    className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold hover:from-amber-600 hover:to-yellow-600"
+                  >
+                    <Link
+                      href="/pricing"
+                      onClick={() =>
+                        analytics.trackEvent(ANALYTICS_EVENTS.PROFILE_PLAN_CTA_CLICKED, {
+                          destination: "/pricing",
+                          surface: "profile_plan_alert",
+                          layout: "mobile",
+                        })
+                      }
+                    >
+                      {PROFILE_PLAN_PRICING_CTA_LABEL}
+                    </Link>
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div
+              id="profile-photos"
+              className="bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl space-y-4 scroll-mt-24"
+            >
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-400">Optional photos</p>
+              <div className={`grid grid-cols-2 gap-4 ${isEditing ? "pb-20" : ""}`}>
+                <div className="space-y-2 text-center">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
+                  <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
+                    {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
+                    {uploadingFace && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
+                  </div>
+                  {isEditing && (
+                    <div className="flex flex-col gap-1">
+                      <input
+                        ref={faceInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0]
+                          if (f) handlePhotoUpload(f, "face")
+                          e.target.value = ""
+                        }}
+                      />
+                      <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>
+                        Open camera
+                      </Button>
+                      {formData.facePhotoUrl && (
+                        <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("face")}>
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2 text-center">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                  <p className="text-sm text-white/70">Upload left palm (female) or right palm (male).</p>
+                  <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
+                    {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
+                    {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
+                  </div>
+                  {isEditing && (
+                    <div className="flex flex-col gap-1">
+                      <input
+                        ref={palmInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0]
+                          if (f) handlePhotoUpload(f, "palm")
+                          e.target.value = ""
+                        }}
+                      />
+                      <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>
+                        Open camera
+                      </Button>
+                      {formData.palmPhotoUrl && (
+                        <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("palm")}>
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {user && (
+              <div
+                id="profile-referral"
+                className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg scroll-mt-24"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-primary-container rounded-xl">
+                    <Heart className="w-5 h-5 text-primary-on-container" />
+                  </div>
+                  <h2 className="font-bold text-white uppercase text-sm tracking-widest">Referral</h2>
+                </div>
+                <ReferralCodeCard userId={user.uid} />
+              </div>
+            )}
+
+            <div className="bg-surface-container-high rounded-[32px] p-6 border border-outline-variant shadow-2xl scroll-mt-24">
+              {!isEditing && (
+                <div id="profile-generate-mystical" className="pt-2 border-t border-outline-variant/30 scroll-mt-24">
+                  <Button
+                    onClick={async () => {
+                      if (isGeneratingProfile) return
+                      if (user?.uid) {
+                        clearComprehensiveMysticalProfileCache(user.uid)
+                        clearPersistentProfileCache(user.uid)
+                        if (typeof window !== "undefined") {
+                          window.dispatchEvent(new CustomEvent("futureSeer:profileInvalidated", { detail: { userId: user.uid } }))
+                        }
+                      }
+                      setIsGeneratingProfile(true)
+                      setError(null)
+                      setGenerationStatus("Preparing your cosmic reading...")
+                      const abort = new AbortController()
+                      generationAbortRef.current = abort
+                      try {
+                        analytics.trackProfileGenerationStarted({ surface: "profile_primary" })
+                        setGenerationStatus("Connecting to the celestial realm...")
+                        const t = await user?.getIdToken()
+                        if (!t) throw new Error("Please sign in again to continue.")
+                        setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+                        const profileOverrides = buildProfileOverridesForGenerate()
+                        const res = await fetch("/api/profile/generate-mystical", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+                          body: JSON.stringify({ profileOverrides }),
+                          signal: abort.signal,
+                        })
+                        if (!res.ok) {
+                          const body = await res.json().catch(() => ({}))
+                          if (res.status === 403) setCanGenerateMysticalProfile(false)
+                          throw new Error(body.error || "Profile generation failed. Please try again.")
+                        }
+                        const data = await res.json()
+                        if (data.failedTools && data.failedTools.length > 0) {
+                          devLog.warn(`Some tools had issues: ${data.failedTools.join(", ")}`, "profile")
+                        }
+                        if (data.success && data.comprehensiveProfile) {
+                          applyGeneratedProfile(data.comprehensiveProfile)
+                        } else if (data.success && data.alreadyGenerated) {
+                          await refreshComprehensiveProfile()
+                        }
+                        analytics.trackProfileGenerationCompleted(true, {
+                          surface: "profile_primary",
+                          failed_tools_count: Array.isArray(data.failedTools) ? data.failedTools.length : 0,
+                        })
+                        if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
+                        setSuccess("Mystical Profile Generated!")
+                        try {
+                          if (typeof window !== "undefined") {
+                            sessionStorage.setItem(SEQ_PROMPT_AFTER_PROFILE_GEN, "1")
+                          }
+                        } catch {
+                          /* ignore */
+                        }
+                        router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
+                      } catch (e: unknown) {
+                        if (e instanceof Error && e.name === "AbortError") return
+                        analytics.trackProfileGenerationCompleted(false, {
+                          surface: "profile_primary",
+                          error: e instanceof Error ? e.message : "unknown",
+                        })
+                        setError(e instanceof Error ? e.message : "Generation failed. Please check your connection and try again.")
+                      } finally {
+                        setIsGeneratingProfile(false)
+                        setGenerationStatus("")
+                        generationAbortRef.current = null
+                      }
+                    }}
+                    disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateMysticalProfile}
+                    className="w-full h-16 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 rounded-[24px] font-bold text-lg shadow-xl active:scale-95 transition-all"
+                  >
+                    {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
+                  </Button>
+                  {isGeneratingProfile && generationStatus && (
+                    <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
+                  )}
+                  {!formData.birthDate && !isGeneratingProfile && (
+                    <p className="text-center text-amber-400/50 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                  )}
+                  {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
+                    <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
+                  )}
+                  {formData.birthDate && formData.birthPlace && canGenerateMysticalProfile && !isGeneratingProfile && (
+                    <p className="text-center text-amber-400/50 text-xs mt-2">
+                      {isConsultantWorkspace
+                        ? "The client’s birth details above will be used for generation."
+                        : "Your current birth details above will be used for generation."}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {isEditing && (
@@ -1374,48 +1641,21 @@ export default function ProfilePage() {
               </AlertDescription>
             </Alert>
           )}
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-500/20 rounded-xl"><Heart className="w-5 h-5 text-amber-400" /></div>
-              <h2 className="font-bold text-amber-400 uppercase text-sm tracking-widest">Plan & Referral</h2>
-            </div>
-            {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
-            <div className="mt-4 border-t border-amber-400/20 pt-4 space-y-3">
-              <p className="text-xs text-amber-200/80">
-                Choose your payment path now: verify your payment method or start your free trial without a card (free month still active).
-              </p>
-              <select
-                value={selectedPlanForProfile}
-                onChange={(e) => setSelectedPlanForProfile(e.target.value as ProfilePlanId)}
-                className="h-11 w-full rounded-xl bg-white/5 border border-amber-400/30 px-3 text-white"
-              >
-                <option value="power-user-trial">Power User Trial</option>
-                <option value="buy-coffee">Coffee (Monthly)</option>
-                <option value="treat-me">Treat (Quarterly)</option>
-                <option value="festive-hamper">Hamper (Annual)</option>
-              </select>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  onClick={() => setShowUpdatePaymentModal(true)}
-                  disabled={isSavingPaymentChoice}
-                  className="bg-amber-500 hover:bg-amber-400 text-[#020617] font-semibold"
-                >
-                  Verify payment now
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={saveDeferredPaymentChoice}
-                  disabled={isSavingPaymentChoice}
-                  className="border-amber-400/30 text-white"
-                >
-                  Start free trial (add card later)
-                </Button>
-              </div>
-            </div>
-            {user && <div className="mt-4 border-t border-amber-400/20 pt-4"><ReferralCodeCard userId={user.uid} /></div>}
-          </motion.div>
+          {!isFirstTimeProfileSetup && (
+          <>
+            <ProfilePlanPaymentSection
+              variant="devotionist"
+              userProfile={userProfile}
+              user={user}
+              selectedPlanForProfile={selectedPlanForProfile}
+              onPlanChange={setSelectedPlanForProfile}
+              onVerifyPayment={() => setShowUpdatePaymentModal(true)}
+              onDeferredTrial={() => void saveDeferredPaymentChoice()}
+              isSavingPaymentChoice={isSavingPaymentChoice}
+              deferTrialPrimaryCta={deferTrialPrimaryCta}
+              showReferralInline
+              onSubscriptionRefresh={() => refreshProfile()}
+            />
 
           {showPaymentReminder && (
             <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
@@ -1489,6 +1729,12 @@ export default function ProfilePage() {
             !userProfile.mysticalProfileGenerated &&
             !isSuperadmin &&
             !isAdmin && (
+            <ProfileNextStepsBanner variant="devotionist" isConsultantWorkspace={isConsultantWorkspace} />
+          )}
+          </>
+          )}
+
+          {isFirstTimeProfileSetup && (
             <ProfileNextStepsBanner variant="devotionist" isConsultantWorkspace={isConsultantWorkspace} />
           )}
 
@@ -1596,6 +1842,8 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              {!isFirstTimeProfileSetup && (
+              <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 text-center">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
@@ -1758,8 +2006,259 @@ export default function ProfilePage() {
                   )}
                 </div>
               )}
+              </>
+              )}
             </div>
           </motion.div>
+
+        {isFirstTimeProfileSetup && (
+          <>
+            <ProfilePlanPaymentSection
+              variant="devotionist"
+              userProfile={userProfile}
+              user={user}
+              selectedPlanForProfile={selectedPlanForProfile}
+              onPlanChange={setSelectedPlanForProfile}
+              onVerifyPayment={() => setShowUpdatePaymentModal(true)}
+              onDeferredTrial={() => void saveDeferredPaymentChoice()}
+              isSavingPaymentChoice={isSavingPaymentChoice}
+              deferTrialPrimaryCta={deferTrialPrimaryCta}
+              showReferralInline={false}
+              onSubscriptionRefresh={() => refreshProfile()}
+              cardTitle="Plan & payment"
+            />
+
+            {showPaymentReminder && (
+              <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
+                <AlertDescription className="text-amber-100 space-y-2">
+                  <p className="font-semibold text-amber-200">Your free month is active.</p>
+                  <p>
+                    {trialDaysRemaining != null
+                      ? trialDaysRemaining <= 5
+                        ? `You have ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left. Add a payment method now so your access continues smoothly after trial.`
+                        : `You have ${trialDaysRemaining} days left. You can keep using FutureSeer now and add your payment method anytime before trial ends.`
+                      : "You can keep using FutureSeer now and add your payment method anytime before trial ends."}
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => setShowUpdatePaymentModal(true)}
+                    className="bg-amber-500 hover:bg-amber-400 text-[#020617] font-semibold"
+                  >
+                    Verify payment method
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {user?.uid && (
+              <motion.div
+                id="profile-seer-settings"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.02 }}
+                className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-3 scroll-mt-24"
+              >
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="p-2 bg-amber-500/20 rounded-xl">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <h2 className="font-bold text-amber-400 uppercase text-sm tracking-widest">The Seer</h2>
+                </div>
+                <SeerNewsHeadlinesToggle
+                  userId={user.uid}
+                  enabled={!!userProfile?.seerIncludeNewsHeadlines}
+                  onUpdated={() => refreshProfile()}
+                />
+              </motion.div>
+            )}
+
+            {hasProfile && !canViewFullProfile && (
+              <Alert className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
+                <AlertDescription className="text-amber-200 space-y-3">
+                  <p>{PROFILE_PLAN_REQUIRED_BODY}</p>
+                  <Button
+                    asChild
+                    className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold hover:from-amber-600 hover:to-yellow-600"
+                  >
+                    <Link
+                      href="/pricing"
+                      onClick={() =>
+                        analytics.trackEvent(ANALYTICS_EVENTS.PROFILE_PLAN_CTA_CLICKED, {
+                          destination: "/pricing",
+                          surface: "profile_plan_alert",
+                          layout: "web",
+                        })
+                      }
+                    >
+                      {PROFILE_PLAN_PRICING_CTA_LABEL}
+                    </Link>
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <motion.div
+              id="profile-photos"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.03 }}
+              className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl space-y-4 scroll-mt-24"
+            >
+              <p className="text-xs font-bold uppercase tracking-widest text-amber-400">Optional photos</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 text-center">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
+                  <div className="aspect-square bg-white/5 rounded-2xl border-2 border-dashed border-amber-400/20 flex items-center justify-center overflow-hidden relative">
+                    {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 text-amber-400/40" />}
+                    {uploadingFace && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
+                  </div>
+                  {isEditing && (
+                    <div className="flex flex-col gap-1">
+                      <input ref={faceInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }} />
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>Upload</Button>
+                      {formData.facePhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("face")}>Remove</Button>}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2 text-center">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                  <p className="text-xs text-amber-400/70">Upload left palm (female) or right palm (male).</p>
+                  <div className="aspect-square bg-white/5 rounded-2xl border-2 border-dashed border-amber-400/20 flex items-center justify-center overflow-hidden relative">
+                    {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 text-amber-400/40" />}
+                    {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
+                  </div>
+                  {isEditing && (
+                    <div className="flex flex-col gap-1">
+                      <input ref={palmInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }} />
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>Upload</Button>
+                      {formData.palmPhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("palm")}>Remove</Button>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+
+            {user && (
+              <motion.div
+                id="profile-referral"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.04 }}
+                className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl scroll-mt-24"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-amber-500/20 rounded-xl">
+                    <Heart className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <h2 className="font-bold text-amber-400 uppercase text-sm tracking-widest">Referral</h2>
+                </div>
+                <ReferralCodeCard userId={user.uid} />
+              </motion.div>
+            )}
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-[#020617]/80 backdrop-blur-xl rounded-3xl p-6 border border-amber-500/20 shadow-xl scroll-mt-24"
+            >
+              {!isEditing && (
+                <div id="profile-generate-mystical" className="pt-2 border-t border-amber-400/20 scroll-mt-24">
+                  <Button
+                    onClick={async () => {
+                      if (isGeneratingProfile) return
+                      if (user?.uid) {
+                        clearComprehensiveMysticalProfileCache(user.uid)
+                        clearPersistentProfileCache(user.uid)
+                        if (typeof window !== "undefined") {
+                          window.dispatchEvent(new CustomEvent("futureSeer:profileInvalidated", { detail: { userId: user.uid } }))
+                        }
+                      }
+                      setIsGeneratingProfile(true)
+                      setError(null)
+                      setGenerationStatus("Preparing your cosmic reading...")
+                      const abort = new AbortController()
+                      generationAbortRef.current = abort
+                      try {
+                        analytics.trackProfileGenerationStarted({ surface: "profile_secondary" })
+                        setGenerationStatus("Connecting to the celestial realm...")
+                        const t = await user?.getIdToken()
+                        if (!t) throw new Error("Please sign in again to continue.")
+                        setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+                        const profileOverrides = buildProfileOverridesForGenerate()
+                        const res = await fetch("/api/profile/generate-mystical", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json", Authorization: `Bearer ${t}` },
+                          body: JSON.stringify({ profileOverrides }),
+                          signal: abort.signal,
+                        })
+                        if (!res.ok) {
+                          const body = await res.json().catch(() => ({}))
+                          if (res.status === 403) setCanGenerateMysticalProfile(false)
+                          throw new Error(body.error || "Profile generation failed. Please try again.")
+                        }
+                        const data = await res.json()
+                        if (data.failedTools && data.failedTools.length > 0) {
+                          devLog.warn(`Some tools had issues: ${data.failedTools.join(", ")}`, "profile")
+                        }
+                        if (data.success && data.comprehensiveProfile) {
+                          applyGeneratedProfile(data.comprehensiveProfile)
+                        } else if (data.success && data.alreadyGenerated) {
+                          await refreshComprehensiveProfile()
+                        }
+                        analytics.trackProfileGenerationCompleted(true, {
+                          surface: "profile_secondary",
+                          failed_tools_count: Array.isArray(data.failedTools) ? data.failedTools.length : 0,
+                        })
+                        if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
+                        setSuccess("Mystical Profile Generated!")
+                        try {
+                          if (typeof window !== "undefined") {
+                            sessionStorage.setItem(SEQ_PROMPT_AFTER_PROFILE_GEN, "1")
+                          }
+                        } catch {
+                          /* ignore */
+                        }
+                        router.push(RETURNING_USER_WITH_REPORTS_DESTINATION)
+                      } catch (e: unknown) {
+                        if (e instanceof Error && e.name === "AbortError") return
+                        analytics.trackProfileGenerationCompleted(false, {
+                          surface: "profile_secondary",
+                          error: e instanceof Error ? e.message : "unknown",
+                        })
+                        setError(e instanceof Error ? e.message : "Generation failed. Please check your connection and try again.")
+                      } finally {
+                        setIsGeneratingProfile(false)
+                        setGenerationStatus("")
+                        generationAbortRef.current = null
+                      }
+                    }}
+                    disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateMysticalProfile}
+                    className="w-full h-14 bg-gradient-to-r from-amber-600 to-yellow-500 text-[#020617] rounded-2xl font-bold shadow-xl hover:opacity-95 transition-opacity"
+                  >
+                    {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
+                  </Button>
+                  {isGeneratingProfile && generationStatus && (
+                    <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
+                  )}
+                  {!formData.birthDate && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/70 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                  )}
+                  {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
+                  )}
+                  {formData.birthDate && formData.birthPlace && canGenerateMysticalProfile && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/60 text-xs mt-2">
+                      {isConsultantWorkspace
+                        ? "The client’s birth details above will be used for generation."
+                        : "Your current birth details above will be used for generation."}
+                    </p>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </>
+        )}
         </div>
       </div>
     </div>

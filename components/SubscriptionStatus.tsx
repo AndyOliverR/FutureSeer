@@ -35,7 +35,8 @@ export function SubscriptionStatus({ userProfile, onCancel, onUpdatePaymentClick
   };
 
   const getPlanName = () => {
-    switch (selectedPlan) {
+    const raw = selectedPlan != null ? String(selectedPlan).trim() : '';
+    switch (raw) {
       case 'power-user-trial':
         return 'Power User Trial';
       case 'buy-coffee':
@@ -45,7 +46,13 @@ export function SubscriptionStatus({ userProfile, onCancel, onUpdatePaymentClick
       case 'festive-hamper':
         return 'Hamper (Annual)';
       default:
-        return 'No Plan Selected';
+        if (!raw && subscriptionStatus === 'trial') {
+          return 'Free trial';
+        }
+        if (!raw) {
+          return 'Plan not set — choose below';
+        }
+        return 'Plan not recognized — choose below';
     }
   };
 
