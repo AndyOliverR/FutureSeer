@@ -122,7 +122,7 @@ export function TopNavBar() {
           {showMenu && (
             <motion.div
               ref={menuRef}
-              className="absolute right-2 sm:right-4 top-14 flex flex-col items-end z-[9999] w-[min(22rem,calc(100vw-1rem))] sm:w-auto bg-surface-container-high border border-outline-variant rounded-2xl p-2 shadow-2xl"
+              className="absolute right-3 sm:right-4 top-14 flex flex-col items-end z-[9999] w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-1rem)] sm:w-[min(20rem,calc(100vw-2.5rem))] md:w-auto bg-surface-container-high border border-outline-variant rounded-2xl p-2 shadow-2xl"
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}

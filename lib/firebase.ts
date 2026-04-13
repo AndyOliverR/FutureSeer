@@ -458,9 +458,9 @@ export const signInWithApple = async (): Promise<User> => {
 };
 
 /**
- * Small grace window to handle popup-cancel race where auth state still resolves successfully.
+ * Grace window to handle popup-cancel races where auth state resolves shortly after dismiss.
  */
-export async function waitForAuthenticatedSession(timeoutMs = 1200): Promise<boolean> {
+export async function waitForAuthenticatedSession(timeoutMs = 3000): Promise<boolean> {
   const auth = getFirebaseAuth();
   if (!auth) return false;
   if (auth.currentUser) return true;
@@ -649,10 +649,10 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection and try again. If you use a VPN or ad blocker, try turning it off for this site or switch networks.';
     case 'auth/popup-closed-by-user':
-      return 'The Google sign-in window was closed before finishing. Nothing was changed on your account—you are still signed out. Tap Sign in with Google again, or use email and password below.';
+      return 'Google sign-in was closed before confirmation. If you already selected your account, please wait a moment—your sign-in may still complete automatically. Otherwise tap Sign in with Google again.';
     case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
     case 'auth/cancelled-popup-request':
-      return 'Sign-in was interrupted (another sign-in may have started). You are still signed out. Wait a moment, then tap Sign in with Google again, or use email and password.';
+      return 'Sign-in was briefly interrupted. Please wait a moment; if nothing happens, tap Sign in with Google again.';
     case 'auth/unauthorized-domain':
       return 'Google or Apple sign-in is not available from this web address. Try email and password, or open the app from the main FutureSeer website.';
     case 'auth/account-exists-with-different-credential':

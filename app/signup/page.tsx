@@ -181,7 +181,7 @@ function SignUpPageContent() {
       const err = error as { message?: string; code?: string };
       if (isAuthRedirectInitiatedError(error)) return;
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(1200)
+        const resolvedSession = await waitForAuthenticatedSession(3000)
         if (resolvedSession) {
           await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             provider: "google",
@@ -232,7 +232,7 @@ function SignUpPageContent() {
       const err = error as { message?: string; code?: string };
       if (isAuthRedirectInitiatedError(error)) return;
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(1200)
+        const resolvedSession = await waitForAuthenticatedSession(3000)
         if (resolvedSession) {
           await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             provider: "apple",

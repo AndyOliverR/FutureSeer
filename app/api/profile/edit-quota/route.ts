@@ -74,7 +74,9 @@ export async function GET(request: NextRequest) {
       count = 0;
     }
 
-    const canGenerate = count <= limit;
+    // Launch hotfix: free users should not be blocked from generation by edit quota.
+    // Keep returning count/limit for telemetry and future re-enforcement.
+    const canGenerate = true;
     return NextResponse.json({ count, limit, canGenerate });
   } catch (err) {
     devLog.error('Profile edit-quota API error', err, 'edit-quota');
