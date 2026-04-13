@@ -85,7 +85,8 @@ export async function POST(request: NextRequest) {
       updatedAt: Date.now(),
     });
 
-    const canGenerate = count <= limit;
+    // Launch hotfix: do not block generation due to edit quota during free-month rollout.
+    const canGenerate = true;
     return NextResponse.json({ count, limit, canGenerate });
   } catch (err) {
     devLog.error('Profile record-edit API error', err, 'record-edit');

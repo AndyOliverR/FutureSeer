@@ -163,7 +163,7 @@ function SignInContent() {
       const err = error as { message?: string; code?: string }
       if (isAuthRedirectInitiatedError(error)) return
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(1200)
+        const resolvedSession = await waitForAuthenticatedSession(3000)
         if (resolvedSession) {
           await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             method: "google",
@@ -220,7 +220,7 @@ function SignInContent() {
       const err = error as { message?: string; code?: string }
       if (isAuthRedirectInitiatedError(error)) return
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(1200)
+        const resolvedSession = await waitForAuthenticatedSession(3000)
         if (resolvedSession) {
           await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             method: "apple",

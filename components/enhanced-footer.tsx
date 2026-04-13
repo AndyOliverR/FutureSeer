@@ -51,7 +51,7 @@ export function EnhancedFooter() {
             <span className="text-outline-variant/50 text-xs hidden sm:inline">·</span>
             <Link href="/privacy" className="text-xs font-medium text-surface-on-variant hover:text-primary">Privacy</Link>
           </div>
-          <div className="flex-1 min-w-0 md:min-w-[160px] max-w-xs flex flex-col gap-1">
+          <div className="basis-full md:basis-auto w-full md:flex-1 min-w-0 md:min-w-[160px] md:max-w-xs flex flex-col gap-1">
             <div className="min-h-[2.75rem] flex flex-col justify-center">
             {status === "success" ? (
               <p
@@ -62,7 +62,7 @@ export function EnhancedFooter() {
               </p>
             ) : (
               <form
-                className="flex gap-1 items-center bg-surface-container-low p-0.5 pr-1 rounded-full border border-outline-variant/20"
+                className="w-full flex gap-1 items-center bg-surface-container-low p-0.5 pr-1 rounded-full border border-outline-variant/20"
                 onSubmit={handleSubmit}
                 aria-label="Subscribe to product updates"
               >
@@ -75,7 +75,7 @@ export function EnhancedFooter() {
                   placeholder="Stay updated"
                   required
                   disabled={loading}
-                  className="bg-transparent border-none h-7 text-xs flex-1 focus-visible:ring-0"
+                  className="min-w-0 bg-transparent border-none h-7 text-xs flex-1 focus-visible:ring-0"
                 />
                 <Button
                   type="submit"
@@ -95,7 +95,7 @@ export function EnhancedFooter() {
               </form>
             )}
             </div>
-            <p className="text-[9px] text-surface-on-variant/85 leading-tight">
+            <p className="text-[10px] text-surface-on-variant/85 leading-relaxed whitespace-normal break-words">
               No spam. Unsubscribe anytime.{" "}
               <Link href="/terms" className="text-primary/90 hover:underline">
                 Terms
