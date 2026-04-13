@@ -104,8 +104,22 @@ export function OnboardingTour() {
     markCompleted();
   };
 
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768;
+
   // Calculate tooltip position
   const getTooltipPosition = () => {
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+    const horizontalPadding = 12;
+    const verticalPadding = 12;
+    if (isMobileViewport) {
+      return {
+        top: `${Math.max(verticalPadding, Math.floor(viewportHeight * 0.08))}px`,
+        left: '50%',
+        transform: 'translateX(-50%)',
+      };
+    }
+
     if (!targetElement || step.target === 'body') {
       return {
         top: '50%',
@@ -117,38 +131,52 @@ export function OnboardingTour() {
     const rect = targetElement.getBoundingClientRect();
     const placement = step.placement || 'bottom';
 
+    let proposedTop = 0;
+    let proposedLeft = 0;
+    let transform = '';
+    const estimatedTooltipWidth = 384;
+    const estimatedTooltipHeight = 340;
+
     switch (placement) {
       case 'top':
-        return {
-          top: `${rect.top - 20}px`,
-          left: `${rect.left + rect.width / 2}px`,
-          transform: 'translate(-50%, -100%)',
-        };
+        proposedTop = rect.top - 20 - estimatedTooltipHeight;
+        proposedLeft = rect.left + rect.width / 2 - estimatedTooltipWidth / 2;
+        transform = 'none';
+        break;
       case 'bottom':
-        return {
-          top: `${rect.bottom + 20}px`,
-          left: `${rect.left + rect.width / 2}px`,
-          transform: 'translate(-50%, 0)',
-        };
+        proposedTop = rect.bottom + 20;
+        proposedLeft = rect.left + rect.width / 2 - estimatedTooltipWidth / 2;
+        transform = 'none';
+        break;
       case 'left':
-        return {
-          top: `${rect.top + rect.height / 2}px`,
-          left: `${rect.left - 20}px`,
-          transform: 'translate(-100%, -50%)',
-        };
+        proposedTop = rect.top + rect.height / 2 - estimatedTooltipHeight / 2;
+        proposedLeft = rect.left - 20 - estimatedTooltipWidth;
+        transform = 'none';
+        break;
       case 'right':
-        return {
-          top: `${rect.top + rect.height / 2}px`,
-          left: `${rect.right + 20}px`,
-          transform: 'translate(0, -50%)',
-        };
+        proposedTop = rect.top + rect.height / 2 - estimatedTooltipHeight / 2;
+        proposedLeft = rect.right + 20;
+        transform = 'none';
+        break;
       default:
-        return {
-          top: `${rect.bottom + 20}px`,
-          left: `${rect.left + rect.width / 2}px`,
-          transform: 'translate(-50%, 0)',
-        };
+        proposedTop = rect.bottom + 20;
+        proposedLeft = rect.left + rect.width / 2 - estimatedTooltipWidth / 2;
+        transform = 'none';
+        break;
     }
+
+    const minLeft = horizontalPadding;
+    const maxLeft = Math.max(horizontalPadding, viewportWidth - estimatedTooltipWidth - horizontalPadding);
+    const minTop = verticalPadding;
+    const maxTop = Math.max(verticalPadding, viewportHeight - estimatedTooltipHeight - verticalPadding);
+    const clampedLeft = Math.min(maxLeft, Math.max(minLeft, proposedLeft));
+    const clampedTop = Math.min(maxTop, Math.max(minTop, proposedTop));
+
+    return {
+      top: `${clampedTop}px`,
+      left: `${clampedLeft}px`,
+      transform,
+    };
   };
 
   return (
@@ -197,23 +225,20 @@ export function OnboardingTour() {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed z-[10001] max-w-sm max-h-[min(90dvh,90vh)] overflow-y-auto"
+            className="fixed z-[10001] w-[calc(100vw-24px)] max-w-sm md:w-auto"
             style={getTooltipPosition()}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`onboarding-step-title-${step.id}`}
             aria-describedby={`onboarding-step-desc-${step.id}`}
           >
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-400/50 rounded-xl p-6 shadow-2xl">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-400/50 rounded-xl p-4 sm:p-6 shadow-2xl max-h-[min(86dvh,86vh)] flex flex-col overflow-hidden">
               {/* Header */}
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start justify-between mb-3 shrink-0">
                 <div className="flex-1 min-w-0">
                   <h3 id={`onboarding-step-title-${step.id}`} className="text-xl font-bold text-white mb-2">
                     {step.title}
                   </h3>
-                  <p id={`onboarding-step-desc-${step.id}`} className="text-white/80 text-sm leading-relaxed">
-                    {step.content}
-                  </p>
                 </div>
                 <button
                   onClick={handleSkip}
@@ -224,8 +249,14 @@ export function OnboardingTour() {
                 </button>
               </div>
 
+              <div className="mb-3 overflow-y-auto">
+                <p id={`onboarding-step-desc-${step.id}`} className="text-white/80 text-sm leading-relaxed">
+                  {step.content}
+                </p>
+              </div>
+
               {/* Progress indicator */}
-              <div className="mb-4">
+              <div className="mb-3 shrink-0">
                 <div className="flex gap-1" aria-hidden>
                   {onboardingSteps.map((_, index) => (
                     <div
@@ -242,7 +273,7 @@ export function OnboardingTour() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 mt-auto shrink-0">
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
