@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CreditCard, Shield, Lock, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,8 @@ interface PaymentMethodCaptureProps {
   onPaymentMethodCaptured: (paymentMethodId: string, subscriptionId?: string) => void;
   onError?: (error: string) => void;
   isSpecialUser?: boolean;
+  /** Signup: offer "None for now" for trial only (saves paymentMethodId none; paid tiers still require checkout). */
+  allowDeferredPayment?: boolean;
 }
 
 export function PaymentMethodCapture({
@@ -35,6 +38,7 @@ export function PaymentMethodCapture({
   onPaymentMethodCaptured,
   onError,
   isSpecialUser,
+  allowDeferredPayment = false,
 }: PaymentMethodCaptureProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
@@ -218,8 +222,16 @@ export function PaymentMethodCapture({
     }
   };
 
+  const handleFreeTrialWithoutCard = () => {
+    if (isSpecialUser) return;
+    if (selectedPlan !== 'power-user-trial') return;
+    onPaymentMethodCaptured('none');
+  };
+
   const config = getCountryPricingConfig(userCountry);
   const chargeInUsdFallback = !isRazorpayPlanCurrency(config.currency);
+  const showDualTrialPaths =
+    allowDeferredPayment && selectedPlan === 'power-user-trial' && !isSpecialUser;
 
   return (
     <motion.div
@@ -228,7 +240,7 @@ export function PaymentMethodCapture({
       transition={{ duration: 0.5 }}
       className="w-full"
     >
-      <Card className="bg-slate-900/40 border-amber-500/30 backdrop-blur-xl">
+      <Card className="bg-slate-900/40 border-amber-500/30 backdrop-blur-xl overflow-hidden">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className="p-3 rounded-full bg-amber-500/20 border border-amber-500/30">
@@ -240,7 +252,8 @@ export function PaymentMethodCapture({
           </CardTitle>
           {chargeInUsdFallback && (
             <p className="text-sm text-amber-200/90 mb-2">
-              Payment will be processed in USD. Your card may show the equivalent in your local currency.
+              Checkout may bill in USD or INR depending on your region and our payment partner. Your bank
+              may show the amount in your local currency.
             </p>
           )}
           <CardDescription className="text-slate-300 font-serif">
@@ -289,36 +302,98 @@ export function PaymentMethodCapture({
             </p>
           </div>
 
-          {/* CTA Button */}
-          <Button
-            onClick={handleSecureSpot}
-            disabled={isLoading || !isScriptLoaded}
-            className="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold py-6 text-lg"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Securing your spot...
-              </>
-            ) : !isScriptLoaded ? (
-              'Loading...'
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5 mr-2" />
-                Secure My Spot (No Charge for 30 Days)
-              </>
-            )}
-          </Button>
+          {showDualTrialPaths ? (
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-slate-300 text-center">Choose how to continue</p>
+
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  onClick={handleFreeTrialWithoutCard}
+                  disabled={isLoading}
+                  className="w-full min-h-[3.25rem] whitespace-normal px-3 py-4 sm:py-5 text-sm sm:text-base leading-tight bg-slate-800 border-2 border-amber-500/60 text-amber-50 hover:bg-slate-800/90 hover:border-amber-400 font-semibold shadow-md shadow-black/20"
+                >
+                  <span className="flex flex-col items-center gap-1">
+                    <span>Start free trial</span>
+                    <span className="text-xs font-normal text-slate-400">
+                      First month on us — add a card anytime in Profile
+                    </span>
+                  </span>
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-3 py-1">
+                <span className="h-px flex-1 bg-slate-600/80" aria-hidden />
+                <span className="text-xs text-slate-400 shrink-0">Or verify a card</span>
+                <span className="h-px flex-1 bg-slate-600/80" aria-hidden />
+              </div>
+
+              <Button
+                onClick={handleSecureSpot}
+                disabled={isLoading || !isScriptLoaded}
+                className="w-full min-h-[3.25rem] whitespace-normal px-3 py-4 sm:py-5 text-sm sm:text-base leading-tight bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold shadow-md shadow-amber-900/20"
+              >
+                {isLoading ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
+                    Securing your spot...
+                  </span>
+                ) : !isScriptLoaded ? (
+                  'Loading...'
+                ) : (
+                  <span className="inline-flex flex-col sm:flex-row sm:items-center sm:justify-center gap-0.5 sm:gap-2 text-center">
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Sparkles className="w-4 h-4 shrink-0 sm:w-5 sm:h-5" />
+                      <span className="font-semibold">Secure my spot</span>
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium opacity-90 sm:opacity-100">
+                      (No charge for 30 days)
+                    </span>
+                  </span>
+                )}
+              </Button>
+
+              <p className="text-[11px] sm:text-xs text-slate-500 text-center leading-snug max-w-md mx-auto px-1">
+                Your first month is on us. Before your trial ends, add a payment method in Profile if you
+                want your subscription to continue without interruption.
+              </p>
+            </div>
+          ) : (
+            <Button
+              onClick={handleSecureSpot}
+              disabled={isLoading || !isScriptLoaded}
+              className="w-full min-h-[3.25rem] whitespace-normal px-3 py-4 sm:py-5 text-sm sm:text-base leading-tight bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-slate-900 font-semibold shadow-md shadow-amber-900/20"
+            >
+              {isLoading ? (
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Loader2 className="w-5 h-5 shrink-0 animate-spin" />
+                  Securing your spot...
+                </span>
+              ) : !isScriptLoaded ? (
+                'Loading...'
+              ) : (
+                <span className="inline-flex flex-col sm:flex-row sm:items-center sm:justify-center gap-0.5 sm:gap-2 text-center">
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 shrink-0 sm:w-5 sm:h-5" />
+                    <span className="font-semibold">Secure my spot</span>
+                  </span>
+                  <span className="text-xs sm:text-sm font-medium opacity-90 sm:opacity-100">
+                    (No charge for 30 days)
+                  </span>
+                </span>
+              )}
+            </Button>
+          )}
 
           <p className="text-xs text-center text-slate-400">
             By continuing, you agree to our{' '}
-            <a href="/terms" className="text-amber-400 hover:text-amber-300 underline">
+            <Link href="/terms" className="text-amber-400 hover:text-amber-300 underline">
               Terms of Service
-            </a>{' '}
+            </Link>{' '}
             and{' '}
-            <a href="/privacy" className="text-amber-400 hover:text-amber-300 underline">
+            <Link href="/privacy" className="text-amber-400 hover:text-amber-300 underline">
               Privacy Policy
-            </a>
+            </Link>
           </p>
         </CardContent>
       </Card>

@@ -110,6 +110,23 @@ const MysticalProfileContext = createContext<MysticalProfileContextValue | null>
 const profileCache = new Map<string, { data: ComprehensiveMysticalProfile; timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
+const COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS = 15_000
+
+async function firestoreReadWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('COMPREHENSIVE_PROFILE_READ_TIMEOUT')), ms)
+    promise
+      .then((v) => {
+        clearTimeout(t)
+        resolve(v)
+      })
+      .catch((e) => {
+        clearTimeout(t)
+        reject(e)
+      })
+  })
+}
+
 export function clearComprehensiveMysticalProfileCache(userId: string): void {
   profileCache.delete(userId)
 }
@@ -181,16 +198,25 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       const profileRef = doc(db, 'comprehensiveMysticalProfiles', userId)
       let profileSnap
       if (useCache) {
-        profileSnap = await getDoc(profileRef)
+        profileSnap = await firestoreReadWithTimeout(
+          getDoc(profileRef),
+          COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS
+        )
       } else {
         try {
-          profileSnap = await getDocFromServer(profileRef)
+          profileSnap = await firestoreReadWithTimeout(
+            getDocFromServer(profileRef),
+            COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS
+          )
         } catch (serverErr) {
           // Server read failed (e.g. offline or doc only in cache); use cache so report still shows
           if (process.env.NODE_ENV === 'development') {
             console.warn('⚠️ Server read failed, using cache:', serverErr)
           }
-          profileSnap = await getDoc(profileRef)
+          profileSnap = await firestoreReadWithTimeout(
+            getDoc(profileRef),
+            COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS
+          )
         }
       }
 
@@ -236,11 +262,19 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load profile'
+      const isReadTimeout = errorMessage === 'COMPREHENSIVE_PROFILE_READ_TIMEOUT'
       const isBenignFirestoreError =
         errorMessage.includes('Target ID already exists') ||
         errorMessage.includes('Failed to get document from server')
+      if (isReadTimeout && process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Comprehensive profile Firestore read exceeded timeout; trying cache/listener')
+      }
       if (isBenignFirestoreError && process.env.NODE_ENV === 'development') {
         console.warn('⚠️ Profile fetch hit known Firestore quirk, will use cache/listener:', errorMessage)
+      } else if (isReadTimeout) {
+        setError(
+          'Your mystical profile is taking longer than usual to load. Check your connection; saved readings may appear shortly.'
+        )
       } else {
         setError(errorMessage)
         if (process.env.NODE_ENV === 'development') {
@@ -258,7 +292,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
           for (const delay of delays) {
             if (delay > 0) await new Promise((r) => setTimeout(r, delay))
             try {
-              cacheSnap = await getDoc(profileRef)
+              cacheSnap = await firestoreReadWithTimeout(getDoc(profileRef), 8_000)
               break
             } catch (e) {
               if (delay === delays[delays.length - 1]) throw e

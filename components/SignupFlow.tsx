@@ -72,10 +72,15 @@ export function SignupFlow({
 
   const handlePaymentMethodCaptured = (methodId: string, subId?: string) => {
     setPaymentMethodId(methodId);
-    if (subId) {
+    if (methodId === 'none') {
+      setSubscriptionId('');
+    } else if (subId) {
       setSubscriptionId(subId);
     }
-    analytics.trackTrialStart('signup_flow', selectedPlan, { variant });
+    analytics.trackTrialStart('signup_flow', selectedPlan, {
+      variant,
+      ...(methodId === 'none' ? { deferredPayment: true } : {}),
+    });
     // Auto-advance to next step
     setTimeout(() => {
       const agreementIndex = steps.indexOf('agreement');
@@ -137,8 +142,8 @@ export function SignupFlow({
         onComplete({
           selectedPlan,
           paymentMethodId,
-          autoMandateAccepted,
-          subscriptionId,
+          autoMandateAccepted: paymentMethodId === 'none' ? false : autoMandateAccepted,
+          subscriptionId: paymentMethodId === 'none' ? undefined : subscriptionId,
         }),
       );
     } catch {
@@ -269,12 +274,15 @@ export function SignupFlow({
               onPaymentMethodCaptured={handlePaymentMethodCaptured}
               onError={onError}
               isSpecialUser={isSpecialUser}
+              allowDeferredPayment
             />
           )}
 
           {currentStepKey === 'agreement' && (
             <AutoMandateAgreement
+              key={paymentMethodId === 'none' ? 'deferred' : 'verified'}
               selectedPlan={selectedPlan}
+              deferredPayment={paymentMethodId === 'none'}
               onAgreementAccepted={handleAgreementAccepted}
             />
           )}

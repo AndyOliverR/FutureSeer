@@ -614,6 +614,7 @@ export const signOutUser = async (): Promise<void> => {
       await signOutNative();
     }
     if (auth) await signOut(auth);
+    redirectResultPromise = null;
     // Only redirect after sign-out succeeds
     if (typeof window !== 'undefined') {
       document.cookie = 'fs_auth=; path=/; max-age=0; SameSite=Lax';
@@ -718,10 +719,23 @@ export const isReturningUser = (user: User): boolean => {
   return lst - ct > 60000;
 };
 
-export const getRedirectResult = async (): Promise<any> => {
+/**
+ * Single-flight redirect result: overlapping calls (e.g. React remount / duplicate init)
+ * must not run firebaseGetRedirectResult concurrently — it can trigger Auth internal
+ * "Pending promise was never set" assertions.
+ */
+let redirectResultPromise: Promise<UserCredential | null> | null = null;
+
+export const getRedirectResult = async (): Promise<UserCredential | null> => {
   const auth = getFirebaseAuth();
   if (!auth) return null;
-  return await firebaseGetRedirectResult(auth);
+  if (!redirectResultPromise) {
+    redirectResultPromise = firebaseGetRedirectResult(auth).catch((e: unknown) => {
+      devLog.debug('getRedirectResult: no result or error', e, 'firebase');
+      return null;
+    });
+  }
+  return redirectResultPromise;
 };
 
 // Enhanced Firestore connection management

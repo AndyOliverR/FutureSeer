@@ -10,11 +10,14 @@ import Link from 'next/link';
 
 interface AutoMandateAgreementProps {
   selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
+  /** User chose to skip card capture for now (e.g. signup "None for now") — copy must not imply an active payment mandate. */
+  deferredPayment?: boolean;
   onAgreementAccepted: (accepted: boolean) => void;
 }
 
 export function AutoMandateAgreement({
   selectedPlan,
+  deferredPayment = false,
   onAgreementAccepted,
 }: AutoMandateAgreementProps) {
   const [agreed, setAgreed] = useState(false);
@@ -45,9 +48,11 @@ export function AutoMandateAgreement({
             </CardTitle>
           </div>
           <CardDescription className="text-slate-300 font-serif">
-            {isTrial
-              ? 'Agree to support the innovation experiment after your free 30 days'
-              : 'Agree to support the innovation experiment with your contribution'}
+            {deferredPayment && isTrial
+              ? 'Confirm your free month and terms. You can add a payment method later from your profile before any billing starts.'
+              : isTrial
+                ? 'Agree to support the innovation experiment after your free 30 days'
+                : 'Agree to support the innovation experiment with your contribution'}
           </CardDescription>
         </CardHeader>
 
@@ -64,21 +69,33 @@ export function AutoMandateAgreement({
               htmlFor="auto-mandate-agreement"
               className="text-sm text-slate-200 cursor-pointer leading-relaxed"
             >
-              <span className="font-semibold text-amber-300">
-                I agree to support the FutureSeer innovation experiment
-              </span>
-              {isTrial ? (
+              {deferredPayment && isTrial ? (
                 <>
-                  {' '}
-                  after my free 30 days. I understand that my contribution will automatically continue
-                  to support the innovation, but I can cancel anytime with no questions asked.
+                  <span className="font-semibold text-amber-300">
+                    I agree to the FutureSeer terms and the innovation experiment
+                  </span>{' '}
+                  for my free 30 days. I understand no card is on file yet; I can add a payment method
+                  from my profile before any contribution billing, and I can cancel anytime.
                 </>
               ) : (
                 <>
-                  {' '}
-                  with my selected contribution tier. I understand that my contribution will
-                  automatically continue to support the innovation, but I can cancel anytime with no
-                  questions asked.
+                  <span className="font-semibold text-amber-300">
+                    I agree to support the FutureSeer innovation experiment
+                  </span>
+                  {isTrial ? (
+                    <>
+                      {' '}
+                      after my free 30 days. I understand that my contribution will automatically continue
+                      to support the innovation, but I can cancel anytime with no questions asked.
+                    </>
+                  ) : (
+                    <>
+                      {' '}
+                      with my selected contribution tier. I understand that my contribution will
+                      automatically continue to support the innovation, but I can cancel anytime with no
+                      questions asked.
+                    </>
+                  )}
                 </>
               )}
             </Label>
@@ -119,11 +136,21 @@ export function AutoMandateAgreement({
                 className="mt-3 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 space-y-2"
               >
                 <p>
-                  <strong className="text-slate-300">Auto-Mandate Agreement:</strong> By agreeing,
-                  you authorize FutureSeer to automatically charge your payment method for recurring
-                  contributions according to your selected plan. This authorization is required for
-                  regulatory compliance (RBI guidelines for recurring payments in India, similar
-                  regulations in other countries).
+                  <strong className="text-slate-300">Auto-Mandate Agreement:</strong>{' '}
+                  {deferredPayment && isTrial ? (
+                    <>
+                      When you add a payment method later, you may be asked to authorize recurring
+                      contributions per your plan and local rules (e.g. RBI-style mandates where applicable).
+                      Until then, no recurring charges are authorized.
+                    </>
+                  ) : (
+                    <>
+                      By agreeing, you authorize FutureSeer to automatically charge your payment method for recurring
+                      contributions according to your selected plan. This authorization is required for
+                      regulatory compliance (RBI guidelines for recurring payments in India, similar
+                      regulations in other countries).
+                    </>
+                  )}
                 </p>
                 <p>
                   <strong className="text-slate-300">Your Rights:</strong> You can cancel this
