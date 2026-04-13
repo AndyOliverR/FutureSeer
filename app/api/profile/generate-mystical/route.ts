@@ -103,23 +103,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Profile edit quota: reject if over limit (no-charge / admin emails bypass)
-    if (!isNoChargeSubscriptionEmail(email)) {
-      const limit = getEditLimit(selectedPlan);
-      const isPaid = isPaidPlan(selectedPlan);
-      const now = new Date();
-      let count = typeof userProfile.profileEditCount === 'number' ? userProfile.profileEditCount : 0;
-      const periodStart = typeof userProfile.profileEditPeriodStart === 'number' ? userProfile.profileEditPeriodStart : undefined;
-      if (shouldResetPeriod(periodStart, now, isPaid)) {
-        count = 0;
-      }
-      if (count > limit) {
-        return NextResponse.json(
-          { error: 'Profile update limit reached for this period. Upgrade your plan for more.' },
-          { status: 403 }
-        );
-      }
-    }
+    // Launch hotfix: do not block mystical profile generation by edit quota.
+    // We keep counting edits elsewhere so telemetry remains intact.
 
     // Build effective profile from Firestore + optional client overrides (before idempotency so we compare against what we would use)
     const ALLOWED_OVERRIDES = [

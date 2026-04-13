@@ -48,6 +48,7 @@ import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
 
 const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
 const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
+type ProfilePlanId = "power-user-trial" | "buy-coffee" | "treat-me" | "festive-hamper"
 
 function readUploadErrorFields(e: unknown): {
   status: number | null
@@ -234,6 +235,8 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
+  const [selectedPlanForProfile, setSelectedPlanForProfile] = useState<ProfilePlanId>("power-user-trial")
+  const [isSavingPaymentChoice, setIsSavingPaymentChoice] = useState(false)
   const [generationStatus, setGenerationStatus] = useState<string>("")
   const generationAbortRef = useRef<AbortController | null>(null)
   const draftRestoreAttemptedRef = useRef(false)
@@ -281,6 +284,25 @@ export default function ProfilePage() {
     birthTimeNote: "", birthPlace: "", currentLocation: "",
     facePhotoUrl: "", palmPhotoUrl: ""
   })
+
+  const trialDaysRemaining = useMemo(() => {
+    const endTs = userProfile?.trialEndDate
+    if (!endTs || typeof endTs !== "number") return null
+    const nowSec = Math.floor(Date.now() / 1000)
+    return Math.max(0, Math.ceil((endTs - nowSec) / (24 * 60 * 60)))
+  }, [userProfile?.trialEndDate])
+
+  const hasVerifiedPaymentMethod = useMemo(() => {
+    const pm = String(userProfile?.paymentMethodId || "").trim().toLowerCase()
+    return !!pm && pm !== "none" && pm !== "no-charge"
+  }, [userProfile?.paymentMethodId])
+
+  const showPaymentReminder = useMemo(() => {
+    if (!userProfile) return false
+    const status = String(userProfile.subscriptionStatus || "").toLowerCase()
+    const isTrialLike = !status || status === "trial"
+    return isTrialLike && !hasVerifiedPaymentMethod
+  }, [userProfile, hasVerifiedPaymentMethod])
 
   // Fetch edit quota on load so Generate button state is correct
   useEffect(() => {
@@ -365,6 +387,20 @@ export default function ProfilePage() {
       })
     }
   }, [userProfile, isEditing, user, isConsultantWorkspace])
+
+  useEffect(() => {
+    const selected = userProfile?.selectedPlan
+    if (
+      selected === "power-user-trial" ||
+      selected === "buy-coffee" ||
+      selected === "treat-me" ||
+      selected === "festive-hamper"
+    ) {
+      setSelectedPlanForProfile(selected)
+      return
+    }
+    setSelectedPlanForProfile("power-user-trial")
+  }, [userProfile?.selectedPlan])
 
   useEffect(() => {
     if (isConsultantWorkspace) return
@@ -480,6 +516,81 @@ export default function ProfilePage() {
         </AlertDialogContent>
       </AlertDialog>
     ) : null
+
+  const saveDeferredPaymentChoice = async () => {
+    if (!user?.uid) return
+    setIsSavingPaymentChoice(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      await updateUserProfile(user.uid, {
+        selectedPlan: selectedPlanForProfile,
+        paymentMethodId: "none",
+        subscriptionStatus: "trial",
+        autoMandateAccepted: false,
+      })
+      setSuccess("Saved: no payment method for now. You can add it anytime from this section.")
+      await refreshProfile()
+    } catch {
+      setError("Could not save your payment preference. Please try again.")
+    } finally {
+      setIsSavingPaymentChoice(false)
+    }
+  }
+
+  const handlePaymentMethodCapturedFromProfile = async (paymentMethodId: string, subscriptionId?: string) => {
+    if (!user?.uid) return
+    setIsSavingPaymentChoice(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      await updateUserProfile(user.uid, {
+        selectedPlan: selectedPlanForProfile,
+        paymentMethodId,
+        subscriptionId,
+        subscriptionStatus: "trial",
+        autoMandateAccepted: true,
+      })
+      setShowUpdatePaymentModal(false)
+      setSuccess("Payment method verified. Your free month continues, and billing starts only after trial.")
+      await refreshProfile()
+    } catch {
+      setError("Payment method was captured but profile update failed. Please try again.")
+    } finally {
+      setIsSavingPaymentChoice(false)
+    }
+  }
+
+  const paymentSetupDialog = user ? (
+    <AlertDialog open={showUpdatePaymentModal} onOpenChange={setShowUpdatePaymentModal}>
+      <AlertDialogContent className="max-w-xl border-amber-500/40 bg-slate-950 text-amber-50 sm:rounded-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-white">Verify payment method</AlertDialogTitle>
+          <AlertDialogDescription className="text-amber-200/90">
+            Optional for now during your free month. You can also close this and choose none for now.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <PaymentMethodCapture
+          selectedPlan={selectedPlanForProfile}
+          userEmail={user.email || userProfile?.email || ""}
+          userName={formData.displayName || user.displayName || "FutureSeer User"}
+          userCountry={userProfile?.country || "IN"}
+          onPaymentMethodCaptured={handlePaymentMethodCapturedFromProfile}
+          onError={(message) => setError(message)}
+          isSpecialUser={isSuperadmin || isAdmin}
+        />
+        <AlertDialogFooter>
+          <AlertDialogCancel
+            type="button"
+            className="border-amber-400/50 text-amber-100 hover:bg-amber-900/30"
+            disabled={isSavingPaymentChoice}
+          >
+            Close
+          </AlertDialogCancel>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  ) : null
 
   const validateProfileData = (): string | null => {
     if (formData.birthDate) {
@@ -778,6 +889,7 @@ export default function ProfilePage() {
     return (
     <>
       {consultantClearWorkspaceDialog}
+      {paymentSetupDialog}
     <div data-onboarding="profile" className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
       <div className="flex items-center justify-between h-16 mb-6">
         <Link href="/tools" className="p-2 text-amber-400 active:scale-90 transition-transform"><ArrowLeft className="w-6 h-6" /></Link>
@@ -820,8 +932,64 @@ export default function ProfilePage() {
             <h2 className="font-bold text-white uppercase text-sm tracking-widest">Plan & Referral</h2>
           </div>
           {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
+          <div className="mt-4 border-t border-outline-variant pt-4 space-y-3">
+            <p className="text-xs text-surface-on-variant">
+              Choose your payment path now: verify your payment method or pick none for now (free month still active).
+            </p>
+            <select
+              value={selectedPlanForProfile}
+              onChange={(e) => setSelectedPlanForProfile(e.target.value as ProfilePlanId)}
+              className="h-11 w-full rounded-xl bg-surface-container-low border border-outline-variant px-3 text-white"
+            >
+              <option value="power-user-trial">Power User Trial</option>
+              <option value="buy-coffee">Coffee (Monthly)</option>
+              <option value="treat-me">Treat (Quarterly)</option>
+              <option value="festive-hamper">Hamper (Annual)</option>
+            </select>
+            <div className="grid grid-cols-1 gap-2">
+              <Button
+                type="button"
+                onClick={() => setShowUpdatePaymentModal(true)}
+                disabled={isSavingPaymentChoice}
+                className="w-full bg-amber-500 text-slate-900 font-semibold"
+              >
+                Verify payment now
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={saveDeferredPaymentChoice}
+                disabled={isSavingPaymentChoice}
+                className="w-full"
+              >
+                None for now (1 month free)
+              </Button>
+            </div>
+          </div>
           {user && <div className="mt-4 border-t border-outline-variant pt-4"><ReferralCodeCard userId={user.uid} /></div>}
         </div>
+
+        {showPaymentReminder && (
+          <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
+            <AlertDescription className="text-amber-100 text-sm space-y-2">
+              <p className="font-semibold text-amber-200">Your free month is active.</p>
+              <p>
+                {trialDaysRemaining != null
+                  ? trialDaysRemaining <= 5
+                    ? `You have ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left. Add a payment method now so your access continues smoothly after trial.`
+                    : `You have ${trialDaysRemaining} days left. You can keep using FutureSeer now and add your payment method anytime before trial ends.`
+                  : "You can keep using FutureSeer now and add your payment method anytime before trial ends."}
+              </p>
+              <Button
+                type="button"
+                onClick={() => setShowUpdatePaymentModal(true)}
+                className="w-full bg-amber-500 text-slate-900 font-semibold"
+              >
+                Verify payment method
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {user?.uid && (
           <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg space-y-3">
@@ -1163,6 +1331,7 @@ export default function ProfilePage() {
   return (
     <>
       {consultantClearWorkspaceDialog}
+      {paymentSetupDialog}
     <div data-onboarding="profile" className="min-h-screen starfield-ultra-sharp flex flex-col pb-16 px-4 md:px-8 overflow-x-hidden">
       <div className="max-w-2xl mx-auto w-full py-8">
         <div className="flex items-center justify-between h-14 mb-8">
@@ -1206,8 +1375,64 @@ export default function ProfilePage() {
               <h2 className="font-bold text-amber-400 uppercase text-sm tracking-widest">Plan & Referral</h2>
             </div>
             {userProfile && <SubscriptionStatus userProfile={userProfile} onCancel={() => refreshProfile()} onUpdatePaymentClick={() => setShowUpdatePaymentModal(true)} />}
+            <div className="mt-4 border-t border-amber-400/20 pt-4 space-y-3">
+              <p className="text-xs text-amber-200/80">
+                Choose your payment path now: verify your payment method or select none for now (free month still active).
+              </p>
+              <select
+                value={selectedPlanForProfile}
+                onChange={(e) => setSelectedPlanForProfile(e.target.value as ProfilePlanId)}
+                className="h-11 w-full rounded-xl bg-white/5 border border-amber-400/30 px-3 text-white"
+              >
+                <option value="power-user-trial">Power User Trial</option>
+                <option value="buy-coffee">Coffee (Monthly)</option>
+                <option value="treat-me">Treat (Quarterly)</option>
+                <option value="festive-hamper">Hamper (Annual)</option>
+              </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  onClick={() => setShowUpdatePaymentModal(true)}
+                  disabled={isSavingPaymentChoice}
+                  className="bg-amber-500 hover:bg-amber-400 text-[#020617] font-semibold"
+                >
+                  Verify payment now
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={saveDeferredPaymentChoice}
+                  disabled={isSavingPaymentChoice}
+                  className="border-amber-400/30 text-white"
+                >
+                  None for now (1 month free)
+                </Button>
+              </div>
+            </div>
             {user && <div className="mt-4 border-t border-amber-400/20 pt-4"><ReferralCodeCard userId={user.uid} /></div>}
           </motion.div>
+
+          {showPaymentReminder && (
+            <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
+              <AlertDescription className="text-amber-100 space-y-2">
+                <p className="font-semibold text-amber-200">Your free month is active.</p>
+                <p>
+                  {trialDaysRemaining != null
+                    ? trialDaysRemaining <= 5
+                      ? `You have ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left. Add a payment method now so your access continues smoothly after trial.`
+                      : `You have ${trialDaysRemaining} days left. You can keep using FutureSeer now and add your payment method anytime before trial ends.`
+                    : "You can keep using FutureSeer now and add your payment method anytime before trial ends."}
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => setShowUpdatePaymentModal(true)}
+                  className="bg-amber-500 hover:bg-amber-400 text-[#020617] font-semibold"
+                >
+                  Verify payment method
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {user?.uid && (
             <motion.div
