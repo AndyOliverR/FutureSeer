@@ -70,6 +70,23 @@ function addResponseUsage(
   if (typeof t === 'number') aggregate.totalTokens += t;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+    promise
+      .then((value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timeout);
+        reject(err);
+      });
+  });
+}
+
 /** List of all tools to run at profile generation time. No lazy loading. Exported so API can check for missing reports. */
 export const ALL_TOOL_SLUGS = [
   'vedic',
@@ -1077,7 +1094,7 @@ export async function runProfileGeneration(
   };
 
   // 1. Run Vedic first (required for interpretations)
-  const vedicEntry = await runTool('vedic', userId, profile, baseUrl);
+  const vedicEntry = await withTimeout(runTool('vedic', userId, profile, baseUrl), 90_000, 'vedic');
   toolReports.vedic = vedicEntry;
   if (vedicEntry.status === 'failed') {
     failedTools.push('vedic');
@@ -1214,7 +1231,7 @@ export async function runProfileGeneration(
   const otherTools = ALL_TOOL_SLUGS.filter((t) => t !== 'vedic');
   const results = await Promise.allSettled(
     otherTools.map(async (slug) => {
-      const entry = await runTool(slug, userId, profile, baseUrl);
+      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
       toolReports[slug] = entry;
       if (entry.status === 'failed') failedTools.push(slug);
       return entry;

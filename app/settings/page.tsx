@@ -629,6 +629,31 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* Payment Management */}
+        <Card className={cardClass}>
+          <CardHeader>
+            <CardTitle className={sectionTitleClass}>
+              <Badge className="bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs">Billing</Badge>
+              Plan & Payment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <p className={cn("text-sm", sublabelClass)}>
+                You started with a free trial. Before it ends, choose your plan and update payment details to keep access uninterrupted.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button asChild className={btnPrimaryClass}>
+                  <Link href="/subscribe">Choose plan</Link>
+                </Button>
+                <Button asChild variant="outline" className={btnOutlineClass}>
+                  <Link href="/subscribe">Add or update payment method</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Account Management */}
         <Card className={cardClass}>
           <CardHeader>

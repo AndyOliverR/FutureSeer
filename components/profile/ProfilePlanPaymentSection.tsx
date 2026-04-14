@@ -25,6 +25,7 @@ export type ProfilePlanPaymentSectionProps = {
   onSubscriptionRefresh: () => void
   /** When referral is shown separately, use a clearer card title. */
   cardTitle?: string
+  referralTargetCount?: number
 }
 
 export function ProfilePlanPaymentSection({
@@ -40,6 +41,7 @@ export function ProfilePlanPaymentSection({
   showReferralInline,
   onSubscriptionRefresh,
   cardTitle = "Plan & Referral",
+  referralTargetCount,
 }: ProfilePlanPaymentSectionProps) {
   const isM3 = variant === "m3"
 
@@ -153,7 +155,7 @@ export function ProfilePlanPaymentSection({
       </section>
       {showReferralInline && user ? (
         <div className={`mt-4 pt-4 ${borderDivider}`}>
-          <ReferralCodeCard userId={user.uid} />
+          <ReferralCodeCard userId={user.uid} targetCount={referralTargetCount} />
         </div>
       ) : null}
     </>

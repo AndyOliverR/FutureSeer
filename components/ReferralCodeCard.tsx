@@ -12,9 +12,10 @@ import { safeCopyToClipboard } from '@/lib/safeClipboard';
 
 interface ReferralCodeCardProps {
   userId: string;
+  targetCount?: number;
 }
 
-export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
+export function ReferralCodeCard({ userId, targetCount }: ReferralCodeCardProps) {
   const { toast } = useToast();
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -229,6 +230,14 @@ export function ReferralCodeCard({ userId }: ReferralCodeCardProps) {
             <div className="m3-body-small text-white/80">Free Months Left</div>
           </div>
         </div>
+
+        {typeof targetCount === 'number' && targetCount > 0 ? (
+          <div className="mb-6 rounded-lg border border-amber-500/30 bg-slate-900/40 p-3">
+            <p className="text-xs text-amber-200">
+              Progress for onboarding requirement: <span className="font-semibold">{Math.min(referralStats.referralCount, targetCount)}/{targetCount}</span> friends shared.
+            </p>
+          </div>
+        ) : null}
 
         {/* Share Buttons */}
         <div className="space-y-2">

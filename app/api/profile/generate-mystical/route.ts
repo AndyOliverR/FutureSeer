@@ -21,11 +21,6 @@ import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import { calculateProfileDataHash } from '@/lib/firebase';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { devLog } from '@/lib/devLogger';
-import {
-  getEditLimit,
-  shouldResetPeriod,
-  isPaidPlan,
-} from '@/lib/profileEditQuota';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
@@ -94,14 +89,9 @@ export async function POST(request: NextRequest) {
     }
 
     const email = (userProfile.email ?? userProfile.Email) as string | undefined;
-    const selectedPlan = (userProfile.selectedPlan ?? userProfile.selected_plan) as string | undefined;
-    const hasPlan = selectedPlan && typeof selectedPlan === 'string' && selectedPlan.trim().length > 0;
-    if (!isNoChargeSubscriptionEmail(email) && !hasPlan) {
-      return NextResponse.json(
-        { error: 'Please select a plan to generate your mystical profile.' },
-        { status: 403 }
-      );
-    }
+    // Onboarding is intentionally low-friction: generation should not be blocked by payment/plan choice.
+    // Keep this read so existing no-charge account logic remains compatible for downstream analytics/meta.
+    void isNoChargeSubscriptionEmail(email);
 
     // Launch hotfix: do not block mystical profile generation by edit quota.
     // We keep counting edits elsewhere so telemetry remains intact.
@@ -181,6 +171,7 @@ export async function POST(request: NextRequest) {
         {
           success: true,
           inProgress: true,
+          generationState: 'in_progress',
           message: 'Profile generation is already running for this request.',
         },
         { status: 202 }
@@ -188,7 +179,7 @@ export async function POST(request: NextRequest) {
     }
     if (lockResult === 'concurrent') {
       return NextResponse.json(
-        { error: 'Profile generation is already in progress. Please wait for it to complete.' },
+        { error: 'Profile generation is already in progress. Please wait for it to complete.', generationState: 'in_progress' },
         { status: 409 }
       );
     }
@@ -377,6 +368,38 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to generate mystical profile' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    if (!idToken) {
+      return NextResponse.json({ error: 'Missing Authorization Bearer token' }, { status: 401 });
+    }
+    const decoded = await getAuth().verifyIdToken(idToken);
+    const uid = decoded.uid;
+    const [userDoc, lockDoc, profileDoc] = await Promise.all([
+      getDocument('users', uid),
+      getDocument('generationLocks', uid),
+      getDocument('comprehensiveMysticalProfiles', uid),
+    ]);
+    const generated = Boolean((userDoc as Record<string, unknown> | null)?.mysticalProfileGenerated);
+    const lockStatus = (lockDoc as Record<string, unknown> | null)?.status;
+    const inProgress = lockStatus === 'running' || lockStatus === 'started';
+    return NextResponse.json({
+      success: true,
+      inProgress,
+      generated,
+      hasProfile: Boolean(profileDoc),
+      lockStatus: lockStatus ?? null,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to check generation status' },
       { status: 500 }
     );
   }
