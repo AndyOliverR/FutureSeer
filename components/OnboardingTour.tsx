@@ -8,23 +8,25 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 import { onboardingSteps } from '@/lib/onboardingSteps';
 import { ModalPortal } from '@/components/ui/ModalPortal';
 import { analytics } from '@/lib/analytics';
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
 
 export function OnboardingTour() {
-  const { isTourActive, shouldShowTour, startTour, markCompleted, markSkipped } = useOnboarding();
+  const { isTourActive, shouldAutoShowTour, startTour, markCompleted, markSkipped } = useOnboarding();
+  const isMobileLayout = useIsMobileLayout();
   const [currentStep, setCurrentStep] = useState(0);
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Auto-start tour for new users
   useEffect(() => {
-    if (shouldShowTour && !isTourActive) {
+    if (shouldAutoShowTour && !isMobileLayout && !isTourActive) {
       // Small delay to ensure page is fully loaded
       const timer = setTimeout(() => {
         startTour();
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [shouldShowTour, isTourActive, startTour]);
+  }, [shouldAutoShowTour, isMobileLayout, isTourActive, startTour]);
 
   useEffect(() => {
     if (!isTourActive) return;
