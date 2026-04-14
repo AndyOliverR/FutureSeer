@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +25,6 @@ import { updateUserProfile, type UserProfile } from "@/lib/firebase"
 import { normalizeBirthTime } from "@/lib/birthTimeUtils"
 import { getOverQuotaMessage } from "@/lib/profileEditQuota"
 import { clearComprehensiveMysticalProfileCache, clearPersistentProfileCache, useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
-import { PaymentMethodCapture } from "@/components/PaymentMethodCapture"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import { SEQ_PROMPT_AFTER_PROFILE_GEN } from "@/lib/metricsSession"
 import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
@@ -39,7 +39,6 @@ import { isGrowthProfileDraftEnabled } from "@/lib/growthFlags"
 import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/profileDraftStorage"
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
-import { ProfilePlanPaymentSection, type ProfilePlanId } from "@/components/profile/ProfilePlanPaymentSection"
 
 const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
 const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
@@ -226,9 +225,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false)
-  const [selectedPlanForProfile, setSelectedPlanForProfile] = useState<ProfilePlanId>("power-user-trial")
-  const [isSavingPaymentChoice, setIsSavingPaymentChoice] = useState(false)
+  const [acceptedFreeTrialTerms, setAcceptedFreeTrialTerms] = useState(false)
   const [generationStatus, setGenerationStatus] = useState<string>("")
   const generationAbortRef = useRef<AbortController | null>(null)
   const isMountedRef = useRef(true)
@@ -284,37 +281,7 @@ export default function ProfilePage() {
     facePhotoUrl: "", palmPhotoUrl: ""
   })
 
-  const trialDaysRemaining = useMemo(() => {
-    const endTs = userProfile?.trialEndDate
-    if (!endTs || typeof endTs !== "number") return null
-    const nowSec = Math.floor(Date.now() / 1000)
-    return Math.max(0, Math.ceil((endTs - nowSec) / (24 * 60 * 60)))
-  }, [userProfile?.trialEndDate])
-
-  const hasVerifiedPaymentMethod = useMemo(() => {
-    const pm = String(userProfile?.paymentMethodId || "").trim().toLowerCase()
-    return !!pm && pm !== "none" && pm !== "no-charge"
-  }, [userProfile?.paymentMethodId])
-
-  const showPaymentReminder = useMemo(() => {
-    if (!userProfile) return false
-    const status = String(userProfile.subscriptionStatus || "").toLowerCase()
-    const isTrialLike = !status || status === "trial"
-    return isTrialLike && !hasVerifiedPaymentMethod
-  }, [userProfile, hasVerifiedPaymentMethod])
-
-  const deferTrialPrimaryCta = useMemo(
-    () => showPaymentReminder || !hasVerifiedPaymentMethod,
-    [showPaymentReminder, hasVerifiedPaymentMethod]
-  )
-
-  const referralGoal = 5
-  const referralCount = Number(userProfile?.referralCount ?? 0)
-  const requiresReferralBeforeGenerate =
-    selectedPlanForProfile === "power-user-trial" && !hasVerifiedPaymentMethod
-  const hasReferralGateMet = referralCount >= referralGoal
-  const canGenerateFromOnboarding =
-    canGenerateMysticalProfile && (!requiresReferralBeforeGenerate || hasReferralGateMet)
+  const canGenerateFromOnboarding = canGenerateMysticalProfile && acceptedFreeTrialTerms
 
   // Fetch edit quota on load so Generate button state is correct
   useEffect(() => {
@@ -401,18 +368,8 @@ export default function ProfilePage() {
   }, [userProfile, isEditing, user, isConsultantWorkspace])
 
   useEffect(() => {
-    const selected = userProfile?.selectedPlan
-    if (
-      selected === "power-user-trial" ||
-      selected === "buy-coffee" ||
-      selected === "treat-me" ||
-      selected === "festive-hamper"
-    ) {
-      setSelectedPlanForProfile(selected)
-      return
-    }
-    setSelectedPlanForProfile("power-user-trial")
-  }, [userProfile?.selectedPlan])
+    setAcceptedFreeTrialTerms(Boolean(userProfile?.freeTrialTermsAccepted))
+  }, [userProfile?.freeTrialTermsAccepted])
 
   useEffect(() => {
     if (isConsultantWorkspace) return
@@ -529,82 +486,6 @@ export default function ProfilePage() {
       </AlertDialog>
     ) : null
 
-  const saveDeferredPaymentChoice = async () => {
-    if (!user?.uid) return
-    setIsSavingPaymentChoice(true)
-    setError(null)
-    setSuccess(null)
-    try {
-      await updateUserProfile(user.uid, {
-        selectedPlan: selectedPlanForProfile,
-        paymentMethodId: "none",
-        subscriptionStatus: "trial",
-        autoMandateAccepted: false,
-      })
-      setSuccess(
-        "Saved: you are on a free trial without a card on file. Add a payment method here before your trial ends if you want uninterrupted access."
-      )
-      await refreshProfile()
-    } catch {
-      setError("Could not save your payment preference. Please try again.")
-    } finally {
-      setIsSavingPaymentChoice(false)
-    }
-  }
-
-  const handlePaymentMethodCapturedFromProfile = async (paymentMethodId: string, subscriptionId?: string) => {
-    if (!user?.uid) return
-    setIsSavingPaymentChoice(true)
-    setError(null)
-    setSuccess(null)
-    try {
-      await updateUserProfile(user.uid, {
-        selectedPlan: selectedPlanForProfile,
-        paymentMethodId,
-        subscriptionId,
-        subscriptionStatus: "trial",
-        autoMandateAccepted: true,
-      })
-      setShowUpdatePaymentModal(false)
-      setSuccess("Payment method verified. Your free month continues, and billing starts only after trial.")
-      await refreshProfile()
-    } catch {
-      setError("Payment method was captured but profile update failed. Please try again.")
-    } finally {
-      setIsSavingPaymentChoice(false)
-    }
-  }
-
-  const paymentSetupDialog = user ? (
-    <AlertDialog open={showUpdatePaymentModal} onOpenChange={setShowUpdatePaymentModal}>
-      <AlertDialogContent className="max-w-xl border-amber-500/40 bg-slate-950 text-amber-50 sm:rounded-2xl">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-white">Verify payment method</AlertDialogTitle>
-          <AlertDialogDescription className="text-amber-200/90">
-            Optional for now during your free month. You can also close this and start with a free trial without a card.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <PaymentMethodCapture
-          selectedPlan={selectedPlanForProfile}
-          userEmail={user.email || userProfile?.email || ""}
-          userName={formData.displayName || user.displayName || "FutureSeer User"}
-          userCountry={userProfile?.country || "IN"}
-          onPaymentMethodCaptured={handlePaymentMethodCapturedFromProfile}
-          onError={(message) => setError(message)}
-          isSpecialUser={isSuperadmin || isAdmin}
-        />
-        <AlertDialogFooter>
-          <AlertDialogCancel
-            type="button"
-            className="border-amber-400/50 text-amber-100 hover:bg-amber-900/30"
-            disabled={isSavingPaymentChoice}
-          >
-            Close
-          </AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  ) : null
 
   const validateProfileData = (): string | null => {
     if (formData.birthDate) {
@@ -664,9 +545,7 @@ export default function ProfilePage() {
   const handleGenerateMysticalProfile = async (surface: string) => {
     if (isGeneratingProfile) return
     if (!canGenerateFromOnboarding) {
-      if (requiresReferralBeforeGenerate && !hasReferralGateMet) {
-        setError(`Share your referral with at least ${referralGoal} friends before generating your profile on free trial with add-card-later.`)
-      }
+      setError("Please accept the free trial terms before generating your mystical profile.")
       return
     }
     if (user?.uid) {
@@ -689,6 +568,14 @@ export default function ProfilePage() {
       analytics.trackProfileGenerationStarted({ surface })
       const t = await user?.getIdToken()
       if (!t) throw new Error("Please sign in again to continue.")
+      if (user?.uid) {
+        await updateUserProfile(user.uid, {
+          selectedPlan: "power-user-trial",
+          subscriptionStatus: "trial",
+          freeTrialTermsAccepted: true,
+          freeTrialTermsAcceptedAt: Date.now(),
+        })
+      }
       // Move users immediately to Mystical Profile; progress is shown there.
       router.push("/mystical-profile?generating=1")
       setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
@@ -818,7 +705,11 @@ export default function ProfilePage() {
         birthPlace: formData.birthPlace,
         currentLocation: formData.currentLocation,
         facePhotoUrl: formData.facePhotoUrl,
-        palmPhotoUrl: formData.palmPhotoUrl
+        palmPhotoUrl: formData.palmPhotoUrl,
+        selectedPlan: "power-user-trial",
+        subscriptionStatus: "trial",
+        freeTrialTermsAccepted: acceptedFreeTrialTerms,
+        freeTrialTermsAcceptedAt: acceptedFreeTrialTerms ? Date.now() : userProfile?.freeTrialTermsAcceptedAt
       }
 
       await updateUserProfile(user.uid, updatePayload)
@@ -1011,7 +902,6 @@ export default function ProfilePage() {
     return (
     <>
       {consultantClearWorkspaceDialog}
-      {paymentSetupDialog}
     <div data-onboarding="profile" className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 px-4 overflow-x-hidden">
       <div className="flex items-center justify-between h-16 mb-6">
         <Link href="/tools" className="p-2 text-amber-400 active:scale-90 transition-transform"><ArrowLeft className="w-6 h-6" /></Link>
@@ -1050,42 +940,12 @@ export default function ProfilePage() {
         )}
         {(
           <>
-            <ProfilePlanPaymentSection
-              variant="m3"
-              userProfile={userProfile}
-              user={user}
-              selectedPlanForProfile={selectedPlanForProfile}
-              onPlanChange={setSelectedPlanForProfile}
-              onVerifyPayment={() => setShowUpdatePaymentModal(true)}
-              onDeferredTrial={() => void saveDeferredPaymentChoice()}
-              isSavingPaymentChoice={isSavingPaymentChoice}
-              deferTrialPrimaryCta={deferTrialPrimaryCta}
-              showReferralInline
-              referralTargetCount={requiresReferralBeforeGenerate ? referralGoal : undefined}
-              onSubscriptionRefresh={() => refreshProfile()}
-            />
-
-        {showPaymentReminder && (
-          <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
-            <AlertDescription className="text-amber-100 text-sm space-y-2">
-              <p className="font-semibold text-amber-200">Your free month is active.</p>
-              <p>
-                {trialDaysRemaining != null
-                  ? trialDaysRemaining <= 5
-                    ? `You have ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left. Add a payment method now so your access continues smoothly after trial.`
-                    : `You have ${trialDaysRemaining} days left. You can keep using FutureSeer now and add your payment method anytime before trial ends.`
-                  : "You can keep using FutureSeer now and add your payment method anytime before trial ends."}
-              </p>
-              <Button
-                type="button"
-                onClick={() => setShowUpdatePaymentModal(true)}
-                className="w-full bg-amber-500 text-slate-900 font-semibold"
-              >
-                Verify payment method
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+        <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
+          <AlertDescription className="text-amber-100 text-sm space-y-2">
+            <p className="font-semibold text-amber-200">Free trial: 1 month</p>
+            <p>No payment setup required now. You can update plan and payment later from Settings.</p>
+          </AlertDescription>
+        </Alert>
 
         {user?.uid && (
           <div className="bg-surface-container-high rounded-3xl p-5 border border-outline-variant shadow-lg space-y-3">
@@ -1293,6 +1153,16 @@ export default function ProfilePage() {
 
             {!isEditing && (
               <div id="profile-generate-mystical" className="pt-6 border-t border-outline-variant/30 scroll-mt-24">
+                <label className="mb-3 flex items-start gap-3 text-sm text-white/85">
+                  <Checkbox
+                    checked={acceptedFreeTrialTerms}
+                    onCheckedChange={(checked) => setAcceptedFreeTrialTerms(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    I agree to start the 1-month free trial now and update payment details in Settings before the trial ends.
+                  </span>
+                </label>
                 <Button
                   onClick={() => void handleGenerateMysticalProfile("profile_primary")}
                   disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
@@ -1308,11 +1178,6 @@ export default function ProfilePage() {
                 )}
                 {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
-                )}
-                {formData.birthDate && formData.birthPlace && requiresReferralBeforeGenerate && !hasReferralGateMet && !isGeneratingProfile && (
-                  <p className="text-center text-amber-300/80 text-xs mt-2">
-                    Share with {referralGoal} friends to unlock generate on free trial without payment.
-                  </p>
                 )}
                 {formData.birthDate && formData.birthPlace && canGenerateFromOnboarding && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/50 text-xs mt-2">
@@ -1377,7 +1242,6 @@ export default function ProfilePage() {
   return (
     <>
       {consultantClearWorkspaceDialog}
-      {paymentSetupDialog}
     <div data-onboarding="profile" className="min-h-screen starfield-ultra-sharp flex flex-col pb-16 px-4 md:px-8 overflow-x-hidden">
       <div className="max-w-2xl mx-auto w-full py-8">
         <div className="flex items-center justify-between h-14 mb-8">
@@ -1417,42 +1281,12 @@ export default function ProfilePage() {
           )}
           {(
           <>
-            <ProfilePlanPaymentSection
-              variant="devotionist"
-              userProfile={userProfile}
-              user={user}
-              selectedPlanForProfile={selectedPlanForProfile}
-              onPlanChange={setSelectedPlanForProfile}
-              onVerifyPayment={() => setShowUpdatePaymentModal(true)}
-              onDeferredTrial={() => void saveDeferredPaymentChoice()}
-              isSavingPaymentChoice={isSavingPaymentChoice}
-              deferTrialPrimaryCta={deferTrialPrimaryCta}
-              showReferralInline
-              referralTargetCount={requiresReferralBeforeGenerate ? referralGoal : undefined}
-              onSubscriptionRefresh={() => refreshProfile()}
-            />
-
-          {showPaymentReminder && (
-            <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
-              <AlertDescription className="text-amber-100 space-y-2">
-                <p className="font-semibold text-amber-200">Your free month is active.</p>
-                <p>
-                  {trialDaysRemaining != null
-                    ? trialDaysRemaining <= 5
-                      ? `You have ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left. Add a payment method now so your access continues smoothly after trial.`
-                      : `You have ${trialDaysRemaining} days left. You can keep using FutureSeer now and add your payment method anytime before trial ends.`
-                    : "You can keep using FutureSeer now and add your payment method anytime before trial ends."}
-                </p>
-                <Button
-                  type="button"
-                  onClick={() => setShowUpdatePaymentModal(true)}
-                  className="bg-amber-500 hover:bg-amber-400 text-[#020617] font-semibold"
-                >
-                  Verify payment method
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
+          <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
+            <AlertDescription className="text-amber-100 space-y-2">
+              <p className="font-semibold text-amber-200">Free trial: 1 month</p>
+              <p>No payment setup required now. You can update plan and payment later from Settings.</p>
+            </AlertDescription>
+          </Alert>
 
           {user?.uid && (
             <motion.div
@@ -1686,6 +1520,16 @@ export default function ProfilePage() {
 
               {!isEditing && (
                 <div id="profile-generate-mystical" className="pt-6 border-t border-amber-400/20 scroll-mt-24">
+                  <label className="mb-3 flex items-start gap-3 text-sm text-amber-100/90">
+                    <Checkbox
+                      checked={acceptedFreeTrialTerms}
+                      onCheckedChange={(checked) => setAcceptedFreeTrialTerms(checked === true)}
+                      className="mt-0.5 border-amber-400/50"
+                    />
+                    <span>
+                      I agree to start the 1-month free trial now and update payment details in Settings before the trial ends.
+                    </span>
+                  </label>
                   <Button
                     onClick={() => void handleGenerateMysticalProfile("profile_secondary")}
                     disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
@@ -1701,11 +1545,6 @@ export default function ProfilePage() {
                   )}
                   {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
-                  )}
-                  {formData.birthDate && formData.birthPlace && requiresReferralBeforeGenerate && !hasReferralGateMet && !isGeneratingProfile && (
-                    <p className="text-center text-amber-200/80 text-xs mt-2">
-                      Share with {referralGoal} friends to unlock generate on free trial without payment.
-                    </p>
                   )}
                   {formData.birthDate && formData.birthPlace && canGenerateFromOnboarding && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/60 text-xs mt-2">
