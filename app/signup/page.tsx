@@ -365,8 +365,8 @@ function SignUpPageContent() {
           <div className="w-full bg-surface-container-high rounded-[32px] p-6 sm:p-8 border border-outline-variant shadow-2xl overflow-hidden glass-effect">
             {!showSignupFlow && (
               <>
-                <label className="flex items-start gap-3 cursor-pointer text-surface-on-variant text-sm mb-6">
-                  <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-0.5 border-outline-variant rounded" />
+                <label className="flex items-start gap-3 cursor-pointer text-surface-on-variant text-base leading-relaxed mb-6 rounded-2xl border border-outline-variant/40 bg-surface-container-low p-4">
+                  <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-1 h-5 w-5 border-outline-variant rounded" />
                   <span>
                     I confirm I am at least 16 years old and agree to the{" "}
                     <Link href="/terms" className="text-amber-400 underline">Terms</Link>
@@ -441,6 +441,9 @@ function SignUpPageContent() {
                 <Button type="submit" disabled={isLoading || !confirmAge16} size="xl" className="w-full bg-amber-500 text-slate-900 shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                   {isLoading ? <Loader2 className="animate-spin" /> : "Next Step"}
                 </Button>
+                {!confirmAge16 ? (
+                  <p className="text-center text-xs text-surface-on-variant/80">Required once to continue.</p>
+                ) : null}
               </form>
             )}
             <div className="mt-8 text-center pt-6 border-t border-outline-variant/30">
@@ -484,8 +487,8 @@ function SignUpPageContent() {
             </>
           ) : (
             <div className="space-y-6">
-              <label className="flex items-start gap-3 cursor-pointer text-white/90 text-sm font-light pb-2 border-b border-white/10">
-                <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-0.5 border-amber-500/40 rounded data-[state=checked]:bg-amber-500/20 shrink-0" />
+              <label className="flex items-start gap-3 cursor-pointer text-white/90 text-base font-light leading-relaxed rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-1 h-5 w-5 border-amber-500/40 rounded data-[state=checked]:bg-amber-500/20 shrink-0" />
                 <span>
                   I confirm I am at least 16 years old and agree to the{" "}
                   <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">Terms</Link>
@@ -528,6 +531,9 @@ function SignUpPageContent() {
               <Button type="submit" disabled={isLoading || !confirmAge16} size="2xl" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-xl shadow-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed">
                 {isLoading ? <Loader2 className="animate-spin" /> : "Begin Transformation"}
               </Button>
+              {!confirmAge16 ? (
+                <p className="text-center text-xs text-amber-200/80">Required once to continue.</p>
+              ) : null}
             </form>
             </div>
           )}

@@ -13,6 +13,7 @@ const mockGetDocument = jest.fn();
 const mockSetDocument = jest.fn();
 const mockBatchSetDocuments = jest.fn();
 const mockGenerateAllReports = jest.fn();
+const mockGenerateCoreReportsStageA = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
 
 jest.mock('firebase-admin/auth', () => ({
@@ -59,6 +60,8 @@ jest.mock('@/lib/firebase-admin', () => {
 
 jest.mock('@/lib/reportGenerationService', () => ({
   generateAllReports: (...args: unknown[]) => mockGenerateAllReports(...args),
+  generateCoreReportsStageA: (...args: unknown[]) => mockGenerateCoreReportsStageA(...args),
+  getCoreStageToolCount: () => 10,
 }));
 
 jest.mock('@/lib/universalDataAggregator', () => ({
@@ -86,6 +89,24 @@ describe('Profile generate-mystical API', () => {
     mockSetDocument.mockResolvedValue(undefined);
     mockBatchSetDocuments.mockResolvedValue(true);
     mockClearCachedDivinationData.mockReturnValue(undefined);
+    mockGenerateCoreReportsStageA.mockResolvedValue({
+      success: true,
+      systemsUsed: ['vedic', 'numerology'],
+      failedTools: [],
+      comprehensiveProfile: { vedic: {}, numerology: {} },
+      seerMaster: {},
+      toolReports: {},
+      aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    });
+    mockGenerateAllReports.mockResolvedValue({
+      success: true,
+      systemsUsed: ['vedic', 'numerology'],
+      failedTools: [],
+      comprehensiveProfile: { vedic: {}, numerology: {} },
+      seerMaster: {},
+      toolReports: {},
+      aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    });
   });
 
   async function callGenerate(token = 'fake-token'): Promise<Response> {
@@ -139,22 +160,13 @@ describe('Profile generate-mystical API', () => {
         if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
         return Promise.resolve(undefined);
       });
-      mockGenerateAllReports.mockResolvedValue({
-        success: true,
-        systemsUsed: ['vedic', 'numerology'],
-        failedTools: [],
-        comprehensiveProfile: { vedic: {}, numerology: {} },
-        seerMaster: {},
-        toolReports: {},
-      });
-
       const res = await callGenerate();
       const data = await res.json();
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
-      expect(mockGenerateAllReports).toHaveBeenCalledWith(uid, expect.objectContaining({ uid, birthDate: profile.birthDate, birthPlace: profile.birthPlace }));
+      expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(uid, expect.objectContaining({ uid, birthDate: profile.birthDate, birthPlace: profile.birthPlace }));
     });
   });
 
@@ -172,22 +184,13 @@ describe('Profile generate-mystical API', () => {
         if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
         return Promise.resolve(undefined);
       });
-      mockGenerateAllReports.mockResolvedValue({
-        success: true,
-        systemsUsed: ['vedic', 'numerology'],
-        failedTools: [],
-        comprehensiveProfile: {},
-        seerMaster: {},
-        toolReports: {},
-      });
-
       const res = await callGenerate();
       const data = await res.json();
 
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(202);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
-      expect(mockGenerateAllReports).toHaveBeenCalledWith(uid, expect.objectContaining({ birthDate: '1992-06-20' }));
+      expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(uid, expect.objectContaining({ birthDate: '1992-06-20' }));
     });
   });
 
