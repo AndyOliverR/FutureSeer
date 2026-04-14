@@ -14,14 +14,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { getDocument, setDocument, batchSetDocuments, isAdminAvailable, adminDb } from '@/lib/firebase-admin';
-import { generateAllReports } from '@/lib/reportGenerationService';
+import { generateAllReports, generateCoreReportsStageA, getCoreStageToolCount } from '@/lib/reportGenerationService';
 import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import { calculateProfileDataHash } from '@/lib/firebase';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { devLog } from '@/lib/devLogger';
-import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
+import {
+  canRunFullPipeline,
+  getMissingFullProfileFields,
+  isNoChargeSubscriptionEmail,
+  isTrialExpired,
+} from '@/lib/subscriptionConfig';
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
@@ -33,6 +38,19 @@ export const maxDuration = 120; // 2 minutes for all tools
 /** Grace past `maxDuration` before treating a lock as stale (failed/crashed run). */
 function mysticalLockStaleMs(): number {
   return maxDuration * 1000 + 90_000;
+}
+
+function cleanData(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return null;
+  if (typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map((item) => cleanData(item));
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (value !== undefined) {
+      cleaned[key] = cleanData(value);
+    }
+  }
+  return cleaned;
 }
 
 export async function POST(request: NextRequest) {
@@ -108,8 +126,10 @@ export async function POST(request: NextRequest) {
       birthDate: birthDate ?? userProfile.birthDate,
       birthPlace: birthPlace ?? userProfile.birthPlace,
     };
+    let requestBody: Record<string, unknown> = {};
     try {
       const body = await request.json().catch(() => ({}));
+      requestBody = (body && typeof body === 'object' ? body : {}) as Record<string, unknown>;
       const overrides = (body && typeof body === 'object' && (body as Record<string, unknown>).profileOverrides) as Record<string, unknown> | undefined;
       if (overrides && typeof overrides === 'object') {
         for (const key of ALLOWED_OVERRIDES) {
@@ -126,6 +146,39 @@ export async function POST(request: NextRequest) {
       }
     } catch {
       // No body or invalid JSON: proceed with Firestore profile only
+    }
+
+    const modeRaw = typeof requestBody.mode === 'string' ? requestBody.mode.trim().toLowerCase() : 'preview';
+    const generationMode: 'preview' | 'full' = modeRaw === 'full' ? 'full' : 'preview';
+    const missingFullFields = getMissingFullProfileFields(profileWithUid as Partial<UserProfile>);
+    if (generationMode === 'full') {
+      if (missingFullFields.length > 0) {
+        return NextResponse.json(
+          {
+            error: 'Please complete all required profile details for full report generation.',
+            blockReason: 'missing_fields',
+            missingFields: missingFullFields,
+            generationMode,
+          },
+          { status: 400 },
+        );
+      }
+      const trialExpired = isTrialExpired(profileWithUid as Partial<UserProfile>);
+      const canRunFull = canRunFullPipeline(profileWithUid as Partial<UserProfile>);
+      if (!canRunFull) {
+        return NextResponse.json(
+          {
+            error: trialExpired
+              ? 'Your trial has ended. Please choose a plan and add payment details to generate the full report.'
+              : 'To unlock the full report, add your plan and payment details.',
+            blockReason: trialExpired ? 'trial_expired' : 'payment_required',
+            missingFields: missingFullFields,
+            trialExpired,
+            generationMode,
+          },
+          { status: 403 },
+        );
+      }
     }
 
     // Idempotent guard: already generated with same effective data — do not re-run tools
@@ -172,6 +225,7 @@ export async function POST(request: NextRequest) {
           success: true,
           inProgress: true,
           generationState: 'in_progress',
+          generationMode,
           message: 'Profile generation is already running for this request.',
         },
         { status: 202 }
@@ -185,16 +239,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for selective retry of failed tools via query param
-    let retryOnly: string[] | null = null;
     const retryParam = request.nextUrl.searchParams.get('retryTools');
     if (retryParam) {
-      retryOnly = retryParam.split(',').map(s => s.trim()).filter(Boolean);
+      const retryOnly = retryParam.split(',').map(s => s.trim()).filter(Boolean);
       devLog.info(`[generate-mystical] Selective retry for tools: ${retryOnly.join(', ')}`, 'generate-mystical');
     }
 
-    const result = await generateAllReports(uid, profileWithUid as unknown as UserProfile);
+    await setDocument('generationLocks', uid, {
+      status: 'running',
+      phase: 'stageA',
+      totalTools: ALL_TOOL_SLUGS.length,
+      completedTools: 0,
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
 
-    if (result.aggregateUsage && adminDb) {
+    const stageAResult = await generateCoreReportsStageA(uid, profileWithUid as unknown as UserProfile);
+
+    if (stageAResult.aggregateUsage && adminDb) {
       const runId = Date.now().toString();
       try {
         await adminDb
@@ -203,18 +265,19 @@ export async function POST(request: NextRequest) {
           .collection('runs')
           .doc(runId)
           .set({
-            promptTokens: result.aggregateUsage.promptTokens,
-            completionTokens: result.aggregateUsage.completionTokens,
-            totalTokens: result.aggregateUsage.totalTokens,
+            promptTokens: stageAResult.aggregateUsage.promptTokens,
+            completionTokens: stageAResult.aggregateUsage.completionTokens,
+            totalTokens: stageAResult.aggregateUsage.totalTokens,
             generatedAt: new Date().toISOString(),
-            toolCount: result.systemsUsed?.length ?? 0,
+            toolCount: stageAResult.systemsUsed?.length ?? 0,
+            phase: 'stageA',
           });
       } catch (usageErr) {
         devLog.warn('[generate-mystical] Failed to store aggregate usage (non-blocking)', usageErr, 'generate-mystical');
       }
     }
 
-    if (!result.success && result.systemsUsed.length === 0) {
+    if (!stageAResult.success && stageAResult.systemsUsed.length === 0) {
       const errorMessage = 'Profile generation failed. Vedic chart could not be generated.';
       await logServerError({
         area: 'profile',
@@ -222,7 +285,7 @@ export async function POST(request: NextRequest) {
         message: errorMessage,
         userId: uid ?? null,
         route: '/api/profile/generate-mystical',
-        meta: { systemsUsed: result.systemsUsed?.length ?? 0, failedTools: result.failedTools ?? [] },
+        meta: { systemsUsed: stageAResult.systemsUsed?.length ?? 0, failedTools: stageAResult.failedTools ?? [] },
       }).catch(() => {});
       return NextResponse.json(
         { error: errorMessage },
@@ -235,20 +298,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    const cleanData = (obj: unknown): unknown => {
-      if (obj === null || obj === undefined) return null;
-      if (typeof obj !== 'object') return obj;
-      if (Array.isArray(obj)) return obj.map((item) => cleanData(item));
-      const cleaned: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-        if (value !== undefined) {
-          cleaned[key] = cleanData(value);
-        }
-      }
-      return cleaned;
-    };
-
-    const toStore = cleanData(result.comprehensiveProfile);
+    const toStore = cleanData(stageAResult.comprehensiveProfile);
     // Omit duplicate toolReports so we stay under Firestore 1 MiB limit; each tool is already at top-level (vedic, western, scrying, etc.)
     delete (toStore as Record<string, unknown>).toolReports;
 
@@ -300,7 +350,7 @@ export async function POST(request: NextRequest) {
       mysticalProfileGenerated: true,
       mysticalProfileGeneratedAt: Date.now(),
       profileDataHash: newHash,
-      profileStatus: 'completed',
+      profileStatus: 'stageA_complete_stageB_running',
       updatedAt: Date.now(),
     };
     for (const key of profileDefiningFields) {
@@ -319,10 +369,10 @@ export async function POST(request: NextRequest) {
         collection: 'seerMaster',
         docId: uid,
         data: {
-          ...result.seerMaster,
+          ...stageAResult.seerMaster,
           userId: uid,
           generatedAt: new Date().toISOString(),
-          systemsUsed: result.systemsUsed,
+          systemsUsed: stageAResult.systemsUsed,
         },
       },
     ]);
@@ -334,23 +384,99 @@ export async function POST(request: NextRequest) {
     // Invalidate divination cache
     clearCachedDivinationData(uid);
 
-    // Release generation lock
-    await setDocument('generationLocks', uid, { lockedAt: null, status: 'completed', completedAt: Date.now() });
+    await setDocument('generationLocks', uid, {
+      status: 'running',
+      phase: 'stageB',
+      totalTools: ALL_TOOL_SLUGS.length,
+      completedTools: getCoreStageToolCount(),
+      startedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
 
     const response: Record<string, unknown> = {
       success: true,
-      systemsUsed: result.systemsUsed,
-      failedTools: result.failedTools,
-      message: 'Mystical profile generated successfully. All tools have run.',
+      systemsUsed: stageAResult.systemsUsed,
+      failedTools: stageAResult.failedTools,
+      message: 'Core profile generated. Remaining systems are completing in the background.',
+      generationState: 'stageA_complete_stageB_running',
+      generationMode,
+      phase: 'stageB',
+      completedTools: getCoreStageToolCount(),
+      totalTools: ALL_TOOL_SLUGS.length,
       comprehensiveProfile: toStore,
     };
+    void (async () => {
+      try {
+        const coreCount = getCoreStageToolCount();
+        const totalTools = ALL_TOOL_SLUGS.length;
+        const result = await generateAllReports(uid!, profileWithUid as unknown as UserProfile, {
+          onProgress: async ({ completedTools }) => {
+            const stageBCompleted = Math.max(0, completedTools - coreCount);
+            const stageBTotal = Math.max(0, totalTools - coreCount);
+            const overallCompleted = Math.min(totalTools, coreCount + stageBCompleted);
+            await setDocument('generationLocks', uid!, {
+              status: 'running',
+              phase: 'stageB',
+              completedTools: overallCompleted,
+              totalTools,
+              stageBCompletedTools: stageBCompleted,
+              stageBTotalTools: stageBTotal,
+              updatedAt: Date.now(),
+            });
+          },
+        });
+        const finalToStore = cleanData(result.comprehensiveProfile);
+        delete (finalToStore as Record<string, unknown>).toolReports;
+        const batchSuccessFinal = await batchSetDocuments([
+          { collection: 'comprehensiveMysticalProfiles', docId: uid!, data: finalToStore },
+          {
+            collection: 'users',
+            docId: uid!,
+            data: {
+              mysticalProfileGenerated: true,
+              mysticalProfileGeneratedAt: Date.now(),
+              profileDataHash: newHash,
+              profileStatus: 'completed',
+              updatedAt: Date.now(),
+            },
+          },
+          {
+            collection: 'seerMaster',
+            docId: uid!,
+            data: {
+              ...result.seerMaster,
+              userId: uid!,
+              generatedAt: new Date().toISOString(),
+              systemsUsed: result.systemsUsed,
+            },
+          },
+        ]);
+        if (!batchSuccessFinal) {
+          throw new Error('Failed to save Stage B data.');
+        }
+        await setDocument('generationLocks', uid!, {
+          lockedAt: null,
+          status: 'completed',
+          phase: 'completed',
+          completedAt: Date.now(),
+          completedTools: ALL_TOOL_SLUGS.length,
+          totalTools: ALL_TOOL_SLUGS.length,
+          updatedAt: Date.now(),
+        });
+        clearCachedDivinationData(uid!);
+      } catch (bgErr) {
+        devLog.error('[generate-mystical] Stage B continuation failed', bgErr, 'generate-mystical');
+        await setDocument('generationLocks', uid!, {
+          lockedAt: null,
+          status: 'failed',
+          phase: 'failed',
+          failedAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
+    })();
 
-    if (result.failedTools && result.failedTools.length > 0) {
-      response.retryUrl = `/api/profile/generate-mystical?retryTools=${result.failedTools.join(',')}`;
-      response.message = `Profile generated with ${result.failedTools.length} tool(s) that need retry: ${result.failedTools.join(', ')}`;
-    }
-
-    return NextResponse.json(response);
+    return NextResponse.json(response, { status: 202 });
   } catch (err) {
     // Release generation lock on failure
     if (uid) { try { await setDocument('generationLocks', uid, { lockedAt: null, status: 'failed', failedAt: Date.now() }); } catch { /* ignore */ } }
@@ -387,15 +513,23 @@ export async function GET(request: NextRequest) {
       getDocument('generationLocks', uid),
       getDocument('comprehensiveMysticalProfiles', uid),
     ]);
-    const generated = Boolean((userDoc as Record<string, unknown> | null)?.mysticalProfileGenerated);
-    const lockStatus = (lockDoc as Record<string, unknown> | null)?.status;
+    const user = (userDoc as Record<string, unknown> | null) ?? {};
+    const lock = (lockDoc as Record<string, unknown> | null) ?? {};
+    const lockStatus = lock?.status;
     const inProgress = lockStatus === 'running' || lockStatus === 'started';
+    const generated = !inProgress && Boolean(user?.mysticalProfileGenerated);
     return NextResponse.json({
       success: true,
       inProgress,
       generated,
       hasProfile: Boolean(profileDoc),
       lockStatus: lockStatus ?? null,
+      phase: (lock?.phase as string | undefined) ?? null,
+      completedTools: (lock?.completedTools as number | undefined) ?? null,
+      totalTools: (lock?.totalTools as number | undefined) ?? null,
+      stageBCompletedTools: (lock?.stageBCompletedTools as number | undefined) ?? null,
+      stageBTotalTools: (lock?.stageBTotalTools as number | undefined) ?? null,
+      updatedAt: (lock?.updatedAt as number | undefined) ?? null,
     });
   } catch (err) {
     return NextResponse.json(

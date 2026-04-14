@@ -39,6 +39,7 @@ import { isGrowthProfileDraftEnabled } from "@/lib/growthFlags"
 import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/profileDraftStorage"
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
+import { getMissingFullProfileFields, isTrialActive } from "@/lib/subscriptionConfig"
 
 const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
 const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
@@ -73,6 +74,34 @@ function readUploadErrorFields(e: unknown): {
 
 function sleepMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function normalizeBirthDateForUi(value: string | undefined): string {
+  if (!value) return ""
+  const isoLike = /^\d{4}-\d{2}-\d{2}$/
+  if (isoLike.test(value)) return value
+  const dmy = /^(\d{2})-(\d{2})-(\d{4})$/.exec(value)
+  if (dmy) {
+    const [, dd, mm, yyyy] = dmy
+    return `${yyyy}-${mm}-${dd}`
+  }
+  const parsed = new Date(value)
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10)
+  }
+  return value
+}
+
+const FULL_FIELD_LABELS: Record<string, string> = {
+  displayName: "Display name",
+  fullName: "Full name",
+  gender: "Gender",
+  birthDate: "Birth date",
+  birthTime: "Birth time",
+  birthPlace: "Birth place",
+  currentLocation: "Current residence",
+  facePhotoUrl: "Face photo",
+  palmPhotoUrl: "Palm photo",
 }
 
 function errorHasHttpStatus(e: unknown): boolean {
@@ -228,6 +257,7 @@ export default function ProfilePage() {
   const [acceptedFreeTrialTerms, setAcceptedFreeTrialTerms] = useState(false)
   const [generationStatus, setGenerationStatus] = useState<string>("")
   const generationAbortRef = useRef<AbortController | null>(null)
+  const autoEditBootstrappedRef = useRef(false)
   const isMountedRef = useRef(true)
   const draftRestoreAttemptedRef = useRef(false)
   const canPersistDraftRef = useRef(false)
@@ -282,6 +312,25 @@ export default function ProfilePage() {
   })
 
   const canGenerateFromOnboarding = canGenerateMysticalProfile && acceptedFreeTrialTerms
+  const fullProfileChecklist = useMemo(() => {
+    const profileForChecklist: Partial<UserProfile> = {
+      displayName: formData.displayName || undefined,
+      fullName: formData.fullName || undefined,
+      gender: formData.gender,
+      birthDate: formData.birthDate || undefined,
+      birthTime: formData.birthTime || undefined,
+      birthPlace: formData.birthPlace || undefined,
+      currentLocation: formData.currentLocation || undefined,
+      facePhotoUrl: formData.facePhotoUrl || undefined,
+      palmPhotoUrl: formData.palmPhotoUrl || undefined,
+    }
+    return getMissingFullProfileFields(profileForChecklist).map((f) => FULL_FIELD_LABELS[f] ?? f)
+  }, [formData])
+  const trialIsActive = isTrialActive(userProfile)
+  const showPostHookFullPath = Boolean(userProfile?.mysticalProfileGenerated)
+  const isFirstHookUser = !userProfile?.mysticalProfileGenerated
+  const [showOptionalBasics, setShowOptionalBasics] = useState(false)
+  const showOptionalSection = !isFirstHookUser || showOptionalBasics
 
   // Fetch edit quota on load so Generate button state is correct
   useEffect(() => {
@@ -353,7 +402,7 @@ export default function ProfilePage() {
         fullName: userProfile.fullName || "",
         email: user?.email || userProfile.email || "",
         gender: userProfile.gender,
-        birthDate: userProfile.birthDate || "",
+        birthDate: normalizeBirthDateForUi(userProfile.birthDate),
         birthTime: bt,
         birthTimeAMPM: btAMPM,
         birthTimeKnown: userProfile.birthTimeKnown || false,
@@ -366,6 +415,15 @@ export default function ProfilePage() {
       })
     }
   }, [userProfile, isEditing, user, isConsultantWorkspace])
+
+  useEffect(() => {
+    if (autoEditBootstrappedRef.current) return
+    if (!userProfile) return
+    if (isConsultantWorkspace) return
+    if (userProfile.mysticalProfileGenerated) return
+    autoEditBootstrappedRef.current = true
+    setIsEditing(true)
+  }, [userProfile, isConsultantWorkspace])
 
   useEffect(() => {
     setAcceptedFreeTrialTerms(Boolean(userProfile?.freeTrialTermsAccepted))
@@ -396,6 +454,12 @@ export default function ProfilePage() {
     }))
     canPersistDraftRef.current = true
   }, [user?.uid, userProfile, isConsultantWorkspace])
+
+  useEffect(() => {
+    if (!isFirstHookUser) {
+      setShowOptionalBasics(true)
+    }
+  }, [isFirstHookUser])
 
   const openClearWorkspaceConfirm = () => {
     if (!user?.uid || !isConsultantWorkspace) return
@@ -542,8 +606,12 @@ export default function ProfilePage() {
     return overrides
   }
 
-  const handleGenerateMysticalProfile = async (surface: string) => {
+  const handleGenerateMysticalProfile = async (surface: string, mode: "preview" | "full" = "preview") => {
     if (isGeneratingProfile) return
+    if (!formData.birthDate || !formData.birthPlace) {
+      setError("Please add your birth date and birth place to generate your mystical profile.")
+      return
+    }
     if (!canGenerateFromOnboarding) {
       setError("Please accept the free trial terms before generating your mystical profile.")
       return
@@ -586,13 +654,20 @@ export default function ProfilePage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${t}`,
         },
-        body: JSON.stringify({ profileOverrides }),
+        body: JSON.stringify({ profileOverrides, mode }),
         signal: abort.signal,
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        if (res.status === 403) setCanGenerateMysticalProfile(false)
-        throw new Error((data as { error?: string }).error || "Profile generation failed. Please try again.")
+        if (res.status === 403 && mode === "preview") setCanGenerateMysticalProfile(false)
+        const payload = data as { error?: string; blockReason?: string; missingFields?: string[] }
+        if (payload.blockReason === "missing_fields" && Array.isArray(payload.missingFields) && payload.missingFields.length > 0) {
+          throw new Error(`Complete these fields for full report: ${payload.missingFields.map((f) => FULL_FIELD_LABELS[f] ?? f).join(", ")}`)
+        }
+        if (payload.blockReason === "payment_required" || payload.blockReason === "trial_expired") {
+          throw new Error(`${payload.error ?? "Full report requires payment setup."} Open Settings to complete billing and plan.`)
+        }
+        throw new Error(payload.error || "Profile generation failed. Please try again.")
       }
       if ((data as { inProgress?: boolean }).inProgress) {
         if (typeof window !== "undefined") {
@@ -605,12 +680,21 @@ export default function ProfilePage() {
       } else if (data.success && data.alreadyGenerated) {
         await refreshComprehensiveProfile()
       }
+      const generationState = (data as { generationState?: string }).generationState
+      const isBackgroundStageRunning = generationState === "stageA_complete_stageB_running"
       if (typeof window !== "undefined") {
-        sessionStorage.setItem("futureSeer:generationStatus", "completed")
+        sessionStorage.setItem("futureSeer:generationStatus", isBackgroundStageRunning ? "in_progress" : "completed")
       }
       window.dispatchEvent(
         new CustomEvent("futureSeer:profileGenerationCompleted", {
-          detail: { success: true, comprehensiveProfile: data.comprehensiveProfile },
+          detail: {
+            success: true,
+            pending: isBackgroundStageRunning,
+            phase: (data as { phase?: string }).phase,
+            completedTools: (data as { completedTools?: number }).completedTools,
+            totalTools: (data as { totalTools?: number }).totalTools,
+            comprehensiveProfile: data.comprehensiveProfile,
+          },
         }),
       )
       analytics.trackProfileGenerationCompleted(true, {
@@ -713,6 +797,8 @@ export default function ProfilePage() {
       }
 
       await updateUserProfile(user.uid, updatePayload)
+      setIsEditing(false)
+      setSuccess("Profile updated successfully!")
 
       // Clear stored mystical profile so user can regenerate from updated data
       try {
@@ -744,7 +830,6 @@ export default function ProfilePage() {
         // Best-effort; don't lock user out on network error
       }
 
-      setSuccess("Profile updated successfully!"); setIsEditing(false)
       setTimeout(() => refreshProfile(), 500)
     } catch {
       setError("Failed to save profile.")
@@ -1040,29 +1125,43 @@ export default function ProfilePage() {
               {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
-              {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
-            </div>
+            {isFirstHookUser ? (
+              <button
+                type="button"
+                onClick={() => setShowOptionalBasics((v) => !v)}
+                className="w-full rounded-2xl border border-outline-variant/40 bg-surface-container-low px-4 py-3 text-left text-sm text-white/85"
+              >
+                {showOptionalSection ? "Hide optional fields for now" : "Show optional fields (improves accuracy)"}
+              </button>
+            ) : null}
 
-            <div className="space-y-2 relative z-20 overflow-visible">
-              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
-              {isEditing ? (
-                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
-                  <option value="">Not set</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="non-binary">Non-binary</option>
-                </select>
-              ) : (
-                <p className="text-lg font-bold text-white ml-1">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
-              )}
-            </div>
+            {showOptionalSection ? (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
+                  {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
+                </div>
+
+                <div className="space-y-2 relative z-20 overflow-visible">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
+                  {isEditing ? (
+                    <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
+                      <option value="">Not set</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="non-binary">Non-binary</option>
+                    </select>
+                  ) : (
+                    <p className="text-lg font-bold text-white ml-1">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
+                  )}
+                </div>
+              </>
+            ) : null}
 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Date</Label>
-                {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthDate || "Not set"}</p>}
+                {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-bold text-white ml-1">{normalizeBirthDateForUi(formData.birthDate) || "Not set"}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Place</Label>
@@ -1070,6 +1169,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {showOptionalSection ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Time of Birth</Label>
@@ -1090,8 +1190,9 @@ export default function ProfilePage() {
                 {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
               </div>
             </div>
+            ) : null}
 
-            {!formData.birthTime && formData.birthDate && (
+            {showOptionalSection && !formData.birthTime && formData.birthDate && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
                 <p className="text-amber-300 text-xs font-medium">
                   ⚠️ Birth time not set — readings will use 12:00 PM (noon) as default, which may reduce accuracy for time-sensitive charts like houses and ascendant.
@@ -1101,6 +1202,7 @@ export default function ProfilePage() {
 
             {(
             <>
+            {showOptionalSection ? (
             <div className={`grid grid-cols-2 gap-4 ${isEditing ? "pb-20" : ""}`}>
               <div className="space-y-2 text-center">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
@@ -1150,10 +1252,20 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
+            ) : null}
 
-            {!isEditing && (
-              <div id="profile-generate-mystical" className="pt-6 border-t border-outline-variant/30 scroll-mt-24">
-                <label className="mb-3 flex items-start gap-3 text-sm text-white/85">
+            <div id="profile-generate-mystical" className="pt-6 border-t border-outline-variant/30 scroll-mt-24">
+              <div className="mb-3 rounded-xl border border-outline-variant/40 bg-surface-container-low p-4 text-sm text-white/85">
+                <p>
+                  Required now: birth date, birth place, and free-trial consent.
+                </p>
+                {showPostHookFullPath ? (
+                <p className="mt-1">
+                  Recommended for better accuracy: birth time, full name, current residence, face photo, and palm photo.
+                </p>
+                ) : null}
+              </div>
+                <label className="mb-3 flex items-start gap-3 rounded-xl border border-outline-variant/40 bg-surface-container p-3 text-sm text-white/95">
                   <Checkbox
                     checked={acceptedFreeTrialTerms}
                     onCheckedChange={(checked) => setAcceptedFreeTrialTerms(checked === true)}
@@ -1164,17 +1276,50 @@ export default function ProfilePage() {
                   </span>
                 </label>
                 <Button
-                  onClick={() => void handleGenerateMysticalProfile("profile_primary")}
+                  onClick={() => void handleGenerateMysticalProfile("profile_primary", "preview")}
                   disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
                   className="w-full h-16 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 rounded-[24px] font-bold text-lg shadow-xl active:scale-95 transition-all"
                 >
-                  {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
+                  {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Trial Preview</>}
                 </Button>
+                {showPostHookFullPath ? (
+                  <Button
+                    onClick={() => void handleGenerateMysticalProfile("profile_primary_full", "full")}
+                    disabled={isGeneratingProfile || !acceptedFreeTrialTerms}
+                    variant="outline"
+                    className="mt-3 w-full h-12 border-amber-400/40 text-amber-100"
+                  >
+                    Generate Full Report
+                  </Button>
+                ) : (
+                  <p className="text-center text-amber-300/70 text-xs mt-2">
+                    Continue with Trial Preview for now. Complete full-report checklist in{" "}
+                    <Link href="/settings" className="underline">
+                      Settings
+                    </Link>
+                    .
+                  </p>
+                )}
+                {trialIsActive && showPostHookFullPath ? (
+                  <p className="text-center text-amber-300/70 text-xs mt-2">
+                    Full Report unlocks when your complete profile and payment details are ready.
+                  </p>
+                ) : null}
+                {showPostHookFullPath && fullProfileChecklist.length > 0 ? (
+                  <p className="text-center text-amber-300/70 text-xs mt-2">
+                    Missing for Full Report: {fullProfileChecklist.join(", ")}
+                  </p>
+                ) : null}
+                {!showPostHookFullPath ? (
+                  <p className="text-center text-amber-300/70 text-xs mt-2">
+                    Start with Trial Preview first. Full Report unlock appears after your first result.
+                  </p>
+                ) : null}
                 {isGeneratingProfile && generationStatus && (
                   <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                 )}
-                {!formData.birthDate && !isGeneratingProfile && (
-                  <p className="text-center text-amber-400/50 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                {(!formData.birthDate || !formData.birthPlace) && !isGeneratingProfile && (
+                  <p className="text-center text-amber-400/60 text-xs mt-2">Add your birth date and birth place to unlock Generate.</p>
                 )}
                 {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
@@ -1186,8 +1331,7 @@ export default function ProfilePage() {
                       : "Your current birth details above will be used for generation."}
                   </p>
                 )}
-              </div>
-            )}
+            </div>
             </>
             )}
           </div>
@@ -1389,29 +1533,43 @@ export default function ProfilePage() {
                 {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.displayName || "Not set"}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
-                {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
-              </div>
+              {isFirstHookUser ? (
+                <button
+                  type="button"
+                  onClick={() => setShowOptionalBasics((v) => !v)}
+                  className="w-full rounded-2xl border border-amber-400/30 bg-white/5 px-4 py-3 text-left text-sm text-amber-100/90"
+                >
+                  {showOptionalSection ? "Hide optional fields for now" : "Show optional fields (improves accuracy)"}
+                </button>
+              ) : null}
 
-              <div className="space-y-2 relative z-20 overflow-visible">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
-                {isEditing ? (
-                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-12 w-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:border-amber-500 [color-scheme:dark]">
-                    <option value="">Not set</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="non-binary">Non-binary</option>
-                  </select>
-                ) : (
-                  <p className="text-lg font-medium text-white">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
-                )}
-              </div>
+              {showOptionalSection ? (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
+                    {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
+                  </div>
+
+                  <div className="space-y-2 relative z-20 overflow-visible">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
+                    {isEditing ? (
+                      <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-12 w-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:border-amber-500 [color-scheme:dark]">
+                        <option value="">Not set</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="non-binary">Non-binary</option>
+                      </select>
+                    ) : (
+                      <p className="text-lg font-medium text-white">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
+                    )}
+                  </div>
+                </>
+              ) : null}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Date</Label>
-                  {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-medium text-white">{formData.birthDate || "Not set"}</p>}
+                  {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-medium text-white">{normalizeBirthDateForUi(formData.birthDate) || "Not set"}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Place</Label>
@@ -1419,6 +1577,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {showOptionalSection ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Time of Birth</Label>
@@ -1439,8 +1598,9 @@ export default function ProfilePage() {
                   {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.currentLocation || "Not set"}</p>}
                 </div>
               </div>
+              ) : null}
 
-              {!formData.birthTime && formData.birthDate && (
+              {showOptionalSection && !formData.birthTime && formData.birthDate && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
                   <p className="text-amber-300 text-xs font-medium">
                     ⚠️ Birth time not set — readings will use 12:00 PM (noon) as default, which may reduce accuracy for time-sensitive charts like houses and ascendant.
@@ -1450,6 +1610,7 @@ export default function ProfilePage() {
 
               {(
               <>
+              {showOptionalSection ? (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 text-center">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
@@ -1481,6 +1642,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
+              ) : null}
 
               {isEditing && (
                 <div className="pt-4 border-t border-amber-400/20">
@@ -1518,9 +1680,18 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {!isEditing && (
-                <div id="profile-generate-mystical" className="pt-6 border-t border-amber-400/20 scroll-mt-24">
-                  <label className="mb-3 flex items-start gap-3 text-sm text-amber-100/90">
+              <div id="profile-generate-mystical" className="pt-6 border-t border-amber-400/20 scroll-mt-24">
+                <div className="mb-3 rounded-xl border border-amber-400/20 bg-slate-900/30 p-4 text-sm text-amber-100/90">
+                  <p>
+                    Required now: birth date, birth place, and free-trial consent.
+                  </p>
+                  {showPostHookFullPath ? (
+                  <p className="mt-1">
+                    Recommended for better accuracy: birth time, full name, current residence, face photo, and palm photo.
+                  </p>
+                  ) : null}
+                </div>
+                  <label className="mb-3 flex items-start gap-3 rounded-xl border border-amber-400/20 bg-slate-900/40 p-3 text-sm text-amber-100">
                     <Checkbox
                       checked={acceptedFreeTrialTerms}
                       onCheckedChange={(checked) => setAcceptedFreeTrialTerms(checked === true)}
@@ -1531,17 +1702,50 @@ export default function ProfilePage() {
                     </span>
                   </label>
                   <Button
-                    onClick={() => void handleGenerateMysticalProfile("profile_secondary")}
+                    onClick={() => void handleGenerateMysticalProfile("profile_secondary", "preview")}
                     disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
                     className="w-full h-14 bg-gradient-to-r from-amber-600 to-yellow-500 text-[#020617] rounded-2xl font-bold shadow-xl hover:opacity-95 transition-opacity"
                   >
-                    {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Mystical Profile</>}
+                    {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Trial Preview</>}
                   </Button>
+                  {showPostHookFullPath ? (
+                    <Button
+                      onClick={() => void handleGenerateMysticalProfile("profile_secondary_full", "full")}
+                      disabled={isGeneratingProfile || !acceptedFreeTrialTerms}
+                      variant="outline"
+                      className="mt-3 w-full h-11 border-amber-400/40 text-amber-100"
+                    >
+                      Generate Full Report
+                    </Button>
+                  ) : (
+                    <p className="text-center text-amber-200/70 text-xs mt-2">
+                      Continue with Trial Preview for now. Complete full-report checklist in{" "}
+                      <Link href="/settings" className="underline">
+                        Settings
+                      </Link>
+                      .
+                    </p>
+                  )}
+                  {trialIsActive && showPostHookFullPath ? (
+                    <p className="text-center text-amber-200/70 text-xs mt-2">
+                      Full Report unlocks when your complete profile and payment details are ready.
+                    </p>
+                  ) : null}
+                  {showPostHookFullPath && fullProfileChecklist.length > 0 ? (
+                    <p className="text-center text-amber-200/70 text-xs mt-2">
+                      Missing for Full Report: {fullProfileChecklist.join(", ")}
+                    </p>
+                  ) : null}
+                  {!showPostHookFullPath ? (
+                    <p className="text-center text-amber-200/70 text-xs mt-2">
+                      Start with Trial Preview first. Full Report unlock appears after your first result.
+                    </p>
+                  ) : null}
                   {isGeneratingProfile && generationStatus && (
                     <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                   )}
-                  {!formData.birthDate && !isGeneratingProfile && (
-                    <p className="text-center text-amber-200/70 text-xs mt-2">Please set your birth date and birth place to generate your profile.</p>
+                  {(!formData.birthDate || !formData.birthPlace) && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/80 text-xs mt-2">Add your birth date and birth place to unlock Generate.</p>
                   )}
                   {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
@@ -1553,8 +1757,7 @@ export default function ProfilePage() {
                         : "Your current birth details above will be used for generation."}
                     </p>
                   )}
-                </div>
-              )}
+              </div>
               </>
               )}
             </div>

@@ -26,6 +26,7 @@ import { toolManager } from "@/lib/services/toolManager"
 import { MysticalLoadingState } from "@/components/MysticalLoadingState"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { getMissingFullProfileFields, isTrialActive } from "@/lib/subscriptionConfig"
 
 const CATEGORY_ORDER = [
   "Astrology",
@@ -55,6 +56,8 @@ export default function MysticalProfilePage() {
   const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
 
   const p = profile as Record<string, unknown> | null
+  const missingFullFields = useMemo(() => getMissingFullProfileFields(userProfile), [userProfile])
+  const trialActive = useMemo(() => isTrialActive(userProfile), [userProfile])
   const [generationPending, setGenerationPending] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
     return sessionStorage.getItem("futureSeer:generationStatus") === "in_progress"
@@ -63,16 +66,38 @@ export default function MysticalProfilePage() {
     if (typeof window === "undefined") return null
     return sessionStorage.getItem("futureSeer:generationError")
   })
+  const [generationPhase, setGenerationPhase] = useState<string | null>(null)
+  const [completedTools, setCompletedTools] = useState<number | null>(null)
+  const [totalTools, setTotalTools] = useState<number | null>(null)
+  const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
+  const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
+  const loadingMessages = useMemo(
+    () => [
+      "Calibrating charts...",
+      "Synthesizing insights...",
+      "Finalizing highlights...",
+    ],
+    [],
+  )
 
   useEffect(() => {
     if (typeof window === "undefined") return
     const onGenerationCompleted = (event: Event) => {
-      const detail = (event as CustomEvent<{ success?: boolean; error?: string }>).detail
+      const detail = (event as CustomEvent<{ success?: boolean; error?: string; pending?: boolean; phase?: string; completedTools?: number; totalTools?: number }>).detail
       if (detail?.success) {
-        sessionStorage.setItem("futureSeer:generationStatus", "completed")
+        if (detail.pending) {
+          sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
+          setGenerationPending(true)
+        } else {
+          sessionStorage.setItem("futureSeer:generationStatus", "completed")
+          setGenerationPending(false)
+        }
         sessionStorage.removeItem("futureSeer:generationError")
-        setGenerationPending(false)
         setGenerationError(null)
+        setGenerationPhase(detail.phase ?? null)
+        setCompletedTools(typeof detail.completedTools === "number" ? detail.completedTools : null)
+        setTotalTools(typeof detail.totalTools === "number" ? detail.totalTools : null)
         void refreshAuthProfile()
         void refreshMysticalProfile()
         return
@@ -102,7 +127,19 @@ export default function MysticalProfilePage() {
             headers: { Authorization: `Bearer ${token}` },
           })
           if (!res.ok) return
-          const data = (await res.json()) as { generated?: boolean; inProgress?: boolean; error?: string }
+          const data = (await res.json()) as {
+            generated?: boolean
+            inProgress?: boolean
+            error?: string
+            phase?: string | null
+            completedTools?: number | null
+            totalTools?: number | null
+            updatedAt?: number | null
+          }
+          setGenerationPhase(data.phase ?? null)
+          setCompletedTools(typeof data.completedTools === "number" ? data.completedTools : null)
+          setTotalTools(typeof data.totalTools === "number" ? data.totalTools : null)
+          setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : null)
           if (data.generated) {
             sessionStorage.setItem("futureSeer:generationStatus", "completed")
             sessionStorage.removeItem("futureSeer:generationError")
@@ -127,7 +164,7 @@ export default function MysticalProfilePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    if (userProfile?.mysticalProfileGenerated && p) {
+    if (userProfile?.mysticalProfileGenerated && p && !generationPending) {
       sessionStorage.setItem("futureSeer:generationStatus", "completed")
       sessionStorage.removeItem("futureSeer:generationError")
       const timer = window.setTimeout(() => {
@@ -136,7 +173,36 @@ export default function MysticalProfilePage() {
       }, 0)
       return () => window.clearTimeout(timer)
     }
-  }, [userProfile?.mysticalProfileGenerated, p])
+  }, [userProfile?.mysticalProfileGenerated, p, generationPending])
+
+  useEffect(() => {
+    if (!generationPending) return
+    const kickoff = window.setTimeout(() => {
+      setCurrentTimeMs(Date.now())
+    }, 0)
+    const timer = window.setInterval(() => {
+      setCurrentTimeMs(Date.now())
+    }, 5000)
+    const loadingCopyTimer = window.setInterval(() => {
+      setLoadingMessageIndex((idx) => (idx + 1) % loadingMessages.length)
+    }, 3500)
+    return () => {
+      window.clearTimeout(kickoff)
+      window.clearInterval(timer)
+      window.clearInterval(loadingCopyTimer)
+    }
+  }, [generationPending, loadingMessages.length])
+
+  const progressLooksStale = useMemo(() => {
+    if (!generationPending || !lastProgressUpdatedAt) return false
+    return currentTimeMs - lastProgressUpdatedAt > 25_000
+  }, [generationPending, lastProgressUpdatedAt, currentTimeMs])
+  const lastUpdatedLabel = useMemo(() => {
+    if (!lastProgressUpdatedAt) return null
+    const deltaSec = Math.max(0, Math.floor((currentTimeMs - lastProgressUpdatedAt) / 1000))
+    if (deltaSec <= 2) return "Updated just now"
+    return `Updated ${deltaSec}s ago`
+  }, [lastProgressUpdatedAt, currentTimeMs])
 
   const showMysticalPageLoader = useMemo(() => {
     if (authLoading) return true
@@ -334,7 +400,17 @@ export default function MysticalProfilePage() {
         {generationPending ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
-            <p className="text-on-surface">Generating your mystical profile. You can stay on this page while we complete it.</p>
+      <p className="text-on-surface">Generating your mystical profile. Core systems are ready; we are finishing the rest in background.</p>
+      <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
+      {typeof completedTools === "number" && typeof totalTools === "number" ? (
+        <p className="mt-2 text-xs text-surface-on-variant">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
+      ) : null}
+      {lastUpdatedLabel ? (
+        <p className="mt-1 text-[11px] text-surface-on-variant/80">{lastUpdatedLabel}</p>
+      ) : null}
+      {progressLooksStale ? (
+        <p className="mt-2 text-xs text-surface-on-variant">Still processing in background. New cards may appear shortly.</p>
+      ) : null}
           </div>
         ) : groupedCards.length === 0 ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
@@ -393,6 +469,15 @@ export default function MysticalProfilePage() {
             ))}
           </div>
         )}
+        {(trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
+          <p className="mt-3 text-center text-xs text-surface-on-variant">
+            Trial preview is active. Ready for deeper reports? Complete your checklist and billing in{" "}
+            <Link href="/settings" className="underline">
+              Settings
+            </Link>
+            .
+          </p>
+        ) : null}
       </div>
     )
   }
@@ -417,7 +502,17 @@ export default function MysticalProfilePage() {
         {generationPending ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-            <p>Generating your mystical profile. Keep this page open while we complete all systems.</p>
+      <p>Generating your mystical profile. Core systems are ready; we are finishing the rest in background.</p>
+      <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
+      {typeof completedTools === "number" && typeof totalTools === "number" ? (
+        <p className="mt-2 text-xs text-slate-400">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
+      ) : null}
+      {lastUpdatedLabel ? (
+        <p className="mt-1 text-[11px] text-slate-400/80">{lastUpdatedLabel}</p>
+      ) : null}
+      {progressLooksStale ? (
+        <p className="mt-2 text-xs text-slate-400">Still processing in background. New cards may appear shortly.</p>
+      ) : null}
           </div>
         ) : groupedCards.length === 0 ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
@@ -482,6 +577,15 @@ export default function MysticalProfilePage() {
             ))}
           </div>
         )}
+        {(trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
+          <p className="mt-3 text-center text-xs text-slate-400">
+            Trial preview is active. Ready for deeper reports? Complete your checklist and billing in{" "}
+            <Link href="/settings" className="underline">
+              Settings
+            </Link>
+            .
+          </p>
+        ) : null}
         {generationError ? (
           <p className="mt-4 text-center text-red-300 text-sm">{generationError}</p>
         ) : null}

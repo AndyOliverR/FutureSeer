@@ -20,6 +20,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { User, LogOut, Trash2, CheckCircle, XCircle, Moon, Sun, Bell, Globe, Mic, Mail, Heart, Users, Sparkles } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { BirthTimeDualFormatSelect } from "@/components/BirthTimeDualFormatSelect"
+import { getMissingFullProfileFields } from "@/lib/subscriptionConfig"
+
+const FULL_FIELD_LABELS: Record<string, string> = {
+  displayName: "Display name",
+  fullName: "Full name",
+  gender: "Gender",
+  birthDate: "Birth date",
+  birthTime: "Birth time",
+  birthPlace: "Birth place",
+  currentLocation: "Current residence",
+  facePhotoUrl: "Face photo",
+  palmPhotoUrl: "Palm photo",
+}
 
 export default function SettingsPage() {
   const { t } = useTranslation('common')
@@ -43,6 +56,10 @@ export default function SettingsPage() {
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
+  const missingFullProfileFields = useMemo(
+    () => getMissingFullProfileFields(userProfile).map((f) => FULL_FIELD_LABELS[f] ?? f),
+    [userProfile],
+  )
 
   const handleDeleteAccount = useCallback(async () => {
     if (!user) return
@@ -642,6 +659,15 @@ export default function SettingsPage() {
               <p className={cn("text-sm", sublabelClass)}>
                 You started with a free trial. Before it ends, choose your plan and update payment details to keep access uninterrupted.
               </p>
+              {missingFullProfileFields.length > 0 ? (
+                <p className={cn("text-xs", sublabelClass)}>
+                  Missing for Full Report: {missingFullProfileFields.join(", ")}
+                </p>
+              ) : (
+                <p className={cn("text-xs", sublabelClass)}>
+                  Profile details complete for Full Report.
+                </p>
+              )}
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button asChild className={btnPrimaryClass}>
                   <Link href="/subscribe">Choose plan</Link>
