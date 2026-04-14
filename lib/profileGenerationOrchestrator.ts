@@ -52,7 +52,15 @@ export interface GenerationResult {
   failedTools: string[];
   systemsUsed: string[];
   aggregateUsage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+  remainingTools?: string[];
+  phase?: 'stageA' | 'final';
 }
+
+export type GenerationProgressUpdate = {
+  completedTools: number;
+  totalTools: number;
+  toolSlug: string;
+};
 
 /** Add usage from a tool API response body (_usage or usage) into the running aggregate. */
 function addResponseUsage(
@@ -132,6 +140,23 @@ export const ALL_TOOL_SLUGS = [
   'scrying',
   'bibliomancy',
 ] as const;
+
+const CORE10_TOOL_SLUGS = [
+  'vedic',
+  'western',
+  'numerology',
+  'tarot',
+  'dailyDecisions',
+  'humanDesign',
+  'palmistry',
+  'faceReading',
+  'kp',
+  'medicalAstrology',
+] as const;
+
+export function getCoreToolSlugsCore10(): string[] {
+  return [...CORE10_TOOL_SLUGS];
+}
 
 /** Run a single tool and return its report. Failures are caught; never throw. */
 async function runTool(
@@ -921,8 +946,8 @@ async function runTool(
         const combined: Record<string, unknown> = {};
         let hasAny = false;
         const energyUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
-        for (const method of methods) {
-          try {
+        const methodResults = await Promise.allSettled(
+          methods.map(async (method) => {
             const res = await fetch(`${baseUrl}/api/tools/energy-healing/analysis`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -930,24 +955,28 @@ async function runTool(
             });
             if (!res.ok) {
               const err = await res.json().catch(() => ({}));
-              devLog.warn(`[ProfileOrchestrator] Energy Healing ${method} failed:`, (err as { error?: string })?.error ?? res.status, 'profileGenerationOrchestrator');
-              continue;
+              throw new Error((err as { error?: string })?.error ?? `Energy Healing API: ${res.status}`);
             }
             const json = await res.json();
-            if (json._usage || json.usage) {
-              const u = json._usage ?? json.usage;
-              if (typeof u.promptTokens === 'number') energyUsage.promptTokens += u.promptTokens;
-              if (typeof u.completionTokens === 'number') energyUsage.completionTokens += u.completionTokens;
-              if (typeof u.totalTokens === 'number') energyUsage.totalTokens += u.totalTokens;
-            }
-            const data = json.data ?? json;
-            if (data && typeof data === 'object' && (data as Record<string, unknown>).placeholder !== true) {
-              combined[method] = data;
-              hasAny = true;
-            }
-          } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown error';
-            devLog.warn(`[ProfileOrchestrator] Energy Healing ${method} failed:`, msg, 'profileGenerationOrchestrator');
+            return { method, json };
+          }),
+        );
+        for (const result of methodResults) {
+          if (result.status === 'rejected') {
+            devLog.warn('[ProfileOrchestrator] Energy Healing method failed:', result.reason, 'profileGenerationOrchestrator');
+            continue;
+          }
+          const { method, json } = result.value;
+          if (json._usage || json.usage) {
+            const u = json._usage ?? json.usage;
+            if (typeof u.promptTokens === 'number') energyUsage.promptTokens += u.promptTokens;
+            if (typeof u.completionTokens === 'number') energyUsage.completionTokens += u.completionTokens;
+            if (typeof u.totalTokens === 'number') energyUsage.totalTokens += u.totalTokens;
+          }
+          const data = json.data ?? json;
+          if (data && typeof data === 'object' && (data as Record<string, unknown>).placeholder !== true) {
+            combined[method] = data;
+            hasAny = true;
           }
         }
         if (!hasAny) {
@@ -1032,6 +1061,111 @@ async function runTool(
   }
 }
 
+async function runStageTools(
+  userId: string,
+  profile: UserProfile,
+  baseUrl: string,
+  stageTools: string[],
+  toolReports: ToolReports,
+  failedTools: string[],
+  aggregateUsage: { promptTokens: number; completionTokens: number; totalTokens: number },
+): Promise<void> {
+  const results = await Promise.allSettled(
+    stageTools.map(async (slug) => {
+      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
+      toolReports[slug] = entry;
+      if (entry.status === 'failed') failedTools.push(slug);
+      return entry;
+    }),
+  );
+
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      const slug = stageTools[i];
+      toolReports[slug] = { status: 'failed', error: r.reason?.message || 'Unknown', generatedAt: new Date().toISOString() };
+      failedTools.push(slug);
+    }
+  });
+
+  for (const entry of Object.values(toolReports)) {
+    if (entry._usage) addResponseUsage(aggregateUsage, { _usage: entry._usage });
+  }
+}
+
+function mergeToolStageIntoProfile(
+  comprehensiveProfile: Record<string, unknown>,
+  toolReports: ToolReports,
+): string[] {
+  const placeholders: string[] = [];
+  for (const [slug, entry] of Object.entries(toolReports)) {
+    if (entry.status === 'success' && entry.data && typeof entry.data === 'object') {
+      comprehensiveProfile[slug] = entry.data;
+      if ((entry.data as Record<string, unknown>).placeholder === true) {
+        placeholders.push(slug);
+      }
+    }
+  }
+  return placeholders;
+}
+
+export async function runProfileGenerationStageA(
+  userId: string,
+  userProfile: UserProfile,
+): Promise<GenerationResult> {
+  const baseUrl = getServerBaseUrl();
+  const toolReports: ToolReports = {};
+  const failedTools: string[] = [];
+  const aggregateUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+
+  const profile: UserProfile = {
+    ...userProfile,
+    birthTime: normalizeBirthTime(userProfile.birthTime) || userProfile.birthTime || '12:00:00',
+  };
+
+  const stageTools = getCoreToolSlugsCore10();
+  await runStageTools(userId, profile, baseUrl, stageTools, toolReports, failedTools, aggregateUsage);
+
+  const systemsUsed = Object.entries(toolReports).filter(([, v]) => v.status === 'success').map(([k]) => k);
+  const comprehensiveProfile: Record<string, unknown> = {
+    vedic: (toolReports.vedic?.status === 'success' ? toolReports.vedic.data : {}) ?? {},
+    interpretations: {},
+    toolReports,
+    metadata: {
+      source: 'profile_generation_orchestrator',
+      version: '2.1-stageA',
+      generatedAt: new Date().toISOString(),
+      calculationTime: Date.now(),
+      systemsUsed,
+      interpretationType: 'stageA_fast_first',
+    },
+    userId,
+    lastUpdated: Date.now(),
+    birthDate: profile.birthDate,
+    birthPlace: profile.birthPlace,
+    birthTime: profile.birthTime,
+  };
+
+  const placeholders = mergeToolStageIntoProfile(comprehensiveProfile, toolReports);
+  if (placeholders.length > 0) {
+    devLog.info('[ProfileOrchestrator] Stage A placeholders', placeholders, 'profileGenerationOrchestrator');
+  }
+
+  const seerMaster = buildSeerMaster(toolReports, {});
+  const remainingTools = ALL_TOOL_SLUGS.filter((slug) => !stageTools.includes(slug));
+
+  return {
+    success: systemsUsed.length > 0,
+    toolReports,
+    seerMaster,
+    comprehensiveProfile,
+    failedTools,
+    systemsUsed,
+    aggregateUsage,
+    remainingTools,
+    phase: 'stageA',
+  };
+}
+
 /** Extract normalized insights for Master Seer from tool reports and interpretations. */
 function buildSeerMaster(
   toolReports: ToolReports,
@@ -1080,12 +1214,26 @@ function buildSeerMaster(
  */
 export async function runProfileGeneration(
   userId: string,
-  userProfile: UserProfile
+  userProfile: UserProfile,
+  options?: {
+    onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
+  },
 ): Promise<GenerationResult> {
   const baseUrl = getServerBaseUrl();
   const toolReports: ToolReports = {};
   const failedTools: string[] = [];
   const aggregateUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+  let completedTools = 0;
+  const totalTools = ALL_TOOL_SLUGS.length;
+  const progressedSlugs = new Set<string>();
+  const reportProgress = async (toolSlug: string) => {
+    if (progressedSlugs.has(toolSlug)) return;
+    progressedSlugs.add(toolSlug);
+    completedTools += 1;
+    if (options?.onProgress) {
+      await options.onProgress({ completedTools, totalTools, toolSlug });
+    }
+  };
 
   // Normalize birth time so invalid values (e.g. 34:00) never reach tool APIs
   const profile: UserProfile = {
@@ -1096,6 +1244,7 @@ export async function runProfileGeneration(
   // 1. Run Vedic first (required for interpretations)
   const vedicEntry = await withTimeout(runTool('vedic', userId, profile, baseUrl), 90_000, 'vedic');
   toolReports.vedic = vedicEntry;
+  await reportProgress('vedic');
   if (vedicEntry.status === 'failed') {
     failedTools.push('vedic');
     addResponseUsage(aggregateUsage, vedicEntry);
@@ -1234,18 +1383,20 @@ export async function runProfileGeneration(
       const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
       toolReports[slug] = entry;
       if (entry.status === 'failed') failedTools.push(slug);
+      await reportProgress(slug);
       return entry;
     })
   );
 
   // Log any unexpected rejections
-  results.forEach((r, i) => {
+  for (const [i, r] of results.entries()) {
     if (r.status === 'rejected') {
       const slug = otherTools[i];
       toolReports[slug] = { status: 'failed', error: r.reason?.message || 'Unknown', generatedAt: new Date().toISOString() };
       failedTools.push(slug);
+      await reportProgress(slug);
     }
-  });
+  }
 
   for (const entry of Object.values(toolReports)) {
     if (entry._usage) addResponseUsage(aggregateUsage, { _usage: entry._usage });
@@ -1368,5 +1519,6 @@ export async function runProfileGeneration(
     failedTools,
     systemsUsed,
     aggregateUsage,
+    phase: 'final',
   };
 }

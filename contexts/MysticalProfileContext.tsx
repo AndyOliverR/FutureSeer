@@ -473,7 +473,10 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     return () => window.removeEventListener('futureSeer:toolReportSaved', handler)
   }, [])
 
-  const hasProfileData = !!profile && !!profile.vedic && !!profile.interpretations
+  const hasToolPayload =
+    !!profile &&
+    Object.keys(profile).some((key) => !['metadata', 'userId', 'lastUpdated', 'toolReports'].includes(key))
+  const hasProfileData = !!profile && (!!profile.vedic || hasToolPayload)
   const canViewFullProfile = Boolean(
     userProfile?.selectedPlan && String(userProfile.selectedPlan).trim().length > 0
   )

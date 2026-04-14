@@ -6,7 +6,10 @@
 
 import type { UserProfile } from './firebase';
 import {
+  getCoreToolSlugsCore10,
+  type GenerationProgressUpdate,
   runProfileGeneration,
+  runProfileGenerationStageA,
   type GenerationResult,
 } from './profileGenerationOrchestrator';
 
@@ -16,7 +19,21 @@ import {
  */
 export async function generateAllReports(
   userId: string,
-  userProfile: UserProfile
+  userProfile: UserProfile,
+  options?: {
+    onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
+  },
 ): Promise<GenerationResult> {
-  return runProfileGeneration(userId, userProfile);
+  return runProfileGeneration(userId, userProfile, options);
+}
+
+export async function generateCoreReportsStageA(
+  userId: string,
+  userProfile: UserProfile,
+): Promise<GenerationResult> {
+  return runProfileGenerationStageA(userId, userProfile);
+}
+
+export function getCoreStageToolCount(): number {
+  return getCoreToolSlugsCore10().length;
 }
