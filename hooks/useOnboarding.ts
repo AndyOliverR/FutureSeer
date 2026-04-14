@@ -117,13 +117,16 @@ export function useOnboarding() {
     setIsTourActive(true);
   }, []);
 
-  // Check if user should see the tour (new user who hasn't completed or skipped)
+  // Eligibility for seeing onboarding content (manual or automatic)
   const shouldShowTour = !state.loading && !state.completed && !state.skipped && user?.uid;
+  // Auto-launch eligibility; consumers can still add layout-specific gating.
+  const shouldAutoShowTour = shouldShowTour;
 
   return {
     ...state,
     isTourActive,
     shouldShowTour,
+    shouldAutoShowTour,
     startTour,
     markCompleted,
     markSkipped,
