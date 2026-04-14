@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
 import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
@@ -48,13 +48,95 @@ function humanizePipelineSlug(slug: string): string {
 
 export default function MysticalProfilePage() {
   const router = useRouter()
-  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, signOut } = useAuth()
-  const { profile, loading: profileLoading, error } = useComprehensiveMysticalProfile()
+  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, signOut, refreshProfile: refreshAuthProfile } = useAuth()
+  const { profile, loading: profileLoading, error, refreshProfile: refreshMysticalProfile } = useComprehensiveMysticalProfile()
   const { material3: useMaterial3Layout, narrow: isNarrowViewport } =
     useIsPortraitNarrowLayout()
   const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
 
   const p = profile as Record<string, unknown> | null
+  const [generationPending, setGenerationPending] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false
+    return sessionStorage.getItem("futureSeer:generationStatus") === "in_progress"
+  })
+  const [generationError, setGenerationError] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    return sessionStorage.getItem("futureSeer:generationError")
+  })
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const onGenerationCompleted = (event: Event) => {
+      const detail = (event as CustomEvent<{ success?: boolean; error?: string }>).detail
+      if (detail?.success) {
+        sessionStorage.setItem("futureSeer:generationStatus", "completed")
+        sessionStorage.removeItem("futureSeer:generationError")
+        setGenerationPending(false)
+        setGenerationError(null)
+        void refreshAuthProfile()
+        void refreshMysticalProfile()
+        return
+      }
+      if (detail?.error) {
+        sessionStorage.setItem("futureSeer:generationStatus", "failed")
+        sessionStorage.setItem("futureSeer:generationError", detail.error)
+        setGenerationPending(false)
+        setGenerationError(detail.error)
+      }
+    }
+
+    window.addEventListener("futureSeer:profileGenerationCompleted", onGenerationCompleted)
+    return () => window.removeEventListener("futureSeer:profileGenerationCompleted", onGenerationCompleted)
+  }, [refreshAuthProfile, refreshMysticalProfile])
+
+  useEffect(() => {
+    if (!generationPending || !user) return
+    const interval = window.setInterval(() => {
+      void refreshAuthProfile()
+      void refreshMysticalProfile()
+      void user
+        .getIdToken()
+        .then(async (token) => {
+          const res = await fetch("/api/profile/generate-mystical", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (!res.ok) return
+          const data = (await res.json()) as { generated?: boolean; inProgress?: boolean; error?: string }
+          if (data.generated) {
+            sessionStorage.setItem("futureSeer:generationStatus", "completed")
+            sessionStorage.removeItem("futureSeer:generationError")
+            setGenerationPending(false)
+            setGenerationError(null)
+            return
+          }
+          if (!data.inProgress && !data.generated) {
+            sessionStorage.setItem("futureSeer:generationStatus", "failed")
+            const msg = "Generation did not complete. Please retry once."
+            sessionStorage.setItem("futureSeer:generationError", msg)
+            setGenerationPending(false)
+            setGenerationError(msg)
+          }
+        })
+        .catch(() => {
+          // ignore transient polling errors
+        })
+    }, 4000)
+    return () => window.clearInterval(interval)
+  }, [generationPending, user, refreshAuthProfile, refreshMysticalProfile])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (userProfile?.mysticalProfileGenerated && p) {
+      sessionStorage.setItem("futureSeer:generationStatus", "completed")
+      sessionStorage.removeItem("futureSeer:generationError")
+      const timer = window.setTimeout(() => {
+        setGenerationPending(false)
+        setGenerationError(null)
+      }, 0)
+      return () => window.clearTimeout(timer)
+    }
+  }, [userProfile?.mysticalProfileGenerated, p])
 
   const showMysticalPageLoader = useMemo(() => {
     if (authLoading) return true
@@ -100,11 +182,12 @@ export default function MysticalProfilePage() {
       userProfile &&
       !userProfile.mysticalProfileGenerated &&
       !isSuperadmin &&
-      !isAdmin
+      !isAdmin &&
+      !generationPending
     ) {
       router.replace("/profile")
     }
-  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin])
+  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending])
 
   const groupedCards = useMemo(() => {
     if (!p) return []
@@ -188,7 +271,8 @@ export default function MysticalProfilePage() {
     userProfile &&
     !userProfile.mysticalProfileGenerated &&
     !isSuperadmin &&
-    !isAdmin
+    !isAdmin &&
+    !generationPending
   ) {
     return null
   }
@@ -247,7 +331,12 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {ctaRow}
-        {groupedCards.length === 0 ? (
+        {generationPending ? (
+          <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
+            <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
+            <p className="text-on-surface">Generating your mystical profile. You can stay on this page while we complete it.</p>
+          </div>
+        ) : groupedCards.length === 0 ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
             No report snippets found yet. Open{" "}
             <Link href="/tools" className="text-primary underline">
@@ -325,7 +414,12 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {ctaRow}
-        {groupedCards.length === 0 ? (
+        {generationPending ? (
+          <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
+            <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
+            <p>Generating your mystical profile. Keep this page open while we complete all systems.</p>
+          </div>
+        ) : groupedCards.length === 0 ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
             <p>No snippets available yet. Try regenerating from your profile, or browse the tool library.</p>
@@ -388,6 +482,9 @@ export default function MysticalProfilePage() {
             ))}
           </div>
         )}
+        {generationError ? (
+          <p className="mt-4 text-center text-red-300 text-sm">{generationError}</p>
+        ) : null}
       </div>
     </div>
   )

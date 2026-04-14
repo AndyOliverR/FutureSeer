@@ -1123,6 +1123,8 @@ export interface UserProfile {
   subscriptionId?: string;
   selectedPlan?: string;
   autoMandateAccepted?: boolean;
+  freeTrialTermsAccepted?: boolean;
+  freeTrialTermsAcceptedAt?: number;
   subscriptionStatus?: string;
   noChargeAccount?: boolean;
   trialEndDate?: number;
