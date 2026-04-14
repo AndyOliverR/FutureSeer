@@ -114,7 +114,8 @@ export function OnboardingTour() {
     const verticalPadding = 12;
     if (isMobileViewport) {
       return {
-        top: `${Math.max(verticalPadding, Math.floor(viewportHeight * 0.08))}px`,
+        top: `${verticalPadding}px`,
+        bottom: `${verticalPadding}px`,
         left: '50%',
         transform: 'translateX(-50%)',
       };
@@ -189,7 +190,7 @@ export function OnboardingTour() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000]"
+            className="fixed inset-0 bg-black/35 z-[10000]"
             role="presentation"
             aria-hidden
             onClick={(e) => {
@@ -210,7 +211,7 @@ export function OnboardingTour() {
                   left: targetElement.getBoundingClientRect().left + window.scrollX - 4,
                   width: targetElement.getBoundingClientRect().width + 8,
                   height: targetElement.getBoundingClientRect().height + 8,
-                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
+                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.28)',
                 }}
               />
             )}
@@ -232,7 +233,7 @@ export function OnboardingTour() {
             aria-labelledby={`onboarding-step-title-${step.id}`}
             aria-describedby={`onboarding-step-desc-${step.id}`}
           >
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-400/50 rounded-xl p-4 sm:p-6 shadow-2xl max-h-[min(86dvh,86vh)] flex flex-col overflow-hidden">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-amber-400/50 rounded-xl p-4 sm:p-6 shadow-2xl max-h-[calc(100dvh-24px)] md:max-h-[min(86dvh,86vh)] flex flex-col overflow-hidden">
               {/* Header */}
               <div className="flex items-start justify-between mb-3 shrink-0">
                 <div className="flex-1 min-w-0">
