@@ -584,10 +584,13 @@ export const signUpWithEmail = async (
       referralCount: 0,
       freeMonthsRemaining: 1,
     };
+    const cleanUserProfile = Object.fromEntries(
+      Object.entries(userProfile).filter(([, value]) => value !== undefined)
+    ) as UserProfile;
 
     for (let attempt = 0; attempt < SIGNUP_MAX_ATTEMPTS; attempt++) {
       try {
-        await setDoc(doc(db, 'users', user.uid), userProfile);
+        await setDoc(doc(db, 'users', user.uid), cleanUserProfile);
         break;
       } catch (error: unknown) {
         const retry = isTransientFirestoreWriteError(error) && attempt < SIGNUP_MAX_ATTEMPTS - 1;
@@ -614,7 +617,7 @@ export const signOutUser = async (): Promise<void> => {
       await signOutNative();
     }
     if (auth) await signOut(auth);
-    redirectResultPromise = null;
+    setGlobalRedirectResultPromise(null);
     // Only redirect after sign-out succeeds
     if (typeof window !== 'undefined') {
       document.cookie = 'fs_auth=; path=/; max-age=0; SameSite=Lax';
@@ -723,17 +726,33 @@ export const isReturningUser = (user: User): boolean => {
  * Single-flight redirect result: overlapping calls (e.g. React remount / duplicate init)
  * must not run firebaseGetRedirectResult concurrently — it can trigger Auth internal
  * "Pending promise was never set" assertions.
+ *
+ * Keep this on globalThis so multiple webpack chunks/module instances still share one in-flight promise.
  */
-let redirectResultPromise: Promise<UserCredential | null> | null = null;
+type GlobalFirebaseState = typeof globalThis & {
+  __fsRedirectResultPromise__?: Promise<UserCredential | null> | null;
+};
+
+function getGlobalRedirectResultPromise(): Promise<UserCredential | null> | null {
+  const g = globalThis as GlobalFirebaseState;
+  return g.__fsRedirectResultPromise__ ?? null;
+}
+
+function setGlobalRedirectResultPromise(value: Promise<UserCredential | null> | null): void {
+  const g = globalThis as GlobalFirebaseState;
+  g.__fsRedirectResultPromise__ = value;
+}
 
 export const getRedirectResult = async (): Promise<UserCredential | null> => {
   const auth = getFirebaseAuth();
   if (!auth) return null;
+  let redirectResultPromise = getGlobalRedirectResultPromise();
   if (!redirectResultPromise) {
     redirectResultPromise = firebaseGetRedirectResult(auth).catch((e: unknown) => {
       devLog.debug('getRedirectResult: no result or error', e, 'firebase');
       return null;
     });
+    setGlobalRedirectResultPromise(redirectResultPromise);
   }
   return redirectResultPromise;
 };

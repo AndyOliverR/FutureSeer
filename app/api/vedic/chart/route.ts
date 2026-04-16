@@ -14,8 +14,11 @@ export async function POST(request: NextRequest) {
       birthDate, birthTime, birthPlace, latitude, longitude
     }, 'vedic');
 
+    const hasValidCoordinate = (value: unknown): value is number =>
+      typeof value === 'number' && Number.isFinite(value);
+
     // Validate required fields
-    if (!birthDate || !birthTime || !latitude || !longitude) {
+    if (!birthDate || !birthTime || !hasValidCoordinate(latitude) || !hasValidCoordinate(longitude)) {
       return NextResponse.json({
         success: false,
         error: 'Missing required birth data'

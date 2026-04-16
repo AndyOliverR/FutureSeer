@@ -45,6 +45,10 @@ export interface OccultResponse {
   };
 }
 
+function isMissingCoordinate(value: unknown): boolean {
+  return typeof value !== 'number' || !Number.isFinite(value);
+}
+
 // Swiss Ephemeris Integration Functions
 async function calculateVedicChart(birthData: BirthData, options: any = {}) {
   devLog.info('🔮 Calculating REAL Vedic chart for:', birthData, 'occult');
@@ -55,7 +59,7 @@ async function calculateVedicChart(birthData: BirthData, options: any = {}) {
     let longitude = birthData.longitude;
 
     // If coordinates are missing but birthPlace is provided, geocode it
-    if ((!latitude || !longitude) && birthData.birthPlace) {
+    if ((isMissingCoordinate(latitude) || isMissingCoordinate(longitude)) && birthData.birthPlace) {
       devLog.info(`📍 Coordinates missing, geocoding: ${birthData.birthPlace}`, undefined, 'occult');
       const { geocodePlace } = await import('@/services/geocoding');
       const coords = await geocodePlace(birthData.birthPlace);
@@ -69,7 +73,7 @@ async function calculateVedicChart(birthData: BirthData, options: any = {}) {
     }
 
     // Final validation: Ensure we have coordinates
-    if (!latitude || !longitude) {
+    if (isMissingCoordinate(latitude) || isMissingCoordinate(longitude)) {
       throw new Error('Birth location is required for accurate chart calculation.');
     }
 
@@ -98,7 +102,8 @@ async function calculateVedicChart(birthData: BirthData, options: any = {}) {
     return result;
   } catch (error) {
     devLog.error('❌ Vedic chart calculation error:', error, 'route');
-    throw new Error(`Failed to generate Vedic chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const reason = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to generate Vedic chart [validation_or_geocode_or_compute]: ${reason}`);
   }
 }
 
