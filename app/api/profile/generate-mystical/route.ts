@@ -287,9 +287,26 @@ export async function POST(request: NextRequest) {
         route: '/api/profile/generate-mystical',
         meta: { systemsUsed: stageAResult.systemsUsed?.length ?? 0, failedTools: stageAResult.failedTools ?? [] },
       }).catch(() => {});
+      await setDocument('generationLocks', uid, {
+        status: 'failed',
+        phase: 'stageA_failed',
+        completedTools: 0,
+        totalTools: ALL_TOOL_SLUGS.length,
+        failedAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
       return NextResponse.json(
-        { error: errorMessage },
-        { status: 500 }
+        {
+          success: true,
+          generationState: 'stageA_failed',
+          message: 'Core profile generation could not complete. Please retry Vedic chart generation.',
+          systemsUsed: stageAResult.systemsUsed,
+          failedTools: stageAResult.failedTools,
+          partial: true,
+          error: errorMessage,
+        },
+        { status: 202 }
       );
     }
 
