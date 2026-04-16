@@ -3,8 +3,10 @@
 import React from 'react'
 import { devLog } from '@/lib/devLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import ColorfulWesternChart from './ColorfulWesternChart'
 import ChartMetadataComponent, { ChartMetadata } from './ChartMetadata'
+import { UnifiedChartRenderer, createWesternChartData } from '@/components/charts/UnifiedChartRenderer';
+import ColorfulWesternChart from './ColorfulWesternChart';
+import { isUnifiedChartsEnabled } from '@/lib/charts/featureFlags';
 
 interface Planet {
   name: string;
@@ -52,8 +54,8 @@ export default function DualChartDisplay({
   natalAspects,
   transitPlanets,
   transitHouses,
-  width = 550,
-  height = 400,
+  width: _width = 550,
+  height: _height = 400,
   natalMetadata,
   transitMetadata
 }: DualChartDisplayProps) {
@@ -84,15 +86,27 @@ export default function DualChartDisplay({
                 )}
                 
                 <div className="w-full h-full min-h-[400px] flex items-center justify-center">
-                  <ColorfulWesternChart
-                    planets={natalPlanets}
-                    houses={natalHouses}
-                    aspects={natalAspects}
-                    width={width}
-                    height={height}
-                    title=""
-                    backgroundColor="#f3f4f9"
-                  />
+                  {isUnifiedChartsEnabled() ? (
+                    <UnifiedChartRenderer
+                      chart={createWesternChartData({
+                        planets: natalPlanets as unknown as Array<Record<string, unknown>>,
+                        houses: natalHouses as unknown as Array<Record<string, unknown>>,
+                        aspects: natalAspects as unknown as Array<Record<string, unknown>>,
+                        title: 'Natal Chart',
+                      })}
+                      visualVariant="ivory-manuscript"
+                    />
+                  ) : (
+                    <ColorfulWesternChart
+                      planets={natalPlanets}
+                      houses={natalHouses}
+                      aspects={natalAspects}
+                      width={_width}
+                      height={_height}
+                      title=""
+                      backgroundColor="#f3f4f9"
+                    />
+                  )}
                 </div>
           </CardContent>
         </Card>
@@ -114,15 +128,27 @@ export default function DualChartDisplay({
             )}
             
             <div className="w-full h-full min-h-[400px] flex items-center justify-center">
-              <ColorfulWesternChart
-                planets={transitPlanets}
-                houses={transitHouses}
-                aspects={[]} // Transit aspects can be added later
-                width={width}
-                height={height}
-                title=""
-                backgroundColor="#f0fdf4"
-              />
+              {isUnifiedChartsEnabled() ? (
+                <UnifiedChartRenderer
+                  chart={createWesternChartData({
+                    planets: transitPlanets as unknown as Array<Record<string, unknown>>,
+                    houses: transitHouses as unknown as Array<Record<string, unknown>>,
+                    aspects: [],
+                    title: 'Transit Chart',
+                  })}
+                  visualVariant="ivory-manuscript"
+                />
+              ) : (
+                <ColorfulWesternChart
+                  planets={transitPlanets}
+                  houses={transitHouses}
+                  aspects={[]}
+                  width={_width}
+                  height={_height}
+                  title=""
+                  backgroundColor="#f0fdf4"
+                />
+              )}
             </div>
           </CardContent>
         </Card>

@@ -6,14 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
-  Download, 
   Eye, 
   EyeOff, 
   Maximize2,
   Star,
-  MapPin,
-  Calendar
 } from 'lucide-react';
+import { UnifiedChartRenderer, createVedicChartData } from '@/components/charts/UnifiedChartRenderer';
+import { isUnifiedChartsEnabled } from '@/lib/charts/featureFlags';
 import VedicChartNorthPro from '@/components/VedicChartNorthPro';
 import VedicChartSouthPro from '@/components/VedicChartSouthPro';
 import VedicChartCircular from '@/components/VedicChartCircular';
@@ -62,23 +61,26 @@ export function UnifiedChartDisplay({
   ];
 
   const renderChart = (type: string) => {
-    const commonProps = {
-      chart,
-      name: `${name}-${type}`,
-      className: "min-h-[500px]",
-      onPlanetClick
-    };
-
-    switch (type) {
-      case "north":
-        return <VedicChartNorthPro {...commonProps} />;
-      case "south":
-        return <VedicChartSouthPro {...commonProps} />;
-      case "circular":
-        return <VedicChartCircular {...commonProps} radius={200} />;
-      default:
-        return <VedicChartNorthPro {...commonProps} />;
+    if (!isUnifiedChartsEnabled()) {
+      const commonProps = {
+        chart,
+        name: `${name}-${type}`,
+        className: "min-h-[500px]",
+        onPlanetClick,
+      };
+      if (type === 'south') return <VedicChartSouthPro {...commonProps} />;
+      if (type === 'circular') return <VedicChartCircular {...commonProps} radius={200} />;
+      return <VedicChartNorthPro {...commonProps} />;
     }
+
+    const layout = type === 'south' ? 'vedic-south' : type === 'circular' ? 'nakshatra-wheel' : 'vedic-north';
+    const unified = createVedicChartData({
+      houses: chart.houses,
+      planets: chart.planets,
+      title: `${name}-${type}`,
+      layout,
+    });
+    return <UnifiedChartRenderer chart={unified} visualVariant="auric-night" />;
   };
 
   return (

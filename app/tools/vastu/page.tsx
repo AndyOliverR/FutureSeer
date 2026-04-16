@@ -40,6 +40,9 @@ import { toolPathForSlug } from '@/lib/report-viral/toolSlugToPath'
 import { cn } from '@/lib/utils'
 import { useToolReportUnlock } from '@/hooks/useToolReportUnlock'
 import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { Phase2VisualPanel } from '@/components/charts/Phase2VisualPanel'
+import { adaptVastuCompass } from '@/lib/charts/phase2Adapters'
+import { isVastuChartsV2Enabled } from '@/lib/charts/featureFlags'
 
 // Helper function to get color styles based on color name
 function getColorStyles(colorName: string): string {
@@ -359,6 +362,19 @@ export default function VastuPage() {
           </div>
 
         </motion.div>
+
+        {analysis && isVastuChartsV2Enabled() && (
+          <div className="mb-6">
+            <Phase2VisualPanel
+              charts={[
+                adaptVastuCompass({
+                  title: 'Vastu Compass (Phase 2 Preview)',
+                  zones: analysis?.rooms?.slice(0, 8)?.map((room: any) => String(room?.idealDirection ?? room?.currentDirection ?? ''))?.filter(Boolean),
+                }),
+              ]}
+            />
+          </div>
+        )}
 
         {/* Main Content */}
                 {isLoading ? (
