@@ -42,6 +42,9 @@ import FengShuiCures from "@/components/fengshui/FengShuiCures"
 import FengShuiPracticalGuides from "@/components/fengshui/FengShuiPracticalGuides"
 import FengShuiReport from "@/components/fengshui/FengShuiReport"
 import CompassHelper from "@/components/fengshui/CompassHelper"
+import { Phase2VisualPanel } from "@/components/charts/Phase2VisualPanel"
+import { adaptFengShuiBagua } from "@/lib/charts/phase2Adapters"
+import { isFengShuiChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { FengShuiLayoutInput } from "@/components/FengShuiSeerChatInterface"
 
@@ -256,6 +259,19 @@ export default function FengShuiPage() {
           {/* Main Content */}
           {!isLoading && analysis && reading && (
             <>
+              {isFengShuiChartsV2Enabled() && (
+                <div className="mb-6">
+                  <Phase2VisualPanel
+                    charts={[
+                      adaptFengShuiBagua({
+                        title: "Feng Shui Bagua (Phase 2 Preview)",
+                        sectors: analysis?.bagua?.map((area) => String(area?.name ?? '')).filter(Boolean),
+                      }),
+                    ]}
+                  />
+                </div>
+              )}
+
               {showFengViral && !bypassViral && (
                 <div className="mb-6 space-y-4">
                   <TeaserView teaser={fengTeaser} />

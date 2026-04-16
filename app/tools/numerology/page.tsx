@@ -68,6 +68,9 @@ import NumerologySeerChatInterface from '@/components/numerology/NumerologySeerC
 import { DevotionistStyleCard } from '@/components/western/DevotionistStyleCard'
 import { ChaldeanInterpretations } from '@/lib/numerology/chaldean'
 import { toIntegerOrNull, toIntegerOrUndefined } from '@/lib/utils/coerceNumber'
+import { Phase2VisualPanel } from '@/components/charts/Phase2VisualPanel'
+import { adaptNumerologyMatrix } from '@/lib/charts/phase2Adapters'
+import { isNumerologyChartsV2Enabled } from '@/lib/charts/featureFlags'
 
 /** Map pipeline report (numbers, breakdown, etc.) to page-style numerology data. */
 function numerologyDataFromReport(report: unknown): Record<string, unknown> | null {
@@ -299,6 +302,26 @@ export default function NumerologyPage() {
           
           {/* Debug info removed for production */}
         </div>
+
+        {isNumerologyChartsV2Enabled() && (
+          <div className="mb-6">
+            <Phase2VisualPanel
+              charts={[
+                adaptNumerologyMatrix({
+                  title: 'Numerology Matrix (Phase 2 Preview)',
+                  values: [
+                    toIntegerOrNull(numerologyData?.life_path_number ?? numerologyData?.life_path) ?? 0,
+                    toIntegerOrNull(numerologyData?.expression_number) ?? 0,
+                    toIntegerOrNull(numerologyData?.soul_number ?? numerologyData?.soul_urge) ?? 0,
+                    toIntegerOrNull(numerologyData?.personality_number) ?? 0,
+                    toIntegerOrNull(numerologyData?.destiny_number) ?? 0,
+                    toIntegerOrNull(numerologyData?.birthday_number) ?? 0,
+                  ],
+                }),
+              ]}
+            />
+          </div>
+        )}
 
         {showNumerologyViral && !bypassViral && (
           <div className="mb-6 space-y-4">

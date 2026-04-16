@@ -34,6 +34,7 @@ jest.mock('@/lib/firebase-admin', () => {
       return callback(tx);
     }),
     collection: jest.fn((colName: string) => ({
+      add: jest.fn().mockResolvedValue({ id: 'mock-error-event-id' }),
       doc: jest.fn((docId: string) => {
         const ref: { path: string; collection?: jest.Mock } = {
           path: `${colName}/${docId}`,

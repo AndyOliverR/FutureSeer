@@ -46,6 +46,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { getPermanentChart, storeCurrentChart, getCurrentChart, ChartStorage } from '@/lib/chartStorage'
 import { calculateCurrentDasha } from '@/lib/vedic-core'
+import { Phase2VisualPanel } from '@/components/charts/Phase2VisualPanel'
+import { adaptKpOverlay } from '@/lib/charts/phase2Adapters'
+import { isKpChartsV2Enabled } from '@/lib/charts/featureFlags'
 
 const CHART_CANVAS_W = 450
 const CHART_CANVAS_H = 333
@@ -1129,6 +1132,29 @@ export default function KPAstrologyPage() {
                   </motion.div>
                 ))}
               </TabsList>
+
+            {analysis && isKpChartsV2Enabled() && (
+              <div className="pt-6 px-4 sm:px-6 pb-2">
+                <Phase2VisualPanel
+                  charts={[
+                    adaptKpOverlay({
+                      title: 'KP Overlay (Phase 2 Preview)',
+                      points: (() => {
+                        const chart = (analysis as Record<string, unknown>)?.chart as Record<string, unknown> | undefined;
+                        const planets = chart?.planets as Array<Record<string, unknown>> | undefined;
+                        if (!Array.isArray(planets)) return [];
+                        return planets.slice(0, 12).map((planet, index) => ({
+                          id: String(planet.name ?? `p${index}`),
+                          label: String(planet.name ?? `P${index + 1}`),
+                          longitude: Number(planet.longitude ?? planet.lon ?? 0),
+                          house: Number(planet.house ?? 0),
+                        }));
+                      })(),
+                    }),
+                  ]}
+                />
+              </div>
+            )}
 
             {activeTab === 'kp_astrology_expert' && analysis ? (
               <motion.div
