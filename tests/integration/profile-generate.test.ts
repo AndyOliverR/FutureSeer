@@ -222,4 +222,70 @@ describe('Profile generate-mystical API', () => {
       expect(data.error).toBeDefined();
     });
   });
+
+  describe('Vedic failure resilience', () => {
+    it('returns graceful partial response when Stage A has no successful systems', async () => {
+      const profile = { ...baseProfile };
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve(profile);
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
+        return Promise.resolve(undefined);
+      });
+      mockGenerateCoreReportsStageA.mockResolvedValueOnce({
+        success: false,
+        systemsUsed: [],
+        failedTools: ['vedic'],
+        comprehensiveProfile: {},
+        seerMaster: {},
+        toolReports: {
+          vedic: { status: 'failed', error: 'Vedic API: 500', generatedAt: new Date().toISOString() },
+        },
+        aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      });
+
+      const res = await callGenerate();
+      const data = await res.json();
+
+      expect(res.status).toBe(202);
+      expect(data.success).toBe(true);
+      expect(data.partial).toBe(true);
+      expect(data.generationState).toBe('stageA_failed');
+      expect(data.failedTools).toContain('vedic');
+    });
+
+    it('preserves zero-value coordinates in overrides (0 is valid)', async () => {
+      const profile = { ...baseProfile };
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve(profile);
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
+        return Promise.resolve(undefined);
+      });
+
+      const req = new NextRequest('http://localhost:3000/api/profile/generate-mystical', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer fake-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          profileOverrides: {
+            birthLatitude: 0,
+            birthLongitude: 0,
+          },
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(202);
+      expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(
+        uid,
+        expect.objectContaining({
+          birthLatitude: 0,
+          birthLongitude: 0,
+        }),
+      );
+    });
+  });
 });
