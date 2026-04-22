@@ -1,18 +1,22 @@
 "use client"
 
-import { useCallback, useMemo, useEffect, Suspense } from "react"
+import { useMemo, useEffect, Suspense, useRef } from "react"
 import Link from "next/link"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useTools } from "@/hooks/useTools"
 import { navigateToTool } from '@/lib/utils/toolRouting'
 import { ArrowLeft, Search, Sparkles, ChevronRight, Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
-import { hasRequiredProfileSetup, PROFILE_SETUP_PATH } from "@/lib/authRouting"
+import {
+  getReturningPaymentCommitDestination,
+  hasRequiredProfileSetup,
+  PROFILE_SETUP_PATH,
+} from "@/lib/authRouting"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { BACK_NAV_LINK_CLASSES } from "@/components/navigation/BackButton"
+import { analytics } from "@/lib/analytics"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 
@@ -20,9 +24,11 @@ function ToolsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
-  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin } = useAuth();
+  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, requiresReturningPaymentCommit } = useAuth();
   const { tools, searchTerm, setSearchTerm } = useTools();
   const isMobileLayout = useIsMobileLayout();
+  const gateTrackedRef = useRef(false)
+  const bypassTrackedRef = useRef(false)
 
   useEffect(() => {
     if (
@@ -36,6 +42,27 @@ function ToolsPageContent() {
       router.replace(PROFILE_SETUP_PATH);
     }
   }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin]);
+
+  useEffect(() => {
+    if (!authLoading && user && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) {
+      if (!gateTrackedRef.current) {
+        analytics.trackReturnGateViewed({ surface: "tools_route", destination: "/subscribe" })
+        gateTrackedRef.current = true
+      }
+      const attempted =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : "/tools";
+      router.replace(getReturningPaymentCommitDestination(attempted));
+    }
+  }, [authLoading, user, requiresReturningPaymentCommit, router, isSuperadmin, isAdmin]);
+
+  useEffect(() => {
+    if (!authLoading && user && !requiresReturningPaymentCommit && !isSuperadmin && !isAdmin && !bypassTrackedRef.current) {
+      analytics.trackReturnGateBypassedActiveSubscriber({ surface: "tools_route" })
+      bypassTrackedRef.current = true
+    }
+  }, [authLoading, user, requiresReturningPaymentCommit, isSuperadmin, isAdmin])
 
   const displayedTools = useMemo(() => {
     let list = categoryParam ? tools.filter(t => t.category === categoryParam) : tools;
@@ -63,6 +90,7 @@ function ToolsPageContent() {
   }, [displayedTools, categoryParam, searchTerm]);
 
   if (user && userProfile != null && !hasRequiredProfileSetup(userProfile) && !isSuperadmin && !isAdmin) return null;
+  if (user && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) return null;
 
   // RENDER MATERIAL 3 (mobile layout: small screen or native)
   if (isMobileLayout) {
@@ -127,7 +155,7 @@ function ToolsPageContent() {
             ))
           ) : (
             <div className="grid grid-cols-1 gap-3">
-              {displayedTools.map((tool, index) => (
+              {displayedTools.map((tool) => (
                 <motion.div
                   key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}

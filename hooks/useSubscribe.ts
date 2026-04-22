@@ -46,7 +46,13 @@ interface CommunityFeature {
   availableIn: string[];
 }
 
-export function useSubscribe() {
+type UseSubscribeOptions = {
+  requireReturningCommit?: boolean;
+  redirectAfterCommit?: string;
+};
+
+export function useSubscribe(options: UseSubscribeOptions = {}) {
+  const { requireReturningCommit = false, redirectAfterCommit } = options;
   const router = useRouter();
   const { user, userProfile, loading: authLoading, isSpecialUser } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -68,66 +74,68 @@ export function useSubscribe() {
       const priceQuarterly = getAttractivePrice('quarterly', country);
       const priceAnnual = getAttractivePrice('annual', country);
 
+      const plans: SubscriptionPlan[] = [
+        {
+          id: "power-user-trial",
+          name: "Power User Trial",
+          price: 0,
+          currency: cfg.currency,
+          interval: "forever",
+          currencySymbol: cfg.currencySymbol,
+          formatted: "Free",
+          features: [...MEMBERSHIP_TIER_FEATURES["power-user-trial"]],
+          valueScore: 3,
+          targetAudience: "New users, curious explorers",
+        },
+        {
+          id: "buy-coffee",
+          name: "Coffee",
+          price: priceAll.price,
+          currency: priceAll.currency,
+          interval: "month",
+          currencySymbol: priceAll.currencySymbol,
+          formatted: priceAll.formatted,
+          features: [...MEMBERSHIP_TIER_FEATURES["buy-coffee"]],
+          popular: true,
+          valueScore: 7,
+          targetAudience: "Regular users, spiritual seekers",
+        },
+        {
+          id: "treat-me",
+          name: "Treat",
+          price: priceQuarterly.price,
+          currency: priceQuarterly.currency,
+          interval: "quarter",
+          currencySymbol: priceQuarterly.currencySymbol,
+          formatted: priceQuarterly.formatted,
+          features: [
+            "Quarterly contribution",
+            "Better value, same mission",
+            "All monthly benefits",
+            "3 months of innovation support",
+            "Early access to new features",
+            "Priority support",
+          ],
+          valueScore: 8,
+          targetAudience: "Committed supporters",
+        },
+        {
+          id: "festive-hamper",
+          name: "Hamper",
+          price: priceAnnual.price,
+          currency: priceAnnual.currency,
+          interval: "year",
+          currencySymbol: priceAnnual.currencySymbol,
+          formatted: priceAnnual.formatted,
+          features: [...MEMBERSHIP_TIER_FEATURES["festive-hamper"]],
+          valueScore: 10,
+          targetAudience: "Annual believers",
+        },
+      ];
+
       const subConfig: SubscriptionConfig = {
         available: true,
-        plans: [
-          {
-            id: "power-user-trial",
-            name: "Power User Trial",
-            price: 0,
-            currency: cfg.currency,
-            interval: "forever",
-            currencySymbol: cfg.currencySymbol,
-            formatted: "Free",
-            features: [...MEMBERSHIP_TIER_FEATURES["power-user-trial"]],
-            valueScore: 3,
-            targetAudience: "New users, curious explorers",
-          },
-          {
-            id: "buy-coffee",
-            name: "Coffee",
-            price: priceAll.price,
-            currency: priceAll.currency,
-            interval: "month",
-            currencySymbol: priceAll.currencySymbol,
-            formatted: priceAll.formatted,
-            features: [...MEMBERSHIP_TIER_FEATURES["buy-coffee"]],
-            popular: true,
-            valueScore: 7,
-            targetAudience: "Regular users, spiritual seekers",
-          },
-          {
-            id: "treat-me",
-            name: "Treat",
-            price: priceQuarterly.price,
-            currency: priceQuarterly.currency,
-            interval: "quarter",
-            currencySymbol: priceQuarterly.currencySymbol,
-            formatted: priceQuarterly.formatted,
-            features: [
-              "Quarterly contribution",
-              "Better value, same mission",
-              "All monthly benefits",
-              "3 months of innovation support",
-              "Early access to new features",
-              "Priority support",
-            ],
-            valueScore: 8,
-            targetAudience: "Committed supporters",
-          },
-          {
-            id: "festive-hamper",
-            name: "Hamper",
-            price: priceAnnual.price,
-            currency: priceAnnual.currency,
-            interval: "year",
-            currencySymbol: priceAnnual.currencySymbol,
-            formatted: priceAnnual.formatted,
-            features: [...MEMBERSHIP_TIER_FEATURES["festive-hamper"]],
-            valueScore: 10,
-            targetAudience: "Annual believers",
-          },
-        ],
+        plans: plans.filter((plan) => (requireReturningCommit ? plan.id !== "power-user-trial" : true)),
         features: [
           { tier: "Core Value", features: ["AI-Powered Predictions", "18+ Divination Tools", "Personalized Insights", "Mobile Optimization"], value: "Foundation of mystical guidance" },
           { tier: "Advanced Value", features: ["Custom AI Training", "Pattern Recognition", "Community Features", "Priority Support"], value: "Enhanced personalization & community" },
@@ -147,7 +155,7 @@ export function useSubscribe() {
       setError("Failed to load subscription options");
       setSubscriptionConfig({ available: false, plans: [], features: [], communityFeatures: [] });
     }
-  }, [country]);
+  }, [country, requireReturningCommit]);
 
   useEffect(() => {
     fetchSubscriptionConfig();
@@ -158,6 +166,10 @@ export function useSubscribe() {
     setError(null);
 
     if (planId === 'power-user-trial') {
+      if (requireReturningCommit) {
+        setError('Please choose a paid plan to complete returning access.');
+        throw new Error('Paid plan required for returning access');
+      }
       router.push('/tools');
       return;
     }
@@ -175,7 +187,11 @@ export function useSubscribe() {
     }
 
     if (!user) {
-      router.push('/signin?redirect=/subscribe');
+      const subscribePath =
+        typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}`
+          : '/subscribe';
+      router.push(`/signin?redirect=${encodeURIComponent(subscribePath)}`);
       return;
     }
 
@@ -232,6 +248,7 @@ export function useSubscribe() {
           name: user.displayName || user.email || '',
           country: userCountry,
           userId: user.uid,
+          enableTrial: requireReturningCommit,
         }),
       });
 
@@ -242,13 +259,20 @@ export function useSubscribe() {
 
       if (createData.noSubscriptionRequired === true) {
         setLoading(false);
-        router.push('/tools');
+        router.push(redirectAfterCommit || '/tools');
         return;
       }
 
       const { subscriptionId, razorpayKeyId } = createData;
       if (!subscriptionId || !razorpayKeyId) {
         throw new Error('Missing subscription or key from server');
+      }
+
+      if (requireReturningCommit) {
+        analytics.trackReturnPlanCommitStarted({
+          surface: 'subscribe_checkout',
+          plan: planId,
+        });
       }
 
       await initializeSubscriptionCheckout({
@@ -289,7 +313,14 @@ export function useSubscribe() {
               surface: 'subscribe_checkout',
               razorpay_payment_id: res.razorpay_payment_id,
             });
-            router.push('/tools');
+            if (requireReturningCommit) {
+              analytics.trackReturnPlanCommitCompleted({
+                surface: 'subscribe_checkout',
+                plan: planId,
+                destination: redirectAfterCommit || '/tools',
+              });
+            }
+            router.push(redirectAfterCommit || '/tools');
           } catch (err) {
             console.error('Subscribe verify error:', err);
             setError(err instanceof Error ? err.message : 'Verification failed');
@@ -308,7 +339,7 @@ export function useSubscribe() {
       setLoading(false);
       throw err;
     }
-  }, [user, userProfile, router, authLoading, isSpecialUser]);
+  }, [user, userProfile, router, authLoading, isSpecialUser, requireReturningCommit, redirectAfterCommit]);
 
   // Analytics and optimization functions
   const trackPricingEvent = useCallback((event: string, planId: string, metadata?: Record<string, unknown>) => {

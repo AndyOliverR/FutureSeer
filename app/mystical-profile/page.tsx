@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
 import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
 import { useIsPortraitNarrowLayout } from "@/hooks/useIsPortraitNarrowLayout"
 import {
+  getReturningPaymentCommitDestination,
   hasRequiredProfileSetup,
   PROFILE_SETUP_PATH,
 } from "@/lib/authRouting"
@@ -27,6 +28,7 @@ import { MysticalLoadingState } from "@/components/MysticalLoadingState"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { getMissingFullProfileFields, isTrialActive } from "@/lib/subscriptionConfig"
+import { analytics } from "@/lib/analytics"
 
 const CATEGORY_ORDER = [
   "Astrology",
@@ -49,7 +51,16 @@ function humanizePipelineSlug(slug: string): string {
 
 export default function MysticalProfilePage() {
   const router = useRouter()
-  const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, signOut, refreshProfile: refreshAuthProfile } = useAuth()
+  const {
+    user,
+    userProfile,
+    loading: authLoading,
+    isSuperadmin,
+    isAdmin,
+    signOut,
+    refreshProfile: refreshAuthProfile,
+    requiresReturningPaymentCommit,
+  } = useAuth()
   const { profile, loading: profileLoading, error, refreshProfile: refreshMysticalProfile } = useComprehensiveMysticalProfile()
   const { material3: useMaterial3Layout, narrow: isNarrowViewport } =
     useIsPortraitNarrowLayout()
@@ -72,6 +83,8 @@ export default function MysticalProfilePage() {
   const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
+  const gateTrackedRef = useRef(false)
+  const bypassTrackedRef = useRef(false)
   const loadingMessages = useMemo(
     () => [
       "Calibrating charts...",
@@ -245,6 +258,23 @@ export default function MysticalProfilePage() {
       return
     }
     if (
+      user &&
+      requiresReturningPaymentCommit &&
+      !isSuperadmin &&
+      !isAdmin
+    ) {
+      if (!gateTrackedRef.current) {
+        analytics.trackReturnGateViewed({ surface: "mystical_profile_route", destination: "/subscribe" })
+        gateTrackedRef.current = true
+      }
+      const attempted =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : "/mystical-profile";
+      router.replace(getReturningPaymentCommitDestination(attempted))
+      return
+    }
+    if (
       userProfile &&
       !userProfile.mysticalProfileGenerated &&
       !isSuperadmin &&
@@ -253,7 +283,14 @@ export default function MysticalProfilePage() {
     ) {
       router.replace("/profile")
     }
-  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending])
+  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending, requiresReturningPaymentCommit])
+
+  useEffect(() => {
+    if (!authLoading && user && !requiresReturningPaymentCommit && !isSuperadmin && !isAdmin && !bypassTrackedRef.current) {
+      analytics.trackReturnGateBypassedActiveSubscriber({ surface: "mystical_profile_route" })
+      bypassTrackedRef.current = true
+    }
+  }, [authLoading, user, requiresReturningPaymentCommit, isSuperadmin, isAdmin])
 
   const groupedCards = useMemo(() => {
     if (!p) return []
@@ -330,6 +367,9 @@ export default function MysticalProfilePage() {
   }
 
   if (!user || (userProfile != null && !hasRequiredProfileSetup(userProfile) && !isSuperadmin && !isAdmin)) {
+    return null
+  }
+  if (user && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) {
     return null
   }
 

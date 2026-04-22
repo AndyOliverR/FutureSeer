@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { devLog } from '@/lib/devLogger';
 import { useAuth } from '@/hooks/use-auth';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,8 @@ import { GuestDiscussionForm } from '@/components/community/GuestDiscussionForm'
 import { AttributionLeaderboard } from '@/components/AttributionLeaderboard';
 import { RecaptchaScript } from '@/components/RecaptchaScript';
 import { useToast } from '@/components/ui/use-toast';
+import { getReturningPaymentCommitDestination } from '@/lib/authRouting';
+import { analytics } from '@/lib/analytics';
 interface UserContribution {
   id: string;
   type: 'feedback' | 'suggestion' | 'bug-report' | 'feature-request';
@@ -101,7 +104,8 @@ interface UserAttribution {
 }
 
 export default function CommunityAttributionPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, requiresReturningPaymentCommit, isSuperadmin, isAdmin } = useAuth();
+  const router = useRouter();
   const { toast } = useToast();
   const [attribution, setAttribution] = useState<UserAttribution | null>(null);
   const [communityMembers, setCommunityMembers] = useState<CommunityMember[]>([]);
@@ -123,6 +127,8 @@ export default function CommunityAttributionPage() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [pendingIncomingCount, setPendingIncomingCount] = useState(0);
   const [newDiscussionCount, setNewDiscussionCount] = useState(0);
+  const [gateTracked, setGateTracked] = useState(false);
+  const [bypassTracked, setBypassTracked] = useState(false);
 
   const LOAD_TIMEOUT_MS = 10000; // Don't block the page forever if a request hangs
 
@@ -387,13 +393,32 @@ export default function CommunityAttributionPage() {
 
   useEffect(() => {
     if (authLoading) return;
+    if (user?.uid && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) {
+      if (!gateTracked) {
+        analytics.trackReturnGateViewed({ surface: 'community_route', destination: '/subscribe' });
+        setGateTracked(true);
+      }
+      const attempted =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : "/community/attribution";
+      router.replace(getReturningPaymentCommitDestination(attempted));
+      return;
+    }
     if (user?.uid) {
       void loadCommunityData();
     } else {
       void loadGuestDiscussions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when auth gate or user id changes
-  }, [user?.uid, authLoading, discussionSort]);
+  }, [user?.uid, authLoading, discussionSort, requiresReturningPaymentCommit, isSuperadmin, isAdmin, router, gateTracked]);
+
+  useEffect(() => {
+    if (!authLoading && user?.uid && !requiresReturningPaymentCommit && !isSuperadmin && !isAdmin && !bypassTracked) {
+      analytics.trackReturnGateBypassedActiveSubscriber({ surface: 'community_route' });
+      setBypassTracked(true);
+    }
+  }, [authLoading, user?.uid, requiresReturningPaymentCommit, isSuperadmin, isAdmin, bypassTracked]);
 
   useEffect(() => {
     if (!user?.uid || authLoading) return;
@@ -790,6 +815,16 @@ export default function CommunityAttributionPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
           <p className="text-amber-200">Loading your mystical community...</p>
+        </div>
+      </div>
+    );
+  }
+  if (user?.uid && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) {
+    return (
+      <div className="starfield-ultra-sharp min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-400 mx-auto mb-4"></div>
+          <p className="text-amber-200">Redirecting to plan commitment…</p>
         </div>
       </div>
     );
