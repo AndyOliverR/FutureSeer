@@ -700,6 +700,12 @@ export default function ProfilePage() {
         surface,
         failed_tools_count: Array.isArray(data.failedTools) ? data.failedTools.length : 0,
       })
+      if (isFirstHookUser) {
+        analytics.trackFirstTimeOnboardingCompleted({
+          surface,
+          generation_state: generationState ?? "completed",
+        })
+      }
       if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
       if (isMountedRef.current) {
         setSuccess("Mystical Profile Generated!")

@@ -176,6 +176,12 @@ function SignUpPageContent() {
     try {
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
+      if (!returning) {
+        analytics.trackFirstTimeOnboardingStarted({
+          surface: "signup",
+          method: "google",
+        })
+      }
       router.push(redirectTo ?? (returning ? getReturningUserWithReportsDestination() : "/profile"))
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
@@ -227,6 +233,12 @@ function SignUpPageContent() {
     try {
       const user = await signInWithApple()
       const returning = isReturningUser(user)
+      if (!returning) {
+        analytics.trackFirstTimeOnboardingStarted({
+          surface: "signup",
+          method: "apple",
+        })
+      }
       router.push(redirectTo ?? (returning ? getReturningUserWithReportsDestination() : "/profile"))
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
@@ -322,6 +334,10 @@ function SignUpPageContent() {
         data.subscriptionId,
         referralCode || undefined,
       )
+      analytics.trackFirstTimeOnboardingStarted({
+        surface: "signup",
+        method: "email",
+      })
       router.push("/profile")
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string }

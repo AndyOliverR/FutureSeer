@@ -82,6 +82,8 @@ export const ANALYTICS_EVENTS = {
   ONBOARDING_STEP_BACK: 'onboarding_step_back',
   ONBOARDING_ABANDON: 'onboarding_abandon',
   ONBOARDING_COMPLETED: 'onboarding_completed',
+  FIRST_TIME_ONBOARDING_STARTED: 'first_time_onboarding_started',
+  FIRST_TIME_ONBOARDING_COMPLETED: 'first_time_onboarding_completed',
   PAYWALL_VIEW: 'paywall_view',
   TRIAL_START: 'trial_start',
 } as const
@@ -377,6 +379,20 @@ export class AnalyticsService {
 
   trackOnboardingCompleted(properties?: Record<string, unknown>) {
     this.trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackFirstTimeOnboardingStarted(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.FIRST_TIME_ONBOARDING_STARTED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackFirstTimeOnboardingCompleted(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.FIRST_TIME_ONBOARDING_COMPLETED, {
       ...campaignPropsForPostHog(),
       ...properties,
     })
