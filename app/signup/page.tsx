@@ -45,9 +45,9 @@ import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
 import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
 
 type SignupFlowCompleteData = {
-  selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
-  paymentMethodId: string;
-  autoMandateAccepted: boolean;
+  selectedPlan?: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
+  paymentMethodId?: string;
+  autoMandateAccepted?: boolean;
   subscriptionId?: string;
 };
 
@@ -309,7 +309,19 @@ function SignUpPageContent() {
     setIsLoading(true); setError(null); setDismissAuthInfo(false)
     try {
       await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.SIGNUP, logError)
-      await signUpWithEmail(email, password, displayName, selectedCountry, data.selectedPlan, data.paymentMethodId, data.autoMandateAccepted, data.subscriptionId, referralCode || undefined)
+      const selectedPlan = data.selectedPlan ?? "power-user-trial"
+      const paymentMethodId = data.paymentMethodId && data.paymentMethodId !== "none" ? data.paymentMethodId : undefined
+      await signUpWithEmail(
+        email,
+        password,
+        displayName,
+        selectedCountry,
+        selectedPlan,
+        paymentMethodId,
+        data.autoMandateAccepted ?? false,
+        data.subscriptionId,
+        referralCode || undefined,
+      )
       router.push("/profile")
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string }
@@ -329,7 +341,7 @@ function SignUpPageContent() {
         typeof err.message === "string" ? err.message : msg,
         benign ? "warning" : "error",
         {
-          selectedPlan: data.selectedPlan,
+          selectedPlan: data.selectedPlan ?? "power-user-trial",
           code: err.code ?? null,
           authDomain,
           ...(benign ? { expectedUserInputError: true } : {}),
@@ -408,7 +420,7 @@ function SignUpPageContent() {
             )}
 
             {showSignupFlow ? (
-              <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
+              <SignupFlow initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
             ) : (
               <form onSubmit={handleBasicInfoSubmit} className="space-y-5">
                 <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Full Name" autoComplete="name" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
@@ -483,7 +495,7 @@ function SignUpPageContent() {
                   <AlertDescription className="font-bold leading-relaxed">{error}</AlertDescription>
                 </Alert>
               )}
-              <SignupFlow email={email} password={password} displayName={displayName} selectedCountry={selectedCountry} initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
+              <SignupFlow initialPlan={planParam || undefined} variant={signupVariant} onComplete={handleSignupFlowComplete} onError={setError} />
             </>
           ) : (
             <div className="space-y-6">
