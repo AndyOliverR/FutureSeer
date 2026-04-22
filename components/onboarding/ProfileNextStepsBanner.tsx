@@ -47,8 +47,8 @@ export function ProfileNextStepsBanner({
           isM3 ? "text-on-surface" : "text-amber-100/90"
         )}
       >
-        <li>Fill in birth details (tap Edit if needed) and save.</li>
-        <li>Choose your plan tier and how you want to continue after the free month (payment section).</li>
+        <li>Fill in your profile details (tap Edit if needed) and save.</li>
+        <li>Required to generate now: birth date and birth place.</li>
         <li>Optional: add face and palm photos; adjust The Seer headline setting.</li>
         <li>Optional: copy your referral code to share later.</li>
         <li>Tap Generate Mystical Profile — it runs all systems and may take a couple of minutes.</li>
@@ -66,19 +66,6 @@ export function ProfileNextStepsBanner({
           }
         >
           <a href="#profile-personal-data">Jump to birth details</a>
-        </Button>
-        <Button
-          asChild
-          type="button"
-          size="sm"
-          variant="outline"
-          className={
-            isM3
-              ? "border-outline-variant text-on-surface"
-              : "border-amber-500/50 text-amber-200 hover:bg-amber-500/10"
-          }
-        >
-          <a href="#profile-payment-path">Jump to payment &amp; plan</a>
         </Button>
         <Button
           asChild
