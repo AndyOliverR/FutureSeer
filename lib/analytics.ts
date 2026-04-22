@@ -84,6 +84,10 @@ export const ANALYTICS_EVENTS = {
   ONBOARDING_COMPLETED: 'onboarding_completed',
   FIRST_TIME_ONBOARDING_STARTED: 'first_time_onboarding_started',
   FIRST_TIME_ONBOARDING_COMPLETED: 'first_time_onboarding_completed',
+  RETURN_GATE_VIEWED: 'return_gate_viewed',
+  RETURN_PLAN_COMMIT_STARTED: 'return_plan_commit_started',
+  RETURN_PLAN_COMMIT_COMPLETED: 'return_plan_commit_completed',
+  RETURN_GATE_BYPASSED_ACTIVE_SUBSCRIBER: 'return_gate_bypassed_active_subscriber',
   PAYWALL_VIEW: 'paywall_view',
   TRIAL_START: 'trial_start',
 } as const
@@ -393,6 +397,34 @@ export class AnalyticsService {
 
   trackFirstTimeOnboardingCompleted(properties?: Record<string, unknown>) {
     this.trackEvent(ANALYTICS_EVENTS.FIRST_TIME_ONBOARDING_COMPLETED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackReturnGateViewed(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.RETURN_GATE_VIEWED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackReturnPlanCommitStarted(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.RETURN_PLAN_COMMIT_STARTED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackReturnPlanCommitCompleted(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.RETURN_PLAN_COMMIT_COMPLETED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackReturnGateBypassedActiveSubscriber(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.RETURN_GATE_BYPASSED_ACTIVE_SUBSCRIBER, {
       ...campaignPropsForPostHog(),
       ...properties,
     })
