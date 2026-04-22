@@ -4,6 +4,7 @@ import Link from "next/link";
 import { devLog } from '@/lib/devLogger';
 import { useSubscribe } from "@/hooks/useSubscribe";
 import { useAuth } from "@/hooks/use-auth";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,12 @@ const PLAN_DISPLAY_NAME: Record<string, string> = {
 };
 
 export default function SubscribePage() {
+  const searchParams = useSearchParams();
+  const isReturningCommitFlow = searchParams.get("gate") === "returning_commit";
+  const redirectAfterCommit = searchParams.get("redirect") || "/tools";
+  const signInRedirect = `/signin?redirect=${encodeURIComponent(
+    typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/subscribe",
+  )}`;
   const { user, isSpecialUser } = useAuth();
   const {
     loading,
@@ -23,7 +30,10 @@ export default function SubscribePage() {
     subscriptionConfig,
     subscribeToPlan,
     trackPricingEvent,
-  } = useSubscribe();
+  } = useSubscribe({
+    requireReturningCommit: isReturningCommitFlow,
+    redirectAfterCommit,
+  });
 
   const handleSubscribe = async (planId: string) => {
     try {
@@ -81,7 +91,7 @@ export default function SubscribePage() {
                 Sign in to choose a paid plan and support FutureSeer.
               </p>
               <Button asChild className="bg-amber-600 hover:bg-amber-500 text-slate-900">
-                <Link href="/signin?redirect=/subscribe">
+                <Link href={signInRedirect}>
                   <LogIn className="w-4 h-4 mr-2" />
                   Sign in
                 </Link>
@@ -104,6 +114,11 @@ export default function SubscribePage() {
 
         {/* Header */}
         <div className="text-center mb-16">
+          {isReturningCommitFlow ? (
+            <p className="mb-4 text-amber-300 text-sm">
+              Returning access check: choose a paid plan and verify payment to start your one-month free trial, then continue on your selected subscription cadence.
+            </p>
+          ) : null}
           <h1 className="text-5xl md:text-6xl font-bold text-amber-300 mb-6">
             Choose Your Cosmic Path
           </h1>

@@ -28,7 +28,7 @@ async function userIsSpecialForSubscription(uid: string): Promise<boolean> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { plan, amount, email, name, country, userId } = body;
+    const { plan, amount, email, name, country, userId, enableTrial } = body;
 
     if (!plan || !email || !name || !country) {
       return NextResponse.json(
@@ -241,8 +241,8 @@ export async function POST(request: NextRequest) {
       chargeCurrency = 'INR';
     }
 
-    // Trial: first charge delayed (start_at + 30 days). Paid plans: immediate start.
-    const isTrial = plan === 'power-user-trial';
+    // Trial can be enabled explicitly for returning-user commit flows as well.
+    const isTrial = plan === 'power-user-trial' || enableTrial === true;
     const subscription = await createSubscription({
       planId: razorpayPlanId,
       customerId: email,
