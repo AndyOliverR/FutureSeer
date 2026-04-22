@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -311,7 +310,7 @@ export default function ProfilePage() {
     facePhotoUrl: "", palmPhotoUrl: ""
   })
 
-  const canGenerateFromOnboarding = canGenerateMysticalProfile && acceptedFreeTrialTerms
+  const canGenerateFromOnboarding = canGenerateMysticalProfile
   const fullProfileChecklist = useMemo(() => {
     const profileForChecklist: Partial<UserProfile> = {
       displayName: formData.displayName || undefined,
@@ -612,8 +611,8 @@ export default function ProfilePage() {
       setError("Please add your birth date and birth place to generate your mystical profile.")
       return
     }
-    if (!canGenerateFromOnboarding) {
-      setError("Please accept the free trial terms before generating your mystical profile.")
+    if (!canGenerateMysticalProfile) {
+      setError(getOverQuotaMessage(userProfile?.selectedPlan))
       return
     }
     if (user?.uid) {
@@ -1257,7 +1256,7 @@ export default function ProfilePage() {
             <div id="profile-generate-mystical" className="pt-6 border-t border-outline-variant/30 scroll-mt-24">
               <div className="mb-3 rounded-xl border border-outline-variant/40 bg-surface-container-low p-4 text-sm text-white/85">
                 <p>
-                  Required now: birth date, birth place, and free-trial consent.
+                    Required now: birth date and birth place.
                 </p>
                 {showPostHookFullPath ? (
                 <p className="mt-1">
@@ -1265,16 +1264,6 @@ export default function ProfilePage() {
                 </p>
                 ) : null}
               </div>
-                <label className="mb-3 flex items-start gap-3 rounded-xl border border-outline-variant/40 bg-surface-container p-3 text-sm text-white/95">
-                  <Checkbox
-                    checked={acceptedFreeTrialTerms}
-                    onCheckedChange={(checked) => setAcceptedFreeTrialTerms(checked === true)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    I agree to start the 1-month free trial now and update payment details in Settings before the trial ends.
-                  </span>
-                </label>
                 <Button
                   onClick={() => void handleGenerateMysticalProfile("profile_primary", "preview")}
                   disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
@@ -1285,7 +1274,7 @@ export default function ProfilePage() {
                 {showPostHookFullPath ? (
                   <Button
                     onClick={() => void handleGenerateMysticalProfile("profile_primary_full", "full")}
-                    disabled={isGeneratingProfile || !acceptedFreeTrialTerms}
+                    disabled={isGeneratingProfile || !canGenerateMysticalProfile}
                     variant="outline"
                     className="mt-3 w-full h-12 border-amber-400/40 text-amber-100"
                   >
@@ -1683,7 +1672,7 @@ export default function ProfilePage() {
               <div id="profile-generate-mystical" className="pt-6 border-t border-amber-400/20 scroll-mt-24">
                 <div className="mb-3 rounded-xl border border-amber-400/20 bg-slate-900/30 p-4 text-sm text-amber-100/90">
                   <p>
-                    Required now: birth date, birth place, and free-trial consent.
+                  Required now: birth date and birth place.
                   </p>
                   {showPostHookFullPath ? (
                   <p className="mt-1">
@@ -1691,16 +1680,6 @@ export default function ProfilePage() {
                   </p>
                   ) : null}
                 </div>
-                  <label className="mb-3 flex items-start gap-3 rounded-xl border border-amber-400/20 bg-slate-900/40 p-3 text-sm text-amber-100">
-                    <Checkbox
-                      checked={acceptedFreeTrialTerms}
-                      onCheckedChange={(checked) => setAcceptedFreeTrialTerms(checked === true)}
-                      className="mt-0.5 border-amber-400/50"
-                    />
-                    <span>
-                      I agree to start the 1-month free trial now and update payment details in Settings before the trial ends.
-                    </span>
-                  </label>
                   <Button
                     onClick={() => void handleGenerateMysticalProfile("profile_secondary", "preview")}
                     disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
@@ -1711,7 +1690,7 @@ export default function ProfilePage() {
                   {showPostHookFullPath ? (
                     <Button
                       onClick={() => void handleGenerateMysticalProfile("profile_secondary_full", "full")}
-                      disabled={isGeneratingProfile || !acceptedFreeTrialTerms}
+                      disabled={isGeneratingProfile || !canGenerateMysticalProfile}
                       variant="outline"
                       className="mt-3 w-full h-11 border-amber-400/40 text-amber-100"
                     >
