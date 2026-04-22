@@ -5,117 +5,49 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { PlanSelectionStep } from './PlanSelectionStep';
-import { PaymentMethodCapture } from './PaymentMethodCapture';
-import { AutoMandateAgreement } from './AutoMandateAgreement';
-import { useAuth } from '@/hooks/use-auth';
 import { analytics } from '@/lib/analytics';
 
 type SignupVariant = 'control' | 'story_first';
 
-type SignupFlowStep = 'pain' | 'empathy' | 'solution' | 'wow' | 'plan' | 'payment' | 'agreement';
+type SignupFlowStep = 'pain' | 'empathy' | 'solution' | 'wow';
 
 interface SignupFlowProps {
-  // Step 1: Basic Info (handled by parent)
-  email: string;
-  password: string;
-  displayName: string;
-  selectedCountry: string;
-  
   // URL params
   initialPlan?: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
   variant?: SignupVariant;
   
   // Callbacks (onComplete may be async; must be awaited so loading state matches real work)
   onComplete: (data: {
-    selectedPlan: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
-    paymentMethodId: string;
-    autoMandateAccepted: boolean;
+    selectedPlan?: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper';
+    paymentMethodId?: string;
+    autoMandateAccepted?: boolean;
     subscriptionId?: string;
   }) => void | Promise<void>;
   onError?: (error: string) => void;
 }
 
 export function SignupFlow({
-  email,
-  password,
-  displayName,
-  selectedCountry,
   initialPlan,
   variant = 'control',
   onComplete,
-  onError,
 }: SignupFlowProps) {
-  const { isSpecialUser } = useAuth();
-
   const steps: SignupFlowStep[] =
     variant === 'story_first'
-      ? ['pain', 'empathy', 'solution', 'wow', 'plan', 'payment', 'agreement']
-      : ['plan', 'payment', 'agreement'];
+      ? ['pain', 'empathy', 'solution', 'wow']
+      : ['wow'];
   const totalSteps = steps.length;
   const [currentStep, setCurrentStep] = useState(1);
   const currentStepKey = steps[currentStep - 1];
-  const [selectedPlan, setSelectedPlan] = useState<
-    'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper'
-  >(initialPlan || 'power-user-trial');
-  const [paymentMethodId, setPaymentMethodId] = useState<string>('');
-  const [autoMandateAccepted, setAutoMandateAccepted] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const isIntroStep = currentStepKey === 'pain' || currentStepKey === 'empathy' || currentStepKey === 'solution' || currentStepKey === 'wow';
-
-  const handlePlanSelected = (planId: 'power-user-trial' | 'buy-coffee' | 'treat-me' | 'festive-hamper') => {
-    setSelectedPlan(planId);
-  };
-
-  const [subscriptionId, setSubscriptionId] = useState<string>('');
-
-  const handlePaymentMethodCaptured = (methodId: string, subId?: string) => {
-    setPaymentMethodId(methodId);
-    if (methodId === 'none') {
-      setSubscriptionId('');
-    } else if (subId) {
-      setSubscriptionId(subId);
-    }
-    analytics.trackTrialStart('signup_flow', selectedPlan, {
-      variant,
-      ...(methodId === 'none' ? { deferredPayment: true } : {}),
-    });
-    // Auto-advance to next step
-    setTimeout(() => {
-      const agreementIndex = steps.indexOf('agreement');
-      setCurrentStep(agreementIndex + 1);
-    }, 500);
-  };
-
-  const handleAgreementAccepted = (accepted: boolean) => {
-    setAutoMandateAccepted(accepted);
-  };
 
   const handleNext = () => {
     analytics.trackOnboardingStepNext(currentStepKey, currentStep, {
       surface: 'signup',
       variant,
     });
-    if (isIntroStep) {
-      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
-    } else if (currentStepKey === 'plan') {
-      if (selectedPlan) {
-        const paymentIndex = steps.indexOf('payment');
-        setCurrentStep(paymentIndex + 1);
-      }
-    } else if (currentStepKey === 'payment') {
-      // Payment capture auto-advances after callback
-    } else if (currentStepKey === 'agreement') {
-      // Auto-mandate agreement - proceed if accepted
-      if (autoMandateAccepted && paymentMethodId) {
-        handleComplete();
-      } else {
-        if (onError) {
-          onError('Please accept the agreement to continue');
-        }
-      }
-    }
+    if (isIntroStep) setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
   };
 
   const handleBack = () => {
@@ -129,21 +61,11 @@ export function SignupFlow({
   };
 
   const handleComplete = async () => {
-    if (!paymentMethodId || !autoMandateAccepted) {
-      if (onError) {
-        onError('Please complete all steps');
-      }
-      return;
-    }
-
     setIsProcessing(true);
     try {
       await Promise.resolve(
         onComplete({
-          selectedPlan,
-          paymentMethodId,
-          autoMandateAccepted: paymentMethodId === 'none' ? false : autoMandateAccepted,
-          subscriptionId: paymentMethodId === 'none' ? undefined : subscriptionId,
+          selectedPlan: initialPlan || 'power-user-trial',
         }),
       );
     } catch {
@@ -155,11 +77,7 @@ export function SignupFlow({
   };
 
   const canProceed = () => {
-    if (isIntroStep) return true;
-    if (currentStepKey === 'plan') return selectedPlan !== null;
-    if (currentStepKey === 'payment') return paymentMethodId !== '';
-    if (currentStepKey === 'agreement') return autoMandateAccepted && paymentMethodId !== '';
-    return false;
+    return isIntroStep;
   };
 
   const stepTitles = steps.map((step) => {
@@ -167,9 +85,7 @@ export function SignupFlow({
     if (step === 'empathy') return 'You Are Understood';
     if (step === 'solution') return 'How We Help';
     if (step === 'wow') return 'Your Breakthrough';
-    if (step === 'plan') return 'Choose Your Contribution Tier';
-    if (step === 'payment') return 'Secure Your Spot';
-    return 'Join the Innovation Team';
+    return 'Your Breakthrough';
   });
 
   useEffect(() => {
@@ -177,9 +93,6 @@ export function SignupFlow({
       surface: 'signup',
       variant,
     });
-    if (currentStepKey === 'plan') {
-      analytics.trackPaywallView('signup_plan_selection', { variant });
-    }
   }, [currentStep, currentStepKey, variant]);
 
   return (
@@ -257,35 +170,6 @@ export function SignupFlow({
             </div>
           )}
 
-          {currentStepKey === 'plan' && (
-            <PlanSelectionStep
-              selectedCountry={selectedCountry}
-              initialPlan={selectedPlan}
-              onPlanSelected={handlePlanSelected}
-            />
-          )}
-
-          {currentStepKey === 'payment' && (
-            <PaymentMethodCapture
-              selectedPlan={selectedPlan}
-              userEmail={email}
-              userName={displayName}
-              userCountry={selectedCountry}
-              onPaymentMethodCaptured={handlePaymentMethodCaptured}
-              onError={onError}
-              isSpecialUser={isSpecialUser}
-              allowDeferredPayment
-            />
-          )}
-
-          {currentStepKey === 'agreement' && (
-            <AutoMandateAgreement
-              key={paymentMethodId === 'none' ? 'deferred' : 'verified'}
-              selectedPlan={selectedPlan}
-              deferredPayment={paymentMethodId === 'none'}
-              onAgreementAccepted={handleAgreementAccepted}
-            />
-          )}
         </motion.div>
       </AnimatePresence>
 
