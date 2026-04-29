@@ -558,14 +558,29 @@ export async function GET(request: NextRequest) {
     const profile = (profileDoc as Record<string, unknown> | null) ?? {};
     const lockStatus = lock?.status;
     const inProgress = lockStatus === 'running' || lockStatus === 'started';
-    const generated = !inProgress && Boolean(user?.mysticalProfileGenerated);
+    const generated = Boolean(user?.mysticalProfileGenerated);
     const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
+    const allReportsReady = Boolean(user?.allReportsReady ?? readiness.allReportsReady);
+    const partialReady = readiness.readyToolsCount > 0 && !allReportsReady;
+    const completed = generated && allReportsReady;
+    const generationState = inProgress
+      ? 'running'
+      : completed
+        ? 'completed'
+        : partialReady
+          ? 'partial_ready'
+          : generated
+            ? 'generated_pending_reports'
+            : 'not_started';
     return NextResponse.json({
       success: true,
       inProgress,
       generated,
       hasProfile: Boolean(profileDoc),
-      allReportsReady: Boolean(user?.allReportsReady ?? readiness.allReportsReady),
+      completed,
+      partialReady,
+      generationState,
+      allReportsReady,
       readyToolsCount: readiness.readyToolsCount,
       pendingToolSlugs: readiness.pendingToolSlugs,
       lockStatus: lockStatus ?? null,

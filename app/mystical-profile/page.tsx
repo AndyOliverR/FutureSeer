@@ -89,11 +89,13 @@ export default function MysticalProfilePage() {
   const [totalTools, setTotalTools] = useState<number | null>(null)
   const [readyToolsCount, setReadyToolsCount] = useState<number | null>(null)
   const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
+  const [generationWarning, setGenerationWarning] = useState<string | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const hasGeneratingIntent = searchParams.get("generating") === "1"
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
+  const staleRecoveryRef = useRef(false)
   const loadingMessages = useMemo(
     () => [
       "Calibrating charts...",
@@ -117,6 +119,7 @@ export default function MysticalProfilePage() {
         }
         sessionStorage.removeItem("futureSeer:generationError")
         setGenerationError(null)
+        setGenerationWarning(null)
         setGenerationPhase(detail.phase ?? null)
         setCompletedTools(typeof detail.completedTools === "number" ? detail.completedTools : null)
         setTotalTools(typeof detail.totalTools === "number" ? detail.totalTools : null)
@@ -150,8 +153,14 @@ export default function MysticalProfilePage() {
           })
           if (!res.ok) return
           const data = (await res.json()) as {
+            success?: boolean
             generated?: boolean
             inProgress?: boolean
+            completed?: boolean
+            partialReady?: boolean
+            generationState?: string
+            hasProfile?: boolean
+            allReportsReady?: boolean
             error?: string
             phase?: string | null
             completedTools?: number | null
@@ -164,19 +173,32 @@ export default function MysticalProfilePage() {
           setTotalTools(typeof data.totalTools === "number" ? data.totalTools : null)
           setReadyToolsCount(typeof data.readyToolsCount === "number" ? data.readyToolsCount : null)
           setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : null)
-          if (data.generated) {
+          if (data.inProgress) {
+            setGenerationWarning(null)
+          }
+          if (data.completed || data.allReportsReady) {
             sessionStorage.setItem("futureSeer:generationStatus", "completed")
             sessionStorage.removeItem("futureSeer:generationError")
             setGenerationPending(false)
             setGenerationError(null)
+            setGenerationWarning(null)
             return
           }
-          if (!data.inProgress && !data.generated) {
+          if (!data.inProgress && (data.partialReady || data.generated || data.hasProfile)) {
+            sessionStorage.setItem("futureSeer:generationStatus", "partial_ready")
+            sessionStorage.removeItem("futureSeer:generationError")
+            setGenerationPending(false)
+            setGenerationError(null)
+            setGenerationWarning("Some reports are still finalizing. New cards will appear as processing completes.")
+            return
+          }
+          if (!data.inProgress && !data.generated && !data.partialReady) {
             sessionStorage.setItem("futureSeer:generationStatus", "failed")
-            const msg = "Generation did not complete. Please return to Profile and retry."
+            const msg = "Generation did not start. Please return to Profile and try again."
             sessionStorage.setItem("futureSeer:generationError", msg)
             setGenerationPending(false)
             setGenerationError(msg)
+            setGenerationWarning(null)
           }
         })
         .catch(() => {
@@ -219,14 +241,61 @@ export default function MysticalProfilePage() {
 
   const progressLooksStale = useMemo(() => {
     if (!generationPending || !lastProgressUpdatedAt) return false
-    return currentTimeMs - lastProgressUpdatedAt > 25_000
-  }, [generationPending, lastProgressUpdatedAt, currentTimeMs])
+    const staleThresholdMs = useMaterial3Layout ? 15_000 : 22_000
+    return currentTimeMs - lastProgressUpdatedAt > staleThresholdMs
+  }, [generationPending, lastProgressUpdatedAt, currentTimeMs, useMaterial3Layout])
   const lastUpdatedLabel = useMemo(() => {
     if (!lastProgressUpdatedAt) return null
     const deltaSec = Math.max(0, Math.floor((currentTimeMs - lastProgressUpdatedAt) / 1000))
     if (deltaSec <= 2) return "Updated just now"
     return `Updated ${deltaSec}s ago`
   }, [lastProgressUpdatedAt, currentTimeMs])
+
+  useEffect(() => {
+    if (!generationPending || !progressLooksStale || !user || staleRecoveryRef.current) return
+    staleRecoveryRef.current = true
+    setGenerationWarning("Still generating in the background. Checking latest progress now…")
+    void user
+      .getIdToken()
+      .then(async (token) => {
+        const res = await fetch("/api/profile/generate-mystical", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const data = (await res.json()) as {
+          inProgress?: boolean
+          completed?: boolean
+          partialReady?: boolean
+          generated?: boolean
+          hasProfile?: boolean
+          allReportsReady?: boolean
+          updatedAt?: number | null
+        }
+        setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : Date.now())
+        if (data.completed || data.allReportsReady) {
+          sessionStorage.setItem("futureSeer:generationStatus", "completed")
+          sessionStorage.removeItem("futureSeer:generationError")
+          setGenerationPending(false)
+          setGenerationError(null)
+          setGenerationWarning(null)
+          return
+        }
+        if (!data.inProgress && (data.partialReady || data.generated || data.hasProfile)) {
+          sessionStorage.setItem("futureSeer:generationStatus", "partial_ready")
+          sessionStorage.removeItem("futureSeer:generationError")
+          setGenerationPending(false)
+          setGenerationError(null)
+          setGenerationWarning("More reports are still processing. You can open ready cards now while the rest finish.")
+        }
+      })
+      .catch(() => {
+        setGenerationWarning("Connection slowed down while checking progress. We will keep retrying automatically.")
+      })
+      .finally(() => {
+        staleRecoveryRef.current = false
+      })
+  }, [generationPending, progressLooksStale, user])
 
   const showMysticalPageLoader = useMemo(() => {
     if (authLoading) return true
@@ -472,7 +541,7 @@ export default function MysticalProfilePage() {
         {generationPending ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
-      <p className="text-on-surface">Generating your mystical profile. Core systems are ready; we are finishing the rest in background.</p>
+      <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
       <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
         <p className="mt-2 text-xs text-surface-on-variant">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
@@ -483,8 +552,10 @@ export default function MysticalProfilePage() {
       {lastUpdatedLabel ? (
         <p className="mt-1 text-[11px] text-surface-on-variant/80">{lastUpdatedLabel}</p>
       ) : null}
-      {progressLooksStale ? (
-        <p className="mt-2 text-xs text-surface-on-variant">Still processing in background. New cards may appear shortly.</p>
+      {generationWarning ? (
+        <p className="mt-2 text-xs text-surface-on-variant">Still processing; you can open ready cards now.</p>
+      ) : progressLooksStale ? (
+        <p className="mt-2 text-xs text-surface-on-variant">Slow network detected; reports continue in background.</p>
       ) : null}
           </div>
         ) : groupedCards.length === 0 ? (
@@ -577,7 +648,7 @@ export default function MysticalProfilePage() {
         {generationPending ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-      <p>Generating your mystical profile. Core systems are ready; we are finishing the rest in background.</p>
+      <p>Generating your mystical profile. Core systems are ready; remaining systems are finishing in the background.</p>
       <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
         <p className="mt-2 text-xs text-slate-400">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
@@ -588,8 +659,10 @@ export default function MysticalProfilePage() {
       {lastUpdatedLabel ? (
         <p className="mt-1 text-[11px] text-slate-400/80">{lastUpdatedLabel}</p>
       ) : null}
-      {progressLooksStale ? (
-        <p className="mt-2 text-xs text-slate-400">Still processing in background. New cards may appear shortly.</p>
+      {generationWarning ? (
+        <p className="mt-2 text-xs text-slate-400">{generationWarning}</p>
+      ) : progressLooksStale ? (
+        <p className="mt-2 text-xs text-slate-400">Generation can be slower on busy networks. Ready cards appear as each report completes.</p>
       ) : null}
           </div>
         ) : groupedCards.length === 0 ? (
