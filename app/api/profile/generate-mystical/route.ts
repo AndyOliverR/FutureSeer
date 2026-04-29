@@ -150,6 +150,7 @@ export async function POST(request: NextRequest) {
 
     const modeRaw = typeof requestBody.mode === 'string' ? requestBody.mode.trim().toLowerCase() : 'preview';
     const generationMode: 'preview' | 'full' = modeRaw === 'full' ? 'full' : 'preview';
+    const isFirstOnboardingGeneration = userProfile.mysticalProfileGenerated !== true;
     const missingFullFields = getMissingFullProfileFields(profileWithUid as Partial<UserProfile>);
     if (generationMode === 'full') {
       if (missingFullFields.length > 0) {
@@ -163,31 +164,33 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      const trialExpired = isTrialExpired(profileWithUid as Partial<UserProfile>);
-      const canRunFull = canRunFullPipeline(profileWithUid as Partial<UserProfile>);
-      if (!canRunFull) {
-        const subscriptionStatus = String((profileWithUid as Partial<UserProfile>).subscriptionStatus ?? '').trim().toLowerCase();
-        const paymentBlockReason =
-          trialExpired
-            ? 'trial_expired'
-            : subscriptionStatus === 'past_due' || subscriptionStatus === 'incomplete'
-              ? 'payment_method_update_required'
-              : 'payment_required';
-        return NextResponse.json(
-          {
-            error: trialExpired
-              ? 'Your trial has ended. Please choose a plan and add payment details to generate the full report.'
+      if (!isFirstOnboardingGeneration) {
+        const trialExpired = isTrialExpired(profileWithUid as Partial<UserProfile>);
+        const canRunFull = canRunFullPipeline(profileWithUid as Partial<UserProfile>);
+        if (!canRunFull) {
+          const subscriptionStatus = String((profileWithUid as Partial<UserProfile>).subscriptionStatus ?? '').trim().toLowerCase();
+          const paymentBlockReason =
+            trialExpired
+              ? 'trial_expired'
               : subscriptionStatus === 'past_due' || subscriptionStatus === 'incomplete'
-                ? 'Your payment method needs an update before full report generation can continue.'
-              : 'To unlock the full report, add your plan and payment details.',
-            blockReason: paymentBlockReason,
-            missingFields: missingFullFields,
-            trialExpired,
-            subscriptionStatus,
-            generationMode,
-          },
-          { status: 403 },
-        );
+                ? 'payment_method_update_required'
+                : 'payment_required';
+          return NextResponse.json(
+            {
+              error: trialExpired
+                ? 'Your trial has ended. Please choose a plan and add payment details to generate the full report.'
+                : subscriptionStatus === 'past_due' || subscriptionStatus === 'incomplete'
+                  ? 'Your payment method needs an update before full report generation can continue.'
+                  : 'To unlock the full report, add your plan and payment details.',
+              blockReason: paymentBlockReason,
+              missingFields: missingFullFields,
+              trialExpired,
+              subscriptionStatus,
+              generationMode,
+            },
+            { status: 403 },
+          );
+        }
       }
     }
 

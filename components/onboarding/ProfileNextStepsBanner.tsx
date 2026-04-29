@@ -39,7 +39,7 @@ export function ProfileNextStepsBanner({
       <p className={cn("text-sm leading-relaxed", isM3 ? "text-surface-on-variant" : "text-amber-200/90")}>
         {isConsultantWorkspace
           ? "Work through the steps in order once, then generate the full mystical profile for this client."
-          : "Work through the steps in order once, then run your first Generate Trial Preview. That unlocks your first cross-tool mystical profile."}
+          : "Work through the steps in order once, then run Generate Full Report to unlock your first cross-tool mystical profile."}
       </p>
       <ol
         className={cn(
@@ -51,7 +51,7 @@ export function ProfileNextStepsBanner({
         <li>Step 2: Add birth date, birth place, and birth time (or mark birth time unknown).</li>
         <li>Step 3: Add current residence.</li>
         <li>Step 4: Upload both face and palm photos.</li>
-        <li>Tap Generate Trial Preview once all required fields are complete.</li>
+        <li>Tap Generate Full Report once all required fields are complete.</li>
       </ol>
       <div className="flex flex-wrap gap-2 pt-1">
         <Button

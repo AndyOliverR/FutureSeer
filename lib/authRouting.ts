@@ -7,6 +7,7 @@ import { getMissingFirstGenerationFields } from './subscriptionConfig'
  */
 export const RETURNING_USER_WITH_REPORTS_DESTINATION = '/mystical-profile'
 export const NEW_USER_ONBOARDING_DESTINATION = '/profile'
+export const ONBOARDING_FULL_REPORT_BYPASS_KEY = 'futureSeer:onboardingFullReportBypass'
 
 /**
  * Returns the route to use when a user has completed profile and reports exist.
@@ -103,6 +104,7 @@ type ReturningPaymentCommitContext = {
   isSuperadmin: boolean
   isAdmin: boolean
   isSpecialUser: boolean
+  hasSessionBypass?: boolean
 }
 
 /**
@@ -110,8 +112,9 @@ type ReturningPaymentCommitContext = {
  * Special users (sponsored/no-charge) must never be forced into payment commit.
  */
 export function shouldRequireReturningPaymentCommit(context: ReturningPaymentCommitContext): boolean {
-  const { profile, isSuperadmin, isAdmin, isSpecialUser } = context
+  const { profile, isSuperadmin, isAdmin, isSpecialUser, hasSessionBypass } = context
   if (isSuperadmin || isAdmin || isSpecialUser) return false
+  if (hasSessionBypass === true) return false
   return shouldGateReturningUserForPaymentCommit(profile)
 }
 
