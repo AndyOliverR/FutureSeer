@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -21,9 +22,19 @@ export function OnboardingStuckBanner({
   className,
   onSignOutTryAgain,
 }: OnboardingStuckBannerProps) {
+  const [copied, setCopied] = useState(false)
   if (!stuck) return null
 
   const isM3 = variant === "m3"
+  const debugSnapshot =
+    typeof window !== "undefined"
+      ? {
+          route: window.location.pathname,
+          online: navigator.onLine,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+        }
+      : null
 
   return (
     <div
@@ -55,6 +66,23 @@ export function OnboardingStuckBanner({
         {onSignOutTryAgain ? (
           <Button type="button" variant="outline" onClick={() => void onSignOutTryAgain()}>
             Sign out and try again
+          </Button>
+        ) : null}
+        {debugSnapshot ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              void navigator.clipboard
+                .writeText(JSON.stringify(debugSnapshot))
+                .then(() => {
+                  setCopied(true)
+                  window.setTimeout(() => setCopied(false), 1400)
+                })
+                .catch(() => {})
+            }}
+          >
+            {copied ? "Copied debug info" : "Copy debug info"}
           </Button>
         ) : null}
       </div>

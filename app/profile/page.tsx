@@ -38,7 +38,7 @@ import { isGrowthProfileDraftEnabled } from "@/lib/growthFlags"
 import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/profileDraftStorage"
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
-import { getMissingFullProfileFields, isTrialActive } from "@/lib/subscriptionConfig"
+import { getMissingFirstGenerationFields, isTrialActive } from "@/lib/subscriptionConfig"
 
 const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
 const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
@@ -101,6 +101,15 @@ const FULL_FIELD_LABELS: Record<string, string> = {
   currentLocation: "Current residence",
   facePhotoUrl: "Face photo",
   palmPhotoUrl: "Palm photo",
+}
+
+type RequiredStepId = "identity" | "birth" | "residence" | "media"
+
+const REQUIRED_STEP_FIELDS: Record<RequiredStepId, string[]> = {
+  identity: ["displayName", "fullName", "gender"],
+  birth: ["birthDate", "birthTime", "birthPlace"],
+  residence: ["currentLocation"],
+  media: ["facePhotoUrl", "palmPhotoUrl"],
 }
 
 function errorHasHttpStatus(e: unknown): boolean {
@@ -304,13 +313,12 @@ export default function ProfilePage() {
     displayName: "", fullName: "", email: "",
     gender: undefined as UserProfile['gender'],
     birthDate: "", birthTime: "", birthTimeAMPM: "AM",
-    birthTimeKnown: false,
+    birthTimeKnown: true,
     birthTimePeriod: undefined as BirthTimePeriodId | undefined,
     birthTimeNote: "", birthPlace: "", currentLocation: "",
     facePhotoUrl: "", palmPhotoUrl: ""
   })
 
-  const canGenerateFromOnboarding = canGenerateMysticalProfile
   const fullProfileChecklist = useMemo(() => {
     const profileForChecklist: Partial<UserProfile> = {
       displayName: formData.displayName || undefined,
@@ -318,18 +326,74 @@ export default function ProfilePage() {
       gender: formData.gender,
       birthDate: formData.birthDate || undefined,
       birthTime: formData.birthTime || undefined,
+      birthTimeKnown: formData.birthTimeKnown,
       birthPlace: formData.birthPlace || undefined,
       currentLocation: formData.currentLocation || undefined,
       facePhotoUrl: formData.facePhotoUrl || undefined,
       palmPhotoUrl: formData.palmPhotoUrl || undefined,
     }
-    return getMissingFullProfileFields(profileForChecklist).map((f) => FULL_FIELD_LABELS[f] ?? f)
+    return getMissingFirstGenerationFields(profileForChecklist, { allowUnknownBirthTime: true }).map((f) => FULL_FIELD_LABELS[f] ?? f)
   }, [formData])
+  const missingGenerationFieldKeys = useMemo(() => {
+    const profileForChecklist: Partial<UserProfile> = {
+      displayName: formData.displayName || undefined,
+      fullName: formData.fullName || undefined,
+      gender: formData.gender,
+      birthDate: formData.birthDate || undefined,
+      birthTime: formData.birthTime || undefined,
+      birthTimeKnown: formData.birthTimeKnown,
+      birthPlace: formData.birthPlace || undefined,
+      currentLocation: formData.currentLocation || undefined,
+      facePhotoUrl: formData.facePhotoUrl || undefined,
+      palmPhotoUrl: formData.palmPhotoUrl || undefined,
+    }
+    return getMissingFirstGenerationFields(profileForChecklist, { allowUnknownBirthTime: true })
+  }, [formData])
+  const canGenerateFromOnboarding = canGenerateMysticalProfile && missingGenerationFieldKeys.length === 0
+  const firstIncompleteStep = useMemo<RequiredStepId>(() => {
+    const order: RequiredStepId[] = ["identity", "birth", "residence", "media"]
+    for (const step of order) {
+      if (REQUIRED_STEP_FIELDS[step].some((field) => missingGenerationFieldKeys.includes(field))) return step
+    }
+    return "media"
+  }, [missingGenerationFieldKeys])
+  const [activeStep, setActiveStep] = useState<RequiredStepId>("identity")
+  const completedStepsTrackedRef = useRef<Set<RequiredStepId>>(new Set())
   const trialIsActive = isTrialActive(userProfile)
   const showPostHookFullPath = Boolean(userProfile?.mysticalProfileGenerated)
   const isFirstHookUser = !userProfile?.mysticalProfileGenerated
-  const [showOptionalBasics, setShowOptionalBasics] = useState(false)
-  const showOptionalSection = !isFirstHookUser || showOptionalBasics
+  const retentionSnapshot = useMemo(() => {
+    const profileRec = (userProfile ?? null) as (Record<string, unknown> | null)
+    const lastActiveRaw = profileRec?.lastActiveAt
+    const trialEndsRaw = profileRec?.trialEndsAt
+    const lastActiveAt = typeof lastActiveRaw === "number" ? lastActiveRaw : null
+    const now = Date.now()
+    const dayMs = 24 * 60 * 60 * 1000
+    const daysSinceLast = lastActiveAt ? Math.floor((now - lastActiveAt) / dayMs) : Number.POSITIVE_INFINITY
+    const trialDaysLeft =
+      typeof trialEndsRaw === "number" ? Math.max(0, Math.ceil((trialEndsRaw - now) / dayMs)) : null
+    const nudgeStage = trialDaysLeft !== null && trialDaysLeft <= 3
+      ? "trial_ending"
+      : daysSinceLast <= 0
+        ? "active"
+        : daysSinceLast <= 1
+          ? "at_risk"
+          : "reactivation"
+    return {
+      currentStreak: typeof profileRec?.streakDays === "number" ? Number(profileRec.streakDays) : 0,
+      lastActiveAt,
+      loopCompletedToday: daysSinceLast === 0,
+      trialDaysLeft,
+      nudgeStage,
+    } as const
+  }, [userProfile])
+  const stepLabels: Record<RequiredStepId, string> = {
+    identity: "Step 1: Identity",
+    birth: "Step 2: Birth Foundation",
+    residence: "Step 3: Current Residence",
+    media: "Step 4: Media Uploads",
+  }
+  const missingLabels = missingGenerationFieldKeys.map((field) => FULL_FIELD_LABELS[field] ?? field)
 
   // Fetch edit quota on load so Generate button state is correct
   useEffect(() => {
@@ -404,7 +468,7 @@ export default function ProfilePage() {
         birthDate: normalizeBirthDateForUi(userProfile.birthDate),
         birthTime: bt,
         birthTimeAMPM: btAMPM,
-        birthTimeKnown: userProfile.birthTimeKnown || false,
+        birthTimeKnown: userProfile.birthTimeKnown ?? true,
         birthTimePeriod: userProfile.birthTimePeriod as BirthTimePeriodId,
         birthTimeNote: userProfile.birthTimeNote || "",
         birthPlace: userProfile.birthPlace || "",
@@ -446,7 +510,7 @@ export default function ProfilePage() {
       birthDate: prev.birthDate || d.birthDate,
       birthTime: prev.birthTime || d.birthTime,
       birthTimeAMPM: prev.birthTimeAMPM || d.birthTimeAMPM,
-      birthTimeKnown: prev.birthTimeKnown || d.birthTimeKnown,
+      birthTimeKnown: prev.birthTimeKnown ?? d.birthTimeKnown ?? true,
       birthPlace: prev.birthPlace || d.birthPlace,
       currentLocation: prev.currentLocation || d.currentLocation,
       birthTimeNote: prev.birthTimeNote || d.birthTimeNote,
@@ -455,10 +519,21 @@ export default function ProfilePage() {
   }, [user?.uid, userProfile, isConsultantWorkspace])
 
   useEffect(() => {
-    if (!isFirstHookUser) {
-      setShowOptionalBasics(true)
+    setActiveStep(firstIncompleteStep)
+  }, [firstIncompleteStep])
+
+  useEffect(() => {
+    const stepOrder: RequiredStepId[] = ["identity", "birth", "residence", "media"]
+    for (const stepId of stepOrder) {
+      const isComplete = !REQUIRED_STEP_FIELDS[stepId].some((field) => missingGenerationFieldKeys.includes(field))
+      if (isComplete && !completedStepsTrackedRef.current.has(stepId)) {
+        analytics.trackProfileRequiredStepCompleted(stepId, {
+          layout: isMobileLayout ? "mobile" : "web",
+        })
+        completedStepsTrackedRef.current.add(stepId)
+      }
     }
-  }, [isFirstHookUser])
+  }, [missingGenerationFieldKeys, isMobileLayout])
 
   const openClearWorkspaceConfirm = () => {
     if (!user?.uid || !isConsultantWorkspace) return
@@ -495,7 +570,7 @@ export default function ProfilePage() {
         birthDate: "",
         birthTime: "",
         birthTimeAMPM: "AM",
-        birthTimeKnown: false,
+        birthTimeKnown: true,
         birthTimePeriod: undefined,
         birthTimeNote: "",
         birthPlace: "",
@@ -567,7 +642,7 @@ export default function ProfilePage() {
   }
 
   // Build 24h birth time and profile overrides from current form (so Generate uses latest values even without Save)
-  const buildProfileOverridesForGenerate = (): Record<string, string | number | undefined> => {
+  const buildProfileOverridesForGenerate = (): Record<string, string | number | boolean | undefined> => {
     let bt24 = formData.birthTime ?? ''
     if (formData.birthTime && formData.birthTimeAMPM) {
       const p = String(formData.birthTime).split(':')
@@ -589,9 +664,13 @@ export default function ProfilePage() {
     }
     const [hh, mm] = (bt24 || '0:0').split(':').map((x) => parseInt(x, 10) || 0)
     if (hh > 23 || hh < 0 || mm > 59 || mm < 0) bt24 = '12:00'
-    const overrides: Record<string, string | number | undefined> = {
+    const normalizedBirthTime = formData.birthTimeKnown === false
+      ? "12:00:00"
+      : (normalizeBirthTime(bt24 || "12:00:00") || undefined)
+    const overrides: Record<string, string | number | boolean | undefined> = {
       birthDate: formData.birthDate || undefined,
-      birthTime: normalizeBirthTime(bt24 || '12:00:00') || undefined,
+      birthTime: normalizedBirthTime,
+      birthTimeKnown: formData.birthTimeKnown,
       birthPlace: formData.birthPlace || undefined,
       currentLocation: formData.currentLocation || undefined,
       fullName: formData.fullName || undefined,
@@ -607,8 +686,10 @@ export default function ProfilePage() {
 
   const handleGenerateMysticalProfile = async (surface: string, mode: "preview" | "full" = "preview") => {
     if (isGeneratingProfile) return
-    if (!formData.birthDate || !formData.birthPlace) {
-      setError("Please add your birth date and birth place to generate your mystical profile.")
+    if (missingGenerationFieldKeys.length > 0) {
+      const missingLabels = missingGenerationFieldKeys.map((field) => FULL_FIELD_LABELS[field] ?? field)
+      analytics.trackProfileGenerateBlockedMissingFields(missingGenerationFieldKeys, { surface, mode })
+      setError(`Complete all required profile fields first: ${missingLabels.join(", ")}.`)
       return
     }
     if (!canGenerateMysticalProfile) {
@@ -643,9 +724,6 @@ export default function ProfilePage() {
           freeTrialTermsAcceptedAt: Date.now(),
         })
       }
-      // Move users immediately to Mystical Profile; progress is shown there.
-      router.push("/mystical-profile?generating=1")
-      setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
       const profileOverrides = buildProfileOverridesForGenerate()
       const res = await fetch("/api/profile/generate-mystical", {
         method: "POST",
@@ -666,8 +744,13 @@ export default function ProfilePage() {
         if (payload.blockReason === "payment_required" || payload.blockReason === "trial_expired") {
           throw new Error(`${payload.error ?? "Full report requires payment setup."} Open Settings to complete billing and plan.`)
         }
+        if (payload.blockReason === "payment_method_update_required") {
+          throw new Error(`${payload.error ?? "Payment method update required."} Open Settings to update billing details.`)
+        }
         throw new Error(payload.error || "Profile generation failed. Please try again.")
       }
+      setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+      router.push("/mystical-profile?generating=1")
       if ((data as { inProgress?: boolean }).inProgress) {
         if (typeof window !== "undefined") {
           sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
@@ -1034,6 +1117,15 @@ export default function ProfilePage() {
           <AlertDescription className="text-amber-100 text-sm space-y-2">
             <p className="font-semibold text-amber-200">Free trial: 1 month</p>
             <p>No payment setup required now. You can update plan and payment later from Settings.</p>
+            {retentionSnapshot.nudgeStage === "at_risk" ? (
+              <p className="text-amber-200/90">You are close to keeping momentum. Finish one pending step today.</p>
+            ) : null}
+            {retentionSnapshot.nudgeStage === "reactivation" ? (
+              <p className="text-amber-200/90">Welcome back. Complete one step now and your setup progress continues.</p>
+            ) : null}
+            {retentionSnapshot.nudgeStage === "trial_ending" && retentionSnapshot.trialDaysLeft !== null ? (
+              <p className="text-amber-200/90">Trial ends in about {retentionSnapshot.trialDaysLeft} day(s). Finish setup to get full value.</p>
+            ) : null}
           </AlertDescription>
         </Alert>
 
@@ -1130,38 +1222,46 @@ export default function ProfilePage() {
               {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
             </div>
 
-            {isFirstHookUser ? (
-              <button
-                type="button"
-                onClick={() => setShowOptionalBasics((v) => !v)}
-                className="w-full rounded-2xl border border-outline-variant/40 bg-surface-container-low px-4 py-3 text-left text-sm text-white/85"
-              >
-                {showOptionalSection ? "Hide optional fields for now" : "Show optional fields (improves accuracy)"}
-              </button>
-            ) : null}
+            <div className="rounded-2xl border border-outline-variant/40 bg-surface-container-low p-4 space-y-3">
+              <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Required Steps Before Generate</p>
+              <div className="grid gap-2">
+                {(Object.keys(stepLabels) as RequiredStepId[]).map((stepId) => {
+                  const stepMissing = REQUIRED_STEP_FIELDS[stepId].filter((field) => missingGenerationFieldKeys.includes(field))
+                  const done = stepMissing.length === 0
+                  const isActive = activeStep === stepId
+                  return (
+                    <button
+                      key={stepId}
+                      type="button"
+                      onClick={() => setActiveStep(stepId)}
+                      className={`w-full rounded-xl border px-3 py-2 text-left text-xs ${done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200" : isActive ? "border-amber-400/60 bg-amber-500/10 text-amber-100" : "border-outline-variant/40 bg-surface text-white/80"}`}
+                    >
+                      <span className="font-semibold">{stepLabels[stepId]}</span>
+                      {!done ? <span className="block mt-1 text-[11px]">Still needed: {stepMissing.map((f) => FULL_FIELD_LABELS[f] ?? f).join(", ")}</span> : <span className="block mt-1 text-[11px]">Completed</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
-            {showOptionalSection ? (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
-                  {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
-                </div>
+            <div className="space-y-2">
+              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
+              {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (required for numerology and report generation)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
+            </div>
 
-                <div className="space-y-2 relative z-20 overflow-visible">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
-                  {isEditing ? (
-                    <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
-                      <option value="">Not set</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="non-binary">Non-binary</option>
-                    </select>
-                  ) : (
-                    <p className="text-lg font-bold text-white ml-1">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
-                  )}
-                </div>
-              </>
-            ) : null}
+            <div className="space-y-2 relative z-20 overflow-visible">
+              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
+              {isEditing ? (
+                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
+                  <option value="">Not set</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="non-binary">Non-binary</option>
+                </select>
+              ) : (
+                <p className="text-lg font-bold text-white ml-1">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
@@ -1174,20 +1274,33 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {showOptionalSection ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Time of Birth</Label>
                 {isEditing ? (
-                  <div className="flex gap-2 items-center">
-                    <Input type="time" value={formData.birthTime} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark] flex-1" />
-                    <select value={formData.birthTimeAMPM} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white min-w-[72px]">
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
+                  <div className="space-y-2">
+                    <div className="flex gap-2 items-center">
+                      <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark] flex-1" />
+                      <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white min-w-[72px]">
+                        <option value="AM">AM</option>
+                        <option value="PM">PM</option>
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-amber-200/90">
+                      <input
+                        type="checkbox"
+                        checked={!formData.birthTimeKnown}
+                        onChange={(e) => {
+                          const unknown = e.target.checked
+                          setFormData((prev) => ({ ...prev, birthTimeKnown: !unknown, birthTime: unknown ? "" : prev.birthTime }))
+                          if (unknown) analytics.trackProfileBirthTimeUnknownSelected({ layout: "mobile" })
+                        }}
+                      />
+                      I do not know my birth time
+                    </label>
                   </div>
                 ) : (
-                  <p className="text-lg font-bold text-white ml-1">{formData.birthTime ? `${formData.birthTime} ${formData.birthTimeAMPM}` : "Not set"}</p>
+                  <p className="text-lg font-bold text-white ml-1">{formData.birthTimeKnown === false ? "Unknown (lower-accuracy mode)" : formData.birthTime ? `${formData.birthTime} ${formData.birthTimeAMPM}` : "Not set"}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -1195,19 +1308,17 @@ export default function ProfilePage() {
                 {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
               </div>
             </div>
-            ) : null}
 
-            {showOptionalSection && !formData.birthTime && formData.birthDate && (
+            {formData.birthTimeKnown === false && formData.birthDate && (
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
                 <p className="text-amber-300 text-xs font-medium">
-                  ⚠️ Birth time not set — readings will use 12:00 PM (noon) as default, which may reduce accuracy for time-sensitive charts like houses and ascendant.
+                  Birth time is marked unknown. We will use a neutral noon default, which lowers accuracy for time-sensitive charts (houses/ascendant).
                 </p>
               </div>
             )}
 
             {(
             <>
-            {showOptionalSection ? (
             <div className={`grid grid-cols-2 gap-4 ${isEditing ? "pb-20" : ""}`}>
               <div className="space-y-2 text-center">
                 <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
@@ -1257,22 +1368,17 @@ export default function ProfilePage() {
                 )}
               </div>
             </div>
-            ) : null}
 
             <div id="profile-generate-mystical" className="pt-6 border-t border-outline-variant/30 scroll-mt-24">
               <div className="mb-3 rounded-xl border border-outline-variant/40 bg-surface-container-low p-4 text-sm text-white/85">
                 <p>
-                    Required now: birth date and birth place.
+                    Required before generate: display name, full name, gender, birth date, birth time (or unknown), birth place, current residence, face photo, and palm photo.
                 </p>
-                {showPostHookFullPath ? (
-                <p className="mt-1">
-                  Recommended for better accuracy: birth time, full name, current residence, face photo, and palm photo.
-                </p>
-                ) : null}
+                {missingLabels.length > 0 ? <p className="mt-1">Still needed: {missingLabels.join(", ")}.</p> : <p className="mt-1 text-emerald-300">All required fields complete. You can generate now.</p>}
               </div>
                 <Button
                   onClick={() => void handleGenerateMysticalProfile("profile_primary", "preview")}
-                  disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
+                  disabled={isGeneratingProfile || !canGenerateFromOnboarding}
                   className="w-full h-16 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 rounded-[24px] font-bold text-lg shadow-xl active:scale-95 transition-all"
                 >
                   {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Trial Preview</>}
@@ -1313,13 +1419,13 @@ export default function ProfilePage() {
                 {isGeneratingProfile && generationStatus && (
                   <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                 )}
-                {(!formData.birthDate || !formData.birthPlace) && !isGeneratingProfile && (
-                  <p className="text-center text-amber-400/60 text-xs mt-2">Add your birth date and birth place to unlock Generate.</p>
+                {missingLabels.length > 0 && !isGeneratingProfile && (
+                  <p className="text-center text-amber-400/60 text-xs mt-2">Complete all required profile fields to unlock Generate.</p>
                 )}
                 {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                 )}
-                {formData.birthDate && formData.birthPlace && canGenerateFromOnboarding && !isGeneratingProfile && (
+                {canGenerateFromOnboarding && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/50 text-xs mt-2">
                     {isConsultantWorkspace
                       ? "The client’s birth details above will be used for generation."
@@ -1424,6 +1530,15 @@ export default function ProfilePage() {
             <AlertDescription className="text-amber-100 space-y-2">
               <p className="font-semibold text-amber-200">Free trial: 1 month</p>
               <p>No payment setup required now. You can update plan and payment later from Settings.</p>
+              {retentionSnapshot.nudgeStage === "at_risk" ? (
+                <p className="text-amber-200/90">You are close to keeping momentum. Finish one pending step today.</p>
+              ) : null}
+              {retentionSnapshot.nudgeStage === "reactivation" ? (
+                <p className="text-amber-200/90">Welcome back. Complete one step now and your setup progress continues.</p>
+              ) : null}
+              {retentionSnapshot.nudgeStage === "trial_ending" && retentionSnapshot.trialDaysLeft !== null ? (
+                <p className="text-amber-200/90">Trial ends in about {retentionSnapshot.trialDaysLeft} day(s). Finish setup to get full value.</p>
+              ) : null}
             </AlertDescription>
           </Alert>
 
@@ -1528,38 +1643,46 @@ export default function ProfilePage() {
                 {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.displayName || "Not set"}</p>}
               </div>
 
-              {isFirstHookUser ? (
-                <button
-                  type="button"
-                  onClick={() => setShowOptionalBasics((v) => !v)}
-                  className="w-full rounded-2xl border border-amber-400/30 bg-white/5 px-4 py-3 text-left text-sm text-amber-100/90"
-                >
-                  {showOptionalSection ? "Hide optional fields for now" : "Show optional fields (improves accuracy)"}
-                </button>
-              ) : null}
+              <div className="rounded-2xl border border-amber-400/30 bg-white/5 p-4 space-y-3">
+                <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Required Steps Before Generate</p>
+                <div className="grid gap-2">
+                  {(Object.keys(stepLabels) as RequiredStepId[]).map((stepId) => {
+                    const stepMissing = REQUIRED_STEP_FIELDS[stepId].filter((field) => missingGenerationFieldKeys.includes(field))
+                    const done = stepMissing.length === 0
+                    const isActive = activeStep === stepId
+                    return (
+                      <button
+                        key={stepId}
+                        type="button"
+                        onClick={() => setActiveStep(stepId)}
+                        className={`w-full rounded-xl border px-3 py-2 text-left text-xs ${done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200" : isActive ? "border-amber-400/60 bg-amber-500/10 text-amber-100" : "border-white/20 bg-white/5 text-white/80"}`}
+                      >
+                        <span className="font-semibold">{stepLabels[stepId]}</span>
+                        {!done ? <span className="block mt-1 text-[11px]">Still needed: {stepMissing.map((f) => FULL_FIELD_LABELS[f] ?? f).join(", ")}</span> : <span className="block mt-1 text-[11px]">Completed</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
 
-              {showOptionalSection ? (
-                <>
-                  <div className="space-y-2">
-                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
-                    {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (for numerology & reports)" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
-                  </div>
+              <div className="space-y-2">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
+                {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (required for numerology and report generation)" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
+              </div>
 
-                  <div className="space-y-2 relative z-20 overflow-visible">
-                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
-                    {isEditing ? (
-                      <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-12 w-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:border-amber-500 [color-scheme:dark]">
-                        <option value="">Not set</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="non-binary">Non-binary</option>
-                      </select>
-                    ) : (
-                      <p className="text-lg font-medium text-white">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
-                    )}
-                  </div>
-                </>
-              ) : null}
+              <div className="space-y-2 relative z-20 overflow-visible">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
+                {isEditing ? (
+                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-12 w-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:border-amber-500 [color-scheme:dark]">
+                    <option value="">Not set</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="non-binary">Non-binary</option>
+                  </select>
+                ) : (
+                  <p className="text-lg font-medium text-white">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -1572,20 +1695,33 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {showOptionalSection ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Time of Birth</Label>
                   {isEditing ? (
-                    <div className="flex gap-2 items-center">
-                      <Input type="time" value={formData.birthTime} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark] flex-1" />
-                      <select value={formData.birthTimeAMPM} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-12 bg-white/5 border border-amber-400/30 rounded-2xl px-3 text-white min-w-[72px]">
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                      </select>
+                    <div className="space-y-2">
+                      <div className="flex gap-2 items-center">
+                        <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark] flex-1" />
+                        <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-12 bg-white/5 border border-amber-400/30 rounded-2xl px-3 text-white min-w-[72px]">
+                          <option value="AM">AM</option>
+                          <option value="PM">PM</option>
+                        </select>
+                      </div>
+                      <label className="flex items-center gap-2 text-xs text-amber-200/90">
+                        <input
+                          type="checkbox"
+                          checked={!formData.birthTimeKnown}
+                          onChange={(e) => {
+                            const unknown = e.target.checked
+                            setFormData((prev) => ({ ...prev, birthTimeKnown: !unknown, birthTime: unknown ? "" : prev.birthTime }))
+                            if (unknown) analytics.trackProfileBirthTimeUnknownSelected({ layout: "web" })
+                          }}
+                        />
+                        I do not know my birth time
+                      </label>
                     </div>
                   ) : (
-                    <p className="text-lg font-medium text-white">{formData.birthTime ? `${formData.birthTime} ${formData.birthTimeAMPM}` : "Not set"}</p>
+                    <p className="text-lg font-medium text-white">{formData.birthTimeKnown === false ? "Unknown (lower-accuracy mode)" : formData.birthTime ? `${formData.birthTime} ${formData.birthTimeAMPM}` : "Not set"}</p>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -1593,19 +1729,16 @@ export default function ProfilePage() {
                   {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.currentLocation || "Not set"}</p>}
                 </div>
               </div>
-              ) : null}
-
-              {showOptionalSection && !formData.birthTime && formData.birthDate && (
+              {formData.birthTimeKnown === false && formData.birthDate && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3">
                   <p className="text-amber-300 text-xs font-medium">
-                    ⚠️ Birth time not set — readings will use 12:00 PM (noon) as default, which may reduce accuracy for time-sensitive charts like houses and ascendant.
+                    Birth time is marked unknown. We will use a neutral noon default, which lowers accuracy for time-sensitive charts (houses/ascendant).
                   </p>
                 </div>
               )}
 
               {(
               <>
-              {showOptionalSection ? (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 text-center">
                   <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
@@ -1637,7 +1770,6 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
-              ) : null}
 
               {isEditing && (
                 <div className="pt-4 border-t border-amber-400/20">
@@ -1678,17 +1810,13 @@ export default function ProfilePage() {
               <div id="profile-generate-mystical" className="pt-6 border-t border-amber-400/20 scroll-mt-24">
                 <div className="mb-3 rounded-xl border border-amber-400/20 bg-slate-900/30 p-4 text-sm text-amber-100/90">
                   <p>
-                  Required now: birth date and birth place.
+                  Required before generate: display name, full name, gender, birth date, birth time (or unknown), birth place, current residence, face photo, and palm photo.
                   </p>
-                  {showPostHookFullPath ? (
-                  <p className="mt-1">
-                    Recommended for better accuracy: birth time, full name, current residence, face photo, and palm photo.
-                  </p>
-                  ) : null}
+                  {missingLabels.length > 0 ? <p className="mt-1">Still needed: {missingLabels.join(", ")}.</p> : <p className="mt-1 text-emerald-300">All required fields complete. You can generate now.</p>}
                 </div>
                   <Button
                     onClick={() => void handleGenerateMysticalProfile("profile_secondary", "preview")}
-                    disabled={isGeneratingProfile || !formData.birthDate || !formData.birthPlace || !canGenerateFromOnboarding}
+                    disabled={isGeneratingProfile || !canGenerateFromOnboarding}
                     className="w-full h-14 bg-gradient-to-r from-amber-600 to-yellow-500 text-[#020617] rounded-2xl font-bold shadow-xl hover:opacity-95 transition-opacity"
                   >
                     {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Trial Preview</>}
@@ -1729,13 +1857,13 @@ export default function ProfilePage() {
                   {isGeneratingProfile && generationStatus && (
                     <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                   )}
-                  {(!formData.birthDate || !formData.birthPlace) && !isGeneratingProfile && (
-                    <p className="text-center text-amber-200/80 text-xs mt-2">Add your birth date and birth place to unlock Generate.</p>
+                  {missingLabels.length > 0 && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/80 text-xs mt-2">Complete all required profile fields to unlock Generate.</p>
                   )}
                   {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                   )}
-                  {formData.birthDate && formData.birthPlace && canGenerateFromOnboarding && !isGeneratingProfile && (
+                  {canGenerateFromOnboarding && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/60 text-xs mt-2">
                       {isConsultantWorkspace
                         ? "The client’s birth details above will be used for generation."

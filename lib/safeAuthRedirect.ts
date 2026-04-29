@@ -65,7 +65,10 @@ function isPrefixAllowed(canonical: string): boolean {
 export function getSafeAuthRedirectAfterSignIn(redirect: string | null): string | null {
   if (redirect == null || typeof redirect !== "string") return null
   const trimmed = redirect.trim()
+  if (trimmed.length > 300) return null
   if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return null
+  if (trimmed.includes("\\")) return null
+  if (/[\r\n\t]/.test(trimmed)) return null
 
   const pathOnly = stripQueryAndHash(trimmed)
   if (!pathOnly.startsWith("/")) return null

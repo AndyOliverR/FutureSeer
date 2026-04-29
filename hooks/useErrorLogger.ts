@@ -19,19 +19,38 @@ export function useErrorLogger(options: UseErrorLoggerOptions) {
         typeof navigator !== 'undefined'
           ? `${navigator.userAgent} | ${navigator.language || ''}`
           : undefined;
+      const online = typeof navigator !== 'undefined' ? navigator.onLine : undefined;
+      const visibilityState = typeof document !== 'undefined' ? document.visibilityState : undefined;
+      const platform =
+        typeof document !== 'undefined'
+          ? document.documentElement.getAttribute('data-platform') || undefined
+          : undefined;
+      const connectionType =
+        typeof navigator !== 'undefined' && 'connection' in navigator
+          ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection
+              ?.effectiveType
+          : undefined;
 
-      await logClientError({
-        area: options.area,
-        action,
-        message,
-        severity,
-        route: pathname || undefined,
-        browser,
-        meta: {
-          ...meta,
-          hasUser: !!user,
-        },
-      });
+      try {
+        await logClientError({
+          area: options.area,
+          action,
+          message,
+          severity,
+          route: pathname || undefined,
+          browser,
+          meta: {
+            ...meta,
+            hasUser: !!user,
+            online,
+            visibilityState,
+            platform,
+            connectionType,
+          },
+        });
+      } catch {
+        // Never block auth UX on telemetry failures.
+      }
     },
     [options.area, pathname, user],
   );

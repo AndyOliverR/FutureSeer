@@ -1,9 +1,12 @@
+import { getMissingFirstGenerationFields } from './subscriptionConfig'
+
 /**
  * Canonical destination for returning users who have completed profile
  * and have reports in cache/DB (mysticalProfileGenerated === true).
  * Single constant so switching landing after generation / returning session is one change.
  */
 export const RETURNING_USER_WITH_REPORTS_DESTINATION = '/mystical-profile'
+export const NEW_USER_ONBOARDING_DESTINATION = '/profile'
 
 /**
  * Returns the route to use when a user has completed profile and reports exist.
@@ -11,6 +14,18 @@ export const RETURNING_USER_WITH_REPORTS_DESTINATION = '/mystical-profile'
  */
 export function getReturningUserWithReportsDestination(): string {
   return RETURNING_USER_WITH_REPORTS_DESTINATION
+}
+
+/**
+ * Shared post-auth destination resolver for sign-in / sign-up entry points.
+ * Uses explicit redirect if safe, otherwise branches by returning-user status.
+ */
+export function getPostAuthDestination(
+  safeRedirect: string | null,
+  isReturningUser: boolean
+): string {
+  if (safeRedirect) return safeRedirect
+  return isReturningUser ? getReturningUserWithReportsDestination() : NEW_USER_ONBOARDING_DESTINATION
 }
 
 /** Route to send users who have not completed profile setup (missing birth date/place). */
@@ -27,6 +42,32 @@ export function hasRequiredProfileSetup(userProfile: { birthDate?: string; birth
   return Boolean(userProfile?.birthDate?.trim() && userProfile?.birthPlace?.trim())
 }
 
+type GenerationReadinessProfile = {
+  displayName?: string
+  fullName?: string
+  gender?: string
+  birthDate?: string
+  birthTime?: string
+  birthTimeKnown?: boolean
+  birthPlace?: string
+  currentLocation?: string
+  facePhotoUrl?: string
+  palmPhotoUrl?: string
+}
+
+/**
+ * Full readiness used by first generation flow.
+ * Keep this in sync with the profile generation entry requirements.
+ */
+export function hasRequiredGenerationProfileSetup(profile: GenerationReadinessProfile | null): boolean {
+  const generationProfile = profile as Parameters<typeof getMissingFirstGenerationFields>[0]
+  return (
+    getMissingFirstGenerationFields(generationProfile, {
+      allowUnknownBirthTime: true,
+    }).length === 0
+  )
+}
+
 type PaymentGateProfile = {
   mysticalProfileGenerated?: boolean
   subscriptionStatus?: string
@@ -39,7 +80,8 @@ type PaymentGateProfile = {
 export function hasActiveSubscriptionAccess(profile: PaymentGateProfile | null): boolean {
   if (!profile) return false
   if (profile.noChargeAccount === true) return true
-  return String(profile.subscriptionStatus ?? '').trim().toLowerCase() === 'active'
+  const status = String(profile.subscriptionStatus ?? '').trim().toLowerCase()
+  return status === 'active'
 }
 
 /**

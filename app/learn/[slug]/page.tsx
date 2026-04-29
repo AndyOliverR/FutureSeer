@@ -2,9 +2,11 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { LEARN_ARTICLES, LEARN_SLUGS } from "@/app/learn/learnArticles"
+import { buildLearnArticleSchema } from "@/components/schema-markup"
 import { EnhancedFooter } from "@/components/enhanced-footer"
+import { buildPathLocaleAlternates, normalizeSeoBaseUrl } from "@/lib/seo/locales"
 
-const site = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
+const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -19,13 +21,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${article.title} | FutureSeer Learn`,
     description: article.description,
-    alternates: { canonical: `${site}/learn/${slug}` },
+    alternates: {
+      canonical: `${site}/learn/${slug}`,
+      languages: buildPathLocaleAlternates(site, `/learn/${slug}`),
+    },
     openGraph: {
       title: article.title,
       description: article.description,
       url: `${site}/learn/${slug}`,
       siteName: "FutureSeer",
       type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: article.title,
+      description: article.description,
+      site: "@futureseerapp",
+      creator: "@futureseerapp",
     },
   }
 }
@@ -46,10 +58,20 @@ export default async function LearnArticlePage({ params }: Props) {
   const { slug } = await params
   const article = LEARN_ARTICLES[slug]
   if (!article) notFound()
+  const articleUrl = `${site}/learn/${slug}`
+  const learnArticleSchema = buildLearnArticleSchema({
+    url: articleUrl,
+    title: article.title,
+    description: article.description,
+  })
 
   return (
     <div className="min-h-screen flex flex-col starfield-ultra-sharp">
       <article className="relative flex-1 z-20 bg-transparent flex flex-col w-full">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(learnArticleSchema) }}
+        />
         <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-20 pb-12">
           <nav className="text-sm text-amber-500/90 mb-6">
             <Link href="/learn" className="hover:underline">

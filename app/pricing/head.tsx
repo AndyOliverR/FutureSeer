@@ -1,3 +1,7 @@
+import { normalizeSeoBaseUrl } from "@/lib/seo/locales";
+
+const siteBase = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app");
+
 export default function Head() {
   return (
     <>
@@ -10,7 +14,7 @@ export default function Head() {
         name="keywords"
         content="futureseer pricing, localized pricing, astrology app subscription, tarot membership, numerology premium, precio app astrologia, tarif application mystique, 占星 订阅"
       />
-      <link rel="canonical" href="https://futureseer.app/pricing" />
+      <link rel="canonical" href={`${siteBase}/pricing`} />
     </>
   );
 }

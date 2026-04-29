@@ -20,7 +20,11 @@ function getResendClient(): Resend | null {
  */
 export async function sendDailyInsightEmail(
   to: string,
-  displayName?: string
+  displayName?: string,
+  options?: {
+    nudgeStage?: 'active' | 'at_risk' | 'reactivation' | 'trial_ending'
+    trialDaysLeft?: number | null
+  },
 ): Promise<boolean> {
   const resend = getResendClient();
   if (!resend) {
@@ -28,11 +32,22 @@ export async function sendDailyInsightEmail(
     return false;
   }
   const name = displayName || 'there';
-  const subject = 'Your Daily Astrological Insight';
+  const nudgeStage = options?.nudgeStage ?? 'active'
+  const trialDaysLeft = typeof options?.trialDaysLeft === 'number' ? options.trialDaysLeft : null
+  const stageCopy =
+    nudgeStage === 'trial_ending'
+      ? `Your trial has ${trialDaysLeft ?? 0} day(s) left. Open FutureSeer to lock in your next breakthrough.`
+      : nudgeStage === 'reactivation'
+        ? 'Welcome back. One small check-in today is enough to restart your flow.'
+        : nudgeStage === 'at_risk'
+          ? 'You are one step away from keeping your momentum. A quick check-in today keeps your streak alive.'
+          : 'Your consistency is building. Keep your daily momentum with one focused check-in.'
+  const subject = nudgeStage === 'trial_ending' ? 'Your FutureSeer trial is ending soon' : 'Your Daily Astrological Insight';
   const html = `
     <p>Hi ${name},</p>
     <p>Here’s your daily astrological insight from FutureSeer.</p>
     <p>Today’s energies invite reflection and small, grounded steps. Check the app for personalized insights based on your chart.</p>
+    <p>${stageCopy}</p>
     <p>— FutureSeer</p>
   `;
   try {

@@ -32,6 +32,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+type GlobalAuthBootstrapState = typeof globalThis & {
+  __fsAuthBootstrapPromise__?: Promise<void> | null;
+};
+
+function getGlobalAuthBootstrapPromise(): Promise<void> | null {
+  const g = globalThis as GlobalAuthBootstrapState;
+  return g.__fsAuthBootstrapPromise__ ?? null;
+}
+
+function setGlobalAuthBootstrapPromise(value: Promise<void> | null): void {
+  const g = globalThis as GlobalAuthBootstrapState;
+  g.__fsAuthBootstrapPromise__ = value;
+}
+
 function profileIndicatesSpecialUser(profile: UserProfile | null): boolean {
   if (!profile) return false;
   return (
@@ -126,25 +140,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('⚠️ Firestore connection check failed during auth initialization:', connectionError);
       });
 
-      try {
-        const redirectResult = await getRedirectResult();
-        if (cancelled) return;
-        if (redirectResult?.user) {
-          devLog.debug('Redirect authentication completed successfully', 'auth');
-          void ensureUserDocumentFromAuth(redirectResult.user).catch(() => {});
-          setUser(redirectResult.user);
-          setLoading(false);
-          void getUserProfile(redirectResult.user.uid)
-            .then((profile) => {
-              if (!cancelled) setUserProfile(profile);
-            })
-            .catch(() => {
-              if (!cancelled) setUserProfile(null);
-            });
+      const runRedirectBootstrap = async (): Promise<void> => {
+        try {
+          const redirectResult = await getRedirectResult();
+          if (cancelled) return;
+          if (redirectResult?.user) {
+            devLog.debug('Redirect authentication completed successfully', 'auth');
+            void ensureUserDocumentFromAuth(redirectResult.user).catch(() => {});
+            setUser(redirectResult.user);
+            setLoading(false);
+            void getUserProfile(redirectResult.user.uid)
+              .then((profile) => {
+                if (!cancelled) setUserProfile(profile);
+              })
+              .catch(() => {
+                if (!cancelled) setUserProfile(null);
+              });
+          }
+        } catch {
+          devLog.debug('No redirect result or redirect error', 'auth');
         }
-      } catch {
-        devLog.debug('No redirect result or redirect error', 'auth');
+      };
+
+      let bootstrapPromise = getGlobalAuthBootstrapPromise();
+      if (!bootstrapPromise) {
+        bootstrapPromise = runRedirectBootstrap().finally(() => {
+          if (getGlobalAuthBootstrapPromise() === bootstrapPromise) {
+            setGlobalAuthBootstrapPromise(null);
+          }
+        });
+        setGlobalAuthBootstrapPromise(bootstrapPromise);
       }
+      await bootstrapPromise;
 
       if (cancelled) return;
 

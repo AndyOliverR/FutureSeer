@@ -144,3 +144,13 @@ Run once per day. Use Firestore or your log sink.
 5. **Fix** only proven issues.
 6. **Expand** gradually.
 7. **Freeze** behavior when stable.
+
+---
+
+## Linux readiness gate (cross-platform access)
+
+Before release windows where Linux desktop/web access matters:
+
+- Run `pnpm run linux:readiness`
+- Require a full pass (10/10) for strict Linux-ready sign-off
+- If not 10/10, log failing checks and treat them as release blockers for Linux-targeted rollout

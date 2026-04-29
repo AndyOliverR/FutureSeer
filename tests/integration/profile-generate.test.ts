@@ -110,13 +110,17 @@ describe('Profile generate-mystical API', () => {
     });
   });
 
-  async function callGenerate(token = 'fake-token'): Promise<Response> {
+  async function callGenerate(
+    token = 'fake-token',
+    body?: Record<string, unknown>,
+  ): Promise<Response> {
     const req = new NextRequest('http://localhost:3000/api/profile/generate-mystical', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      body: body ? JSON.stringify(body) : undefined,
     });
     return POST(req) as Promise<Response>;
   }
@@ -167,6 +171,8 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(202);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
+      expect(data.allReportsReady).toBe(false);
+      expect(Array.isArray(data.pendingToolSlugs)).toBe(true);
       expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(uid, expect.objectContaining({ uid, birthDate: profile.birthDate, birthPlace: profile.birthPlace }));
     });
   });
@@ -221,6 +227,26 @@ describe('Profile generate-mystical API', () => {
       const data = await res.json();
       expect(res.status).toBe(400);
       expect(data.error).toBeDefined();
+    });
+
+    it('returns payment_method_update_required for full mode when status is past_due', async () => {
+      mockGetDocument.mockResolvedValue({
+        ...baseProfile,
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+        selectedPlan: 'premium',
+        subscriptionStatus: 'past_due',
+        paymentMethodId: '',
+      });
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+      expect(res.status).toBe(403);
+      expect(data.blockReason).toBe('payment_method_update_required');
+      expect(data.subscriptionStatus).toBe('past_due');
     });
   });
 

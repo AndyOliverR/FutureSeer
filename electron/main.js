@@ -4,6 +4,14 @@ const path = require('path');
 const { app, BrowserWindow } = require('electron');
 
 const APP_URL = process.env.ELECTRON_APP_URL || 'http://localhost:3000';
+const shouldDisableSandbox = process.env.ELECTRON_NO_SANDBOX === '1';
+const autoExitMs = Number(process.env.ELECTRON_EXIT_AFTER_MS || '0');
+
+if (shouldDisableSandbox) {
+  // Required for some Linux CI runners that execute as root.
+  app.commandLine.appendSwitch('no-sandbox');
+  app.commandLine.appendSwitch('disable-setuid-sandbox');
+}
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -26,6 +34,14 @@ function createWindow() {
 }
 
 app.whenReady().then(createWindow);
+
+if (autoExitMs > 0) {
+  app.whenReady().then(() => {
+    setTimeout(() => {
+      app.quit();
+    }, autoExitMs);
+  });
+}
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
