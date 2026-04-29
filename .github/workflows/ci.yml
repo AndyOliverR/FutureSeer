@@ -25,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Enable Corepack
         run: corepack enable
@@ -40,6 +42,11 @@ jobs:
 
       - name: Dependency audit + security lint
         run: pnpm run security
+
+      - name: Ensure full git history for gitleaks range scan
+        shell: bash
+        run: |
+          git fetch --prune --unshallow || true
 
       - name: Gitleaks secret scan
         uses: gitleaks/gitleaks-action@v2
