@@ -70,7 +70,7 @@ jest.mock('@/lib/universalDataAggregator', () => ({
 }));
 
 // Import route after mocks so it sees mocked dependencies
-import { POST } from '@/app/api/profile/generate-mystical/route';
+import { GET, POST } from '@/app/api/profile/generate-mystical/route';
 
 describe('Profile generate-mystical API', () => {
   const uid = 'test-uid-123';
@@ -123,6 +123,16 @@ describe('Profile generate-mystical API', () => {
       body: body ? JSON.stringify(body) : undefined,
     });
     return POST(req) as Promise<Response>;
+  }
+
+  async function callGenerationStatus(token = 'fake-token'): Promise<Response> {
+    const req = new NextRequest('http://localhost:3000/api/profile/generate-mystical', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return GET(req) as Promise<Response>;
   }
 
   describe('Returning login (idempotent)', () => {
@@ -270,6 +280,65 @@ describe('Profile generate-mystical API', () => {
       expect(data.success).toBe(true);
       expect(data.blockReason).toBeUndefined();
       expect(mockGenerateCoreReportsStageA).toHaveBeenCalled();
+    });
+  });
+
+  describe('Generation status semantics (GET)', () => {
+    it('returns running state when lock is active', async () => {
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true });
+        if (collection === 'generationLocks') return Promise.resolve({ status: 'running', phase: 'stageB', updatedAt: Date.now() });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: { placeholder: false } });
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.inProgress).toBe(true);
+      expect(data.generationState).toBe('running');
+      expect(data.partialReady).toBe(true);
+      expect(data.completed).toBe(false);
+    });
+
+    it('returns completed state when all reports are ready', async () => {
+      const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: true });
+        if (collection === 'generationLocks') return Promise.resolve({ status: 'completed', phase: 'completed', updatedAt: Date.now() });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve(allReadyProfile);
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.inProgress).toBe(false);
+      expect(data.completed).toBe(true);
+      expect(data.partialReady).toBe(false);
+      expect(data.generationState).toBe('completed');
+      expect(data.allReportsReady).toBe(true);
+    });
+
+    it('returns partial_ready when some snippets exist but pipeline is not active', async () => {
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
+        if (collection === 'generationLocks') return Promise.resolve({ status: 'failed', phase: 'failed', updatedAt: Date.now() });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: { placeholder: false } });
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.inProgress).toBe(false);
+      expect(data.partialReady).toBe(true);
+      expect(data.completed).toBe(false);
+      expect(data.generationState).toBe('partial_ready');
+      expect(data.readyToolsCount).toBeGreaterThan(0);
     });
   });
 
