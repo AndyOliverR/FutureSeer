@@ -5,7 +5,6 @@ import {
   setCachedServerAdminFirestore,
 } from '@/lib/firebaseServerAdminCache';
 import { 
-  getAuth, 
   GoogleAuthProvider, 
   EmailAuthProvider,
   OAuthProvider,
@@ -19,25 +18,17 @@ import {
   onAuthStateChanged, 
   User,
   UserCredential,
-  AuthError,
   indexedDBLocalPersistence,
   initializeAuth,
   browserPopupRedirectResolver,
   browserSessionPersistence,
-  signInWithCredential,
   getRedirectResult as firebaseGetRedirectResult
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, limit, getDocs, updateDoc, serverTimestamp, enableNetwork, disableNetwork, onSnapshot, connectFirestoreEmulator, waitForPendingWrites, deleteDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, getDocs, updateDoc, serverTimestamp, enableNetwork } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 import { 
   saveLocalAskHistory, 
   getLocalAskHistory, 
-  saveLocalNote, 
-  getLocalNotes, 
-  updateLocalNote, 
-  deleteLocalNote,
-  saveLocalUserProfile,
-  getLocalUserProfile
 } from './localStorage';
 import { clearAstroDataCache } from './astroDataService';
 import { generateReferralCode, trackReferralSignup } from './referralUtils';
@@ -276,7 +267,7 @@ const initializeFirebase = (): { app: any; auth: any; db: any } => {
           persistence: [indexedDBLocalPersistence, browserSessionPersistence],
           popupRedirectResolver: browserPopupRedirectResolver,
         });
-      } catch (persistError) {
+      } catch {
         devLog.warn('IndexedDB persistence unavailable, falling back to session persistence', undefined, 'firebase');
         firebaseAuth = initializeAuth(app, {
           persistence: [browserSessionPersistence],
@@ -622,6 +613,13 @@ export const signUpWithEmail = async (
         await sleepSignupBackoff(attempt);
       }
     }
+    if (referralCode && referralCode.trim()) {
+      try {
+        await trackReferralSignup(user.uid, referralCode.trim(), db);
+      } catch (error) {
+        devLog.warn('Failed to track referral signup (non-fatal)', error, 'firebase');
+      }
+    }
   }
   return user;
 };
@@ -806,10 +804,10 @@ export const ensureFirestoreConnection = async (): Promise<boolean> => {
     try {
       await enableNetwork(db);
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -1100,6 +1098,7 @@ export const getUserActivity = async (uid: string, limitCount: number = 50): Pro
 /** Returns user's saved remedies (e.g. from profile or a future collection). Stub returns [] until persistence is added. */
 export const getSavedRemedies = async (_uid: string): Promise<any[]> => {
   try {
+    void _uid;
     const db = getFirebaseDB();
     if (!db) return [];
     // TODO: read from user profile field or remedies subcollection when added
@@ -1121,6 +1120,7 @@ export interface UnifiedReading {
 /** Returns all readings for a user. Stub returns [] until persistence is added. */
 export const getAllReadings = async (_uid: string): Promise<UnifiedReading[]> => {
   try {
+    void _uid;
     const db = getFirebaseDB();
     if (!db) return [];
     // TODO: read from user readings subcollection or activity log when added
@@ -1130,7 +1130,8 @@ export const getAllReadings = async (_uid: string): Promise<UnifiedReading[]> =>
   }
 };
 
-export const clearUserProfileCache = (uid: string) => {
+export const clearUserProfileCache = (_uid: string) => {
+  void _uid;
   // In-memory cache clearing logic would go here if implemented
 };
 

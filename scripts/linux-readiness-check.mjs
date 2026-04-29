@@ -35,7 +35,10 @@ function writeSummaryFile() {
     '',
   ];
 
+  // Paths come from controlled CI env vars; this script only writes local artifacts.
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   mkdirSync(dirname(SUMMARY_PATH), { recursive: true });
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   writeFileSync(SUMMARY_PATH, `${lines.join('\n')}\n`, 'utf8');
   console.log(`Summary written to ${SUMMARY_PATH}`);
 
@@ -51,7 +54,9 @@ function writeSummaryFile() {
       details: r.details,
     })),
   };
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   mkdirSync(dirname(SUMMARY_JSON_PATH), { recursive: true });
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
   writeFileSync(SUMMARY_JSON_PATH, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
   console.log(`JSON summary written to ${SUMMARY_JSON_PATH}`);
 }
