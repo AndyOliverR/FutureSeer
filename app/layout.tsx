@@ -18,10 +18,10 @@ import {
 } from "@/components/DeferredLayoutComponents"
 import { PlatformClassProvider } from "@/components/PlatformClassProvider"
 import { OnboardingTour } from "@/components/OnboardingTour"
-import { buildLocaleAlternates, localizedOgImagePath } from "@/lib/seo/locales"
+import { buildLocaleAlternates, localizedOgImagePath, normalizeSeoBaseUrl } from "@/lib/seo/locales"
 
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim()
-const siteBase = (process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app").replace("://www.", "://")
+const siteBase = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteBase),

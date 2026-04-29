@@ -53,3 +53,46 @@ Use this when Google/Apple auth fails on Safari/iOS/macOS or shows `redirect_uri
 ## External comparison (optional)
 
 Community Next + Capacitor starters are useful to compare **config only** (static export, `webDir`, scripts)—not to replace this app’s stack. Prefer **[Capacitor Next.js](https://capacitorjs.com/docs/next)** and **[Next.js static exports](https://nextjs.org/docs/app/building-your-application/deploying/static-exports)** for correctness.
+
+## Linux desktop quick runbook (Electron)
+
+Use this when validating desktop support for Linux users.
+
+1. Ensure runtime prerequisites:
+   - Node `24.x`, pnpm `10.28.2` (from `package.json` / `AGENTS.md`)
+   - X11 runtime available (for local GUI) or `xvfb` in CI/headless environments
+2. Install deps: `pnpm install --frozen-lockfile`
+3. Build web app: `pnpm run build`
+4. Launch desktop (Linux-safe): `pnpm run desktop:linux`
+
+### Linux smoke command (headless/CI)
+
+For a quick launch verification without manual interaction:
+
+- `ELECTRON_NO_SANDBOX=1 ELECTRON_EXIT_AFTER_MS=5000 pnpm run electron`
+
+Notes:
+- `ELECTRON_NO_SANDBOX=1` is intended for CI/root-like Linux runners.
+- `ELECTRON_EXIT_AFTER_MS` auto-quits the app after startup so smoke checks can finish.
+
+### Automated Linux readiness audit (strict 10-point)
+
+Run:
+
+- `pnpm run linux:readiness`
+
+What it checks (PASS/FAIL):
+1. Node version (`24.x`)
+2. pnpm version (`10.28.2`)
+3. Frozen lockfile install
+4. Production build
+5. Production server startup
+6. `/signin` HTML render
+7. `/profile` HTML render
+8. Mobile-width render probe
+9. Electron binary health
+10. Headless Electron launch smoke (`xvfb-run`)
+
+Exit code:
+- `0` when all checks pass
+- `1` when one or more checks fail

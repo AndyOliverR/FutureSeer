@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
-import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import {
   signInWithGoogle,
@@ -26,12 +25,18 @@ import {
   isUnauthorizedDomainAuthError,
   isAuthRedirectInitiatedError,
   isBenignAuthUserInputError,
+  AUTH_DISMISS_RECOVERY_WINDOW_MS,
 } from "@/lib/firebase"
 import { CountrySelector } from "@/components/CountrySelector"
 import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons"
 import { isAppleSignInEnabledClient } from "@/lib/authFeatureFlags"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
-import { analytics } from "@/lib/analytics"
+import {
+  trackAuthAttemptDeferred,
+  trackAuthOutcomeDeferred,
+  trackFirstTimeOnboardingStartedDeferred,
+  trackSignupStartedFromCampaignDeferred,
+} from "@/lib/deferredAnalytics"
 import {
   getStoredCampaignAttribution,
   hasCampaignSignal,
@@ -39,7 +44,7 @@ import {
   wasSignupFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
 import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
-import { getReturningUserWithReportsDestination } from "@/lib/authRouting"
+import { getPostAuthDestination, NEW_USER_ONBOARDING_DESTINATION } from "@/lib/authRouting"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
 import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
@@ -59,6 +64,14 @@ const SignupFlow = dynamic(() => import("@/components/SignupFlow").then(mod => (
     </div>
   )
 })
+
+const OnboardingStuckBanner = dynamic(
+  () =>
+    import("@/components/onboarding/OnboardingStuckBanner").then((mod) => ({
+      default: mod.OnboardingStuckBanner,
+    })),
+  { loading: () => null }
+)
 
 function SignUpPageContent() {
   const SIGNUP_VARIANT_KEY = "fs_signup_variant_v1";
@@ -125,7 +138,7 @@ function SignUpPageContent() {
   useEffect(() => {
     if (wasSignupFunnelFromCampaignTracked()) return
     if (!hasCampaignSignal(getStoredCampaignAttribution())) return
-    analytics.trackSignupStartedFromCampaign("signup_page")
+    trackSignupStartedFromCampaignDeferred("signup_page")
     markSignupFunnelFromCampaignTracked()
   }, [])
 
@@ -137,7 +150,7 @@ function SignUpPageContent() {
     setDismissAuthInfo(false)
     if (didAutoRedirectRef.current) return
     didAutoRedirectRef.current = true
-    const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
+    const destination = getPostAuthDestination(redirectTo, isReturningUser(user))
     if (typeof window !== "undefined") {
       window.location.replace(destination)
     } else {
@@ -174,25 +187,33 @@ function SignUpPageContent() {
     }
     setIsLoading(true); setError(null); setDismissAuthInfo(false); setActiveProvider('google')
     try {
+      trackAuthAttemptDeferred("google", "signup", { hasRedirect: !!redirectTo })
       const user = await signInWithGoogle()
       const returning = isReturningUser(user)
       if (!returning) {
-        analytics.trackFirstTimeOnboardingStarted({
+        trackFirstTimeOnboardingStartedDeferred({
           surface: "signup",
           method: "google",
         })
       }
-      router.push(redirectTo ?? (returning ? getReturningUserWithReportsDestination() : "/profile"))
+      const destination = getPostAuthDestination(redirectTo, returning)
+      trackAuthOutcomeDeferred("google", "signup", "success", { redirectTo: destination })
+      router.push(destination)
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
-      if (isAuthRedirectInitiatedError(error)) return;
+      if (isAuthRedirectInitiatedError(error)) {
+        trackAuthOutcomeDeferred("google", "signup", "redirect_initiated")
+        return;
+      }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(3000)
+        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
         if (resolvedSession) {
           await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             provider: "google",
             code: err.code ?? null,
+            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
           })
+          trackAuthOutcomeDeferred("google", "signup", "success", { recoveredAfterDismiss: true })
           return
         }
       }
@@ -200,21 +221,25 @@ function SignUpPageContent() {
       setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
+        trackAuthOutcomeDeferred("google", "signup", "dismissed", { code: err.code ?? null })
         await logError("signup_google_dismissed", msg, "info", {
           provider: "google",
           code: err.code ?? null,
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
         })
         void logOnboarding("oauth_popup_dismissed", "User dismissed Google sign-up popup", "info", {
           surface: "signup",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
+        trackAuthOutcomeDeferred("google", "signup", "error", { code: err.code ?? null, reason: "unauthorized_domain" })
         await logError("signup_google_unauthorized_domain", msg, "warning", {
           provider: "google",
           code: err.code ?? null,
           hostname: typeof window !== "undefined" ? window.location.hostname : null,
         })
       } else {
+        trackAuthOutcomeDeferred("google", "signup", "error", { code: err.code ?? null })
         await logError("signup_google", msg, "error", { provider: "google", code: err.code ?? null })
       }
     } finally {
@@ -231,25 +256,33 @@ function SignUpPageContent() {
     }
     setIsLoading(true); setError(null); setDismissAuthInfo(false); setActiveProvider("apple")
     try {
+      trackAuthAttemptDeferred("apple", "signup", { hasRedirect: !!redirectTo })
       const user = await signInWithApple()
       const returning = isReturningUser(user)
       if (!returning) {
-        analytics.trackFirstTimeOnboardingStarted({
+        trackFirstTimeOnboardingStartedDeferred({
           surface: "signup",
           method: "apple",
         })
       }
-      router.push(redirectTo ?? (returning ? getReturningUserWithReportsDestination() : "/profile"))
+      const destination = getPostAuthDestination(redirectTo, returning)
+      trackAuthOutcomeDeferred("apple", "signup", "success", { redirectTo: destination })
+      router.push(destination)
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string };
-      if (isAuthRedirectInitiatedError(error)) return;
+      if (isAuthRedirectInitiatedError(error)) {
+        trackAuthOutcomeDeferred("apple", "signup", "redirect_initiated")
+        return;
+      }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(3000)
+        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
         if (resolvedSession) {
           await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             provider: "apple",
             code: err.code ?? null,
+            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
           })
+          trackAuthOutcomeDeferred("apple", "signup", "success", { recoveredAfterDismiss: true })
           return
         }
       }
@@ -257,21 +290,25 @@ function SignUpPageContent() {
       setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
+        trackAuthOutcomeDeferred("apple", "signup", "dismissed", { code: err.code ?? null })
         await logError("signup_apple_dismissed", msg, "info", {
           provider: "apple",
           code: err.code ?? null,
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
         })
         void logOnboarding("oauth_popup_dismissed", "User dismissed Apple sign-up popup", "info", {
           surface: "signup",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
+        trackAuthOutcomeDeferred("apple", "signup", "error", { code: err.code ?? null, reason: "unauthorized_domain" })
         await logError("signup_apple_unauthorized_domain", msg, "warning", {
           provider: "apple",
           code: err.code ?? null,
           hostname: typeof window !== "undefined" ? window.location.hostname : null,
         })
       } else {
+        trackAuthOutcomeDeferred("apple", "signup", "error", { code: err.code ?? null })
         await logError("signup_apple", msg, "error", { provider: "apple", code: err.code ?? null })
       }
     } finally {
@@ -320,6 +357,7 @@ function SignUpPageContent() {
   const handleSignupFlowComplete = async (data: SignupFlowCompleteData) => {
     setIsLoading(true); setError(null); setDismissAuthInfo(false)
     try {
+      trackAuthAttemptDeferred("email", "signup", { hasRedirect: !!redirectTo })
       await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.SIGNUP, logError)
       const selectedPlan = data.selectedPlan ?? "power-user-trial"
       const paymentMethodId = data.paymentMethodId && data.paymentMethodId !== "none" ? data.paymentMethodId : undefined
@@ -334,11 +372,12 @@ function SignUpPageContent() {
         data.subscriptionId,
         referralCode || undefined,
       )
-      analytics.trackFirstTimeOnboardingStarted({
+      trackFirstTimeOnboardingStartedDeferred({
         surface: "signup",
         method: "email",
       })
-      router.push("/profile")
+      trackAuthOutcomeDeferred("email", "signup", "success", { redirectTo: NEW_USER_ONBOARDING_DESTINATION })
+      router.push(NEW_USER_ONBOARDING_DESTINATION)
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string }
       const msg = getAuthErrorMessage(err)
@@ -363,6 +402,10 @@ function SignUpPageContent() {
           ...(benign ? { expectedUserInputError: true } : {}),
         },
       )
+      trackAuthOutcomeDeferred("email", "signup", "error", {
+        code: err.code ?? null,
+        expectedUserInputError: benign,
+      })
       throw error
     } finally {
       setIsLoading(false)

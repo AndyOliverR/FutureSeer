@@ -4,13 +4,13 @@ import React, { useState, Suspense, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
-import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
 import {
   signInWithGoogle,
@@ -24,11 +24,16 @@ import {
   isBenignAuthUserInputError,
   isUnauthorizedDomainAuthError,
   isAuthRedirectInitiatedError,
+  AUTH_DISMISS_RECOVERY_WINDOW_MS,
 } from "@/lib/firebase"
 import { OAuthProviderButtons } from "@/components/auth/OAuthProviderButtons"
 import { isAppleSignInEnabledClient } from "@/lib/authFeatureFlags"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
-import { analytics } from "@/lib/analytics"
+import {
+  trackAuthAttemptDeferred,
+  trackAuthOutcomeDeferred,
+  trackSignupStartedFromCampaignDeferred,
+} from "@/lib/deferredAnalytics"
 import {
   getStoredCampaignAttribution,
   hasCampaignSignal,
@@ -36,11 +41,19 @@ import {
   wasSigninFunnelFromCampaignTracked,
 } from "@/lib/campaignAttribution"
 import { getSafeAuthRedirectAfterSignIn } from "@/lib/safeAuthRedirect"
-import { getReturningUserWithReportsDestination } from "@/lib/authRouting"
-import { getClientOAuthGuardrailReport } from "@/lib/oauthDomainGuardrails"
+import { getPostAuthDestination } from "@/lib/authRouting"
+import { getClientOAuthGuardrailReportDeferred } from "@/lib/deferredOAuthGuardrails"
 import { RecaptchaScript } from "@/components/RecaptchaScript"
 import { RECAPTCHA_ACTIONS } from "@/lib/recaptcha/actions"
 import { ensureRecaptchaVerifiedForWebAuth } from "@/lib/recaptchaClient"
+
+const OnboardingStuckBanner = dynamic(
+  () =>
+    import("@/components/onboarding/OnboardingStuckBanner").then((mod) => ({
+      default: mod.OnboardingStuckBanner,
+    })),
+  { loading: () => null }
+)
 
 function SignInContent() {
   const [isLoading, setIsLoading] = useState(false)
@@ -62,7 +75,6 @@ function SignInContent() {
   const { user, signOut } = useAuth()
   const { logError } = useErrorLogger({ area: "auth" })
   const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
-  const oauthGuardrails = React.useMemo(() => getClientOAuthGuardrailReport(), [])
   const redirectStall = useOnboardingStallRecovery(!!user, {
     surface: "signin_redirect",
     logOnboarding: logOnboarding,
@@ -106,7 +118,7 @@ function SignInContent() {
   useEffect(() => {
     if (wasSigninFunnelFromCampaignTracked()) return
     if (!hasCampaignSignal(getStoredCampaignAttribution())) return
-    analytics.trackSignupStartedFromCampaign("signin_page")
+    trackSignupStartedFromCampaignDeferred("signin_page")
     markSigninFunnelFromCampaignTracked()
   }, [])
 
@@ -118,7 +130,7 @@ function SignInContent() {
     setDismissAuthInfo(false)
     if (didAutoRedirectRef.current) return;
     didAutoRedirectRef.current = true;
-    const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile");
+    const destination = getPostAuthDestination(redirectTo, isReturningUser(user))
     void logError("auth_success", "User signed in", "info", { method: "existing_session", redirectTo: destination })
     if (typeof window !== "undefined") {
       window.location.replace(destination);
@@ -155,20 +167,27 @@ function SignInContent() {
     setDismissAuthInfo(false)
     try {
       await logError("google_clicked", "Google sign-in clicked", "info", { hasRedirect: !!redirectTo })
+      trackAuthAttemptDeferred("google", "signin", { hasRedirect: !!redirectTo })
       const user = await signInWithGoogle()
-      const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
+      const destination = getPostAuthDestination(redirectTo, isReturningUser(user))
       await logError("auth_success", "User signed in", "info", { method: "google", redirectTo: destination })
+      trackAuthOutcomeDeferred("google", "signin", "success", { redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string }
-      if (isAuthRedirectInitiatedError(error)) return
+      if (isAuthRedirectInitiatedError(error)) {
+        trackAuthOutcomeDeferred("google", "signin", "redirect_initiated")
+        return
+      }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(3000)
+        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
         if (resolvedSession) {
           await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             method: "google",
             code: err.code ?? null,
+            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
           })
+          trackAuthOutcomeDeferred("google", "signin", "success", { recoveredAfterDismiss: true })
           return
         }
       }
@@ -176,15 +195,19 @@ function SignInContent() {
       setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
+        trackAuthOutcomeDeferred("google", "signin", "dismissed", { code: err.code ?? null })
         await logError("signin_dismissed", msg, "info", {
           method: "google",
           code: err.code ?? null,
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
         })
         void logOnboarding("oauth_popup_dismissed", "User dismissed Google sign-in popup", "info", {
           surface: "signin",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
+        const oauthGuardrails = await getClientOAuthGuardrailReportDeferred()
+        trackAuthOutcomeDeferred("google", "signin", "error", { code: err.code ?? null, reason: "unauthorized_domain" })
         await logError("auth_unauthorized_domain", msg, "warning", {
           method: "google",
           code: err.code ?? null,
@@ -192,10 +215,15 @@ function SignInContent() {
           oauthGuardrails,
         })
       } else {
+        const oauthGuardrails =
+          isLikelyOAuthDomainMismatch(err.code)
+            ? await getClientOAuthGuardrailReportDeferred()
+            : undefined
+        trackAuthOutcomeDeferred("google", "signin", "error", { code: err.code ?? null })
         await logError("auth_failed", msg, "error", {
           method: "google",
           code: err.code ?? null,
-          ...(isLikelyOAuthDomainMismatch(err.code) ? { oauthGuardrails } : {}),
+          ...(oauthGuardrails ? { oauthGuardrails } : {}),
         })
       }
     } finally {
@@ -212,20 +240,27 @@ function SignInContent() {
     setDismissAuthInfo(false)
     try {
       await logError("apple_clicked", "Apple sign-in clicked", "info", { hasRedirect: !!redirectTo })
+      trackAuthAttemptDeferred("apple", "signin", { hasRedirect: !!redirectTo })
       const user = await signInWithApple()
-      const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
+      const destination = getPostAuthDestination(redirectTo, isReturningUser(user))
       await logError("auth_success", "User signed in", "info", { method: "apple", redirectTo: destination })
+      trackAuthOutcomeDeferred("apple", "signin", "success", { redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {
       const err = error as { message?: string; code?: string }
-      if (isAuthRedirectInitiatedError(error)) return
+      if (isAuthRedirectInitiatedError(error)) {
+        trackAuthOutcomeDeferred("apple", "signin", "redirect_initiated")
+        return
+      }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(3000)
+        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
         if (resolvedSession) {
           await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             method: "apple",
             code: err.code ?? null,
+            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
           })
+          trackAuthOutcomeDeferred("apple", "signin", "success", { recoveredAfterDismiss: true })
           return
         }
       }
@@ -233,15 +268,19 @@ function SignInContent() {
       setDismissAuthInfo(isUserDismissedAuthError(err))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
+        trackAuthOutcomeDeferred("apple", "signin", "dismissed", { code: err.code ?? null })
         await logError("signin_dismissed", msg, "info", {
           method: "apple",
           code: err.code ?? null,
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
         })
         void logOnboarding("oauth_popup_dismissed", "User dismissed Apple sign-in popup", "info", {
           surface: "signin",
           code: err.code ?? null,
         })
       } else if (isUnauthorizedDomainAuthError(err)) {
+        const oauthGuardrails = await getClientOAuthGuardrailReportDeferred()
+        trackAuthOutcomeDeferred("apple", "signin", "error", { code: err.code ?? null, reason: "unauthorized_domain" })
         await logError("auth_unauthorized_domain", msg, "warning", {
           method: "apple",
           code: err.code ?? null,
@@ -249,10 +288,15 @@ function SignInContent() {
           oauthGuardrails,
         })
       } else {
+        const oauthGuardrails =
+          isLikelyOAuthDomainMismatch(err.code)
+            ? await getClientOAuthGuardrailReportDeferred()
+            : undefined
+        trackAuthOutcomeDeferred("apple", "signin", "error", { code: err.code ?? null })
         await logError("auth_failed", msg, "error", {
           method: "apple",
           code: err.code ?? null,
-          ...(isLikelyOAuthDomainMismatch(err.code) ? { oauthGuardrails } : {}),
+          ...(oauthGuardrails ? { oauthGuardrails } : {}),
         })
       }
     } finally {
@@ -267,6 +311,7 @@ function SignInContent() {
 
     try {
       await logError("email_submit_clicked", "Email sign-in submitted", "info", { hasRedirect: !!redirectTo })
+      trackAuthAttemptDeferred("email", "signin", { hasRedirect: !!redirectTo })
       try {
         await ensureRecaptchaVerifiedForWebAuth(isMobileLayout, RECAPTCHA_ACTIONS.LOGIN, logError)
       } catch (captchaError: unknown) {
@@ -305,8 +350,9 @@ function SignInContent() {
         }
       }
       const user = await signInWithEmail(email, password)
-      const destination = redirectTo ?? (isReturningUser(user) ? getReturningUserWithReportsDestination() : "/profile")
+      const destination = getPostAuthDestination(redirectTo, isReturningUser(user))
       await logError("auth_success", "User signed in", "info", { method: "email", redirectTo: destination })
+      trackAuthOutcomeDeferred("email", "signin", "success", { redirectTo: destination })
       router.push(destination)
     } catch (error: unknown) {
       const err = error as {
@@ -321,6 +367,7 @@ function SignInContent() {
       setError(msg)
       const captchaMeta = extractCaptchaMeta(err)
       if (isBenignAuthUserInputError(err)) {
+        trackAuthOutcomeDeferred("email", "signin", "error", { code: err.code ?? null, expectedUserInputError: true })
         await logError("auth_failed", msg, "warning", {
           method: "email",
           code: err.code ?? null,
@@ -328,11 +375,16 @@ function SignInContent() {
           ...captchaMeta,
         })
       } else {
+        const oauthGuardrails =
+          isLikelyOAuthDomainMismatch(err.code)
+            ? await getClientOAuthGuardrailReportDeferred()
+            : undefined
+        trackAuthOutcomeDeferred("email", "signin", "error", { code: err.code ?? null })
         await logError("auth_failed", msg, "error", {
           method: "email",
           code: err.code ?? null,
           ...captchaMeta,
-          ...(isLikelyOAuthDomainMismatch(err.code) ? { oauthGuardrails } : {}),
+          ...(oauthGuardrails ? { oauthGuardrails } : {}),
         })
       }
     } finally {

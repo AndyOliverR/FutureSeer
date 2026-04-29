@@ -9,7 +9,9 @@ import MainSeerChatInterface from "@/components/MainSeerChatInterface";
 import { SeqEaseMicroSurvey } from "@/components/metrics/SeqEaseMicroSurvey";
 import {
   getReturningPaymentCommitDestination,
+  hasRequiredGenerationProfileSetup,
   hasRequiredProfileSetup,
+  NEW_USER_ONBOARDING_DESTINATION,
   PROFILE_SETUP_PATH,
 } from "@/lib/authRouting";
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout";
@@ -17,12 +19,16 @@ import { analytics } from "@/lib/analytics";
 
 export default function AskTheSeerPage() {
   const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, requiresReturningPaymentCommit } = useAuth();
-  const { streakDays } = useDashboardData();
+  const { streakDays, retentionSnapshot } = useDashboardData();
   const router = useRouter();
   const isMobileLayout = useIsMobileLayout();
   const layout = isMobileLayout ? "mobile" : "web";
   const gateTrackedRef = useRef(false);
   const bypassTrackedRef = useRef(false);
+  const needsFirstGenerationSetup =
+    Boolean(userProfile) &&
+    !Boolean(userProfile?.mysticalProfileGenerated) &&
+    !hasRequiredGenerationProfileSetup(userProfile);
 
   useEffect(() => {
     if (
@@ -36,6 +42,18 @@ export default function AskTheSeerPage() {
       router.replace(PROFILE_SETUP_PATH);
     }
   }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin]);
+
+  useEffect(() => {
+    if (
+      !authLoading &&
+      user &&
+      needsFirstGenerationSetup &&
+      !isSuperadmin &&
+      !isAdmin
+    ) {
+      router.replace(NEW_USER_ONBOARDING_DESTINATION);
+    }
+  }, [authLoading, user, needsFirstGenerationSetup, router, isSuperadmin, isAdmin]);
 
   useEffect(() => {
     if (!authLoading && user && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) {
@@ -57,6 +75,20 @@ export default function AskTheSeerPage() {
       bypassTrackedRef.current = true;
     }
   }, [authLoading, user, requiresReturningPaymentCommit, isSuperadmin, isAdmin]);
+
+  useEffect(() => {
+    if (!user?.uid || authLoading) return;
+    if (retentionSnapshot.nudgeStage === "reactivation") return;
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const storageKey = `futureseer:habit_loop_completed:${user.uid}:${dayKey}`;
+    if (typeof window !== "undefined" && window.localStorage.getItem(storageKey) === "1") return;
+    analytics.trackHabitLoopCompleted({
+      surface: "ask_seer_route",
+      nudge_stage: retentionSnapshot.nudgeStage,
+      streak_days: retentionSnapshot.currentStreak,
+    });
+    if (typeof window !== "undefined") window.localStorage.setItem(storageKey, "1");
+  }, [user?.uid, authLoading, retentionSnapshot.nudgeStage, retentionSnapshot.currentStreak]);
 
   if (authLoading) {
     return (
@@ -84,6 +116,21 @@ export default function AskTheSeerPage() {
         <div className="text-center space-y-4">
           <p className="text-amber-400 text-lg font-serif">Complete your profile to consult the Seer</p>
           <a href={PROFILE_SETUP_PATH} className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl">Complete Profile</a>
+        </div>
+      </div>
+    );
+  }
+  if (needsFirstGenerationSetup && !isSuperadmin && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-[#070d2d] via-[#0b1230] to-[#050914] flex items-center justify-center px-4">
+        <div className="text-center space-y-4">
+          <p className="text-amber-400 text-lg font-serif">Finish your profile steps to consult the Seer</p>
+          <a
+            href={NEW_USER_ONBOARDING_DESTINATION}
+            className="inline-block px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 font-bold rounded-xl"
+          >
+            Continue Setup
+          </a>
         </div>
       </div>
     );

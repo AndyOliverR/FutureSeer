@@ -39,7 +39,7 @@ export function ProfileNextStepsBanner({
       <p className={cn("text-sm leading-relaxed", isM3 ? "text-surface-on-variant" : "text-amber-200/90")}>
         {isConsultantWorkspace
           ? "Work through the steps in order once, then generate the full mystical profile for this client."
-          : "Work through the steps in order once, then generate your mystical profile. That unlocks every tool and your unified readings."}
+          : "Work through the steps in order once, then run your first Generate Trial Preview. That unlocks your first cross-tool mystical profile."}
       </p>
       <ol
         className={cn(
@@ -47,11 +47,11 @@ export function ProfileNextStepsBanner({
           isM3 ? "text-on-surface" : "text-amber-100/90"
         )}
       >
-        <li>Fill in your profile details (tap Edit if needed) and save.</li>
-        <li>Required to generate now: birth date and birth place.</li>
-        <li>Optional: add face and palm photos; adjust The Seer headline setting.</li>
-        <li>Optional: copy your referral code to share later.</li>
-        <li>Tap Generate Mystical Profile — it runs all systems and may take a couple of minutes.</li>
+        <li>Step 1: Add display name, full name, and gender.</li>
+        <li>Step 2: Add birth date, birth place, and birth time (or mark birth time unknown).</li>
+        <li>Step 3: Add current residence.</li>
+        <li>Step 4: Upload both face and palm photos.</li>
+        <li>Tap Generate Trial Preview once all required fields are complete.</li>
       </ol>
       <div className="flex flex-wrap gap-2 pt-1">
         <Button
@@ -65,7 +65,7 @@ export function ProfileNextStepsBanner({
               : "border-amber-500/50 text-amber-200 hover:bg-amber-500/10"
           }
         >
-          <a href="#profile-personal-data">Jump to birth details</a>
+          <a href="#profile-personal-data">Jump to required steps</a>
         </Button>
         <Button
           asChild

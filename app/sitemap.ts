@@ -1,9 +1,8 @@
 import type { MetadataRoute } from "next"
 import { LEARN_SLUGS } from "@/app/learn/learnArticles"
-import { SEO_LOCALES, localeSegment } from "@/lib/seo/locales"
+import { SEO_LOCALES, localeSegment, normalizeSeoBaseUrl } from "@/lib/seo/locales"
 
-const rawSite = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
-const site = rawSite.replace("://www.", "://")
+const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
 
 /**
  * Static tool routes with a real page (excludes dynamic /tools/[slug] and
@@ -96,12 +95,21 @@ const STATIC_PATHS = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastMod = new Date()
 
-  const staticEntries: MetadataRoute.Sitemap = [...STATIC_PATHS, ...TOOL_PATHS].map((path) => ({
-    url: `${site}${path}`,
-    lastModified: lastMod,
-    changeFrequency: path === "/" ? ("weekly" as const) : ("monthly" as const),
-    priority: path === "/" ? 1 : path.startsWith("/learn") ? 0.75 : 0.7,
-  }))
+  const seen = new Set<string>()
+  const createEntry = (
+    path: string,
+    changeFrequency: "weekly" | "monthly",
+    priority: number,
+  ): MetadataRoute.Sitemap[number] | null => {
+    const url = `${site}${path}`
+    if (seen.has(url)) return null
+    seen.add(url)
+    return { url, lastModified: lastMod, changeFrequency, priority }
+  }
+
+  const staticEntries: MetadataRoute.Sitemap = [...STATIC_PATHS, ...TOOL_PATHS]
+    .map((path) => createEntry(path, path === "/" ? "weekly" : "monthly", path === "/" ? 1 : 0.7))
+    .filter((entry): entry is MetadataRoute.Sitemap[number] => Boolean(entry))
 
   const learnEntries: MetadataRoute.Sitemap = LEARN_SLUGS.map((slug) => ({
     url: `${site}/learn/${slug}`,
@@ -110,12 +118,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.72,
   }))
 
-  const localizedLandingEntries: MetadataRoute.Sitemap = SEO_LOCALES.map((locale) => ({
-    url: `${site}/${localeSegment(locale)}`,
-    lastModified: lastMod,
-    changeFrequency: "weekly" as const,
-    priority: 0.85,
-  }))
+  const localizedLandingEntries: MetadataRoute.Sitemap = SEO_LOCALES.map((locale) =>
+    createEntry(`/${localeSegment(locale)}`, "weekly", 0.85),
+  ).filter((entry): entry is MetadataRoute.Sitemap[number] => Boolean(entry))
 
-  return [...staticEntries, ...learnEntries, ...localizedLandingEntries]
+  return [
+    ...staticEntries,
+    ...learnEntries
+      .map((entry) => (seen.has(entry.url) ? null : (seen.add(entry.url), entry)))
+      .filter((entry): entry is MetadataRoute.Sitemap[number] => Boolean(entry)),
+    ...localizedLandingEntries,
+  ]
 }

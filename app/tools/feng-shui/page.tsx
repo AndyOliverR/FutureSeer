@@ -5,6 +5,7 @@ import Link from "next/link"
 import { devLog } from '@/lib/devLogger';
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/use-auth"
+import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile"
 import { useRouter } from "next/navigation"
 import { useToolReportUnlock } from "@/hooks/useToolReportUnlock"
 import { useViralReportBypass } from "@/hooks/useViralReportBypass"
@@ -47,6 +48,7 @@ import { adaptFengShuiBagua } from "@/lib/charts/phase2Adapters"
 import { isFengShuiChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { FengShuiLayoutInput } from "@/components/FengShuiSeerChatInterface"
+import { classifyToolReportState } from "@/lib/profileGenerationOrchestrator"
 
 const DIRECTION_OPTIONS = ['Unknown', 'North', 'South', 'East', 'West', 'Northeast', 'Northwest', 'Southeast', 'Southwest'] as const
 
@@ -63,12 +65,24 @@ const tabs = [
 
 export default function FengShuiPage() {
   const { user, userProfile } = useAuth()
+  const { report: pipelineReport, loading: isPipelineLoading, error: pipelineError } = useToolReport('fengShui')
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
   const [analysis, setAnalysis] = useState<FengShuiAnalysis | null>(null)
   const [reading, setReading] = useState<FengShuiReading | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const fengShuiFromPipeline = useMemo(() => {
+    if (!pipelineReport || typeof pipelineReport !== 'object') return null
+    if (classifyToolReportState(pipelineReport) !== 'ready') return null
+    const envelope = pipelineReport as Record<string, unknown>
+    const data = (envelope.data ?? envelope) as Record<string, unknown>
+    const analysis = (data.analysis ?? data.fengShuiAnalysis ?? data) as FengShuiAnalysis | undefined
+    const reading = (data.reading ?? data.fengShuiReading) as FengShuiReading | undefined
+    if (!analysis || !reading) return null
+    return { analysis, reading }
+  }, [pipelineReport])
+
   const [facingDirection, setFacingDirection] = useState<string>('')
   const [layout, setLayout] = useState<FengShuiLayoutInput>({})
 
@@ -141,6 +155,14 @@ export default function FengShuiPage() {
 
   useEffect(() => {
     const loadFengShuiAnalysis = async () => {
+      if (fengShuiFromPipeline) {
+        setAnalysis(fengShuiFromPipeline.analysis)
+        setReading(fengShuiFromPipeline.reading)
+        setIsLoading(false)
+        setError(null)
+        return
+      }
+
       if (!userProfile) {
         setIsLoading(false)
         return
@@ -180,7 +202,7 @@ export default function FengShuiPage() {
     }
 
     loadFengShuiAnalysis()
-  }, [userProfile])
+  }, [userProfile, fengShuiFromPipeline])
 
   if (!user) {
     return (
@@ -221,7 +243,7 @@ export default function FengShuiPage() {
           </motion.div>
 
           {/* Error Alert */}
-          {error && (
+          {(error || pipelineError) && (
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -229,8 +251,8 @@ export default function FengShuiPage() {
             >
               <Alert className="bg-red-500/20 border-red-500/50 text-[var(--m3-on-surface)]">
                 <Info className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-                {error.includes("complete your profile") && (
+                <AlertDescription>{error ?? pipelineError}</AlertDescription>
+                {(error ?? pipelineError ?? '').includes("complete your profile") && (
                   <Button
                     onClick={() => router.push('/profile')}
                     className="mt-4 bg-gradient-to-r from-amber-600 to-yellow-500"
@@ -243,7 +265,7 @@ export default function FengShuiPage() {
           )}
 
           {/* Loading State */}
-          {isLoading && (
+          {(isLoading || isPipelineLoading) && (
             <div className="text-center py-20">
               <motion.div
                 animate={{ rotate: 360 }}

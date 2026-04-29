@@ -47,6 +47,7 @@ import { shouldPreferOAuthRedirect } from '@/lib/oauthWebView';
 
 /** Thrown after signInWithRedirect so callers can skip error UI; page navigates away. */
 export const AUTH_REDIRECT_INITIATED_MESSAGE = 'Redirect initiated';
+export const AUTH_DISMISS_RECOVERY_WINDOW_MS = 5000;
 
 export function isAuthRedirectInitiatedError(error: unknown): boolean {
   return error instanceof Error && error.message === AUTH_REDIRECT_INITIATED_MESSAGE;
@@ -353,6 +354,7 @@ async function signInWithOAuthWeb(
   provider: FederatedOAuthProvider,
   label: 'google' | 'apple'
 ): Promise<User> {
+  const attemptId = `${label}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   const startedAtMs =
     typeof performance !== 'undefined' && typeof performance.now === 'function'
       ? performance.now()
@@ -361,37 +363,58 @@ async function signInWithOAuthWeb(
     typeof window !== 'undefined' && shouldPreferOAuthRedirect();
 
   if (preferRedirect) {
-    devLog.debug(`OAuth ${label}: signInWithRedirect (WebKit-friendly)`);
+    devLog.debug(`OAuth ${label}: signInWithRedirect (WebKit-friendly)`, { attemptId }, 'firebase');
     await signInWithRedirect(auth, provider);
     const elapsedMs =
       (typeof performance !== 'undefined' && typeof performance.now === 'function'
         ? performance.now()
         : Date.now()) - startedAtMs;
-    devLog.debug(`OAuth ${label}: redirect initiated in ${Math.round(elapsedMs)}ms`, 'firebase');
+    devLog.debug(
+      `OAuth ${label}: redirect initiated in ${Math.round(elapsedMs)}ms`,
+      { attemptId, mode: 'redirect' },
+      'firebase'
+    );
     throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
   }
 
   try {
-    devLog.debug(`OAuth ${label}: signInWithPopup`);
+    devLog.debug(`OAuth ${label}: signInWithPopup`, { attemptId }, 'firebase');
     const result = await signInWithPopup(auth, provider);
     const elapsedMs =
       (typeof performance !== 'undefined' && typeof performance.now === 'function'
         ? performance.now()
         : Date.now()) - startedAtMs;
-    devLog.debug(`OAuth ${label}: popup completed in ${Math.round(elapsedMs)}ms`, 'firebase');
+    devLog.debug(
+      `OAuth ${label}: popup completed in ${Math.round(elapsedMs)}ms`,
+      { attemptId, mode: 'popup' },
+      'firebase'
+    );
     return result.user;
   } catch (error: unknown) {
     const code = (error as { code?: string })?.code;
     if (code === 'auth/popup-blocked') {
-      devLog.warn(`OAuth ${label}: popup blocked; falling back to redirect`, undefined, 'firebase');
+      devLog.warn(
+        `OAuth ${label}: popup blocked; falling back to redirect`,
+        { attemptId, mode: 'popup' },
+        'firebase'
+      );
       await signInWithRedirect(auth, provider);
       const elapsedMs =
         (typeof performance !== 'undefined' && typeof performance.now === 'function'
           ? performance.now()
           : Date.now()) - startedAtMs;
-      devLog.debug(`OAuth ${label}: redirect fallback initiated in ${Math.round(elapsedMs)}ms`, 'firebase');
+      devLog.debug(
+        `OAuth ${label}: redirect fallback initiated in ${Math.round(elapsedMs)}ms`,
+        { attemptId, mode: 'popup-to-redirect' },
+        'firebase'
+      );
       throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
     }
+    devLog.debug(
+      `OAuth ${label}: popup/redirect flow failed`,
+      { attemptId, mode: 'popup', code },
+      'firebase'
+    );
     throw error;
   }
 }
@@ -746,15 +769,33 @@ function setGlobalRedirectResultPromise(value: Promise<UserCredential | null> | 
 export const getRedirectResult = async (): Promise<UserCredential | null> => {
   const auth = getFirebaseAuth();
   if (!auth) return null;
-  let redirectResultPromise = getGlobalRedirectResultPromise();
-  if (!redirectResultPromise) {
-    redirectResultPromise = firebaseGetRedirectResult(auth).catch((e: unknown) => {
-      devLog.debug('getRedirectResult: no result or error', e, 'firebase');
-      return null;
-    });
-    setGlobalRedirectResultPromise(redirectResultPromise);
+  const startedAt = Date.now();
+  let inFlightPromise = getGlobalRedirectResultPromise();
+  if (!inFlightPromise) {
+    const nextPromise = firebaseGetRedirectResult(auth)
+      .then((result) => {
+        devLog.debug(
+          'getRedirectResult: completed',
+          { hasUser: !!result?.user, elapsedMs: Date.now() - startedAt },
+          'firebase'
+        );
+        return result;
+      })
+      .catch((e: unknown) => {
+        devLog.debug('getRedirectResult: no result or error', e, 'firebase');
+        return null;
+      })
+      .finally(() => {
+        if (getGlobalRedirectResultPromise() === nextPromise) {
+          setGlobalRedirectResultPromise(null);
+        }
+      });
+    inFlightPromise = nextPromise;
+    setGlobalRedirectResultPromise(nextPromise);
+  } else {
+    devLog.debug('getRedirectResult: using in-flight promise', undefined, 'firebase');
   }
-  return redirectResultPromise;
+  return inFlightPromise;
 };
 
 // Enhanced Firestore connection management

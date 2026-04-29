@@ -20,5 +20,15 @@ const lines = [
   "2. Compare with automated check: pnpm audit:sitemap:live",
   "   (confirms current sitemap.xml URLs return 2xx/3xx on production).",
   "",
+  "=== Canonical conflict check (manual in GSC) ===",
+  "1. Indexing > Pages > Duplicate, Google chose different canonical than user.",
+  "2. Export example URLs and group by template (/tools, /learn, etc.).",
+  "3. URL Inspection each group: compare User-declared canonical vs Google-selected canonical.",
+  "4. Confirm sitemap URL, internal links, and final redirected URL all match canonical host/path.",
+  "",
+  "=== hreflang/alternates check (manual) ===",
+  "1. Inspect one /learn/[slug] URL and verify alternates include locale variants + x-default.",
+  "2. Ensure locale URLs in sitemap match alternates language targets.",
+  "",
 ];
 console.log(lines.join("\n"));

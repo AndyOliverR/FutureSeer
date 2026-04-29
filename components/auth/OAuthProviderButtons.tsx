@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -67,6 +68,20 @@ export function OAuthProviderButtons({
 }: OAuthProviderButtonsProps) {
   const gate = requireAgeOk && !ageOk;
   const busy = disabled || gate;
+  const clickLockRef = useRef(false);
+
+  const runWithShortClickLock = async (action: () => void | Promise<void>) => {
+    if (clickLockRef.current) return;
+    clickLockRef.current = true;
+    try {
+      await action();
+    } finally {
+      // Prevent rapid double taps that can trigger cancelled popup requests.
+      window.setTimeout(() => {
+        clickLockRef.current = false;
+      }, 700);
+    }
+  };
 
   if (variant === "mobile") {
     return (
@@ -74,9 +89,10 @@ export function OAuthProviderButtons({
         <Button
           type="button"
           size="xl"
-          onClick={() => void onGoogle()}
+          onClick={() => void runWithShortClickLock(onGoogle)}
           disabled={busy || activeProvider === "google"}
           className="w-full gap-3 bg-white text-slate-900 shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-busy={activeProvider === "google"}
         >
           {activeProvider === "google" ? (
             <Loader2 className="w-6 h-6 animate-spin" />
@@ -89,9 +105,10 @@ export function OAuthProviderButtons({
           <Button
             type="button"
             size="xl"
-            onClick={() => void onApple()}
+            onClick={() => void runWithShortClickLock(onApple)}
             disabled={busy || activeProvider === "apple"}
             className="w-full gap-3 bg-black text-white border border-white/10 shadow-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-busy={activeProvider === "apple"}
           >
             {activeProvider === "apple" ? (
               <Loader2 className="w-6 h-6 animate-spin" />
@@ -109,10 +126,11 @@ export function OAuthProviderButtons({
     <div className="flex flex-col gap-3 w-full">
       <Button
         type="button"
-        onClick={() => void onGoogle()}
+        onClick={() => void runWithShortClickLock(onGoogle)}
         disabled={busy || activeProvider === "google"}
         size="2xl"
         className="w-full gap-3 bg-white hover:bg-white/90 text-[#020617] shadow-lg disabled:opacity-50"
+        aria-busy={activeProvider === "google"}
       >
         {activeProvider === "google" ? (
           <Loader2 className="w-6 h-6 animate-spin" />
@@ -124,10 +142,11 @@ export function OAuthProviderButtons({
       {showApple ? (
         <Button
           type="button"
-          onClick={() => void onApple()}
+          onClick={() => void runWithShortClickLock(onApple)}
           disabled={busy || activeProvider === "apple"}
           size="2xl"
           className="w-full gap-3 bg-black hover:bg-black/90 text-white border border-white/10 shadow-lg disabled:opacity-50"
+          aria-busy={activeProvider === "apple"}
         >
           {activeProvider === "apple" ? (
             <Loader2 className="w-6 h-6 animate-spin" />

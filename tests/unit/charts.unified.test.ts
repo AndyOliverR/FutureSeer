@@ -47,6 +47,28 @@ describe('phase2 visual adapters', () => {
     expect(adaptVastuCompass({ zones: ['N', 'E', 'S', 'W'] }).system).toBe('vastu');
     expect(adaptFengShuiBagua({}).system).toBe('fengshui');
   });
+
+  it('returns deterministic adapter geometry for same input', () => {
+    const kpInput = { points: [{ id: 'su', label: 'Sun', longitude: 20 }, { id: 'mo', label: 'Moon', longitude: 90 }] };
+    const v1 = adaptKpOverlay(kpInput);
+    const v2 = adaptKpOverlay(kpInput);
+    expect(v1.points).toEqual(v2.points);
+
+    const nInput = { values: [1, 3, 6, 9] };
+    const n1 = adaptNumerologyMatrix(nInput);
+    const n2 = adaptNumerologyMatrix(nInput);
+    expect(n1.points).toEqual(n2.points);
+
+    const vaInput = { zones: ['N', 'E', 'S', 'W'] };
+    const va1 = adaptVastuCompass(vaInput);
+    const va2 = adaptVastuCompass(vaInput);
+    expect(va1.points).toEqual(va2.points);
+
+    const fInput = { sectors: ['Career', 'Wealth', 'Love'] };
+    const f1 = adaptFengShuiBagua(fInput);
+    const f2 = adaptFengShuiBagua(fInput);
+    expect(f1.points).toEqual(f2.points);
+  });
 });
 
 describe('phase2 per-tool flags', () => {

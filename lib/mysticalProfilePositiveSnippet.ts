@@ -1,5 +1,6 @@
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import type { ToolTeaserPayload } from '@/lib/report-viral/types'
+import { classifyToolReportState } from '@/lib/profileGenerationOrchestrator'
 
 const MAX_LINE = 180
 const MAX_POSITIVE_LINES = 4
@@ -96,11 +97,7 @@ export function resolveToolReportFromProfile(
 }
 
 export function isUsableStoredReport(report: unknown): boolean {
-  if (report == null) return false
-  if (isPlaceholderReport(report)) return false
-  if (isFailedToolEnvelope(report)) return false
-  if (typeof report === 'object' && Object.keys(report as object).length === 0) return false
-  return true
+  return classifyToolReportState(report) === 'ready'
 }
 
 export interface MysticalCardSnippet {

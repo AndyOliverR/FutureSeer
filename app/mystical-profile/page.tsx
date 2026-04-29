@@ -5,7 +5,7 @@ import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
 import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { ChevronRight, Loader2, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
@@ -13,7 +13,9 @@ import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMystica
 import { useIsPortraitNarrowLayout } from "@/hooks/useIsPortraitNarrowLayout"
 import {
   getReturningPaymentCommitDestination,
+  hasRequiredGenerationProfileSetup,
   hasRequiredProfileSetup,
+  NEW_USER_ONBOARDING_DESTINATION,
   PROFILE_SETUP_PATH,
 } from "@/lib/authRouting"
 import { ALL_TOOL_SLUGS } from "@/lib/profileGenerationOrchestrator"
@@ -51,6 +53,7 @@ function humanizePipelineSlug(slug: string): string {
 
 export default function MysticalProfilePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const {
     user,
     userProfile,
@@ -67,6 +70,10 @@ export default function MysticalProfilePage() {
   const { logError: logOnboarding } = useErrorLogger({ area: "onboarding" })
 
   const p = profile as Record<string, unknown> | null
+  const needsFirstGenerationSetup =
+    Boolean(userProfile) &&
+    !Boolean(userProfile?.mysticalProfileGenerated) &&
+    !hasRequiredGenerationProfileSetup(userProfile)
   const missingFullFields = useMemo(() => getMissingFullProfileFields(userProfile), [userProfile])
   const trialActive = useMemo(() => isTrialActive(userProfile), [userProfile])
   const [generationPending, setGenerationPending] = useState<boolean>(() => {
@@ -80,9 +87,11 @@ export default function MysticalProfilePage() {
   const [generationPhase, setGenerationPhase] = useState<string | null>(null)
   const [completedTools, setCompletedTools] = useState<number | null>(null)
   const [totalTools, setTotalTools] = useState<number | null>(null)
+  const [readyToolsCount, setReadyToolsCount] = useState<number | null>(null)
   const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
+  const hasGeneratingIntent = searchParams.get("generating") === "1"
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
   const loadingMessages = useMemo(
@@ -147,11 +156,13 @@ export default function MysticalProfilePage() {
             phase?: string | null
             completedTools?: number | null
             totalTools?: number | null
+            readyToolsCount?: number | null
             updatedAt?: number | null
           }
           setGenerationPhase(data.phase ?? null)
           setCompletedTools(typeof data.completedTools === "number" ? data.completedTools : null)
           setTotalTools(typeof data.totalTools === "number" ? data.totalTools : null)
+          setReadyToolsCount(typeof data.readyToolsCount === "number" ? data.readyToolsCount : null)
           setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : null)
           if (data.generated) {
             sessionStorage.setItem("futureSeer:generationStatus", "completed")
@@ -162,7 +173,7 @@ export default function MysticalProfilePage() {
           }
           if (!data.inProgress && !data.generated) {
             sessionStorage.setItem("futureSeer:generationStatus", "failed")
-            const msg = "Generation did not complete. Please retry once."
+            const msg = "Generation did not complete. Please return to Profile and retry."
             sessionStorage.setItem("futureSeer:generationError", msg)
             setGenerationPending(false)
             setGenerationError(msg)
@@ -251,10 +262,15 @@ export default function MysticalProfilePage() {
     if (
       userProfile != null &&
       !hasRequiredProfileSetup(userProfile) &&
+      userProfile.mysticalProfileGenerated &&
       !isSuperadmin &&
       !isAdmin
     ) {
       router.replace(PROFILE_SETUP_PATH)
+      return
+    }
+    if (needsFirstGenerationSetup && !isSuperadmin && !isAdmin) {
+      router.replace(NEW_USER_ONBOARDING_DESTINATION)
       return
     }
     if (
@@ -281,9 +297,15 @@ export default function MysticalProfilePage() {
       !isAdmin &&
       !generationPending
     ) {
+      if (hasGeneratingIntent) {
+        if (!generationError) {
+          setGenerationError("Generation did not start. Please return to Profile and try again.")
+        }
+        return
+      }
       router.replace("/profile")
     }
-  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending, requiresReturningPaymentCommit])
+  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending, requiresReturningPaymentCommit, needsFirstGenerationSetup, hasGeneratingIntent, generationError])
 
   useEffect(() => {
     if (!authLoading && user && !requiresReturningPaymentCommit && !isSuperadmin && !isAdmin && !bypassTrackedRef.current) {
@@ -369,6 +391,9 @@ export default function MysticalProfilePage() {
   if (!user || (userProfile != null && !hasRequiredProfileSetup(userProfile) && !isSuperadmin && !isAdmin)) {
     return null
   }
+  if (needsFirstGenerationSetup && !isSuperadmin && !isAdmin) {
+    return null
+  }
   if (user && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) {
     return null
   }
@@ -380,6 +405,16 @@ export default function MysticalProfilePage() {
     !isAdmin &&
     !generationPending
   ) {
+    if (hasGeneratingIntent && generationError) {
+      return (
+        <div className="min-h-screen pt-24 px-4 flex flex-col items-center justify-center text-center">
+          <p className="text-red-300 mb-4 max-w-md">{generationError}</p>
+          <Button asChild variant="outline" className="border-amber-500/50 text-amber-200">
+            <Link href="/profile">Back to profile</Link>
+          </Button>
+        </div>
+      )
+    }
     return null
   }
 
@@ -444,6 +479,9 @@ export default function MysticalProfilePage() {
       <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
         <p className="mt-2 text-xs text-surface-on-variant">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
+      ) : null}
+      {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
+        <p className="mt-1 text-xs text-surface-on-variant">Ready reports: {readyToolsCount}/{totalTools}</p>
       ) : null}
       {lastUpdatedLabel ? (
         <p className="mt-1 text-[11px] text-surface-on-variant/80">{lastUpdatedLabel}</p>
@@ -546,6 +584,9 @@ export default function MysticalProfilePage() {
       <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
         <p className="mt-2 text-xs text-slate-400">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
+      ) : null}
+      {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
+        <p className="mt-1 text-xs text-slate-400">Ready reports: {readyToolsCount}/{totalTools}</p>
       ) : null}
       {lastUpdatedLabel ? (
         <p className="mt-1 text-[11px] text-slate-400/80">{lastUpdatedLabel}</p>

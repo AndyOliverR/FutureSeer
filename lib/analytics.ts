@@ -88,8 +88,14 @@ export const ANALYTICS_EVENTS = {
   RETURN_PLAN_COMMIT_STARTED: 'return_plan_commit_started',
   RETURN_PLAN_COMMIT_COMPLETED: 'return_plan_commit_completed',
   RETURN_GATE_BYPASSED_ACTIVE_SUBSCRIBER: 'return_gate_bypassed_active_subscriber',
+  PROFILE_REQUIRED_STEP_COMPLETED: 'profile_required_step_completed',
+  PROFILE_GENERATE_BLOCKED_MISSING_FIELDS: 'profile_generate_blocked_missing_fields',
+  PROFILE_BIRTH_TIME_UNKNOWN_SELECTED: 'profile_birth_time_unknown_selected',
+  HABIT_LOOP_COMPLETED: 'habit_loop_completed',
   PAYWALL_VIEW: 'paywall_view',
   TRIAL_START: 'trial_start',
+  AUTH_ATTEMPT: 'auth_attempt',
+  AUTH_OUTCOME: 'auth_outcome',
 } as const
 
 // Analytics Properties
@@ -430,6 +436,37 @@ export class AnalyticsService {
     })
   }
 
+  trackProfileRequiredStepCompleted(stepId: string, properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.PROFILE_REQUIRED_STEP_COMPLETED, {
+      step_id: stepId,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackProfileGenerateBlockedMissingFields(missingFields: string[], properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.PROFILE_GENERATE_BLOCKED_MISSING_FIELDS, {
+      missing_fields: missingFields,
+      missing_count: missingFields.length,
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackProfileBirthTimeUnknownSelected(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.PROFILE_BIRTH_TIME_UNKNOWN_SELECTED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackHabitLoopCompleted(properties?: Record<string, unknown>) {
+    this.trackEvent(ANALYTICS_EVENTS.HABIT_LOOP_COMPLETED, {
+      ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
   trackPaywallView(surface: string, properties?: Record<string, unknown>) {
     this.trackEvent(ANALYTICS_EVENTS.PAYWALL_VIEW, {
       surface,
@@ -443,6 +480,32 @@ export class AnalyticsService {
       surface,
       plan,
       ...campaignPropsForPostHog(),
+      ...properties,
+    })
+  }
+
+  trackAuthAttempt(
+    method: 'google' | 'apple' | 'email',
+    surface: 'signin' | 'signup',
+    properties?: Record<string, unknown>
+  ) {
+    this.trackEvent(ANALYTICS_EVENTS.AUTH_ATTEMPT, {
+      method,
+      surface,
+      ...properties,
+    })
+  }
+
+  trackAuthOutcome(
+    method: 'google' | 'apple' | 'email',
+    surface: 'signin' | 'signup',
+    outcome: 'success' | 'redirect_initiated' | 'dismissed' | 'error',
+    properties?: Record<string, unknown>
+  ) {
+    this.trackEvent(ANALYTICS_EVENTS.AUTH_OUTCOME, {
+      method,
+      surface,
+      outcome,
       ...properties,
     })
   }

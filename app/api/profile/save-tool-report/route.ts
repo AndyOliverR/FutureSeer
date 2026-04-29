@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { setDocument, isAdminAvailable } from '@/lib/firebase-admin';
+import { getDocument, setDocument, isAdminAvailable } from '@/lib/firebase-admin';
 import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
 import { devLog } from '@/lib/devLogger';
 
@@ -58,7 +58,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    await setDocument('comprehensiveMysticalProfiles', uid, { [toolSlug]: data });
+    const existing = (await getDocument('comprehensiveMysticalProfiles', uid)) as Record<string, unknown> | null;
+    const existingReadiness =
+      existing && typeof existing.toolReadiness === 'object'
+        ? (existing.toolReadiness as Record<string, string>)
+        : {};
+    const nextReadiness = { ...existingReadiness, [toolSlug]: 'ready' };
+    await setDocument('comprehensiveMysticalProfiles', uid, { [toolSlug]: data, toolReadiness: nextReadiness });
 
     devLog.debug('Saved tool report to profile', { uid, toolSlug }, 'save-tool-report');
 
