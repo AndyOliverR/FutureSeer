@@ -39,6 +39,7 @@ import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/pro
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
 import { getMissingFirstGenerationFields, isTrialActive } from "@/lib/subscriptionConfig"
+import { ONBOARDING_FULL_REPORT_BYPASS_KEY } from "@/lib/authRouting"
 
 const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
 const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
@@ -684,7 +685,7 @@ export default function ProfilePage() {
     return overrides
   }
 
-  const handleGenerateMysticalProfile = async (surface: string, mode: "preview" | "full" = "preview") => {
+  const handleGenerateMysticalProfile = async (surface: string, mode: "preview" | "full" = "full") => {
     if (isGeneratingProfile) return
     if (missingGenerationFieldKeys.length > 0) {
       const missingLabels = missingGenerationFieldKeys.map((field) => FULL_FIELD_LABELS[field] ?? field)
@@ -736,7 +737,7 @@ export default function ProfilePage() {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
-        if (res.status === 403 && mode === "preview") setCanGenerateMysticalProfile(false)
+        if (res.status === 403) setCanGenerateMysticalProfile(false)
         const payload = data as { error?: string; blockReason?: string; missingFields?: string[] }
         if (payload.blockReason === "missing_fields" && Array.isArray(payload.missingFields) && payload.missingFields.length > 0) {
           throw new Error(`Complete these fields for full report: ${payload.missingFields.map((f) => FULL_FIELD_LABELS[f] ?? f).join(", ")}`)
@@ -750,6 +751,10 @@ export default function ProfilePage() {
         throw new Error(payload.error || "Profile generation failed. Please try again.")
       }
       setGenerationStatus("Generating readings across all divination systems... This may take up to 2 minutes.")
+      if (typeof window !== "undefined" && mode === "full") {
+        sessionStorage.setItem(ONBOARDING_FULL_REPORT_BYPASS_KEY, "1")
+        window.dispatchEvent(new CustomEvent("futureSeer:onboardingBypassChanged"))
+      }
       router.push("/mystical-profile?generating=1")
       if ((data as { inProgress?: boolean }).inProgress) {
         if (typeof window !== "undefined") {
@@ -1377,11 +1382,11 @@ export default function ProfilePage() {
                 {missingLabels.length > 0 ? <p className="mt-1">Still needed: {missingLabels.join(", ")}.</p> : <p className="mt-1 text-emerald-300">All required fields complete. You can generate now.</p>}
               </div>
                 <Button
-                  onClick={() => void handleGenerateMysticalProfile("profile_primary", "preview")}
+                  onClick={() => void handleGenerateMysticalProfile("profile_primary", "full")}
                   disabled={isGeneratingProfile || !canGenerateFromOnboarding}
                   className="w-full h-16 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 rounded-[24px] font-bold text-lg shadow-xl active:scale-95 transition-all"
                 >
-                  {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Trial Preview</>}
+                  {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
                 </Button>
                 {showPostHookFullPath ? (
                   <Button
@@ -1394,11 +1399,7 @@ export default function ProfilePage() {
                   </Button>
                 ) : (
                   <p className="text-center text-amber-300/70 text-xs mt-2">
-                    Continue with Trial Preview for now. Complete full-report checklist in{" "}
-                    <Link href="/settings" className="underline">
-                      Settings
-                    </Link>
-                    .
+                    Your first full generation runs now. If you update profile details later, use this button to regenerate.
                   </p>
                 )}
                 {trialIsActive && showPostHookFullPath ? (
@@ -1413,7 +1414,7 @@ export default function ProfilePage() {
                 ) : null}
                 {!showPostHookFullPath ? (
                   <p className="text-center text-amber-300/70 text-xs mt-2">
-                    Start with Trial Preview first. Full Report unlock appears after your first result.
+                    Complete all required fields once, then generate your full multi-tool mystical profile.
                   </p>
                 ) : null}
                 {isGeneratingProfile && generationStatus && (
@@ -1815,11 +1816,11 @@ export default function ProfilePage() {
                   {missingLabels.length > 0 ? <p className="mt-1">Still needed: {missingLabels.join(", ")}.</p> : <p className="mt-1 text-emerald-300">All required fields complete. You can generate now.</p>}
                 </div>
                   <Button
-                    onClick={() => void handleGenerateMysticalProfile("profile_secondary", "preview")}
+                    onClick={() => void handleGenerateMysticalProfile("profile_secondary", "full")}
                     disabled={isGeneratingProfile || !canGenerateFromOnboarding}
                     className="w-full h-14 bg-gradient-to-r from-amber-600 to-yellow-500 text-[#020617] rounded-2xl font-bold shadow-xl hover:opacity-95 transition-opacity"
                   >
-                    {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Trial Preview</>}
+                    {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
                   </Button>
                   {showPostHookFullPath ? (
                     <Button
@@ -1832,11 +1833,7 @@ export default function ProfilePage() {
                     </Button>
                   ) : (
                     <p className="text-center text-amber-200/70 text-xs mt-2">
-                      Continue with Trial Preview for now. Complete full-report checklist in{" "}
-                      <Link href="/settings" className="underline">
-                        Settings
-                      </Link>
-                      .
+                      Your first full generation runs now. If you update profile details later, use this button to regenerate.
                     </p>
                   )}
                   {trialIsActive && showPostHookFullPath ? (
@@ -1851,7 +1848,7 @@ export default function ProfilePage() {
                   ) : null}
                   {!showPostHookFullPath ? (
                     <p className="text-center text-amber-200/70 text-xs mt-2">
-                      Start with Trial Preview first. Full Report unlock appears after your first result.
+                      Complete all required fields once, then generate your full multi-tool mystical profile.
                     </p>
                   ) : null}
                   {isGeneratingProfile && generationStatus && (

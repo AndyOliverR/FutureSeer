@@ -232,6 +232,7 @@ describe('Profile generate-mystical API', () => {
     it('returns payment_method_update_required for full mode when status is past_due', async () => {
       mockGetDocument.mockResolvedValue({
         ...baseProfile,
+        mysticalProfileGenerated: true,
         fullName: 'Test User',
         gender: 'male',
         currentLocation: 'New York, NY',
@@ -247,6 +248,28 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(403);
       expect(data.blockReason).toBe('payment_method_update_required');
       expect(data.subscriptionStatus).toBe('past_due');
+    });
+
+    it('allows first onboarding full generation without payment setup', async () => {
+      mockGetDocument.mockResolvedValue({
+        ...baseProfile,
+        mysticalProfileGenerated: false,
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+        selectedPlan: 'power-user-trial',
+        subscriptionStatus: 'trial',
+        paymentMethodId: '',
+      });
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+      expect(res.status).toBe(202);
+      expect(data.success).toBe(true);
+      expect(data.blockReason).toBeUndefined();
+      expect(mockGenerateCoreReportsStageA).toHaveBeenCalled();
     });
   });
 

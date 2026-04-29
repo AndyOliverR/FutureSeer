@@ -56,4 +56,19 @@ describe('Returning user payment gating', () => {
       }),
     ).toBe(false);
   });
+
+  it('does not require returning commit when onboarding session bypass is active', () => {
+    expect(
+      shouldRequireReturningPaymentCommit({
+        profile: {
+          mysticalProfileGenerated: true,
+          subscriptionStatus: 'trial',
+        },
+        isSuperadmin: false,
+        isAdmin: false,
+        isSpecialUser: false,
+        hasSessionBypass: true,
+      }),
+    ).toBe(false);
+  });
 });
