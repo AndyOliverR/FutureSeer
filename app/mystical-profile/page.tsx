@@ -92,6 +92,11 @@ export default function MysticalProfilePage() {
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const hasGeneratingIntent = searchParams.get("generating") === "1"
+  const generationIntentFallbackError =
+    hasGeneratingIntent && !generationPending
+      ? "Generation did not start. Please return to Profile and try again."
+      : null
+  const effectiveGenerationError = generationError ?? generationIntentFallbackError
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
   const loadingMessages = useMemo(
@@ -298,14 +303,11 @@ export default function MysticalProfilePage() {
       !generationPending
     ) {
       if (hasGeneratingIntent) {
-        if (!generationError) {
-          setGenerationError("Generation did not start. Please return to Profile and try again.")
-        }
         return
       }
       router.replace("/profile")
     }
-  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending, requiresReturningPaymentCommit, needsFirstGenerationSetup, hasGeneratingIntent, generationError])
+  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending, requiresReturningPaymentCommit, needsFirstGenerationSetup, hasGeneratingIntent])
 
   useEffect(() => {
     if (!authLoading && user && !requiresReturningPaymentCommit && !isSuperadmin && !isAdmin && !bypassTrackedRef.current) {
@@ -405,10 +407,10 @@ export default function MysticalProfilePage() {
     !isAdmin &&
     !generationPending
   ) {
-    if (hasGeneratingIntent && generationError) {
+    if (hasGeneratingIntent && effectiveGenerationError) {
       return (
         <div className="min-h-screen pt-24 px-4 flex flex-col items-center justify-center text-center">
-          <p className="text-red-300 mb-4 max-w-md">{generationError}</p>
+          <p className="text-red-300 mb-4 max-w-md">{effectiveGenerationError}</p>
           <Button asChild variant="outline" className="border-amber-500/50 text-amber-200">
             <Link href="/profile">Back to profile</Link>
           </Button>
@@ -667,8 +669,8 @@ export default function MysticalProfilePage() {
             .
           </p>
         ) : null}
-        {generationError ? (
-          <p className="mt-4 text-center text-red-300 text-sm">{generationError}</p>
+        {effectiveGenerationError ? (
+          <p className="mt-4 text-center text-red-300 text-sm">{effectiveGenerationError}</p>
         ) : null}
       </div>
     </div>
