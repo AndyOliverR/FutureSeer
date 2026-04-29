@@ -92,11 +92,6 @@ export default function MysticalProfilePage() {
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const hasGeneratingIntent = searchParams.get("generating") === "1"
-  const generationIntentFallbackError =
-    hasGeneratingIntent && !generationPending
-      ? "Generation did not start. Please return to Profile and try again."
-      : null
-  const effectiveGenerationError = generationError ?? generationIntentFallbackError
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
   const loadingMessages = useMemo(
@@ -407,10 +402,10 @@ export default function MysticalProfilePage() {
     !isAdmin &&
     !generationPending
   ) {
-    if (hasGeneratingIntent && effectiveGenerationError) {
+    if (hasGeneratingIntent && generationError) {
       return (
         <div className="min-h-screen pt-24 px-4 flex flex-col items-center justify-center text-center">
-          <p className="text-red-300 mb-4 max-w-md">{effectiveGenerationError}</p>
+          <p className="text-red-300 mb-4 max-w-md">{generationError}</p>
           <Button asChild variant="outline" className="border-amber-500/50 text-amber-200">
             <Link href="/profile">Back to profile</Link>
           </Button>
@@ -549,9 +544,9 @@ export default function MysticalProfilePage() {
             ))}
           </div>
         )}
-        {(trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
+        {requiresReturningPaymentCommit && (trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
           <p className="mt-3 text-center text-xs text-surface-on-variant">
-            Trial preview is active. Ready for deeper reports? Complete your checklist and billing in{" "}
+            Ready for deeper reports? Complete your plan and billing in{" "}
             <Link href="/settings" className="underline">
               Settings
             </Link>
@@ -660,17 +655,17 @@ export default function MysticalProfilePage() {
             ))}
           </div>
         )}
-        {(trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
+        {requiresReturningPaymentCommit && (trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
           <p className="mt-3 text-center text-xs text-slate-400">
-            Trial preview is active. Ready for deeper reports? Complete your checklist and billing in{" "}
+            Ready for deeper reports? Complete your plan and billing in{" "}
             <Link href="/settings" className="underline">
               Settings
             </Link>
             .
           </p>
         ) : null}
-        {effectiveGenerationError ? (
-          <p className="mt-4 text-center text-red-300 text-sm">{effectiveGenerationError}</p>
+        {generationError ? (
+          <p className="mt-4 text-center text-red-300 text-sm">{generationError}</p>
         ) : null}
       </div>
     </div>

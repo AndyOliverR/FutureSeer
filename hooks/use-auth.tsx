@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User } from 'firebase/auth';
 import { devLog } from '@/lib/devLogger';
 import { analytics } from '@/lib/analytics';
-import { shouldRequireReturningPaymentCommit } from '@/lib/authRouting';
+import { ONBOARDING_FULL_REPORT_BYPASS_KEY, shouldRequireReturningPaymentCommit } from '@/lib/authRouting';
 import {
   getFirebaseAuth,
   signInWithGoogle,
@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSuperadmin, setIsSuperadmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSpecialUser, setIsSpecialUser] = useState(false);
+  const [hasOnboardingFullReportBypass, setHasOnboardingFullReportBypass] = useState(false);
 
   const checkAdminRoles = (email: string | null) => {
     if (!email) return { isSuperadmin: false, isAdmin: false, isSpecialUser: false };
@@ -100,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Clear user profile state first
       setUserProfile(null);
+      setHasOnboardingFullReportBypass(false);
       
       // Then sign out from Firebase (this also clears localStorage now)
       await signOutUser();
@@ -130,6 +132,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
   }, [user]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncBypassFlag = () => {
+      try {
+        setHasOnboardingFullReportBypass(
+          sessionStorage.getItem(ONBOARDING_FULL_REPORT_BYPASS_KEY) === '1'
+        );
+      } catch {
+        setHasOnboardingFullReportBypass(false);
+      }
+    };
+    syncBypassFlag();
+    window.addEventListener('futureSeer:onboardingBypassChanged', syncBypassFlag);
+    window.addEventListener('focus', syncBypassFlag);
+    return () => {
+      window.removeEventListener('futureSeer:onboardingBypassChanged', syncBypassFlag);
+      window.removeEventListener('focus', syncBypassFlag);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -319,6 +341,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isSuperadmin,
         isAdmin,
         isSpecialUser,
+        hasSessionBypass: hasOnboardingFullReportBypass,
       }),
   };
 
