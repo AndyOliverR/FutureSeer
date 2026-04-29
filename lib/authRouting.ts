@@ -98,6 +98,23 @@ export function shouldGateReturningUserForPaymentCommit(profile: PaymentGateProf
   return isReturningUserProfile(profile) && !hasActiveSubscriptionAccess(profile)
 }
 
+type ReturningPaymentCommitContext = {
+  profile: PaymentGateProfile | null
+  isSuperadmin: boolean
+  isAdmin: boolean
+  isSpecialUser: boolean
+}
+
+/**
+ * Canonical returning-payment gate decision across routes/hooks.
+ * Special users (sponsored/no-charge) must never be forced into payment commit.
+ */
+export function shouldRequireReturningPaymentCommit(context: ReturningPaymentCommitContext): boolean {
+  const { profile, isSuperadmin, isAdmin, isSpecialUser } = context
+  if (isSuperadmin || isAdmin || isSpecialUser) return false
+  return shouldGateReturningUserForPaymentCommit(profile)
+}
+
 /**
  * Builds a subscribe destination that can return users back to their attempted route after payment commit.
  */
