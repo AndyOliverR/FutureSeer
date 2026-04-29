@@ -361,7 +361,6 @@ export default function ProfilePage() {
   const [activeStep, setActiveStep] = useState<RequiredStepId>("identity")
   const completedStepsTrackedRef = useRef<Set<RequiredStepId>>(new Set())
   const trialIsActive = isTrialActive(userProfile)
-  const showPostHookFullPath = Boolean(userProfile?.mysticalProfileGenerated)
   const isFirstHookUser = !userProfile?.mysticalProfileGenerated
   const retentionSnapshot = useMemo(() => {
     const profileRec = (userProfile ?? null) as (Record<string, unknown> | null)
@@ -1388,35 +1387,22 @@ export default function ProfilePage() {
                 >
                   {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
                 </Button>
-                {showPostHookFullPath ? (
-                  <Button
-                    onClick={() => void handleGenerateMysticalProfile("profile_primary_full", "full")}
-                    disabled={isGeneratingProfile || !canGenerateMysticalProfile}
-                    variant="outline"
-                    className="mt-3 w-full h-12 border-amber-400/40 text-amber-100"
-                  >
-                    Generate Full Report
-                  </Button>
-                ) : (
-                  <p className="text-center text-amber-300/70 text-xs mt-2">
-                    Your first full generation runs now. If you update profile details later, use this button to regenerate.
-                  </p>
-                )}
-                {trialIsActive && showPostHookFullPath ? (
+                <p className="text-center text-amber-300/70 text-xs mt-2">
+                  Your first full generation runs now. Use this same button anytime you update profile details and want to regenerate.
+                </p>
+                {trialIsActive ? (
                   <p className="text-center text-amber-300/70 text-xs mt-2">
                     Full Report unlocks when your complete profile and payment details are ready.
                   </p>
                 ) : null}
-                {showPostHookFullPath && fullProfileChecklist.length > 0 ? (
+                {fullProfileChecklist.length > 0 ? (
                   <p className="text-center text-amber-300/70 text-xs mt-2">
                     Missing for Full Report: {fullProfileChecklist.join(", ")}
                   </p>
                 ) : null}
-                {!showPostHookFullPath ? (
-                  <p className="text-center text-amber-300/70 text-xs mt-2">
-                    Complete all required fields once, then generate your full multi-tool mystical profile.
-                  </p>
-                ) : null}
+                <p className="text-center text-amber-300/70 text-xs mt-2">
+                  Complete all required fields once, then generate your full multi-tool mystical profile.
+                </p>
                 {isGeneratingProfile && generationStatus && (
                   <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                 )}
@@ -1822,35 +1808,22 @@ export default function ProfilePage() {
                   >
                     {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
                   </Button>
-                  {showPostHookFullPath ? (
-                    <Button
-                      onClick={() => void handleGenerateMysticalProfile("profile_secondary_full", "full")}
-                      disabled={isGeneratingProfile || !canGenerateMysticalProfile}
-                      variant="outline"
-                      className="mt-3 w-full h-11 border-amber-400/40 text-amber-100"
-                    >
-                      Generate Full Report
-                    </Button>
-                  ) : (
-                    <p className="text-center text-amber-200/70 text-xs mt-2">
-                      Your first full generation runs now. If you update profile details later, use this button to regenerate.
-                    </p>
-                  )}
-                  {trialIsActive && showPostHookFullPath ? (
+                  <p className="text-center text-amber-200/70 text-xs mt-2">
+                    Your first full generation runs now. Use this same button anytime you update profile details and want to regenerate.
+                  </p>
+                  {trialIsActive ? (
                     <p className="text-center text-amber-200/70 text-xs mt-2">
                       Full Report unlocks when your complete profile and payment details are ready.
                     </p>
                   ) : null}
-                  {showPostHookFullPath && fullProfileChecklist.length > 0 ? (
+                  {fullProfileChecklist.length > 0 ? (
                     <p className="text-center text-amber-200/70 text-xs mt-2">
                       Missing for Full Report: {fullProfileChecklist.join(", ")}
                     </p>
                   ) : null}
-                  {!showPostHookFullPath ? (
-                    <p className="text-center text-amber-200/70 text-xs mt-2">
-                      Complete all required fields once, then generate your full multi-tool mystical profile.
-                    </p>
-                  ) : null}
+                  <p className="text-center text-amber-200/70 text-xs mt-2">
+                    Complete all required fields once, then generate your full multi-tool mystical profile.
+                  </p>
                   {isGeneratingProfile && generationStatus && (
                     <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                   )}
