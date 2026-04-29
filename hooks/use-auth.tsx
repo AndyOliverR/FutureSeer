@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { User } from 'firebase/auth';
 import { devLog } from '@/lib/devLogger';
 import { analytics } from '@/lib/analytics';
-import { shouldGateReturningUserForPaymentCommit } from '@/lib/authRouting';
+import { shouldRequireReturningPaymentCommit } from '@/lib/authRouting';
 import {
   getFirebaseAuth,
   signInWithGoogle,
@@ -314,9 +314,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isSpecialUser,
     requiresReturningPaymentCommit:
       !!user &&
-      !isSuperadmin &&
-      !isAdmin &&
-      shouldGateReturningUserForPaymentCommit(userProfile),
+      shouldRequireReturningPaymentCommit({
+        profile: userProfile,
+        isSuperadmin,
+        isAdmin,
+        isSpecialUser,
+      }),
   };
 
   return (
