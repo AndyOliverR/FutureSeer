@@ -9,6 +9,7 @@ import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile'
 import { ToolReportGuard } from '@/components/ToolReportGuard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import { CompatibilityTab } from '@/components/compatibility/CompatibilityTab'
 import { NumerologyRemedies } from '@/components/numerology/NumerologyRemedies'
@@ -180,6 +181,7 @@ export default function NumerologyPage() {
   }, [pipelineReport])
 
   const hasCompleteDetails = !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace)
+  const chartsV2Enabled = isNumerologyChartsV2Enabled()
 
   // Memoized calculations for performance
   const driverConductor = useMemo(() => ({
@@ -246,6 +248,17 @@ export default function NumerologyPage() {
       toIntegerOrNull(numerologyData?.maturity_number),
     ])
   }, [numerologyData?.life_path_number, numerologyData?.life_path, numerologyData?.expression_number, numerologyData?.destiny_number, numerologyData?.birthday_number, numerologyData?.maturity_number])
+  const previewFallbackValues = useMemo(
+    () => [
+      driverConductor.driver.reduced ?? 0,
+      driverConductor.conductor.reduced ?? 0,
+      personalYear ?? 0,
+      toIntegerOrNull(numerologyData?.life_path_number ?? numerologyData?.life_path) ?? 0,
+      toIntegerOrNull(numerologyData?.expression_number) ?? 0,
+      toIntegerOrNull(numerologyData?.soul_number ?? numerologyData?.soul_urge) ?? 0,
+    ],
+    [driverConductor.driver.reduced, driverConductor.conductor.reduced, personalYear, numerologyData?.life_path_number, numerologyData?.life_path, numerologyData?.expression_number, numerologyData?.soul_number, numerologyData?.soul_urge]
+  )
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="numerology data">
@@ -267,7 +280,7 @@ export default function NumerologyPage() {
             </div>
           </div>
         </div>
-      ) : !numerologyData ? (
+      ) : !numerologyData && !chartsV2Enabled ? (
         <div className="relative min-h-screen starfield-ultra-sharp">
           <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
             <div className="backdrop-blur-sm bg-slate-900/50 border-amber-500/50 rounded-xl p-6 text-center">
@@ -297,26 +310,33 @@ export default function NumerologyPage() {
             Ancient Babylonian number system revealing life patterns and destiny
           </p>
           
+          {!numerologyData && chartsV2Enabled ? (
+            <Alert className="mb-4 bg-amber-500/10 border-amber-500/30 text-amber-200">
+              <AlertDescription>
+                Numerology report is still generating. Phase 2 preview is enabled for rollout validation using profile-derived fallback values.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           {/* Data Source Indicators */}
           {/* Data source pills removed per request */}
           
           {/* Debug info removed for production */}
         </div>
 
-        {isNumerologyChartsV2Enabled() && (
+        {chartsV2Enabled && (
           <div className="mb-6">
             <Phase2VisualPanel
               charts={[
                 adaptNumerologyMatrix({
                   title: 'Numerology Matrix (Phase 2 Preview)',
-                  values: [
+                  values: numerologyData ? [
                     toIntegerOrNull(numerologyData?.life_path_number ?? numerologyData?.life_path) ?? 0,
                     toIntegerOrNull(numerologyData?.expression_number) ?? 0,
                     toIntegerOrNull(numerologyData?.soul_number ?? numerologyData?.soul_urge) ?? 0,
                     toIntegerOrNull(numerologyData?.personality_number) ?? 0,
                     toIntegerOrNull(numerologyData?.destiny_number) ?? 0,
                     toIntegerOrNull(numerologyData?.birthday_number) ?? 0,
-                  ],
+                  ] : previewFallbackValues,
                 }),
               ]}
             />

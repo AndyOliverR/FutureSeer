@@ -1,3 +1,7 @@
+import { normalizeSeoBaseUrl } from "@/lib/seo/locales";
+
+const siteBase = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app");
+
 export default function Head() {
   return (
     <>
@@ -10,7 +14,7 @@ export default function Head() {
         name="keywords"
         content="divination tools, vedic astrology app, western astrology app, tarot reading app, numerology tools, herramientas misticas, outils divinatoires, 占卜 工具"
       />
-      <link rel="canonical" href="https://futureseer.app/tools" />
+      <link rel="canonical" href={`${siteBase}/tools`} />
     </>
   );
 }

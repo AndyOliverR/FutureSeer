@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
+import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
 
-const rawSite = process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app"
-const site = rawSite.replace("://www.", "://")
+const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
 
 export const PRIORITY_TOOL_SLUGS = [
   "vastu",

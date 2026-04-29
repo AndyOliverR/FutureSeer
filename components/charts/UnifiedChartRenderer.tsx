@@ -130,6 +130,46 @@ function NakshatraWheel({ chart }: { chart: UnifiedChartData }) {
   );
 }
 
+function GridPreview({ chart }: { chart: UnifiedChartData }) {
+  const points = chart.points.slice(0, 9);
+  return (
+    <div className="grid grid-cols-3 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      {Array.from({ length: 9 }, (_, i) => {
+        const point = points[i];
+        return (
+          <div
+            key={point?.id ?? `cell-${i}`}
+            className="flex min-h-[64px] items-center justify-center rounded border border-slate-200 bg-white px-2 text-center"
+          >
+            <span className="text-sm font-semibold text-slate-700">
+              {point ? point.shortLabel ?? point.label : '—'}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function CompassPreview({ chart }: { chart: UnifiedChartData }) {
+  const ordered = [...chart.points].sort((a, b) => a.longitude - b.longitude);
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="grid grid-cols-2 gap-2">
+        {ordered.map((point) => (
+          <div
+            key={point.id}
+            className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+          >
+            <span className="font-semibold">{point.shortLabel ?? point.label}</span>
+            <span className="ml-2 text-xs text-slate-500">{Math.round(point.longitude)}°</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function UnifiedChartRenderer({ chart, visualVariant }: { chart: UnifiedChartData; visualVariant?: string }) {
   let renderData = chart;
   if (isGroqChartExperimentEnabled()) {
@@ -139,6 +179,8 @@ export function UnifiedChartRenderer({ chart, visualVariant }: { chart: UnifiedC
 
   if (renderData.layout === 'western-wheel') return <WesternWheel chart={renderData} />;
   if (renderData.layout === 'nakshatra-wheel') return <NakshatraWheel chart={renderData} />;
+  if (renderData.layout === 'grid') return <GridPreview chart={renderData} />;
+  if (renderData.layout === 'compass') return <CompassPreview chart={renderData} />;
   if (renderData.layout === 'vedic-south') return <VedicGrid chart={renderData} south />;
   return <VedicGrid chart={renderData} />;
 }

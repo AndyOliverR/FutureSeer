@@ -15,7 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { getDocument, setDocument, batchSetDocuments, isAdminAvailable, adminDb } from '@/lib/firebase-admin';
 import { generateAllReports, generateCoreReportsStageA, getCoreStageToolCount } from '@/lib/reportGenerationService';
-import { ALL_TOOL_SLUGS } from '@/lib/profileGenerationOrchestrator';
+import { ALL_TOOL_SLUGS, summarizeToolReadiness } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import { calculateProfileDataHash } from '@/lib/firebase';
@@ -166,14 +166,24 @@ export async function POST(request: NextRequest) {
       const trialExpired = isTrialExpired(profileWithUid as Partial<UserProfile>);
       const canRunFull = canRunFullPipeline(profileWithUid as Partial<UserProfile>);
       if (!canRunFull) {
+        const subscriptionStatus = String((profileWithUid as Partial<UserProfile>).subscriptionStatus ?? '').trim().toLowerCase();
+        const paymentBlockReason =
+          trialExpired
+            ? 'trial_expired'
+            : subscriptionStatus === 'past_due' || subscriptionStatus === 'incomplete'
+              ? 'payment_method_update_required'
+              : 'payment_required';
         return NextResponse.json(
           {
             error: trialExpired
               ? 'Your trial has ended. Please choose a plan and add payment details to generate the full report.'
+              : subscriptionStatus === 'past_due' || subscriptionStatus === 'incomplete'
+                ? 'Your payment method needs an update before full report generation can continue.'
               : 'To unlock the full report, add your plan and payment details.',
-            blockReason: trialExpired ? 'trial_expired' : 'payment_required',
+            blockReason: paymentBlockReason,
             missingFields: missingFullFields,
             trialExpired,
+            subscriptionStatus,
             generationMode,
           },
           { status: 403 },
@@ -193,18 +203,16 @@ export async function POST(request: NextRequest) {
     if (hashMatches) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
       const storedProfile = (stored || {}) as Record<string, unknown>;
-      const missingSlugs = ALL_TOOL_SLUGS.filter((slug) => {
-        const value = storedProfile[slug];
-        // Consider missing if key absent or placeholder (no real report)
-        if (value == null) return true;
-        if (typeof value === 'object' && (value as { placeholder?: boolean }).placeholder === true) return true;
-        return false;
-      });
+      const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS);
+      const missingSlugs = readiness.pendingToolSlugs;
       if (missingSlugs.length === 0) {
         return NextResponse.json({
           success: true,
           message: 'Profile already generated.',
           alreadyGenerated: true,
+          allReportsReady: true,
+          readyToolsCount: readiness.readyToolsCount,
+          pendingToolSlugs: [],
         });
       }
       devLog.info(
@@ -368,6 +376,8 @@ export async function POST(request: NextRequest) {
       mysticalProfileGeneratedAt: Date.now(),
       profileDataHash: newHash,
       profileStatus: 'stageA_complete_stageB_running',
+      allReportsReady: false,
+      pendingToolSlugs: ALL_TOOL_SLUGS,
       updatedAt: Date.now(),
     };
     for (const key of profileDefiningFields) {
@@ -410,6 +420,7 @@ export async function POST(request: NextRequest) {
       updatedAt: Date.now(),
     });
 
+    const stageAReadiness = summarizeToolReadiness(toStore as Record<string, unknown>, ALL_TOOL_SLUGS);
     const response: Record<string, unknown> = {
       success: true,
       systemsUsed: stageAResult.systemsUsed,
@@ -420,6 +431,9 @@ export async function POST(request: NextRequest) {
       phase: 'stageB',
       completedTools: getCoreStageToolCount(),
       totalTools: ALL_TOOL_SLUGS.length,
+      readyToolsCount: stageAReadiness.readyToolsCount,
+      pendingToolSlugs: stageAReadiness.pendingToolSlugs,
+      allReportsReady: stageAReadiness.allReportsReady,
       comprehensiveProfile: toStore,
     };
     void (async () => {
@@ -444,6 +458,7 @@ export async function POST(request: NextRequest) {
         });
         const finalToStore = cleanData(result.comprehensiveProfile);
         delete (finalToStore as Record<string, unknown>).toolReports;
+        const finalReadiness = summarizeToolReadiness(finalToStore as Record<string, unknown>, ALL_TOOL_SLUGS);
         const batchSuccessFinal = await batchSetDocuments([
           { collection: 'comprehensiveMysticalProfiles', docId: uid!, data: finalToStore },
           {
@@ -454,6 +469,8 @@ export async function POST(request: NextRequest) {
               mysticalProfileGeneratedAt: Date.now(),
               profileDataHash: newHash,
               profileStatus: 'completed',
+              allReportsReady: finalReadiness.allReportsReady,
+              pendingToolSlugs: finalReadiness.pendingToolSlugs,
               updatedAt: Date.now(),
             },
           },
@@ -478,6 +495,9 @@ export async function POST(request: NextRequest) {
           completedAt: Date.now(),
           completedTools: ALL_TOOL_SLUGS.length,
           totalTools: ALL_TOOL_SLUGS.length,
+          readyToolsCount: finalReadiness.readyToolsCount,
+          pendingToolSlugs: finalReadiness.pendingToolSlugs,
+          allReportsReady: finalReadiness.allReportsReady,
           updatedAt: Date.now(),
         });
         clearCachedDivinationData(uid!);
@@ -532,14 +552,19 @@ export async function GET(request: NextRequest) {
     ]);
     const user = (userDoc as Record<string, unknown> | null) ?? {};
     const lock = (lockDoc as Record<string, unknown> | null) ?? {};
+    const profile = (profileDoc as Record<string, unknown> | null) ?? {};
     const lockStatus = lock?.status;
     const inProgress = lockStatus === 'running' || lockStatus === 'started';
     const generated = !inProgress && Boolean(user?.mysticalProfileGenerated);
+    const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
     return NextResponse.json({
       success: true,
       inProgress,
       generated,
       hasProfile: Boolean(profileDoc),
+      allReportsReady: Boolean(user?.allReportsReady ?? readiness.allReportsReady),
+      readyToolsCount: readiness.readyToolsCount,
+      pendingToolSlugs: readiness.pendingToolSlugs,
       lockStatus: lockStatus ?? null,
       phase: (lock?.phase as string | undefined) ?? null,
       completedTools: (lock?.completedTools as number | undefined) ?? null,

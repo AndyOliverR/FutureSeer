@@ -28,6 +28,7 @@
     "test:e2e:ci": "pnpm run build && start-server-and-test \"pnpm start\" http://localhost:3000 \"pnpm exec playwright test\"",
     "electron": "electron .",
     "desktop": "next build && concurrently -k \"next start\" \"wait-on http://localhost:3000 && electron .\"",
+    "desktop:linux": "next build && cross-env ELECTRON_NO_SANDBOX=1 concurrently -k \"next start\" \"wait-on http://localhost:3000 && electron .\"",
     "build:capacitor": "cross-env CAPACITOR_BUILD=1 next build --webpack",
     "cap:add:ios": "npx cap add ios",
     "cap:add:android": "npx cap add android",
@@ -35,7 +36,8 @@
     "mobile:build": "pnpm run build:capacitor && node scripts/run-cap-sync-clean-env.mjs",
     "audit:sitemap:live": "node scripts/audit-sitemap-live.mjs",
     "audit:gsc-hygiene": "node scripts/gsc-manual-checklist.mjs",
-    "audit:google-presence": "node scripts/google-presence-checklist.mjs"
+    "audit:google-presence": "node scripts/google-presence-checklist.mjs",
+    "linux:readiness": "node scripts/linux-readiness-check.mjs"
   },
   "engines": {
     "node": "24.x"

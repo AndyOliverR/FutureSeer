@@ -81,9 +81,28 @@ export function getMissingFullProfileFields(profile: Partial<UserProfile> | null
   return missing;
 }
 
+type FirstGenerationFieldOptions = {
+  allowUnknownBirthTime?: boolean;
+};
+
+export function getMissingFirstGenerationFields(
+  profile: Partial<UserProfile> | null | undefined,
+  options?: FirstGenerationFieldOptions,
+): string[] {
+  const missing = getMissingFullProfileFields(profile);
+  if (!options?.allowUnknownBirthTime) return missing;
+
+  // Birth time is considered complete when user explicitly marks it as unknown.
+  if (missing.includes('birthTime') && profile?.birthTimeKnown === false) {
+    return missing.filter((field) => field !== 'birthTime');
+  }
+  return missing;
+}
+
 export function canRunFullPipeline(profile: Partial<UserProfile> | null | undefined): boolean {
   if (!profile) return false;
   if (getMissingFullProfileFields(profile).length > 0) return false;
+  if (profile.noChargeAccount === true) return true;
   const email = typeof profile.email === 'string' ? profile.email : undefined;
   if (isNoChargeSubscriptionEmail(email)) return true;
   const selectedPlan = typeof profile.selectedPlan === 'string' ? profile.selectedPlan.trim().toLowerCase() : '';

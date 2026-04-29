@@ -38,6 +38,8 @@ export async function GET(request: NextRequest) {
       const profile = doc.data() as {
         email?: string;
         displayName?: string;
+        lastActiveAt?: number;
+        trialEndsAt?: number;
         notificationsEnabled?: boolean;
         notificationPreferences?: {
           dailyInsights?: boolean;
@@ -49,7 +51,25 @@ export async function GET(request: NextRequest) {
       if (profile.notificationsEnabled === false) continue;
       if (profile.notificationPreferences?.dailyInsights !== true) continue;
 
-      const ok = await sendDailyInsightEmail(email, profile.displayName);
+      const now = Date.now();
+      const dayMs = 24 * 60 * 60 * 1000;
+      const daysSinceLast =
+        typeof profile.lastActiveAt === 'number'
+          ? Math.max(0, Math.floor((now - profile.lastActiveAt) / dayMs))
+          : Number.POSITIVE_INFINITY;
+      const trialDaysLeft =
+        typeof profile.trialEndsAt === 'number'
+          ? Math.max(0, Math.ceil((profile.trialEndsAt - now) / dayMs))
+          : null;
+      const nudgeStage: 'active' | 'at_risk' | 'reactivation' | 'trial_ending' =
+        trialDaysLeft !== null && trialDaysLeft <= 3
+          ? 'trial_ending'
+          : daysSinceLast <= 0
+            ? 'active'
+            : daysSinceLast <= 1
+              ? 'at_risk'
+              : 'reactivation';
+      const ok = await sendDailyInsightEmail(email, profile.displayName, { nudgeStage, trialDaysLeft });
       if (ok) sent++;
       else failed++;
     }

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useTools } from "@/hooks/useTools"
+import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
 import { navigateToTool } from '@/lib/utils/toolRouting'
 import { ArrowLeft, Search, Sparkles, ChevronRight, Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
@@ -17,15 +18,36 @@ import {
 import { cn } from "@/lib/utils"
 import { BACK_NAV_LINK_CLASSES } from "@/components/navigation/BackButton"
 import { analytics } from "@/lib/analytics"
+import { summarizeToolReadiness, ALL_TOOL_SLUGS } from "@/lib/profileGenerationOrchestrator"
+import { isNumerologyChartsV2Enabled } from "@/lib/charts/featureFlags"
+import { buildItemListSchema } from "@/components/schema-markup"
+import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
+const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
 
 function ToolsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, requiresReturningPaymentCommit } = useAuth();
+  const { profile: comprehensiveProfile } = useComprehensiveMysticalProfile();
   const { tools, searchTerm, setSearchTerm } = useTools();
+  const readiness = useMemo(
+    () => summarizeToolReadiness((comprehensiveProfile as Record<string, unknown> | null) ?? null, ALL_TOOL_SLUGS),
+    [comprehensiveProfile],
+  )
+  const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
+  const toolsLockedForGeneration =
+    Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
+  const numerologyPreviewBypassEnabled = isNumerologyChartsV2Enabled()
+  const canOpenTool = (toolSlug: string, isComingSoon?: boolean) => {
+    if (isComingSoon) return false
+    if (!toolsLockedForGeneration) return true
+    // Temporary rollout bypass: allow Numerology-only validation while readiness gate is active.
+    if (numerologyPreviewBypassEnabled && toolSlug === 'numerology') return true
+    return false
+  }
   const isMobileLayout = useIsMobileLayout();
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
@@ -73,6 +95,20 @@ function ToolsPageContent() {
     return list;
   }, [tools, categoryParam, searchTerm]);
 
+  const toolsCollectionSchema = useMemo(
+    () =>
+      buildItemListSchema({
+        url: `${site}/tools`,
+        name: "FutureSeer Mystical Tools",
+        description: "Browse FutureSeer mystical tools across astrology, divination, numerology, and more.",
+        items: displayedTools.map((tool) => ({
+          name: tool.name,
+          url: `${site}/tools/${tool.slug}`,
+        })),
+      }),
+    [displayedTools],
+  )
+
   const toolsByCategoryOrdered = useMemo(() => {
     if (categoryParam || searchTerm.trim()) return null;
     const byCat: Record<string, typeof displayedTools> = {};
@@ -96,6 +132,10 @@ function ToolsPageContent() {
   if (isMobileLayout) {
     return (
       <div data-onboarding="tools" className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] pb-24 overflow-x-hidden">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(toolsCollectionSchema) }}
+        />
         <div className="px-4 py-6 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-heading font-bold text-amber-400 uppercase tracking-tight">Mystical Tools</h1>
@@ -130,6 +170,11 @@ function ToolsPageContent() {
         </div>
 
         <div className="px-4 space-y-8 pb-6">
+          {toolsLockedForGeneration ? (
+            <div className="mb-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200 text-sm">
+              Your reports are still generating. Tools unlock automatically when all reports are ready ({readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length}).
+            </div>
+          ) : null}
           {toolsByCategoryOrdered ? (
             toolsByCategoryOrdered.map(({ category, tools: catTools }) => (
               <div key={category}>
@@ -139,8 +184,8 @@ function ToolsPageContent() {
                     <motion.div
                       key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
-                      className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", tool.isComingSoon ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
+                      onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
+                      className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
                     >
                       <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                       <div className="flex-1 min-w-0 pr-6">
@@ -158,8 +203,8 @@ function ToolsPageContent() {
               {displayedTools.map((tool) => (
                 <motion.div
                   key={tool.slug} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
-                  className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", tool.isComingSoon ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
+                  onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
+                  className={cn("relative p-4 rounded-3xl border flex items-center gap-4 min-h-[100px] active:scale-[0.98] transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "bg-surface-container-low opacity-50 border-outline-variant/30" : "bg-surface-container-high border-outline-variant shadow-md")}
                 >
                   <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                   <div className="flex-1 min-w-0 pr-6">
@@ -179,6 +224,10 @@ function ToolsPageContent() {
   // RENDER ORIGINAL WEB DESIGN
   return (
     <div data-onboarding="tools" className="min-h-screen pt-24 pb-12 px-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(toolsCollectionSchema) }}
+      />
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-heading font-light text-amber-400 mb-4 tracking-widest uppercase">Mystical Tools</h1>
@@ -214,8 +263,8 @@ function ToolsPageContent() {
                   {catTools.map((tool) => (
                     <motion.div
                       key={tool.slug} whileHover={{}}
-                      onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
-                      className="group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 cursor-pointer overflow-hidden transition-all hover:border-amber-500/60"
+                      onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
+                      className={cn("group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
                     >
                       <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative z-10 h-full flex flex-col items-center text-center">
@@ -237,8 +286,8 @@ function ToolsPageContent() {
           {displayedTools.map((tool) => (
             <motion.div
               key={tool.slug} whileHover={{}}
-              onClick={() => !tool.isComingSoon && navigateToTool(tool.slug, router)}
-              className="group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 cursor-pointer overflow-hidden transition-all hover:border-amber-500/60"
+              onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
+              className={cn("group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
             >
               <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10 h-full flex flex-col items-center text-center">

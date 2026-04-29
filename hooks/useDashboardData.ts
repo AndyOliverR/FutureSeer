@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './use-auth';
 import { getAskHistory, getNotes } from '@/lib/firebase';
 
+export type RetentionSnapshot = {
+  currentStreak: number;
+  lastActiveAt: number | null;
+  loopCompletedToday: boolean;
+  trialDaysLeft: number | null;
+  nudgeStage: 'active' | 'at_risk' | 'reactivation' | 'trial_ending';
+};
+
 function getStreakDays(timestamps: number[]): number {
   if (!timestamps.length) return 0;
   const days = timestamps.map(ts => new Date(ts).toDateString());
@@ -57,6 +65,29 @@ export function useDashboardData() {
   const activeRemedies = Array.from(new Set(remedies.map((r) => r.name || JSON.stringify(r)))).length;
   const streakDays = getStreakDays(askHistory.map((h) => h.timestamp));
   const accuracy = '94%'; // Placeholder, replace with real logic if available
+  const lastActiveAt = askHistory.length > 0 ? Math.max(...askHistory.map((h) => h.timestamp)) : null;
+  const now = Date.now();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const daysSinceLastActivity = lastActiveAt ? Math.floor((now - lastActiveAt) / dayMs) : Number.POSITIVE_INFINITY;
+  const trialEndsAtRaw = (userProfile as { trialEndsAt?: number } | null)?.trialEndsAt;
+  const trialDaysLeft =
+    typeof trialEndsAtRaw === 'number' ? Math.max(0, Math.ceil((trialEndsAtRaw - now) / dayMs)) : null;
+  const loopCompletedToday = daysSinceLastActivity === 0;
+  const nudgeStage: RetentionSnapshot['nudgeStage'] =
+    trialDaysLeft !== null && trialDaysLeft <= 3
+      ? 'trial_ending'
+      : daysSinceLastActivity <= 0
+        ? 'active'
+        : daysSinceLastActivity <= 1
+          ? 'at_risk'
+          : 'reactivation';
+  const retentionSnapshot: RetentionSnapshot = {
+    currentStreak: streakDays,
+    lastActiveAt,
+    loopCompletedToday,
+    trialDaysLeft,
+    nudgeStage,
+  };
 
   // Recent activity: last 5 from askHistory and notes
   const recentActivity = [
@@ -99,5 +130,6 @@ export function useDashboardData() {
     accuracy,
     notesCount,
     recentActivity,
+    retentionSnapshot,
   };
 } 

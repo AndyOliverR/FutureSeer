@@ -62,6 +62,51 @@ export type GenerationProgressUpdate = {
   toolSlug: string;
 };
 
+export type ReportReadinessState = 'ready' | 'pending' | 'failed' | 'placeholder';
+
+export function classifyToolReportState(report: unknown): ReportReadinessState {
+  if (report == null) return 'pending';
+  if (typeof report !== 'object') return 'ready';
+  const rec = report as Record<string, unknown>;
+  if (rec.status === 'failed') return 'failed';
+  if (rec.placeholder === true) return 'placeholder';
+  if (Object.keys(rec).length === 0) return 'pending';
+  return 'ready';
+}
+
+export function isReadyToolReport(report: unknown): boolean {
+  return classifyToolReportState(report) === 'ready';
+}
+
+export function summarizeToolReadiness(
+  profile: Record<string, unknown> | null | undefined,
+  toolSlugs: readonly string[] = ALL_TOOL_SLUGS,
+): { readyToolsCount: number; pendingToolSlugs: string[]; allReportsReady: boolean } {
+  if (!profile) {
+    return {
+      readyToolsCount: 0,
+      pendingToolSlugs: [...toolSlugs],
+      allReportsReady: false,
+    };
+  }
+  const toolReports = profile.toolReports as Record<string, { data?: unknown }> | undefined;
+  let readyToolsCount = 0;
+  const pendingToolSlugs: string[] = [];
+  for (const slug of toolSlugs) {
+    const report = profile[slug] ?? toolReports?.[slug]?.data;
+    if (isReadyToolReport(report)) {
+      readyToolsCount += 1;
+    } else {
+      pendingToolSlugs.push(slug);
+    }
+  }
+  return {
+    readyToolsCount,
+    pendingToolSlugs,
+    allReportsReady: pendingToolSlugs.length === 0,
+  };
+}
+
 /** Add usage from a tool API response body (_usage or usage) into the running aggregate. */
 function addResponseUsage(
   aggregate: { promptTokens: number; completionTokens: number; totalTokens: number },
@@ -142,16 +187,16 @@ export const ALL_TOOL_SLUGS = [
 ] as const;
 
 const CORE10_TOOL_SLUGS = [
-  'vedic',
-  'western',
   'numerology',
   'tarot',
   'dailyDecisions',
+  'vedic',
+  'western',
+  'kp',
   'humanDesign',
+  'medicalAstrology',
   'palmistry',
   'faceReading',
-  'kp',
-  'medicalAstrology',
 ] as const;
 
 export function getCoreToolSlugsCore10(): string[] {
@@ -855,7 +900,7 @@ async function runTool(
           }
           const json = await res.json();
           const data = json.data ?? json;
-          if (!data || (data as Record<string, unknown>).placeholder === true) {
+          if (!data || (data as unknown as Record<string, unknown>).placeholder === true) {
             return {
               status: 'success',
               data: { placeholder: true, reason: 'Human Design report unavailable.' },
@@ -888,7 +933,7 @@ async function runTool(
           }
           const json = await res.json();
           const data = json.data ?? json;
-          if (!data || (data as Record<string, unknown>).placeholder === true) {
+          if (!data || (data as unknown as Record<string, unknown>).placeholder === true) {
             return {
               status: 'success',
               data: { placeholder: true, reason: 'Navaratna analysis unavailable.' },
@@ -921,7 +966,7 @@ async function runTool(
           }
           const json = await res.json();
           const data = json.data ?? json;
-          if (!data || (data as Record<string, unknown>).placeholder === true) {
+          if (!data || (data as unknown as Record<string, unknown>).placeholder === true) {
             return {
               status: 'success',
               data: { placeholder: true, reason: 'Trichakra analysis unavailable.' },
@@ -988,6 +1033,58 @@ async function runTool(
           };
         }
         return { status: 'success', data: combined as Record<string, unknown>, generatedAt, _usage: energyUsage.promptTokens + energyUsage.completionTokens + energyUsage.totalTokens > 0 ? energyUsage : undefined };
+      }
+
+      case 'vastu': {
+        try {
+          const { getPersonalizedVastuReport } = await import('./vastuIntelligence');
+          const data = await getPersonalizedVastuReport(userId, profile);
+          if (!data || (data as unknown as Record<string, unknown>).placeholder === true) {
+            return {
+              status: 'success',
+              data: { placeholder: true, reason: 'Vastu report unavailable.' },
+              generatedAt,
+            };
+          }
+          return { status: 'success', data: data as unknown as Record<string, unknown>, generatedAt };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Vastu failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
+      }
+
+      case 'fengShui': {
+        try {
+          const { generateFengShuiAnalysis } = await import('./fengshui/fengShuiService');
+          const { generateFengShuiReading } = await import('./fengshui/fengShuiIntelligence');
+          const analysis = generateFengShuiAnalysis(profile);
+          if (!analysis) {
+            return {
+              status: 'success',
+              data: { placeholder: true, reason: 'Feng Shui analysis unavailable.' },
+              generatedAt,
+            };
+          }
+          const reading = await generateFengShuiReading(profile, analysis);
+          return {
+            status: 'success',
+            data: { analysis, reading },
+            generatedAt,
+          };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Feng Shui failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
+        }
       }
 
       case 'akashicRecords': {
@@ -1069,10 +1166,11 @@ async function runStageTools(
   toolReports: ToolReports,
   failedTools: string[],
   aggregateUsage: { promptTokens: number; completionTokens: number; totalTokens: number },
+  timeoutMs = 90_000,
 ): Promise<void> {
   const results = await Promise.allSettled(
     stageTools.map(async (slug) => {
-      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
+      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), timeoutMs, slug);
       toolReports[slug] = entry;
       if (entry.status === 'failed') failedTools.push(slug);
       return entry;
@@ -1123,7 +1221,7 @@ export async function runProfileGenerationStageA(
   };
 
   const stageTools = getCoreToolSlugsCore10();
-  await runStageTools(userId, profile, baseUrl, stageTools, toolReports, failedTools, aggregateUsage);
+  await runStageTools(userId, profile, baseUrl, stageTools, toolReports, failedTools, aggregateUsage, 25_000);
 
   const systemsUsed = Object.entries(toolReports).filter(([, v]) => v.status === 'success').map(([k]) => k);
   const comprehensiveProfile: Record<string, unknown> = {

@@ -24,10 +24,14 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/ui/use-toast'
 import Link from 'next/link'
 import { updateUserProfile, type UserProfile } from '@/lib/firebase'
-import { getReturningUserWithReportsDestination } from '@/lib/authRouting'
+import {
+  getReturningUserWithReportsDestination,
+  NEW_USER_ONBOARDING_DESTINATION,
+} from '@/lib/authRouting'
 import { useErrorLogger } from '@/hooks/useErrorLogger';
 import { compressImageFile } from '@/lib/imageCompression'
 import { BirthTimeDualFormatSelect } from '@/components/BirthTimeDualFormatSelect'
+import { getMissingFirstGenerationFields } from '@/lib/subscriptionConfig'
 
 type UploadPhotoType = "face" | "palm";
 type UploadStatus = "idle" | "ready" | "uploading" | "success" | "error";
@@ -113,7 +117,8 @@ export default function ProfileSetupPage() {
   const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
   const [profileData, setProfileData] = useState({
     displayName: '', fullName: '', gender: '' as ProfileSetupGender,
-    birthDate: '', birthTime: '', birthPlace: '',
+    birthDate: '', birthTime: '', birthPlace: '', currentLocation: '',
+    birthTimeKnown: true,
     facePhotoUrl: '', palmPhotoUrl: '',
     facePhoto: null as File | null, palmPhoto: null as File | null
   })
@@ -128,17 +133,28 @@ export default function ProfileSetupPage() {
   })
 
   useEffect(() => {
+    if (user === null) {
+      router.replace('/signin?redirect=/profile-setup')
+      return
+    }
+    if (userProfile?.mysticalProfileGenerated) {
+      router.replace(getReturningUserWithReportsDestination())
+      return
+    }
     if (userProfile) {
+      setBirthTimeUnknown(userProfile.birthTimeKnown === false)
       setProfileData(prev => ({
         ...prev,
         displayName: userProfile.displayName || '',
         fullName: userProfile.fullName || '',
         birthDate: userProfile.birthDate || '',
         birthTime: userProfile.birthTime || '',
-        birthPlace: userProfile.birthPlace || ''
+        birthPlace: userProfile.birthPlace || '',
+        currentLocation: userProfile.currentLocation || '',
+        birthTimeKnown: userProfile.birthTimeKnown ?? true,
       }))
     }
-  }, [userProfile])
+  }, [user, userProfile, router])
 
   const handleFileUpload = (file: File, type: 'face' | 'palm') => {
     const url = URL.createObjectURL(file)
@@ -269,7 +285,9 @@ export default function ProfileSetupPage() {
         fullName: profileData.fullName,
         birthDate: profileData.birthDate,
         birthTime: profileData.birthTime,
+        birthTimeKnown: profileData.birthTimeKnown,
         birthPlace: profileData.birthPlace,
+        currentLocation: profileData.currentLocation,
         facePhotoUrl: profileData.facePhotoUrl,
         palmPhotoUrl: profileData.palmPhotoUrl,
       }
@@ -293,7 +311,7 @@ export default function ProfileSetupPage() {
       await updateUserProfile(user.uid, updateData)
       await refreshProfile()
       toast({ title: 'Cosmic Profile Set! 🌟' })
-      router.push('/profile')
+      router.push(NEW_USER_ONBOARDING_DESTINATION)
     } catch (e: unknown) {
       toast({ title: 'Setup Failed', variant: 'destructive' })
       const msg = e instanceof Error ? e.message : 'Profile setup failed'
@@ -315,9 +333,24 @@ export default function ProfileSetupPage() {
   }
 
   const progress = (currentStep / 4) * 100
+  const missingFirstGenFields = getMissingFirstGenerationFields(
+    {
+      displayName: profileData.displayName,
+      fullName: profileData.fullName,
+      gender: profileData.gender || undefined,
+      birthDate: profileData.birthDate,
+      birthTime: profileData.birthTime,
+      birthTimeKnown: profileData.birthTimeKnown,
+      birthPlace: profileData.birthPlace,
+      currentLocation: profileData.currentLocation,
+      facePhotoUrl: profileData.facePhotoUrl,
+      palmPhotoUrl: profileData.palmPhotoUrl,
+    },
+    { allowUnknownBirthTime: true },
+  )
   const faceReady = !!profileData.facePhoto && uploadState.face.status === "success"
   const palmReady = !!profileData.palmPhoto && uploadState.palm.status === "success"
-  const canComplete = faceReady && palmReady && !isLoading
+  const canComplete = missingFirstGenFields.length === 0 && faceReady && palmReady && !isLoading
 
   return (
     <div className="min-h-screen bg-surface flex flex-col pt-[env(safe-area-inset-top)] px-4 pb-10">
@@ -398,12 +431,20 @@ export default function ProfileSetupPage() {
                       onChange={(next) => setProfileData({ ...profileData, birthTime: next })}
                       showUnknownCheckbox
                       unknownTime={birthTimeUnknown}
-                      onUnknownTimeChange={setBirthTimeUnknown}
+                      onUnknownTimeChange={(next) => {
+                        setBirthTimeUnknown(next)
+                        setProfileData((prev) => ({
+                          ...prev,
+                          birthTimeKnown: !next,
+                          birthTime: next ? '' : prev.birthTime,
+                        }))
+                      }}
                       showFooterHint={false}
                       selectClassName="flex-1 min-w-0 h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white [color-scheme:dark]"
                     />
                   </div>
                   <Input value={profileData.birthPlace} onChange={e => setProfileData({...profileData, birthPlace: e.target.value})} placeholder="City, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
+                  <Input value={profileData.currentLocation} onChange={e => setProfileData({...profileData, currentLocation: e.target.value})} placeholder="Current residence (City, Country)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl pl-4" />
                 </div>
               </motion.div>
             )}

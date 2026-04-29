@@ -7,6 +7,7 @@ import { MysticalLoadingState } from '@/components/MysticalLoadingState'
 import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { toolReportMissingBody } from '@/lib/accessGatingCopy'
+import { classifyToolReportState, type ReportReadinessState } from '@/lib/profileGenerationOrchestrator'
 
 export interface ToolReportViralConfig {
   toolSlug: string
@@ -28,6 +29,7 @@ export interface ToolReportGuardProps {
   errorCtaHref?: string
   /** Optional viral gate: teaser → lock → unlock. Children may be a function receiving `{ lite }` when viral is set. */
   viral?: ToolReportViralConfig | null
+  report?: unknown
   children: React.ReactNode | ((opts: { lite: boolean }) => React.ReactNode)
 }
 
@@ -43,8 +45,11 @@ export function ToolReportGuard({
   errorCtaLabel = 'Generate your mystical profile',
   errorCtaHref = '/profile',
   viral = null,
+  report,
   children,
 }: ToolReportGuardProps) {
+  const reportState: ReportReadinessState = report ? classifyToolReportState(report) : 'pending'
+  const shouldEnforceReportState = report !== undefined
   if (loading) {
     return (
       <MysticalLoadingState
@@ -76,16 +81,16 @@ export function ToolReportGuard({
     )
   }
 
-  if (!hasReport) {
+  if (!hasReport || (shouldEnforceReportState && reportState !== 'ready')) {
     return (
       <div className="relative min-h-screen starfield-ultra-sharp">
         <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/30 rounded-xl p-8 text-center max-w-2xl mx-auto mt-12">
             <Sparkles className="w-12 h-12 text-amber-400 mx-auto mb-4" aria-hidden />
             <h3 className="text-xl font-serif font-semibold text-amber-300 mb-2">
-              {toolLabel ? `Your ${toolLabel} reading awaits` : 'Your mystical reading awaits'}
+              {toolLabel ? `${toolLabel} is still being generated` : 'Your mystical reading is still being generated'}
             </h3>
-            <p className="text-slate-400 mb-6">{toolReportMissingBody(toolLabel)}</p>
+            <p className="text-slate-400 mb-6">{reportState === 'failed' ? 'This report failed to generate. Retry generation from your profile.' : toolReportMissingBody(toolLabel)}</p>
             <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-900 font-bold">
               <Link href={errorCtaHref}>{errorCtaLabel}</Link>
             </Button>

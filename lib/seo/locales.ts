@@ -24,6 +24,23 @@ const LOCALE_PATH_SEGMENT: Record<SeoLocale, string> = {
 
 export const DEFAULT_SEO_LOCALE: SeoLocale = "en";
 
+export function normalizeSeoBaseUrl(baseUrl: string): string {
+  const fallback = "https://futureseer.app";
+  const raw = (baseUrl || fallback).trim();
+  try {
+    const parsed = new URL(raw);
+    const protocol = parsed.protocol || "https:";
+    const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+    return `${protocol}//${host}`;
+  } catch {
+    const normalized = raw
+      .replace(/^https?:\/\/www\./i, "https://")
+      .replace(/^www\./i, "https://")
+      .replace(/\/+$/, "");
+    return normalized || fallback;
+  }
+}
+
 export function isSupportedSeoLocale(value: string): value is SeoLocale {
   return (SEO_LOCALES as readonly string[]).includes(value);
 }
@@ -33,12 +50,25 @@ export function localeSegment(locale: SeoLocale): string {
 }
 
 export function buildLocaleAlternates(baseUrl: string): Record<string, string> {
+  const base = normalizeSeoBaseUrl(baseUrl);
   const map: Record<string, string> = {};
   for (const locale of SEO_LOCALES) {
     const segment = localeSegment(locale);
-    map[locale] = `${baseUrl}/${segment}`;
+    map[locale] = `${base}/${segment}`;
   }
-  map["x-default"] = `${baseUrl}/en`;
+  map["x-default"] = `${base}/en`;
+  return map;
+}
+
+export function buildPathLocaleAlternates(baseUrl: string, path: string): Record<string, string> {
+  const base = normalizeSeoBaseUrl(baseUrl);
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const map: Record<string, string> = {};
+  for (const locale of SEO_LOCALES) {
+    const segment = localeSegment(locale);
+    map[locale] = `${base}/${segment}${normalizedPath}`;
+  }
+  map["x-default"] = `${base}/en${normalizedPath}`;
   return map;
 }
 
