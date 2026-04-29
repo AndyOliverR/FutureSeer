@@ -2,6 +2,19 @@ import { useEffect, useState } from 'react';
 import { useAuth } from './use-auth';
 import { getAskHistory, getNotes } from '@/lib/firebase';
 
+type AskHistoryItem = {
+  timestamp: number;
+  question?: string;
+  aiSummary?: string;
+  remedies?: Array<{ name?: string } | string>;
+};
+
+type NoteItem = {
+  title?: string;
+  createdAt?: number;
+  updatedAt?: number;
+};
+
 export type RetentionSnapshot = {
   currentStreak: number;
   lastActiveAt: number | null;
@@ -32,8 +45,9 @@ export function useDashboardData() {
   const { user, userProfile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [askHistory, setAskHistory] = useState<any[]>([]);
-  const [notes, setNotes] = useState<any[]>([]);
+  const [askHistory, setAskHistory] = useState<AskHistoryItem[]>([]);
+  const [notes, setNotes] = useState<NoteItem[]>([]);
+  const [nowMs] = useState<number>(() => Date.now());
 
   useEffect(() => {
     if (!user) {
@@ -52,7 +66,7 @@ export function useDashboardData() {
         setAskHistory(history);
         setNotes(notes);
       })
-      .catch((err) => {
+      .catch(() => {
         setError('Failed to load dashboard data');
       })
       .finally(() => setLoading(false));
@@ -62,16 +76,17 @@ export function useDashboardData() {
   const totalReadings = askHistory.length;
   const notesCount = notes.length;
   const remedies = askHistory.flatMap((h) => h.remedies || []);
-  const activeRemedies = Array.from(new Set(remedies.map((r) => r.name || JSON.stringify(r)))).length;
+  const activeRemedies = Array.from(
+    new Set(remedies.map((r) => (typeof r === 'string' ? r : r.name || JSON.stringify(r))))
+  ).length;
   const streakDays = getStreakDays(askHistory.map((h) => h.timestamp));
   const accuracy = '94%'; // Placeholder, replace with real logic if available
   const lastActiveAt = askHistory.length > 0 ? Math.max(...askHistory.map((h) => h.timestamp)) : null;
-  const now = Date.now();
   const dayMs = 24 * 60 * 60 * 1000;
-  const daysSinceLastActivity = lastActiveAt ? Math.floor((now - lastActiveAt) / dayMs) : Number.POSITIVE_INFINITY;
+  const daysSinceLastActivity = lastActiveAt ? Math.floor((nowMs - lastActiveAt) / dayMs) : Number.POSITIVE_INFINITY;
   const trialEndsAtRaw = (userProfile as { trialEndsAt?: number } | null)?.trialEndsAt;
   const trialDaysLeft =
-    typeof trialEndsAtRaw === 'number' ? Math.max(0, Math.ceil((trialEndsAtRaw - now) / dayMs)) : null;
+    typeof trialEndsAtRaw === 'number' ? Math.max(0, Math.ceil((trialEndsAtRaw - nowMs) / dayMs)) : null;
   const loopCompletedToday = daysSinceLastActivity === 0;
   const nudgeStage: RetentionSnapshot['nudgeStage'] =
     trialDaysLeft !== null && trialDaysLeft <= 3
@@ -94,13 +109,13 @@ export function useDashboardData() {
     ...askHistory.map((h) => ({
       type: 'ask',
       time: h.timestamp,
-      action: `Asked: ${h.question.substring(0, 40)}${h.question.length > 40 ? '…' : ''}`,
+      action: `Asked: ${(h.question ?? '').substring(0, 40)}${(h.question ?? '').length > 40 ? '…' : ''}`,
       result: h.aiSummary ? 'AI Insight' : '',
     })),
     ...notes.map((n) => ({
       type: 'note',
-      time: n.updatedAt || n.createdAt,
-      action: `Note: ${n.title.substring(0, 40)}${n.title.length > 40 ? '…' : ''}`,
+      time: n.updatedAt || n.createdAt || 0,
+      action: `Note: ${(n.title ?? '').substring(0, 40)}${(n.title ?? '').length > 40 ? '…' : ''}`,
       result: '',
     })),
   ]
@@ -108,11 +123,10 @@ export function useDashboardData() {
     .slice(0, 5)
     .map((item) => ({
       ...item,
-      timeAgo: timeAgo(item.time),
+      timeAgo: timeAgo(item.time, nowMs),
     }));
 
-  function timeAgo(ts: number) {
-    const now = Date.now();
+  function timeAgo(ts: number, now: number) {
     const diff = Math.floor((now - ts) / 1000);
     if (diff < 60) return `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
