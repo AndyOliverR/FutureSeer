@@ -62,7 +62,9 @@ export function ToolReportGuard({
     reportState === 'failed'
       ? 'This report failed to generate. The pipeline retries automatically; check your profile status.'
       : reportState === 'placeholder'
-        ? 'A partial report is available while the remaining analysis is still processing.'
+        ? toolLabel?.toLowerCase().includes('synastry')
+          ? 'Add your partner birth date, time, and place to generate Synastry.'
+          : 'A partial report is available while the remaining analysis is still processing.'
         : toolReportMissingBody(toolLabel)
   if (loading) {
     return (

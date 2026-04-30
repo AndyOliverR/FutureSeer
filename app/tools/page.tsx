@@ -22,6 +22,7 @@ import { summarizeToolReadiness, ALL_TOOL_SLUGS } from "@/lib/profileGenerationO
 import { isNumerologyChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { buildItemListSchema } from "@/components/schema-markup"
 import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
+import { toolPathForSlug } from "@/lib/report-viral/toolSlugToPath"
 
 const CATEGORY_ORDER = ['Astrology', 'Divination', 'Numerology', 'Reading', 'Chinese', 'Indian', 'Remedies', 'Analysis', 'Energy'] as const;
 const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app")
@@ -40,7 +41,10 @@ function ToolsPageContent() {
   const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
   const generationHasPendingTools =
     Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
-  const pendingToolsSet = useMemo(() => new Set(readiness.pendingToolSlugs), [readiness.pendingToolSlugs])
+  const pendingToolsSet = useMemo(
+    () => new Set(readiness.pendingToolSlugs.map((slug) => toolPathForSlug(slug))),
+    [readiness.pendingToolSlugs],
+  )
   const [nowMs, setNowMs] = useState(() => Date.now())
   const toolStatusMap = useMemo(
     () =>
