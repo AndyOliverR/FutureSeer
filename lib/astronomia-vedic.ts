@@ -10,6 +10,7 @@
  */
 
 import { devLog } from '@/lib/devLogger';
+const verboseAstroLogs = process.env.VERBOSE_ASTRO_LOGS === '1';
 import * as julian from "astronomia/julian";
 import * as solarxyz from "astronomia/solarxyz";
 import * as planetposition from "astronomia/planetposition";
@@ -990,9 +991,11 @@ export function validateVedicPosition(date: Date, expectedSun: number, expectedA
       date.getUTCMonth() === 1 && 
       date.getUTCDate() === 24) {
     
-    devLog.debug('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
-    devLog.debug('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
-    devLog.debug('🕉️ Expected Ascendant: ~13° Gemini (sidereal ~73°)');
+    if (verboseAstroLogs) {
+      devLog.debug('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
+      devLog.debug('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
+      devLog.debug('🕉️ Expected Ascendant: ~13° Gemini (sidereal ~73°)');
+    }
     
     // Sun should be around 311° (11° Aquarius)
     // Ascendant should be around 73° (13° Gemini)
@@ -1002,9 +1005,11 @@ export function validateVedicPosition(date: Date, expectedSun: number, expectedA
     if (sunCorrect && ascCorrect) {
       devLog.debug('✅ Feb 24, 1983 Vedic positions CORRECT');
     } else {
-      devLog.error('Feb 24, 1983 Vedic positions WRONG', undefined, 'astronomia-vedic');
-      devLog.error(`Sun: ${expectedSun}° (expected ~311°)`, undefined, 'astronomia-vedic');
-      devLog.error(`Asc: ${expectedAsc}° (expected ~97°)`, undefined, 'astronomia-vedic');
+      if (verboseAstroLogs) {
+        devLog.warn('Feb 24, 1983 Vedic positions WRONG', undefined, 'astronomia-vedic');
+        devLog.warn(`Sun: ${expectedSun}° (expected ~311°)`, undefined, 'astronomia-vedic');
+        devLog.warn(`Asc: ${expectedAsc}° (expected ~97°)`, undefined, 'astronomia-vedic');
+      }
     }
   }
 }

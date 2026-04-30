@@ -13,11 +13,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { getDocument, setDocument, batchSetDocuments, isAdminAvailable, adminDb } from '@/lib/firebase-admin';
-import { generateCoreReportsStageA, getCoreStageToolCount } from '@/lib/reportGenerationService';
+import { adminDb, getDocument, setDocument } from '@/lib/firebase-admin';
 import { ALL_TOOL_SLUGS, summarizeToolReadiness } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
-import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
 import { calculateProfileDataHash } from '@/lib/firebase';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { devLog } from '@/lib/devLogger';
@@ -36,26 +34,14 @@ import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
+const HEARTBEAT_STALE_MS = 45_000;
 
 /** Grace past `maxDuration` before treating a lock as stale (failed/crashed run). */
 function mysticalLockStaleMs(): number {
   return maxDuration * 1000 + 90_000;
 }
 
-function cleanData(obj: unknown): unknown {
-  if (obj === null || obj === undefined) return null;
-  if (typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map((item) => cleanData(item));
-  const cleaned: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-    if (value !== undefined) {
-      cleaned[key] = cleanData(value);
-    }
-  }
-  return cleaned;
-}
-
-function buildStageAToolStatus(
+function buildToolStatus(
   profile: Record<string, unknown>,
   now: number,
 ): PersistedToolStatusMap {
@@ -77,6 +63,45 @@ function buildStageAToolStatus(
     };
   }
   return status;
+}
+
+type RegenDecisionReason =
+  | 'unchanged_hash_all_ready'
+  | 'missing_tools_backfill'
+  | 'profile_hash_changed'
+  | 'payment_blocked';
+
+async function writeRegenDecisionTelemetry(
+  uid: string,
+  payload: {
+    event: string;
+    generationMode: 'preview' | 'full';
+    hashMatch: boolean;
+    pendingToolCount: number;
+    reason: RegenDecisionReason;
+  }
+): Promise<string> {
+  const auditId = (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
+  const data = {
+    ...payload,
+    userId: uid,
+    auditId,
+    createdAt: Date.now(),
+  };
+  try {
+    if (adminDb) {
+      await adminDb.collection('profileGenerationUsage').doc(uid).collection('runs').doc(auditId).set(data);
+      return auditId;
+    }
+  } catch (err) {
+    devLog.warn('[generate-mystical] Failed profileGenerationUsage decision telemetry write', err, 'generate-mystical');
+  }
+  try {
+    await setDocument('profileGenerationDecisionAudit', `${uid}_${auditId}`, data);
+  } catch {
+    // best effort telemetry only
+  }
+  return auditId;
 }
 
 export async function POST(request: NextRequest) {
@@ -194,6 +219,13 @@ export async function POST(request: NextRequest) {
         const trialExpired = isTrialExpired(profileWithUid as Partial<UserProfile>);
         const canRunFull = canRunFullPipeline(profileWithUid as Partial<UserProfile>);
         if (!canRunFull) {
+          const auditId = await writeRegenDecisionTelemetry(uid, {
+            event: 'mystical_regen_blocked_payment',
+            generationMode,
+            hashMatch: false,
+            pendingToolCount: 0,
+            reason: 'payment_blocked',
+          });
           const subscriptionStatus = String((profileWithUid as Partial<UserProfile>).subscriptionStatus ?? '').trim().toLowerCase();
           const paymentBlockReason =
             trialExpired
@@ -213,6 +245,9 @@ export async function POST(request: NextRequest) {
               trialExpired,
               subscriptionStatus,
               generationMode,
+              decision: 'blocked',
+              decisionReason: 'payment_blocked',
+              auditId,
             },
             { status: 403 },
           );
@@ -228,6 +263,7 @@ export async function POST(request: NextRequest) {
       userProfile.profileDataHash != null &&
       userProfile.profileDataHash !== '' &&
       userProfile.profileDataHash === effectiveHash;
+    let decisionAuditId: string | null = null;
 
     if (hashMatches) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
@@ -235,6 +271,13 @@ export async function POST(request: NextRequest) {
       const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS);
       const missingSlugs = readiness.pendingToolSlugs;
       if (missingSlugs.length === 0) {
+        const auditId = await writeRegenDecisionTelemetry(uid, {
+          event: 'mystical_regen_skipped_unchanged',
+          generationMode,
+          hashMatch: true,
+          pendingToolCount: 0,
+          reason: 'unchanged_hash_all_ready',
+        });
         return NextResponse.json({
           success: true,
           message: 'Profile already generated.',
@@ -242,12 +285,34 @@ export async function POST(request: NextRequest) {
           allReportsReady: true,
           readyToolsCount: readiness.readyToolsCount,
           pendingToolSlugs: [],
+          skipReason: 'unchanged_hash_all_ready',
+          decision: 'skipped',
+          decisionReason: 'unchanged_hash_all_ready',
+          auditId,
         });
       }
+      decisionAuditId = await writeRegenDecisionTelemetry(uid, {
+        event: 'mystical_regen_backfill_missing_tools',
+        generationMode,
+        hashMatch: true,
+        pendingToolCount: missingSlugs.length,
+        reason: 'missing_tools_backfill',
+      });
       devLog.info(
         `[generate-mystical] Re-running pipeline to backfill missing tools: ${missingSlugs.join(', ')}`,
         'generate-mystical'
       );
+      devLog.info(`[generate-mystical] decision=rerun reason=missing_tools_backfill auditId=${decisionAuditId}`, 'generate-mystical');
+    }
+    if (!hashMatches) {
+      decisionAuditId = await writeRegenDecisionTelemetry(uid, {
+        event: 'mystical_regen_hash_changed',
+        generationMode,
+        hashMatch: false,
+        pendingToolCount: ALL_TOOL_SLUGS.length,
+        reason: 'profile_hash_changed',
+      });
+      devLog.info(`[generate-mystical] decision=rerun reason=profile_hash_changed auditId=${decisionAuditId}`, 'generate-mystical');
     }
 
     const idempotencyKey =
@@ -282,119 +347,7 @@ export async function POST(request: NextRequest) {
       devLog.info(`[generate-mystical] Selective retry for tools: ${retryOnly.join(', ')}`, 'generate-mystical');
     }
 
-    await setDocument('generationLocks', uid, {
-      status: 'running',
-      phase: 'stageA',
-      totalTools: ALL_TOOL_SLUGS.length,
-      completedTools: 0,
-      startedAt: Date.now(),
-      updatedAt: Date.now(),
-    });
-
-    const stageAResult = await generateCoreReportsStageA(uid, profileWithUid as unknown as UserProfile);
-
-    if (stageAResult.aggregateUsage && adminDb) {
-      const runId = Date.now().toString();
-      try {
-        await adminDb
-          .collection('profileGenerationUsage')
-          .doc(uid)
-          .collection('runs')
-          .doc(runId)
-          .set({
-            promptTokens: stageAResult.aggregateUsage.promptTokens,
-            completionTokens: stageAResult.aggregateUsage.completionTokens,
-            totalTokens: stageAResult.aggregateUsage.totalTokens,
-            generatedAt: new Date().toISOString(),
-            toolCount: stageAResult.systemsUsed?.length ?? 0,
-            phase: 'stageA',
-          });
-      } catch (usageErr) {
-        devLog.warn('[generate-mystical] Failed to store aggregate usage (non-blocking)', usageErr, 'generate-mystical');
-      }
-    }
-
-    if (!stageAResult.success && stageAResult.systemsUsed.length === 0) {
-      const errorMessage = 'Profile generation failed. Vedic chart could not be generated.';
-      await logServerError({
-        area: 'profile',
-        action: 'generate_mystical',
-        message: errorMessage,
-        userId: uid ?? null,
-        route: '/api/profile/generate-mystical',
-        meta: { systemsUsed: stageAResult.systemsUsed?.length ?? 0, failedTools: stageAResult.failedTools ?? [] },
-      }).catch(() => {});
-      await setDocument('generationLocks', uid, {
-        status: 'failed',
-        phase: 'stageA_failed',
-        completedTools: 0,
-        totalTools: ALL_TOOL_SLUGS.length,
-        failedAt: Date.now(),
-        updatedAt: Date.now(),
-      });
-
-      return NextResponse.json(
-        {
-          success: true,
-          generationState: 'stageA_failed',
-          message: 'Core profile generation could not complete. Please retry Vedic chart generation.',
-          systemsUsed: stageAResult.systemsUsed,
-          failedTools: stageAResult.failedTools,
-          partial: true,
-          error: errorMessage,
-        },
-        { status: 202 }
-      );
-    }
-
-    // Store comprehensive profile
-    if (!isAdminAvailable()) {
-      return NextResponse.json({ error: 'Database not available' }, { status: 500 });
-    }
-
-    const toStore = cleanData(stageAResult.comprehensiveProfile);
-    // Omit duplicate toolReports so we stay under Firestore 1 MiB limit; each tool is already at top-level (vedic, western, scrying, etc.)
-    delete (toStore as Record<string, unknown>).toolReports;
-
-    // Preserve existing real tool reports when this run produced a placeholder (e.g. BaZi API failed on re-run)
-    const storedBeforeWrite = await getDocument('comprehensiveMysticalProfiles', uid);
-    const storedProfile = (storedBeforeWrite || {}) as Record<string, unknown>;
-    for (const slug of ALL_TOOL_SLUGS) {
-      const newVal = (toStore as Record<string, unknown>)[slug];
-      const existingVal = storedProfile[slug];
-      const newIsPlaceholder =
-        newVal != null &&
-        typeof newVal === 'object' &&
-        (newVal as { placeholder?: boolean }).placeholder === true;
-      const existingIsRealReport =
-        existingVal != null &&
-        typeof existingVal === 'object' &&
-        (existingVal as { placeholder?: boolean }).placeholder !== true;
-      if (newIsPlaceholder && existingIsRealReport) {
-        (toStore as Record<string, unknown>)[slug] = existingVal;
-        devLog.info(`[generate-mystical] Preserved existing real report for tool: ${slug}`, 'generate-mystical');
-      }
-    }
-    // Preserve pipeline-derived reports (not in ALL_TOOL_SLUGS) when this run didn't produce them or produced placeholder
-    const EXTRA_PROFILE_KEYS = ['vedicAstroNumerology', 'astroNumerology'] as const;
-    for (const slug of EXTRA_PROFILE_KEYS) {
-      const newVal = (toStore as Record<string, unknown>)[slug];
-      const existingVal = storedProfile[slug];
-      const newIsPlaceholder =
-        newVal != null &&
-        typeof newVal === 'object' &&
-        (newVal as { placeholder?: boolean }).placeholder === true;
-      const existingIsRealReport =
-        existingVal != null &&
-        typeof existingVal === 'object' &&
-        (existingVal as { placeholder?: boolean }).placeholder !== true;
-      const shouldPreserve = existingIsRealReport && (newVal == null || newIsPlaceholder);
-      if (shouldPreserve) {
-        (toStore as Record<string, unknown>)[slug] = existingVal;
-        devLog.info(`[generate-mystical] Preserved existing real report for tool: ${slug}`, 'generate-mystical');
-      }
-    }
-
+    const now = Date.now();
     const newHash = calculateProfileDataHash(profileWithUid as Partial<UserProfile>);
     const profileDefiningFields = [
       'birthDate', 'birthTime', 'birthPlace', 'currentLocation', 'fullName', 'displayName',
@@ -402,101 +355,63 @@ export async function POST(request: NextRequest) {
     ] as const;
     const userUpdate: Record<string, unknown> = {
       mysticalProfileGenerated: true,
-      mysticalProfileGeneratedAt: Date.now(),
+      mysticalProfileGeneratedAt: now,
       profileDataHash: newHash,
-      profileStatus: 'stageA_complete_stageB_running',
+      profileStatus: 'running',
       allReportsReady: false,
       pendingToolSlugs: ALL_TOOL_SLUGS,
-      updatedAt: Date.now(),
+      updatedAt: now,
     };
     for (const key of profileDefiningFields) {
-      if (profileWithUid[key] !== undefined) {
-        userUpdate[key] = profileWithUid[key];
-      }
-    }
-    const batchSuccess = await batchSetDocuments([
-      { collection: 'comprehensiveMysticalProfiles', docId: uid, data: toStore },
-      {
-        collection: 'users',
-        docId: uid,
-        data: userUpdate,
-      },
-      {
-        collection: 'seerMaster',
-        docId: uid,
-        data: {
-          ...stageAResult.seerMaster,
-          userId: uid,
-          generatedAt: new Date().toISOString(),
-          systemsUsed: stageAResult.systemsUsed,
-        },
-      },
-    ]);
-
-    if (!batchSuccess) {
-      return NextResponse.json({ error: 'Failed to save profile data. Please try again.' }, { status: 500 });
+      if (profileWithUid[key] !== undefined) userUpdate[key] = profileWithUid[key];
     }
 
-    // Invalidate divination cache
-    clearCachedDivinationData(uid);
-
+    await setDocument('users', uid, userUpdate);
     await setDocument('generationLocks', uid, {
       status: 'running',
-      phase: 'stageB',
+      phase: 'running',
       totalTools: ALL_TOOL_SLUGS.length,
-      completedTools: getCoreStageToolCount(),
-      startedAt: Date.now(),
-      updatedAt: Date.now(),
+      completedTools: 0,
+      startedAt: now,
+      updatedAt: now,
+      currentToolSlug: null,
     });
-
-    const stageAReadiness = summarizeToolReadiness(toStore as Record<string, unknown>, ALL_TOOL_SLUGS);
-    const stageAToolStatus = buildStageAToolStatus(toStore as Record<string, unknown>, Date.now());
-    (toStore as Record<string, unknown>).toolStatus = stageAToolStatus;
-    await setDocument('comprehensiveMysticalProfiles', uid, { toolStatus: stageAToolStatus, lastProgressAt: Date.now() });
-    await setDocument('users', uid, {
-      toolStatus: stageAToolStatus,
-      corePhaseCompleted: stageAReadiness.readyToolsCount >= getCoreStageToolCount(),
-      coreReadyCount: Math.min(stageAReadiness.readyToolsCount, getCoreStageToolCount()),
-      longTailReadyCount: Math.max(0, stageAReadiness.readyToolsCount - getCoreStageToolCount()),
-      lastProgressAt: Date.now(),
-    });
-    const response: Record<string, unknown> = {
-      success: true,
-      systemsUsed: stageAResult.systemsUsed,
-      failedTools: stageAResult.failedTools,
-      message: 'Core profile generated. Remaining systems are completing in the background.',
-      generationState: 'stageA_complete_stageB_running',
-      generationMode,
-      phase: 'stageB',
-      completedTools: getCoreStageToolCount(),
-      totalTools: ALL_TOOL_SLUGS.length,
-      readyToolsCount: stageAReadiness.readyToolsCount,
-      pendingToolSlugs: stageAReadiness.pendingToolSlugs,
-      allReportsReady: stageAReadiness.allReportsReady,
-      toolStatus: stageAToolStatus,
-      comprehensiveProfile: toStore,
-    };
     await setDocument('generationJobs', uid, {
       uid,
       status: 'queued',
-      phase: 'stageB',
-      queuedAt: Date.now(),
-      updatedAt: Date.now(),
+      phase: 'running',
+      queuedAt: now,
+      updatedAt: now,
       attempts: 0,
       maxAttempts: 3,
       nextRetryAt: null,
-      toolStatus: stageAToolStatus,
-      corePhaseCompleted: stageAReadiness.readyToolsCount >= getCoreStageToolCount(),
-      coreReadyCount: Math.min(stageAReadiness.readyToolsCount, getCoreStageToolCount()),
-      longTailReadyCount: Math.max(0, stageAReadiness.readyToolsCount - getCoreStageToolCount()),
-      lastProgressAt: Date.now(),
       profileHash: newHash,
       profileSnapshot: profileWithUid,
+      pipelineMode: 'unified',
+      completedTools: 0,
+      totalTools: ALL_TOOL_SLUGS.length,
+      lastProgressAt: now,
+      lastHeartbeatAt: now,
     });
-    // Kick worker optimistically through atomic claim; if interrupted, status polling/backfill can safely resume.
+
     void tryResumeMysticalStageB(uid);
 
-    return NextResponse.json(response, { status: 202 });
+    return NextResponse.json({
+      success: true,
+      message: 'Generating your mystical profile. Reports will unlock one by one in tools order.',
+      generationState: 'running',
+      generationMode,
+      decision: 'rerun',
+      decisionReason: hashMatches ? 'missing_tools_backfill' : 'profile_hash_changed',
+      auditId: decisionAuditId,
+      phase: 'running',
+      completedTools: 0,
+      totalTools: ALL_TOOL_SLUGS.length,
+      readyToolsCount: 0,
+      pendingToolSlugs: ALL_TOOL_SLUGS,
+      allReportsReady: false,
+      toolStatus: buildToolStatus({}, now),
+    }, { status: 202 });
   } catch (err) {
     // Release generation lock on failure
     if (uid) { try { await setDocument('generationLocks', uid, { lockedAt: null, status: 'failed', failedAt: Date.now() }); } catch { /* ignore */ } }
@@ -545,18 +460,21 @@ export async function GET(request: NextRequest) {
     const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
     const allReportsReady = readiness.allReportsReady;
     const pendingToolSlugs = readiness.pendingToolSlugs;
-    const inProgress = lockRuntime.isRunning && !lockRuntime.isStale;
+    const lastHeartbeatAt = typeof generationJob?.lastHeartbeatAt === 'number' ? generationJob.lastHeartbeatAt : null;
+    const runningHeartbeatStale =
+      generationJobStatus === 'running' &&
+      lastHeartbeatAt != null &&
+      Date.now() - lastHeartbeatAt > HEARTBEAT_STALE_MS;
+    const inProgress = lockRuntime.isRunning && !lockRuntime.isStale && !runningHeartbeatStale;
     const partialReady = readiness.readyToolsCount > 0 && !allReportsReady;
     const completed = generated && allReportsReady;
     const generationState = inProgress
       ? 'running'
       : completed
         ? 'completed'
-        : partialReady
+        : generated
           ? 'partial_ready'
-          : generated
-            ? 'generated_pending_reports'
-            : 'not_started';
+          : 'not_started';
 
     const userAllReportsReady = Boolean(user?.allReportsReady);
     const userPending = Array.isArray(user?.pendingToolSlugs) ? (user.pendingToolSlugs as unknown[]) : [];
@@ -569,7 +487,7 @@ export async function GET(request: NextRequest) {
       await setDocument('users', uid, {
         allReportsReady,
         pendingToolSlugs,
-        profileStatus: allReportsReady ? 'completed' : inProgress ? 'stageA_complete_stageB_running' : 'partial_ready',
+        profileStatus: allReportsReady ? 'completed' : inProgress ? 'running' : 'partial_ready',
         updatedAt: Date.now(),
       });
     }
@@ -604,12 +522,27 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (
-      (generationJobStatus === 'queued' || generationJobStatus === 'failed' || generationJobStatus === 'stale_running') &&
-      !inProgress &&
+    let resumeAttempted = false;
+    const shouldResume =
       generated &&
-      !allReportsReady
-    ) {
+      !allReportsReady &&
+      (
+        generationJobStatus === 'queued' ||
+        generationJobStatus === 'failed' ||
+        generationJobStatus === 'stale_running' ||
+        runningHeartbeatStale
+      );
+    if (shouldResume) {
+      resumeAttempted = true;
+      if (runningHeartbeatStale) {
+        await setDocument('generationJobs', uid, {
+          status: 'stale_running',
+          phase: 'stale_heartbeat',
+          staleRecovered: true,
+          staleRecoveredAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      }
       void tryResumeMysticalStageB(uid);
     }
 
@@ -640,6 +573,7 @@ export async function GET(request: NextRequest) {
       lockAgeMs: lockRuntime.lockAgeMs,
       lockStatus: lockStatus ?? null,
       generationJobStatus,
+      resumeAttempted,
       phase: (lock?.phase as string | undefined) ?? null,
       completedTools: (lock?.completedTools as number | undefined) ?? null,
       totalTools: (lock?.totalTools as number | undefined) ?? null,
@@ -647,6 +581,8 @@ export async function GET(request: NextRequest) {
         (generationJob?.currentToolSlug as string | undefined) ??
         (lock?.currentToolSlug as string | undefined) ??
         null,
+      currentToolElapsedMs: (generationJob?.currentToolElapsedMs as number | undefined) ?? null,
+      lastHeartbeatAt,
       queuePosition:
         generationJobCompletedTools !== null && generationJobTotalTools !== null
           ? {

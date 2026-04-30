@@ -96,6 +96,7 @@ async function setCachedDoc(collectionPath: string[], docId: string, data: any):
 // Schema version for predictive insights format
 // Version 2.0: Structured object with time-based predictions (today, week, month, year, etc.)
 const PREDICTIVE_INSIGHTS_SCHEMA_VERSION = '2.0';
+const inFlightWesternComprehensive = new Set<string>();
 
 
 interface ComprehensiveWesternRequest {
@@ -758,6 +759,7 @@ function generateChartBasedPredictions(
 }
 
 export async function POST(request: NextRequest) {
+  let lockKey: string | null = null;
   try {
     const { userId, chartData }: ComprehensiveWesternRequest = await request.json();
 
@@ -768,6 +770,18 @@ export async function POST(request: NextRequest) {
         error: 'Missing required parameters: userId or chartData'
       }, { status: 400 });
     }
+    lockKey = `western-comprehensive:${userId}`;
+    if (inFlightWesternComprehensive.has(lockKey)) {
+      return NextResponse.json(
+        {
+          success: true,
+          inProgress: true,
+          message: 'Western comprehensive generation is already in progress for this user.',
+        },
+        { status: 202 },
+      );
+    }
+    inFlightWesternComprehensive.add(lockKey);
 
     devLog.info('🔮 Comprehensive Western Astrology API: Generating comprehensive report for user:', userId, 'western');
 
@@ -996,6 +1010,8 @@ export async function POST(request: NextRequest) {
       success: false,
       error: error.message || 'Failed to generate comprehensive Western astrology analysis'
     }, { status: 500 });
+  } finally {
+    if (lockKey) inFlightWesternComprehensive.delete(lockKey);
   }
 }
 

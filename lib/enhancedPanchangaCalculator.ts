@@ -96,32 +96,42 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   
   // Add null check for defensive programming
   if (!chartData || !chartData.planets || !chartData.metadata) {
-    devLog.error('❌ Invalid chart data for Panchanga calculation:', {
+    devLog.warn('❌ Invalid chart data for Panchanga calculation:', {
       chartData: !!chartData,
       hasPlanets: chartData?.planets ? 'yes' : 'no',
       hasMetadata: chartData?.metadata ? 'yes' : 'no',
       planetsType: typeof chartData?.planets,
       planetsKeys: chartData?.planets ? Object.keys(chartData.planets) : []
-    });
+    }, 'enhancedPanchangaCalculator');
     return null;
   }
 
+  // Support both object map ({ sun: {...} }) and array payloads ([{ name: 'Sun', ... }])
+  const planets =
+    Array.isArray(chartData.planets)
+      ? chartData.planets.reduce((acc: Record<string, any>, p: any) => {
+          const key = String(p?.name ?? '').toLowerCase();
+          if (key) acc[key] = p;
+          return acc;
+        }, {})
+      : (chartData.planets as Record<string, any>);
+
   // Validate planets object has sun and moon
-  if (!chartData.planets.sun && !chartData.planets.Sun) {
+  if (!planets?.sun && !planets?.Sun) {
     devLog.error('❌ No Sun data in planets object', undefined, 'enhancedPanchangaCalculator');
     return null;
   }
-  if (!chartData.planets.moon && !chartData.planets.Moon) {
+  if (!planets?.moon && !planets?.Moon) {
     devLog.error('❌ No Moon data in planets object', undefined, 'enhancedPanchangaCalculator');
     return null;
   }
   
-  const { planets, metadata } = chartData;
+  const { metadata } = chartData;
   
   // Extract Sun and Moon positions from accurate astronomia-vedic data
   // planets is an object with keys like {sun: {...}, moon: {...}}
-  const sunLon = planets.sun?.lonSidereal || planets.Sun?.lonSidereal || 0;
-  const moonLon = planets.moon?.lonSidereal || planets.Moon?.lonSidereal || 0;
+  const sunLon = planets.sun?.lonSidereal || planets.Sun?.lonSidereal || planets.sun?.lon || planets.Sun?.lon || 0;
+  const moonLon = planets.moon?.lonSidereal || planets.Moon?.lonSidereal || planets.moon?.lon || planets.Moon?.lon || 0;
   
   devLog.debug('📊 Sun longitude:', sunLon);
   devLog.debug('📊 Moon longitude:', moonLon);

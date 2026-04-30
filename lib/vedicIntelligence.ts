@@ -7,6 +7,7 @@ import { normalizeTimeString, normalizeDateString } from './timeUtils';
 import { getFirebaseDB } from './firebase';
 import { getServerBaseUrl } from './serverBaseUrl';
 import { universalInterpretationEngine } from './universalInterpretationEngine';
+import { createAICompletion } from './aiGateway';
 
 export interface VedicReading {
   id: string;
@@ -135,9 +136,12 @@ class VedicIntelligence {
     useAIEnhancement: boolean = false  // NEW PARAMETER for optional AI enhancement
   ): Promise<VedicReading> {
     if (process.env.NODE_ENV === 'development') {
+      const verboseAstroLogs = process.env.VERBOSE_ASTRO_LOGS === '1';
       devLog.debug('🔮 VedicIntelligence: Starting intelligent calculation...');
-      devLog.debug('🔄 CACHING DISABLED - Generating fresh Vedic data for user:', userId);
-      devLog.debug('Calculating new Vedic analysis for user:', userId);
+      if (verboseAstroLogs) {
+        devLog.debug('🔄 CACHING DISABLED - Generating fresh Vedic data for user:', userId);
+        devLog.debug('Calculating new Vedic analysis for user:', userId);
+      }
     }
     
     // Get chart data from Universal API
@@ -241,39 +245,41 @@ class VedicIntelligence {
     }
   }
   
-  // Generate AI interpretations using OpenAI
+  // Generate AI interpretations using Groq-first provider abstraction
   private async generateAIInterpretations(chartData: any, userId: string) {
     try {
-      const response = await fetch('/api/openai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          question: 'Please provide a comprehensive Vedic astrology interpretation',
-          astroData: {
-            sun_sign: chartData.ascendant?.sign || 'Unknown',
-            moon_sign: chartData.planets?.find((p: any) => p.name === 'Moon')?.sign || 'Unknown',
-            rising_sign: chartData.ascendant?.sign || 'Unknown',
-            planets: chartData.planets || [],
-            houses: chartData.houses || []
+      const completion = await createAICompletion({
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+        maxTokens: 1400,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a Vedic astrologer. Provide concise sections for personality, relationships, career, health, and spirituality.',
           },
-          symbolicData: {
-            primarySymbol: '🔮',
-            elementalInfluence: 'Cosmic',
-            cosmicAlignment: 'Harmonious',
-            timing: 'Present moment'
+          {
+            role: 'user',
+            content: JSON.stringify({
+              question: 'Please provide a comprehensive Vedic astrology interpretation',
+              astroData: {
+                sun_sign: chartData.ascendant?.sign || 'Unknown',
+                moon_sign: chartData.planets?.find((p: any) => p.name === 'Moon')?.sign || 'Unknown',
+                rising_sign: chartData.ascendant?.sign || 'Unknown',
+                planets: chartData.planets || [],
+                houses: chartData.houses || [],
+              },
+              symbolicData: {
+                primarySymbol: '🔮',
+                elementalInfluence: 'Cosmic',
+                cosmicAlignment: 'Harmonious',
+                timing: 'Present moment',
+              },
+              userId,
+            }),
           },
-          userId
-        })
+        ],
       });
-      
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      return this.parseAIInterpretation(result.prediction);
+      return this.parseAIInterpretation(completion.content || '');
     } catch (error) {
       devLog.error('Error generating AI interpretations:', error, 'vedicIntelligence');
       return this.getFallbackInterpretations();

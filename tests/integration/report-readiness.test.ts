@@ -35,4 +35,34 @@ describe('Report readiness contract', () => {
     expect(summary.pendingToolSlugs).toContain('numerology');
     expect(summary.allReportsReady).toBe(false);
   });
+
+  it('treats top-level ready report as ready even when legacy toolReports fallback is pending', () => {
+    const profile = {
+      western: { reading: 'ready' },
+      toolReports: {
+        western: { data: { placeholder: true } },
+      },
+    } as Record<string, unknown>;
+    const summary = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
+    expect(summary.pendingToolSlugs).not.toContain('western');
+    expect(summary.readyToolsCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('treats baseline input-dependent payloads as ready (not placeholder)', () => {
+    const profile = {
+      synastry: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+      horary: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+      angelNumbers: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+      kabbalisticNumerology: { baselineReady: true, requiresNextStep: true, overview: 'ready' },
+      nameAnalysis: { baselineReady: true, requiresNextStep: true, analysis: { primaryTheme: 'identity' } },
+      vastu: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+    } as Record<string, unknown>;
+    const summary = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
+    expect(summary.pendingToolSlugs).not.toContain('synastry');
+    expect(summary.pendingToolSlugs).not.toContain('horary');
+    expect(summary.pendingToolSlugs).not.toContain('angelNumbers');
+    expect(summary.pendingToolSlugs).not.toContain('kabbalisticNumerology');
+    expect(summary.pendingToolSlugs).not.toContain('nameAnalysis');
+    expect(summary.pendingToolSlugs).not.toContain('vastu');
+  });
 });

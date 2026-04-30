@@ -265,7 +265,10 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
       const isReadTimeout = errorMessage === 'COMPREHENSIVE_PROFILE_READ_TIMEOUT'
       const isBenignFirestoreError =
         errorMessage.includes('Target ID already exists') ||
-        errorMessage.includes('Failed to get document from server')
+        errorMessage.includes('Failed to get document from server') ||
+        errorMessage.includes('permission-denied') ||
+        errorMessage.includes('Missing or insufficient permissions') ||
+        errorMessage.toLowerCase().includes('insufficient permissions')
       if (isReadTimeout && process.env.NODE_ENV === 'development') {
         console.warn('⚠️ Comprehensive profile Firestore read exceeded timeout; trying cache/listener')
       }

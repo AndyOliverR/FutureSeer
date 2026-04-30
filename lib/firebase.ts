@@ -1178,7 +1178,13 @@ export interface UserProfile {
   updatedAt?: number;
   mysticalProfileGenerated?: boolean;
   profileDataHash?: string;
-  profileStatus?: 'incomplete' | 'completed';
+  profileStatus?:
+    | 'incomplete'
+    | 'running'
+    | 'partial_ready'
+    | 'completed'
+    | 'stageA_complete_stageB_running'
+    | 'stageA_failed';
   country?: string;
   paymentMethodId?: string;
   subscriptionId?: string;

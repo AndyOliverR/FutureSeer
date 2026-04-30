@@ -8,6 +8,7 @@ import { HumanDesignChart } from './humanDesignCalculator';
 import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase';
 import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
+import { createAICompletion } from '@/lib/aiGateway';
 
 export interface HumanDesignReport {
   overview: {
@@ -186,38 +187,44 @@ async function generateAIReport(
     // Build question: second person only; no user name in report
     const question = `Generate a comprehensive, personalized Human Design interpretation. ${REPORT_VOICE_RULE} Write as if FutureSeer has analyzed the chart and is speaking directly to the user.`;
     
-    const response = await fetch('/api/openai', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: question,
-        astroData: {
-          type: chart.type.name,
-          strategy: chart.strategy,
-          authority: chart.authority.name,
-          profile: chart.profile.name,
-          definedCenters: chart.centers.defined,
-          undefinedCenters: chart.centers.undefined,
-          activeGates: chart.gates.map(g => g.gate),
-          activeChannels: chart.channels.map(c => c.name),
-          incarnationCross: chart.incarnationCross.name
+    const result = await createAICompletion({
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      maxTokens: 2400,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a Human Design expert for FutureSeer. Return concise structured sections for overview, key insights, type, authority, profile, relationships, career, and growth. Use second person voice only. Never include the user name.',
         },
-        symbolicData: {
-          primarySymbol: '🧬',
-          elementalInfluence: chart.type.name,
-          cosmicAlignment: chart.definition.type,
-          timing: 'Present moment'
+        {
+          role: 'user',
+          content: JSON.stringify({
+            question,
+            chart: {
+              type: chart.type.name,
+              strategy: chart.strategy,
+              authority: chart.authority.name,
+              profile: chart.profile.name,
+              definedCenters: chart.centers.defined,
+              undefinedCenters: chart.centers.undefined,
+              activeGates: chart.gates.map((g) => g.gate),
+              activeChannels: chart.channels.map((c) => c.name),
+              incarnationCross: chart.incarnationCross.name,
+              definition: chart.definition.type,
+            },
+            symbolicData: {
+              primarySymbol: '🧬',
+              elementalInfluence: chart.type.name,
+              cosmicAlignment: chart.definition.type,
+              timing: 'Present moment',
+            },
+            userId: userProfile?.uid,
+          }),
         },
-        userId: userProfile?.uid
-      })
+      ],
     });
-
-    if (!response.ok) {
-      throw new Error('Failed to generate AI report');
-    }
-
-    const result = await response.json();
-    const aiResponse = result.prediction || '';
+    const aiResponse = result.content || '';
     
     // Post-process: Remove any user name from response (reports must not contain the user's name)
     let cleanedResponse = aiResponse;
@@ -234,6 +241,9 @@ async function generateAIReport(
     }
     
     const parsedResponse = parseAIResponse(cleanedResponse);
+    parsedResponse._provider = 'groq';
+    parsedResponse._model = 'llama-3.3-70b-versatile';
+    if (result.usage) parsedResponse._usage = result.usage;
     
     // Post-process each extracted field to remove any user name
     return cleanAIResponseFields(parsedResponse, userProfile);
