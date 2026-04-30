@@ -254,7 +254,9 @@ export default function MysticalProfilePage() {
   useEffect(() => {
     if (!generationPending || !progressLooksStale || !user || staleRecoveryRef.current) return
     staleRecoveryRef.current = true
-    setGenerationWarning("Still generating in the background. Checking latest progress now…")
+    const warningTimer = window.setTimeout(() => {
+      setGenerationWarning("Still generating in the background. Checking latest progress now…")
+    }, 0)
     void user
       .getIdToken()
       .then(async (token) => {
@@ -295,6 +297,9 @@ export default function MysticalProfilePage() {
       .finally(() => {
         staleRecoveryRef.current = false
       })
+    return () => {
+      window.clearTimeout(warningTimer)
+    }
   }, [generationPending, progressLooksStale, user])
 
   const showMysticalPageLoader = useMemo(() => {
