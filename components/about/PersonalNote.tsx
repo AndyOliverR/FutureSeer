@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Sparkles, Brain, Globe, Heart } from "lucide-react";
 
 export function PersonalNote() {
   const [imageError, setImageError] = useState(false);
@@ -86,36 +85,6 @@ export function PersonalNote() {
             </p>
           </div>
 
-          {/* Mission Card */}
-          <div className="p-6 bg-black/20 rounded-3xl border border-amber-500/10 shadow-inner">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <Sparkles className="w-5 h-5 text-amber-400" />
-              </div>
-              <h2 className="text-lg font-bold text-amber-400 uppercase tracking-wider">The Mission</h2>
-            </div>
-            <ul className="space-y-4">
-              {[
-                { icon: Brain, title: "AI + Tradition", desc: "Unbiased, precise interpretations." },
-                { icon: Globe, title: "One Platform", desc: "60+ ancient and modern tools." },
-                { icon: Heart, title: "Inclusive Access", desc: "No gatekeeping. Wisdom for all." }
-              ].map((item, i) => (
-                <li key={i} className="flex gap-4 items-start">
-                  <item.icon className="w-5 h-5 text-amber-500 mt-1 shrink-0" />
-                  <div>
-                    <span className="block font-bold text-white text-sm">{item.title}</span>
-                    <span className="text-sm text-surface-on-variant font-light leading-snug">{item.desc}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <p className="font-sans text-sm sm:text-base leading-relaxed text-surface-on">
-            This is just the beginning. Your feedback will help shape what we build next.
-          </p>
-          <p className="font-sans text-sm sm:text-base leading-relaxed text-surface-on text-center">
-            Crafted with ❤️ in India — For the World.
-          </p>
         </div>
       </div>
     </motion.section>

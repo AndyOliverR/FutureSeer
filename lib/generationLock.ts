@@ -12,6 +12,36 @@ export type MysticalGenerationAcquire =
   | 'idempotent_in_progress'
   | 'concurrent';
 
+export type MysticalLockRuntimeStatus = {
+  isRunning: boolean;
+  isStale: boolean;
+  lockAgeMs: number | null;
+};
+
+export function getMysticalLockRuntimeStatus(
+  lock: { status?: unknown; lockedAt?: unknown; updatedAt?: unknown } | null | undefined,
+  staleMs: number,
+  nowMs = Date.now(),
+): MysticalLockRuntimeStatus {
+  const status = typeof lock?.status === 'string' ? lock.status : '';
+  const isRunning = status === 'running' || status === 'started';
+  const updatedAt =
+    typeof lock?.updatedAt === 'number'
+      ? lock.updatedAt
+      : typeof lock?.lockedAt === 'number'
+        ? lock.lockedAt
+        : null;
+  if (!isRunning || updatedAt == null) {
+    return { isRunning, isStale: false, lockAgeMs: null };
+  }
+  const lockAgeMs = Math.max(0, nowMs - updatedAt);
+  return {
+    isRunning,
+    isStale: lockAgeMs > staleMs,
+    lockAgeMs,
+  };
+}
+
 /**
  * Try to acquire the generation lock. Stale locks older than `staleMs` are overwritten.
  * If the same `idempotencyKey` is replayed while a non-stale run is active, returns

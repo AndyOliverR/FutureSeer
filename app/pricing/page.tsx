@@ -3,15 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/use-auth'
-import { Shield, Clock } from 'lucide-react'
-import { InnovationInvitation } from '@/components/InnovationInvitation'
 import { ContributionTiers } from '@/components/ContributionTiers'
-import { PowerUserBenefits } from '@/components/PowerUserBenefits'
-import { AttributionLeaderboard } from '@/components/AttributionLeaderboard'
-import { FeedbackImprovement } from '@/components/FeedbackImprovement'
-import { ContextualHelp } from '@/components/ContextualHelp'
 import { TipJarCard } from '@/components/TipJarCard'
-import { PricingReflectionPrompts } from '@/components/PricingReflectionPrompts'
 export default function PricingPage() {
   const { userProfile } = useAuth()
   const [isMounted, setIsMounted] = useState(false)
@@ -40,19 +33,15 @@ export default function PricingPage() {
       </Link>
       
       <div className="max-w-7xl mx-auto pt-8" data-onboarding="pricing">
-        {/* Innovation Invitation Hero */}
-        <div className="relative">
-          <InnovationInvitation />
-          <div className="absolute top-4 right-4">
-            <ContextualHelp
-              title="Understanding memberships"
-              content="Coffee, Treat, and Hamper are membership tiers with recurring billing (monthly, quarterly, or annual). Your membership supports the innovation experiment and unlocks full access to tools and AI features. Cancel anytime; see Terms and Refund Policy."
-              placement="left"
-            />
-          </div>
+        <div className="text-center mb-10">
+          <h1 className="text-3xl md:text-5xl font-bold text-white mb-3">
+            <span className="text-amber-400">FutureSeer</span>
+            <span> membership plans</span>
+          </h1>
+          <p className="text-white/80 text-sm md:text-base max-w-2xl mx-auto">
+            Start with a 30-day trial, then choose monthly, quarterly, or annual membership.
+          </p>
         </div>
-
-        <PricingReflectionPrompts />
 
         {/* Contribution Tiers */}
         <div className="space-y-8">
@@ -63,38 +52,9 @@ export default function PricingPage() {
           
           {/* Tip Jar Section */}
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-serif text-amber-400 mb-3">Or Show Your Appreciation</h3>
-            <p className="text-white/80 mb-6">One-time contribution, any amount</p>
+            <h3 className="text-2xl font-serif text-amber-400 mb-3">Tip Jar</h3>
             <div className="max-w-md mx-auto">
               <TipJarCard countryCode={selectedCountry} />
-            </div>
-          </div>
-        </div>
-
-        {/* Power User Benefits */}
-        <PowerUserBenefits />
-
-        {/* Attribution Leaderboard Preview */}
-        <AttributionLeaderboard />
-
-        {/* Feedback Improvement Section */}
-        <div className="mb-16">
-          <FeedbackImprovement variant="section" />
-        </div>
-
-        {/* Additional Info */}
-        <div className="text-center text-white/80 space-y-4">
-          <p className="text-sm">
-            Secure membership billing • Join the experiment • Cancel anytime
-          </p>
-          <div className="flex justify-center items-center gap-6 text-sm">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-amber-400" />
-              <span>100% secure</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-400" />
-              <span>24/7 support</span>
             </div>
           </div>
         </div>
