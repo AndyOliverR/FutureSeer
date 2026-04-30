@@ -16,6 +16,7 @@ import { NumerologyRemedies } from '@/components/numerology/NumerologyRemedies'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { detectKarmicDebtNumbers, karmicDebtShortMeaning } from '@/lib/numerology/karmicDebt'
 import { DashboardSection } from '@/components/western/DashboardSection'
+import { ToolReportStatusChips } from '@/components/tool-status/ToolReportStatusChips'
 import { 
   Hash, 
   Calendar,
@@ -111,7 +112,25 @@ type NumerologyTabKey =
 export default function NumerologyPage() {
   const { user, userProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<NumerologyTabKey>('introduction')
-  const { report: pipelineReport, loading: isLoading, error } = useToolReport('numerology')
+  const {
+    report: pipelineReport,
+    loading: isLoading,
+    error,
+    reportUpdatedAt,
+    reportGeneratedAt,
+    reportUnchanged,
+  } = useToolReport('numerology')
+  const freshnessLabel = useMemo(() => {
+    const ts = reportUpdatedAt ?? reportGeneratedAt
+    if (!ts) return null
+    const ms = typeof ts === "number" ? ts : Date.parse(ts)
+    if (!Number.isFinite(ms)) return null
+    const delta = Date.now() - ms
+    if (delta < 60_000) return "Updated just now"
+    if (delta < 3_600_000) return `Updated ${Math.floor(delta / 60_000)} min ago`
+    if (delta < 86_400_000) return `Updated ${Math.floor(delta / 3_600_000)}h ago`
+    return `Updated ${Math.floor(delta / 86_400_000)}d ago`
+  }, [reportGeneratedAt, reportUpdatedAt])
   const numerologyData = useMemo(() => numerologyDataFromReport(pipelineReport), [pipelineReport])
 
   const viralUnlock = useToolReportUnlock('numerology')
@@ -309,6 +328,11 @@ export default function NumerologyPage() {
           <p className="m3-body-large text-slate-300">
             Ancient Babylonian number system revealing life patterns and destiny
           </p>
+          <ToolReportStatusChips
+            freshnessLabel={freshnessLabel}
+            reportUnchanged={reportUnchanged}
+            className="mt-3"
+          />
           
           {!numerologyData && chartsV2Enabled ? (
             <Alert className="mb-4 bg-amber-500/10 border-amber-500/30 text-amber-200">

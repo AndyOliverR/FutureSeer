@@ -569,7 +569,7 @@ export default function MysticalProfilePage() {
             <Link href="/tools" className="text-primary underline">
               Tools
             </Link>{" "}
-            or regenerate from{" "}
+            or check generation status in{" "}
             <Link href="/profile" className="text-primary underline">
               Profile
             </Link>
@@ -673,7 +673,7 @@ export default function MysticalProfilePage() {
         ) : groupedCards.length === 0 ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-            <p>No snippets available yet. Try regenerating from your profile, or browse the tool library.</p>
+            <p>No snippets available yet. The pipeline may still be processing; browse the tool library or check profile status.</p>
             <div className="mt-4 flex flex-wrap gap-3 justify-center">
               <Button asChild className="bg-amber-500/90 text-slate-950 hover:bg-amber-500">
                 <Link href="/profile">Profile</Link>
