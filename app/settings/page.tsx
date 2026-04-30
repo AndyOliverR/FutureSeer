@@ -16,10 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { User, LogOut, Trash2, CheckCircle, XCircle, Moon, Sun, Bell, Globe, Mic, Mail, Heart, Users, Sparkles } from "lucide-react"
+import { User, LogOut, Trash2, CheckCircle, XCircle, Bell, Mail, Heart, Users, Sparkles } from "lucide-react"
 import { Label } from "@/components/ui/label"
-import { BirthTimeDualFormatSelect } from "@/components/BirthTimeDualFormatSelect"
 import { getMissingFullProfileFields } from "@/lib/subscriptionConfig"
 
 const FULL_FIELD_LABELS: Record<string, string> = {
@@ -55,7 +53,6 @@ export default function SettingsPage() {
   const [showDelete, setShowDelete] = useState(false)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [birthTimeUnknown, setBirthTimeUnknown] = useState(false)
   const missingFullProfileFields = useMemo(
     () => getMissingFullProfileFields(userProfile).map((f) => FULL_FIELD_LABELS[f] ?? f),
     [userProfile],
@@ -123,8 +120,6 @@ export default function SettingsPage() {
     interestChipClass,
     labelAccentClass,
     sublabelClass,
-    themeSelectedClass,
-    themeUnselectedClass,
     notifTitleClass,
     notifDescClass,
   } = useMemo(() => {
@@ -167,12 +162,6 @@ export default function SettingsPage() {
         ? "text-[var(--m3-on-surface)] text-base font-semibold"
         : "text-amber-400 text-base font-semibold",
       sublabelClass: m ? "text-[var(--m3-on-surface-variant)]" : "text-white/80",
-      themeSelectedClass: m
-        ? "bg-[var(--m3-surface-container-highest)] border-2 border-[var(--m3-primary)] text-amber-400"
-        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/50 text-amber-400",
-      themeUnselectedClass: m
-        ? "bg-[var(--m3-surface-container)] border-2 border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] hover:border-[var(--m3-primary)]/40 hover:text-amber-400/90"
-        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-amber-500/30 text-white/80 hover:border-amber-500/50 hover:text-amber-400",
       notifTitleClass: m ? "text-[var(--m3-on-surface)] text-sm font-medium" : "text-white/80 text-sm font-medium",
       notifDescClass: m ? "text-[var(--m3-on-surface-variant)] text-xs" : "text-white/60 text-xs",
     }
@@ -264,13 +253,11 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label className={cn("block text-sm font-semibold mb-1", sublabelClass)}>Birth Time</label>
-                    <BirthTimeDualFormatSelect
-                      value={profileData.birthTime || "12:00"}
-                      onChange={(next) => setProfileData({ ...profileData, birthTime: next })}
-                      showUnknownCheckbox
-                      unknownTime={birthTimeUnknown}
-                      onUnknownTimeChange={setBirthTimeUnknown}
-                      selectClassName="flex-1 min-w-0 min-h-12 bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] rounded-xl px-3 text-[var(--m3-on-surface)] [color-scheme:dark]"
+                    <Input
+                      value={profileData.birthTime || ""}
+                      onChange={e => setProfileData({ ...profileData, birthTime: e.target.value })}
+                      placeholder="e.g. 2:15 PM"
+                      className="bg-[var(--m3-surface-container-low)] border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] placeholder:text-[var(--m3-on-surface-variant)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus backdrop-blur-sm m3-transition-standard"
                     />
                   </div>
                   <div className="md:col-span-2">
@@ -315,49 +302,11 @@ export default function SettingsPage() {
         <Card className={cardClass}>
           <CardHeader>
             <CardTitle className={sectionTitleClass}>
-              <Moon className="w-6 h-6" /> {t('settings.preferences')}
+              <Bell className="w-6 h-6" /> {t('settings.preferences')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className={isMobileLayout ? "space-y-3" : "space-y-4"}>
-              <div className={cn("space-y-3", prefRowTileClass)}>
-                <div className="flex items-center gap-2">
-                  <Sun className="w-5 h-5 text-amber-400" />
-                  <span className={labelAccentClass}>Theme Preference</span>
-                </div>
-                <RadioGroup
-                  value={settings.theme}
-                  onValueChange={(value) => updateSetting('theme', value as 'light' | 'dark' | 'system')}
-                  className="grid grid-cols-3 gap-2"
-                >
-                  {[
-                    { value: 'light', label: 'Light', icon: '☀️' },
-                    { value: 'dark', label: 'Dark', icon: '🌙' },
-                    { value: 'system', label: 'System', icon: '⚙️' }
-                  ].map((theme) => {
-                    const isSelected = settings.theme === theme.value;
-                    return (
-                      <div key={theme.value} className="relative">
-                        <RadioGroupItem
-                          value={theme.value}
-                          id={`theme-${theme.value}`}
-                          className="peer sr-only"
-                          aria-label={`${theme.label} theme`}
-                        />
-                        <label
-                          htmlFor={`theme-${theme.value}`}
-                          className={`flex items-center justify-center gap-2 px-2 py-3 md:px-8 rounded-full text-sm font-medium cursor-pointer border-2 min-h-[48px] w-full min-w-0 md:min-w-[120px] transition-all duration-300 ${
-                            isSelected ? themeSelectedClass : themeUnselectedClass
-                          } peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-slate-950`}
-                        >
-                          <span className="text-base">{theme.icon}</span>
-                          <span>{theme.label}</span>
-                        </label>
-                      </div>
-                    );
-                  })}
-                </RadioGroup>
-              </div>
               <div className={cn("flex items-center justify-between", prefRowTileClass)}>
                 <div className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-amber-400" />
@@ -397,30 +346,6 @@ export default function SettingsPage() {
                     updateSetting('emailUpdates', v);
                   }}
                 />
-              </div>
-              <div className={cn("flex items-center justify-between", prefRowTileClass)}>
-                <div className="flex items-center gap-2">
-                  <Mic className="w-5 h-5 text-amber-400" />
-                  <span className={labelAccentClass}>Voice Guidance</span>
-                </div>
-                <Switch checked={settings.voiceGuidance} onCheckedChange={v => updateSetting('voiceGuidance', v)} />
-              </div>
-              <div className={cn("flex items-center justify-between", prefRowTileClass)}>
-                <div className="flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-amber-400" />
-                  <span className={labelAccentClass}>Language</span>
-                </div>
-                <select
-                  value={settings.language}
-                  onChange={e => updateSetting('language', e.target.value)}
-                  className="bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] rounded-xl px-3 py-2 text-[var(--m3-on-surface)] m3-body-medium focus:outline-none focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] m3-input-focus m3-transition-standard"
-                >
-                  <option value="en">English</option>
-                  <option value="hi">हिन्दी (Hindi)</option>
-                  <option value="es">Español (Spanish)</option>
-                  <option value="fr">Français (French)</option>
-                  <option value="zh">中文 (Chinese)</option>
-                </select>
               </div>
             </div>
           </CardContent>
@@ -657,7 +582,7 @@ export default function SettingsPage() {
           <CardContent>
             <div className="space-y-3">
               <p className={cn("text-sm", sublabelClass)}>
-                You started with a free trial. Before it ends, choose your plan and update payment details to keep access uninterrupted.
+                Choose a plan and payment method to keep full access.
               </p>
               {missingFullProfileFields.length > 0 ? (
                 <p className={cn("text-xs", sublabelClass)}>
@@ -717,8 +642,7 @@ export default function SettingsPage() {
                     )}
                   >
                     <div className="mb-2">
-                      Permanently delete your account, Firestore profile, community posts you authored, and sign-in access.
-                      This cannot be undone. Active subscriptions are cancelled when possible.
+                      This permanently deletes your account and profile data. This cannot be undone.
                     </div>
                     {deleteError && (
                       <p className="text-red-300 text-xs mt-2" role="alert">

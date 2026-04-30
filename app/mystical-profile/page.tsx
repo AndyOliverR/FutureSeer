@@ -189,7 +189,7 @@ export default function MysticalProfilePage() {
             sessionStorage.removeItem("futureSeer:generationError")
             setGenerationPending(false)
             setGenerationError(null)
-            setGenerationWarning("Some reports are still finalizing. New cards will appear as processing completes.")
+            setGenerationWarning("Some reports are still finalizing. Ready tools are unlocked now while the rest keep processing.")
             return
           }
           if (!data.inProgress && !data.generated && !data.partialReady) {
@@ -288,7 +288,7 @@ export default function MysticalProfilePage() {
           sessionStorage.removeItem("futureSeer:generationError")
           setGenerationPending(false)
           setGenerationError(null)
-          setGenerationWarning("More reports are still processing. You can open ready cards now while the rest finish.")
+          setGenerationWarning("More reports are still processing. Ready tools are unlocked now while the rest finish.")
         }
       })
       .catch(() => {
@@ -558,7 +558,7 @@ export default function MysticalProfilePage() {
         <p className="mt-1 text-[11px] text-surface-on-variant/80">{lastUpdatedLabel}</p>
       ) : null}
       {generationWarning ? (
-        <p className="mt-2 text-xs text-surface-on-variant">Still processing; you can open ready cards now.</p>
+        <p className="mt-2 text-xs text-surface-on-variant">Still processing; open Explore all tools for the ready reports.</p>
       ) : progressLooksStale ? (
         <p className="mt-2 text-xs text-surface-on-variant">Slow network detected; reports continue in background.</p>
       ) : null}
@@ -667,7 +667,7 @@ export default function MysticalProfilePage() {
       {generationWarning ? (
         <p className="mt-2 text-xs text-slate-400">{generationWarning}</p>
       ) : progressLooksStale ? (
-        <p className="mt-2 text-xs text-slate-400">Generation can be slower on busy networks. Ready cards appear as each report completes.</p>
+        <p className="mt-2 text-xs text-slate-400">Generation can be slower on busy networks. Open Explore all tools for reports that are already ready.</p>
       ) : null}
           </div>
         ) : groupedCards.length === 0 ? (

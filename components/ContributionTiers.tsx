@@ -65,7 +65,7 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
     {
       id: 'power-user-trial',
       name: 'Power User Trial',
-      description: 'Start Your Journey - 30 Days Free',
+      description: '30-day free trial',
       icon: <Sparkles className="w-6 h-6" />,
       visualIcon: <Sparkles className="w-12 h-12" />,
       color: 'bg-green-500',
@@ -211,7 +211,7 @@ export function ContributionTiers({ selectedCountry, onContribute }: Contributio
                     : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 hover:border-amber-500/50 text-white'
                 } font-semibold py-3 transition-all duration-300`}
               >
-                {isTrial ? 'Join the Experiment' : tier.name}
+                {isTrial ? 'Start Free Trial' : tier.name}
               </Button>
             </CardContent>
           </Card>
