@@ -62,6 +62,11 @@ export type GenerationProgressUpdate = {
   toolSlug: string;
 };
 
+export type ToolRunUpdate = {
+  toolSlug: string;
+  entry: ToolReportEntry;
+};
+
 export type ReportReadinessState = 'ready' | 'pending' | 'failed' | 'placeholder';
 
 export function classifyToolReportState(report: unknown): ReportReadinessState {
@@ -142,61 +147,61 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 
 /** List of all tools to run at profile generation time. No lazy loading. Exported so API can check for missing reports. */
 export const ALL_TOOL_SLUGS = [
-  'vedic',
   'western',
-  'astrocartography',
-  'esotericAstrology',
-  'psychologicalAstrology',
-  'shamanicAstrology',
-  'kabbalisticAstrology',
-  'hermeticAstrology',
   'hellenistic',
-  'kp',
-  'numerology',
-  'tarot',
-  'iching',
-  'runes',
-  'lenormand',
-  'pendulum',
-  'geomancy',
-  'ogham',
-  'sortilege',
-  'palmistry',
-  'faceReading',
-  'nameAnalysis',
-  'dreamSymbols',
-  'angelNumbers',
-  'kabbalisticNumerology',
-  'navaratna',
-  'trichakra',
-  'fengShui',
-  'vastu',
-  'energyHealing',
-  'dailyDecisions',
+  'esotericAstrology',
+  'kabbalisticAstrology',
+  'astrocartography',
+  'psychologicalAstrology',
+  'synastry',
+  'financialAstrology',
+  'hermeticAstrology',
+  'shamanicAstrology',
+  'mundaneAstrology',
   'horary',
   'medicalAstrology',
-  'financialAstrology',
-  'mundaneAstrology',
-  'synastry',
-  'bazi',
-  'ziweiDouShu',
-  'humanDesign',
-  'akashicRecords',
+  'tarot',
   'scrying',
   'bibliomancy',
+  'iching',
+  'runes',
+  'pendulum',
+  'lenormand',
+  'geomancy',
+  'akashicRecords',
+  'ogham',
+  'sortilege',
+  'numerology',
+  'angelNumbers',
+  'kabbalisticNumerology',
+  'nameAnalysis',
+  'palmistry',
+  'faceReading',
+  'dreamSymbols',
+  'ziweiDouShu',
+  'bazi',
+  'fengShui',
+  'vedic',
+  'dailyDecisions',
+  'kp',
+  'vastu',
+  'trichakra',
+  'navaratna',
+  'humanDesign',
+  'energyHealing',
 ] as const;
 
 const CORE10_TOOL_SLUGS = [
-  'numerology',
-  'tarot',
-  'dailyDecisions',
-  'vedic',
   'western',
-  'kp',
-  'humanDesign',
-  'medicalAstrology',
-  'palmistry',
-  'faceReading',
+  'hellenistic',
+  'esotericAstrology',
+  'kabbalisticAstrology',
+  'astrocartography',
+  'psychologicalAstrology',
+  'synastry',
+  'financialAstrology',
+  'hermeticAstrology',
+  'shamanicAstrology',
 ] as const;
 
 export function getCoreToolSlugsCore10(): string[] {
@@ -499,6 +504,81 @@ async function runTool(
         };
       }
 
+      case 'runes': {
+        const res = await fetch(`${baseUrl}/api/tools/runes/reading`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, question: 'Birth-path rune guidance', spreadType: 'three' }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Runes API: ${res.status}`);
+        }
+        const json = await res.json();
+        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+      }
+
+      case 'lenormand': {
+        const res = await fetch(`${baseUrl}/api/tools/lenormand/reading`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, question: 'Birth-path Lenormand guidance', spreadType: 'three' }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Lenormand API: ${res.status}`);
+        }
+        const json = await res.json();
+        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+      }
+
+      case 'pendulum': {
+        const res = await fetch(`${baseUrl}/api/tools/pendulum/reading`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, question: 'What is the most supportive current focus?', pendulumType: 'crystal' }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Pendulum API: ${res.status}`);
+        }
+        const json = await res.json();
+        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+      }
+
+      case 'geomancy': {
+        const res = await fetch(`${baseUrl}/api/tools/geomancy/reading`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, question: 'Birth-path geomancy guidance', questionType: 'general' }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Geomancy API: ${res.status}`);
+        }
+        const json = await res.json();
+        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+      }
+
+      case 'sortilege': {
+        const res = await fetch(`${baseUrl}/api/tools/sortilege/reading`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            question: 'Birth-path sortilege guidance',
+            method: 'coins',
+            userProfile: profile,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Sortilege API: ${res.status}`);
+        }
+        const json = await res.json();
+        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+      }
+
       case 'faceReading': {
         if (!profile.facePhotoUrl) {
           return {
@@ -730,6 +810,48 @@ async function runTool(
           generatedAt,
           _usage: json._usage ?? json.usage,
         };
+      }
+
+      case 'synastry': {
+        const rec = profile as unknown as Record<string, unknown>;
+        const person2BirthDate = (rec.partnerBirthDate as string | undefined) ?? (rec.partnerDateOfBirth as string | undefined);
+        const person2BirthTime = (rec.partnerBirthTime as string | undefined) ?? (rec.partnerTimeOfBirth as string | undefined);
+        const person2BirthLocation = (rec.partnerBirthPlace as string | undefined) ?? (rec.partnerPlaceOfBirth as string | undefined);
+        if (!person2BirthDate || !person2BirthTime || !person2BirthLocation) {
+          return {
+            status: 'success',
+            data: {
+              placeholder: true,
+              pending: true,
+              reason: 'Add partner birth date, time, and place to generate Synastry.',
+            },
+            generatedAt,
+          };
+        }
+        const res = await fetch(`${baseUrl}/api/tools/synastry/analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            person1Name: profile.displayName || (profile as unknown as Record<string, unknown>).fullName || 'Person 1',
+            person1BirthDate: profile.birthDate,
+            person1BirthTime: profile.birthTime || '12:00:00',
+            person1BirthLocation: profile.birthPlace,
+            person1Latitude: profile.birthLatitude ?? 0,
+            person1Longitude: profile.birthLongitude ?? 0,
+            person2Name: (rec.partnerName as string | undefined) ?? 'Partner',
+            person2BirthDate,
+            person2BirthTime,
+            person2BirthLocation,
+            person2Latitude: rec.partnerBirthLatitude ?? 0,
+            person2Longitude: rec.partnerBirthLongitude ?? 0,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error((err as { error?: string })?.error ?? `Synastry API: ${res.status}`);
+        }
+        const json = await res.json();
+        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'ziweiDouShu': {
@@ -1144,8 +1266,9 @@ async function runTool(
         return {
           status: 'success',
           data: {
-            reading: `${toolSlug} reading will be generated when tool is fully integrated.`,
+            reading: `${toolSlug} is not wired in the generation pipeline yet.`,
             placeholder: true,
+            integrationGap: true,
           },
           generatedAt,
         };
@@ -1168,22 +1291,20 @@ async function runStageTools(
   aggregateUsage: { promptTokens: number; completionTokens: number; totalTokens: number },
   timeoutMs = 90_000,
 ): Promise<void> {
-  const results = await Promise.allSettled(
-    stageTools.map(async (slug) => {
+  for (const slug of stageTools) {
+    try {
       const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), timeoutMs, slug);
       toolReports[slug] = entry;
       if (entry.status === 'failed') failedTools.push(slug);
-      return entry;
-    }),
-  );
-
-  results.forEach((r, i) => {
-    if (r.status === 'rejected') {
-      const slug = stageTools[i];
-      toolReports[slug] = { status: 'failed', error: r.reason?.message || 'Unknown', generatedAt: new Date().toISOString() };
+    } catch (err) {
+      toolReports[slug] = {
+        status: 'failed',
+        error: err instanceof Error ? err.message : 'Unknown',
+        generatedAt: new Date().toISOString(),
+      };
       failedTools.push(slug);
     }
-  });
+  }
 
   for (const entry of Object.values(toolReports)) {
     if (entry._usage) addResponseUsage(aggregateUsage, { _usage: entry._usage });
@@ -1315,6 +1436,7 @@ export async function runProfileGeneration(
   userProfile: UserProfile,
   options?: {
     onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
+    onToolRun?: (update: ToolRunUpdate) => void | Promise<void>;
   },
 ): Promise<GenerationResult> {
   const baseUrl = getServerBaseUrl();
@@ -1339,160 +1461,141 @@ export async function runProfileGeneration(
     birthTime: normalizeBirthTime(userProfile.birthTime) || userProfile.birthTime || '12:00:00',
   };
 
-  // 1. Run Vedic first (required for interpretations)
-  const vedicEntry = await withTimeout(runTool('vedic', userId, profile, baseUrl), 90_000, 'vedic');
-  toolReports.vedic = vedicEntry;
-  await reportProgress('vedic');
-  if (vedicEntry.status === 'failed') {
-    failedTools.push('vedic');
-    addResponseUsage(aggregateUsage, vedicEntry);
-    return {
-      success: false,
-      toolReports,
-      seerMaster: buildSeerMaster(toolReports, {}),
-      comprehensiveProfile: {},
-      failedTools,
-      systemsUsed: [],
-      aggregateUsage,
-    };
-  }
-
-  // 2. Generate interpretations via universal engine (uses Vedic data)
-  let interpretations: Record<string, unknown> = {};
-  try {
-    const { universalInterpretationEngine } = await import('./universalInterpretationEngine');
-    const vedicData = vedicEntry.data as Record<string, unknown>;
-    const interpretation = await universalInterpretationEngine.generateInterpretation(
-      'vedic',
-      userId,
-      vedicData,
-      profile
-    );
-    interpretations = interpretation as unknown as Record<string, unknown>;
-  } catch (err) {
-    devLog.warn('[ProfileOrchestrator] Interpretation engine failed:', err, 'profileGenerationOrchestrator');
-  }
-
-  // 2a. Fetch Vedic comprehensive report (planetaryAnalysis, houseAnalysis, etc.) and store in vedicEntry.data so it is saved to profile; Overview/Planets/Houses/Remedies then show it without generating on mount
-  try {
-    const res = await fetch(`${baseUrl}/api/vedic/comprehensive`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        vedicChartData: vedicEntry.data,
-        userProfile: {
-          birthDate: profile.birthDate,
-          birthTime: profile.birthTime ?? '12:00:00',
-          birthPlace: profile.birthPlace,
-          fullName: (profile as unknown as Record<string, unknown>).fullName ?? profile.displayName,
-          displayName: profile.displayName,
-        },
-      }),
-    });
-    if (res.ok) {
-      const json = await res.json();
-      addResponseUsage(aggregateUsage, json);
-      const analysis = json?.data?.comprehensiveAnalysis ?? json?.comprehensiveAnalysis ?? json?.data;
-      if (analysis && typeof analysis === 'object') {
-        (vedicEntry.data as Record<string, unknown>).comprehensiveAnalysis = analysis;
-        devLog.info('[ProfileOrchestrator] Vedic comprehensive report stored for user', userId, 'profileGenerationOrchestrator');
-      } else {
-        devLog.warn('[ProfileOrchestrator] Vedic comprehensive response missing analysis (non-blocking)', undefined, 'profileGenerationOrchestrator');
+  // 1) Run tools in canonical UI grid order.
+  for (const slug of ALL_TOOL_SLUGS) {
+    try {
+      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
+      toolReports[slug] = entry;
+      if (entry.status === 'failed') failedTools.push(slug);
+      if (options?.onToolRun) {
+        await options.onToolRun({ toolSlug: slug, entry });
       }
-    } else {
-      devLog.warn('[ProfileOrchestrator] Vedic comprehensive fetch failed (non-blocking)', undefined, 'profileGenerationOrchestrator');
+      await reportProgress(slug);
+    } catch (err) {
+      toolReports[slug] = {
+        status: 'failed',
+        error: err instanceof Error ? err.message : 'Unknown',
+        generatedAt: new Date().toISOString(),
+      };
+      failedTools.push(slug);
+      if (options?.onToolRun) {
+        await options.onToolRun({ toolSlug: slug, entry: toolReports[slug] });
+      }
+      await reportProgress(slug);
     }
-  } catch (err) {
-    devLog.warn('[ProfileOrchestrator] Vedic comprehensive fetch failed (non-blocking):', err, 'profileGenerationOrchestrator');
   }
 
-  // 2b. Run Vedic Astro-Numerology (depends on Vedic chart; runs after vedic so we have moon/lagna/sun)
-  const vedicAstroNumGeneratedAt = new Date().toISOString();
-  try {
-    const vdata = vedicEntry.data as Record<string, unknown>;
-    const getSign = (src: unknown, key: string, subKey: string): string => {
-      const obj = src as Record<string, unknown> | undefined;
-      if (!obj) return 'Unknown';
-      const val = obj[key] ?? obj[subKey];
-      if (typeof val === 'string') return val;
-      const inner = val as Record<string, unknown> | undefined;
-      return (inner?.signName ?? inner?.sign) as string ?? 'Unknown';
-    };
-    const planets = vdata?.planets as Array<{ name: string; sign?: string; signName?: string }> | undefined;
-    const findPlanet = (name: string) =>
-      Array.isArray(planets) ? planets.find((p) => p.name === name || p.name === name.toLowerCase()) : undefined;
-    const moonSign =
-      getSign(vdata?.moon, 'sign', 'signName') !== 'Unknown'
-        ? getSign(vdata?.moon, 'sign', 'signName')
-        : (findPlanet('Moon')?.signName ?? findPlanet('Moon')?.sign ?? 'Unknown');
-    const sunSign =
-      getSign(vdata?.sun, 'sign', 'signName') !== 'Unknown'
-        ? getSign(vdata?.sun, 'sign', 'signName')
-        : (findPlanet('Sun')?.signName ?? findPlanet('Sun')?.sign ?? 'Unknown');
-    const lagnaSign =
-      getSign(vdata?.ascendant, 'signName', 'sign') !== 'Unknown'
-        ? getSign(vdata?.ascendant, 'signName', 'sign')
-        : getSign(vdata?.lagna, 'signName', 'sign');
+  let interpretations: Record<string, unknown> = {};
+  const vedicEntry = toolReports.vedic;
+  if (vedicEntry?.status === 'success' && vedicEntry.data && typeof vedicEntry.data === 'object') {
+    // 2) Generate interpretations via universal engine once Vedic data exists.
+    try {
+      const { universalInterpretationEngine } = await import('./universalInterpretationEngine');
+      const vedicData = vedicEntry.data as Record<string, unknown>;
+      const interpretation = await universalInterpretationEngine.generateInterpretation(
+        'vedic',
+        userId,
+        vedicData,
+        profile
+      );
+      interpretations = interpretation as unknown as Record<string, unknown>;
+    } catch (err) {
+      devLog.warn('[ProfileOrchestrator] Interpretation engine failed:', err, 'profileGenerationOrchestrator');
+    }
 
-    const birthDate = profile.birthDate ?? '';
-    const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
-
-    if (birthDate && fullName && moonSign !== 'Unknown') {
-      const numerologyProfile = calculateVedicNumerologyProfile(fullName, birthDate);
-      const res = await fetch(`${baseUrl}/api/vedic-astro-numerology/analysis`, {
+    // 2a) Fetch Vedic comprehensive report and attach to stored Vedic payload.
+    try {
+      const res = await fetch(`${baseUrl}/api/vedic/comprehensive`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          birthDate,
-          fullName,
-          moonSign,
-          lagnaSign: lagnaSign !== 'Unknown' ? lagnaSign : 'Aries',
-          sunSign: sunSign !== 'Unknown' ? sunSign : 'Aries',
-          numerologyProfile,
+          vedicChartData: vedicEntry.data,
+          userProfile: {
+            birthDate: profile.birthDate,
+            birthTime: profile.birthTime ?? '12:00:00',
+            birthPlace: profile.birthPlace,
+            fullName: (profile as unknown as Record<string, unknown>).fullName ?? profile.displayName,
+            displayName: profile.displayName,
+          },
         }),
       });
       if (res.ok) {
-        const result = await res.json();
-        addResponseUsage(aggregateUsage, result);
-        const data = result?.data ?? result;
-        toolReports.vedicAstroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: vedicAstroNumGeneratedAt, _usage: result._usage ?? result.usage };
+        const json = await res.json();
+        addResponseUsage(aggregateUsage, json);
+        const analysis = json?.data?.comprehensiveAnalysis ?? json?.comprehensiveAnalysis ?? json?.data;
+        if (analysis && typeof analysis === 'object') {
+          (vedicEntry.data as Record<string, unknown>).comprehensiveAnalysis = analysis;
+          devLog.info('[ProfileOrchestrator] Vedic comprehensive report stored for user', userId, 'profileGenerationOrchestrator');
+        }
+      }
+    } catch (err) {
+      devLog.warn('[ProfileOrchestrator] Vedic comprehensive fetch failed (non-blocking):', err, 'profileGenerationOrchestrator');
+    }
+
+    // 2b) Run Vedic Astro-Numerology derived payload.
+    const vedicAstroNumGeneratedAt = new Date().toISOString();
+    try {
+      const vdata = vedicEntry.data as Record<string, unknown>;
+      const getSign = (src: unknown, key: string, subKey: string): string => {
+        const obj = src as Record<string, unknown> | undefined;
+        if (!obj) return 'Unknown';
+        const val = obj[key] ?? obj[subKey];
+        if (typeof val === 'string') return val;
+        const inner = val as Record<string, unknown> | undefined;
+        return (inner?.signName ?? inner?.sign) as string ?? 'Unknown';
+      };
+      const planets = vdata?.planets as Array<{ name: string; sign?: string; signName?: string }> | undefined;
+      const findPlanet = (name: string) =>
+        Array.isArray(planets) ? planets.find((p) => p.name === name || p.name === name.toLowerCase()) : undefined;
+      const moonSign =
+        getSign(vdata?.moon, 'sign', 'signName') !== 'Unknown'
+          ? getSign(vdata?.moon, 'sign', 'signName')
+          : (findPlanet('Moon')?.signName ?? findPlanet('Moon')?.sign ?? 'Unknown');
+      const sunSign =
+        getSign(vdata?.sun, 'sign', 'signName') !== 'Unknown'
+          ? getSign(vdata?.sun, 'sign', 'signName')
+          : (findPlanet('Sun')?.signName ?? findPlanet('Sun')?.sign ?? 'Unknown');
+      const lagnaSign =
+        getSign(vdata?.ascendant, 'signName', 'sign') !== 'Unknown'
+          ? getSign(vdata?.ascendant, 'signName', 'sign')
+          : getSign(vdata?.lagna, 'signName', 'sign');
+      const birthDate = profile.birthDate ?? '';
+      const fullName = (profile.displayName ?? (profile as unknown as Record<string, unknown>).fullName ?? '') as string;
+      if (birthDate && fullName && moonSign !== 'Unknown') {
+        const numerologyProfile = calculateVedicNumerologyProfile(fullName, birthDate);
+        const res = await fetch(`${baseUrl}/api/vedic-astro-numerology/analysis`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            birthDate,
+            fullName,
+            moonSign,
+            lagnaSign: lagnaSign !== 'Unknown' ? lagnaSign : 'Aries',
+            sunSign: sunSign !== 'Unknown' ? sunSign : 'Aries',
+            numerologyProfile,
+          }),
+        });
+        if (res.ok) {
+          const result = await res.json();
+          addResponseUsage(aggregateUsage, result);
+          const data = result?.data ?? result;
+          toolReports.vedicAstroNumerology = { status: 'success', data: data as Record<string, unknown>, generatedAt: vedicAstroNumGeneratedAt, _usage: result._usage ?? result.usage };
+        } else {
+          const err = await res.json().catch(() => ({}));
+          toolReports.vedicAstroNumerology = { status: 'failed', error: err?.error ?? `API ${res.status}`, generatedAt: vedicAstroNumGeneratedAt };
+          failedTools.push('vedicAstroNumerology');
+        }
       } else {
-        const err = await res.json().catch(() => ({}));
-        toolReports.vedicAstroNumerology = { status: 'failed', error: err?.error ?? `API ${res.status}`, generatedAt: vedicAstroNumGeneratedAt };
+        toolReports.vedicAstroNumerology = { status: 'failed', error: 'Missing birthDate, fullName, or moonSign', generatedAt: vedicAstroNumGeneratedAt };
         failedTools.push('vedicAstroNumerology');
       }
-    } else {
-      toolReports.vedicAstroNumerology = { status: 'failed', error: 'Missing birthDate, fullName, or moonSign', generatedAt: vedicAstroNumGeneratedAt };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown';
+      devLog.warn('[ProfileOrchestrator] Vedic Astro-Numerology failed:', msg, 'profileGenerationOrchestrator');
+      toolReports.vedicAstroNumerology = { status: 'failed', error: msg, generatedAt: new Date().toISOString() };
       failedTools.push('vedicAstroNumerology');
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown';
-    devLog.warn('[ProfileOrchestrator] Vedic Astro-Numerology failed:', msg, 'profileGenerationOrchestrator');
-    toolReports.vedicAstroNumerology = { status: 'failed', error: msg, generatedAt: vedicAstroNumGeneratedAt };
-    failedTools.push('vedicAstroNumerology');
-  }
-
-  // 3. Run ALL other tools in parallel (excluding vedic, already done)
-  const otherTools = ALL_TOOL_SLUGS.filter((t) => t !== 'vedic');
-  const results = await Promise.allSettled(
-    otherTools.map(async (slug) => {
-      const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
-      toolReports[slug] = entry;
-      if (entry.status === 'failed') failedTools.push(slug);
-      await reportProgress(slug);
-      return entry;
-    })
-  );
-
-  // Log any unexpected rejections
-  for (const [i, r] of results.entries()) {
-    if (r.status === 'rejected') {
-      const slug = otherTools[i];
-      toolReports[slug] = { status: 'failed', error: r.reason?.message || 'Unknown', generatedAt: new Date().toISOString() };
-      failedTools.push(slug);
-      await reportProgress(slug);
     }
   }
 
@@ -1553,13 +1656,17 @@ export async function runProfileGeneration(
   // 4. Build comprehensive profile (backward compatible with existing structure)
   const interp = interpretations as Record<string, unknown>;
   const timing = interp.timing as Record<string, unknown> | undefined;
+  const vedicDataForProfile =
+    vedicEntry?.status === 'success' && vedicEntry.data && typeof vedicEntry.data === 'object'
+      ? (vedicEntry.data as Record<string, unknown>)
+      : {};
   const comprehensiveProfile: Record<string, unknown> = {
     vedic: {
-      ascendant: (vedicEntry.data as Record<string, unknown>)?.ascendant ?? 0,
-      planets: (vedicEntry.data as Record<string, unknown>)?.planets ?? [],
-      houses: (vedicEntry.data as Record<string, unknown>)?.houses ?? [],
-      dasha: (vedicEntry.data as Record<string, unknown>)?.dasha ?? [],
-      currentDasha: (vedicEntry.data as Record<string, unknown>)?.currentDasha ?? null,
+      ascendant: vedicDataForProfile?.ascendant ?? 0,
+      planets: (vedicDataForProfile?.planets as unknown[]) ?? [],
+      houses: (vedicDataForProfile?.houses as unknown[]) ?? [],
+      dasha: (vedicDataForProfile?.dasha as unknown[]) ?? [],
+      currentDasha: (vedicDataForProfile?.currentDasha as Record<string, unknown> | null) ?? null,
     },
     interpretations: {
       comprehensive: (interp.personality as Record<string, unknown>)?.overview ?? '',

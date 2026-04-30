@@ -422,6 +422,36 @@ describe('Profile generate-mystical API', () => {
       expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
     });
 
+    it('returns current tool slug and queue position for live progress UI', async () => {
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
+        if (collection === 'generationLocks') {
+          return Promise.resolve({ status: 'running', phase: 'stageB', updatedAt: Date.now(), currentToolSlug: 'financialAstrology' });
+        }
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve({ vedic: { placeholder: false }, western: { placeholder: false } });
+        }
+        if (collection === 'generationJobs') {
+          return Promise.resolve({
+            status: 'running',
+            currentToolSlug: 'financialAstrology',
+            completedTools: 14,
+            totalTools: ALL_TOOL_SLUGS.length,
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.currentToolSlug).toBe('financialAstrology');
+      expect(data.queuePosition).toEqual({
+        completed: 14,
+        total: ALL_TOOL_SLUGS.length,
+      });
+    });
+
     it('reconciles user allReportsReady false when profile shows all tools ready', async () => {
       const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
       mockGetDocument.mockImplementation((collection: string) => {

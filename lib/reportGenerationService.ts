@@ -8,6 +8,7 @@ import type { UserProfile } from './firebase';
 import {
   getCoreToolSlugsCore10,
   type GenerationProgressUpdate,
+  type ToolRunUpdate,
   runProfileGeneration,
   runProfileGenerationStageA,
   type GenerationResult,
@@ -22,6 +23,7 @@ export async function generateAllReports(
   userProfile: UserProfile,
   options?: {
     onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
+    onToolRun?: (update: ToolRunUpdate) => void | Promise<void>;
   },
 ): Promise<GenerationResult> {
   return runProfileGeneration(userId, userProfile, options);

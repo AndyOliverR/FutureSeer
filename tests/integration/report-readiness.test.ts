@@ -13,6 +13,7 @@ import {
 describe('Report readiness contract', () => {
   it('classifies placeholder and failed states correctly', () => {
     expect(classifyToolReportState({ placeholder: true })).toBe('placeholder');
+    expect(classifyToolReportState({ placeholder: true, pending: true })).toBe('placeholder');
     expect(classifyToolReportState({ status: 'failed', error: 'x' })).toBe('failed');
     expect(classifyToolReportState({})).toBe('pending');
     expect(classifyToolReportState({ reading: 'ok' })).toBe('ready');
