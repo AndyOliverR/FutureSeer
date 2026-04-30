@@ -340,6 +340,87 @@ describe('Profile generate-mystical API', () => {
       expect(data.generationState).toBe('partial_ready');
       expect(data.readyToolsCount).toBeGreaterThan(0);
     });
+
+    it('recovers stale running lock and returns partial_ready without endless inProgress', async () => {
+      const staleTs = Date.now() - (120_000 + 90_000 + 60_000);
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') {
+          return Promise.resolve({
+            ...baseProfile,
+            mysticalProfileGenerated: true,
+            allReportsReady: false,
+            pendingToolSlugs: ALL_TOOL_SLUGS,
+          });
+        }
+        if (collection === 'generationLocks') {
+          return Promise.resolve({
+            status: 'running',
+            phase: 'stageB',
+            updatedAt: staleTs,
+            lockedAt: staleTs,
+          });
+        }
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve({ vedic: { placeholder: false }, numerology: { placeholder: false } });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.inProgress).toBe(false);
+      expect(data.partialReady).toBe(true);
+      expect(data.generationState).toBe('partial_ready');
+      expect(data.lockStaleRecovered).toBe(true);
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'generationLocks',
+        uid,
+        expect.objectContaining({
+          staleRecovered: true,
+          phase: 'stale_timeout',
+        }),
+      );
+    });
+
+    it('reconciles user allReportsReady false when profile shows all tools ready', async () => {
+      const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') {
+          return Promise.resolve({
+            ...baseProfile,
+            mysticalProfileGenerated: true,
+            allReportsReady: false,
+            pendingToolSlugs: ALL_TOOL_SLUGS,
+          });
+        }
+        if (collection === 'generationLocks') {
+          return Promise.resolve({ status: 'completed', phase: 'completed', updatedAt: Date.now() });
+        }
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve(allReadyProfile);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.inProgress).toBe(false);
+      expect(data.completed).toBe(true);
+      expect(data.allReportsReady).toBe(true);
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'users',
+        uid,
+        expect.objectContaining({
+          allReportsReady: true,
+          pendingToolSlugs: [],
+          profileStatus: 'completed',
+        }),
+      );
+    });
   });
 
   describe('Vedic failure resilience', () => {

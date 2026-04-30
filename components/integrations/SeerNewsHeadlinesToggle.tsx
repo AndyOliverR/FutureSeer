@@ -41,9 +41,6 @@ export function SeerNewsHeadlinesToggle({
         <Label htmlFor="seer-news" className="text-amber-200 font-medium">
           Headlines in The Seer
         </Label>
-        <p className="text-sm text-slate-400 leading-relaxed">
-          When enabled, the main Seer may receive same-day headline titles as optional world context (not predictions).
-        </p>
       </div>
       <Switch
         id="seer-news"

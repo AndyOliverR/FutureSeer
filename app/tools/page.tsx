@@ -38,12 +38,15 @@ function ToolsPageContent() {
     [comprehensiveProfile],
   )
   const allReportsReady = Boolean((userProfile as Record<string, unknown> | null)?.allReportsReady)
-  const toolsLockedForGeneration =
+  const generationHasPendingTools =
     Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
+  const pendingToolsSet = useMemo(() => new Set(readiness.pendingToolSlugs), [readiness.pendingToolSlugs])
   const numerologyPreviewBypassEnabled = isNumerologyChartsV2Enabled()
+  const isToolPending = (toolSlug: string) =>
+    Boolean(userProfile?.mysticalProfileGenerated) && pendingToolsSet.has(toolSlug)
   const canOpenTool = (toolSlug: string, isComingSoon?: boolean) => {
     if (isComingSoon) return false
-    if (!toolsLockedForGeneration) return true
+    if (!isToolPending(toolSlug)) return true
     // Temporary rollout bypass: allow Numerology-only validation while readiness gate is active.
     if (numerologyPreviewBypassEnabled && toolSlug === 'numerology') return true
     return false
@@ -170,9 +173,9 @@ function ToolsPageContent() {
         </div>
 
         <div className="px-4 space-y-8 pb-6">
-          {toolsLockedForGeneration ? (
+          {generationHasPendingTools ? (
             <div className="mb-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-center text-amber-200 text-sm">
-              Your reports are still generating. Tools unlock automatically when all reports are ready ({readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length}).
+              Reports are still processing. Ready tools are unlocked now ({readiness.readyToolsCount}/{ALL_TOOL_SLUGS.length} ready).
             </div>
           ) : null}
           {toolsByCategoryOrdered ? (
@@ -189,7 +192,14 @@ function ToolsPageContent() {
                     >
                       <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                       <div className="flex-1 min-w-0 pr-6">
-                        <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
+                          {isToolPending(tool.slug) ? (
+                            <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
+                              Processing
+                            </span>
+                          ) : null}
+                        </div>
                         <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
                       </div>
                       <ChevronRight className="absolute right-4 w-6 h-6 text-amber-400 opacity-30" />
@@ -208,7 +218,14 @@ function ToolsPageContent() {
                 >
                   <div className="shrink-0 w-16 h-16 rounded-lg bg-surface-container-lowest flex items-center justify-center text-3xl shadow-inner">{tool.icon}</div>
                   <div className="flex-1 min-w-0 pr-6">
-                    <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-white leading-tight truncate">{tool.name}</h3>
+                      {isToolPending(tool.slug) ? (
+                        <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
+                          Processing
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
                   </div>
                   <ChevronRight className="absolute right-4 w-6 h-6 text-amber-400 opacity-30" />
@@ -270,6 +287,11 @@ function ToolsPageContent() {
                       <div className="relative z-10 h-full flex flex-col items-center text-center">
                         <div className="text-6xl mb-6 transition-transform">{tool.icon}</div>
                         <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
+                        {isToolPending(tool.slug) ? (
+                          <span className="mb-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
+                            Processing
+                          </span>
+                        ) : null}
                         <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                         <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
                           Explore <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -293,6 +315,11 @@ function ToolsPageContent() {
               <div className="relative z-10 h-full flex flex-col items-center text-center">
                 <div className="text-6xl mb-6 transition-transform">{tool.icon}</div>
                 <h3 className="text-2xl font-bold text-amber-400 mb-3">{tool.name}</h3>
+                {isToolPending(tool.slug) ? (
+                  <span className="mb-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
+                    Processing
+                  </span>
+                ) : null}
                 <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                 <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
                   Explore <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

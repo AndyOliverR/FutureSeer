@@ -388,12 +388,28 @@ export default function ProfilePage() {
     } as const
   }, [userProfile])
   const stepLabels: Record<RequiredStepId, string> = {
-    identity: "Step 1: Identity",
-    birth: "Step 2: Birth Foundation",
-    residence: "Step 3: Current Residence",
-    media: "Step 4: Media Uploads",
+    identity: "Identity",
+    birth: "Birth",
+    residence: "Residence",
+    media: "Media",
   }
   const missingLabels = missingGenerationFieldKeys.map((field) => FULL_FIELD_LABELS[field] ?? field)
+  const missingFieldSet = useMemo(() => new Set(missingGenerationFieldKeys), [missingGenerationFieldKeys])
+  const isFieldMissing = useCallback((fieldKey: string) => missingFieldSet.has(fieldKey), [missingFieldSet])
+  const getRequiredFieldClasses = useCallback(
+    (fieldKey: string, platform: "mobile" | "web") => {
+      const missing = isFieldMissing(fieldKey)
+      if (platform === "mobile") {
+        return missing
+          ? "border-rose-400/70 focus-visible:border-rose-300"
+          : "border-outline-variant"
+      }
+      return missing
+        ? "border-rose-400/70 focus-visible:border-rose-300"
+        : "border-white/10 focus:border-amber-500"
+    },
+    [isFieldMissing],
+  )
 
   // Fetch edit quota on load so Generate button state is correct
   useEffect(() => {
@@ -1120,13 +1136,6 @@ export default function ProfilePage() {
         <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
           <AlertDescription className="text-amber-100 text-sm space-y-2">
             <p className="font-semibold text-amber-200">Free trial: 1 month</p>
-            <p>No payment setup required now. You can update plan and payment later from Settings.</p>
-            {retentionSnapshot.nudgeStage === "at_risk" ? (
-              <p className="text-amber-200/90">You are close to keeping momentum. Finish one pending step today.</p>
-            ) : null}
-            {retentionSnapshot.nudgeStage === "reactivation" ? (
-              <p className="text-amber-200/90">Welcome back. Complete one step now and your setup progress continues.</p>
-            ) : null}
             {retentionSnapshot.nudgeStage === "trial_ending" && retentionSnapshot.trialDaysLeft !== null ? (
               <p className="text-amber-200/90">Trial ends in about {retentionSnapshot.trialDaysLeft} day(s). Finish setup to get full value.</p>
             ) : null}
@@ -1222,12 +1231,15 @@ export default function ProfilePage() {
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Display Name</Label>
-              {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
+              <div className="ml-1 flex items-center justify-between gap-2">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Display Name</Label>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("displayName") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("displayName") ? "Missing" : "Done"}</span>
+              </div>
+              {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className={`h-14 bg-surface-container-low rounded-2xl ${getRequiredFieldClasses("displayName", "mobile")}`} /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
             </div>
 
             <div className="rounded-2xl border border-outline-variant/40 bg-surface-container-low p-4 space-y-3">
-              <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Required Steps Before Generate</p>
+              <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Setup status</p>
               <div className="grid gap-2">
                 {(Object.keys(stepLabels) as RequiredStepId[]).map((stepId) => {
                   const stepMissing = REQUIRED_STEP_FIELDS[stepId].filter((field) => missingGenerationFieldKeys.includes(field))
@@ -1241,7 +1253,7 @@ export default function ProfilePage() {
                       className={`w-full rounded-xl border px-3 py-2 text-left text-xs ${done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200" : isActive ? "border-amber-400/60 bg-amber-500/10 text-amber-100" : "border-outline-variant/40 bg-surface text-white/80"}`}
                     >
                       <span className="font-semibold">{stepLabels[stepId]}</span>
-                      {!done ? <span className="block mt-1 text-[11px]">Still needed: {stepMissing.map((f) => FULL_FIELD_LABELS[f] ?? f).join(", ")}</span> : <span className="block mt-1 text-[11px]">Completed</span>}
+                      <span className="block mt-1 text-[11px]">{done ? "Done" : `${stepMissing.length} missing`}</span>
                     </button>
                   )
                 })}
@@ -1249,14 +1261,20 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Full Name</Label>
-              {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (required for numerology and report generation)" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
+              <div className="ml-1 flex items-center justify-between gap-2">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("fullName") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("fullName") ? "Missing" : "Done"}</span>
+              </div>
+              {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name" className={`h-14 bg-surface-container-low rounded-2xl ${getRequiredFieldClasses("fullName", "mobile")}`} /> : <p className="text-lg font-bold text-white ml-1">{formData.fullName || "Not set"}</p>}
             </div>
 
             <div className="space-y-2 relative z-20 overflow-visible">
-              <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Gender</Label>
+              <div className="ml-1 flex items-center justify-between gap-2">
+                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("gender") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("gender") ? "Missing" : "Done"}</span>
+              </div>
               {isEditing ? (
-                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-14 w-full bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [color-scheme:dark]">
+                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-14 w-full bg-surface-container-low border rounded-2xl px-4 text-white [color-scheme:dark] ${getRequiredFieldClasses("gender", "mobile")}`}>
                   <option value="">Not set</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -1269,22 +1287,31 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Date</Label>
-                {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-bold text-white ml-1">{normalizeBirthDateForUi(formData.birthDate) || "Not set"}</p>}
+                <div className="ml-1 flex items-center justify-between gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Date</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("birthDate") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("birthDate") ? "Missing" : "Done"}</span>
+                </div>
+                {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className={`h-14 bg-surface-container-low rounded-2xl [color-scheme:dark] ${getRequiredFieldClasses("birthDate", "mobile")}`} /> : <p className="text-lg font-bold text-white ml-1">{normalizeBirthDateForUi(formData.birthDate) || "Not set"}</p>}
               </div>
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Birth Place</Label>
-                {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.birthPlace || "Not set"}</p>}
+                <div className="ml-1 flex items-center justify-between gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Place</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("birthPlace") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("birthPlace") ? "Missing" : "Done"}</span>
+                </div>
+                {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className={`h-14 bg-surface-container-low rounded-2xl ${getRequiredFieldClasses("birthPlace", "mobile")}`} /> : <p className="text-lg font-bold text-white ml-1">{formData.birthPlace || "Not set"}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Time of Birth</Label>
+                <div className="ml-1 flex items-center justify-between gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Time of Birth</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("birthTime") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("birthTime") ? "Missing" : "Done"}</span>
+                </div>
                 {isEditing ? (
                   <div className="space-y-2">
                     <div className="flex gap-2 items-center">
-                      <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-14 bg-surface-container-low border-outline-variant rounded-2xl [color-scheme:dark] flex-1" />
+                      <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className={`h-14 bg-surface-container-low rounded-2xl [color-scheme:dark] flex-1 ${getRequiredFieldClasses("birthTime", "mobile")}`} />
                       <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white min-w-[72px]">
                         <option value="AM">AM</option>
                         <option value="PM">PM</option>
@@ -1308,8 +1335,11 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest ml-1">Current residence</Label>
-                {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-14 bg-surface-container-low border-outline-variant rounded-2xl" /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
+                <div className="ml-1 flex items-center justify-between gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Current residence</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("currentLocation") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("currentLocation") ? "Missing" : "Done"}</span>
+                </div>
+                {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className={`h-14 bg-surface-container-low rounded-2xl ${getRequiredFieldClasses("currentLocation", "mobile")}`} /> : <p className="text-lg font-bold text-white ml-1">{formData.currentLocation || "Not set"}</p>}
               </div>
             </div>
 
@@ -1325,8 +1355,11 @@ export default function ProfilePage() {
             <>
             <div className={`grid grid-cols-2 gap-4 ${isEditing ? "pb-20" : ""}`}>
               <div className="space-y-2 text-center">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
-                <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
+                <div className="flex items-center justify-center gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("facePhotoUrl") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("facePhotoUrl") ? "Missing" : "Done"}</span>
+                </div>
+                <div className={`aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed flex items-center justify-center overflow-hidden relative ${isFieldMissing("facePhotoUrl") ? "border-rose-400/70" : "border-outline-variant"}`}>
                   {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
                   {uploadingFace && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
                 </div>
@@ -1348,9 +1381,11 @@ export default function ProfilePage() {
                 )}
               </div>
               <div className="space-y-2 text-center">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
-                <p className="text-sm text-white/70">Upload left palm (female) or right palm (male).</p>
-                <div className="aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden relative">
+                <div className="flex items-center justify-center gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("palmPhotoUrl") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("palmPhotoUrl") ? "Missing" : "Done"}</span>
+                </div>
+                <div className={`aspect-square bg-surface-container-low rounded-3xl border-2 border-dashed flex items-center justify-center overflow-hidden relative ${isFieldMissing("palmPhotoUrl") ? "border-rose-400/70" : "border-outline-variant"}`}>
                   {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 opacity-20" />}
                   {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
                 </div>
@@ -1375,10 +1410,7 @@ export default function ProfilePage() {
 
             <div id="profile-generate-mystical" className="pt-6 border-t border-outline-variant/30 scroll-mt-24">
               <div className="mb-3 rounded-xl border border-outline-variant/40 bg-surface-container-low p-4 text-sm text-white/85">
-                <p>
-                    Required before generate: display name, full name, gender, birth date, birth time (or unknown), birth place, current residence, face photo, and palm photo.
-                </p>
-                {missingLabels.length > 0 ? <p className="mt-1">Still needed: {missingLabels.join(", ")}.</p> : <p className="mt-1 text-emerald-300">All required fields complete. You can generate now.</p>}
+                {missingLabels.length > 0 ? <p>Still needed: {missingLabels.join(", ")}.</p> : <p className="text-emerald-300">All required fields complete.</p>}
               </div>
                 <Button
                   onClick={() => void handleGenerateMysticalProfile("profile_primary", "full")}
@@ -1387,9 +1419,6 @@ export default function ProfilePage() {
                 >
                   {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
                 </Button>
-                <p className="text-center text-amber-300/70 text-xs mt-2">
-                  Your first full generation runs now. Use this same button anytime you update profile details and want to regenerate.
-                </p>
                 {trialIsActive ? (
                   <p className="text-center text-amber-300/70 text-xs mt-2">
                     Full Report unlocks when your complete profile and payment details are ready.
@@ -1400,9 +1429,6 @@ export default function ProfilePage() {
                     Missing for Full Report: {fullProfileChecklist.join(", ")}
                   </p>
                 ) : null}
-                <p className="text-center text-amber-300/70 text-xs mt-2">
-                  Complete all required fields once, then generate your full multi-tool mystical profile.
-                </p>
                 {isGeneratingProfile && generationStatus && (
                   <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                 )}
@@ -1412,13 +1438,7 @@ export default function ProfilePage() {
                 {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                 )}
-                {canGenerateFromOnboarding && !isGeneratingProfile && (
-                  <p className="text-center text-amber-400/50 text-xs mt-2">
-                    {isConsultantWorkspace
-                      ? "The client’s birth details above will be used for generation."
-                      : "Your current birth details above will be used for generation."}
-                  </p>
-                )}
+                {canGenerateFromOnboarding && !isGeneratingProfile && <p className="text-center text-emerald-300/70 text-xs mt-2">Ready to generate.</p>}
             </div>
             </>
             )}
@@ -1516,13 +1536,6 @@ export default function ProfilePage() {
           <Alert className="border-amber-500/40 bg-amber-500/10 rounded-2xl">
             <AlertDescription className="text-amber-100 space-y-2">
               <p className="font-semibold text-amber-200">Free trial: 1 month</p>
-              <p>No payment setup required now. You can update plan and payment later from Settings.</p>
-              {retentionSnapshot.nudgeStage === "at_risk" ? (
-                <p className="text-amber-200/90">You are close to keeping momentum. Finish one pending step today.</p>
-              ) : null}
-              {retentionSnapshot.nudgeStage === "reactivation" ? (
-                <p className="text-amber-200/90">Welcome back. Complete one step now and your setup progress continues.</p>
-              ) : null}
               {retentionSnapshot.nudgeStage === "trial_ending" && retentionSnapshot.trialDaysLeft !== null ? (
                 <p className="text-amber-200/90">Trial ends in about {retentionSnapshot.trialDaysLeft} day(s). Finish setup to get full value.</p>
               ) : null}
@@ -1626,12 +1639,15 @@ export default function ProfilePage() {
 
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Display Name</Label>
-                {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.displayName || "Not set"}</p>}
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Display Name</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("displayName") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("displayName") ? "Missing" : "Done"}</span>
+                </div>
+                {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className={`h-12 bg-white/5 rounded-2xl ${getRequiredFieldClasses("displayName", "web")}`} /> : <p className="text-lg font-medium text-white">{formData.displayName || "Not set"}</p>}
               </div>
 
               <div className="rounded-2xl border border-amber-400/30 bg-white/5 p-4 space-y-3">
-                <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Required Steps Before Generate</p>
+                <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Setup status</p>
                 <div className="grid gap-2">
                   {(Object.keys(stepLabels) as RequiredStepId[]).map((stepId) => {
                     const stepMissing = REQUIRED_STEP_FIELDS[stepId].filter((field) => missingGenerationFieldKeys.includes(field))
@@ -1645,7 +1661,7 @@ export default function ProfilePage() {
                         className={`w-full rounded-xl border px-3 py-2 text-left text-xs ${done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200" : isActive ? "border-amber-400/60 bg-amber-500/10 text-amber-100" : "border-white/20 bg-white/5 text-white/80"}`}
                       >
                         <span className="font-semibold">{stepLabels[stepId]}</span>
-                        {!done ? <span className="block mt-1 text-[11px]">Still needed: {stepMissing.map((f) => FULL_FIELD_LABELS[f] ?? f).join(", ")}</span> : <span className="block mt-1 text-[11px]">Completed</span>}
+                        <span className="block mt-1 text-[11px]">{done ? "Done" : `${stepMissing.length} missing`}</span>
                       </button>
                     )
                   })}
@@ -1653,14 +1669,20 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
-                {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name (required for numerology and report generation)" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Full Name</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("fullName") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("fullName") ? "Missing" : "Done"}</span>
+                </div>
+                {isEditing ? <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="Full name" className={`h-12 bg-white/5 rounded-2xl ${getRequiredFieldClasses("fullName", "web")}`} /> : <p className="text-lg font-medium text-white">{formData.fullName || "Not set"}</p>}
               </div>
 
               <div className="space-y-2 relative z-20 overflow-visible">
-                <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Gender</Label>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("gender") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("gender") ? "Missing" : "Done"}</span>
+                </div>
                 {isEditing ? (
-                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className="h-12 w-full bg-white/5 border border-white/10 rounded-2xl px-4 text-white focus:border-amber-500 [color-scheme:dark]">
+                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-12 w-full bg-white/5 border rounded-2xl px-4 text-white [color-scheme:dark] ${getRequiredFieldClasses("gender", "web")}`}>
                     <option value="">Not set</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -1673,22 +1695,31 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Date</Label>
-                  {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark]" /> : <p className="text-lg font-medium text-white">{normalizeBirthDateForUi(formData.birthDate) || "Not set"}</p>}
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Date</Label>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("birthDate") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("birthDate") ? "Missing" : "Done"}</span>
+                  </div>
+                  {isEditing ? <Input type="date" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} className={`h-12 bg-white/5 rounded-2xl [color-scheme:dark] ${getRequiredFieldClasses("birthDate", "web")}`} /> : <p className="text-lg font-medium text-white">{normalizeBirthDateForUi(formData.birthDate) || "Not set"}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Place</Label>
-                  {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.birthPlace || "Not set"}</p>}
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Birth Place</Label>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("birthPlace") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("birthPlace") ? "Missing" : "Done"}</span>
+                  </div>
+                  {isEditing ? <Input value={formData.birthPlace} onChange={e => setFormData({...formData, birthPlace: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className={`h-12 bg-white/5 rounded-2xl ${getRequiredFieldClasses("birthPlace", "web")}`} /> : <p className="text-lg font-medium text-white">{formData.birthPlace || "Not set"}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Time of Birth</Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Time of Birth</Label>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("birthTime") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("birthTime") ? "Missing" : "Done"}</span>
+                  </div>
                   {isEditing ? (
                     <div className="space-y-2">
                       <div className="flex gap-2 items-center">
-                        <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className="h-12 bg-white/5 border-white/10 rounded-2xl [color-scheme:dark] flex-1" />
+                        <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className={`h-12 bg-white/5 rounded-2xl [color-scheme:dark] flex-1 ${getRequiredFieldClasses("birthTime", "web")}`} />
                         <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-12 bg-white/5 border border-amber-400/30 rounded-2xl px-3 text-white min-w-[72px]">
                           <option value="AM">AM</option>
                           <option value="PM">PM</option>
@@ -1712,8 +1743,11 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Current residence</Label>
-                  {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className="h-12 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500" /> : <p className="text-lg font-medium text-white">{formData.currentLocation || "Not set"}</p>}
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Current residence</Label>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("currentLocation") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("currentLocation") ? "Missing" : "Done"}</span>
+                  </div>
+                  {isEditing ? <Input value={formData.currentLocation} onChange={e => setFormData({...formData, currentLocation: e.target.value})} placeholder="Place/Town/Village, City, State, Country" className={`h-12 bg-white/5 rounded-2xl ${getRequiredFieldClasses("currentLocation", "web")}`} /> : <p className="text-lg font-medium text-white">{formData.currentLocation || "Not set"}</p>}
                 </div>
               </div>
               {formData.birthTimeKnown === false && formData.birthDate && (
@@ -1728,8 +1762,11 @@ export default function ProfilePage() {
               <>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 text-center">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
-                  <div className="aspect-square bg-white/5 rounded-2xl border-2 border-dashed border-amber-400/20 flex items-center justify-center overflow-hidden relative">
+                  <div className="flex items-center justify-center gap-2">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Face Scan</Label>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("facePhotoUrl") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("facePhotoUrl") ? "Missing" : "Done"}</span>
+                  </div>
+                  <div className={`aspect-square bg-white/5 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden relative ${isFieldMissing("facePhotoUrl") ? "border-rose-400/70" : "border-amber-400/20"}`}>
                     {formData.facePhotoUrl ? <img src={formData.facePhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 text-amber-400/40" />}
                     {uploadingFace && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
                   </div>
@@ -1742,9 +1779,11 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <div className="space-y-2 text-center">
-                  <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
-                  <p className="text-xs text-amber-400/70">Upload left palm (female) or right palm (male).</p>
-                  <div className="aspect-square bg-white/5 rounded-2xl border-2 border-dashed border-amber-400/20 flex items-center justify-center overflow-hidden relative">
+                  <div className="flex items-center justify-center gap-2">
+                    <Label className="text-xs uppercase font-bold text-amber-400 tracking-widest">Palm Scan</Label>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("palmPhotoUrl") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("palmPhotoUrl") ? "Missing" : "Done"}</span>
+                  </div>
+                  <div className={`aspect-square bg-white/5 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden relative ${isFieldMissing("palmPhotoUrl") ? "border-rose-400/70" : "border-amber-400/20"}`}>
                     {formData.palmPhotoUrl ? <img src={formData.palmPhotoUrl} className="w-full h-full object-cover" alt="" /> : <Camera className="w-8 h-8 text-amber-400/40" />}
                     {uploadingPalm && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-amber-400" /></div>}
                   </div>
@@ -1796,10 +1835,7 @@ export default function ProfilePage() {
 
               <div id="profile-generate-mystical" className="pt-6 border-t border-amber-400/20 scroll-mt-24">
                 <div className="mb-3 rounded-xl border border-amber-400/20 bg-slate-900/30 p-4 text-sm text-amber-100/90">
-                  <p>
-                  Required before generate: display name, full name, gender, birth date, birth time (or unknown), birth place, current residence, face photo, and palm photo.
-                  </p>
-                  {missingLabels.length > 0 ? <p className="mt-1">Still needed: {missingLabels.join(", ")}.</p> : <p className="mt-1 text-emerald-300">All required fields complete. You can generate now.</p>}
+                  {missingLabels.length > 0 ? <p>Still needed: {missingLabels.join(", ")}.</p> : <p className="text-emerald-300">All required fields complete.</p>}
                 </div>
                   <Button
                     onClick={() => void handleGenerateMysticalProfile("profile_secondary", "full")}
@@ -1808,9 +1844,6 @@ export default function ProfilePage() {
                   >
                     {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
                   </Button>
-                  <p className="text-center text-amber-200/70 text-xs mt-2">
-                    Your first full generation runs now. Use this same button anytime you update profile details and want to regenerate.
-                  </p>
                   {trialIsActive ? (
                     <p className="text-center text-amber-200/70 text-xs mt-2">
                       Full Report unlocks when your complete profile and payment details are ready.
@@ -1821,9 +1854,6 @@ export default function ProfilePage() {
                       Missing for Full Report: {fullProfileChecklist.join(", ")}
                     </p>
                   ) : null}
-                  <p className="text-center text-amber-200/70 text-xs mt-2">
-                    Complete all required fields once, then generate your full multi-tool mystical profile.
-                  </p>
                   {isGeneratingProfile && generationStatus && (
                     <p className="text-center text-amber-400/80 text-sm mt-3 animate-pulse">{generationStatus}</p>
                   )}
@@ -1833,13 +1863,7 @@ export default function ProfilePage() {
                   {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
                   )}
-                  {canGenerateFromOnboarding && !isGeneratingProfile && (
-                    <p className="text-center text-amber-200/60 text-xs mt-2">
-                      {isConsultantWorkspace
-                        ? "The client’s birth details above will be used for generation."
-                        : "Your current birth details above will be used for generation."}
-                    </p>
-                  )}
+                  {canGenerateFromOnboarding && !isGeneratingProfile && <p className="text-center text-emerald-300/70 text-xs mt-2">Ready to generate.</p>}
               </div>
               </>
               )}

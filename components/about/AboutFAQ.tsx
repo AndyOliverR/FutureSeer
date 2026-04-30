@@ -8,23 +8,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 const faqs = [
   {
     question: "What makes FutureSeer different?",
-    answer: "FutureSeer combines traditional astrological wisdom with advanced AI algorithms. We use proprietary astronomical calculations (Swiss Ephemeris NASA JPL DE431) alongside machine learning to provide accurate insights across multiple systems."
+    answer: "FutureSeer brings multiple traditional systems into one platform, with AI-assisted synthesis to keep insights coherent and practical."
   },
   {
     question: "Do I need to know my exact birth time?",
-    answer: "For Vedic astrology, birth time improves accuracy significantly. However, many tools (like Tarot or Numerology) don't require it. If you don't know your time, we can still provide valuable guidance."
+    answer: "Birth time improves chart precision, but you can still use tools like Tarot and Numerology without exact time."
   },
   {
     question: "Is my personal information secure?",
-    answer: "Absolutely. Your privacy is sacred. We employ bank-level encryption. Your information is yours alone—we never sell or monetize your personal data."
+    answer: "Yes. We treat profile data as private and use secure handling practices for account and billing flows."
   },
   {
     question: "Can I try FutureSeer for free?",
-    answer: "Yes! Everyone gets the first month completely free with all features included. Explore 60+ tools and the Seer AI with no credit card required upfront."
+    answer: "Yes. New users start with a free trial before choosing a membership tier."
   },
   {
     question: "How accurate are the predictions?",
-    answer: "We use precise NASA-validated astronomical data. However, divination tools are for guidance and self-reflection, not deterministic prediction. Our AI helps you interpret possibilities to make informed decisions."
+    answer: "We aim for methodological consistency and quality. Outputs are for guidance and reflection, not deterministic guarantees."
   }
 ];
 
@@ -34,7 +34,7 @@ export function AboutFAQ() {
   return (
     <AboutSection 
       title="FAQ"
-      subtitle="Everything you need to know"
+      subtitle="Quick answers"
     >
       <div className="max-w-3xl mx-auto space-y-4">
         {faqs.map((faq, index) => (

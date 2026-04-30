@@ -30,7 +30,7 @@ import {
 import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
-import { acquireMysticalGenerationLock } from '@/lib/generationLock';
+import { acquireMysticalGenerationLock, getMysticalLockRuntimeStatus } from '@/lib/generationLock';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
@@ -557,10 +557,12 @@ export async function GET(request: NextRequest) {
     const lock = (lockDoc as Record<string, unknown> | null) ?? {};
     const profile = (profileDoc as Record<string, unknown> | null) ?? {};
     const lockStatus = lock?.status;
-    const inProgress = lockStatus === 'running' || lockStatus === 'started';
-    const generated = Boolean(user?.mysticalProfileGenerated);
+    const lockRuntime = getMysticalLockRuntimeStatus(lock, mysticalLockStaleMs());
+    const generated = Boolean(user?.mysticalProfileGenerated) || Boolean(profileDoc);
     const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
-    const allReportsReady = Boolean(user?.allReportsReady ?? readiness.allReportsReady);
+    const allReportsReady = readiness.allReportsReady;
+    const pendingToolSlugs = readiness.pendingToolSlugs;
+    const inProgress = lockRuntime.isRunning && !lockRuntime.isStale;
     const partialReady = readiness.readyToolsCount > 0 && !allReportsReady;
     const completed = generated && allReportsReady;
     const generationState = inProgress
@@ -572,6 +574,38 @@ export async function GET(request: NextRequest) {
           : generated
             ? 'generated_pending_reports'
             : 'not_started';
+
+    const userAllReportsReady = Boolean(user?.allReportsReady);
+    const userPending = Array.isArray(user?.pendingToolSlugs) ? (user.pendingToolSlugs as unknown[]) : [];
+    const userPendingNormalized = userPending.filter((s): s is string => typeof s === 'string').sort();
+    const pendingNormalized = [...pendingToolSlugs].sort();
+    const pendingMismatch =
+      userPendingNormalized.length !== pendingNormalized.length ||
+      userPendingNormalized.some((slug, idx) => slug !== pendingNormalized[idx]);
+    if (generated && (userAllReportsReady !== allReportsReady || pendingMismatch)) {
+      await setDocument('users', uid, {
+        allReportsReady,
+        pendingToolSlugs,
+        profileStatus: allReportsReady ? 'completed' : inProgress ? 'stageA_complete_stageB_running' : 'partial_ready',
+        updatedAt: Date.now(),
+      });
+    }
+
+    if (lockRuntime.isRunning && lockRuntime.isStale) {
+      await setDocument('generationLocks', uid, {
+        status: allReportsReady ? 'completed' : 'failed',
+        phase: allReportsReady ? 'completed' : 'stale_timeout',
+        staleRecovered: true,
+        staleRecoveredAt: Date.now(),
+        completedTools: readiness.readyToolsCount,
+        totalTools: ALL_TOOL_SLUGS.length,
+        readyToolsCount: readiness.readyToolsCount,
+        pendingToolSlugs,
+        allReportsReady,
+        updatedAt: Date.now(),
+      });
+    }
+
     return NextResponse.json({
       success: true,
       inProgress,
@@ -582,7 +616,9 @@ export async function GET(request: NextRequest) {
       generationState,
       allReportsReady,
       readyToolsCount: readiness.readyToolsCount,
-      pendingToolSlugs: readiness.pendingToolSlugs,
+      pendingToolSlugs,
+      lockStaleRecovered: lockRuntime.isStale,
+      lockAgeMs: lockRuntime.lockAgeMs,
       lockStatus: lockStatus ?? null,
       phase: (lock?.phase as string | undefined) ?? null,
       completedTools: (lock?.completedTools as number | undefined) ?? null,
