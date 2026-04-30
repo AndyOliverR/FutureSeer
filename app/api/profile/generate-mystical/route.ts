@@ -613,6 +613,12 @@ export async function GET(request: NextRequest) {
       void tryResumeMysticalStageB(uid);
     }
 
+    const generationJobCompletedToolsRaw = generationJob?.completedTools;
+    const generationJobTotalToolsRaw = generationJob?.totalTools;
+    const generationJobCompletedTools =
+      typeof generationJobCompletedToolsRaw === 'number' ? generationJobCompletedToolsRaw : null;
+    const generationJobTotalTools =
+      typeof generationJobTotalToolsRaw === 'number' ? generationJobTotalToolsRaw : null;
     return NextResponse.json({
       success: true,
       inProgress,
@@ -637,6 +643,17 @@ export async function GET(request: NextRequest) {
       phase: (lock?.phase as string | undefined) ?? null,
       completedTools: (lock?.completedTools as number | undefined) ?? null,
       totalTools: (lock?.totalTools as number | undefined) ?? null,
+      currentToolSlug:
+        (generationJob?.currentToolSlug as string | undefined) ??
+        (lock?.currentToolSlug as string | undefined) ??
+        null,
+      queuePosition:
+        generationJobCompletedTools !== null && generationJobTotalTools !== null
+          ? {
+              completed: generationJobCompletedTools,
+              total: generationJobTotalTools,
+            }
+          : null,
       stageBCompletedTools: (lock?.stageBCompletedTools as number | undefined) ?? null,
       stageBTotalTools: (lock?.stageBTotalTools as number | undefined) ?? null,
       updatedAt: (lock?.updatedAt as number | undefined) ?? null,

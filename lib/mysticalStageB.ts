@@ -122,6 +122,50 @@ export async function runMysticalStageBJob(params: {
   });
 
   const result = await generateAllReports(uid, profileWithUid, {
+    onToolRun: async ({ toolSlug, entry }) => {
+      const updatedAt = Date.now();
+      const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) || {}) as Record<string, unknown>;
+      const nextProfile: Record<string, unknown> = { ...existingProfile };
+      if (entry.status === 'success' && entry.data && typeof entry.data === 'object') {
+        nextProfile[toolSlug] = entry.data;
+      }
+      const existingToolStatus = (nextProfile.toolStatus as PersistedToolStatusMap | undefined) ?? {};
+      const nextState = entry.status === 'failed' ? 'failed' : classifyToolReportState(entry.data);
+      const nextToolStatus: PersistedToolStatusMap = {
+        ...existingToolStatus,
+        [toolSlug]: {
+          ...(existingToolStatus[toolSlug] ?? {}),
+          state: nextState,
+          startedAt: existingToolStatus[toolSlug]?.startedAt ?? updatedAt,
+          updatedAt,
+          generatedAt: nextState === 'ready' ? updatedAt : existingToolStatus[toolSlug]?.generatedAt,
+          attempts: attempt,
+          error: entry.status === 'failed' ? entry.error ?? 'Generation failed' : null,
+          unchanged: false,
+        },
+      };
+      nextProfile.toolStatus = nextToolStatus;
+      nextProfile.lastProgressAt = updatedAt;
+      const profilePatch: Record<string, unknown> = {
+        toolStatus: nextToolStatus,
+        lastProgressAt: updatedAt,
+      };
+      if (entry.status === 'success' && nextProfile[toolSlug] !== undefined) {
+        profilePatch[toolSlug] = nextProfile[toolSlug];
+      }
+      await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
+      const readiness = summarizeToolReadiness(nextProfile, ALL_TOOL_SLUGS);
+      await setDocument('users', uid, {
+        toolStatus: nextToolStatus,
+        allReportsReady: readiness.allReportsReady,
+        pendingToolSlugs: readiness.pendingToolSlugs,
+        corePhaseCompleted: true,
+        coreReadyCount: getCoreStageToolCount(),
+        longTailReadyCount: Math.max(0, readiness.readyToolsCount - getCoreStageToolCount()),
+        lastProgressAt: updatedAt,
+        updatedAt,
+      });
+    },
     onProgress: async ({ completedTools, toolSlug }) => {
       const stageBCompleted = Math.max(0, completedTools - coreCount);
       const stageBTotal = Math.max(0, totalTools - coreCount);
@@ -147,6 +191,7 @@ export async function runMysticalStageBJob(params: {
         totalTools,
         stageBCompletedTools: stageBCompleted,
         stageBTotalTools: stageBTotal,
+        currentToolSlug: toolSlug,
         updatedAt,
       });
       await setDocument('generationJobs', uid, {
@@ -154,6 +199,7 @@ export async function runMysticalStageBJob(params: {
         phase: 'stageB',
         completedTools: overallCompleted,
         totalTools,
+        currentToolSlug: toolSlug,
         toolStatus: nextToolStatus,
         lastProgressAt: updatedAt,
         updatedAt,

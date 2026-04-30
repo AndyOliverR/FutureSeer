@@ -88,6 +88,7 @@ export default function MysticalProfilePage() {
   const [completedTools, setCompletedTools] = useState<number | null>(null)
   const [totalTools, setTotalTools] = useState<number | null>(null)
   const [readyToolsCount, setReadyToolsCount] = useState<number | null>(null)
+  const [currentToolSlug, setCurrentToolSlug] = useState<string | null>(null)
   const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
   const [generationWarning, setGenerationWarning] = useState<string | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
@@ -166,12 +167,14 @@ export default function MysticalProfilePage() {
             completedTools?: number | null
             totalTools?: number | null
             readyToolsCount?: number | null
+            currentToolSlug?: string | null
             updatedAt?: number | null
           }
           setGenerationPhase(data.phase ?? null)
           setCompletedTools(typeof data.completedTools === "number" ? data.completedTools : null)
           setTotalTools(typeof data.totalTools === "number" ? data.totalTools : null)
           setReadyToolsCount(typeof data.readyToolsCount === "number" ? data.readyToolsCount : null)
+          setCurrentToolSlug(typeof data.currentToolSlug === "string" ? data.currentToolSlug : null)
           setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : null)
           if (data.inProgress) {
             setGenerationWarning(null)
@@ -185,11 +188,16 @@ export default function MysticalProfilePage() {
             return
           }
           if (!data.inProgress && (data.partialReady || data.generated || data.hasProfile)) {
-            sessionStorage.setItem("futureSeer:generationStatus", "partial_ready")
+            if (data.allReportsReady) {
+              sessionStorage.setItem("futureSeer:generationStatus", "completed")
+              setGenerationPending(false)
+            } else {
+              sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
+              setGenerationPending(true)
+            }
             sessionStorage.removeItem("futureSeer:generationError")
-            setGenerationPending(false)
             setGenerationError(null)
-            setGenerationWarning("Some reports are still finalizing. Ready tools are unlocked now while the rest keep processing.")
+            setGenerationWarning("Some reports are ready. Remaining tools are still processing in order.")
             return
           }
           if (!data.inProgress && !data.generated && !data.partialReady) {
@@ -272,8 +280,10 @@ export default function MysticalProfilePage() {
           generated?: boolean
           hasProfile?: boolean
           allReportsReady?: boolean
+          currentToolSlug?: string | null
           updatedAt?: number | null
         }
+        setCurrentToolSlug(typeof data.currentToolSlug === "string" ? data.currentToolSlug : null)
         setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : Date.now())
         if (data.completed || data.allReportsReady) {
           sessionStorage.setItem("futureSeer:generationStatus", "completed")
@@ -284,11 +294,16 @@ export default function MysticalProfilePage() {
           return
         }
         if (!data.inProgress && (data.partialReady || data.generated || data.hasProfile)) {
-          sessionStorage.setItem("futureSeer:generationStatus", "partial_ready")
+          if (data.allReportsReady) {
+            sessionStorage.setItem("futureSeer:generationStatus", "completed")
+            setGenerationPending(false)
+          } else {
+            sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
+            setGenerationPending(true)
+          }
           sessionStorage.removeItem("futureSeer:generationError")
-          setGenerationPending(false)
           setGenerationError(null)
-          setGenerationWarning("More reports are still processing. Ready tools are unlocked now while the rest finish.")
+          setGenerationWarning("More reports are still processing. We'll keep checking automatically.")
         }
       })
       .catch(() => {
@@ -554,6 +569,9 @@ export default function MysticalProfilePage() {
       {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
         <p className="mt-1 text-xs text-surface-on-variant">Ready reports: {readyToolsCount}/{totalTools}</p>
       ) : null}
+      {currentToolSlug ? (
+        <p className="mt-1 text-xs text-surface-on-variant">Current tool: {humanizePipelineSlug(currentToolSlug)}</p>
+      ) : null}
       {lastUpdatedLabel ? (
         <p className="mt-1 text-[11px] text-surface-on-variant/80">{lastUpdatedLabel}</p>
       ) : null}
@@ -660,6 +678,9 @@ export default function MysticalProfilePage() {
       ) : null}
       {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
         <p className="mt-1 text-xs text-slate-400">Ready reports: {readyToolsCount}/{totalTools}</p>
+      ) : null}
+      {currentToolSlug ? (
+        <p className="mt-1 text-xs text-slate-400">Current tool: {humanizePipelineSlug(currentToolSlug)}</p>
       ) : null}
       {lastUpdatedLabel ? (
         <p className="mt-1 text-[11px] text-slate-400/80">{lastUpdatedLabel}</p>
