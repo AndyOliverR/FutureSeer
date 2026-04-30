@@ -27,6 +27,7 @@ import { ElementalBalanceWheel } from '@/components/tarot/ElementalBalanceWheel'
 import { ArcanaDistributionChart } from '@/components/tarot/ArcanaDistributionChart'
 import { TarotNumerologyIntegration } from '@/components/tarot/TarotNumerologyIntegration'
 import { DashboardSection } from '@/components/western/DashboardSection'
+import { ToolReportStatusChips } from '@/components/tool-status/ToolReportStatusChips'
 import {
   Sparkles, 
   Calendar,
@@ -82,7 +83,25 @@ function TarotPage() {
   const [availableSpreads, setAvailableSpreads] = useState<SpreadType[]>([])
   const [allCards, setAllCards] = useState<TarotCard[]>([])
   
-  const { report: pipelineReport, loading: isLoadingCombinedSystem, error: profileError } = useToolReport('tarot')
+  const {
+    report: pipelineReport,
+    loading: isLoadingCombinedSystem,
+    error: profileError,
+    reportUpdatedAt,
+    reportGeneratedAt,
+    reportUnchanged,
+  } = useToolReport('tarot')
+  const freshnessLabel = useMemo(() => {
+    const ts = reportUpdatedAt ?? reportGeneratedAt
+    if (!ts) return null
+    const ms = typeof ts === "number" ? ts : Date.parse(ts)
+    if (!Number.isFinite(ms)) return null
+    const delta = Date.now() - ms
+    if (delta < 60_000) return "Updated just now"
+    if (delta < 3_600_000) return `Updated ${Math.floor(delta / 60_000)} min ago`
+    if (delta < 86_400_000) return `Updated ${Math.floor(delta / 3_600_000)}h ago`
+    return `Updated ${Math.floor(delta / 86_400_000)}d ago`
+  }, [reportGeneratedAt, reportUpdatedAt])
   const { report: westernReport } = useToolReport('western')
   const combinedSystemData = useMemo((): CombinedSystemData | null => {
     if (!pipelineReport || typeof pipelineReport !== 'object') return null
@@ -258,6 +277,11 @@ function TarotPage() {
             Ancient wisdom through the sacred art of Tarot card reading
           </p>
           <p className="text-slate-400 text-sm mt-3">Deck tip: use a trusted local or official deck source.</p>
+          <ToolReportStatusChips
+            freshnessLabel={freshnessLabel}
+            reportUnchanged={reportUnchanged}
+            className="mt-3"
+          />
         </div>
 
         {showTarotViral && !bypassViral && (

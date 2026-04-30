@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useEffect, Suspense, useRef } from "react"
+import { useMemo, useEffect, Suspense, useRef, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -41,6 +41,22 @@ function ToolsPageContent() {
   const generationHasPendingTools =
     Boolean(userProfile?.mysticalProfileGenerated) && !allReportsReady && readiness.pendingToolSlugs.length > 0
   const pendingToolsSet = useMemo(() => new Set(readiness.pendingToolSlugs), [readiness.pendingToolSlugs])
+  const [nowMs, setNowMs] = useState(() => Date.now())
+  const toolStatusMap = useMemo(
+    () =>
+      ((comprehensiveProfile as Record<string, unknown> | null)?.toolStatus as
+        | Record<string, { updatedAt?: number; generatedAt?: number; state?: string; unchanged?: boolean }>
+        | undefined) ?? {},
+    [comprehensiveProfile],
+  )
+  const formatAgo = (ts?: number) => {
+    if (!ts) return null
+    const sec = Math.max(0, Math.floor((nowMs - ts) / 1000))
+    if (sec < 5) return 'updated now'
+    if (sec < 60) return `updated ${sec}s ago`
+    const min = Math.floor(sec / 60)
+    return `updated ${min}m ago`
+  }
   const numerologyPreviewBypassEnabled = isNumerologyChartsV2Enabled()
   const isToolPending = (toolSlug: string) =>
     Boolean(userProfile?.mysticalProfileGenerated) && pendingToolsSet.has(toolSlug)
@@ -54,6 +70,11 @@ function ToolsPageContent() {
   const isMobileLayout = useIsMobileLayout();
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 10_000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   useEffect(() => {
     if (
@@ -199,8 +220,18 @@ function ToolsPageContent() {
                               Processing
                             </span>
                           ) : null}
+                          {toolStatusMap[tool.slug]?.unchanged ? (
+                            <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
+                              No new data yet
+                            </span>
+                          ) : null}
                         </div>
                         <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
+                        {isToolPending(tool.slug) ? (
+                          <p className="text-[10px] text-surface-on-variant mt-1">
+                            {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                          </p>
+                        ) : null}
                       </div>
                       <ChevronRight className="absolute right-4 w-6 h-6 text-amber-400 opacity-30" />
                     </motion.div>
@@ -225,8 +256,18 @@ function ToolsPageContent() {
                           Processing
                         </span>
                       ) : null}
+                      {toolStatusMap[tool.slug]?.unchanged ? (
+                        <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
+                          No new data yet
+                        </span>
+                      ) : null}
                     </div>
                     <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
+                    {isToolPending(tool.slug) ? (
+                      <p className="text-[10px] text-surface-on-variant mt-1">
+                        {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                      </p>
+                    ) : null}
                   </div>
                   <ChevronRight className="absolute right-4 w-6 h-6 text-amber-400 opacity-30" />
                 </motion.div>
@@ -292,7 +333,17 @@ function ToolsPageContent() {
                             Processing
                           </span>
                         ) : null}
+                        {toolStatusMap[tool.slug]?.unchanged ? (
+                          <span className="mb-2 rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
+                            No new data yet
+                          </span>
+                        ) : null}
                         <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
+                        {isToolPending(tool.slug) ? (
+                          <p className="mt-2 text-[10px] text-slate-500">
+                            {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                          </p>
+                        ) : null}
                         <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
                           Explore <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </div>
@@ -320,7 +371,17 @@ function ToolsPageContent() {
                     Processing
                   </span>
                 ) : null}
+                {toolStatusMap[tool.slug]?.unchanged ? (
+                  <span className="mb-2 rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
+                    No new data yet
+                  </span>
+                ) : null}
                 <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
+                {isToolPending(tool.slug) ? (
+                  <p className="mt-2 text-[10px] text-slate-500">
+                    {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                  </p>
+                ) : null}
                 <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
                   Explore <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>

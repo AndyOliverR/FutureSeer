@@ -4,6 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMysticalProfileContext } from "@/contexts/MysticalProfileContext";
+import { useAuth } from "@/hooks/use-auth";
+import { getReturningPaymentCommitDestination } from "@/lib/authRouting";
 import { Sparkles } from "lucide-react";
 
 /**
@@ -13,11 +15,11 @@ import { Sparkles } from "lucide-react";
  */
 export function ToolsProfileGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { hasProfile, canViewFullProfile, loading } = useMysticalProfileContext();
+  const { hasProfile, loading } = useMysticalProfileContext();
+  const { requiresReturningPaymentCommit } = useAuth();
 
-  const isToolsListing = pathname === "/tools";
   const isToolPage = pathname?.startsWith("/tools/");
-  const shouldGate = isToolPage && hasProfile && !canViewFullProfile && !loading;
+  const shouldGate = isToolPage && hasProfile && !loading && requiresReturningPaymentCommit;
 
   if (shouldGate) {
     return (
@@ -35,10 +37,10 @@ export function ToolsProfileGate({ children }: { children: React.ReactNode }) {
             Your mystical profile is ready. Choose a plan to unlock your full readings and tool reports.
           </p>
           <Link
-            href="/profile"
+            href={getReturningPaymentCommitDestination(pathname || "/tools")}
             className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 font-medium text-slate-900 transition hover:bg-amber-400"
           >
-            Go to Profile & Plan
+            Go to Subscription
           </Link>
         </div>
       </div>

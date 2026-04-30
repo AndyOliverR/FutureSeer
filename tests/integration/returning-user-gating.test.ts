@@ -24,6 +24,7 @@ describe('Returning user payment gating', () => {
       shouldGateReturningUserForPaymentCommit({
         mysticalProfileGenerated: true,
         subscriptionStatus: 'active',
+        paymentMethodId: 'pm_test_active_123',
       }),
     ).toBe(false);
   });

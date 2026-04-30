@@ -62,13 +62,20 @@ export async function acquireMysticalGenerationLock(
       const data = snap.data() as
         | {
             lockedAt?: number;
+            updatedAt?: number;
             status?: string;
             idempotencyKey?: string | null;
           }
         | undefined;
 
-      if (data?.lockedAt != null && typeof data.lockedAt === 'number' && data.status === 'running') {
-        const age = now - data.lockedAt;
+      const runningUpdatedAt =
+        typeof data?.updatedAt === 'number'
+          ? data.updatedAt
+          : typeof data?.lockedAt === 'number'
+            ? data.lockedAt
+            : null;
+      if (runningUpdatedAt != null && data?.status === 'running') {
+        const age = now - runningUpdatedAt;
         if (age < staleMs) {
           if (idempotencyKey && data.idempotencyKey === idempotencyKey) {
             return 'idempotent_in_progress';
@@ -83,6 +90,7 @@ export async function acquireMysticalGenerationLock(
 
       transaction.set(ref, {
         lockedAt: now,
+        updatedAt: now,
         status: 'running',
         idempotencyKey: idempotencyKey ?? null,
       });

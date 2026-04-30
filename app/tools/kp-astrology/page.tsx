@@ -49,6 +49,7 @@ import { calculateCurrentDasha } from '@/lib/vedic-core'
 import { Phase2VisualPanel } from '@/components/charts/Phase2VisualPanel'
 import { adaptKpOverlay } from '@/lib/charts/phase2Adapters'
 import { isKpChartsV2Enabled } from '@/lib/charts/featureFlags'
+import { ToolReportStatusChips } from '@/components/tool-status/ToolReportStatusChips'
 
 const CHART_CANVAS_W = 450
 const CHART_CANVAS_H = 333
@@ -415,7 +416,25 @@ function nativeKPAnalysisToRawAstroAppData(native: KPIntelligenceAnalysis): Reco
 
 export default function KPAstrologyPage() {
   const { user, userProfile } = useAuth()
-  const { report: pipelineReport, loading: isLoadingPipeline, error: profileError } = useToolReport('kp')
+  const {
+    report: pipelineReport,
+    loading: isLoadingPipeline,
+    error: profileError,
+    reportUpdatedAt,
+    reportGeneratedAt,
+    reportUnchanged,
+  } = useToolReport('kp')
+  const freshnessLabel = useMemo(() => {
+    const ts = reportUpdatedAt ?? reportGeneratedAt
+    if (!ts) return null
+    const ms = typeof ts === "number" ? ts : Date.parse(ts)
+    if (!Number.isFinite(ms)) return null
+    const delta = Date.now() - ms
+    if (delta < 60_000) return "Updated just now"
+    if (delta < 3_600_000) return `Updated ${Math.floor(delta / 60_000)} min ago`
+    if (delta < 86_400_000) return `Updated ${Math.floor(delta / 3_600_000)}h ago`
+    return `Updated ${Math.floor(delta / 86_400_000)}d ago`
+  }, [reportGeneratedAt, reportUpdatedAt])
   const analysisFromPipeline = useMemo((): KPAnalysis | null => {
     if (!pipelineReport || typeof pipelineReport !== 'object') return null
     const r = pipelineReport as Record<string, unknown>
@@ -1003,6 +1022,11 @@ export default function KPAstrologyPage() {
           <p className="text-slate-200 leading-relaxed text-xl font-light mb-8">
             Krishnamurti Paddhati - The most precise system of astrological predictions
           </p>
+          <ToolReportStatusChips
+            freshnessLabel={freshnessLabel}
+            reportUnchanged={reportUnchanged}
+            className="mb-6"
+          />
           {/* Inspirational Quote */}
           <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md max-w-2xl mx-auto">
             <p className="text-xl italic text-amber-900 font-serif mb-2">

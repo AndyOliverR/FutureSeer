@@ -15,7 +15,7 @@ export const PROFILE_PLAN_PRICING_CTA_LABEL = 'View pricing and plans'
  */
 export function toolReportMissingBody(toolLabel?: string): string {
   if (toolLabel) {
-    return `Generate your mystical profile on Cosmic Profile to unlock your personalized ${toolLabel.toLowerCase()} reading from your birth data.`
+    return `Your ${toolLabel.toLowerCase()} reading is still processing. Ready reports appear automatically as the pipeline completes.`
   }
-  return 'Generate your mystical profile on Cosmic Profile to unlock personalized insights from your birth data.'
+  return 'Your readings are still processing. Ready reports appear automatically as the pipeline completes.'
 }

@@ -351,14 +351,6 @@ export default function ProfilePage() {
     return getMissingFirstGenerationFields(profileForChecklist, { allowUnknownBirthTime: true })
   }, [formData])
   const canGenerateFromOnboarding = canGenerateMysticalProfile && missingGenerationFieldKeys.length === 0
-  const firstIncompleteStep = useMemo<RequiredStepId>(() => {
-    const order: RequiredStepId[] = ["identity", "birth", "residence", "media"]
-    for (const step of order) {
-      if (REQUIRED_STEP_FIELDS[step].some((field) => missingGenerationFieldKeys.includes(field))) return step
-    }
-    return "media"
-  }, [missingGenerationFieldKeys])
-  const [activeStep, setActiveStep] = useState<RequiredStepId>("identity")
   const completedStepsTrackedRef = useRef<Set<RequiredStepId>>(new Set())
   const trialIsActive = isTrialActive(userProfile)
   const isFirstHookUser = !userProfile?.mysticalProfileGenerated
@@ -387,12 +379,6 @@ export default function ProfilePage() {
       nudgeStage,
     } as const
   }, [userProfile])
-  const stepLabels: Record<RequiredStepId, string> = {
-    identity: "Identity",
-    birth: "Birth",
-    residence: "Residence",
-    media: "Media",
-  }
   const missingLabels = missingGenerationFieldKeys.map((field) => FULL_FIELD_LABELS[field] ?? field)
   const missingFieldSet = useMemo(() => new Set(missingGenerationFieldKeys), [missingGenerationFieldKeys])
   const isFieldMissing = useCallback((fieldKey: string) => missingFieldSet.has(fieldKey), [missingFieldSet])
@@ -533,10 +519,6 @@ export default function ProfilePage() {
     }))
     canPersistDraftRef.current = true
   }, [user?.uid, userProfile, isConsultantWorkspace])
-
-  useEffect(() => {
-    setActiveStep(firstIncompleteStep)
-  }, [firstIncompleteStep])
 
   useEffect(() => {
     const stepOrder: RequiredStepId[] = ["identity", "birth", "residence", "media"]
@@ -732,7 +714,7 @@ export default function ProfilePage() {
       analytics.trackProfileGenerationStarted({ surface })
       const t = await user?.getIdToken()
       if (!t) throw new Error("Please sign in again to continue.")
-      if (user?.uid) {
+      if (user?.uid && userProfile?.mysticalProfileGenerated !== true) {
         await updateUserProfile(user.uid, {
           selectedPlan: "power-user-trial",
           subscriptionStatus: "trial",
@@ -898,10 +880,12 @@ export default function ProfilePage() {
         currentLocation: formData.currentLocation,
         facePhotoUrl: formData.facePhotoUrl,
         palmPhotoUrl: formData.palmPhotoUrl,
-        selectedPlan: "power-user-trial",
-        subscriptionStatus: "trial",
         freeTrialTermsAccepted: acceptedFreeTrialTerms,
         freeTrialTermsAcceptedAt: acceptedFreeTrialTerms ? Date.now() : userProfile?.freeTrialTermsAcceptedAt
+      }
+      if (userProfile?.mysticalProfileGenerated !== true) {
+        updatePayload.selectedPlan = "power-user-trial"
+        updatePayload.subscriptionStatus = "trial"
       }
 
       await updateUserProfile(user.uid, updatePayload)
@@ -1236,28 +1220,6 @@ export default function ProfilePage() {
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("displayName") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("displayName") ? "Missing" : "Done"}</span>
               </div>
               {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className={`h-14 bg-surface-container-low rounded-2xl ${getRequiredFieldClasses("displayName", "mobile")}`} /> : <p className="text-lg font-bold text-white ml-1">{formData.displayName || "Not set"}</p>}
-            </div>
-
-            <div className="rounded-2xl border border-outline-variant/40 bg-surface-container-low p-4 space-y-3">
-              <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Setup status</p>
-              <div className="grid gap-2">
-                {(Object.keys(stepLabels) as RequiredStepId[]).map((stepId) => {
-                  const stepMissing = REQUIRED_STEP_FIELDS[stepId].filter((field) => missingGenerationFieldKeys.includes(field))
-                  const done = stepMissing.length === 0
-                  const isActive = activeStep === stepId
-                  return (
-                    <button
-                      key={stepId}
-                      type="button"
-                      onClick={() => setActiveStep(stepId)}
-                      className={`w-full rounded-xl border px-3 py-2 text-left text-xs ${done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200" : isActive ? "border-amber-400/60 bg-amber-500/10 text-amber-100" : "border-outline-variant/40 bg-surface text-white/80"}`}
-                    >
-                      <span className="font-semibold">{stepLabels[stepId]}</span>
-                      <span className="block mt-1 text-[11px]">{done ? "Done" : `${stepMissing.length} missing`}</span>
-                    </button>
-                  )
-                })}
-              </div>
             </div>
 
             <div className="space-y-2">
@@ -1644,28 +1606,6 @@ export default function ProfilePage() {
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("displayName") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("displayName") ? "Missing" : "Done"}</span>
                 </div>
                 {isEditing ? <Input value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className={`h-12 bg-white/5 rounded-2xl ${getRequiredFieldClasses("displayName", "web")}`} /> : <p className="text-lg font-medium text-white">{formData.displayName || "Not set"}</p>}
-              </div>
-
-              <div className="rounded-2xl border border-amber-400/30 bg-white/5 p-4 space-y-3">
-                <p className="text-xs uppercase tracking-widest text-amber-300 font-bold">Setup status</p>
-                <div className="grid gap-2">
-                  {(Object.keys(stepLabels) as RequiredStepId[]).map((stepId) => {
-                    const stepMissing = REQUIRED_STEP_FIELDS[stepId].filter((field) => missingGenerationFieldKeys.includes(field))
-                    const done = stepMissing.length === 0
-                    const isActive = activeStep === stepId
-                    return (
-                      <button
-                        key={stepId}
-                        type="button"
-                        onClick={() => setActiveStep(stepId)}
-                        className={`w-full rounded-xl border px-3 py-2 text-left text-xs ${done ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200" : isActive ? "border-amber-400/60 bg-amber-500/10 text-amber-100" : "border-white/20 bg-white/5 text-white/80"}`}
-                      >
-                        <span className="font-semibold">{stepLabels[stepId]}</span>
-                        <span className="block mt-1 text-[11px]">{done ? "Done" : `${stepMissing.length} missing`}</span>
-                      </button>
-                    )
-                  })}
-                </div>
               </div>
 
               <div className="space-y-2">

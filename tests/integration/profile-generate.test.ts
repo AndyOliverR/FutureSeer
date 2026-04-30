@@ -15,6 +15,7 @@ const mockBatchSetDocuments = jest.fn();
 const mockGenerateAllReports = jest.fn();
 const mockGenerateCoreReportsStageA = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
+const mockTryResumeMysticalStageB = jest.fn();
 
 jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({ verifyIdToken: mockVerifyIdToken }),
@@ -69,6 +70,10 @@ jest.mock('@/lib/universalDataAggregator', () => ({
   clearCachedDivinationData: (...args: unknown[]) => mockClearCachedDivinationData(...args),
 }));
 
+jest.mock('@/lib/mysticalStageB', () => ({
+  tryResumeMysticalStageB: (...args: unknown[]) => mockTryResumeMysticalStageB(...args),
+}));
+
 // Import route after mocks so it sees mocked dependencies
 import { GET, POST } from '@/app/api/profile/generate-mystical/route';
 
@@ -108,6 +113,7 @@ describe('Profile generate-mystical API', () => {
       toolReports: {},
       aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     });
+    mockTryResumeMysticalStageB.mockResolvedValue({ started: true });
   });
 
   async function callGenerate(
@@ -184,6 +190,7 @@ describe('Profile generate-mystical API', () => {
       expect(data.allReportsReady).toBe(false);
       expect(Array.isArray(data.pendingToolSlugs)).toBe(true);
       expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(uid, expect.objectContaining({ uid, birthDate: profile.birthDate, birthPlace: profile.birthPlace }));
+      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
     });
   });
 
@@ -382,6 +389,37 @@ describe('Profile generate-mystical API', () => {
           phase: 'stale_timeout',
         }),
       );
+    });
+
+    it('resumes queued stageB job from status polling', async () => {
+      const profileSnapshot = {
+        ...baseProfile,
+        uid,
+        isSubscribed: false,
+        isTipped: false,
+        createdAt: Date.now(),
+        lastLoginAt: Date.now(),
+      };
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
+        if (collection === 'generationLocks') return Promise.resolve({ status: 'failed', phase: 'failed', updatedAt: Date.now() });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({ vedic: { placeholder: false } });
+        if (collection === 'generationJobs') {
+          return Promise.resolve({
+            status: 'queued',
+            profileHash: 'queued-hash',
+            profileSnapshot,
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.generationJobStatus).toBe('queued');
+      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
     });
 
     it('reconciles user allReportsReady false when profile shows all tools ready', async () => {
