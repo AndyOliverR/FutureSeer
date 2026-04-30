@@ -73,6 +73,8 @@ type PaymentGateProfile = {
   mysticalProfileGenerated?: boolean
   subscriptionStatus?: string
   noChargeAccount?: boolean
+  selectedPlan?: string
+  paymentMethodId?: string
 }
 
 /**
@@ -82,7 +84,11 @@ export function hasActiveSubscriptionAccess(profile: PaymentGateProfile | null):
   if (!profile) return false
   if (profile.noChargeAccount === true) return true
   const status = String(profile.subscriptionStatus ?? '').trim().toLowerCase()
-  return status === 'active'
+  const selectedPlan = String(profile.selectedPlan ?? '').trim().toLowerCase()
+  const paymentMethodId = String(profile.paymentMethodId ?? '').trim()
+  const hasPaidPlan = !!selectedPlan && selectedPlan !== 'power-user-trial' && selectedPlan !== 'trial'
+  const hasActivePaidStatus = status === 'active'
+  return (hasPaidPlan || hasActivePaidStatus) && paymentMethodId.length > 0
 }
 
 /**

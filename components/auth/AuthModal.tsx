@@ -19,6 +19,8 @@ import {
   isAuthRedirectInitiatedError,
   isUserDismissedAuthError,
   waitForAuthenticatedSession,
+  AUTH_DISMISS_RECOVERY_WINDOW_MS,
+  getFirebaseAuth,
 } from '@/lib/firebase';
 import { isAppleSignInEnabledClient } from '@/lib/authFeatureFlags';
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
@@ -88,9 +90,14 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         return;
       }
       if (isUserDismissedAuthError(error)) {
-        const resolvedSession = await waitForAuthenticatedSession(1200);
+        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS);
         if (resolvedSession) {
           devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
+          return;
+        }
+        const auth = getFirebaseAuth();
+        if (auth?.currentUser) {
+          devLog.debug('Popup dismissed but currentUser is available', undefined, 'AuthModal');
           return;
         }
       }
@@ -137,9 +144,14 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         return;
       }
       if (isUserDismissedAuthError(error)) {
-        const resolvedSession = await waitForAuthenticatedSession(1200);
+        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS);
         if (resolvedSession) {
           devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
+          return;
+        }
+        const auth = getFirebaseAuth();
+        if (auth?.currentUser) {
+          devLog.debug('Popup dismissed but currentUser is available', undefined, 'AuthModal');
           return;
         }
       }

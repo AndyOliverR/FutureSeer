@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { getDocument, setDocument, batchSetDocuments, isAdminAvailable, adminDb } from '@/lib/firebase-admin';
-import { generateAllReports, generateCoreReportsStageA, getCoreStageToolCount } from '@/lib/reportGenerationService';
+import { generateCoreReportsStageA, getCoreStageToolCount } from '@/lib/reportGenerationService';
 import { ALL_TOOL_SLUGS, summarizeToolReadiness } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
 import { clearCachedDivinationData } from '@/lib/universalDataAggregator';
@@ -31,6 +31,8 @@ import { logServerError } from '@/lib/serverErrorLogging';
 import { rateLimiters } from '@/lib/rateLimit';
 import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
 import { acquireMysticalGenerationLock, getMysticalLockRuntimeStatus } from '@/lib/generationLock';
+import { tryResumeMysticalStageB } from '@/lib/mysticalStageB';
+import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
@@ -51,6 +53,30 @@ function cleanData(obj: unknown): unknown {
     }
   }
   return cleaned;
+}
+
+function buildStageAToolStatus(
+  profile: Record<string, unknown>,
+  now: number,
+): PersistedToolStatusMap {
+  const status: PersistedToolStatusMap = {};
+  for (const slug of ALL_TOOL_SLUGS) {
+    const report = profile[slug];
+    const hasObj = report != null && typeof report === 'object';
+    const isPlaceholder = hasObj && (report as { placeholder?: boolean }).placeholder === true;
+    const isFailed = hasObj && (report as { status?: string }).status === 'failed';
+    const isReady = hasObj && !isPlaceholder && !isFailed;
+    status[slug] = {
+      state: isReady ? 'ready' : isPlaceholder ? 'placeholder' : isFailed ? 'failed' : 'pending',
+      startedAt: now,
+      updatedAt: now,
+      generatedAt: isReady ? now : undefined,
+      attempts: 1,
+      error: isFailed ? ((report as { error?: string }).error ?? 'Generation failed') : null,
+      unchanged: false,
+    };
+  }
+  return status;
 }
 
 export async function POST(request: NextRequest) {
@@ -424,6 +450,16 @@ export async function POST(request: NextRequest) {
     });
 
     const stageAReadiness = summarizeToolReadiness(toStore as Record<string, unknown>, ALL_TOOL_SLUGS);
+    const stageAToolStatus = buildStageAToolStatus(toStore as Record<string, unknown>, Date.now());
+    (toStore as Record<string, unknown>).toolStatus = stageAToolStatus;
+    await setDocument('comprehensiveMysticalProfiles', uid, { toolStatus: stageAToolStatus, lastProgressAt: Date.now() });
+    await setDocument('users', uid, {
+      toolStatus: stageAToolStatus,
+      corePhaseCompleted: stageAReadiness.readyToolsCount >= getCoreStageToolCount(),
+      coreReadyCount: Math.min(stageAReadiness.readyToolsCount, getCoreStageToolCount()),
+      longTailReadyCount: Math.max(0, stageAReadiness.readyToolsCount - getCoreStageToolCount()),
+      lastProgressAt: Date.now(),
+    });
     const response: Record<string, unknown> = {
       success: true,
       systemsUsed: stageAResult.systemsUsed,
@@ -437,84 +473,28 @@ export async function POST(request: NextRequest) {
       readyToolsCount: stageAReadiness.readyToolsCount,
       pendingToolSlugs: stageAReadiness.pendingToolSlugs,
       allReportsReady: stageAReadiness.allReportsReady,
+      toolStatus: stageAToolStatus,
       comprehensiveProfile: toStore,
     };
-    void (async () => {
-      try {
-        const coreCount = getCoreStageToolCount();
-        const totalTools = ALL_TOOL_SLUGS.length;
-        const result = await generateAllReports(uid!, profileWithUid as unknown as UserProfile, {
-          onProgress: async ({ completedTools }) => {
-            const stageBCompleted = Math.max(0, completedTools - coreCount);
-            const stageBTotal = Math.max(0, totalTools - coreCount);
-            const overallCompleted = Math.min(totalTools, coreCount + stageBCompleted);
-            await setDocument('generationLocks', uid!, {
-              status: 'running',
-              phase: 'stageB',
-              completedTools: overallCompleted,
-              totalTools,
-              stageBCompletedTools: stageBCompleted,
-              stageBTotalTools: stageBTotal,
-              updatedAt: Date.now(),
-            });
-          },
-        });
-        const finalToStore = cleanData(result.comprehensiveProfile);
-        delete (finalToStore as Record<string, unknown>).toolReports;
-        const finalReadiness = summarizeToolReadiness(finalToStore as Record<string, unknown>, ALL_TOOL_SLUGS);
-        const batchSuccessFinal = await batchSetDocuments([
-          { collection: 'comprehensiveMysticalProfiles', docId: uid!, data: finalToStore },
-          {
-            collection: 'users',
-            docId: uid!,
-            data: {
-              mysticalProfileGenerated: true,
-              mysticalProfileGeneratedAt: Date.now(),
-              profileDataHash: newHash,
-              profileStatus: 'completed',
-              allReportsReady: finalReadiness.allReportsReady,
-              pendingToolSlugs: finalReadiness.pendingToolSlugs,
-              updatedAt: Date.now(),
-            },
-          },
-          {
-            collection: 'seerMaster',
-            docId: uid!,
-            data: {
-              ...result.seerMaster,
-              userId: uid!,
-              generatedAt: new Date().toISOString(),
-              systemsUsed: result.systemsUsed,
-            },
-          },
-        ]);
-        if (!batchSuccessFinal) {
-          throw new Error('Failed to save Stage B data.');
-        }
-        await setDocument('generationLocks', uid!, {
-          lockedAt: null,
-          status: 'completed',
-          phase: 'completed',
-          completedAt: Date.now(),
-          completedTools: ALL_TOOL_SLUGS.length,
-          totalTools: ALL_TOOL_SLUGS.length,
-          readyToolsCount: finalReadiness.readyToolsCount,
-          pendingToolSlugs: finalReadiness.pendingToolSlugs,
-          allReportsReady: finalReadiness.allReportsReady,
-          updatedAt: Date.now(),
-        });
-        clearCachedDivinationData(uid!);
-      } catch (bgErr) {
-        devLog.error('[generate-mystical] Stage B continuation failed', bgErr, 'generate-mystical');
-        await setDocument('generationLocks', uid!, {
-          lockedAt: null,
-          status: 'failed',
-          phase: 'failed',
-          failedAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      }
-    })();
+    await setDocument('generationJobs', uid, {
+      uid,
+      status: 'queued',
+      phase: 'stageB',
+      queuedAt: Date.now(),
+      updatedAt: Date.now(),
+      attempts: 0,
+      maxAttempts: 3,
+      nextRetryAt: null,
+      toolStatus: stageAToolStatus,
+      corePhaseCompleted: stageAReadiness.readyToolsCount >= getCoreStageToolCount(),
+      coreReadyCount: Math.min(stageAReadiness.readyToolsCount, getCoreStageToolCount()),
+      longTailReadyCount: Math.max(0, stageAReadiness.readyToolsCount - getCoreStageToolCount()),
+      lastProgressAt: Date.now(),
+      profileHash: newHash,
+      profileSnapshot: profileWithUid,
+    });
+    // Kick worker optimistically through atomic claim; if interrupted, status polling/backfill can safely resume.
+    void tryResumeMysticalStageB(uid);
 
     return NextResponse.json(response, { status: 202 });
   } catch (err) {
@@ -548,15 +528,18 @@ export async function GET(request: NextRequest) {
     }
     const decoded = await getAuth().verifyIdToken(idToken);
     const uid = decoded.uid;
-    const [userDoc, lockDoc, profileDoc] = await Promise.all([
+    const [userDoc, lockDoc, profileDoc, generationJobDoc] = await Promise.all([
       getDocument('users', uid),
       getDocument('generationLocks', uid),
       getDocument('comprehensiveMysticalProfiles', uid),
+      getDocument('generationJobs', uid),
     ]);
     const user = (userDoc as Record<string, unknown> | null) ?? {};
     const lock = (lockDoc as Record<string, unknown> | null) ?? {};
     const profile = (profileDoc as Record<string, unknown> | null) ?? {};
     const lockStatus = lock?.status;
+    const generationJob = (generationJobDoc as Record<string, unknown> | null) ?? null;
+    const generationJobStatus = typeof generationJob?.status === 'string' ? generationJob.status : null;
     const lockRuntime = getMysticalLockRuntimeStatus(lock, mysticalLockStaleMs());
     const generated = Boolean(user?.mysticalProfileGenerated) || Boolean(profileDoc);
     const readiness = summarizeToolReadiness(profile, ALL_TOOL_SLUGS);
@@ -606,6 +589,30 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const jobUpdatedAt = typeof generationJob?.updatedAt === 'number' ? generationJob.updatedAt : null;
+    if (
+      generationJobStatus === 'running' &&
+      jobUpdatedAt != null &&
+      Date.now() - jobUpdatedAt > mysticalLockStaleMs()
+    ) {
+      await setDocument('generationJobs', uid, {
+        status: 'stale_running',
+        phase: 'stale_timeout',
+        staleRecovered: true,
+        staleRecoveredAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+    }
+
+    if (
+      (generationJobStatus === 'queued' || generationJobStatus === 'failed' || generationJobStatus === 'stale_running') &&
+      !inProgress &&
+      generated &&
+      !allReportsReady
+    ) {
+      void tryResumeMysticalStageB(uid);
+    }
+
     return NextResponse.json({
       success: true,
       inProgress,
@@ -617,9 +624,16 @@ export async function GET(request: NextRequest) {
       allReportsReady,
       readyToolsCount: readiness.readyToolsCount,
       pendingToolSlugs,
+      toolStatus: (profile?.toolStatus as Record<string, unknown> | undefined) ?? null,
+      lastProgressAt:
+        (profile?.lastProgressAt as number | undefined) ??
+        (generationJob?.lastProgressAt as number | undefined) ??
+        (lock?.updatedAt as number | undefined) ??
+        null,
       lockStaleRecovered: lockRuntime.isStale,
       lockAgeMs: lockRuntime.lockAgeMs,
       lockStatus: lockStatus ?? null,
+      generationJobStatus,
       phase: (lock?.phase as string | undefined) ?? null,
       completedTools: (lock?.completedTools as number | undefined) ?? null,
       totalTools: (lock?.totalTools as number | undefined) ?? null,

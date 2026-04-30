@@ -31,6 +31,7 @@ import { WesternCelebritySampleSection } from '@/components/western/WesternCeleb
 import { buildToolTeaser } from '@/lib/report-viral/buildToolTeaser'
 import { ToolReportViralGate } from '@/components/report-viral/ToolReportViralGate'
 import { useViralReportBypass } from '@/hooks/useViralReportBypass'
+import { classifyToolReportState } from '@/lib/profileGenerationOrchestrator'
 import { 
   Star, 
   Calendar,
@@ -76,7 +77,7 @@ function WesternAstrologyPageContent() {
     else if (t === 'western-astrology' || t === 'chart') setActiveTab('western-astrology')
   }, [searchParams])
 
-  const { report: westernPipelineReport, loading: isLoading, error: profileError, hasReport, refreshProfile } = useToolReport('western')
+  const { report: westernPipelineReport, loading: isLoading, error: profileError, refreshProfile } = useToolReport('western')
   const { report: astroNumerologyReport, loading: isLoadingAstroNumerologyReport } = useToolReport('astroNumerology')
   const analysis = useMemo(() => {
     const raw = (westernPipelineReport as Record<string, unknown> | undefined)?.chart
@@ -197,13 +198,18 @@ function WesternAstrologyPageContent() {
 
   const [westernNoReportGraceEnded, setWesternNoReportGraceEnded] = useState(false)
   const [isGeneratingWestern, setIsGeneratingWestern] = useState(false)
+  const westernReportState = useMemo(
+    () => classifyToolReportState(westernPipelineReport),
+    [westernPipelineReport]
+  )
 
   // On-demand Western report when user has birth data but no saved report
   const canGenerateWesternOnDemand =
     !!userProfile?.birthDate &&
     !!userProfile?.birthPlace &&
     !!user?.uid &&
-    !analysis?.data
+    !analysis?.data &&
+    !Boolean(userProfile?.mysticalProfileGenerated)
   const generateWesternReport = async () => {
     if (!user?.uid || !userProfile?.birthDate || !userProfile?.birthPlace || isGeneratingWestern) return
     setIsGeneratingWestern(true)
@@ -292,7 +298,7 @@ function WesternAstrologyPageContent() {
   }
 
   return (
-    <ToolReportGuard loading={isLoading} error={profileError ?? null} toolLabel="Western astrology">
+    <ToolReportGuard loading={isLoading} error={profileError ?? null} toolLabel="Western astrology" report={westernPipelineReport}>
     <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         <div className="text-center mb-8 pt-4">
@@ -811,7 +817,13 @@ function WesternAstrologyPageContent() {
             ) : (
               <div className="text-center py-8">
                 <Info className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-200 mb-4">No Western astrology report loaded. Generate your mystical profile once from your Profile page to see your report here.</p>
+                <p className="text-slate-200 mb-4">
+                  {westernReportState === 'failed'
+                    ? 'Your Western report failed to generate. Retry from your profile or regenerate this report now.'
+                    : westernReportState === 'placeholder'
+                      ? 'A partial Western report exists, but key chart data is incomplete. Complete your profile details and regenerate to unlock the full report.'
+                      : 'No Western astrology report loaded. Generate your mystical profile once from your Profile page to see your report here.'}
+                </p>
                 <div className="flex flex-col sm:flex-row flex-wrap gap-3 justify-center items-center">
                   <Button asChild className="bg-amber-500 hover:bg-amber-600 text-white relative overflow-hidden focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-transparent">
                     <Link href="/profile">Generate your mystical profile</Link>
@@ -825,7 +837,7 @@ function WesternAstrologyPageContent() {
                   >
                     {isLoading ? 'Refreshing…' : 'Refresh profile'}
                   </Button>
-                  {canGenerateWesternOnDemand && (
+                  {canGenerateWesternOnDemand ? (
                     <Button
                       type="button"
                       className="bg-amber-600/80 hover:bg-amber-600 text-white border border-amber-500/50"
@@ -834,7 +846,7 @@ function WesternAstrologyPageContent() {
                     >
                       {isGeneratingWestern ? 'Generating…' : 'Generate Western report'}
                     </Button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             )}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile";
+import { useToolReport } from "@/hooks/useComprehensiveMysticalProfile";
 import { useToolReportUnlock } from "@/hooks/useToolReportUnlock";
 import { useViralReportBypass } from "@/hooks/useViralReportBypass";
 import { ToolReportGuard } from "@/components/ToolReportGuard";
@@ -23,6 +24,7 @@ import { DashaPanelSimplified } from "@/components/vedic/DashaPanelSimplified";
 import { GotraTab } from "@/components/vedic/GotraTab";
 import VedicSeerChatInterface from "@/components/VedicSeerChatInterface";
 import { DevotionistStyleCard } from "@/components/western/DevotionistStyleCard";
+import { ToolReportStatusChips } from "@/components/tool-status/ToolReportStatusChips";
 import {
   Sparkles, ChevronRight, Loader2, MessageCircle, RefreshCw, Users
 } from 'lucide-react'
@@ -46,7 +48,19 @@ function signNameToIndex(name: string): number {
 function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
   const { profile: compProfile, loading: profileLoading, error: profileError } = useComprehensiveMysticalProfile();
+  const { reportUpdatedAt, reportGeneratedAt, reportUnchanged } = useToolReport("vedic");
   const [activeTab, setActiveTab] = useState('introduction');
+  const freshnessLabel = useMemo(() => {
+    const ts = reportUpdatedAt ?? reportGeneratedAt;
+    if (!ts) return null;
+    const ms = typeof ts === "number" ? ts : Date.parse(ts);
+    if (!Number.isFinite(ms)) return null;
+    const delta = Date.now() - ms;
+    if (delta < 60_000) return "Updated just now";
+    if (delta < 3_600_000) return `Updated ${Math.floor(delta / 60_000)} min ago`;
+    if (delta < 86_400_000) return `Updated ${Math.floor(delta / 3_600_000)}h ago`;
+    return `Updated ${Math.floor(delta / 86_400_000)}d ago`;
+  }, [reportGeneratedAt, reportUpdatedAt]);
 
   const hasVedicData = !!compProfile?.vedic;
 
@@ -324,6 +338,11 @@ function VedicAstrologyPageContent() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">Vedic Astrology</span>
             </h1>
             <p className="text-slate-200 leading-relaxed text-xl font-light">Comprehensive sidereal birth chart analysis and interpretations.</p>
+            <ToolReportStatusChips
+              freshnessLabel={freshnessLabel}
+              reportUnchanged={reportUnchanged}
+              className="mt-3"
+            />
           </div>
           <div className="rounded-2xl border border-[var(--m3-outline-variant)] md:border-amber-500/30 bg-[var(--m3-surface-container)] md:bg-slate-900/80 overflow-hidden p-6 md:p-8">
             <div className="flex flex-wrap gap-2 mb-6 h-10 bg-slate-800/50 rounded-lg animate-pulse" />
