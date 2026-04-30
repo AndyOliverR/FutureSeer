@@ -6,6 +6,7 @@
 
 import * as julian from "astronomia/julian";
 import { devLog } from '@/lib/devLogger';
+const verboseAstroLogs = process.env.VERBOSE_ASTRO_LOGS === '1';
 import * as solarxyz from "astronomia/solarxyz";
 import * as planetposition from "astronomia/planetposition";
 import * as moonposition from "astronomia/moonposition";
@@ -382,14 +383,18 @@ export function getDegreeInSign(longitude: number): number {
  */
 export function calculateTropicalHouses(date: Date, latitude: number, longitude: number) {
   try {
-    devLog.debug('🔮 DEBUG - calculateTropicalHouses coordinates:', { latitude, longitude });
+    if (verboseAstroLogs) {
+      devLog.debug('🔮 DEBUG - calculateTropicalHouses coordinates:', { latitude, longitude });
+    }
     
     const jd = toJD_TT(date);
     const lst = calculateLST(jd, longitude);
     const ascendant = calculateAscendant(lst, latitude);
     // Lagna diagnostic: JD, LST, GMST (LST - lon), tropical Ascendant (ref: 22 Apr 1959 16:30 UTC → JD ~2436686, LST ~204°, asc ~276°)
     const gmst = norm360(lst - longitude);
-    devLog.debug('🔮 Lagna diagnostic:', { julianDay: jd, lst: Math.round(lst * 100) / 100, gmst: Math.round(gmst * 100) / 100, tropicalAscendant: Math.round(ascendant * 100) / 100 }, 'tropicalCalculator');
+    if (verboseAstroLogs) {
+      devLog.debug('🔮 Lagna diagnostic:', { julianDay: jd, lst: Math.round(lst * 100) / 100, gmst: Math.round(gmst * 100) / 100, tropicalAscendant: Math.round(ascendant * 100) / 100 }, 'tropicalCalculator');
+    }
     
     // Calculate MC (Midheaven) from RAMC
     const ramc = lst; // Right Ascension of Midheaven

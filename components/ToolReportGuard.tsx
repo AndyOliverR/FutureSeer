@@ -64,6 +64,10 @@ export function ToolReportGuard({
       : reportState === 'placeholder'
         ? toolLabel?.toLowerCase().includes('synastry')
           ? 'Add your partner birth date, time, and place to generate Synastry.'
+          : toolLabel?.toLowerCase().includes('horary')
+            ? 'Your baseline Horary guidance is ready. Complete next step by entering your question, time, and place.'
+            : toolLabel?.toLowerCase().includes('vastu')
+              ? 'Your baseline Vastu guidance is ready. Complete next step by adding home layout details for precision recommendations.'
           : 'A partial report is available while the remaining analysis is still processing.'
         : toolReportMissingBody(toolLabel)
   if (loading) {

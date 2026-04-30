@@ -3,8 +3,8 @@
 
 import { PredictiveSystem } from './predictiveAlgorithms';
 import { devLog } from '@/lib/devLogger';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { getFirebaseDB } from './firebase';
+import { adminDb, getDocument } from '@/lib/firebase-admin';
 
 // Zodiac signs array for fallback ascendant extraction
 const SIGNS = [
@@ -358,6 +358,7 @@ const DIVINATION_SYSTEMS: Record<string, DivinationSystemConfig> = {
 export class UniversalInterpretationEngine {
   private predictiveSystem: PredictiveSystem;
   private interpretationCache = new Map<string, UniversalInterpretation>();
+  private cacheDisabledLogSeen = new Set<string>();
   
   constructor() {
     this.predictiveSystem = new PredictiveSystem();
@@ -381,25 +382,17 @@ export class UniversalInterpretationEngine {
     //     return cached;
     //   }
     // }
-    devLog.debug(`🚫 CACHING DISABLED: Skipping in-memory cache for ${system} interpretation for user:`, userId);
+    if (!this.cacheDisabledLogSeen.has(`mem_${system}`)) {
+      this.cacheDisabledLogSeen.add(`mem_${system}`);
+      devLog.debug(`🚫 CACHING DISABLED: Skipping in-memory cache for ${system} interpretation`);
+    }
     
     // Check Firebase storage
     try {
-      const db = getFirebaseDB();
-      if (db) {
-        const docRef = doc(db, 'users', userId, 'interpretations', system);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-          const storedData = docSnap.data() as UniversalInterpretation;
-          // TEMPORARILY DISABLED: Check if interpretation is still valid
-          // if (Date.now() - storedData.timestamp < 24 * 60 * 60 * 1000) {
-          //   devLog.debug(`Using stored ${system} interpretation for user:`, userId);
-          //   this.interpretationCache.set(cacheKey, storedData);
-          //   return storedData;
-          // }
-          devLog.debug(`🚫 CACHING DISABLED: Skipping stored ${system} interpretation for user:`, userId);
-        }
+      const storedData = await this.getStoredInterpretation(userId, system);
+      if (storedData && !this.cacheDisabledLogSeen.has(`store_${system}`)) {
+        this.cacheDisabledLogSeen.add(`store_${system}`);
+        devLog.debug(`🚫 CACHING DISABLED: Skipping stored ${system} interpretation`);
       }
     } catch (error) {
       devLog.warn(`Error checking stored ${system} interpretation:`, error, 'universalInterpretationEngine');
@@ -412,15 +405,41 @@ export class UniversalInterpretationEngine {
     // this.interpretationCache.set(cacheKey, interpretation);
     
     try {
-      const db = getFirebaseDB();
-      if (db) {
-        await setDoc(doc(db, 'users', userId, 'interpretations', system), interpretation);
-      }
+      await this.storeInterpretation(userId, system, interpretation);
     } catch (error) {
       devLog.warn(`Error storing ${system} interpretation:`, error, 'universalInterpretationEngine');
     }
     
     return interpretation;
+  }
+
+  private async getStoredInterpretation(userId: string, system: string): Promise<UniversalInterpretation | null> {
+    const db = getFirebaseDB();
+    if (!db) return null;
+    if (typeof (db as { collection?: unknown }).collection === 'function') {
+      if (!adminDb) return null;
+      const snap = await adminDb.collection('users').doc(userId).collection('interpretations').doc(system).get();
+      return snap.exists ? (snap.data() as UniversalInterpretation) : null;
+    }
+    const { doc, getDoc } = await import('firebase/firestore');
+    const snap = await getDoc(doc(db, 'users', userId, 'interpretations', system));
+    return snap.exists() ? (snap.data() as UniversalInterpretation) : null;
+  }
+
+  private async storeInterpretation(
+    userId: string,
+    system: string,
+    interpretation: UniversalInterpretation,
+  ): Promise<void> {
+    const db = getFirebaseDB();
+    if (!db) return;
+    if (typeof (db as { collection?: unknown }).collection === 'function') {
+      if (!adminDb) return;
+      await adminDb.collection('users').doc(userId).collection('interpretations').doc(system).set(interpretation);
+      return;
+    }
+    const { doc, setDoc } = await import('firebase/firestore');
+    await setDoc(doc(db, 'users', userId, 'interpretations', system), interpretation);
   }
   
   // Generate Markov-based interpretation for any system

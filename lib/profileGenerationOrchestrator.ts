@@ -67,6 +67,13 @@ export type ToolRunUpdate = {
   entry: ToolReportEntry;
 };
 
+export type ToolHeartbeatUpdate = {
+  toolSlug: string;
+  startedAt: number;
+  heartbeatAt: number;
+  elapsedMs: number;
+};
+
 export type ReportReadinessState = 'ready' | 'pending' | 'failed' | 'placeholder';
 
 export function classifyToolReportState(report: unknown): ReportReadinessState {
@@ -109,6 +116,134 @@ export function summarizeToolReadiness(
     readyToolsCount,
     pendingToolSlugs,
     allReportsReady: pendingToolSlugs.length === 0,
+  };
+}
+
+type BaselineToolSlug =
+  | 'synastry'
+  | 'horary'
+  | 'angelNumbers'
+  | 'kabbalisticNumerology'
+  | 'nameAnalysis'
+  | 'vastu';
+
+function buildBaselineReport(
+  toolSlug: BaselineToolSlug,
+  profile: UserProfile
+): Record<string, unknown> {
+  const displayName = String(profile.displayName ?? profile.fullName ?? 'Seeker').trim();
+  const birthPlace = String(profile.birthPlace ?? 'your birth place').trim();
+  const birthDate = String(profile.birthDate ?? '').trim();
+  const hasBirthDate = birthDate.length > 0;
+  const birthDay = hasBirthDate ? Number.parseInt(birthDate.split('-')[2] ?? '0', 10) || 1 : 1;
+  const birthMonth = hasBirthDate ? Number.parseInt(birthDate.split('-')[1] ?? '0', 10) || 1 : 1;
+  const digitSum = `${Math.max(1, birthDay)}${Math.max(1, birthMonth)}`
+    .split('')
+    .map((c) => Number.parseInt(c, 10))
+    .filter((n) => Number.isFinite(n))
+    .reduce((sum, n) => sum + n, 0);
+
+  if (toolSlug === 'synastry') {
+    return {
+      baselineReady: true,
+      requiresNextStep: true,
+      nextStepLabel: 'Complete Next Step',
+      nextStepCta: 'Add partner details to unlock compatibility layers.',
+      reading: `${displayName}, your baseline relationship pattern is now ready from your personal chart. Add partner birth date, time, and place to unlock full synastry compatibility.`,
+      focusAreas: ['communication rhythm', 'emotional bonding style', 'conflict recovery pattern'],
+      generatedFrom: ['name', 'birth date', 'birth time', 'birth place'],
+      enrichment: {
+        status: 'pending_partner_details',
+      },
+    };
+  }
+
+  if (toolSlug === 'horary') {
+    return {
+      baselineReady: true,
+      requiresNextStep: true,
+      nextStepLabel: 'Complete Next Step',
+      nextStepCta: 'Ask your specific horary question to generate the chart.',
+      reading: 'Horary is ready. Enter one focused question, the exact question time, and location to cast your question chart.',
+      horaryPrimer: {
+        whenToUse: 'Use Horary for specific, time-bound questions.',
+        recommendedQuestionFormat: 'Will X happen, and when?',
+      },
+      enrichment: {
+        status: 'awaiting_question_input',
+      },
+    };
+  }
+
+  if (toolSlug === 'angelNumbers') {
+    const anchor = Math.max(1, (digitSum % 9) || 9);
+    return {
+      baselineReady: true,
+      requiresNextStep: true,
+      nextStepLabel: 'Complete Next Step',
+      nextStepCta: 'Log the number pattern you keep seeing for live guidance.',
+      reading: `Your baseline angel-number signature is ${anchor}. This highlights your current guidance theme and is ready now.`,
+      lifePathAngel: anchor,
+      guidanceTheme: anchor % 2 === 0 ? 'structure and alignment' : 'intuition and creative trust',
+      enrichment: {
+        status: 'awaiting_observed_number',
+      },
+    };
+  }
+
+  if (toolSlug === 'kabbalisticNumerology') {
+    const nameValue = Math.max(1, displayName.replace(/\s+/g, '').length);
+    const soulNumber = Math.max(1, (digitSum % 9) || 9);
+    const destinyNumber = Math.max(1, ((digitSum + nameValue) % 9) || 9);
+    return {
+      baselineReady: true,
+      requiresNextStep: true,
+      nextStepLabel: 'Complete Next Step',
+      nextStepCta: 'Open your tabs for deeper soul, destiny, and Hebrew-letter interpretation.',
+      overview: `${displayName}, your baseline Kabbalistic numerology is ready using your profile name and birth date.`,
+      nameValue,
+      soulNumber,
+      destinyNumber,
+      personalityNumber: Math.max(1, ((nameValue + birthDay) % 9) || 9),
+      guidance: `Use ${soulNumber} as your reflection anchor this week.`,
+    };
+  }
+
+  if (toolSlug === 'nameAnalysis') {
+    const vowelCount = (displayName.match(/[aeiou]/gi) ?? []).length;
+    return {
+      baselineReady: true,
+      requiresNextStep: true,
+      nextStepLabel: 'Complete Next Step',
+      nextStepCta: 'Open Name Analysis to review personality and purpose sections.',
+      reading: `${displayName}, your baseline name vibration analysis is ready.`,
+      analysis: {
+        dominantVibration: vowelCount % 2 === 0 ? 'balanced expression' : 'expressive intuition',
+        primaryTheme: 'identity and communication',
+        birthContext: hasBirthDate ? `born on ${birthDate}` : 'birth date enrichment optional',
+      },
+    };
+  }
+
+  return {
+    baselineReady: true,
+    requiresNextStep: true,
+    nextStepLabel: 'Complete Next Step',
+    nextStepCta: 'Add home layout details to unlock room-by-room optimization.',
+    reading: `Your Vastu baseline is ready for ${birthPlace}. Add residence layout details for precision room placement guidance.`,
+    metadata: {
+      isProfileBased: true,
+      enrichmentStatus: 'awaiting_residence_layout',
+    },
+    personalizedInsights: {
+      personalizedRecommendations: [
+        'Keep the center (Brahmasthan) as open and uncluttered as possible.',
+        'Maximize morning light and airflow at home entrance.',
+      ],
+    },
+    remedies: {
+      immediate: ['Declutter entryway', 'Use warm natural lighting at entrance'],
+    },
   };
 }
 
@@ -820,11 +955,7 @@ async function runTool(
         if (!person2BirthDate || !person2BirthTime || !person2BirthLocation) {
           return {
             status: 'success',
-            data: {
-              placeholder: true,
-              pending: true,
-              reason: 'Add partner birth date, time, and place to generate Synastry.',
-            },
+            data: buildBaselineReport('synastry', profile),
             generatedAt,
           };
         }
@@ -852,6 +983,53 @@ async function runTool(
         }
         const json = await res.json();
         return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+      }
+
+      case 'horary': {
+        return {
+          status: 'success',
+          data: buildBaselineReport('horary', profile),
+          generatedAt,
+        };
+      }
+
+      case 'angelNumbers': {
+        try {
+          const profileData = calculateVedicNumerologyProfile(
+            String(profile.fullName ?? profile.displayName ?? ''),
+            String(profile.birthDate ?? '')
+          );
+          return {
+            status: 'success',
+            data: {
+              ...buildBaselineReport('angelNumbers', profile),
+              numerologyAnchor: profileData?.lifePathNumber ?? null,
+            },
+            generatedAt,
+          };
+        } catch {
+          return {
+            status: 'success',
+            data: buildBaselineReport('angelNumbers', profile),
+            generatedAt,
+          };
+        }
+      }
+
+      case 'kabbalisticNumerology': {
+        return {
+          status: 'success',
+          data: buildBaselineReport('kabbalisticNumerology', profile),
+          generatedAt,
+        };
+      }
+
+      case 'nameAnalysis': {
+        return {
+          status: 'success',
+          data: buildBaselineReport('nameAnalysis', profile),
+          generatedAt,
+        };
       }
 
       case 'ziweiDouShu': {
@@ -1164,17 +1342,30 @@ async function runTool(
           if (!data || (data as unknown as Record<string, unknown>).placeholder === true) {
             return {
               status: 'success',
-              data: { placeholder: true, reason: 'Vastu report unavailable.' },
+              data: buildBaselineReport('vastu', profile),
               generatedAt,
             };
           }
-          return { status: 'success', data: data as unknown as Record<string, unknown>, generatedAt };
+          return {
+            status: 'success',
+            data: {
+              ...(data as unknown as Record<string, unknown>),
+              baselineReady: true,
+              requiresNextStep: true,
+              nextStepLabel: 'Complete Next Step',
+              nextStepCta: 'Add home layout details to unlock precision guidance.',
+            },
+            generatedAt,
+          };
         } catch (err) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           devLog.warn('[ProfileOrchestrator] Vastu failed:', msg, 'profileGenerationOrchestrator');
           return {
             status: 'success',
-            data: { placeholder: true, reason: msg },
+            data: {
+              ...buildBaselineReport('vastu', profile),
+              fallbackReason: msg,
+            },
             generatedAt,
           };
         }
@@ -1437,6 +1628,7 @@ export async function runProfileGeneration(
   options?: {
     onProgress?: (update: GenerationProgressUpdate) => void | Promise<void>;
     onToolRun?: (update: ToolRunUpdate) => void | Promise<void>;
+    onToolHeartbeat?: (update: ToolHeartbeatUpdate) => void | Promise<void>;
   },
 ): Promise<GenerationResult> {
   const baseUrl = getServerBaseUrl();
@@ -1463,6 +1655,26 @@ export async function runProfileGeneration(
 
   // 1) Run tools in canonical UI grid order.
   for (const slug of ALL_TOOL_SLUGS) {
+    const toolStartedAt = Date.now();
+    if (options?.onToolHeartbeat) {
+      await options.onToolHeartbeat({
+        toolSlug: slug,
+        startedAt: toolStartedAt,
+        heartbeatAt: toolStartedAt,
+        elapsedMs: 0,
+      });
+    }
+    let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+    if (options?.onToolHeartbeat) {
+      heartbeatTimer = setInterval(() => {
+        void options.onToolHeartbeat?.({
+          toolSlug: slug,
+          startedAt: toolStartedAt,
+          heartbeatAt: Date.now(),
+          elapsedMs: Date.now() - toolStartedAt,
+        });
+      }, 5000);
+    }
     try {
       const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
       toolReports[slug] = entry;
@@ -1482,6 +1694,16 @@ export async function runProfileGeneration(
         await options.onToolRun({ toolSlug: slug, entry: toolReports[slug] });
       }
       await reportProgress(slug);
+    } finally {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (options?.onToolHeartbeat) {
+        await options.onToolHeartbeat({
+          toolSlug: slug,
+          startedAt: toolStartedAt,
+          heartbeatAt: Date.now(),
+          elapsedMs: Date.now() - toolStartedAt,
+        });
+      }
     }
   }
 

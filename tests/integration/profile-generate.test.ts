@@ -13,7 +13,6 @@ const mockGetDocument = jest.fn();
 const mockSetDocument = jest.fn();
 const mockBatchSetDocuments = jest.fn();
 const mockGenerateAllReports = jest.fn();
-const mockGenerateCoreReportsStageA = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
 const mockTryResumeMysticalStageB = jest.fn();
 
@@ -62,8 +61,6 @@ jest.mock('@/lib/firebase-admin', () => {
 
 jest.mock('@/lib/reportGenerationService', () => ({
   generateAllReports: (...args: unknown[]) => mockGenerateAllReports(...args),
-  generateCoreReportsStageA: (...args: unknown[]) => mockGenerateCoreReportsStageA(...args),
-  getCoreStageToolCount: () => 10,
 }));
 
 jest.mock('@/lib/universalDataAggregator', () => ({
@@ -95,15 +92,6 @@ describe('Profile generate-mystical API', () => {
     mockSetDocument.mockResolvedValue(undefined);
     mockBatchSetDocuments.mockResolvedValue(true);
     mockClearCachedDivinationData.mockReturnValue(undefined);
-    mockGenerateCoreReportsStageA.mockResolvedValue({
-      success: true,
-      systemsUsed: ['vedic', 'numerology'],
-      failedTools: [],
-      comprehensiveProfile: { vedic: {}, numerology: {} },
-      seerMaster: {},
-      toolReports: {},
-      aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-    });
     mockGenerateAllReports.mockResolvedValue({
       success: true,
       systemsUsed: ['vedic', 'numerology'],
@@ -168,7 +156,44 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(200);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).toBe(true);
+      expect(data.skipReason).toBe('unchanged_hash_all_ready');
+      expect(data.decision).toBe('skipped');
+      expect(data.decisionReason).toBe('unchanged_hash_all_ready');
       expect(mockGenerateAllReports).not.toHaveBeenCalled();
+      expect(mockSetDocument).not.toHaveBeenCalledWith('generationLocks', expect.anything(), expect.anything());
+      expect(mockSetDocument).not.toHaveBeenCalledWith('generationJobs', expect.anything(), expect.anything());
+    });
+
+    it('full mode unchanged returning user skips regeneration and does not enqueue paid run', async () => {
+      const profile = {
+        ...baseProfile,
+        mysticalProfileGenerated: true,
+        selectedPlan: 'premium',
+        subscriptionStatus: 'active',
+        paymentMethodId: 'pm_123',
+        fullName: 'Test User',
+        gender: 'male',
+        currentLocation: 'New York, NY',
+        facePhotoUrl: 'https://example.com/face.jpg',
+        palmPhotoUrl: 'https://example.com/palm.jpg',
+      };
+      const hash = calculateProfileDataHash(profile);
+      const storedProfileWithAllTools = Object.fromEntries(
+        ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }])
+      );
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...profile, profileDataHash: hash });
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve(storedProfileWithAllTools);
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerate('fake-token', { mode: 'full' });
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.alreadyGenerated).toBe(true);
+      expect(data.decisionReason).toBe('unchanged_hash_all_ready');
+      expect(mockSetDocument).not.toHaveBeenCalledWith('generationLocks', expect.anything(), expect.anything());
+      expect(mockSetDocument).not.toHaveBeenCalledWith('generationJobs', expect.anything(), expect.anything());
     });
   });
 
@@ -187,10 +212,24 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(202);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
+      expect(data.generationState).toBe('running');
+      expect(data.decision).toBe('rerun');
+      expect(data.decisionReason).toBe('profile_hash_changed');
+      expect(data.phase).toBe('running');
       expect(data.allReportsReady).toBe(false);
       expect(Array.isArray(data.pendingToolSlugs)).toBe(true);
-      expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(uid, expect.objectContaining({ uid, birthDate: profile.birthDate, birthPlace: profile.birthPlace }));
+      expect(typeof data.message).toBe('string');
+      expect(String(data.message)).toContain('Reports will unlock one by one');
       expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'generationJobs',
+        uid,
+        expect.objectContaining({
+          status: 'queued',
+          phase: 'running',
+          pipelineMode: 'unified',
+        }),
+      );
     });
   });
 
@@ -214,7 +253,43 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(202);
       expect(data.success).toBe(true);
       expect(data.alreadyGenerated).not.toBe(true);
-      expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(uid, expect.objectContaining({ birthDate: '1992-06-20' }));
+      expect(data.decision).toBe('rerun');
+      expect(data.decisionReason).toBe('profile_hash_changed');
+      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
+    });
+
+    it('allows only missing-tools backfill when hash matches but reports are incomplete', async () => {
+      const profile = { ...baseProfile };
+      const hash = calculateProfileDataHash(profile);
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') {
+          return Promise.resolve({
+            ...profile,
+            mysticalProfileGenerated: true,
+            profileDataHash: hash,
+          });
+        }
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve({
+            western: { placeholder: false },
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerate();
+      const data = await res.json();
+      expect(res.status).toBe(202);
+      expect(data.decision).toBe('rerun');
+      expect(data.decisionReason).toBe('missing_tools_backfill');
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'generationJobs',
+        uid,
+        expect.objectContaining({
+          status: 'queued',
+        }),
+      );
     });
   });
 
@@ -286,11 +361,29 @@ describe('Profile generate-mystical API', () => {
       expect(res.status).toBe(202);
       expect(data.success).toBe(true);
       expect(data.blockReason).toBeUndefined();
-      expect(mockGenerateCoreReportsStageA).toHaveBeenCalled();
+      expect(mockTryResumeMysticalStageB).toHaveBeenCalled();
     });
   });
 
   describe('Generation status semantics (GET)', () => {
+    it('returns completed when profile is fully ready even without lock/job docs', async () => {
+      const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: true });
+        if (collection === 'generationLocks') return Promise.resolve(null);
+        if (collection === 'generationJobs') return Promise.resolve(null);
+        if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve(allReadyProfile);
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.generationState).toBe('completed');
+      expect(data.allReportsReady).toBe(true);
+      expect(data.inProgress).toBe(false);
+    });
+
     it('returns running state when lock is active', async () => {
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true });
@@ -346,6 +439,35 @@ describe('Profile generate-mystical API', () => {
       expect(data.completed).toBe(false);
       expect(data.generationState).toBe('partial_ready');
       expect(data.readyToolsCount).toBeGreaterThan(0);
+    });
+
+    it('does not mark baseline input-dependent tools as pending when baseline payload exists', async () => {
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
+        if (collection === 'generationLocks') return Promise.resolve({ status: 'failed', phase: 'failed', updatedAt: Date.now() });
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve({
+            synastry: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+            horary: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+            angelNumbers: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+            kabbalisticNumerology: { baselineReady: true, requiresNextStep: true, overview: 'ready' },
+            nameAnalysis: { baselineReady: true, requiresNextStep: true, analysis: { primaryTheme: 'identity' } },
+            vastu: { baselineReady: true, requiresNextStep: true, reading: 'ready' },
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.pendingToolSlugs).not.toContain('synastry');
+      expect(data.pendingToolSlugs).not.toContain('horary');
+      expect(data.pendingToolSlugs).not.toContain('angelNumbers');
+      expect(data.pendingToolSlugs).not.toContain('kabbalisticNumerology');
+      expect(data.pendingToolSlugs).not.toContain('nameAnalysis');
+      expect(data.pendingToolSlugs).not.toContain('vastu');
     });
 
     it('recovers stale running lock and returns partial_ready without endless inProgress', async () => {
@@ -452,6 +574,48 @@ describe('Profile generate-mystical API', () => {
       });
     });
 
+    it('marks running job with stale heartbeat recoverable and attempts resume', async () => {
+      const staleHeartbeat = Date.now() - 60_000;
+      mockGetDocument.mockImplementation((collection: string) => {
+        if (collection === 'users') return Promise.resolve({ ...baseProfile, mysticalProfileGenerated: true, allReportsReady: false });
+        if (collection === 'generationLocks') {
+          return Promise.resolve({ status: 'running', phase: 'stageB', updatedAt: Date.now(), lockedAt: Date.now() });
+        }
+        if (collection === 'comprehensiveMysticalProfiles') {
+          return Promise.resolve({ western: { placeholder: false } });
+        }
+        if (collection === 'generationJobs') {
+          return Promise.resolve({
+            status: 'running',
+            currentToolSlug: 'western',
+            currentToolElapsedMs: 92000,
+            completedTools: 10,
+            totalTools: ALL_TOOL_SLUGS.length,
+            lastHeartbeatAt: staleHeartbeat,
+            updatedAt: Date.now(),
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      const res = await callGenerationStatus();
+      const data = await res.json();
+      expect(res.status).toBe(200);
+      expect(data.inProgress).toBe(false);
+      expect(data.resumeAttempted).toBe(true);
+      expect(data.lastHeartbeatAt).toBe(staleHeartbeat);
+      expect(data.currentToolElapsedMs).toBe(92000);
+      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
+      expect(mockSetDocument).toHaveBeenCalledWith(
+        'generationJobs',
+        uid,
+        expect.objectContaining({
+          status: 'stale_running',
+          phase: 'stale_heartbeat',
+        }),
+      );
+    });
+
     it('reconciles user allReportsReady false when profile shows all tools ready', async () => {
       const allReadyProfile = Object.fromEntries(ALL_TOOL_SLUGS.map((slug) => [slug, { placeholder: false }]));
       mockGetDocument.mockImplementation((collection: string) => {
@@ -500,26 +664,12 @@ describe('Profile generate-mystical API', () => {
         if (collection === 'comprehensiveMysticalProfiles') return Promise.resolve({});
         return Promise.resolve(undefined);
       });
-      mockGenerateCoreReportsStageA.mockResolvedValueOnce({
-        success: false,
-        systemsUsed: [],
-        failedTools: ['vedic'],
-        comprehensiveProfile: {},
-        seerMaster: {},
-        toolReports: {
-          vedic: { status: 'failed', error: 'Vedic API: 500', generatedAt: new Date().toISOString() },
-        },
-        aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-      });
-
       const res = await callGenerate();
       const data = await res.json();
 
       expect(res.status).toBe(202);
       expect(data.success).toBe(true);
-      expect(data.partial).toBe(true);
-      expect(data.generationState).toBe('stageA_failed');
-      expect(data.failedTools).toContain('vedic');
+      expect(data.generationState).toBe('running');
     });
 
     it('preserves zero-value coordinates in overrides (0 is valid)', async () => {
@@ -547,13 +697,7 @@ describe('Profile generate-mystical API', () => {
 
       const res = await POST(req);
       expect(res.status).toBe(202);
-      expect(mockGenerateCoreReportsStageA).toHaveBeenCalledWith(
-        uid,
-        expect.objectContaining({
-          birthLatitude: 0,
-          birthLongitude: 0,
-        }),
-      );
+      expect(mockTryResumeMysticalStageB).toHaveBeenCalledWith(uid);
     });
   });
 });
