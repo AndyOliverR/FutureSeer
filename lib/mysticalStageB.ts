@@ -12,6 +12,7 @@ import type { UserProfile } from '@/lib/firebase';
 
 const STAGE_B_MAX_ATTEMPTS = 3;
 const STAGE_B_BASE_RETRY_MS = 30_000;
+const STAGE_B_HEARTBEAT_STALE_MS = 45_000;
 
 type StageBClaimStatus = 'claimed' | 'not_claimed' | 'retry_wait' | 'max_attempts';
 type StageBJobRecord = Record<string, unknown> & {
@@ -21,6 +22,8 @@ type StageBJobRecord = Record<string, unknown> & {
   status?: string;
   nextRetryAt?: number;
   claimId?: string;
+  lastHeartbeatAt?: number;
+  pipelineMode?: 'legacy_staged' | 'unified';
 };
 export type PersistedToolState = ReportReadinessState | 'running';
 export type PersistedToolStatus = {
@@ -95,33 +98,56 @@ export async function runMysticalStageBJob(params: {
   profileHash: string;
   claimId: string;
   attempt: number;
+  pipelineMode?: 'legacy_staged' | 'unified';
 }): Promise<void> {
-  const { uid, profileWithUid, profileHash, claimId, attempt } = params;
+  const { uid, profileWithUid, profileHash, claimId, attempt, pipelineMode = 'legacy_staged' } = params;
   const now = Date.now();
-  const coreCount = getCoreStageToolCount();
+  const coreCount = pipelineMode === 'unified' ? 0 : getCoreStageToolCount();
   const totalTools = ALL_TOOL_SLUGS.length;
 
   await setDocument('generationJobs', uid, {
     uid,
     status: 'running',
-    phase: 'stageB',
+    phase: pipelineMode === 'unified' ? 'running' : 'stageB',
     startedAt: now,
     updatedAt: now,
     attempts: attempt,
     claimId,
     profileHash,
+    lastHeartbeatAt: now,
   });
 
   await setDocument('generationLocks', uid, {
     status: 'running',
-    phase: 'stageB',
+    phase: pipelineMode === 'unified' ? 'running' : 'stageB',
     totalTools,
     completedTools: coreCount,
     startedAt: now,
     updatedAt: now,
+    lastHeartbeatAt: now,
   });
 
   const result = await generateAllReports(uid, profileWithUid, {
+    onToolHeartbeat: async ({ toolSlug, startedAt, heartbeatAt, elapsedMs }) => {
+      await setDocument('generationLocks', uid, {
+        status: 'running',
+        phase: 'stageB',
+        currentToolSlug: toolSlug,
+        currentToolStartedAt: startedAt,
+        currentToolElapsedMs: elapsedMs,
+        lastHeartbeatAt: heartbeatAt,
+        updatedAt: heartbeatAt,
+      });
+      await setDocument('generationJobs', uid, {
+        status: 'running',
+        phase: 'stageB',
+        currentToolSlug: toolSlug,
+        currentToolStartedAt: startedAt,
+        currentToolElapsedMs: elapsedMs,
+        lastHeartbeatAt: heartbeatAt,
+        updatedAt: heartbeatAt,
+      });
+    },
     onToolRun: async ({ toolSlug, entry }) => {
       const updatedAt = Date.now();
       const existingProfile = ((await getDocument('comprehensiveMysticalProfiles', uid)) || {}) as Record<string, unknown>;
@@ -159,9 +185,9 @@ export async function runMysticalStageBJob(params: {
         toolStatus: nextToolStatus,
         allReportsReady: readiness.allReportsReady,
         pendingToolSlugs: readiness.pendingToolSlugs,
-        corePhaseCompleted: true,
-        coreReadyCount: getCoreStageToolCount(),
-        longTailReadyCount: Math.max(0, readiness.readyToolsCount - getCoreStageToolCount()),
+        corePhaseCompleted: readiness.readyToolsCount >= coreCount,
+        coreReadyCount: Math.min(readiness.readyToolsCount, coreCount),
+        longTailReadyCount: Math.max(0, readiness.readyToolsCount - coreCount),
         lastProgressAt: updatedAt,
         updatedAt,
       });
@@ -186,21 +212,25 @@ export async function runMysticalStageBJob(params: {
       }
       await setDocument('generationLocks', uid, {
         status: 'running',
-        phase: 'stageB',
+        phase: pipelineMode === 'unified' ? 'running' : 'stageB',
         completedTools: overallCompleted,
         totalTools,
         stageBCompletedTools: stageBCompleted,
         stageBTotalTools: stageBTotal,
         currentToolSlug: toolSlug,
+        currentToolElapsedMs: 0,
+        lastHeartbeatAt: updatedAt,
         updatedAt,
       });
       await setDocument('generationJobs', uid, {
         status: 'running',
-        phase: 'stageB',
+        phase: pipelineMode === 'unified' ? 'running' : 'stageB',
         completedTools: overallCompleted,
         totalTools,
         currentToolSlug: toolSlug,
+        currentToolElapsedMs: 0,
         toolStatus: nextToolStatus,
+        lastHeartbeatAt: updatedAt,
         lastProgressAt: updatedAt,
         updatedAt,
       });
@@ -253,9 +283,9 @@ export async function runMysticalStageBJob(params: {
         allReportsReady: finalReadiness.allReportsReady,
         pendingToolSlugs: finalReadiness.pendingToolSlugs,
         toolStatus,
-        corePhaseCompleted: true,
-        coreReadyCount: getCoreStageToolCount(),
-        longTailReadyCount: Math.max(0, finalReadiness.readyToolsCount - getCoreStageToolCount()),
+        corePhaseCompleted: finalReadiness.readyToolsCount >= coreCount,
+        coreReadyCount: Math.min(finalReadiness.readyToolsCount, coreCount),
+        longTailReadyCount: Math.max(0, finalReadiness.readyToolsCount - coreCount),
         lastProgressAt: nowTs,
         updatedAt: Date.now(),
       },
@@ -319,6 +349,7 @@ export async function claimMysticalStageBJob(
       attempt?: number;
       profileWithUid?: UserProfile;
       profileHash?: string;
+      pipelineMode?: 'legacy_staged' | 'unified';
       reason?: string;
     }
   | { status: 'not_claimed'; reason: string }
@@ -328,15 +359,33 @@ export async function claimMysticalStageBJob(
     return { status: 'not_claimed', reason: 'admin_db_unavailable' };
   }
   const claimId = `${uid}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  const result = await db.runTransaction(async (transaction) => {
+  const result = await db.runTransaction<
+    | { status: 'not_claimed'; reason: string }
+    | { status: 'retry_wait'; reason: string }
+    | { status: 'max_attempts'; reason: string }
+    | {
+        status: 'claimed';
+        claimId: string;
+        attempt: number;
+        profileWithUid: UserProfile;
+        profileHash: string;
+        pipelineMode: 'legacy_staged' | 'unified';
+      }
+  >(async (transaction) => {
     const ref = db.collection('generationJobs').doc(uid);
     const snap = await transaction.get(ref);
     const job = (snap.data() ?? {}) as StageBJobRecord;
     const status = typeof job.status === 'string' ? job.status : '';
     const attempts = Number(job.attempts ?? 0);
     const nextRetryAt = Number(job.nextRetryAt ?? 0);
+    const lastHeartbeatAt = Number(job.lastHeartbeatAt ?? 0);
     const now = Date.now();
-    if (!allowedStatuses.includes(status)) {
+    if (status === 'running') {
+      const staleRunning = lastHeartbeatAt > 0 && now - lastHeartbeatAt > STAGE_B_HEARTBEAT_STALE_MS;
+      if (!staleRunning) {
+        return { status: 'not_claimed' as const, reason: 'status_running' };
+      }
+    } else if (!allowedStatuses.includes(status)) {
       return { status: 'not_claimed' as const, reason: `status_${status || 'unknown'}` };
     }
     if (nextRetryAt > now) {
@@ -347,6 +396,8 @@ export async function claimMysticalStageBJob(
     }
     const profileWithUid = job.profileSnapshot;
     const profileHash = typeof job.profileHash === 'string' ? job.profileHash : '';
+    const pipelineMode: 'legacy_staged' | 'unified' =
+      job.pipelineMode === 'unified' ? 'unified' : 'legacy_staged';
     if (!profileWithUid || !profileHash) {
       return { status: 'not_claimed' as const, reason: 'missing_profile_snapshot' };
     }
@@ -373,6 +424,7 @@ export async function claimMysticalStageBJob(
       attempt: nextAttempt,
       profileWithUid,
       profileHash,
+      pipelineMode,
     };
   });
   return result;
@@ -428,6 +480,7 @@ export async function tryResumeMysticalStageB(uid: string): Promise<{
     profileHash: claim.profileHash,
     claimId: claim.claimId,
     attempt: claim.attempt,
+    pipelineMode: claim.pipelineMode ?? 'legacy_staged',
   }).catch((err) => failMysticalStageBJob(uid, err, { claimId: claim.claimId, attempt: claim.attempt }));
   return { started: true };
 }

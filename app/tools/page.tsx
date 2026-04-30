@@ -53,6 +53,23 @@ function ToolsPageContent() {
         | undefined) ?? {},
     [comprehensiveProfile],
   )
+  const toolStateByPath = useMemo(() => {
+    const stateMap: Record<string, string> = {}
+    for (const [slug, status] of Object.entries(toolStatusMap)) {
+      const pathSlug = toolPathForSlug(slug)
+      if (typeof status?.state === 'string') stateMap[pathSlug] = status.state
+    }
+    return stateMap
+  }, [toolStatusMap])
+  const profileByPath = useMemo(() => {
+    const profileObj = (comprehensiveProfile as Record<string, unknown> | null) ?? {}
+    const map: Record<string, unknown> = {}
+    for (const slug of ALL_TOOL_SLUGS) {
+      const pathSlug = toolPathForSlug(slug)
+      map[pathSlug] = profileObj[slug]
+    }
+    return map
+  }, [comprehensiveProfile])
   const formatAgo = (ts?: number) => {
     if (!ts) return null
     const sec = Math.max(0, Math.floor((nowMs - ts) / 1000))
@@ -62,8 +79,40 @@ function ToolsPageContent() {
     return `updated ${min}m ago`
   }
   const numerologyPreviewBypassEnabled = isNumerologyChartsV2Enabled()
+  const baselineNextStepTools = useMemo(
+    () =>
+      new Set([
+        toolPathForSlug('synastry'),
+        toolPathForSlug('horary'),
+        toolPathForSlug('angelNumbers'),
+        toolPathForSlug('kabbalisticNumerology'),
+        toolPathForSlug('nameAnalysis'),
+        toolPathForSlug('vastu'),
+      ]),
+    []
+  )
   const isToolPending = (toolSlug: string) =>
-    Boolean(userProfile?.mysticalProfileGenerated) && pendingToolsSet.has(toolSlug)
+    {
+      if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
+      const state = toolStateByPath[toolSlug]
+      if (state === 'ready') return false
+      if (state === 'running' || state === 'pending' || state === 'placeholder') return true
+      const report = profileByPath[toolSlug]
+      const hasUsableReport =
+        report != null &&
+        typeof report === 'object' &&
+        (report as { placeholder?: boolean; status?: string }).placeholder !== true &&
+        (report as { status?: string }).status !== 'failed'
+      if (hasUsableReport) return false
+      return pendingToolsSet.has(toolSlug)
+    }
+  const isBaselineNextStepReady = (toolSlug: string) => {
+    if (isToolPending(toolSlug)) return false
+    if (!baselineNextStepTools.has(toolSlug)) return false
+    const report = profileByPath[toolSlug]
+    if (!report || typeof report !== 'object') return false
+    return (report as { requiresNextStep?: boolean }).requiresNextStep === true
+  }
   const canOpenTool = (toolSlug: string, isComingSoon?: boolean) => {
     if (isComingSoon) return false
     if (!isToolPending(toolSlug)) return true
@@ -223,6 +272,10 @@ function ToolsPageContent() {
                             <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
                               Processing
                             </span>
+                          ) : isBaselineNextStepReady(tool.slug) ? (
+                            <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
+                              Complete Next Step
+                            </span>
                           ) : null}
                           {toolStatusMap[tool.slug]?.unchanged ? (
                             <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
@@ -258,6 +311,10 @@ function ToolsPageContent() {
                       {isToolPending(tool.slug) ? (
                         <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
                           Processing
+                        </span>
+                      ) : isBaselineNextStepReady(tool.slug) ? (
+                        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
+                          Complete Next Step
                         </span>
                       ) : null}
                       {toolStatusMap[tool.slug]?.unchanged ? (
@@ -336,6 +393,10 @@ function ToolsPageContent() {
                           <span className="mb-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
                             Processing
                           </span>
+                        ) : isBaselineNextStepReady(tool.slug) ? (
+                          <span className="mb-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
+                            Complete Next Step
+                          </span>
                         ) : null}
                         {toolStatusMap[tool.slug]?.unchanged ? (
                           <span className="mb-2 rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
@@ -373,6 +434,10 @@ function ToolsPageContent() {
                 {isToolPending(tool.slug) ? (
                   <span className="mb-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
                     Processing
+                  </span>
+                ) : isBaselineNextStepReady(tool.slug) ? (
+                  <span className="mb-2 rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cyan-200">
+                    Complete Next Step
                   </span>
                 ) : null}
                 {toolStatusMap[tool.slug]?.unchanged ? (

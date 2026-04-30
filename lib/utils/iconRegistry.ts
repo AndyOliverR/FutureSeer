@@ -106,6 +106,7 @@ export const PLANET_ICONS: Record<string, { path?: string; FallbackComponent: Re
   pluto: {
     FallbackComponent: Circle
   },
+  chiron: { FallbackComponent: Star },
   northnode: { FallbackComponent: Circle },
   southnode: { FallbackComponent: Circle },
   ascendant: { FallbackComponent: Star },
@@ -202,9 +203,13 @@ export function getZodiacIconPath(signName: string): string {
  * path is null when no SVG exists (fallback only), to avoid 404s.
  */
 export function getPlanetIconConfig(planetName: string): { path: string | null; fallback: ReactNode } {
-  const normalized = planetName.toLowerCase()
+  const normalized = planetName
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '')
+    .replace(/northnode|truenode|meannode/, 'northnode')
+    .replace(/southnode|descendingnode/, 'southnode')
   const config = PLANET_ICONS[normalized] || {
-    path: `/icons/astrology/western/planets/${normalized}.svg`,
+    path: `/icons/astrology/western/planets/${planetName.toLowerCase().replace(/\s+/g, '-')}.svg`,
     FallbackComponent: Star
   }
   const hasPath = config.path !== undefined && config.path !== ''

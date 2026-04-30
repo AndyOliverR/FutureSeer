@@ -89,6 +89,9 @@ export default function MysticalProfilePage() {
   const [totalTools, setTotalTools] = useState<number | null>(null)
   const [readyToolsCount, setReadyToolsCount] = useState<number | null>(null)
   const [currentToolSlug, setCurrentToolSlug] = useState<string | null>(null)
+  const [currentToolElapsedMs, setCurrentToolElapsedMs] = useState<number | null>(null)
+  const [lastHeartbeatAt, setLastHeartbeatAt] = useState<number | null>(null)
+  const [resumeAttempted, setResumeAttempted] = useState(false)
   const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
   const [generationWarning, setGenerationWarning] = useState<string | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
@@ -168,6 +171,9 @@ export default function MysticalProfilePage() {
             totalTools?: number | null
             readyToolsCount?: number | null
             currentToolSlug?: string | null
+            currentToolElapsedMs?: number | null
+            lastHeartbeatAt?: number | null
+            resumeAttempted?: boolean
             updatedAt?: number | null
           }
           setGenerationPhase(data.phase ?? null)
@@ -175,6 +181,9 @@ export default function MysticalProfilePage() {
           setTotalTools(typeof data.totalTools === "number" ? data.totalTools : null)
           setReadyToolsCount(typeof data.readyToolsCount === "number" ? data.readyToolsCount : null)
           setCurrentToolSlug(typeof data.currentToolSlug === "string" ? data.currentToolSlug : null)
+          setCurrentToolElapsedMs(typeof data.currentToolElapsedMs === "number" ? data.currentToolElapsedMs : null)
+          setLastHeartbeatAt(typeof data.lastHeartbeatAt === "number" ? data.lastHeartbeatAt : null)
+          setResumeAttempted(Boolean(data.resumeAttempted))
           setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : null)
           if (data.inProgress) {
             setGenerationWarning(null)
@@ -258,6 +267,22 @@ export default function MysticalProfilePage() {
     if (deltaSec <= 2) return "Updated just now"
     return `Updated ${deltaSec}s ago`
   }, [lastProgressUpdatedAt, currentTimeMs])
+  const heartbeatLabel = useMemo(() => {
+    if (!lastHeartbeatAt) return null
+    const deltaSec = Math.max(0, Math.floor((currentTimeMs - lastHeartbeatAt) / 1000))
+    if (deltaSec <= 2) return "Heartbeat: just now"
+    return `Heartbeat: ${deltaSec}s ago`
+  }, [lastHeartbeatAt, currentTimeMs])
+  const currentToolElapsedLabel = useMemo(() => {
+    if (typeof currentToolElapsedMs !== "number") return null
+    const secs = Math.floor(Math.max(0, currentToolElapsedMs) / 1000)
+    return `Current tool elapsed: ${secs}s`
+  }, [currentToolElapsedMs])
+  const generationPhaseLabel = useMemo(() => {
+    if (!generationPhase) return "running"
+    if (generationPhase.includes("stage")) return "running"
+    return generationPhase
+  }, [generationPhase])
 
   useEffect(() => {
     if (!generationPending || !progressLooksStale || !user || staleRecoveryRef.current) return
@@ -281,9 +306,13 @@ export default function MysticalProfilePage() {
           hasProfile?: boolean
           allReportsReady?: boolean
           currentToolSlug?: string | null
+          currentToolElapsedMs?: number | null
+          lastHeartbeatAt?: number | null
           updatedAt?: number | null
         }
         setCurrentToolSlug(typeof data.currentToolSlug === "string" ? data.currentToolSlug : null)
+        setCurrentToolElapsedMs(typeof data.currentToolElapsedMs === "number" ? data.currentToolElapsedMs : null)
+        setLastHeartbeatAt(typeof data.lastHeartbeatAt === "number" ? data.lastHeartbeatAt : null)
         setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : Date.now())
         if (data.completed || data.allReportsReady) {
           sessionStorage.setItem("futureSeer:generationStatus", "completed")
@@ -564,7 +593,7 @@ export default function MysticalProfilePage() {
       <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
       <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
-        <p className="mt-2 text-xs text-surface-on-variant">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
+        <p className="mt-2 text-xs text-surface-on-variant">Progress: {completedTools}/{totalTools} tools ({generationPhaseLabel})</p>
       ) : null}
       {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
         <p className="mt-1 text-xs text-surface-on-variant">Ready reports: {readyToolsCount}/{totalTools}</p>
@@ -576,9 +605,17 @@ export default function MysticalProfilePage() {
         <p className="mt-1 text-[11px] text-surface-on-variant/80">{lastUpdatedLabel}</p>
       ) : null}
       {generationWarning ? (
-        <p className="mt-2 text-xs text-surface-on-variant">Still processing; open Explore all tools for the ready reports.</p>
+        <p className="mt-2 text-xs text-surface-on-variant">
+          {resumeAttempted ? "Recovering generation and continuing in tools order..." : "Still processing; open Explore all tools for the ready reports."}
+        </p>
       ) : progressLooksStale ? (
-        <p className="mt-2 text-xs text-surface-on-variant">Slow network detected; reports continue in background.</p>
+        <p className="mt-2 text-xs text-surface-on-variant">Slow network detected; recovering generation in background.</p>
+      ) : null}
+      {heartbeatLabel ? (
+        <p className="mt-1 text-[11px] text-surface-on-variant/80">{heartbeatLabel}</p>
+      ) : null}
+      {currentToolElapsedLabel ? (
+        <p className="mt-1 text-[11px] text-surface-on-variant/80">{currentToolElapsedLabel}</p>
       ) : null}
           </div>
         ) : groupedCards.length === 0 ? (
@@ -671,10 +708,10 @@ export default function MysticalProfilePage() {
         {generationPending ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-      <p>Generating your mystical profile. Core systems are ready; remaining systems are finishing in the background.</p>
+      <p>Generating your mystical profile. Reports unlock one by one in tools order.</p>
       <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
-        <p className="mt-2 text-xs text-slate-400">Progress: {completedTools}/{totalTools} tools ({generationPhase ?? "running"})</p>
+        <p className="mt-2 text-xs text-slate-400">Progress: {completedTools}/{totalTools} tools ({generationPhaseLabel})</p>
       ) : null}
       {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
         <p className="mt-1 text-xs text-slate-400">Ready reports: {readyToolsCount}/{totalTools}</p>
@@ -688,7 +725,13 @@ export default function MysticalProfilePage() {
       {generationWarning ? (
         <p className="mt-2 text-xs text-slate-400">{generationWarning}</p>
       ) : progressLooksStale ? (
-        <p className="mt-2 text-xs text-slate-400">Generation can be slower on busy networks. Open Explore all tools for reports that are already ready.</p>
+        <p className="mt-2 text-xs text-slate-400">Recovering generation in the background. Open Explore all tools for reports that are already ready.</p>
+      ) : null}
+      {heartbeatLabel ? (
+        <p className="mt-1 text-[11px] text-slate-400/80">{heartbeatLabel}</p>
+      ) : null}
+      {currentToolElapsedLabel ? (
+        <p className="mt-1 text-[11px] text-slate-400/80">{currentToolElapsedLabel}</p>
       ) : null}
           </div>
         ) : groupedCards.length === 0 ? (

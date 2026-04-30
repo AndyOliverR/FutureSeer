@@ -1,5 +1,6 @@
 import { calculateTropicalPlanets, calculateTropicalHouses } from '@/lib/western/tropicalCalculator';
 import { devLog } from '@/lib/devLogger';
+const verboseAstroLogs = process.env.VERBOSE_ASTRO_LOGS === '1';
 import * as julian from "astronomia/julian";
 
 // Helper to normalize degree
@@ -74,7 +75,9 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
   const tropicalAsc = tropicalHouses[0].longitude;
   const siderealAsc = norm360(tropicalAsc - ayanamsha);
   
-  devLog.debug(`🕉️ Ascendant: Tropical ${tropicalAsc.toFixed(2)}° → Sidereal ${siderealAsc.toFixed(2)}°`);
+  if (verboseAstroLogs) {
+    devLog.debug(`🕉️ Ascendant: Tropical ${tropicalAsc.toFixed(2)}° → Sidereal ${siderealAsc.toFixed(2)}°`);
+  }
   // Lagna diagnostic for 22 Apr 1959 22:00 IST Kushalnagar: expected sidereal Ascendant ~253° (Sagittarius ~13°)
   const isTestChart1959 = date.getUTCFullYear() === 1959 && date.getUTCMonth() === 3 && date.getUTCDate() === 22 && Math.abs(longitude - 75.96) < 2;
   if (isTestChart1959) {
@@ -89,9 +92,11 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
       date.getUTCMonth() === 1 && 
       date.getUTCDate() === 24) {
     
-    devLog.debug('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
-    devLog.debug('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
-    devLog.debug('🕉️ Expected Ascendant: ~7° Cancer (sidereal ~97°)');
+    if (verboseAstroLogs) {
+      devLog.debug('🕉️ VEDIC VALIDATION for Feb 24, 1983:');
+      devLog.debug('🕉️ Expected Sun: ~11° Aquarius (sidereal ~311°)');
+      devLog.debug('🕉️ Expected Ascendant: ~7° Cancer (sidereal ~97°)');
+    }
     
     const sunLon = siderealPlanets.sun.siderealLongitude;
     const ascLon = siderealAsc;
@@ -102,9 +107,11 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
     if (sunCorrect && ascCorrect) {
       devLog.debug('Feb 24, 1983 Vedic positions CORRECT', undefined, 'siderealCalculator');
     } else {
-      devLog.error('Feb 24, 1983 Vedic positions WRONG', { sunLon, ascLon, expectedSun: 311, expectedAsc: 97 }, 'siderealCalculator');
-      devLog.error(`  Sun: ${sunLon.toFixed(2)}° (expected ~311°)`, undefined, 'siderealCalculator');
-      devLog.error(`  Asc: ${ascLon.toFixed(2)}° (expected ~97°)`, undefined, 'siderealCalculator');
+      if (verboseAstroLogs) {
+        devLog.warn('Feb 24, 1983 Vedic positions WRONG', { sunLon, ascLon, expectedSun: 311, expectedAsc: 97 }, 'siderealCalculator');
+        devLog.warn(`  Sun: ${sunLon.toFixed(2)}° (expected ~311°)`, undefined, 'siderealCalculator');
+        devLog.warn(`  Asc: ${ascLon.toFixed(2)}° (expected ~97°)`, undefined, 'siderealCalculator');
+      }
     }
   }
 
