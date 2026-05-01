@@ -95,7 +95,7 @@ export function EnhancedFooter() {
               </form>
             )}
             </div>
-            <p className="text-[10px] text-surface-on-variant/85 leading-relaxed whitespace-normal break-words">
+            <p className="text-xs text-surface-on-variant/85 leading-relaxed whitespace-normal break-words">
               No spam. Unsubscribe anytime.{" "}
               <Link href="/terms" className="text-primary/90 hover:underline">
                 Terms
@@ -107,22 +107,22 @@ export function EnhancedFooter() {
             </p>
             <div aria-live="polite" aria-atomic="true" className="min-h-[1rem]">
               {status === "error" ? (
-                <p className="text-[10px] text-red-400/90" role="alert">
+                <p className="text-xs text-red-400/90" role="alert">
                   {message}
                 </p>
               ) : null}
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
-            <Link href="/support" className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary-container transition-colors" aria-label="Support">
+            <Link href="/support" className="fs-touch-target w-11 h-11 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary-container transition-colors" aria-label="Support">
               <MessageCircle className="w-4 h-4 text-primary" />
             </Link>
-            <Link href="/contact" className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary-container transition-colors" aria-label="Contact">
+            <Link href="/contact" className="fs-touch-target w-11 h-11 rounded-full bg-surface-container flex items-center justify-center hover:bg-primary-container transition-colors" aria-label="Contact">
               <Mailbox className="w-4 h-4 text-primary" />
             </Link>
           </div>
         </div>
-        <div className="mt-3 pt-3 border-t border-outline-variant/10 flex flex-wrap justify-between items-center gap-2 text-[9px] text-surface-on-variant uppercase tracking-widest opacity-60">
+        <div className="mt-3 pt-3 border-t border-outline-variant/10 flex flex-wrap justify-between items-center gap-2 text-[11px] text-surface-on-variant uppercase tracking-wide opacity-70">
           <p>© 2025 FutureSeer</p>
           <StandardsBadges variant="footer" showToolCount={false} />
         </div>
@@ -140,7 +140,7 @@ export function EnhancedFooter() {
               className="inline-flex flex-col gap-1"
               aria-label="Coming Soon — App Store badge — join the iOS app waitlist"
             >
-              <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
+              <span className="text-[11px] uppercase tracking-wide text-surface-on-variant/90">Coming Soon</span>
               <Image
                 src="/badges/app-store-dark.svg"
                 alt=""
@@ -161,7 +161,7 @@ export function EnhancedFooter() {
               className="inline-flex flex-col gap-1"
               aria-label="Coming Soon — Google Play badge — join the Android app waitlist"
             >
-              <span className="text-[9px] uppercase tracking-wider text-surface-on-variant/90">Coming Soon</span>
+              <span className="text-[11px] uppercase tracking-wide text-surface-on-variant/90">Coming Soon</span>
               <Image
                 src="/badges/google-play-dark.svg"
                 alt=""

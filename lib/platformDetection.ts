@@ -7,6 +7,7 @@
 export type MobileOS = "ios" | "android" | null;
 
 export type DesignSystem = "devotionist" | "material" | "konsta-ios";
+export type PlatformClass = "platform-android" | "platform-web";
 
 /**
  * Returns the mobile OS when viewport is considered mobile (caller should check width).
@@ -24,6 +25,47 @@ export function getMobileOS(): MobileOS {
   if (/Android/i.test(ua)) return "android";
 
   return null;
+}
+
+export function isMobileLayoutWidth(width: number): boolean {
+  return width > 0 && width < 768;
+}
+
+export function getPlatformClassFromWidth(width: number, isNativePlatform: boolean): PlatformClass {
+  if (isNativePlatform) return "platform-android";
+  return isMobileLayoutWidth(width) ? "platform-android" : "platform-web";
+}
+
+export function getDataPlatformFromClass(platformClass: PlatformClass): "android" | "web" {
+  return platformClass === "platform-android" ? "android" : "web";
+}
+
+export function getClientPlatformSnapshot(params?: { isNativePlatform?: boolean }): {
+  platformClass: PlatformClass;
+  dataPlatform: "android" | "web";
+  mobileOS: "ios" | "android" | "desktop";
+  isMobile: boolean;
+} {
+  if (typeof window === "undefined") {
+    return {
+      platformClass: "platform-web",
+      dataPlatform: "web",
+      mobileOS: "desktop",
+      isMobile: false,
+    };
+  }
+
+  const platformClass = getPlatformClassFromWidth(window.innerWidth, Boolean(params?.isNativePlatform));
+  const isMobile = platformClass === "platform-android";
+  const detectedOS = isMobile ? getMobileOS() : null;
+  const mobileOS = isMobile ? (detectedOS ?? "desktop") : "desktop";
+
+  return {
+    platformClass,
+    dataPlatform: getDataPlatformFromClass(platformClass),
+    mobileOS,
+    isMobile,
+  };
 }
 
 /**

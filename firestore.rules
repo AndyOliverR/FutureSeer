@@ -1,13 +1,124 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function userProfileAllowedKeys() {
+      return [
+        'uid',
+        'email',
+        'displayName',
+        'fullName',
+        'photoURL',
+        'isSubscribed',
+        'isTipped',
+        'createdAt',
+        'lastLoginAt',
+        'birthDate',
+        'birthPlace',
+        'birthTime',
+        'birthTimeKnown',
+        'birthTimePeriod',
+        'birthTimeNote',
+        'birthLatitude',
+        'birthLongitude',
+        'latitude',
+        'longitude',
+        'coordinatesResolvedAt',
+        'currentLocation',
+        'gender',
+        'facePhotoUrl',
+        'palmPhotoUrl',
+        'emailVerified',
+        'providerData',
+        'lastSignInTime',
+        'creationTime',
+        'updatedAt',
+        'mysticalProfileGenerated',
+        'profileDataHash',
+        'profileStatus',
+        'country',
+        'paymentMethodId',
+        'subscriptionId',
+        'selectedPlan',
+        'autoMandateAccepted',
+        'freeTrialTermsAccepted',
+        'freeTrialTermsAcceptedAt',
+        'subscriptionStatus',
+        'noChargeAccount',
+        'trialEndDate',
+        'trialEndTime',
+        'nextBillingDate',
+        'referralCode',
+        'referralCount',
+        'freeMonthsRemaining',
+        'notificationsEnabled',
+        'emailUpdates',
+        'relationshipStatus',
+        'hasChildren',
+        'numberOfChildren',
+        'divinationInterests',
+        'notificationPreferences',
+        'seerIncludeNewsHeadlines',
+        'timezone',
+        'specialUser',
+        'special_user',
+        'isSpecialUser',
+        'profileEditCount',
+        'profileEditPeriodStart'
+      ];
+    }
+
+    function protectedUserKeys() {
+      return [
+        'isSubscribed',
+        'selectedPlan',
+        'paymentMethodId',
+        'subscriptionId',
+        'subscriptionStatus',
+        'noChargeAccount',
+        'trialEndDate',
+        'trialEndTime',
+        'nextBillingDate',
+        'specialUser',
+        'special_user',
+        'isSpecialUser',
+        'profileEditCount',
+        'profileEditPeriodStart',
+        'freeMonthsRemaining'
+      ];
+    }
+
+    function validUserCreate(userId) {
+      return request.resource.data.uid == userId
+        && request.resource.data.keys().hasOnly(userProfileAllowedKeys())
+        && (!('selectedPlan' in request.resource.data) || request.resource.data.selectedPlan in ['power-user-trial', 'trial', ''])
+        && (!('subscriptionStatus' in request.resource.data) || request.resource.data.subscriptionStatus == 'trial')
+        && (!('isSubscribed' in request.resource.data) || request.resource.data.isSubscribed == false)
+        && (!('noChargeAccount' in request.resource.data) || request.resource.data.noChargeAccount == false)
+        && (!('specialUser' in request.resource.data) || request.resource.data.specialUser == false)
+        && (!('special_user' in request.resource.data) || request.resource.data.special_user == false)
+        && (!('isSpecialUser' in request.resource.data) || request.resource.data.isSpecialUser == false);
+    }
+
+    function validUserUpdate(userId) {
+      return request.resource.data.uid == userId
+        && request.resource.data.keys().hasOnly(userProfileAllowedKeys())
+        && request.resource.data.diff(resource.data).changedKeys().hasAny(protectedUserKeys()) == false;
+    }
+
     // Allow users to read and write their own data
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && validUserCreate(userId);
+      allow update: if isOwner(userId) && validUserUpdate(userId);
+      allow delete: if false;
       
       // Allow access to user subcollections (astroProfile, numerologyProfile, etc.)
       match /{subcollection=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
     }
     

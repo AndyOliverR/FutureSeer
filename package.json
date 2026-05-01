@@ -37,7 +37,8 @@
     "audit:sitemap:live": "node scripts/audit-sitemap-live.mjs",
     "audit:gsc-hygiene": "node scripts/gsc-manual-checklist.mjs",
     "audit:google-presence": "node scripts/google-presence-checklist.mjs",
-    "linux:readiness": "node scripts/linux-readiness-check.mjs"
+    "linux:readiness": "node scripts/linux-readiness-check.mjs",
+    "ui:audit:tokens": "powershell -NoProfile -Command \"Get-ChildItem app,components -Recurse -Include *.tsx | Select-String -Pattern 'bg-slate-|text-slate-|bg-white/|border-amber-|h-\\[800px\\]|grid-cols-5'\""
   },
   "engines": {
     "node": "24.x"

@@ -70,6 +70,13 @@ export function adaptWesternToUnified(input: {
     points,
     houses,
     aspects,
+    tokens: {
+      background: '#ffffff',
+      ringStroke: '#0f172a',
+      textPrimary: '#0f172a',
+      textSecondary: '#475569',
+      accent: '#dc2626',
+    },
     metadata: { source: 'western-adapter' },
   };
 }
@@ -111,6 +118,13 @@ export function adaptVedicToUnified(input: {
     layout: input.layout ?? 'vedic-north',
     points,
     houses,
+    tokens: {
+      background: '#fffdf7',
+      ringStroke: '#1f2937',
+      textPrimary: '#111827',
+      textSecondary: '#6b7280',
+      accent: '#b45309',
+    },
     metadata: { source: 'vedic-adapter' },
   };
 }

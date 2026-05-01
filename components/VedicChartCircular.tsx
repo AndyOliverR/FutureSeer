@@ -10,6 +10,7 @@ const NAKSHATRAS = [
   "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana", "Dhanishtha", "Shatabhisha",
   "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
 ];
+const NAKSHATRA_SHORT = NAKSHATRAS.map((name) => name.length > 9 ? `${name.slice(0, 8)}.` : name);
 
 // 12 Zodiac Signs with symbols
 const ZODIAC_SIGNS = [
@@ -34,8 +35,8 @@ const PLANET_SYMBOLS: { [key: string]: string } = {
 };
 
 const PLANET_COLORS: { [key: string]: string } = {
-  sun: '#FF8C00', moon: '#C0C0C0', mars: '#FF0000', mercury: '#00FF00',
-  jupiter: '#FFD700', venus: '#FF1493', saturn: '#4169E1', rahu: '#808080', ketu: '#8B4513'
+  sun: '#EA580C', moon: '#1D4ED8', mars: '#DC2626', mercury: '#0F766E',
+  jupiter: '#7C3AED', venus: '#BE185D', saturn: '#0F172A', rahu: '#374151', ketu: '#6B21A8'
 };
 
 interface VedicChartCircularProps {
@@ -66,6 +67,23 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
   const CENTER_CIRCLE = 121; // 220 * SCALE - White center circle
   
   const planets = chart?.planets || {};
+  const planetEntries = Object.entries(planets).map(([planetKey, planetData]) => ({
+    planetKey,
+    planetData,
+    lon: Number((planetData as { lonSidereal?: number; lon?: number })?.lonSidereal ?? (planetData as { lonSidereal?: number; lon?: number })?.lon ?? 0),
+  })).sort((a, b) => a.lon - b.lon);
+
+  const clusterMetaByPlanet = new Map<string, { idx: number; size: number }>();
+  let i = 0;
+  while (i < planetEntries.length) {
+    let j = i + 1;
+    while (j < planetEntries.length && Math.abs(planetEntries[j].lon - planetEntries[j - 1].lon) < 10) {
+      j += 1;
+    }
+    const cluster = planetEntries.slice(i, j);
+    cluster.forEach((entry, idx) => clusterMetaByPlanet.set(entry.planetKey, { idx, size: cluster.length }));
+    i = j;
+  }
 
   // Helper function to convert degrees to radians
   const degToRad = (deg: number) => (deg * Math.PI) / 180;
@@ -86,7 +104,8 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
         height={CHART_SIZE}
         viewBox={`0 0 ${CHART_SIZE} ${CHART_SIZE}`}
         className="shadow-2xl rounded-full"
-        style={{ display: 'block' }}
+        shapeRendering="geometricPrecision"
+        style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8 }}
@@ -109,8 +128,8 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
               y1={start.y}
               x2={end.x}
               y2={end.y}
-              stroke="#CCCCCC"
-              strokeWidth="0.58"
+              stroke="#B0B8C2"
+              strokeWidth="0.8"
             />
           );
         })}
@@ -120,16 +139,16 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
         {/* ═══════════════════════════════════════════════════════ */}
         
         {/* Outer circle boundary */}
-        <circle cx={CENTER} cy={CENTER} r={OUTER_EDGE} fill="none" stroke="#666666" strokeWidth="0.87" />
+        <circle cx={CENTER} cy={CENTER} r={OUTER_EDGE} fill="none" stroke="#334155" strokeWidth="1.3" />
         
         {/* Zodiac ring outer boundary */}
-        <circle cx={CENTER} cy={CENTER} r={ZODIAC_OUTER} fill="none" stroke="#666666" strokeWidth="0.58" />
+        <circle cx={CENTER} cy={CENTER} r={ZODIAC_OUTER} fill="none" stroke="#334155" strokeWidth="1.1" />
         
         {/* Zodiac ring inner boundary (cyan band) */}
-        <circle cx={CENTER} cy={CENTER} r={ZODIAC_INNER} fill="none" stroke="#666666" strokeWidth="0.87" />
+        <circle cx={CENTER} cy={CENTER} r={ZODIAC_INNER} fill="none" stroke="#334155" strokeWidth="1.3" />
         
         {/* Center white circle */}
-        <circle cx={CENTER} cy={CENTER} r={CENTER_CIRCLE} fill="#FFFFFF" stroke="#666666" strokeWidth="0.87" />
+        <circle cx={CENTER} cy={CENTER} r={CENTER_CIRCLE} fill="#FFFFFF" stroke="#334155" strokeWidth="1.3" />
 
         {/* ═══════════════════════════════════════════════════════ */}
         {/* CYAN ZODIAC BAND (12 segments) */}
@@ -157,7 +176,7 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
             <path
               key={`zodiac-${i}`}
               d={pathData}
-              fill="#00CED1"
+              fill="#22D3EE"
               stroke="none"
             />
           );
@@ -177,7 +196,7 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
               y={pos.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              fontSize="28"
+              fontSize="31"
               fill="#FFFFFF"
               fontFamily="Arial, sans-serif"
               fontWeight="bold"
@@ -201,8 +220,8 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
               y={pos.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              fontSize="12"
-              fill="#666666"
+              fontSize="13.5"
+              fill="#334155"
               fontFamily="Arial, sans-serif"
             >
               {i + 1}
@@ -224,12 +243,12 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
               y={pos.y}
               textAnchor="start"
               dominantBaseline="middle"
-              fontSize="11"
-              fill="#333333"
+              fontSize="12.5"
+              fill="#0F172A"
               fontFamily="Arial, sans-serif"
               transform={`rotate(${angle}, ${pos.x}, ${pos.y})`}
             >
-              {nakshatra}
+              {NAKSHATRA_SHORT[i]}
             </text>
           );
         })}
@@ -239,7 +258,10 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
         {/* ═══════════════════════════════════════════════════════ */}
         {Object.entries(planets).map(([planetKey, planetData]: any, idx) => {
           const lon = planetData?.lonSidereal || planetData?.lon || 0;
-          const pos = polarToCartesian(lon, CENTER_CIRCLE - 23); // Scaled: 40 * SCALE ≈ 23
+          const meta = clusterMetaByPlanet.get(planetKey) ?? { idx: 0, size: 1 };
+          const centeredIdx = meta.idx - (meta.size - 1) / 2;
+          const radiusOffset = centeredIdx * 10;
+          const pos = polarToCartesian(lon, CENTER_CIRCLE - 23 + radiusOffset); // Spread dense clusters radially
           const planetSymbol = PLANET_SYMBOLS[planetKey.toLowerCase()] || planetKey.charAt(0).toUpperCase();
           const planetColor = PLANET_COLORS[planetKey.toLowerCase()] || '#000000';
 
@@ -258,7 +280,7 @@ const VedicChartCircular: React.FC<VedicChartCircularProps> = ({
                 y={pos.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize="20"
+                fontSize="23"
                 fill={planetColor}
                 fontFamily="Arial, sans-serif"
                 fontWeight="bold"

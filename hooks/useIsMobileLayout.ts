@@ -1,17 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
-const DESKTOP_MEDIA = "(min-width: 768px)";
+import { getClientPlatformSnapshot } from "@/lib/platformDetection";
 
 function readIsMobile(): boolean {
-  if (typeof window === "undefined") return false;
-  const mq = window.matchMedia(DESKTOP_MEDIA);
-  if (mq && typeof mq.matches === "boolean") return !mq.matches;
-  const w = window.innerWidth;
-  if (w >= 768) return false;
-  if (w > 0 && w < 768) return true;
-  return false;
+  return getClientPlatformSnapshot().isMobile;
 }
 
 /**
@@ -40,14 +33,6 @@ export function useIsMobileLayout(): boolean {
     observer.observe(document.body, { attributes: true, attributeFilter: ["class"] });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-platform"] });
 
-    let mediaQuery: MediaQueryList | null = null;
-    try {
-      mediaQuery = window.matchMedia(DESKTOP_MEDIA);
-      mediaQuery.addEventListener("change", setFromRead);
-    } catch {
-      // ignore
-    }
-
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
@@ -55,7 +40,6 @@ export function useIsMobileLayout(): boolean {
       window.removeEventListener("resize", onUpdate);
       window.removeEventListener("orientationchange", onUpdate);
       observer.disconnect();
-      mediaQuery?.removeEventListener("change", setFromRead);
     };
   }, []);
 

@@ -130,7 +130,7 @@ export default function FixedStarAstrologyPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full min-w-0">
-          <TabsList className="grid w-full grid-cols-5 bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl p-1">
+          <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl p-1 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30 md:grid md:grid-cols-5">
             <TabsTrigger 
               value="overview" 
               className="data-[state=active]:bg-amber-500 data-[state=active]:text-white rounded-xl px-3 py-2"

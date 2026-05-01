@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 
 interface Planet {
   name: string;
@@ -49,21 +49,10 @@ export default function ColorfulWesternChart({
   title = "Western Astrology Chart",
   backgroundColor = "white"
 }: ColorfulWesternChartProps) {
-  const [dimensions, setDimensions] = useState<{ centerX: number; centerY: number; outerRadius: number; innerRadius: number } | null>(null);
-
-  useEffect(() => {
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const baseRadius = Math.min(width, height) * 0.40; // Step 1: Increase to 40% for proper sizing (80% of page)
-    const outerRadius = baseRadius; // Main circle edge
-    const innerRadius = outerRadius * 0.55; // Step 2: Inner "chart hole" at 55% (50-60% range)
-    
-    setDimensions({ centerX, centerY, outerRadius, innerRadius });
-  }, [width, height]);
-
-  if (!dimensions) return null;
-
-  const { centerX, centerY, outerRadius, innerRadius } = dimensions;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const outerRadius = Math.min(width, height) * 0.4;
+  const innerRadius = outerRadius * 0.55;
 
   // Vibrant zodiac colors matching reference image exactly
   const zodiacColors = {
@@ -147,6 +136,32 @@ export default function ColorfulWesternChart({
     return `${degrees}° ${zodiacSymbols[sign as keyof typeof zodiacSymbols]}`;
   };
 
+  // Cluster nearby planets deterministically so labels remain readable.
+  const clusteredPlanets = planets
+    .map((planet, originalIndex) => ({ planet, originalIndex }))
+    .sort((a, b) => a.planet.longitude - b.planet.longitude);
+
+  const clusterIndexByOriginal = new Map<number, { clusterIndex: number; clusterSize: number }>();
+  let start = 0;
+  while (start < clusteredPlanets.length) {
+    let end = start + 1;
+    while (end < clusteredPlanets.length) {
+      const prev = clusteredPlanets[end - 1].planet.longitude;
+      const current = clusteredPlanets[end].planet.longitude;
+      const diff = Math.min(Math.abs(current - prev), 360 - Math.abs(current - prev));
+      if (diff >= 12) break;
+      end += 1;
+    }
+    const cluster = clusteredPlanets.slice(start, end);
+    cluster.forEach((item, idx) => {
+      clusterIndexByOriginal.set(item.originalIndex, {
+        clusterIndex: idx,
+        clusterSize: cluster.length,
+      });
+    });
+    start = end;
+  }
+
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       <svg 
@@ -209,8 +224,8 @@ export default function ColorfulWesternChart({
                    A ${bandOuterRadius} ${bandOuterRadius} 0 0 0 ${centerX + bandOuterRadius * Math.cos((startAngle - 90) * Math.PI / 180)} ${centerY + bandOuterRadius * Math.sin((startAngle - 90) * Math.PI / 180)}
                    Z`}
                 fill={zodiacColors[sign as keyof typeof zodiacColors]}
-                stroke="rgba(0, 0, 0, 0.3)"
-                strokeWidth="0.5"
+                stroke="rgba(0, 0, 0, 0.45)"
+                strokeWidth="0.8"
               />
               
               {/* Zodiac symbol - WHITE on colored band - THINNER */}
@@ -219,7 +234,7 @@ export default function ColorfulWesternChart({
                 y={symbolPos.y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                style={{ fontSize: '14px', fill: 'white', fontWeight: '500' }}
+                style={{ fontSize: '16px', fill: 'white', fontWeight: '700' }}
               >
                 {zodiacSymbols[sign as keyof typeof zodiacSymbols]}
               </text>
@@ -230,7 +245,7 @@ export default function ColorfulWesternChart({
                 y={longitudeToPosition(startAngle, outerRadius + 15).y}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                style={{ fontSize: '8px', fill: 'black', fontWeight: '400' }}
+                style={{ fontSize: '9px', fill: '#111827', fontWeight: '600' }}
               >
                 0°
               </text>
@@ -254,7 +269,7 @@ export default function ColorfulWesternChart({
               x2={pos.x}
               y2={pos.y}
               stroke="black"
-              strokeWidth={isCardinal ? "2" : "0.5"}
+              strokeWidth={isCardinal ? "2.4" : "0.9"}
               strokeOpacity={isCardinal ? "1" : "0.7"}
             />
           );
@@ -273,7 +288,7 @@ export default function ColorfulWesternChart({
               y={pos.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              style={{ fontSize: '10px', fill: 'black', fontWeight: '400' }}
+              style={{ fontSize: '11px', fill: '#111827', fontWeight: '600' }}
             >
               {house.number}
             </text>
@@ -294,7 +309,7 @@ export default function ColorfulWesternChart({
               y={pos.y}
               textAnchor="middle"
               dominantBaseline="middle"
-              style={{ fontSize: '8px', fill: 'black', fontWeight: '400' }}
+              style={{ fontSize: '9px', fill: '#1f2937', fontWeight: '600' }}
             >
               {formattedDegree} {zodiacSymbols[sign as keyof typeof zodiacSymbols]}
             </text>
@@ -303,36 +318,15 @@ export default function ColorfulWesternChart({
 
         {/* Planets - Position in white ring area (between inner circle and colored band) */}
         {planets.map((planet, index) => {
-          const degreeInSign = planet.longitude % 30;
-          
           // Position in white ring area: from inner circle (55%) to colored band start (85%)
           const bandInnerRadius = outerRadius * 0.85;
           const planetRadius = innerRadius + (bandInnerRadius - innerRadius) * 0.7;
           const pos = longitudeToPosition(planet.longitude, planetRadius);
           
-          // Check for nearby planets (within 15° longitude) and adjust position
-          const nearbyPlanets = planets.filter(p => {
-            const angleDiff = Math.abs(p.longitude - planet.longitude);
-            const normalizedDiff = Math.min(angleDiff, 360 - angleDiff);
-            return normalizedDiff < 15 && p.name !== planet.name;
-          });
-          
-          // Calculate offsets based on nearby planets
-          let offsetX = 0;
-          let offsetY = 0;
-          
-          if (nearbyPlanets.length > 0) {
-            // Use radial offset for nearby planets
-            const nearbyIndex = nearbyPlanets.findIndex(p => p.name === planet.name);
-            const totalNearby = nearbyPlanets.length + 1;
-            const spacing = 20;
-            
-            if (totalNearby > 1) {
-              const angle = (nearbyIndex * 2 * Math.PI) / totalNearby;
-              offsetX = Math.cos(angle) * spacing;
-              offsetY = Math.sin(angle) * spacing;
-            }
-          }
+          const clusterMeta = clusterIndexByOriginal.get(index) ?? { clusterIndex: 0, clusterSize: 1 };
+          const centeredIdx = clusterMeta.clusterIndex - (clusterMeta.clusterSize - 1) / 2;
+          const offsetX = centeredIdx * 10;
+          const offsetY = centeredIdx * 8;
           
           const finalX = pos.x + offsetX;
           const finalY = pos.y + offsetY;
@@ -346,9 +340,9 @@ export default function ColorfulWesternChart({
                 textAnchor="middle"
                 dominantBaseline="middle"
                 style={{ 
-                  fontSize: planet.name === 'Sun' || planet.name === 'Moon' ? '14px' : '12px', 
-                  fill: 'black', 
-                  fontWeight: '500' 
+                  fontSize: planet.name === 'Sun' || planet.name === 'Moon' ? '17px' : '15px', 
+                  fill: '#0f172a', 
+                  fontWeight: '700' 
                 }}
               >
                 {planetSymbols[planet.name as keyof typeof planetSymbols] || planet.name.charAt(0)}
@@ -360,7 +354,7 @@ export default function ColorfulWesternChart({
                 y={finalY}
                 textAnchor="start"
                 dominantBaseline="middle"
-                style={{ fontSize: '8px', fill: 'black', fontWeight: '400' }}
+                style={{ fontSize: '10px', fill: '#1f2937', fontWeight: '600' }}
               >
                 {formatDegreeWithSign(planet.longitude)}
               </text>
@@ -372,7 +366,7 @@ export default function ColorfulWesternChart({
                   y={finalY - 5}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  style={{ fontSize: '6px', fill: 'red', fontWeight: '500' }}
+                style={{ fontSize: '8px', fill: '#DC2626', fontWeight: '700' }}
                 >
                   R
                 </text>

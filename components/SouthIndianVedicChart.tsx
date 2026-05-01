@@ -97,7 +97,7 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
   };
 
   // Box dimensions and spacing
-  const boxWidth = 137.5;  // Box width
+  const boxWidth = 140;  // Integer width for crisper grid
   const boxHeight = 100; // Box height
   const gapX = 0;        // No horizontal gap between boxes
   const gapY = 0;        // No vertical gap between boxes
@@ -110,9 +110,9 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
   });
 
   // Calculate total chart dimensions
-  const totalWidth = 4 * boxWidth + 2 * margin; // 4 columns + margins (no gaps)
+  const totalWidth = 4 * boxWidth + 2 * margin; // 560
   const totalHeight = 4 * boxHeight + 2 * margin; // 4 rows + margins (no gaps)
-  const fontSize = 12;
+  const fontSize = 13;
 
   return (
     <div style={{ display: 'inline-block', lineHeight: 0 }}>
@@ -120,8 +120,10 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
         width={totalWidth}
         height={totalHeight}
         viewBox={`0 0 ${totalWidth} ${totalHeight}`}
+        preserveAspectRatio="xMidYMid meet"
         className="border-2 border-blue-800 bg-white shadow-lg"
-        style={{ borderRadius: '12px', display: 'block' }}
+        shapeRendering="geometricPrecision"
+        style={{ borderRadius: '12px', display: 'block', maxWidth: '100%', height: 'auto' }}
       >
         <defs>
           <clipPath id="rounded-corners">
@@ -163,7 +165,7 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
                 height={boxHeight}
                 fill="#FFFFFF"
                   stroke="#000000" 
-                  strokeWidth="1"
+                  strokeWidth="1.6"
                 />
               
               {/* Diagonal Ascendant line for the zodiac sign that matches ascendantSign */}
@@ -176,14 +178,14 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
                     x2={x}
                     y2={y + boxHeight}
                     stroke="#EC4899"
-                    strokeWidth="2"
+                    strokeWidth="2.2"
                   />
                   
                   {/* AS marker text away from diagonal */}
                   <text
                     x={x + boxWidth * 0.25}
                     y={y + boxHeight * 0.45}
-                    fontSize={10}
+                    fontSize={11}
                     fill="#EF4444"
                     fontWeight="bold"
                   >
@@ -196,10 +198,11 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
               <text
                 x={x + boxWidth - 35}
                 y={y + 30}
-                fontSize={24}
-                fill="#7C3AED"
+                fontSize={26}
+                fill="#6D28D9"
                 fontWeight="bold"
                 opacity="0.8"
+                  fontFamily="Arial, Helvetica, 'Segoe UI Symbol', sans-serif"
               >
                 {zodiacSymbol}
               </text>
@@ -218,7 +221,8 @@ const VedicChartSouth: React.FC<VedicChartSouthProps> = ({
                     y={y + 65 + (planetIndex * 18)}
                     fontSize={fontSize}
                       fill={planetColor}
-                    fontWeight="normal"
+                    fontWeight="600"
+                    fontFamily="Arial, Helvetica, 'Segoe UI Symbol', sans-serif"
                     >
                     {planetSymbol} {positionText}{retrogradeText}
                     </text>

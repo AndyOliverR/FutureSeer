@@ -52,7 +52,7 @@ export function BottomNavBar() {
         isIOS ? "bottom-nav-ios" : "bg-[var(--m3-surface-container-high)] border-t border-[var(--m3-outline-variant)]"
       )}
     >
-      <div className="flex w-full items-center justify-between h-16 px-2">
+      <div className="flex w-full items-center justify-between min-h-[64px] px-2">
         {mobileNavItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -70,7 +70,7 @@ export function BottomNavBar() {
                   ? "profile"
                   : undefined
               }
-              className="flex flex-col items-center justify-center flex-1 min-w-0 h-full group"
+              className="fs-touch-target flex flex-col items-center justify-center flex-1 min-w-0 h-full group"
             >
               <div className="relative flex flex-col items-center justify-center">
                 {!isIOS && (
@@ -93,7 +93,7 @@ export function BottomNavBar() {
                 />
                 <span
                   className={cn(
-                    "text-[10px] font-medium mt-1 transition-colors duration-200 truncate w-full text-center",
+                    "text-xs font-medium mt-1 transition-colors duration-200 truncate w-full text-center",
                     isActive ? "text-amber-500" : "text-slate-400 group-hover:text-slate-200"
                   )}
                 >

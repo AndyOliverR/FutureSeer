@@ -23,9 +23,9 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
   chartType = "D1"
 }) => {
   // Chart dimensions (matching South Indian chart)
-  const chartWidth = 550;
+  const chartWidth = 560;
   const chartHeight = 400;
-  const boxWidth = 550 / 3;  // ≈ 183.33
+  const boxWidth = chartWidth / 3;
   const boxHeight = 400 / 3; // ≈ 133.33
 
   // Simple planet symbols mapping
@@ -132,8 +132,10 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
         width={chartWidth}
         height={chartHeight}
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        preserveAspectRatio="xMidYMid meet"
         className="border-2 border-blue-800 bg-white shadow-lg"
-        style={{ borderRadius: '12px', display: 'block' }}
+        shapeRendering="geometricPrecision"
+        style={{ borderRadius: '12px', display: 'block', maxWidth: '100%', height: 'auto' }}
       >
         {/* White background */}
         <rect 
@@ -166,7 +168,7 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
               x2={chartWidth}
               y2={i * boxHeight}
               stroke="#000000"
-              strokeWidth="2"
+              strokeWidth="2.2"
             />
           ))}
           
@@ -179,7 +181,7 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
               x2={i * boxWidth}
               y2={chartHeight}
               stroke="#000000"
-              strokeWidth="2"
+              strokeWidth="2.2"
             />
           ))}
 
@@ -195,7 +197,7 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
                   x2={diagonal.x2}
                   y2={diagonal.y2}
                     stroke="#000000" 
-                  strokeWidth="2"
+                  strokeWidth="2.2"
                 />
               );
             }
@@ -218,10 +220,11 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
               <text
                   x={x + boxWidth / 2}
                   y={y + 30}
-                  fontSize="24"
-                  fill="#9333EA"
+                  fontSize="26"
+                  fill="#6D28D9"
                   textAnchor="middle"
                 fontWeight="bold"
+                fontFamily="Arial, Helvetica, 'Segoe UI Symbol', sans-serif"
               >
                   {zodiacSymbols[houseSign]}
               </text>
@@ -232,7 +235,7 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
               <text
                       x={x + boxWidth - 20}
                       y={y + 20}
-                fontSize="12"
+                fontSize="13"
                       fill="#EF4444"
                 fontWeight="bold"
                       textAnchor="middle"
@@ -274,9 +277,11 @@ const VedicChartEast: React.FC<VedicChartEastProps> = ({
                       key={`planet-${planet.name}-${house}`}
                       x={textX}
                       y={textY}
-                      fontSize="11"
+                      fontSize="11.5"
                       fill={planetColor}
+                      fontWeight="600"
                       textAnchor={isCornerBox ? (textX < x + boxWidth/2 ? "start" : "end") : "start"}
+                      fontFamily="Arial, Helvetica, 'Segoe UI Symbol', sans-serif"
                     >
                       {planetText}
                     </text>

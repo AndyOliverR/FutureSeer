@@ -209,9 +209,23 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS
           )
         } catch (serverErr) {
-          // Server read failed (e.g. offline or doc only in cache); use cache so report still shows
+          // Server read can transiently fail even for valid owners (token refresh race / offline / SDK quirks).
+          // Treat permission-denied in this path as non-fatal and fall back to cache/listener.
+          const serverErrMessage =
+            serverErr instanceof Error ? serverErr.message : String(serverErr ?? '')
+          const isTransientServerReadPermissionIssue =
+            serverErrMessage.includes('permission-denied') ||
+            serverErrMessage.includes('Missing or insufficient permissions') ||
+            serverErrMessage.toLowerCase().includes('insufficient permissions')
           if (process.env.NODE_ENV === 'development') {
-            console.warn('⚠️ Server read failed, using cache:', serverErr)
+            if (isTransientServerReadPermissionIssue) {
+              console.warn(
+                '⚠️ Server read permission transient, falling back to cache/listener:',
+                serverErrMessage
+              )
+            } else {
+              console.warn('⚠️ Server read failed, using cache:', serverErr)
+            }
           }
           profileSnap = await firestoreReadWithTimeout(
             getDoc(profileRef),
