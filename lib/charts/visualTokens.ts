@@ -60,11 +60,38 @@ export const chartSystemTokens: Record<string, ChartTokenOverrides> = {
   },
 };
 
+export interface ChartVisualSpec {
+  baseFont: number;
+  pointFont: number;
+  ringStrokeWidth: number;
+  secondaryStrokeWidth: number;
+}
+
+const defaultVisualSpec: ChartVisualSpec = {
+  baseFont: 12,
+  pointFont: 11,
+  ringStrokeWidth: 1.4,
+  secondaryStrokeWidth: 1.0,
+}
+
+const visualSpecBySystem: Record<string, Partial<ChartVisualSpec>> = {
+  western: { baseFont: 12, pointFont: 11, ringStrokeWidth: 1.6, secondaryStrokeWidth: 1.1 },
+  vedic: { baseFont: 12, pointFont: 11, ringStrokeWidth: 1.5, secondaryStrokeWidth: 1.0 },
+  nakshatra: { baseFont: 11, pointFont: 12, ringStrokeWidth: 1.4, secondaryStrokeWidth: 0.95 },
+}
+
 export function getChartTokens(system: string, overrides?: ChartTokenOverrides): Required<ChartTokenOverrides> {
   return {
     ...defaultChartTokens,
     ...(chartSystemTokens[system] ?? {}),
     ...(overrides ?? {}),
+  };
+}
+
+export function getChartVisualSpec(system: string): ChartVisualSpec {
+  return {
+    ...defaultVisualSpec,
+    ...(visualSpecBySystem[system] ?? {}),
   };
 }
 

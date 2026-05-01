@@ -26,12 +26,23 @@
 
   /* DEFAULT WEB VARIABLES (Desktop Look) */
   --m3-surface: transparent;
+  --m3-surface-bright: rgba(15, 23, 42, 0.92);
+  --m3-surface-dim: rgba(2, 6, 23, 0.9);
+  --m3-surface-container-lowest: rgba(2, 6, 23, 0.55);
+  --m3-surface-container: rgba(15, 23, 42, 0.75);
+  --m3-surface-container-highest: rgba(30, 41, 59, 0.9);
   --m3-primary: var(--gold-primary);
+  --m3-primary-container: rgba(251, 191, 36, 0.2);
+  --m3-tertiary: #67e8f9;
+  --m3-tertiary-container: rgba(103, 232, 249, 0.18);
+  --m3-on-tertiary: #082f49;
+  --m3-on-tertiary-container: #e0f2fe;
   /* WCAG: #1c1917 on #fbbf24 ≈ 10.5:1 (AAA normal text). Primary stays gold; do not swap to tutorial blues. */
   --m3-on-primary: #1c1917;
   --m3-on-primary-container: #1c1917;
   --m3-on-surface: #FFFFFF;
   --m3-on-surface-variant: #94a3b8;
+  --m3-outline: rgba(251, 191, 36, 0.35);
   --m3-outline-variant: rgba(251, 191, 36, 0.15);
   --m3-surface-container-high: rgba(15, 23, 42, 0.85);
   --m3-surface-container-low: rgba(15, 23, 42, 0.65);
@@ -40,15 +51,23 @@
 /* STRICT ANDROID OVERRIDES */
 .platform-android {
   --m3-surface: #020617;
+  --m3-surface-bright: #1e293b;
   --m3-surface-dim: #010409;
+  --m3-surface-container-lowest: #020617;
   --m3-surface-container: #0f172a;
   --m3-surface-container-high: #1e293b;
   --m3-surface-container-low: #0f172a;
   --m3-surface-container-highest: #334155;
+  --m3-primary-container: rgba(251, 191, 36, 0.24);
+  --m3-tertiary: #67e8f9;
+  --m3-tertiary-container: rgba(103, 232, 249, 0.2);
+  --m3-on-tertiary: #082f49;
+  --m3-on-tertiary-container: #e0f2fe;
   --m3-on-primary: #1c1917;
   --m3-on-primary-container: #1c1917;
   --m3-on-surface: #FFFFFF;
   --m3-on-surface-variant: #94a3b8;
+  --m3-outline: rgba(251, 191, 36, 0.35);
   --m3-outline-variant: rgba(251, 191, 36, 0.15);
 }
 
@@ -203,6 +222,24 @@ main {
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Shared UI quality utilities for consistent rhythm and touch targets */
+.fs-heading-hero {
+  @apply text-3xl md:text-5xl font-heading uppercase;
+}
+
+.fs-heading-section {
+  @apply text-lg md:text-2xl font-heading uppercase;
+}
+
+.fs-meta-text {
+  @apply text-xs tracking-wide;
+}
+
+.fs-touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
 
 /* Admin panel: solid dark background so content stands out (no starfield) */
 .admin-panel {

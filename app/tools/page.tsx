@@ -283,9 +283,9 @@ function ToolsPageContent() {
                             </span>
                           ) : null}
                         </div>
-                        <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
+                        <p className="text-xs text-surface-on-variant uppercase font-bold opacity-70 tracking-wide mt-1">{tool.category}</p>
                         {isToolPending(tool.slug) ? (
-                          <p className="text-[10px] text-surface-on-variant mt-1">
+                          <p className="text-xs text-surface-on-variant mt-1">
                             {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
                           </p>
                         ) : null}
@@ -323,9 +323,9 @@ function ToolsPageContent() {
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-[10px] text-surface-on-variant uppercase font-bold opacity-60 tracking-wider mt-1">{tool.category}</p>
+                    <p className="text-xs text-surface-on-variant uppercase font-bold opacity-70 tracking-wide mt-1">{tool.category}</p>
                     {isToolPending(tool.slug) ? (
-                      <p className="text-[10px] text-surface-on-variant mt-1">
+                      <p className="text-xs text-surface-on-variant mt-1">
                         {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
                       </p>
                     ) : null}
@@ -350,7 +350,7 @@ function ToolsPageContent() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-heading font-light text-amber-400 mb-4 tracking-widest uppercase">Mystical Tools</h1>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto font-light italic">Choose your path to cosmic wisdom through ancient traditions</p>
+          <p className="text-surface-on-variant text-lg max-w-2xl mx-auto font-light italic">Choose your path to cosmic wisdom through ancient traditions</p>
         </div>
 
         <div className="mb-12 relative max-w-2xl mx-auto">
@@ -358,7 +358,7 @@ function ToolsPageContent() {
           <input
             type="text" placeholder="Search our mystical tools..." value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full h-14 pl-12 bg-slate-900/50 border border-amber-500/20 rounded-full text-white placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500/20 transition-all"
+            className="w-full h-14 pl-12 bg-surface-container-low border border-outline-variant rounded-full text-surface-on placeholder:text-surface-on-variant focus:border-amber-500 focus:ring-amber-500/20 transition-all"
           />
         </div>
 
@@ -383,7 +383,7 @@ function ToolsPageContent() {
                     <motion.div
                       key={tool.slug} whileHover={{}}
                       onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
-                      className={cn("group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
+                      className={cn("group relative h-[320px] bg-gradient-to-br from-surface-container-high via-surface-container-low to-surface-container-high border border-outline-variant rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
                     >
                       <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="relative z-10 h-full flex flex-col items-center text-center">
@@ -403,9 +403,9 @@ function ToolsPageContent() {
                             No new data yet
                           </span>
                         ) : null}
-                        <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
+                        <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                         {isToolPending(tool.slug) ? (
-                          <p className="mt-2 text-[10px] text-slate-500">
+                          <p className="mt-2 text-xs text-surface-on-variant">
                             {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
                           </p>
                         ) : null}
@@ -425,7 +425,7 @@ function ToolsPageContent() {
             <motion.div
               key={tool.slug} whileHover={{}}
               onClick={() => canOpenTool(tool.slug, tool.isComingSoon) && navigateToTool(tool.slug, router)}
-              className={cn("group relative h-[320px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/30 rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
+              className={cn("group relative h-[320px] bg-gradient-to-br from-surface-container-high via-surface-container-low to-surface-container-high border border-outline-variant rounded-3xl p-8 overflow-hidden transition-all", !canOpenTool(tool.slug, tool.isComingSoon) ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:border-amber-500/60")}
             >
               <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative z-10 h-full flex flex-col items-center text-center">
@@ -445,9 +445,9 @@ function ToolsPageContent() {
                     No new data yet
                   </span>
                 ) : null}
-                <p className="text-slate-400 text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
+                <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                 {isToolPending(tool.slug) ? (
-                  <p className="mt-2 text-[10px] text-slate-500">
+                  <p className="mt-2 text-xs text-surface-on-variant">
                     {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
                   </p>
                 ) : null}

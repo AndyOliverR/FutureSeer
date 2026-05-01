@@ -532,7 +532,7 @@ function SignUpPageContent() {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className={`w-full max-w-[1000px] grid bg-slate-900/80 backdrop-blur-3xl rounded-[40px] border border-amber-500/20 overflow-hidden shadow-2xl glass-effect ${showSignupFlow ? "grid-cols-1 max-w-4xl" : "grid-cols-1 md:grid-cols-2"}`}
+        className={`w-full max-w-[1000px] grid bg-surface-container-high/90 backdrop-blur-3xl rounded-[40px] border border-outline-variant overflow-hidden shadow-2xl glass-effect ${showSignupFlow ? "grid-cols-1 max-w-4xl" : "grid-cols-1 md:grid-cols-2"}`}
       >
         <div className="p-12 flex flex-col justify-center space-y-8">
           <Link href="/" className="text-amber-400 flex items-center gap-2 font-heading tracking-widest uppercase text-sm mb-4 opacity-60 hover:opacity-100"><ArrowLeft className="w-4 h-4" /> Back to Home</Link>
@@ -558,7 +558,7 @@ function SignUpPageContent() {
             </>
           ) : (
             <div className="space-y-6">
-              <label className="flex items-start gap-3 cursor-pointer text-white/90 text-base font-light leading-relaxed rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+              <label className="flex items-start gap-3 cursor-pointer text-surface-on text-base font-light leading-relaxed rounded-2xl border border-outline-variant bg-surface-container-low p-4">
                 <Checkbox checked={confirmAge16} onCheckedChange={(c) => setConfirmAge16(c === true)} className="mt-1 h-5 w-5 border-amber-500/40 rounded data-[state=checked]:bg-amber-500/20 shrink-0" />
                 <span>
                   I confirm I am at least 16 years old and agree to the{" "}
@@ -591,15 +591,15 @@ function SignUpPageContent() {
                 </Alert>
               )}
               <div className="relative text-center">
-                <span className="bg-slate-900/80 px-4 text-xs uppercase tracking-widest text-amber-200/80 font-bold">or register with email</span>
+                <span className="bg-surface-container-high px-4 text-xs uppercase tracking-widest text-surface-on-variant font-bold">or register with email</span>
               </div>
               <form onSubmit={handleBasicInfoSubmit} className="space-y-6">
-              <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" autoComplete="name" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
+              <Input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" autoComplete="name" className="h-16 bg-surface-container-low border-outline-variant rounded-2xl focus:border-amber-500 transition-all font-light" />
               <CountrySelector value={selectedCountry} onChange={setSelectedCountry} autoDetect={true} />
-              <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
-              <Input value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="Password" autoComplete="new-password" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
-              <Input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" autoComplete="new-password" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
-              <Button type="submit" disabled={isLoading || !confirmAge16} size="2xl" className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-xl shadow-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed">
+              <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-surface-container-low border-outline-variant rounded-2xl focus:border-amber-500 transition-all font-light" />
+              <Input value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="Password" autoComplete="new-password" className="h-16 bg-surface-container-low border-outline-variant rounded-2xl focus:border-amber-500 transition-all font-light" />
+              <Input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} type={showConfirmPassword ? "text" : "password"} placeholder="Confirm Password" autoComplete="new-password" className="h-16 bg-surface-container-low border-outline-variant rounded-2xl focus:border-amber-500 transition-all font-light" />
+              <Button type="submit" disabled={isLoading || !confirmAge16} size="2xl" className="w-full bg-amber-500 hover:bg-amber-400 text-primary-foreground transition-all shadow-xl shadow-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed">
                 {isLoading ? <Loader2 className="animate-spin" /> : "Begin Transformation"}
               </Button>
               {!confirmAge16 ? (
@@ -608,7 +608,7 @@ function SignUpPageContent() {
             </form>
             </div>
           )}
-          <div className="pt-6 mt-2 border-t border-white/5 text-center">
+          <div className="pt-6 mt-2 border-t border-outline-variant/30 text-center">
             <p className="text-amber-200/80 text-sm font-light">Already have an account? <Link href="/signin" className="text-amber-400 font-bold hover:underline ml-1">Sign In</Link></p>
           </div>
         </div>

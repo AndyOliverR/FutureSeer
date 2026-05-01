@@ -8,6 +8,7 @@ import { getFirebaseDB } from '@/lib/firebase';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { getAuth, setDocument, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
 import { CHECKOUT_DISPLAY_NAME } from '@/lib/checkoutBranding';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 async function userIsSpecialForSubscription(uid: string): Promise<boolean> {
   if (!isAdminAvailable()) return false;
@@ -27,19 +28,31 @@ async function userIsSpecialForSubscription(uid: string): Promise<boolean> {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'create-subscription');
+    if (!auth.ok) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { plan, amount, email, name, country, userId, enableTrial } = body;
+    const ownedUserId = resolveOwnedUserId(userId, auth.uid);
 
-    if (!plan || !email || !name || !country) {
+    if (!plan || !email || !name || !country || !ownedUserId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields or invalid user ownership' },
         { status: 400 }
+      );
+    }
+    if (auth.email && auth.email.toLowerCase() !== String(email).trim().toLowerCase()) {
+      return NextResponse.json(
+        { error: 'Email must match authenticated account' },
+        { status: 403 }
       );
     }
 
     // No-charge accounts (god mode, mary mode, special test admin): skip Razorpay, grant access
     if (isNoChargeSubscriptionEmail(email)) {
-      let uid: string | null = typeof userId === 'string' && userId.trim() ? userId.trim() : null;
+      let uid: string | null = ownedUserId;
       if (!uid && isAdminAvailable()) {
         try {
           const authUser = await getAuth().getUserByEmail(email.trim().toLowerCase());
@@ -63,8 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Admin-granted special user (Firebase claim / Firestore): skip Razorpay
-    let uidForSpecial: string | null =
-      typeof userId === 'string' && userId.trim() ? userId.trim() : null;
+    let uidForSpecial: string | null = ownedUserId;
     if (!uidForSpecial && isAdminAvailable()) {
       try {
         uidForSpecial = (await getAuth().getUserByEmail(email.trim().toLowerCase())).uid;
@@ -88,11 +100,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has free months remaining (skip charge if they do)
-    if (userId) {
+    if (ownedUserId) {
       const db = getFirebaseDB();
       if (db && typeof window === 'undefined') {
         try {
-          const userRef = db.collection('users').doc(userId);
+          const userRef = db.collection('users').doc(ownedUserId);
           const userDoc = await userRef.get();
           
           if (userDoc.exists) {
@@ -110,7 +122,7 @@ export async function POST(request: NextRequest) {
                 updatedAt: Date.now()
               });
               
-              devLog.debug(`✅ Free month applied for user ${userId}. ${freeMonthsRemaining - 1} free months remaining.`);
+              devLog.debug(`✅ Free month applied for user ${ownedUserId}. ${freeMonthsRemaining - 1} free months remaining.`);
               
               return NextResponse.json({
                 success: true,
@@ -129,7 +141,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Resolve Firebase uid for webhook (recurring updates must target users/{uid})
-    let uid: string | null = typeof userId === 'string' && userId.trim() ? userId.trim() : null;
+    let uid: string | null = ownedUserId;
     if (!uid && isAdminAvailable()) {
       try {
         const authUser = await getAuth().getUserByEmail(email.trim().toLowerCase());

@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, RefreshCw, AlertTriangle, Eye } from 'lucide-react'
+import { isChartClarityUpgradeEnabled } from '@/lib/charts/featureFlags'
 
 interface ChartDisplayProps {
   chartType: string
@@ -204,6 +205,15 @@ export function ChartDisplay({ chartType, name, description, significance, image
                   ) : chartData.type === 'futureSeer' ? (
                     <div className="bg-slate-900/50 rounded-lg p-6 border border-slate-600/50">
                       <div className="text-center">
+                        {isChartClarityUpgradeEnabled() && chartData.templateUrl && (
+                          <div className="mb-4 rounded-lg border border-slate-600/40 bg-white p-2">
+                            <img
+                              src={chartData.templateUrl}
+                              alt={`${name} template`}
+                              className="mx-auto h-40 w-auto object-contain"
+                            />
+                          </div>
+                        )}
                         {/* FutureSeer Chart Display */}
                         <div className="w-32 h-32 mx-auto mb-4 bg-gradient-to-br from-amber-500/20 to-purple-600/20 rounded-full flex items-center justify-center border-2 border-amber-400/30">
                           <span className="text-amber-300 text-2xl font-bold">✨</span>

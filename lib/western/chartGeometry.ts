@@ -18,6 +18,11 @@ export interface PlanetPosition {
   angle: number;
 }
 
+export interface PlanetClusterPosition extends PlanetPosition {
+  clusterIndex: number;
+  clusterSize: number;
+}
+
 export interface HouseCusp {
   x1: number;
   y1: number;
@@ -31,7 +36,7 @@ export interface HouseCusp {
  */
 export function calculateChartDimensions(containerWidth: number, containerHeight: number): ChartDimensions {
   const minDimension = Math.min(containerWidth, containerHeight);
-  const radius = Math.min(minDimension * 0.4, 200); // Max 400px diameter
+  const radius = Math.min(minDimension * 0.43, 225); // Slightly larger while preserving margins
   
   return {
     centerX: containerWidth / 2,
@@ -41,6 +46,35 @@ export function calculateChartDimensions(containerWidth: number, containerHeight
     middleRadius: radius * 0.6, // Houses
     outerRadius: radius * 0.9   // Planets
   };
+}
+
+/**
+ * Spread clustered longitudes to avoid planet-label overlaps.
+ */
+export function distributePlanetLongitudes(
+  longitudes: number[],
+  thresholdDegrees: number = 10
+): PlanetClusterPosition[] {
+  const ordered = longitudes
+    .map((lon, index) => ({ lon, index }))
+    .sort((a, b) => a.lon - b.lon);
+  const clusterMeta = new Map<number, { clusterIndex: number; clusterSize: number }>();
+  let start = 0;
+  while (start < ordered.length) {
+    let end = start + 1;
+    while (end < ordered.length && Math.abs(ordered[end].lon - ordered[end - 1].lon) < thresholdDegrees) end += 1;
+    const cluster = ordered.slice(start, end);
+    cluster.forEach((entry, idx) => {
+      clusterMeta.set(entry.index, { clusterIndex: idx, clusterSize: cluster.length });
+    });
+    start = end;
+  }
+  return longitudes.map((lon, originalIndex) => ({
+    x: 0,
+    y: 0,
+    angle: lon,
+    ...(clusterMeta.get(originalIndex) ?? { clusterIndex: 0, clusterSize: 1 }),
+  }));
 }
 
 /**
