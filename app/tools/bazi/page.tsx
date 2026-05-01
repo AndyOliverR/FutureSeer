@@ -392,7 +392,7 @@ function BaziPageContent() {
               {activeTab === 'ask-the-seer' ? (
               <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
                       {baziReport ? (
-                        <div className="h-[800px] min-h-0">
+                        <div className="min-h-[60vh] max-h-[85vh] min-w-0">
                           <BaZiCoachInterface reading={baziReport} />
                         </div>
                       ) : (

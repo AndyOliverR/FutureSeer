@@ -142,11 +142,11 @@ function SignInContent() {
   // Show redirecting state as soon as user is set (don't wait for profile load)
   if (user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#020617] px-4 pb-12">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-surface px-4 pb-12">
         <div className="text-center max-w-md">
           <Loader2 className="w-10 h-10 animate-spin text-amber-400 mx-auto mb-4" />
           <p className="text-amber-200/90 font-medium">Redirecting...</p>
-          <p className="text-slate-400 text-sm mt-2">Taking you to your profile or home.</p>
+          <p className="text-surface-on-variant text-sm mt-2">Taking you to your profile or home.</p>
           <OnboardingStuckBanner
             stuck={redirectStall}
             variant="devotionist"
@@ -493,7 +493,7 @@ function SignInContent() {
   // WEB VERSION (Original Design) - Deep blue + golden yellow (devotionist)
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-transparent">
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[1000px] grid grid-cols-1 md:grid-cols-2 bg-[#020617]/80 backdrop-blur-3xl rounded-[40px] border border-amber-500/20 overflow-hidden shadow-2xl glass-effect">
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[1000px] grid grid-cols-1 md:grid-cols-2 bg-surface-container-high/90 backdrop-blur-3xl rounded-[40px] border border-outline-variant overflow-hidden shadow-2xl glass-effect">
         <div className="p-12 flex flex-col justify-center space-y-8">
           <Link href="/" className="text-amber-400 flex items-center gap-2 font-heading tracking-widest uppercase text-sm mb-4 opacity-60 hover:opacity-100"><ArrowLeft className="w-4 h-4" /> Back to Home</Link>
           <h1 className="text-5xl font-heading font-light text-amber-400 leading-tight gold-glow uppercase tracking-widest">Welcome Back, <br/>Seeker.</h1>
@@ -525,7 +525,7 @@ function SignInContent() {
           />
           <div className="relative text-center"><span className="bg-transparent px-4 text-xs uppercase tracking-widest text-amber-200/80 font-bold">or email</span></div>
           <form onSubmit={handleSubmit} className="space-y-6">
-            <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light" />
+            <Input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="Email Address" autoComplete="email" className="h-16 bg-surface-container-low border-outline-variant rounded-2xl focus:border-amber-500 transition-all font-light" />
             <div className="relative">
               <Input
                 value={password}
@@ -533,7 +533,7 @@ function SignInContent() {
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 autoComplete="current-password"
-                className="h-16 bg-white/5 border-white/10 rounded-2xl focus:border-amber-500 transition-all font-light pr-12"
+                className="h-16 bg-surface-container-low border-outline-variant rounded-2xl focus:border-amber-500 transition-all font-light pr-12"
               />
               <button
                 type="button"
@@ -553,7 +553,7 @@ function SignInContent() {
             >
               {isResetting ? "Sending reset email…" : "Forgot password?"}
             </button>
-            <Button type="submit" disabled={isLoading} size="2xl" className="w-full bg-amber-500 hover:bg-amber-400 text-[#020617] transition-all shadow-xl shadow-amber-500/10">
+            <Button type="submit" disabled={isLoading} size="2xl" className="w-full bg-amber-500 hover:bg-amber-400 text-primary-foreground transition-all shadow-xl shadow-amber-500/10">
               Continue Journey
             </Button>
           </form>
@@ -563,7 +563,7 @@ function SignInContent() {
             {" "}and{" "}
             <Link href="/privacy" className="text-amber-400 underline hover:text-amber-300">Privacy Policy</Link>.
           </p>
-          <div className="text-center pt-4 border-t border-white/5">
+          <div className="text-center pt-4 border-t border-outline-variant/30">
             <p className="text-amber-200/80 text-sm font-light">New Seeker? <Link href="/signup" className="text-amber-400 font-bold hover:underline ml-1">Create Account</Link></p>
           </div>
         </div>

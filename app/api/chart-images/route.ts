@@ -93,8 +93,9 @@ export async function GET(request: NextRequest) {
       source: 'FutureSeer AI-Powered Mystic',
       fallbackData: {
         description: getChartDescription(type),
-        significance: getChartSignificance(type)
-      }
+        significance: getChartSignificance(type),
+      },
+      templateUrl: getTemplateUrl(type),
     }
 
     return NextResponse.json(response)
@@ -113,6 +114,11 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+function getTemplateUrl(type: string): string {
+  if (type.startsWith('divisional-')) return '/charts/templates/vedic-north.svg'
+  return '/charts/templates/western-wheel.svg'
 }
 
 function getChartTitle(type: string): string {

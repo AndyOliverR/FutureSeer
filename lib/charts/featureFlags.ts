@@ -22,3 +22,7 @@ export function isFengShuiChartsV2Enabled(): boolean {
   return process.env.NEXT_PUBLIC_CHARTS_V2_FENGSHUI === '1';
 }
 
+export function isChartClarityUpgradeEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_CHART_CLARITY_V2 !== '0';
+}
+

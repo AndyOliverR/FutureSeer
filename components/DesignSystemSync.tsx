@@ -2,9 +2,7 @@
 
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { getIsMacOS, getDesignSystem } from "@/lib/platformDetection";
-
-const MOBILE_BREAKPOINT = 768;
+import { getClientPlatformSnapshot, getIsMacOS, getDesignSystem } from "@/lib/platformDetection";
 
 function applyDesignSystem() {
   if (typeof document === "undefined") return;
@@ -14,18 +12,16 @@ function applyDesignSystem() {
     user?.providerData?.some((p) => p?.providerId === "apple.com")
   );
 
-  const dataPlatform = document.documentElement.getAttribute("data-platform");
-  const dataMobileOS = document.documentElement.getAttribute("data-mobile-os");
-  const isMobile = dataPlatform === "android";
+  const snapshot = getClientPlatformSnapshot();
   const mobileOS =
-    dataMobileOS === "ios"
+    snapshot.mobileOS === "ios"
       ? ("ios" as const)
-      : dataMobileOS === "android"
+      : snapshot.mobileOS === "android"
         ? ("android" as const)
         : null;
 
   const designSystem = getDesignSystem({
-    isMobile,
+    isMobile: snapshot.isMobile,
     mobileOS,
     isMacOS: getIsMacOS(),
     signedInWithApple,
