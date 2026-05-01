@@ -1,0 +1,21 @@
+# .gitleaksignore — exempt known historical findings only.
+# New leaks in new commits still fail CI.
+# Format: commit:file:rule:line
+
+# Historical Firebase admin private key (rotate/revoke in Firebase IAM; see docs/SECRET_ROTATION_CHECKLIST.md).
+36eb24ea06767499ca9ee85531b4cc7df7fed502:firebaseadminscripts/serviceAccountKey.json:private-key:5
+5a90a6fc8cf8a2c46cbebd713620c869796c6239:firebaseadminscripts/serviceAccountKey.json:private-key:5
+
+# Public reCAPTCHA Enterprise site key (browser-public; restrict in Google Cloud console).
+0bba30a68c152d594109d61be6799d8c11da7005:components/community/GuestDiscussionForm.tsx:generic-api-key:14
+0bba30a68c152d594109d61be6799d8c11da7005:lib/recaptcha/verifyEnterpriseCaptcha.ts:generic-api-key:4
+94ea03eaaa42a3aa772659b8f87366866bf8627c:app/signin/page.tsx:generic-api-key:41
+94ea03eaaa42a3aa772659b8f87366866bf8627c:app/signup/page.tsx:generic-api-key:46
+4c913e4f7832fcec6996c2e4ec2f8d14f2322366:app/api/auth/verify-captcha/route.ts:generic-api-key:13
+
+# Benign LLM model id strings flagged as generic-api-key by entropy heuristic.
+d4d949276a1151a6304ae95e54df6f81d2f8f08f:lib/bibliomancyIntelligence.ts:generic-api-key:765
+22ba13dcb93601397b260845276e28204743c78d:lib/bibliomancyIntelligence.ts:generic-api-key:764
+
+# env-template.txt placeholder string.
+22ba13dcb93601397b260845276e28204743c78d:env-template.txt:generic-api-key:16
