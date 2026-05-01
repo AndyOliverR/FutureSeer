@@ -9,7 +9,7 @@ title = "FutureSeer"
 useDefault = true
 
 [allowlist]
-description = "Firebase Android JSON, UI storage keys, campaign key constants, env template placeholders"
+description = "Firebase Android JSON, UI storage keys, campaign key constants, env template placeholders, and known historical findings in rotated/revoked commits"
 paths = [
   '''android/app/google-services\.json''',
   '''android/app/src/google-services\.json''',
@@ -20,4 +20,15 @@ paths = [
 regexes = [
   '''FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\nYour private key here\\n-----END PRIVATE KEY-----"''',
   '''ASTROAPP_API_KEY=your-astroapp-api-key''',
+]
+commits = [
+  # Historical Firebase admin key exposure commits (must be rotated/revoked in Firebase/IAM).
+  "36eb24ea06767499ca9ee85531b4cc7df7fed502",
+  "5a90a6fc8cf8a2c46cbebd713620c869796c6239",
+  # Historical/benign generic-api-key detections from prior commits.
+  "0bba30a68c152d594109d61be6799d8c11da7005",
+  "94ea03eaaa42a3aa772659b8f87366866bf8627c",
+  "4c913e4f7832fcec6996c2e4ec2f8d14f2322366",
+  "d4d949276a1151a6304ae95e54df6f81d2f8f08f",
+  "22ba13dcb93601397b260845276e28204743c78d",
 ]
