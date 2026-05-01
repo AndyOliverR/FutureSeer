@@ -408,7 +408,7 @@ export default function ProfileSetupPage() {
                     onChange={e =>
                       setProfileData({ ...profileData, gender: genderFromSelectValue(e.target.value) })
                     }
-                    className="w-full h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white"
+                    className="w-full h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-4 text-white [&>option]:bg-white [&>option]:text-slate-900"
                   >
                     <option value="">Select Gender</option>
                     <option value="male">Male</option>

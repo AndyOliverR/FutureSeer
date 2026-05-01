@@ -62,7 +62,7 @@ export default function AstroScribePage() {
                 <select
                   value={scribeData.interpretationType || ""}
                   onChange={(e) => setScribeData({ ...scribeData, interpretationType: e.target.value })}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
+                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300 [&>option]:bg-white [&>option]:text-slate-900"
                 >
                   <option value="">Select Interpretation Type</option>
                   <option value="birth-chart">Birth Chart Analysis</option>
@@ -84,7 +84,7 @@ export default function AstroScribePage() {
                 <select
                   value={scribeData.writingStyle || ""}
                   onChange={(e) => setScribeData({ ...scribeData, writingStyle: e.target.value })}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
+                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300 [&>option]:bg-white [&>option]:text-slate-900"
                 >
                   <option value="">Select Writing Style</option>
                   <option value="professional">Professional & Analytical</option>
@@ -168,7 +168,7 @@ export default function AstroScribePage() {
                 <select
                   value={scribeData.reportLength || ""}
                   onChange={(e) => setScribeData({ ...scribeData, reportLength: e.target.value })}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
+                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300 [&>option]:bg-white [&>option]:text-slate-900"
                 >
                   <option value="">Select Report Length</option>
                   <option value="brief">Brief Summary (1-2 pages)</option>

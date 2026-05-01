@@ -101,7 +101,7 @@ export default function ThirteenSignsZodiacPage() {
                 <select
                   value={birthData.analysisFocus || ""}
                   onChange={(e) => setBirthData({ ...birthData, analysisFocus: e.target.value })}
-                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300"
+                  className="w-full bg-white/5 border border-white/20 rounded-xl p-3 text-soft focus:outline-none focus:border-yellow-400 transition-all duration-300 [&>option]:bg-white [&>option]:text-slate-900"
                 >
                   <option value="">Select Focus</option>
                   <option value="personality">Personality & Traits</option>

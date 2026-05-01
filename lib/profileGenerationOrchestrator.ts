@@ -908,7 +908,14 @@ async function runTool(
           throw new Error((err as { error?: string })?.error ?? `Financial Astrology API: ${res.status}`);
         }
         const json = await res.json();
-        const report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data ?? json;
+        let report = json.data?.comprehensiveAnalysis ?? json.comprehensiveAnalysis ?? json.data ?? json;
+        if (report && typeof report === 'object' && (report as Record<string, unknown>).posture) {
+          const rec = report as Record<string, unknown>;
+          if (!Array.isArray(rec.history) || rec.history.length === 0) {
+            const { attachFinancialAstrologyHistory } = await import('@/lib/financialAstrology/historyMerge');
+            report = await attachFinancialAstrologyHistory(userId, { ...rec });
+          }
+        }
         return {
           status: 'success',
           data: report ? { comprehensiveAnalysis: report } : { comprehensiveAnalysis: json },

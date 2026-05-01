@@ -199,7 +199,7 @@ export function BirthDetailsCard({
             type="date"
             value={birthData.birthDate}
             onChange={(e) => setBirthData({ ...birthData, birthDate: e.target.value })}
-            className="bg-white/5 border-white/20 text-white focus:border-yellow-400"
+            className="bg-white/5 border-white/20 text-white focus:border-yellow-400 [color-scheme:dark]"
           />
           {validationErrors.birthDate && (
             <div className="flex items-center gap-1 text-red-400 text-sm">

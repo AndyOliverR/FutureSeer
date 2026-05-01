@@ -86,6 +86,37 @@ function formatFinancialReportContext(report: Record<string, unknown> | undefine
   if (strategic && Array.isArray(strategic.strategic_recommendations)) {
     lines.push('Recommendations: ' + (strategic.strategic_recommendations as string[]).slice(0, 3).join('; '));
   }
+
+  const analystReports = report.analystReports as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(analystReports) && analystReports.length) {
+    lines.push('\n## Multi-agent analyst panel');
+    for (const ar of analystReports) {
+      const role = String(ar.role ?? 'analyst');
+      lines.push(`- **${role}** (confidence ${ar.confidence ?? '—'}): ${String(ar.summary ?? '').slice(0, 400)}`);
+      if (Array.isArray(ar.signals) && ar.signals.length) {
+        lines.push(`  Signals: ${(ar.signals as string[]).slice(0, 5).join('; ')}`);
+      }
+    }
+  }
+
+  const debate = report.debate as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(debate) && debate.length) {
+    lines.push('\n## Opportunity Seer vs Caution Seer (debate transcript)');
+    for (const turn of debate) {
+      const who = turn.side === 'bear' ? 'Caution Seer' : 'Opportunity Seer';
+      lines.push(
+        `Round ${turn.round} — ${who}: ${String(turn.argument ?? '').slice(0, 600)} (citations: ${Array.isArray(turn.citations) ? (turn.citations as string[]).join('; ') : ''})`
+      );
+    }
+  }
+
+  const posture = report.posture as Record<string, unknown> | undefined;
+  if (posture && typeof posture.rating === 'string') {
+    lines.push(
+      `\n## Synthesized financial posture (educational)\nRating: ${posture.rating}\nSummary: ${String(posture.executiveSummary ?? '')}\nThesis: ${String(posture.thesis ?? '')}`
+    );
+  }
+
   return lines.join('\n');
 }
 

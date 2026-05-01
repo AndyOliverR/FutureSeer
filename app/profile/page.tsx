@@ -1236,7 +1236,7 @@ export default function ProfilePage() {
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("gender") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("gender") ? "Missing" : "Done"}</span>
               </div>
               {isEditing ? (
-                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-14 w-full bg-surface-container-low border rounded-2xl px-4 text-white [color-scheme:dark] ${getRequiredFieldClasses("gender", "mobile")}`}>
+                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-14 w-full bg-surface-container-low border rounded-2xl px-4 text-white [&>option]:bg-white [&>option]:text-slate-900 ${getRequiredFieldClasses("gender", "mobile")}`}>
                   <option value="">Not set</option>
                   <option value="male">Male</option>
                   <option value="female">Female</option>
@@ -1274,7 +1274,7 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <div className="flex gap-2 items-center">
                       <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className={`h-14 bg-surface-container-low rounded-2xl [color-scheme:dark] flex-1 ${getRequiredFieldClasses("birthTime", "mobile")}`} />
-                      <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white min-w-[72px]">
+                      <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white min-w-[72px] [&>option]:bg-white [&>option]:text-slate-900">
                         <option value="AM">AM</option>
                         <option value="PM">PM</option>
                       </select>
@@ -1622,7 +1622,7 @@ export default function ProfilePage() {
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("gender") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("gender") ? "Missing" : "Done"}</span>
                 </div>
                 {isEditing ? (
-                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-12 w-full bg-white/5 border rounded-2xl px-4 text-white [color-scheme:dark] ${getRequiredFieldClasses("gender", "web")}`}>
+                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-12 w-full bg-white/5 border rounded-2xl px-4 text-white [&>option]:bg-white [&>option]:text-slate-900 ${getRequiredFieldClasses("gender", "web")}`}>
                     <option value="">Not set</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -1660,7 +1660,7 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                       <div className="flex gap-2 items-center">
                         <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className={`h-12 bg-white/5 rounded-2xl [color-scheme:dark] flex-1 ${getRequiredFieldClasses("birthTime", "web")}`} />
-                        <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-12 bg-white/5 border border-amber-400/30 rounded-2xl px-3 text-white min-w-[72px]">
+                        <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-12 bg-white/5 border border-amber-400/30 rounded-2xl px-3 text-white min-w-[72px] [&>option]:bg-white [&>option]:text-slate-900">
                           <option value="AM">AM</option>
                           <option value="PM">PM</option>
                         </select>

@@ -191,7 +191,7 @@ export function RunesTool() {
             <select
               value={spreadType}
               onChange={(e) => setSpreadType(e.target.value)}
-              className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 [&>option]:bg-white [&>option]:text-slate-900"
             >
               {runeSpreads.map(spread => (
                 <option key={spread.key} value={spread.key}>

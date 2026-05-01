@@ -31,6 +31,7 @@ import { checkRateLimitWithOptionalFirestore } from '@/lib/rateLimitFirestore';
 import { acquireMysticalGenerationLock, getMysticalLockRuntimeStatus } from '@/lib/generationLock';
 import { tryResumeMysticalStageB } from '@/lib/mysticalStageB';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
+import { financialAstrologyNeedsMultiAgentBackfill } from '@/lib/financialAstrology/historyMerge';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // 2 minutes for all tools
@@ -269,7 +270,17 @@ export async function POST(request: NextRequest) {
       const stored = await getDocument('comprehensiveMysticalProfiles', uid);
       const storedProfile = (stored || {}) as Record<string, unknown>;
       const readiness = summarizeToolReadiness(storedProfile, ALL_TOOL_SLUGS);
-      const missingSlugs = readiness.pendingToolSlugs;
+      const missingSlugs = [...readiness.pendingToolSlugs];
+      if (
+        !missingSlugs.includes('financialAstrology') &&
+        financialAstrologyNeedsMultiAgentBackfill(storedProfile.financialAstrology)
+      ) {
+        missingSlugs.push('financialAstrology');
+        devLog.info(
+          '[generate-mystical] Queueing financialAstrology multi-agent backfill for legacy report',
+          'generate-mystical'
+        );
+      }
       if (missingSlugs.length === 0) {
         const auditId = await writeRegenDecisionTelemetry(uid, {
           event: 'mystical_regen_skipped_unchanged',

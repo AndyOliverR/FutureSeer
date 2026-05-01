@@ -121,10 +121,11 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
   if (isGatewayAvailable()) {
     try {
       const gatewayModel = mapModelToGateway(options.model);
+      const gatewayMessages = options.messages as NonNullable<Parameters<typeof streamText>[0]['messages']>;
       const result = await streamText({
         model: gatewayModel as unknown as Parameters<typeof streamText>[0]['model'],
-        messages: options.messages as Parameters<typeof streamText>[0]['messages'],
-        maxTokens: options.maxTokens,
+        messages: gatewayMessages,
+        maxOutputTokens: options.maxTokens,
         temperature: options.temperature,
         topP: options.topP,
         frequencyPenalty: options.frequencyPenalty,
@@ -229,10 +230,11 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
   if (isGatewayAvailable()) {
     try {
       const gatewayModel = mapModelToGateway(options.model);
+      const gatewayMessages = options.messages as NonNullable<Parameters<typeof generateText>[0]['messages']>;
       const result = await generateText({
         model: gatewayModel as unknown as Parameters<typeof generateText>[0]['model'],
-        messages: options.messages as Parameters<typeof generateText>[0]['messages'],
-        maxTokens: options.maxTokens,
+        messages: gatewayMessages,
+        maxOutputTokens: options.maxTokens,
         temperature: options.temperature,
         topP: options.topP,
         frequencyPenalty: options.frequencyPenalty,
@@ -242,11 +244,16 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
       const out = {
         content: result.text,
         usage: result.usage
-          ? {
-              promptTokens: result.usage.promptTokens,
-              completionTokens: result.usage.completionTokens,
-              totalTokens: result.usage.totalTokens,
-            }
+          ? (() => {
+              const promptTokens = (result.usage as { inputTokens?: number; promptTokens?: number }).inputTokens
+                ?? (result.usage as { inputTokens?: number; promptTokens?: number }).promptTokens
+                ?? 0;
+              const completionTokens = (result.usage as { outputTokens?: number; completionTokens?: number }).outputTokens
+                ?? (result.usage as { outputTokens?: number; completionTokens?: number }).completionTokens
+                ?? 0;
+              const totalTokens = result.usage.totalTokens ?? (promptTokens + completionTokens);
+              return { promptTokens, completionTokens, totalTokens };
+            })()
           : undefined,
         finishReason: result.finishReason,
       };

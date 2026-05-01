@@ -596,13 +596,13 @@ function Logs({ adminToken, getToken }: { adminToken: string | null; getToken: (
             placeholder="Filter by action..."
             value={filters.action}
             onChange={(e) => setFilters(prev => ({ ...prev, action: e.target.value }))}
-            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500 [color-scheme:dark]"
           />
           <Input
             placeholder="Filter by user ID..."
             value={filters.userId}
             onChange={(e) => setFilters(prev => ({ ...prev, userId: e.target.value }))}
-            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"
+            className="bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500 [color-scheme:dark]"
           />
           <Input
             type="date"

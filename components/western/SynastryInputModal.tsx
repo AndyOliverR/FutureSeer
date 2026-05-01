@@ -182,7 +182,7 @@ export default function SynastryInputModal({
                       type="date"
                       value={currentPartner.birthDate}
                       onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-slate-100"
+                      className="bg-slate-800/50 border-slate-600 text-slate-100 [color-scheme:dark]"
                     />
                   </div>
                   <div>
@@ -192,7 +192,7 @@ export default function SynastryInputModal({
                       type="time"
                       value={currentPartner.birthTime}
                       onChange={(e) => handleInputChange('birthTime', e.target.value)}
-                      className="bg-slate-800/50 border-slate-600 text-slate-100"
+                      className="bg-slate-800/50 border-slate-600 text-slate-100 [color-scheme:dark]"
                     />
                   </div>
                 </div>

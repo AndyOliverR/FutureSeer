@@ -391,7 +391,7 @@ export default function HoraryAstrologyPage() {
                             const { minute, ampm } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
                             setQuestionTime(`${datePart}T${time12To24(Number(e.target.value), minute, ampm)}`)
                           }}
-                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[64px] md:min-w-[72px]"
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[64px] md:min-w-[72px] [&>option]:bg-white [&>option]:text-slate-900"
                         >
                           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                             <option key={n} value={n}>{n}</option>
@@ -407,7 +407,7 @@ export default function HoraryAstrologyPage() {
                             const { hour12, ampm } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
                             setQuestionTime(`${datePart}T${time12To24(hour12, Number(e.target.value), ampm)}`)
                           }}
-                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[64px] md:min-w-[72px]"
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[64px] md:min-w-[72px] [&>option]:bg-white [&>option]:text-slate-900"
                         >
                           {Array.from({ length: 60 }, (_, i) => (
                             <option key={i} value={i}>{String(i).padStart(2, "0")}</option>
@@ -423,7 +423,7 @@ export default function HoraryAstrologyPage() {
                             const { hour12, minute } = time24To12(questionTime ? questionTime.split("T")[1]?.slice(0, 5) || "12:00" : "12:00")
                             setQuestionTime(`${datePart}T${time12To24(hour12, minute, e.target.value as "AM" | "PM")}`)
                           }}
-                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[72px] md:min-w-[80px]"
+                          className="bg-white border-2 border-amber-300 rounded-xl px-3 py-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 min-w-[72px] md:min-w-[80px] [&>option]:bg-white [&>option]:text-slate-900"
                         >
                           <option value="AM">AM</option>
                           <option value="PM">PM</option>

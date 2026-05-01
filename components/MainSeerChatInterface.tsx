@@ -252,7 +252,7 @@ export default function MainSeerChatInterface({
               id="seer-response-style"
               value={responseStyle}
               onChange={(e) => setResponseStyle(e.target.value as ResponseStyle)}
-              className="h-8 rounded-md border border-amber-200 bg-white px-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-200"
+              className="h-8 rounded-md border border-amber-200 bg-white px-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-200 [&>option]:bg-white [&>option]:text-slate-900"
               aria-label="Response style"
             >
               <option value="balanced">Balanced</option>

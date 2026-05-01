@@ -211,7 +211,7 @@ export default function PendulumPage() {
                     <select
                       value={pendulumType || ""}
                       onChange={(e) => setPendulumType(e.target.value)}
-                      className="w-full bg-white border-2 border-amber-300 rounded-2xl p-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300"
+                      className="w-full bg-white border-2 border-amber-300 rounded-2xl p-4 text-slate-800 focus:outline-none focus:border-amber-400 transition-all duration-300 [&>option]:bg-white [&>option]:text-slate-900"
                     >
                       <option value="">Select Pendulum (Optional)</option>
                       <option value="crystal">Crystal Pendulum</option>

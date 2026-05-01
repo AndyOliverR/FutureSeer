@@ -59,7 +59,7 @@ export function BirthTimeDualFormatSelect({
             const nh = Number(e.target.value)
             onChange(toHHmm(nh, minute))
           }}
-          className={selectClassName}
+          className={`${selectClassName} [&>option]:bg-white [&>option]:text-slate-900`}
         >
           {hourOptions.map(({ value: hv, label }) => (
             <option key={hv} value={hv}>
@@ -79,7 +79,7 @@ export function BirthTimeDualFormatSelect({
             const nm = Number(e.target.value)
             onChange(toHHmm(hour, nm))
           }}
-          className={selectClassName}
+          className={`${selectClassName} [&>option]:bg-white [&>option]:text-slate-900`}
         >
           {Array.from({ length: 60 }, (_, i) => (
             <option key={i} value={i}>

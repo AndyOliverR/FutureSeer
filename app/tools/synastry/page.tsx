@@ -135,7 +135,7 @@ export default function SynastryPage() {
                           const { minute, ampm } = time24To12(birthData1?.birthTime ?? "00:00")
                           setBirthData1({ ...birthData1, birthTime: time12To24(Number(e.target.value), minute, ampm) })
                         }}
-                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900"
                       >
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                           <option key={n} value={n}>{n}</option>
@@ -148,7 +148,7 @@ export default function SynastryPage() {
                           const { hour12, ampm } = time24To12(birthData1?.birthTime ?? "00:00")
                           setBirthData1({ ...birthData1, birthTime: time12To24(hour12, Number(e.target.value), ampm) })
                         }}
-                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900"
                       >
                         {Array.from({ length: 60 }, (_, i) => i).map((n) => (
                           <option key={n} value={n}>{String(n).padStart(2, "0")}</option>
@@ -161,7 +161,7 @@ export default function SynastryPage() {
                         const { hour12, minute } = time24To12(birthData1?.birthTime ?? "00:00")
                         setBirthData1({ ...birthData1, birthTime: time12To24(hour12, minute, e.target.value as "AM" | "PM") })
                       }}
-                      className="w-20 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                      className="w-20 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900"
                     >
                       <option value="AM">AM</option>
                       <option value="PM">PM</option>
@@ -205,7 +205,7 @@ export default function SynastryPage() {
                           const { minute, ampm } = time24To12(birthData2?.birthTime ?? "00:00")
                           setBirthData2({ ...birthData2, birthTime: time12To24(Number(e.target.value), minute, ampm) })
                         }}
-                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900"
                       >
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                           <option key={n} value={n}>{n}</option>
@@ -218,7 +218,7 @@ export default function SynastryPage() {
                           const { hour12, ampm } = time24To12(birthData2?.birthTime ?? "00:00")
                           setBirthData2({ ...birthData2, birthTime: time12To24(hour12, Number(e.target.value), ampm) })
                         }}
-                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                        className="flex-1 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900"
                       >
                         {Array.from({ length: 60 }, (_, i) => i).map((n) => (
                           <option key={n} value={n}>{String(n).padStart(2, "0")}</option>
@@ -231,7 +231,7 @@ export default function SynastryPage() {
                         const { hour12, minute } = time24To12(birthData2?.birthTime ?? "00:00")
                         setBirthData2({ ...birthData2, birthTime: time12To24(hour12, minute, e.target.value as "AM" | "PM") })
                       }}
-                      className="w-20 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark]"
+                      className="w-20 bg-white/95 border-2 border-amber-300 rounded-xl p-3 text-slate-800 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 [color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900"
                     >
                       <option value="AM">AM</option>
                       <option value="PM">PM</option>

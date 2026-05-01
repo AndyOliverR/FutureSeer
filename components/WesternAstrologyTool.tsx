@@ -71,7 +71,7 @@ export const WesternAstrologyTool = () => {
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 [color-scheme:dark]"
                 required
               />
             </div>
@@ -84,7 +84,7 @@ export const WesternAstrologyTool = () => {
                 type="time"
                 value={formData.birthTime}
                 onChange={(e) => handleInputChange('birthTime', e.target.value)}
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 [color-scheme:dark]"
                 required
               />
             </div>

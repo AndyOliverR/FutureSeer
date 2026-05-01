@@ -89,6 +89,7 @@ A `.env.local` file is needed with at minimum:
 - `FIREBASE_ADMIN_*` — Firebase Admin SDK config (3 vars)
 - `GROQ_API_KEY` — primary AI provider
 - Optional: `RATE_LIMIT_STORE=firestore` — persist API rate counters in Firestore collection `_apiRateLimits` (requires Firebase Admin); default is in-memory per instance.
+- Optional (financial astrology multi-agent): `FINANCIAL_MULTIAGENT_ENABLED` — set to `false` to skip the TradingAgents-style analyst/debate/synthesis pass (default: enabled unless `false`). Also `FINANCIAL_MULTIAGENT_DEBATE_ROUNDS` (default `1`), `FINANCIAL_MULTIAGENT_ANALYST_MODEL` (default `llama-3.1-8b-instant`), `FINANCIAL_MULTIAGENT_SYNTH_MODEL` (default `llama-3.3-70b-versatile`).
 
 The app starts and renders the landing page without real credentials, but auth/AI features require valid keys.
 

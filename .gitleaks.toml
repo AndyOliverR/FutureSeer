@@ -9,10 +9,15 @@ title = "FutureSeer"
 useDefault = true
 
 [allowlist]
-description = "Firebase Android JSON, UI storage keys, campaign key constants"
+description = "Firebase Android JSON, UI storage keys, campaign key constants, env template placeholders"
 paths = [
   '''android/app/google-services\.json''',
   '''android/app/src/google-services\.json''',
   '''app/tools/esoteric-astrology/page\.tsx''',
   '''lib/campaignAttribution\.ts''',
+  '''env-template\.txt''',
+]
+regexes = [
+  '''FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\nYour private key here\\n-----END PRIVATE KEY-----"''',
+  '''ASTROAPP_API_KEY=your-astroapp-api-key''',
 ]

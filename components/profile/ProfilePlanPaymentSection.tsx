@@ -123,7 +123,7 @@ export function ProfilePlanPaymentSection({
             value={selectedPlanForProfile}
             onChange={(e) => onPlanChange(e.target.value as ProfilePlanId)}
             style={{ colorScheme: "dark" }}
-            className={selectClass}
+            className={`${selectClass} [&>option]:bg-white [&>option]:text-slate-900`}
           >
             <option className="bg-slate-950 text-amber-50" value="power-user-trial">
               Power User Trial

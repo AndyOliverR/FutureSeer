@@ -351,7 +351,7 @@ export function TransitsOverlay({
                 type="date"
                 value={currentDate.toISOString().split('T')[0]}
                 onChange={(e) => setCurrentDate(new Date(e.target.value))}
-                className="bg-white/5 border border-white/20 rounded px-2 py-1 text-white text-sm"
+                className="bg-white/5 border border-white/20 rounded px-2 py-1 text-white text-sm [color-scheme:dark]"
               />
             </div>
             

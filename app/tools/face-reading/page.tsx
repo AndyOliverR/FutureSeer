@@ -312,7 +312,7 @@ export default function FaceReadingPage() {
                 <select
                   value={faceData.analysisFocus || ""}
                   onChange={(e) => setFaceData({ ...faceData, analysisFocus: e.target.value })}
-                  className="w-full bg-white border-2 border-amber-200 rounded-xl p-3 text-slate-700 focus:outline-none focus:border-amber-400 transition-all duration-300"
+                  className="w-full bg-white border-2 border-amber-200 rounded-xl p-3 text-slate-700 focus:outline-none focus:border-amber-400 transition-all duration-300 [&>option]:bg-white [&>option]:text-slate-900"
                 >
                   <option value="" className="bg-white text-slate-700">Select Focus</option>
                   <option value="personality" className="bg-white text-slate-700">Personality Traits</option>

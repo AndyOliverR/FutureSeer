@@ -4,6 +4,7 @@ import { Suspense, useState, useMemo, useEffect, useLayoutEffect, useRef } from 
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
 import { useToolReport } from '@/hooks/useComprehensiveMysticalProfile';
 import { ToolReportGuard } from '@/components/ToolReportGuard';
 import { ToolReportViralShell } from '@/components/report-viral/ToolReportViralShell';
@@ -23,20 +24,45 @@ import {
   FileText,
   Zap,
   Loader2,
+  MessagesSquare,
+  Sparkles,
+  Users,
+  X,
 } from 'lucide-react';
 
 type TabValue = 'introduction' | 'report' | 'ask-the-seer';
 
+const POSTURE_LABELS: Record<string, string> = {
+  expand: 'Expand',
+  leanForward: 'Lean forward',
+  steady: 'Steady',
+  leanDefensive: 'Lean defensive',
+  conserve: 'Conserve',
+};
+
+const ANALYST_ROLE_LABELS: Record<string, string> = {
+  natalWealth: 'Natal wealth',
+  marketCycle: 'Market cycle',
+  mundaneCollective: 'Collective / mundane',
+  personalTiming: 'Personal timing',
+};
+
+const FINANCIAL_MIGRATION_BADGE_DISMISS_KEY = 'financialAstrologyMigrationBadgeDismissed';
+
 function FinancialAstrologyPageContent() {
   const { user, userProfile } = useAuth();
+  const isMobileLayout = useIsMobileLayout();
   const [activeTab, setActiveTab] = useState<TabValue>('introduction');
   const { report: pipelineReport, loading: isLoading, error, hasReport, refreshProfile } =
     useToolReport('financialAstrology');
   const [onDemandReport, setOnDemandReport] = useState<Record<string, unknown> | null>(null);
   const [onDemandLoading, setOnDemandLoading] = useState(false);
   const [onDemandError, setOnDemandError] = useState<string | null>(null);
+  const [showLegacyMigrationBadge, setShowLegacyMigrationBadge] = useState(false);
+  const [migrationBadgeDismissed, setMigrationBadgeDismissed] = useState(false);
   const onDemandFetchedRef = useRef(false);
   const refreshProfileRef = useRef(refreshProfile);
+  const legacyMissingMultiAgentSeenRef = useRef(false);
   useLayoutEffect(() => {
     refreshProfileRef.current = refreshProfile;
   }, [refreshProfile]);
@@ -53,10 +79,18 @@ function FinancialAstrologyPageContent() {
     return (raw.comprehensiveAnalysis as Record<string, unknown>) ?? raw;
   }, [pipelineReport]);
 
-  const hasCompletePipelineReport = useMemo(
-    () => !!(pipelineInner && (pipelineInner as Record<string, unknown>).financialTemperamentProfile),
-    [pipelineInner]
-  );
+  /**
+   * A stored report is considered "complete" only when it carries the legacy temperament
+   * fields AND has either the multi-agent posture or a diagnostics record proving the
+   * multi-agent pass already ran. Pre-multi-agent reports trigger an on-demand backfill.
+   */
+  const hasCompletePipelineReport = useMemo(() => {
+    if (!pipelineInner) return false;
+    const inner = pipelineInner as Record<string, unknown>;
+    if (!inner.financialTemperamentProfile) return false;
+    const multiAgentRan = inner.posture != null || inner.multiAgentDiagnostics != null;
+    return multiAgentRan;
+  }, [pipelineInner]);
 
   useEffect(() => {
     if (!user?.uid || !userProfile || !hasCompleteDetails || hasCompletePipelineReport || isLoading) return;
@@ -139,6 +173,48 @@ function FinancialAstrologyPageContent() {
     return (raw.comprehensiveAnalysis as Record<string, unknown>) ?? raw;
   }, [effectiveReport]);
 
+  useEffect(() => {
+    if (!pipelineInner || typeof pipelineInner !== 'object') return;
+    const inner = pipelineInner as Record<string, unknown>;
+    const hasLegacyShape = inner.financialTemperamentProfile != null;
+    const hasMultiAgentData = inner.posture != null || inner.multiAgentDiagnostics != null;
+    if (hasLegacyShape && !hasMultiAgentData) {
+      legacyMissingMultiAgentSeenRef.current = true;
+    }
+  }, [pipelineInner]);
+
+  useEffect(() => {
+    if (!legacyMissingMultiAgentSeenRef.current) return;
+    if (!comprehensiveReport || typeof comprehensiveReport !== 'object') return;
+    const rec = comprehensiveReport as Record<string, unknown>;
+    const migrationDone = rec.posture != null || rec.multiAgentDiagnostics != null;
+    if (migrationDone) setShowLegacyMigrationBadge(true);
+  }, [comprehensiveReport]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !user?.uid) return;
+    try {
+      const stored = window.localStorage.getItem(
+        `${FINANCIAL_MIGRATION_BADGE_DISMISS_KEY}:${user.uid}`
+      );
+      if (stored === '1') setMigrationBadgeDismissed(true);
+    } catch {
+      // Non-blocking if localStorage is unavailable.
+    }
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !user?.uid) return;
+    try {
+      window.localStorage.setItem(
+        `${FINANCIAL_MIGRATION_BADGE_DISMISS_KEY}:${user.uid}`,
+        migrationBadgeDismissed ? '1' : '0'
+      );
+    } catch {
+      // Non-blocking if localStorage is unavailable.
+    }
+  }, [migrationBadgeDismissed, user?.uid]);
+
   const isReportComplete = useMemo(
     () => !!(comprehensiveReport && (comprehensiveReport as Record<string, unknown>).financialTemperamentProfile),
     [comprehensiveReport]
@@ -206,6 +282,13 @@ function FinancialAstrologyPageContent() {
   const strategic = report?.strategicRecommendations as Record<string, unknown> | undefined;
   const recommendations = (strategic?.strategic_recommendations as string[]) ?? [];
   const legalDisclaimer = (report?.legalDisclaimer as string) ?? '';
+  const analystReports = (report?.analystReports as Array<Record<string, unknown>>) ?? [];
+  const debateTurns = (report?.debate as Array<Record<string, unknown>>) ?? [];
+  const posture = report?.posture as Record<string, unknown> | undefined;
+  /** Inner panels: solid on mobile (M3-friendly), lighter glass on md+ (web). */
+  const posturePanelClass = isMobileLayout
+    ? 'rounded-lg border border-slate-200 bg-slate-50 p-4 shadow-sm'
+    : 'rounded-lg border border-emerald-200/80 bg-white/70 backdrop-blur-sm p-4 md:p-5 shadow-sm';
 
   return (
     <ToolReportGuard loading={effectiveLoading} error={effectiveError ?? null} toolLabel="Financial Astrology">
@@ -318,6 +401,23 @@ function FinancialAstrologyPageContent() {
                       ) : report ? (
                         <ToolReportViralShell toolSlug="financialAstrology" reportForTeaser={effectiveReport ?? pipelineReport}>
                         <div className="space-y-6">
+                          {showLegacyMigrationBadge && !migrationBadgeDismissed && (
+                            <div className="rounded-lg border border-emerald-300 bg-emerald-50/95 px-3 py-2 text-xs sm:text-sm text-emerald-900">
+                              <div className="flex items-start justify-between gap-2">
+                                <p>
+                                  Migration complete: your legacy financial astrology report was upgraded to the new multi-agent format.
+                                </p>
+                                <button
+                                  type="button"
+                                  aria-label="Dismiss migration complete message"
+                                  onClick={() => setMigrationBadgeDismissed(true)}
+                                  className="inline-flex items-center justify-center rounded p-0.5 text-emerald-800 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          )}
                           <DashboardSection
                             title="Disclaimer"
                             icon={<Shield className="w-6 h-6" />}
@@ -329,6 +429,93 @@ function FinancialAstrologyPageContent() {
                               {legalDisclaimer || 'This report is for educational and cyclical modeling only. Not financial advice. No price targets or deterministic predictions.'}
                             </p>
                           </DashboardSection>
+
+                          {analystReports.length > 0 && (
+                            <DashboardSection
+                              title="Multi-agent analyst panel"
+                              icon={<Users className="w-6 h-6" />}
+                              defaultExpanded={false}
+                              colorScheme="blue"
+                              storageKey="financial-analyst-panel"
+                            >
+                              <div className="space-y-4 text-slate-800 text-sm">
+                                {analystReports.map((ar, idx) => {
+                                  const roleKey = String(ar.role ?? '');
+                                  const title = ANALYST_ROLE_LABELS[roleKey] ?? roleKey;
+                                  return (
+                                    <div key={`${roleKey}-${idx}`} className={posturePanelClass}>
+                                      <p className="font-semibold text-emerald-900">{title}</p>
+                                      <p className="mt-1 leading-relaxed text-slate-700">
+                                        {String(ar.summary ?? '')}
+                                      </p>
+                                      {Array.isArray(ar.signals) && ar.signals.length > 0 && (
+                                        <ul className="mt-2 list-disc list-inside text-xs text-slate-600">
+                                          {(ar.signals as string[]).slice(0, 8).map((s, i) => (
+                                            <li key={i}>{s}</li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </DashboardSection>
+                          )}
+
+                          {debateTurns.length > 0 && (
+                            <DashboardSection
+                              title="Opportunity Seer vs Caution Seer"
+                              icon={<MessagesSquare className="w-6 h-6" />}
+                              defaultExpanded={false}
+                              colorScheme="purple"
+                              storageKey="financial-debate"
+                            >
+                              <ol className="space-y-3 text-slate-700 text-sm list-decimal list-inside">
+                                {debateTurns.map((turn, idx) => {
+                                  const who =
+                                    turn.side === 'bear' ? 'Caution Seer' : 'Opportunity Seer';
+                                  return (
+                                    <li key={idx} className="marker:font-semibold">
+                                      <span className="font-medium text-slate-800">
+                                        Round {String(turn.round)} — {who}
+                                      </span>
+                                      <p className="mt-1 text-slate-600 pl-0 md:pl-4">
+                                        {String(turn.argument ?? '')}
+                                      </p>
+                                      {Array.isArray(turn.citations) && (turn.citations as string[]).length > 0 && (
+                                        <p className="text-xs text-slate-500 mt-1 pl-0 md:pl-4">
+                                          Citations: {(turn.citations as string[]).join('; ')}
+                                        </p>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ol>
+                            </DashboardSection>
+                          )}
+
+                          {posture && typeof posture.rating === 'string' && (
+                            <DashboardSection
+                              title="Synthesized financial posture"
+                              icon={<Sparkles className="w-6 h-6" />}
+                              defaultExpanded
+                              colorScheme="cyan"
+                              storageKey="financial-posture"
+                              badge={POSTURE_LABELS[posture.rating as string] ?? String(posture.rating)}
+                            >
+                              <div className={posturePanelClass}>
+                                <p className="text-sm font-medium text-emerald-900">
+                                  {POSTURE_LABELS[posture.rating as string] ?? posture.rating} — risk band:{' '}
+                                  {String(posture.riskBand ?? '—')} — horizon ~{String(posture.timeHorizonDays ?? '—')}{' '}
+                                  days (cyclical framing, not financial advice)
+                                </p>
+                                <p className="mt-2 text-sm leading-relaxed text-slate-800">
+                                  {String(posture.executiveSummary ?? '')}
+                                </p>
+                                <p className="mt-2 text-sm text-slate-700">{String(posture.thesis ?? '')}</p>
+                              </div>
+                            </DashboardSection>
+                          )}
 
                           {temperament && (
                             <DashboardSection

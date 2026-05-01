@@ -192,7 +192,7 @@ function ContactContent() {
                       name="type"
                       value={formData.type}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 bg-slate-800/50 border border-amber-500/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-amber-500/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 [&>option]:bg-white [&>option]:text-slate-900"
                       required
                     >
                       <option value="support">Support</option>
@@ -211,7 +211,7 @@ function ContactContent() {
                       name="subject"
                       value={formData.subject}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 bg-slate-800/50 border border-amber-500/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="w-full px-3 py-2 bg-slate-800/50 border border-amber-500/30 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-amber-500 [&>option]:bg-white [&>option]:text-slate-900"
                       required
                     >
                       <option value="">Select a subject</option>

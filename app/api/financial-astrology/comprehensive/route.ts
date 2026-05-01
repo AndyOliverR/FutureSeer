@@ -9,6 +9,12 @@ import {
   buildFinancialReportSystemPrompt,
   getFinancialDisclaimer,
 } from '@/lib/financialAstrology/financialAstrologyPrompts';
+import { isFinancialMultiAgentEnabled } from '@/lib/financialAstrology/multiAgent/flags';
+import { runFinancialAstrologyMultiAgent } from '@/lib/financialAstrology/multiAgent/orchestrate';
+import {
+  attachFinancialAstrologyHistory,
+  loadFinancialAstrologyHistory,
+} from '@/lib/financialAstrology/historyMerge';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -243,7 +249,56 @@ export async function POST(request: NextRequest) {
       devLog.warn('Financial astrology AI fallback used:', aiErr, 'route');
     }
 
-    const comprehensiveAnalysis = {
+    const generatedAt = new Date().toISOString();
+
+    const multiAgentEnabled = isFinancialMultiAgentEnabled();
+    let multiAgentPatch: Record<string, unknown> = {};
+    const multiAgentDiagnostics: {
+      enabled: boolean;
+      attempted: boolean;
+      succeeded: boolean;
+      error?: string;
+      durationMs?: number;
+      generatedAt: string;
+    } = {
+      enabled: multiAgentEnabled,
+      attempted: false,
+      succeeded: false,
+      generatedAt,
+    };
+
+    if (multiAgentEnabled) {
+      const t0 = Date.now();
+      multiAgentDiagnostics.attempted = true;
+      try {
+        const priorHistory = await loadFinancialAstrologyHistory(userId);
+        const multi = await runFinancialAstrologyMultiAgent({
+          chartContext,
+          natalWealth,
+          marketCycle,
+          alignment,
+          priorHistory,
+        });
+        multiAgentPatch = {
+          analystReports: multi.analystReports,
+          debate: multi.debate,
+          posture: multi.posture,
+          multiAgentGeneratedAt: multi.generatedAt,
+        };
+        multiAgentDiagnostics.succeeded = true;
+      } catch (multiErr) {
+        multiAgentDiagnostics.error =
+          multiErr instanceof Error ? multiErr.message : String(multiErr);
+        devLog.warn(
+          'Financial astrology multi-agent path failed; continuing with legacy report only:',
+          multiErr,
+          'route'
+        );
+      }
+      multiAgentDiagnostics.durationMs = Date.now() - t0;
+    }
+
+    let comprehensiveAnalysis: Record<string, unknown> = {
       financialTemperamentProfile: {
         incomeStabilityScore: natalWealth.incomeStabilityScore,
         speculativeRiskIndex: natalWealth.speculativeRiskIndex,
@@ -265,8 +320,16 @@ export async function POST(request: NextRequest) {
       climateMap12Months: marketCycle.next12MonthsOverview,
       strategicRecommendations: strategicSection,
       legalDisclaimer: getFinancialDisclaimer(),
-      generatedAt: new Date().toISOString(),
+      generatedAt,
+      ...multiAgentPatch,
+      multiAgentDiagnostics,
     };
+
+    if (multiAgentPatch.posture) {
+      comprehensiveAnalysis = await attachFinancialAstrologyHistory(userId, comprehensiveAnalysis, {
+        generatedAtForEntry: generatedAt,
+      });
+    }
 
     return NextResponse.json({
       success: true,

@@ -286,7 +286,7 @@ export default function DailyDecisionsPage() {
                       onChange={(e) => {
                         setSelectedDate(e.target.value)
                       }}
-                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 [color-scheme:dark]"
                     />
                     <Button
                       onClick={handleGenerateCurrentDecisions}

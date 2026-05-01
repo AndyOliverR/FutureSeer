@@ -381,7 +381,7 @@ export default function SettingsPage() {
                       }
                     }
                   }}
-                  className="bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] rounded-lg px-4 py-2 backdrop-blur-sm m3-input-focus m3-transition-standard w-full"
+                  className="bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] rounded-lg px-4 py-2 backdrop-blur-sm m3-input-focus m3-transition-standard w-full [&>option]:bg-white [&>option]:text-slate-900"
                 >
                   <option value="">Prefer not to say</option>
                   <option value="single">Single</option>
@@ -415,7 +415,7 @@ export default function SettingsPage() {
                       }
                     }
                   }}
-                  className="bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] rounded-lg px-4 py-2 backdrop-blur-sm m3-input-focus m3-transition-standard w-full"
+                  className="bg-[var(--m3-surface-container-low)] border border-[var(--m3-outline-variant)] text-[var(--m3-on-surface)] focus:border-[var(--m3-primary)] focus:shadow-[0_0_0_3px_var(--m3-primary-container)] rounded-lg px-4 py-2 backdrop-blur-sm m3-input-focus m3-transition-standard w-full [&>option]:bg-white [&>option]:text-slate-900"
                 >
                   <option value="">Prefer not to say</option>
                   <option value="no">No</option>
