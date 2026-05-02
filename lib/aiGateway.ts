@@ -239,13 +239,24 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
         presencePenalty: options.presencePenalty,
       } as Parameters<typeof generateText>[0]);
 
+      // `LanguageModelUsage` shape varies by `ai` / provider typings (inputTokens vs promptTokens, etc.).
+      const u = result.usage as unknown as {
+        inputTokens?: number;
+        outputTokens?: number;
+        totalTokens?: number;
+        promptTokens?: number;
+        completionTokens?: number;
+      } | undefined;
       const out = {
         content: result.text,
-        usage: result.usage
+        usage: u
           ? {
-              promptTokens: result.usage.inputTokens ?? 0,
-              completionTokens: result.usage.outputTokens ?? 0,
-              totalTokens: result.usage.totalTokens ?? 0,
+              promptTokens: u.promptTokens ?? u.inputTokens ?? 0,
+              completionTokens: u.completionTokens ?? u.outputTokens ?? 0,
+              totalTokens:
+                u.totalTokens ??
+                (u.promptTokens ?? u.inputTokens ?? 0) +
+                  (u.completionTokens ?? u.outputTokens ?? 0),
             }
           : undefined,
         finishReason: result.finishReason,
