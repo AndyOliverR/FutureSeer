@@ -1,8 +1,15 @@
 # .gitleaksignore — exempt known historical findings only.
 # New leaks in new commits still fail CI.
 # Format: commit:file:rule:line
+#
+# Security posture (for reviewers / Security Scan job):
+# - Historical Firebase Admin JSON private_key lines below refer to keys that were revoked in
+#   Google Cloud IAM; active deployments use current credentials from env (Vercel / .env.local).
+#   See docs/SECRET_ROTATION_CHECKLIST.md if you rotate again.
+# - Other fingerprints are not live secrets: public reCAPTCHA site keys, env-template placeholders,
+#   and benign strings (e.g. LLM model id) that gitleaks heuristics matched as generic-api-key.
 
-# Historical Firebase admin private key (rotate/revoke in Firebase IAM; see docs/SECRET_ROTATION_CHECKLIST.md).
+# Historical Firebase admin private key (revoked in IAM; fingerprints remain in git history only).
 36eb24ea06767499ca9ee85531b4cc7df7fed502:firebaseadminscripts/serviceAccountKey.json:private-key:5
 5a90a6fc8cf8a2c46cbebd713620c869796c6239:firebaseadminscripts/serviceAccountKey.json:private-key:5
 

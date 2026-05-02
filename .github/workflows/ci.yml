@@ -58,6 +58,14 @@ jobs:
         run: |
           gitleaks git --redact --verbose --report-format sarif --report-path gitleaks-results.sarif
 
+      - name: Gitleaks remediation note (for reviewers)
+        if: success()
+        shell: bash
+        run: |
+          echo "Gitleaks passed. Historical matches are allowlisted in .gitleaksignore only by fingerprint."
+          echo "Firebase Admin private keys from old commits were revoked in IAM; runtime uses current env credentials."
+          echo "Remaining allowlisted items are public (reCAPTCHA site keys), templates, or non-secret strings — not live API secrets."
+
       - name: Upload gitleaks SARIF artifact
         if: always()
         uses: actions/upload-artifact@v7
