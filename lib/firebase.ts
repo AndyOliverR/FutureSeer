@@ -38,7 +38,8 @@ import { shouldPreferOAuthRedirect } from '@/lib/oauthWebView';
 
 /** Thrown after signInWithRedirect so callers can skip error UI; page navigates away. */
 export const AUTH_REDIRECT_INITIATED_MESSAGE = 'Redirect initiated';
-export const AUTH_DISMISS_RECOVERY_WINDOW_MS = 5000;
+/** After OAuth popup-dismiss errors, wait this long for auth state (extra latency on custom domain). */
+export const AUTH_DISMISS_RECOVERY_WINDOW_MS = 8000;
 
 export function isAuthRedirectInitiatedError(error: unknown): boolean {
   return error instanceof Error && error.message === AUTH_REDIRECT_INITIATED_MESSAGE;
@@ -329,9 +330,10 @@ export const db = getFirebaseDB();
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
+// Do not set display: 'page' with signInWithPopup — Google renders a full-page flow in the
+// small window and Firebase often reports auth/popup-closed-by-user spuriously on success.
 googleProvider.setCustomParameters({
   prompt: 'select_account',
-  display: 'page'
 });
 
 export const emailProvider = new EmailAuthProvider();
