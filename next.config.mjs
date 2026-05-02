@@ -137,15 +137,17 @@ const nextConfig = {
   // default Firebase Hosting origin (see plan: Firebase Console authorized domains + GCP redirect URIs).
   async rewrites() {
     // Proxy Firebase Auth helper on custom domain → Firebase Hosting auth origin.
-    // Hardcoded host avoids 502 DNS_HOSTNAME_EMPTY when env-based interpolation fails on Vercel/Next
-    // (empty project id → https://.firebaseapp.com). Project id is public (same as client config).
-    // Forks: change this URL if using a different Firebase project.
-    return [
-      {
-        source: '/__/auth/:path*',
-        destination: 'https://futureseer-7abcd5.firebaseapp.com/__/auth/:path*',
-      },
-    ];
+    // Use beforeFiles so this runs before static/public matching (recommended for /__/auth/*).
+    // Hardcoded host avoids 502 DNS_HOSTNAME_EMPTY when env-based interpolation fails on Vercel/Next.
+    // Forks: change destination host if using a different Firebase project.
+    return {
+      beforeFiles: [
+        {
+          source: '/__/auth/:path*',
+          destination: 'https://futureseer-7abcd5.firebaseapp.com/__/auth/:path*',
+        },
+      ],
+    };
   },
   // I Ching: canonical URL is /tools/iching; redirect /tools/i-ching so both work (no duplicate page)
   async redirects() {
