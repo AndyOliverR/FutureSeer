@@ -16,7 +16,7 @@ import {
   signInWithGoogle,
   signInWithApple,
   signInWithEmail,
-  waitForAuthenticatedSession,
+  recoverOAuthSessionAfterPopupDismiss,
   getAuthErrorMessage,
   isReturningUser,
   resetPassword,
@@ -180,7 +180,10 @@ function SignInContent() {
         return
       }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
+        setError(null)
+        setSuccess("Completing sign-in…")
+        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
+        setSuccess(null)
         if (resolvedSession) {
           await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             method: "google",
@@ -253,7 +256,10 @@ function SignInContent() {
         return
       }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
+        setError(null)
+        setSuccess("Completing sign-in…")
+        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
+        setSuccess(null)
         if (resolvedSession) {
           await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             method: "apple",

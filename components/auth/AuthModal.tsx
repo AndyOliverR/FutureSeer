@@ -18,7 +18,7 @@ import {
   isInvalidCredentialAuthError,
   isAuthRedirectInitiatedError,
   isUserDismissedAuthError,
-  waitForAuthenticatedSession,
+  recoverOAuthSessionAfterPopupDismiss,
   AUTH_DISMISS_RECOVERY_WINDOW_MS,
   getFirebaseAuth,
 } from '@/lib/firebase';
@@ -90,7 +90,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         return;
       }
       if (isUserDismissedAuthError(error)) {
-        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS);
+        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS);
         if (resolvedSession) {
           devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
           return;
@@ -144,7 +144,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         return;
       }
       if (isUserDismissedAuthError(error)) {
-        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS);
+        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS);
         if (resolvedSession) {
           devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
           return;

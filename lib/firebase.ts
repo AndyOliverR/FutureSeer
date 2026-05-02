@@ -38,8 +38,8 @@ import { shouldPreferOAuthRedirect } from '@/lib/oauthWebView';
 
 /** Thrown after signInWithRedirect so callers can skip error UI; page navigates away. */
 export const AUTH_REDIRECT_INITIATED_MESSAGE = 'Redirect initiated';
-/** After OAuth popup-dismiss errors, wait this long for auth state (extra latency on custom domain). */
-export const AUTH_DISMISS_RECOVERY_WINDOW_MS = 8000;
+/** After OAuth popup-dismiss errors, wait this long for auth state (custom domain + proxy latency). */
+export const AUTH_DISMISS_RECOVERY_WINDOW_MS = 12000;
 
 export function isAuthRedirectInitiatedError(error: unknown): boolean {
   return error instanceof Error && error.message === AUTH_REDIRECT_INITIATED_MESSAGE;
@@ -491,6 +491,7 @@ export const signInWithApple = async (): Promise<User> => {
 
 /**
  * Grace window to handle popup-cancel races where auth state resolves shortly after dismiss.
+ * Polls currentUser as well as onAuthStateChanged — Firebase sometimes sets the user before the listener runs.
  */
 export async function waitForAuthenticatedSession(timeoutMs = 3000): Promise<boolean> {
   const auth = getFirebaseAuth();
@@ -498,18 +499,53 @@ export async function waitForAuthenticatedSession(timeoutMs = 3000): Promise<boo
   if (auth.currentUser) return true;
 
   return await new Promise<boolean>((resolve) => {
-    const timeout = setTimeout(() => {
-      unsubscribe();
-      resolve(false);
-    }, timeoutMs);
+    let settled = false;
+    let pollId: ReturnType<typeof setInterval> | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let unsub: (() => void) | undefined;
 
-    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
-      if (!nextUser) return;
-      clearTimeout(timeout);
-      unsubscribe();
-      resolve(true);
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (pollId !== undefined) clearInterval(pollId);
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      try {
+        unsub?.();
+      } catch {
+        /* noop */
+      }
+      resolve(ok);
+    };
+
+    pollId = setInterval(() => {
+      if (auth.currentUser) finish(true);
+    }, 150);
+
+    unsub = onAuthStateChanged(auth, (nextUser) => {
+      if (nextUser) finish(true);
     });
+
+    timeoutId = setTimeout(() => finish(false), timeoutMs);
   });
+}
+
+/**
+ * After popup-closed / cancelled-popup errors: check redirect result, then wait for session.
+ * Call this instead of waitForAuthenticatedSession alone for better recovery on production.
+ */
+export async function recoverOAuthSessionAfterPopupDismiss(
+  timeoutMs = AUTH_DISMISS_RECOVERY_WINDOW_MS
+): Promise<boolean> {
+  const auth = getFirebaseAuth();
+  if (!auth) return false;
+  if (auth.currentUser) return true;
+  try {
+    const cred = await getRedirectResult();
+    if (cred?.user) return true;
+  } catch {
+    /* no pending redirect */
+  }
+  return waitForAuthenticatedSession(timeoutMs);
 }
 
 export const signInWithEmail = async (email: string, password: string): Promise<User> => {
@@ -692,7 +728,7 @@ export const getAuthErrorMessage = (error: any): string => {
     case 'auth/network-request-failed':
       return 'Network error. Please check your connection and try again. If you use a VPN or ad blocker, try turning it off for this site or switch networks.';
     case 'auth/popup-closed-by-user':
-      return 'Google sign-in was closed before confirmation. If you already selected your account, please wait a moment—your sign-in may still complete automatically. Otherwise tap Sign in with Google again.';
+      return 'Sign-in may still be completing, or the window was closed. Wait a few seconds; if you are not signed in, tap Sign in with Google again.';
     case 'auth/popup-blocked': return 'Pop-up was blocked by your browser. Please allow pop-ups and try again.';
     case 'auth/cancelled-popup-request':
       return 'Sign-in was briefly interrupted. Please wait a moment; if nothing happens, tap Sign in with Google again.';
