@@ -124,12 +124,12 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
       const result = await streamText({
         model: gatewayModel as unknown as Parameters<typeof streamText>[0]['model'],
         messages: options.messages as Parameters<typeof streamText>[0]['messages'],
-        maxTokens: options.maxTokens,
+        maxOutputTokens: options.maxTokens,
         temperature: options.temperature,
         topP: options.topP,
         frequencyPenalty: options.frequencyPenalty,
         presencePenalty: options.presencePenalty,
-      });
+      } as Parameters<typeof streamText>[0]);
 
       // Convert AI SDK stream to Groq-compatible format
       return {
@@ -232,20 +232,31 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
       const result = await generateText({
         model: gatewayModel as unknown as Parameters<typeof generateText>[0]['model'],
         messages: options.messages as Parameters<typeof generateText>[0]['messages'],
-        maxTokens: options.maxTokens,
+        maxOutputTokens: options.maxTokens,
         temperature: options.temperature,
         topP: options.topP,
         frequencyPenalty: options.frequencyPenalty,
         presencePenalty: options.presencePenalty,
-      });
+      } as Parameters<typeof generateText>[0]);
 
+      // `LanguageModelUsage` shape varies by `ai` / provider typings (inputTokens vs promptTokens, etc.).
+      const u = result.usage as unknown as {
+        inputTokens?: number;
+        outputTokens?: number;
+        totalTokens?: number;
+        promptTokens?: number;
+        completionTokens?: number;
+      } | undefined;
       const out = {
         content: result.text,
-        usage: result.usage
+        usage: u
           ? {
-              promptTokens: result.usage.promptTokens,
-              completionTokens: result.usage.completionTokens,
-              totalTokens: result.usage.totalTokens,
+              promptTokens: u.promptTokens ?? u.inputTokens ?? 0,
+              completionTokens: u.completionTokens ?? u.outputTokens ?? 0,
+              totalTokens:
+                u.totalTokens ??
+                (u.promptTokens ?? u.inputTokens ?? 0) +
+                  (u.completionTokens ?? u.outputTokens ?? 0),
             }
           : undefined,
         finishReason: result.finishReason,

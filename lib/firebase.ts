@@ -44,11 +44,28 @@ export function isAuthRedirectInitiatedError(error: unknown): boolean {
   return error instanceof Error && error.message === AUTH_REDIRECT_INITIATED_MESSAGE;
 }
 
+/** Bare Firebase project id only; avoids blank/URL values that break auth hostnames in prod. */
+function sanitizeFirebaseProjectId(preferAdminFirst: boolean): string {
+  const admin = (process.env.FIREBASE_ADMIN_PROJECT_ID || '').trim();
+  const pub = (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '').trim();
+  const ordered = preferAdminFirst ? [admin, pub] : [pub, admin];
+  const fallback = 'futureseer-7abcd5';
+  for (const id of ordered) {
+    if (/^[a-z0-9-]+$/i.test(id)) return id;
+  }
+  return fallback;
+}
+
+const safeClientFirebaseProjectId = sanitizeFirebaseProjectId(false);
+const safeAdminFirebaseProjectId = sanitizeFirebaseProjectId(true);
+
 // Client-side Firebase config (only public keys)
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  authDomain:
+    (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '').trim() ||
+    `${safeClientFirebaseProjectId}.firebaseapp.com`,
+  projectId: safeClientFirebaseProjectId,
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
@@ -56,7 +73,7 @@ const firebaseConfig = {
 
 // Server-side Firebase Admin SDK config
 const adminConfig = {
-  projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  projectId: safeAdminFirebaseProjectId,
   clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
   privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 };
@@ -83,8 +100,7 @@ function warnServerFirebaseAdminFallbackOnce(message: string): void {
  * initialize Admin once using process.env at call time.
  */
 function tryRuntimeAdminFirestoreInit(): any {
-  const projectId =
-    process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const projectId = safeAdminFirebaseProjectId;
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
   const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
   if (!projectId || !clientEmail || !privateKey) {
