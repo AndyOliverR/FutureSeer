@@ -34,6 +34,7 @@ next-env.d.ts
 
 # temp/scratch files
 _tmp_*
+/tmp/
 # node_modules
 node_modules
 
