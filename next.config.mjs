@@ -136,16 +136,14 @@ const nextConfig = {
   // OAuth and the auth helper must hit /__/auth/* on that host. Vercel serves the app, so proxy to the
   // default Firebase Hosting origin (see plan: Firebase Console authorized domains + GCP redirect URIs).
   async rewrites() {
-    // Prefer NEXT_PUBLIC_* (Vercel/client). Fallback to Admin project id at build time so /__/auth/*
-    // is never omitted if only server env vars are present. Last resort matches this repo's Firebase project.
-    const projectId =
-      (process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '').trim() ||
-      (process.env.FIREBASE_ADMIN_PROJECT_ID || '').trim() ||
-      'futureseer-7abcd5';
+    // Proxy Firebase Auth helper on custom domain → Firebase Hosting auth origin.
+    // Hardcoded host avoids 502 DNS_HOSTNAME_EMPTY when env-based interpolation fails on Vercel/Next
+    // (empty project id → https://.firebaseapp.com). Project id is public (same as client config).
+    // Forks: change this URL if using a different Firebase project.
     return [
       {
         source: '/__/auth/:path*',
-        destination: `https://${projectId}.firebaseapp.com/__/auth/:path*`,
+        destination: 'https://futureseer-7abcd5.firebaseapp.com/__/auth/:path*',
       },
     ];
   },
