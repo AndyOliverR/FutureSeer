@@ -17,7 +17,7 @@ import {
   signInWithGoogle,
   signInWithApple,
   signUpWithEmail,
-  waitForAuthenticatedSession,
+  recoverOAuthSessionAfterPopupDismiss,
   getAuthErrorMessage,
   getFirebaseAuth,
   isReturningUser,
@@ -206,7 +206,7 @@ function SignUpPageContent() {
         return;
       }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
+        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
         if (resolvedSession) {
           await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             provider: "google",
@@ -275,7 +275,7 @@ function SignUpPageContent() {
         return;
       }
       if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await waitForAuthenticatedSession(AUTH_DISMISS_RECOVERY_WINDOW_MS)
+        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
         if (resolvedSession) {
           await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
             provider: "apple",
