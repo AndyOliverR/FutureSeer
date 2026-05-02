@@ -31,13 +31,21 @@ export function normalizeSeoBaseUrl(baseUrl: string): string {
     const parsed = new URL(raw);
     const protocol = parsed.protocol || "https:";
     const host = parsed.hostname.replace(/^www\./i, "").toLowerCase();
+    if (!host) return fallback;
     return `${protocol}//${host}`;
   } catch {
     const normalized = raw
       .replace(/^https?:\/\/www\./i, "https://")
       .replace(/^www\./i, "https://")
       .replace(/\/+$/, "");
-    return normalized || fallback;
+    const out = normalized || fallback;
+    try {
+      const check = new URL(out);
+      if (!check.hostname) return fallback;
+    } catch {
+      return fallback;
+    }
+    return out;
   }
 }
 
