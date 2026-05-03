@@ -38,7 +38,7 @@ import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 
 export const dynamic = 'force-dynamic';
 /** Stage B runs via `after()` after the 202 response; allow enough wall time for full sequential/parallel pipeline. */
-export const maxDuration = 600;
+export const maxDuration = 300;
 const HEARTBEAT_STALE_MS = 45_000;
 
 /** Grace past `maxDuration` before treating a lock as stale (failed/crashed run). */
