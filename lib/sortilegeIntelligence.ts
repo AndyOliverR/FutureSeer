@@ -4,9 +4,10 @@
  * Comprehensive divination through casting lots (dice, stones, cards, coins, sticks)
  */
 
-import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
+import { Timestamp } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
 import { getAllDivinationData } from './universalDataAggregator'
@@ -892,14 +893,13 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
     }
 
     try {
-      const readingRef = doc(this.db, 'users', userId, 'sortilege-readings', reading.id)
-      await setDoc(readingRef, {
+      await userSubdocSet(userId, 'sortilege-readings', reading.id, {
         ...reading,
         castResult: {
           ...reading.castResult,
-          timestamp: Timestamp.fromDate(reading.castResult.timestamp)
-        }
-      })
+          timestamp: Timestamp.fromDate(reading.castResult.timestamp),
+        },
+      } as unknown as Record<string, unknown>)
       devLog.debug('✅ Saved Sortilege reading to Firestore')
     } catch (error) {
       devLog.error('Error saving Sortilege reading:', error, 'sortilegeIntelligence')
@@ -915,21 +915,23 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
     }
 
     try {
-      const readingRef = doc(this.db, 'users', userId, 'sortilege-readings', readingId)
-      const docSnap = await getDoc(readingRef)
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        return {
-          ...data,
-          castResult: {
-            ...data.castResult,
-            timestamp: data.castResult.timestamp.toDate()
-          }
-        } as SortilegeReading
-      }
-      
-      return null
+      const data = await userSubdocGet(userId, 'sortilege-readings', readingId)
+      if (!data?.castResult || typeof data.castResult !== 'object') return null
+      const cr = data.castResult as Record<string, unknown>
+      const rawTs = cr.timestamp as { toDate?: () => Date } | undefined
+      const timestamp =
+        rawTs && typeof rawTs.toDate === 'function'
+          ? rawTs.toDate()
+          : cr.timestamp instanceof Date
+            ? cr.timestamp
+            : new Date()
+      return {
+        ...data,
+        castResult: {
+          ...cr,
+          timestamp,
+        },
+      } as SortilegeReading
     } catch (error) {
       devLog.error('Error loading Sortilege reading:', error, 'sortilegeIntelligence')
       return null

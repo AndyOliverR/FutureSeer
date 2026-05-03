@@ -1,5 +1,10 @@
-import { getFirebaseDB } from './firebase';
 import { log } from './consoleLogger';
+import {
+  userRootDocDelete,
+  userRootDocGet,
+  userRootDocSet,
+  userRootDocUpdate,
+} from '@/lib/userSubcollectionFirestore';
 
 export interface UserVedicData {
   birthDate: string;
@@ -40,30 +45,12 @@ export interface UserProfileData {
 }
 
 class UserDataStorage {
-  private db: any;
   private isInitialized = false;
 
   async initialize() {
     if (this.isInitialized) return;
-    
-    try {
-      this.db = getFirebaseDB();
-      
-      // Debug: Check what type of object we got
-      log.info('Firebase DB initialization debug', {
-        dbType: typeof this.db,
-        dbConstructor: this.db?.constructor?.name,
-        hasDoc: typeof this.db?.doc === 'function',
-        hasCollection: typeof this.db?.collection === 'function',
-        isFirestore: this.db?.constructor?.name === 'FirebaseFirestore'
-      }, 'user-data-storage');
-      
-      this.isInitialized = true;
-      log.success('UserDataStorage initialized successfully');
-    } catch (error) {
-      log.error('Failed to initialize UserDataStorage:', error);
-      throw error;
-    }
+    this.isInitialized = true;
+    log.success('UserDataStorage initialized successfully');
   }
 
   // Check if user has existing Vedic data
@@ -73,20 +60,18 @@ class UserDataStorage {
     try {
       log.info('Checking Vedic data existence for user', { userId }, 'user-data-storage');
       
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
+      const userData = await userRootDocGet(userId);
       
       log.info('Document exists check for hasVedicData', { 
-        exists: userDoc.exists,
+        exists: !!userData,
         userId 
       }, 'user-data-storage');
       
-      if (!userDoc.exists) {
+      if (!userData) {
         log.warn('User document does not exist in hasVedicData', { userId }, 'user-data-storage');
         return false;
       }
       
-      const userData = userDoc.data();
       
       log.info('User data check for hasVedicData', { 
         hasVedicData: !!userData?.vedicData,
@@ -112,13 +97,11 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
-      if (!userDoc.exists) return false;
+      const userData = await userRootDocGet(userId);
+      if (!userData) return false;
       
-      const userData = userDoc.data();
       const divinationData = userData?.divinationData || [];
-      return divinationData.some((item: UserDivinationData) => item.type === type);
+      return (divinationData as UserDivinationData[]).some((item: UserDivinationData) => item.type === type);
     } catch (error) {
       log.error('Error checking divination data existence:', error);
       return false;
@@ -130,13 +113,11 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
-      if (!userDoc.exists) return null;
+      const userData = await userRootDocGet(userId);
+      if (!userData) return null;
       
-      const userData = userDoc.data();
       const divinationData = userData?.divinationData || [];
-      return divinationData.find((item: UserDivinationData) => item.type === type) || null;
+      return (divinationData as UserDivinationData[]).find((item: UserDivinationData) => item.type === type) || null;
     } catch (error) {
       log.error('Error fetching divination data:', error);
       return null;
@@ -156,11 +137,8 @@ class UserDataStorage {
         lastUpdated: now
       };
 
-      // Get existing divination data
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
-      const userData = userDoc.exists ? userDoc.data() : {};
-      const existingDivinationData = userData.divinationData || [];
+      const userData = (await userRootDocGet(userId)) || {};
+      const existingDivinationData = (userData.divinationData as UserDivinationData[] | undefined) || [];
 
       // Update or add new divination data
       const updatedDivinationData = existingDivinationData.filter(
@@ -168,7 +146,7 @@ class UserDataStorage {
       );
       updatedDivinationData.push(divinationData);
 
-      await userDocRef.set( {
+      await userRootDocSet(userId, {
         divinationData: updatedDivinationData,
         lastUpdated: now
       }, { merge: true });
@@ -185,22 +163,26 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
-      if (!userDoc.exists) return null;
+      const userData = await userRootDocGet(userId);
+      if (!userData) return null;
       
-      const userData = userDoc.data();
       return {
         userId,
-        vedicData: userData?.vedicData,
-        divinationData: userData?.divinationData || [],
-        preferences: userData?.preferences || {
+        vedicData: userData.vedicData as UserVedicData | undefined,
+        divinationData: (userData.divinationData as UserDivinationData[] | undefined) || [],
+        preferences: (userData.preferences as UserProfileData['preferences'] | undefined) || {
           theme: 'dark',
           notifications: true,
-          language: 'en'
+          language: 'en',
         },
-        createdAt: userData?.createdAt || new Date().toISOString(),
-        lastUpdated: userData?.lastUpdated || new Date().toISOString()
+        createdAt:
+          typeof userData.createdAt === 'string'
+            ? userData.createdAt
+            : new Date().toISOString(),
+        lastUpdated:
+          typeof userData.lastUpdated === 'string'
+            ? userData.lastUpdated
+            : new Date().toISOString(),
       };
     } catch (error) {
       log.error('Error fetching user profile:', error);
@@ -213,8 +195,7 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      await userDocRef.set( {
+      await userRootDocSet(userId, {
         preferences,
         lastUpdated: new Date().toISOString()
       }, { merge: true });
@@ -231,8 +212,7 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      await userDocRef.delete();
+      await userRootDocDelete(userId);
       log.success(`User data deleted for user ${userId}`);
     } catch (error) {
       log.error('Error deleting user data:', error);
@@ -245,19 +225,17 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
+      const existing = await userRootDocGet(userId);
       
-      if (userDoc.exists) {
+      if (existing) {
         if (vedicData === null) {
-          // Clear the vedic data
-          await userDocRef.update({
+          await userRootDocUpdate(userId, {
             vedicData: null,
             lastUpdated: new Date().toISOString()
           });
           log.success(`Vedic data cleared for user ${userId}`);
         } else {
-          await userDocRef.update({
+          await userRootDocUpdate(userId, {
             vedicData: {
               ...vedicData,
               storedAt: new Date().toISOString()
@@ -268,7 +246,7 @@ class UserDataStorage {
         }
       } else {
         if (vedicData !== null) {
-          await userDocRef.set({
+          await userRootDocSet(userId, {
             userId,
             vedicData: {
               ...vedicData,
@@ -276,7 +254,7 @@ class UserDataStorage {
             },
             createdAt: new Date().toISOString(),
             lastUpdated: new Date().toISOString()
-          });
+          }, { merge: false });
           log.success(`Vedic data stored for user ${userId}`);
         }
       }
@@ -290,12 +268,10 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
+      const userData = await userRootDocGet(userId);
       
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-        return userData.vedicData || null;
+      if (userData) {
+        return (userData.vedicData as VedicReportSchema | null | undefined) || null;
       }
       
       return null;
@@ -309,14 +285,12 @@ class UserDataStorage {
     await this.initialize();
     
     try {
-      const userDocRef = this.db.collection('users').doc(userId);
-      const userDoc = await userDocRef.get();
+      const userData = await userRootDocGet(userId);
       
-      if (userDoc.exists) {
-        const userData = userDoc.data();
-        const currentVedicData = userData.vedicData || {};
+      if (userData) {
+        const currentVedicData = (userData.vedicData as Record<string, unknown> | undefined) || {};
         
-        await userDocRef.update({
+        await userRootDocUpdate(userId, {
           vedicData: {
             ...currentVedicData,
             ...updates,

@@ -1,9 +1,9 @@
 // Enhanced Tool Integration for FutureSeer
 // Integrates missing tools from GitHub repositories: VedAstro, Kerykeion, AstroChart, iztro, Sortilege
 
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
+import { userSubdocSet } from '@/lib/userSubcollectionFirestore';
 
 // ============================================================================
 // VEDASTRO INTEGRATION
@@ -105,12 +105,11 @@ export class VedAstroIntegration {
       const data = await response.json();
       
       // Store in Firebase
-      const db = getFirebaseDB();
-      if (db) {
-        await setDoc(doc(db, 'users', userId, 'readings', 'vedastro'), {
-          ...data,
+      if (getFirebaseDB()) {
+        await userSubdocSet(userId, 'readings', 'vedastro', {
+          ...(data as Record<string, unknown>),
           timestamp: Date.now(),
-          source: 'vedastro'
+          source: 'vedastro',
         });
       }
       
@@ -204,12 +203,11 @@ export class KerykeionIntegration {
       }
       
       // Store in Firebase
-      const db = getFirebaseDB();
-      if (db) {
-        await setDoc(doc(db, 'users', userId, 'readings', 'kerykeion'), {
-          ...result,
+      if (getFirebaseDB()) {
+        await userSubdocSet(userId, 'readings', 'kerykeion', {
+          ...(result as unknown as Record<string, unknown>),
           timestamp: Date.now(),
-          source: 'kerykeion'
+          source: 'kerykeion',
         });
       }
       
@@ -320,12 +318,11 @@ export class IztroIntegration {
       };
       
       // Store in Firebase
-      const db = getFirebaseDB();
-      if (db) {
-        await setDoc(doc(db, 'users', userId, 'readings', 'iztro'), {
-          ...result,
+      if (getFirebaseDB()) {
+        await userSubdocSet(userId, 'readings', 'iztro', {
+          ...(result as unknown as Record<string, unknown>),
           timestamp: Date.now(),
-          source: 'iztro'
+          source: 'iztro',
         });
       }
       
@@ -486,12 +483,11 @@ export class SortilegeIntegration {
     };
     
     // Store in Firebase
-    const db = getFirebaseDB();
-    if (db) {
-      await setDoc(doc(db, 'users', userId, 'readings', `sortilege_${method}`), {
-        ...result,
+    if (getFirebaseDB()) {
+      await userSubdocSet(userId, 'readings', `sortilege_${method}`, {
+        ...(result as unknown as Record<string, unknown>),
         timestamp: Date.now(),
-        source: 'sortilege'
+        source: 'sortilege',
       });
     }
     

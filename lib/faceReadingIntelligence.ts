@@ -1,6 +1,5 @@
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 
 export interface FacialFeature {
   name: string
@@ -565,26 +564,17 @@ class FaceReadingIntelligence {
   }
 
   async saveAnalysis(userId: string, analysis: FaceReadingAnalysis): Promise<void> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'face-readings', analysis.id)
-    await setDoc(docRef, analysis)
+    await userSubdocSet(userId, 'face-readings', analysis.id, analysis as unknown as Record<string, unknown>)
   }
 
   async getAnalysis(userId: string, analysisId: string): Promise<FaceReadingAnalysis | null> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'face-readings', analysisId)
-    const docSnap = await getDoc(docRef)
-    
-    if (docSnap.exists()) {
-      return docSnap.data() as FaceReadingAnalysis
-    }
-    return null
+    const data = await userSubdocGet(userId, 'face-readings', analysisId)
+    if (!data) return null
+    return data as unknown as FaceReadingAnalysis
   }
 
   async saveCoaching(userId: string, coaching: FaceReadingCoaching): Promise<void> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'face-reading-coaching', coaching.id)
-    await setDoc(docRef, coaching)
+    await userSubdocSet(userId, 'face-reading-coaching', coaching.id, coaching as unknown as Record<string, unknown>)
   }
 
   getSystemStatus() {

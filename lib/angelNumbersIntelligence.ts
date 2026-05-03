@@ -3,7 +3,7 @@
 
 import { generateAngelNumbersProfile, validateAngelNumbersData } from './angelNumbersCalculations'
 import { devLog } from '@/lib/devLogger';
-import { doc, setDoc, getDoc } from 'firebase/firestore'
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { getFirebaseDB } from './firebase';
 import { CACHE_TTL } from './cacheConstants';
 import {
@@ -124,19 +124,19 @@ class AngelNumbersIntelligence {
     // Check Firebase storage
     try {
       const db = getFirebaseDB();
-      const docRef = doc(db, 'users', userId, 'angelNumbersProfile', 'comprehensive')
-      const docSnap = await getDoc(docRef)
-      
-      if (docSnap.exists()) {
-        const storedData = docSnap.data() as AngelNumbersData
-        if (Date.now() - storedData.lastFetched < CACHE_TTL.REPORTS &&
-            storedData.fullName === fullName &&
-            storedData.birthDate === birthDate) {
-          if (process.env.NODE_ENV === 'development') {
-            devLog.debug('Using stored angel numbers data for user:', userId)
+      if (db) {
+        const raw = await userSubdocGet(userId, 'angelNumbersProfile', 'comprehensive');
+        if (raw) {
+          const storedData = raw as unknown as AngelNumbersData
+          if (Date.now() - storedData.lastFetched < CACHE_TTL.REPORTS &&
+              storedData.fullName === fullName &&
+              storedData.birthDate === birthDate) {
+            if (process.env.NODE_ENV === 'development') {
+              devLog.debug('Using stored angel numbers data for user:', userId)
+            }
+            this.angelNumbersCache.set(userId, storedData)
+            return storedData
           }
-          this.angelNumbersCache.set(userId, storedData)
-          return storedData
         }
       }
     } catch (error) {
@@ -190,10 +190,16 @@ class AngelNumbersIntelligence {
     // Store in Firebase
     try {
       const db = getFirebaseDB();
-      const docRef = doc(db, 'users', userId, 'angelNumbersProfile', 'comprehensive')
-      await setDoc(docRef, angelNumbersData)
-      if (process.env.NODE_ENV === 'development') {
-        devLog.debug('Stored intelligent angel numbers data in Firebase for user:', userId)
+      if (db) {
+        await userSubdocSet(
+          userId,
+          'angelNumbersProfile',
+          'comprehensive',
+          angelNumbersData as unknown as Record<string, unknown>
+        );
+        if (process.env.NODE_ENV === 'development') {
+          devLog.debug('Stored intelligent angel numbers data in Firebase for user:', userId)
+        }
       }
     } catch (storageError) {
       if (process.env.NODE_ENV === 'development') {

@@ -44,6 +44,38 @@ export interface AccuratePanchangaData {
   ayanamsa: number;
 }
 
+type PanchangaChartInput = {
+  planets?: unknown;
+  metadata?: {
+    latitude?: unknown;
+    longitude?: unknown;
+  } | null;
+};
+
+let loggedInvalidContractOnce = false;
+
+function toPlanetMap(planets: unknown): Record<string, any> {
+  if (Array.isArray(planets)) {
+    return planets.reduce((acc: Record<string, any>, p: any) => {
+      const key = String(p?.name ?? '').toLowerCase();
+      if (key) acc[key] = p;
+      return acc;
+    }, {});
+  }
+  return (planets as Record<string, any>) ?? {};
+}
+
+/** Tight contract for panchanga: chart must include sun/moon longitudes and finite coordinates. */
+export function isPanchangaChartCompatible(chartData: PanchangaChartInput | null | undefined): boolean {
+  if (!chartData || !chartData.planets || !chartData.metadata) return false;
+  const planets = toPlanetMap(chartData.planets);
+  const hasSun = Boolean(planets.sun || planets.Sun);
+  const hasMoon = Boolean(planets.moon || planets.Moon);
+  const lat = chartData.metadata?.latitude != null ? Number(chartData.metadata.latitude) : NaN;
+  const lon = chartData.metadata?.longitude != null ? Number(chartData.metadata.longitude) : NaN;
+  return hasSun && hasMoon && Number.isFinite(lat) && Number.isFinite(lon);
+}
+
 // Tithi names
 const TITHI_NAMES = [
   'Purnima', 'Pratipada', 'Dwitiya', 'Tritiya', 'Chaturthi', 'Panchami',
@@ -94,38 +126,23 @@ const NAKSHATRA_LORDS = [
 export function calculateAccuratePanchanga(chartData: any, birthData: any): AccuratePanchangaData | null {
   devLog.debug('🔮 Calculating accurate Panchanga from chart data');
   
-  // Add null check for defensive programming
-  if (!chartData || !chartData.planets || !chartData.metadata) {
-    devLog.warn('❌ Invalid chart data for Panchanga calculation:', {
-      chartData: !!chartData,
-      hasPlanets: chartData?.planets ? 'yes' : 'no',
-      hasMetadata: chartData?.metadata ? 'yes' : 'no',
-      planetsType: typeof chartData?.planets,
-      planetsKeys: chartData?.planets ? Object.keys(chartData.planets) : []
-    }, 'enhancedPanchangaCalculator');
+  if (!isPanchangaChartCompatible(chartData)) {
+    if (!loggedInvalidContractOnce) {
+      loggedInvalidContractOnce = true;
+      devLog.warn('⚠️ Skipping Panchanga: chartData missing required shape (sun/moon + metadata coordinates)', {
+        chartData: !!chartData,
+        hasPlanets: chartData?.planets ? 'yes' : 'no',
+        hasMetadata: chartData?.metadata ? 'yes' : 'no',
+        planetsType: typeof chartData?.planets,
+        planetsKeys: chartData?.planets && typeof chartData.planets === 'object' ? Object.keys(chartData.planets) : []
+      }, 'enhancedPanchangaCalculator');
+    }
     return null;
   }
 
   // Support both object map ({ sun: {...} }) and array payloads ([{ name: 'Sun', ... }])
-  const planets =
-    Array.isArray(chartData.planets)
-      ? chartData.planets.reduce((acc: Record<string, any>, p: any) => {
-          const key = String(p?.name ?? '').toLowerCase();
-          if (key) acc[key] = p;
-          return acc;
-        }, {})
-      : (chartData.planets as Record<string, any>);
+  const planets = toPlanetMap(chartData.planets);
 
-  // Validate planets object has sun and moon
-  if (!planets?.sun && !planets?.Sun) {
-    devLog.error('❌ No Sun data in planets object', undefined, 'enhancedPanchangaCalculator');
-    return null;
-  }
-  if (!planets?.moon && !planets?.Moon) {
-    devLog.error('❌ No Moon data in planets object', undefined, 'enhancedPanchangaCalculator');
-    return null;
-  }
-  
   const { metadata } = chartData;
   
   // Extract Sun and Moon positions from accurate astronomia-vedic data
@@ -145,15 +162,8 @@ export function calculateAccuratePanchanga(chartData: any, birthData: any): Accu
   // Validate metadata has coordinates (allow numeric strings from cached/JSON data)
   const lat = metadata?.latitude != null ? Number(metadata.latitude) : NaN;
   const lon = metadata?.longitude != null ? Number(metadata.longitude) : NaN;
-  if (!metadata || !Number.isFinite(lat) || !Number.isFinite(lon)) {
-    devLog.error('❌ Missing or invalid coordinates in metadata:', {
-      hasMetadata: !!metadata,
-      latitude: metadata?.latitude,
-      longitude: metadata?.longitude
-    }, 'enhancedPanchangaCalculator');
-    return null;
-  }
-  
+  if (!metadata || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
   devLog.debug('✅ Valid metadata coordinates:', {
     latitude: lat,
     longitude: lon

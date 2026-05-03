@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { devLog } from '@/lib/devLogger';
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,6 +96,7 @@ export default function ComprehensiveWesternReport({
   )
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
+  const comprehensiveFetchOnceRef = useRef<string | null>(null)
 
   // Stabilize array dependencies with useMemo to prevent unnecessary re-fetches
   const planets = useMemo(() => chartData?.planets || [], [chartData?.planets])
@@ -124,9 +125,17 @@ export default function ComprehensiveWesternReport({
 
     // Only fetch if we have required data
     if (!userId || !chartData) {
+      comprehensiveFetchOnceRef.current = null
       return
     }
 
+    const dedupeKey = `${userId}:comprehensive-western-report`
+    if (comprehensiveFetchOnceRef.current === dedupeKey) {
+      return
+    }
+    comprehensiveFetchOnceRef.current = dedupeKey
+
+    let cancelled = false
     const fetchComprehensiveAnalysis = async () => {
       setIsLoadingAnalysis(true)
       setAnalysisError(null)
@@ -155,22 +164,28 @@ export default function ComprehensiveWesternReport({
         }
 
         const result = await response.json()
+        if (cancelled) return
         if (result.success && result.data?.comprehensiveAnalysis) {
           setComprehensiveAnalysis(result.data.comprehensiveAnalysis)
         } else {
           throw new Error(result.error || 'Failed to generate analysis. Please try again.')
         }
       } catch (error: any) {
-        devLog.error('Error fetching comprehensive analysis:', error, 'ComprehensiveWesternReport')
-        const errorMessage = error?.message || 'Failed to generate comprehensive analysis'
-        setAnalysisError(errorMessage)
-        // Don't fail silently - show user-friendly error
+        if (!cancelled) {
+          devLog.error('Error fetching comprehensive analysis:', error, 'ComprehensiveWesternReport')
+          const errorMessage = error?.message || 'Failed to generate comprehensive analysis'
+          setAnalysisError(errorMessage)
+        }
       } finally {
-        setIsLoadingAnalysis(false)
+        if (!cancelled) setIsLoadingAnalysis(false)
       }
     }
 
     fetchComprehensiveAnalysis()
+    return () => {
+      cancelled = true
+      comprehensiveFetchOnceRef.current = null
+    }
   }, [userId, chartData, cachedReport, isLoadingReport, comprehensiveAnalysis, planets, houses, aspects, transits, userProfile])
 
   if (!chartData) {

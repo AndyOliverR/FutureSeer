@@ -5,13 +5,22 @@ import { devLog } from '@/lib/devLogger';
 import { normalizeBirthTime } from '@/lib/birthTimeUtils';
 import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC';
 
+/** Stable rounding for logs (avoids float noise / interleaved-request confusion in dev consoles). */
+function coordForLog(n: number): number {
+  return Number.isFinite(n) ? Number(n.toFixed(6)) : n;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { birthDate, birthTime, birthPlace, latitude, longitude, chartType = 'D1' } = body;
 
     devLog.info('🕉️ Generating SIDEREAL Vedic chart for:', {
-      birthDate, birthTime, birthPlace, latitude, longitude
+      birthDate,
+      birthTime,
+      birthPlace,
+      latitude: coordForLog(latitude),
+      longitude: coordForLog(longitude),
     }, 'vedic');
 
     const hasValidCoordinate = (value: unknown): value is number =>
@@ -32,7 +41,7 @@ export async function POST(request: NextRequest) {
     devLog.debug(`🕐 Birth DateTime (UTC): ${birthDateTime.toISOString()}`, undefined, 'vedic');
 
     devLog.debug('🕉️ Birth DateTime:', birthDateTime.toISOString(), 'vedic');
-    devLog.debug('🕉️ Coordinates:', { latitude, longitude }, 'vedic');
+    devLog.debug('🕉️ Coordinates:', { latitude: coordForLog(latitude), longitude: coordForLog(longitude) }, 'vedic');
 
     // Calculate SIDEREAL positions
     const vedicData = calculateSiderealPlanets(birthDateTime, latitude, longitude);

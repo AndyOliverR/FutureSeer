@@ -22,9 +22,11 @@ export default function HomePage() {
           <section className="mx-auto mt-6 mb-2 max-w-6xl rounded-xl border border-amber-500/25 bg-slate-900/35 p-4 md:p-5">
             <h2 className="text-sm md:text-base font-semibold text-amber-300">Why FutureSeer</h2>
             <p className="mt-2 text-xs md:text-sm text-slate-200/90 leading-relaxed">
-              FutureSeer brings multiple divination systems into one account, one profile, and one persistent insight layer.
-              You get tool-specific experts for depth and a unified Seer for cross-system synthesis in the same workspace at
-              <span className="font-medium text-amber-300"> futureseer.app</span>.
+              Most people never get a single coherent map—only scattered takes. Here you complete one ritual (your
+              profile), every major system generates to the same standard, and the main Seer is the door that turns that
+              library into one conversation: pattern, tension, and timing in plain language, grounded in what you
+              actually saved—not generic horoscope filler—at{" "}
+              <span className="font-medium text-amber-300">futureseer.app</span>.
             </p>
           </section>
         </div>

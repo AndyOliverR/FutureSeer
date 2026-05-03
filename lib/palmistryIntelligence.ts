@@ -1,7 +1,5 @@
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from './firebase';
-import { db } from '@/lib/firebase'
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { palmistryImageAnalyzer } from './palmistry/palmistryImageAnalyzer'
 
 export interface PalmLine {
@@ -554,23 +552,17 @@ class PalmistryIntelligence {
   }
 
   async saveAnalysis(userId: string, analysis: PalmistryAnalysis): Promise<void> {
-    const docRef = doc(db, 'users', userId, 'palmistry-readings', analysis.id)
-    await setDoc(docRef, analysis)
+    await userSubdocSet(userId, 'palmistry-readings', analysis.id, analysis as unknown as Record<string, unknown>)
   }
 
   async getAnalysis(userId: string, analysisId: string): Promise<PalmistryAnalysis | null> {
-    const docRef = doc(db, 'users', userId, 'palmistry-readings', analysisId)
-    const docSnap = await getDoc(docRef)
-    
-    if (docSnap.exists()) {
-      return docSnap.data() as PalmistryAnalysis
-    }
-    return null
+    const data = await userSubdocGet(userId, 'palmistry-readings', analysisId)
+    if (!data) return null
+    return data as unknown as PalmistryAnalysis
   }
 
   async saveCoaching(userId: string, coaching: PalmistryCoaching): Promise<void> {
-    const docRef = doc(db, 'users', userId, 'palmistry-coaching', coaching.id)
-    await setDoc(docRef, coaching)
+    await userSubdocSet(userId, 'palmistry-coaching', coaching.id, coaching as unknown as Record<string, unknown>)
   }
 
   getSystemStatus() {

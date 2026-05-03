@@ -4,6 +4,13 @@
 import { AdditionalProfile } from '@/lib/types/profileTypes'
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase'
+import {
+  userSubcollectionAdd,
+  userSubcollectionListDocuments,
+  userSubdocDelete,
+  userSubdocGet,
+  userSubdocUpdate,
+} from '@/lib/userSubcollectionFirestore'
 
 const STORAGE_KEY = 'futureseer_additional_profiles'
 
@@ -31,24 +38,17 @@ class ProfileManager {
       }
 
       // Fetch from Firebase
-      const db = getFirebaseDB()
-      if (!db) {
+      if (!getFirebaseDB()) {
         devLog.warn('Firebase not initialized, using localStorage only', 'profileManager')
         const deduplicated = this.deduplicateProfiles(localData || [])
         return deduplicated.sort((a, b) => b.updatedAt - a.updatedAt)
       }
 
-      const { collection, query, where, getDocs } = await import('firebase/firestore')
-      const profilesRef = collection(db, 'users', userId, 'additionalProfiles')
-      const snapshot = await getDocs(profilesRef)
-      
-      const profiles: AdditionalProfile[] = []
-      snapshot.forEach((doc) => {
-        profiles.push({
-          id: doc.id,
-          ...doc.data()
-        } as AdditionalProfile)
-      })
+      const rows = await userSubcollectionListDocuments(userId, 'additionalProfiles')
+      const profiles: AdditionalProfile[] = rows.map((row) => ({
+        ...row,
+        id: row.id,
+      })) as AdditionalProfile[]
 
       // Deduplicate before caching
       const deduplicated = this.deduplicateProfiles(profiles)
@@ -88,14 +88,11 @@ class ProfileManager {
     }
 
     try {
-      const db = getFirebaseDB()
-      if (db) {
-        const { collection, addDoc } = await import('firebase/firestore')
-        const profilesRef = collection(db, 'users', userId, 'additionalProfiles')
-        const docRef = await addDoc(profilesRef, newProfile)
-        
+      if (getFirebaseDB()) {
+        const newId = await userSubcollectionAdd(userId, 'additionalProfiles', newProfile as unknown as Record<string, unknown>)
+
         const createdProfile: AdditionalProfile = {
-          id: docRef.id,
+          id: newId,
           ...newProfile
         }
 
@@ -147,24 +144,20 @@ class ProfileManager {
   // Update an existing profile
   async updateAdditionalProfile(userId: string, profileId: string, updates: Partial<Omit<AdditionalProfile, 'id' | 'userId' | 'createdAt'>>): Promise<AdditionalProfile | null> {
     try {
-      const db = getFirebaseDB()
-      if (db) {
-        const { doc, updateDoc, getDoc } = await import('firebase/firestore')
-        const profileRef = doc(db, 'users', userId, 'additionalProfiles', profileId)
-        
-        await updateDoc(profileRef, {
-          ...updates,
-          updatedAt: Date.now()
+      if (getFirebaseDB()) {
+        await userSubdocUpdate(userId, 'additionalProfiles', profileId, {
+          ...(updates as unknown as Record<string, unknown>),
+          updatedAt: Date.now(),
         })
 
-        const updatedDoc = await getDoc(profileRef)
-        if (!updatedDoc.exists()) {
+        const updatedRow = await userSubdocGet(userId, 'additionalProfiles', profileId)
+        if (!updatedRow) {
           return null
         }
 
         const updatedProfile: AdditionalProfile = {
-          id: updatedDoc.id,
-          ...updatedDoc.data()
+          id: profileId,
+          ...updatedRow,
         } as AdditionalProfile
 
         // Update local cache
@@ -207,11 +200,8 @@ class ProfileManager {
   // Delete a profile
   async deleteAdditionalProfile(userId: string, profileId: string): Promise<boolean> {
     try {
-      const db = getFirebaseDB()
-      if (db) {
-        const { doc, deleteDoc } = await import('firebase/firestore')
-        const profileRef = doc(db, 'users', userId, 'additionalProfiles', profileId)
-        await deleteDoc(profileRef)
+      if (getFirebaseDB()) {
+        await userSubdocDelete(userId, 'additionalProfiles', profileId)
       }
 
       // Update local cache

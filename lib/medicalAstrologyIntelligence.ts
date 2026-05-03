@@ -1,4 +1,3 @@
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
 
 // Local types aligned with useMedicalAstrology (avoid type-only import from .tsx in lib)
@@ -39,7 +38,6 @@ export interface HealthAnalysis {
   advice?: unknown
   [key: string]: unknown
 }
-import { getFirebaseDB } from './firebase';
 
 class MedicalAstrologyIntelligence {
   private async getAstroData(birthData: UserData) {

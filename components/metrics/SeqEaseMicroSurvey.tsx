@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -65,18 +64,18 @@ export function SeqEaseMicroSurvey({ userId }: SeqEaseMicroSurveyProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && dismiss()}>
       <DialogContent className="max-w-md border-amber-500/30 bg-[#0b1220] text-amber-50 sm:rounded-xl">
-        <DialogHeader>
-          <DialogTitle id="seq-dialog-title" className="text-amber-100">
-            Quick question
-          </DialogTitle>
-          <DialogDescription id="seq-dialog-desc" className="text-amber-100/70">
-            Overall, how easy was it to generate your mystical profile? (1 = very difficult, 7 = very easy)
-          </DialogDescription>
-        </DialogHeader>
+        {/* Title + description as direct children of DialogContent so Radix registers DialogTitle (avoids a11y console warning). */}
+        {/* Do not set id on Title/Description — Radix assigns ids for aria-labelledby/describedby on the dialog; overriding them breaks TitleWarning/DescriptionWarning (document.getElementById(context id)). */}
+        <DialogTitle className="text-center text-lg font-semibold leading-none tracking-tight text-amber-100 sm:text-left">
+          Quick question
+        </DialogTitle>
+        <DialogDescription className="text-center text-sm text-amber-100/70 sm:text-left">
+          Overall, how easy was it to generate your mystical profile? (1 = very difficult, 7 = very easy)
+        </DialogDescription>
         <div
           className="grid grid-cols-7 gap-1.5 py-2"
           role="group"
-          aria-labelledby="seq-dialog-title"
+          aria-label="Rate how easy mystical profile generation was, from 1 very difficult to 7 very easy"
         >
           {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => (
             <Button

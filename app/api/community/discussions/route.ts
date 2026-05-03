@@ -5,14 +5,14 @@ import type { Query } from 'firebase-admin/firestore';
 import { consumeGuestCommunityWriteSlot, getCommunityGuestClientIp } from '@/lib/communityGuestRateLimit';
 import { verifyRecaptchaEnterpriseToken } from '@/lib/recaptcha/verifyEnterpriseCaptcha';
 import { RECAPTCHA_ACTIONS } from '@/lib/recaptcha/actions';
-
-export const dynamic = 'force-static'
 import { 
   calculateKarmaForAction, 
   calculateMemberStatsUpdate,
 } from '@/lib/firestore/communityHelpers';
 import { devLog } from '@/lib/devLogger';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
+
+export const dynamic = 'force-dynamic';
 
 /** Firestore doc data for community discussions; timestamp fields may be Timestamp or string */
 interface CommunityDiscussionDoc extends Record<string, unknown> {
@@ -47,9 +47,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    if (typeof window === 'undefined') {
-      // Server-side: Use Admin SDK
-      let query: Query = db.collection('communityDiscussions');
+    let query: Query = db.collection('communityDiscussions');
       
       // Try to apply status filter, but handle missing index gracefully
       try {
@@ -135,15 +133,12 @@ export async function GET(request: NextRequest) {
         lastActivityAt: timestampToISO(doc.data().lastActivityAt) ?? doc.data().lastActivityAt,
       }));
 
-      return NextResponse.json({
-        success: true,
-        discussions,
-        hasMore: snapshot.docs.length === limit,
-        lastDocId: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null,
-      });
-    } else {
-      return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
-    }
+    return NextResponse.json({
+      success: true,
+      discussions,
+      hasMore: snapshot.docs.length === limit,
+      lastDocId: snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null,
+    });
   } catch (error: any) {
     devLog.error('Error fetching discussions:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch discussions' }, { status: 500 });
@@ -287,54 +282,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    if (typeof window === 'undefined') {
-      // Server-side: Use Admin SDK
-      const now = new Date();
-      
-      // Create discussion document
-      const discussionRef = db.collection('communityDiscussions').doc();
-      const discussionData = {
-        title,
-        content,
-        authorId: ownedUserId,
-        authorName,
-        category,
-        priority,
-        status: 'active',
-        upvotes: 0,
-        downvotes: 0,
-        commentCount: 0,
-        isHot: false,
-        isSticky: false,
-        createdAt: now,
-        updatedAt: now,
-        lastActivityAt: now,
-      };
+    const now = new Date();
 
-      await discussionRef.set(discussionData);
+    // Create discussion document
+    const discussionRef = db.collection('communityDiscussions').doc();
+    const discussionData = {
+      title,
+      content,
+      authorId: ownedUserId,
+      authorName,
+      category,
+      priority,
+      status: 'active',
+      upvotes: 0,
+      downvotes: 0,
+      commentCount: 0,
+      isHot: false,
+      isSticky: false,
+      createdAt: now,
+      updatedAt: now,
+      lastActivityAt: now,
+    };
 
-      // Update member stats (karma, contributions)
-      await updateMemberStats(db, ownedUserId, 'createDiscussion');
+    await discussionRef.set(discussionData);
 
-      // Update or create member profile if needed
-      await ensureMemberProfile(db, ownedUserId, authorName);
+    // Update member stats (karma, contributions)
+    await updateMemberStats(db, ownedUserId, 'createDiscussion');
 
-      // Update community stats
-      await updateCommunityStats(db, { discussions: 1 });
+    // Update or create member profile if needed
+    await ensureMemberProfile(db, ownedUserId, authorName);
 
-      return NextResponse.json({
-        success: true,
-        discussion: {
-          id: discussionRef.id,
-          ...discussionData,
-          createdAt: discussionData.createdAt.toISOString(),
-          updatedAt: discussionData.updatedAt.toISOString(),
-          lastActivityAt: discussionData.lastActivityAt.toISOString(),
-        },
-      });
-    } else {
-      return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
-    }
+    // Update community stats
+    await updateCommunityStats(db, { discussions: 1 });
+
+    return NextResponse.json({
+      success: true,
+      discussion: {
+        id: discussionRef.id,
+        ...discussionData,
+        createdAt: discussionData.createdAt.toISOString(),
+        updatedAt: discussionData.updatedAt.toISOString(),
+        lastActivityAt: discussionData.lastActivityAt.toISOString(),
+      },
+    });
   } catch (error: any) {
     devLog.error('Error creating discussion:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to create discussion' }, { status: 500 });

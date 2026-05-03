@@ -1,9 +1,19 @@
 // Conversational Memory System for Ask the Seer
 // Implements Working, Short-term, Long-term, Episodic, and Procedural memory
 
-import { doc, getDoc, setDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from './firebase';
+import {
+  userSubdocGet,
+  userSubdocSet,
+  userSubdocDelete,
+  userSubcollectionQueryOrdered,
+  userSubcollectionQueryWhere,
+} from '@/lib/userSubcollectionFirestore';
+
+/** Valid Firestore doc id for memory version snapshots (legacy `memory/versions/{n}` paths were invalid in modular SDK). */
+function memoryVersionDocId(versionNumber: number): string {
+  return `version_${versionNumber}`;
+}
 
 export interface MemoryMessage {
   id: string;
@@ -291,16 +301,12 @@ export class ConversationalMemory {
   private episodicMemory: EpisodicMemory | null = null;
   private proceduralMemory: ProceduralMemory | null = null;
   private userId: string;
-  private db: any;
   private config: MemoryConfig;
   private recentSummaries: ContextSummary[] = [];
   private currentVersion: number = 1;
   
   constructor(userId: string, config?: Partial<MemoryConfig>) {
     this.userId = userId;
-    const db = getFirebaseDB();
-    // Server-side: client Firestore API is incompatible with Admin Firestore; skip DB to avoid collection() errors
-    this.db = typeof window === 'undefined' ? null : db;
     this.config = {
       autoSummarizeThreshold: 10,
       maxSummariesToLoad: 5,
@@ -458,17 +464,9 @@ export class ConversationalMemory {
   // LONG-TERM MEMORY METHODS
   async loadLongTermMemory(): Promise<void> {
     try {
-      if (!this.db) {
-        devLog.warn('⚠️ Firebase not available, using default long-term memory', 'conversationalMemory');
-        this.longTermMemory = this.getDefaultLongTermMemory();
-        return;
-      }
-      
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'longTerm');
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        this.longTermMemory = docSnap.data() as LongTermMemory;
+      const data = await userSubdocGet(this.userId, 'memory', 'longTerm');
+      if (data) {
+        this.longTermMemory = data as unknown as LongTermMemory;
         devLog.debug('✅ Loaded long-term memory for user:', this.userId);
       } else {
         this.longTermMemory = this.getDefaultLongTermMemory();
@@ -482,14 +480,11 @@ export class ConversationalMemory {
   
   async saveLongTermMemory(): Promise<void> {
     try {
-      if (!this.db || !this.longTermMemory) return;
-      
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'longTerm');
-      await setDoc(docRef, {
-        ...this.longTermMemory,
-        lastUpdated: Date.now()
+      if (!this.longTermMemory) return;
+      await userSubdocSet(this.userId, 'memory', 'longTerm', {
+        ...(this.longTermMemory as unknown as Record<string, unknown>),
+        lastUpdated: Date.now(),
       });
-      
       devLog.debug('✅ Saved long-term memory for user:', this.userId);
     } catch (error) {
       devLog.error('❌ Error saving long-term memory:', error, 'conversationalMemory');
@@ -559,16 +554,9 @@ export class ConversationalMemory {
   // EPISODIC MEMORY METHODS
   async loadEpisodicMemory(): Promise<void> {
     try {
-      if (!this.db) {
-        this.episodicMemory = this.getDefaultEpisodicMemory();
-        return;
-      }
-      
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'episodic');
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        this.episodicMemory = docSnap.data() as EpisodicMemory;
+      const data = await userSubdocGet(this.userId, 'memory', 'episodic');
+      if (data) {
+        this.episodicMemory = data as unknown as EpisodicMemory;
       } else {
         this.episodicMemory = this.getDefaultEpisodicMemory();
         await this.saveEpisodicMemory();
@@ -581,10 +569,8 @@ export class ConversationalMemory {
   
   async saveEpisodicMemory(): Promise<void> {
     try {
-      if (!this.db || !this.episodicMemory) return;
-      
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'episodic');
-      await setDoc(docRef, this.episodicMemory);
+      if (!this.episodicMemory) return;
+      await userSubdocSet(this.userId, 'memory', 'episodic', this.episodicMemory as unknown as Record<string, unknown>);
     } catch (error) {
       devLog.error('❌ Error saving episodic memory:', error, 'conversationalMemory');
     }
@@ -641,16 +627,9 @@ export class ConversationalMemory {
   // PROCEDURAL MEMORY METHODS
   async loadProceduralMemory(): Promise<void> {
     try {
-      if (!this.db) {
-        this.proceduralMemory = this.getDefaultProceduralMemory();
-        return;
-      }
-      
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'procedural');
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        this.proceduralMemory = docSnap.data() as ProceduralMemory;
+      const data = await userSubdocGet(this.userId, 'memory', 'procedural');
+      if (data) {
+        this.proceduralMemory = data as unknown as ProceduralMemory;
       } else {
         this.proceduralMemory = this.getDefaultProceduralMemory();
         await this.saveProceduralMemory();
@@ -663,10 +642,8 @@ export class ConversationalMemory {
   
   async saveProceduralMemory(): Promise<void> {
     try {
-      if (!this.db || !this.proceduralMemory) return;
-      
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'procedural');
-      await setDoc(docRef, this.proceduralMemory);
+      if (!this.proceduralMemory) return;
+      await userSubdocSet(this.userId, 'memory', 'procedural', this.proceduralMemory as unknown as Record<string, unknown>);
     } catch (error) {
       devLog.error('❌ Error saving procedural memory:', error, 'conversationalMemory');
     }
@@ -766,26 +743,23 @@ export class ConversationalMemory {
     };
 
     try {
-      if (this.db) {
-        const docRef = doc(this.db, 'users', this.userId, 'memory', 'versions', version.version.toString());
-        await setDoc(docRef, version);
-        
-        // Update version history
-        const historyRef = doc(this.db, 'users', this.userId, 'memory', 'versionHistory');
-        const historySnap = await getDoc(historyRef);
-        const history: VersionHistory = historySnap.exists() 
-          ? (historySnap.data() as VersionHistory)
-          : { userId: this.userId, versions: [], currentVersion: 0, lastUpdated: Date.now() };
-        
-        history.versions.push(version);
-        if (history.versions.length > this.config.maxVersionsToKeep) {
-          history.versions.shift();
-        }
-        history.currentVersion = this.currentVersion;
-        history.lastUpdated = Date.now();
-        
-        await setDoc(historyRef, history);
+      await userSubdocSet(this.userId, 'memory', memoryVersionDocId(version.version), {
+        ...(version as unknown as Record<string, unknown>),
+      });
+
+      const historyRow = await userSubdocGet(this.userId, 'memory', 'versionHistory');
+      const history: VersionHistory = historyRow
+        ? (historyRow as unknown as VersionHistory)
+        : { userId: this.userId, versions: [], currentVersion: 0, lastUpdated: Date.now() };
+
+      history.versions.push(version);
+      if (history.versions.length > this.config.maxVersionsToKeep) {
+        history.versions.shift();
       }
+      history.currentVersion = this.currentVersion;
+      history.lastUpdated = Date.now();
+
+      await userSubdocSet(this.userId, 'memory', 'versionHistory', history as unknown as Record<string, unknown>);
     } catch (error) {
       devLog.error('❌ Error saving version:', error, 'conversationalMemory');
     }
@@ -795,12 +769,8 @@ export class ConversationalMemory {
 
   async getVersion(version: number): Promise<MemoryVersion | null> {
     try {
-      if (!this.db) return null;
-      
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'versions', version.toString());
-      const docSnap = await getDoc(docRef);
-      
-      return docSnap.exists() ? (docSnap.data() as MemoryVersion) : null;
+      const data = await userSubdocGet(this.userId, 'memory', memoryVersionDocId(version));
+      return data ? (data as unknown as MemoryVersion) : null;
     } catch (error) {
       devLog.error('❌ Error loading version:', error, 'conversationalMemory');
       return null;
@@ -849,16 +819,10 @@ export class ConversationalMemory {
 
   async getVersionHistory(limit?: number): Promise<MemoryVersion[]> {
     try {
-      if (!this.db) return [];
-      
-      const historyRef = doc(this.db, 'users', this.userId, 'memory', 'versionHistory');
-      const historySnap = await getDoc(historyRef);
-      
-      if (!historySnap.exists()) return [];
-      
-      const history = historySnap.data() as VersionHistory;
+      const row = await userSubdocGet(this.userId, 'memory', 'versionHistory');
+      if (!row) return [];
+      const history = row as unknown as VersionHistory;
       const versions = history.versions || [];
-      
       return limit ? versions.slice(-limit) : versions;
     } catch (error) {
       devLog.error('❌ Error loading version history:', error, 'conversationalMemory');
@@ -962,11 +926,10 @@ export class ConversationalMemory {
 
   async saveSeerSessionState(): Promise<void> {
     try {
-      if (!this.db || !this.workingMemory.seerSessionState) return;
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'seerSession');
-      await setDoc(docRef, {
-        ...this.workingMemory.seerSessionState,
-        lastUpdated: Date.now()
+      if (!this.workingMemory.seerSessionState) return;
+      await userSubdocSet(this.userId, 'memory', 'seerSession', {
+        ...(this.workingMemory.seerSessionState as unknown as Record<string, unknown>),
+        lastUpdated: Date.now(),
       });
     } catch (err) {
       devLog.warn('⚠️ saveSeerSessionState failed:', err, 'conversationalMemory');
@@ -975,11 +938,9 @@ export class ConversationalMemory {
 
   async loadSeerSessionState(): Promise<void> {
     try {
-      if (!this.db) return;
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'seerSession');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        this.workingMemory.seerSessionState = docSnap.data() as SeerSessionState;
+      const data = await userSubdocGet(this.userId, 'memory', 'seerSession');
+      if (data) {
+        this.workingMemory.seerSessionState = data as unknown as SeerSessionState;
       }
     } catch (err) {
       devLog.warn('⚠️ loadSeerSessionState failed:', err, 'conversationalMemory');
@@ -1152,20 +1113,14 @@ Respond in JSON format:
 
   async addContextSummary(summary: ContextSummary): Promise<void> {
     try {
-      if (!this.db) {
-        devLog.warn('⚠️ Firebase not available, cannot save context summary', 'conversationalMemory');
-        return;
-      }
+      await userSubdocSet(this.userId, 'memorySummaries', summary.id, summary as unknown as Record<string, unknown>);
 
-      const docRef = doc(this.db, 'users', this.userId, 'memory', 'summaries', summary.id);
-      await setDoc(docRef, summary);
-      
       // Add to recent summaries cache
       this.recentSummaries.unshift(summary);
       if (this.recentSummaries.length > this.config.maxSummariesToLoad) {
         this.recentSummaries.pop();
       }
-      
+
       devLog.debug('✅ Saved context summary:', summary.id);
     } catch (error) {
       devLog.error('❌ Error saving context summary:', error, 'conversationalMemory');
@@ -1174,16 +1129,19 @@ Respond in JSON format:
 
   async getRecentSummaries(limit?: number): Promise<ContextSummary[]> {
     try {
-      if (!this.db) {
-        return this.recentSummaries.slice(0, limit || this.config.maxSummariesToLoad);
-      }
-
-      const summariesRef = collection(this.db, 'users', this.userId, 'memory', 'summaries');
-      const { query, orderBy, limit: limitQuery, getDocs } = await import('firebase/firestore');
-      const q = query(summariesRef, orderBy('timestamp', 'desc'), limitQuery(limit || this.config.maxSummariesToLoad));
-      const snapshot = await getDocs(q);
-      
-      const summaries = snapshot.docs.map(doc => doc.data() as ContextSummary);
+      const lim = limit || this.config.maxSummariesToLoad;
+      const rows = await userSubcollectionQueryOrdered(
+        this.userId,
+        'memorySummaries',
+        'timestamp',
+        'desc',
+        lim
+      );
+      const summaries = rows.map((r) => {
+        const { id: docId, ...rest } = r;
+        const body = rest as unknown as Omit<ContextSummary, 'id'>;
+        return { ...body, id: docId } as ContextSummary;
+      });
       this.recentSummaries = summaries;
       return summaries;
     } catch (error) {
@@ -1277,18 +1235,13 @@ Respond in JSON format:
 
   async clearOldSummaries(olderThanDays: number): Promise<void> {
     try {
-      if (!this.db) return;
+      const cutoffTime = Date.now() - olderThanDays * 24 * 60 * 60 * 1000;
+      const stale = await userSubcollectionQueryWhere(this.userId, 'memorySummaries', [
+        { field: 'timestamp', op: '<', value: cutoffTime },
+      ]);
+      await Promise.all(stale.map((row) => userSubdocDelete(this.userId, 'memorySummaries', row.id)));
 
-      const cutoffTime = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
-      const summariesRef = collection(this.db, 'users', this.userId, 'memory', 'summaries');
-      const { query, where, getDocs, deleteDoc } = await import('firebase/firestore');
-      const q = query(summariesRef, where('timestamp', '<', cutoffTime));
-      const snapshot = await getDocs(q);
-
-      const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
-      await Promise.all(deletePromises);
-
-      devLog.debug(`✅ Cleared ${snapshot.docs.length} old summaries`);
+      devLog.debug(`✅ Cleared ${stale.length} old summaries`);
     } catch (error) {
       devLog.error('❌ Error clearing old summaries:', error, 'conversationalMemory');
     }
@@ -1330,29 +1283,27 @@ Respond in JSON format:
         await this.saveProceduralMemory();
       }
 
-      if (data.summaries && this.db) {
+      if (data.summaries) {
         for (const summary of data.summaries) {
-          const docRef = doc(this.db, 'users', this.userId, 'memory', 'summaries', summary.id);
-          await setDoc(docRef, summary);
+          await userSubdocSet(this.userId, 'memorySummaries', summary.id, summary as unknown as Record<string, unknown>);
         }
       }
 
-      if (data.versions && this.db) {
+      if (data.versions) {
         for (const version of data.versions) {
-          const docRef = doc(this.db, 'users', this.userId, 'memory', 'versions', version.version.toString());
-          await setDoc(docRef, version);
+          await userSubdocSet(this.userId, 'memory', memoryVersionDocId(version.version), {
+            ...(version as unknown as Record<string, unknown>),
+          });
         }
-        
-        // Update version history
+
         if (data.versions.length > 0) {
-          const historyRef = doc(this.db, 'users', this.userId, 'memory', 'versionHistory');
           const history: VersionHistory = {
             userId: this.userId,
             versions: data.versions,
             currentVersion: data.versions[data.versions.length - 1].version,
-            lastUpdated: Date.now()
+            lastUpdated: Date.now(),
           };
-          await setDoc(historyRef, history);
+          await userSubdocSet(this.userId, 'memory', 'versionHistory', history as unknown as Record<string, unknown>);
           this.currentVersion = history.currentVersion;
         }
       }

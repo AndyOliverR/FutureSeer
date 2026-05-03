@@ -4,7 +4,7 @@
 import { PredictiveSystem } from './predictiveAlgorithms';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
-import { adminDb, getDocument } from '@/lib/firebase-admin';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 
 // Zodiac signs array for fallback ascendant extraction
 const SIGNS = [
@@ -414,16 +414,9 @@ export class UniversalInterpretationEngine {
   }
 
   private async getStoredInterpretation(userId: string, system: string): Promise<UniversalInterpretation | null> {
-    const db = getFirebaseDB();
-    if (!db) return null;
-    if (typeof (db as { collection?: unknown }).collection === 'function') {
-      if (!adminDb) return null;
-      const snap = await adminDb.collection('users').doc(userId).collection('interpretations').doc(system).get();
-      return snap.exists ? (snap.data() as UniversalInterpretation) : null;
-    }
-    const { doc, getDoc } = await import('firebase/firestore');
-    const snap = await getDoc(doc(db, 'users', userId, 'interpretations', system));
-    return snap.exists() ? (snap.data() as UniversalInterpretation) : null;
+    if (!getFirebaseDB()) return null;
+    const row = await userSubdocGet(userId, 'interpretations', system);
+    return row ? (row as unknown as UniversalInterpretation) : null;
   }
 
   private async storeInterpretation(
@@ -431,15 +424,8 @@ export class UniversalInterpretationEngine {
     system: string,
     interpretation: UniversalInterpretation,
   ): Promise<void> {
-    const db = getFirebaseDB();
-    if (!db) return;
-    if (typeof (db as { collection?: unknown }).collection === 'function') {
-      if (!adminDb) return;
-      await adminDb.collection('users').doc(userId).collection('interpretations').doc(system).set(interpretation);
-      return;
-    }
-    const { doc, setDoc } = await import('firebase/firestore');
-    await setDoc(doc(db, 'users', userId, 'interpretations', system), interpretation);
+    if (!getFirebaseDB()) return;
+    await userSubdocSet(userId, 'interpretations', system, interpretation as unknown as Record<string, unknown>);
   }
   
   // Generate Markov-based interpretation for any system

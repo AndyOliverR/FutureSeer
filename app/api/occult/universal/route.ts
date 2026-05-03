@@ -49,6 +49,10 @@ function isMissingCoordinate(value: unknown): boolean {
   return typeof value !== 'number' || !Number.isFinite(value);
 }
 
+function isZeroCoordinatePair(latitude: unknown, longitude: unknown): boolean {
+  return latitude === 0 && longitude === 0;
+}
+
 // Swiss Ephemeris Integration Functions
 async function calculateVedicChart(birthData: BirthData, options: any = {}) {
   devLog.info('🔮 Calculating REAL Vedic chart for:', birthData, 'occult');
@@ -59,10 +63,10 @@ async function calculateVedicChart(birthData: BirthData, options: any = {}) {
     let longitude = birthData.longitude;
 
     // If coordinates are missing but birthPlace is provided, geocode it
-    if ((isMissingCoordinate(latitude) || isMissingCoordinate(longitude)) && birthData.birthPlace) {
+    if ((isMissingCoordinate(latitude) || isMissingCoordinate(longitude) || isZeroCoordinatePair(latitude, longitude)) && birthData.birthPlace) {
       devLog.info(`📍 Coordinates missing, geocoding: ${birthData.birthPlace}`, undefined, 'occult');
-      const { geocodePlace } = await import('@/services/geocoding');
-      const coords = await geocodePlace(birthData.birthPlace);
+      const { geocodePlaceCachedOccult } = await import('@/lib/occultBirthPlaceGeocodeCache');
+      const coords = await geocodePlaceCachedOccult(birthData.birthPlace);
       if (coords) {
         latitude = coords.latitude;
         longitude = coords.longitude;
@@ -341,8 +345,8 @@ async function calculateWesternChart(birthData: BirthData, options: any = {}) {
       let transitHouses = houses;
       if (currentLocationStr.length > 0) {
         try {
-          const { geocodePlace } = await import('@/services/geocoding');
-          const coords = await geocodePlace(currentLocationStr);
+          const { geocodePlaceCachedOccult } = await import('@/lib/occultBirthPlaceGeocodeCache');
+          const coords = await geocodePlaceCachedOccult(currentLocationStr);
           if (coords?.latitude != null && coords?.longitude != null) {
             transitHouses = calculateTropicalHouses(transitDate, coords.latitude, coords.longitude);
             transitLocationUsed = currentLocationStr;

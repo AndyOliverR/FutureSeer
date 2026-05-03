@@ -466,17 +466,10 @@ export default function KPAstrologyPage() {
   const [isLoading, setIsLoading] = useState(false)
   const isLoadingAny = isLoading || isLoadingPipeline
   
-  // Debug: Log analysis state changes
-  useEffect(() => {
-    if (!analysis) return
-    devLog.debug('🔍 Analysis state changed:', {
-      hasAnalysis: !!analysis,
-      hasBasicInfo: !!analysis?.basicInfo,
-      analysisKeys: analysis ? Object.keys(analysis) : []
-    })
-  }, [analysis])
   const [isLoadingTransits, setIsLoadingTransits] = useState(false)
   const [transitsError, setTransitsError] = useState<string | null>(null)
+  /** One in-flight transits POST per mount wave; Strict Mode + deps avoid duplicate network work. */
+  const transitsInFlightRef = useRef<Promise<void> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'introduction' | 'chart_images' | 'planetary_positions' | 'sublord_analysis' | 'dasha_forecast' | 'remedies' | 'current_transits' | 'kp_astrology_expert'>('introduction')
 
@@ -637,9 +630,15 @@ export default function KPAstrologyPage() {
     }
   }
 
-  const fetchCurrentTransits = useCallback(async () => {
+  const fetchCurrentTransits = useCallback(async (signal?: AbortSignal) => {
     if (!hasCompleteProfile || !userProfile?.uid) return
 
+    if (transitsInFlightRef.current) {
+      await transitsInFlightRef.current
+      return
+    }
+
+    const run = (async () => {
     setTransitsError(null)
     setIsLoadingTransits(true)
     try {
@@ -649,6 +648,7 @@ export default function KPAstrologyPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        signal,
         body: JSON.stringify({
           userId: userProfile.uid,
           birthData: {
@@ -702,15 +702,24 @@ export default function KPAstrologyPage() {
         setCurrentTransits(null)
       }
     } catch (err) {
+      if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return
+      }
       devLog.error('❌ Error loading current transits:', err, 'page')
       setTransitsError(err instanceof Error ? err.message : 'Failed to load transits')
       setCurrentTransits(null)
     } finally {
       setIsLoadingTransits(false)
     }
+    })()
+
+    transitsInFlightRef.current = run.finally(() => {
+      transitsInFlightRef.current = null
+    })
+    await run
   }, [hasCompleteProfile, userProfile?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, userProfile?.displayName])
 
-  const loadCurrentTransits = useCallback(async () => {
+  const loadCurrentTransits = useCallback(async (signal?: AbortSignal) => {
     if (!hasCompleteProfile || !userProfile?.uid) return
 
     setTransitsError(null)
@@ -721,6 +730,7 @@ export default function KPAstrologyPage() {
         ? (stored as { chartUrl: { activeTransits?: unknown[]; upcomingTransits?: unknown[] } }).chartUrl
         : null
       if (payload && (Array.isArray(payload.activeTransits) || Array.isArray(payload.upcomingTransits))) {
+        if (signal?.aborted) return
         setCurrentTransits(payload)
         setTransitsError(null)
         devLog.debug('✅ Loaded current transits from cache')
@@ -730,13 +740,15 @@ export default function KPAstrologyPage() {
       devLog.warn('⚠️ Failed to read transit cache:', e, 'page')
     }
 
-    await fetchCurrentTransits()
+    await fetchCurrentTransits(signal)
   }, [hasCompleteProfile, userProfile?.uid, fetchCurrentTransits])
 
   // Load transits on mount when profile is complete so the tab is not blank
   useEffect(() => {
     if (!hasCompleteProfile || !userProfile?.uid) return
-    loadCurrentTransits().catch(() => {})
+    const ac = new AbortController()
+    void loadCurrentTransits(ac.signal)
+    return () => ac.abort()
   }, [hasCompleteProfile, userProfile?.uid, loadCurrentTransits])
 
   const performKPAnalysis = useCallback(async () => {
@@ -2235,7 +2247,7 @@ export default function KPAstrologyPage() {
                       </div>
                     </div>
                     <button
-                      onClick={fetchCurrentTransits}
+                      onClick={() => { void fetchCurrentTransits() }}
                       disabled={isLoadingTransits}
                       className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-4 py-2 rounded-xl font-medium transition-all duration-300 "
                     >

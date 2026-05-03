@@ -3,8 +3,8 @@
 
 import { generateNumerologyProfile, validateNumerologyData } from './numerologyCalculations'
 import { devLog } from '@/lib/devLogger';
-import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { getFirebaseDB } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import {
   powerWordByNumber,
   wealthAttractionByNumber,
@@ -118,17 +118,17 @@ class NumerologyIntelligence {
     // Check Firebase storage
     try {
       const db = getFirebaseDB();
-      const docRef = doc(db, 'users', userId, 'numerologyProfile', 'comprehensive')
-      const docSnap = await getDoc(docRef)
-      
-      if (docSnap.exists()) {
-        const storedData = docSnap.data() as NumerologyData
-        if (Date.now() - storedData.lastFetched < 24 * 60 * 60 * 1000 &&
-            storedData.fullName === fullName &&
-            storedData.birthDate === birthDate) {
-          devLog.debug('Using stored numerology data for user:', userId)
-          this.numerologyCache.set(userId, storedData)
-          return storedData
+      if (db) {
+        const raw = await userSubdocGet(userId, 'numerologyProfile', 'comprehensive');
+        if (raw) {
+          const storedData = raw as unknown as NumerologyData
+          if (Date.now() - storedData.lastFetched < 24 * 60 * 60 * 1000 &&
+              storedData.fullName === fullName &&
+              storedData.birthDate === birthDate) {
+            devLog.debug('Using stored numerology data for user:', userId)
+            this.numerologyCache.set(userId, storedData)
+            return storedData
+          }
         }
       }
     } catch (error) {
@@ -181,9 +181,15 @@ class NumerologyIntelligence {
     // Store in Firebase
     try {
       const db = getFirebaseDB();
-      const docRef = doc(db, 'users', userId, 'numerologyProfile', 'comprehensive')
-      await setDoc(docRef, numerologyData)
-      devLog.debug('Stored intelligent numerology data in Firebase for user:', userId)
+      if (db) {
+        await userSubdocSet(
+          userId,
+          'numerologyProfile',
+          'comprehensive',
+          numerologyData as unknown as Record<string, unknown>
+        );
+        devLog.debug('Stored intelligent numerology data in Firebase for user:', userId);
+      }
     } catch (storageError) {
       devLog.warn('Error storing numerology data in Firebase:', storageError, 'numerologyIntelligence')
     }

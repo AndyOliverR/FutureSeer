@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { Query, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import { devLog } from '@/lib/devLogger';
 import { adminDb } from '@/lib/firebase-admin';
 
-export const dynamic = 'force-static'
+// Must be dynamic: GET uses searchParams + Firestore; force-static breaks per-request handling.
+export const dynamic = 'force-dynamic';
 
 interface ConnectionRequestData {
   fromUserId: string;
@@ -11,6 +13,69 @@ interface ConnectionRequestData {
   toUserName: string;
   topic: string;
   message: string;
+}
+
+function isFirestoreIndexUnavailableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as { code?: number | string; message?: string; details?: string };
+  const text = `${e.message ?? ''} ${String(e.details ?? '')}`;
+  if (e.code === 9 || e.code === '9' || e.code === 'failed-precondition') return true;
+  return /FAILED_PRECONDITION|failed-precondition|requires an index|index is currently building/i.test(text);
+}
+
+function createdAtMillis(data: Record<string, unknown>): number {
+  const v = data.createdAt;
+  if (v && typeof v === 'object' && v !== null && 'toMillis' in v && typeof (v as { toMillis: () => number }).toMillis === 'function') {
+    return (v as { toMillis: () => number }).toMillis();
+  }
+  if (v && typeof v === 'object' && v !== null && 'seconds' in v && typeof (v as { seconds: number }).seconds === 'number') {
+    return (v as { seconds: number }).seconds * 1000;
+  }
+  if (typeof v === 'string' || typeof v === 'number') {
+    const t = new Date(v).getTime();
+    return Number.isFinite(t) ? t : 0;
+  }
+  return 0;
+}
+
+/**
+ * Prefer composite index + orderBy. If the index is missing or still building, query without orderBy and sort in memory.
+ */
+async function getConnectionDocsOrdered(baseQuery: Query): Promise<QueryDocumentSnapshot[]> {
+  try {
+    const snap = await baseQuery.orderBy('createdAt', 'desc').get();
+    return snap.docs;
+  } catch (error) {
+    if (!isFirestoreIndexUnavailableError(error)) {
+      throw error;
+    }
+    devLog.warn(
+      '[community/connections] Composite index unavailable or building; using in-memory sort fallback.',
+      undefined,
+      'route',
+    );
+    const snap = await baseQuery.get();
+    return [...snap.docs].sort(
+      (a, b) =>
+        createdAtMillis(b.data() as Record<string, unknown>) -
+        createdAtMillis(a.data() as Record<string, unknown>),
+    );
+  }
+}
+
+function pushRequestFromDoc(
+  requests: unknown[],
+  doc: QueryDocumentSnapshot,
+  requestType: 'incoming' | 'outgoing',
+): void {
+  const data = doc.data();
+  requests.push({
+    id: doc.id,
+    ...data,
+    type: requestType,
+    createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+    respondedAt: data.respondedAt?.toDate?.()?.toISOString() || data.respondedAt,
+  });
 }
 
 // POST - Send connection request
@@ -41,65 +106,57 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    if (typeof window === 'undefined') {
-      // Server-side: Use Admin SDK
-      // Check if request already exists
-      const existingRequest = await db.collection('communityConnections')
-        .where('fromUserId', '==', fromUserId)
-        .where('toUserId', '==', toUserId)
-        .where('status', '==', 'pending')
-        .get();
+    const existingRequest = await db.collection('communityConnections')
+      .where('fromUserId', '==', fromUserId)
+      .where('toUserId', '==', toUserId)
+      .where('status', '==', 'pending')
+      .get();
 
-      if (!existingRequest.empty) {
-        return NextResponse.json(
-          { error: 'Connection request already sent' },
-          { status: 400 }
-        );
-      }
-
-      // Check if reverse request exists (mutual connection)
-      const reverseRequest = await db.collection('communityConnections')
-        .where('fromUserId', '==', toUserId)
-        .where('toUserId', '==', fromUserId)
-        .where('status', '==', 'accepted')
-        .get();
-
-      if (!reverseRequest.empty) {
-        return NextResponse.json(
-          { error: 'Users are already connected' },
-          { status: 400 }
-        );
-      }
-
-      const now = new Date();
-
-      // Create connection request
-      const connectionRef = db.collection('communityConnections').doc();
-      const connectionData = {
-        fromUserId,
-        fromUserName,
-        toUserId,
-        toUserName,
-        topic,
-        message,
-        status: 'pending',
-        createdAt: now,
-        respondedAt: null,
-      };
-
-      await connectionRef.set(connectionData);
-
-      return NextResponse.json({
-        success: true,
-        connection: {
-          id: connectionRef.id,
-          ...connectionData,
-          createdAt: connectionData.createdAt.toISOString(),
-        },
-      });
-    } else {
-      return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
+    if (!existingRequest.empty) {
+      return NextResponse.json(
+        { error: 'Connection request already sent' },
+        { status: 400 }
+      );
     }
+
+    const reverseRequest = await db.collection('communityConnections')
+      .where('fromUserId', '==', toUserId)
+      .where('toUserId', '==', fromUserId)
+      .where('status', '==', 'accepted')
+      .get();
+
+    if (!reverseRequest.empty) {
+      return NextResponse.json(
+        { error: 'Users are already connected' },
+        { status: 400 }
+      );
+    }
+
+    const now = new Date();
+
+    const connectionRef = db.collection('communityConnections').doc();
+    const connectionData = {
+      fromUserId,
+      fromUserName,
+      toUserId,
+      toUserName,
+      topic,
+      message,
+      status: 'pending',
+      createdAt: now,
+      respondedAt: null,
+    };
+
+    await connectionRef.set(connectionData);
+
+    return NextResponse.json({
+      success: true,
+      connection: {
+        id: connectionRef.id,
+        ...connectionData,
+        createdAt: connectionData.createdAt.toISOString(),
+      },
+    });
   } catch (error: any) {
     devLog.error('Error creating connection request:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to create connection request' }, { status: 500 });
@@ -125,54 +182,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    if (typeof window === 'undefined') {
-      // Server-side: Use Admin SDK
-      const requests: any[] = [];
+    const requests: unknown[] = [];
 
-      if (type === 'incoming' || type === 'all') {
-        const incomingSnapshot = await db.collection('communityConnections')
-          .where('toUserId', '==', userId)
-          .orderBy('createdAt', 'desc')
-          .get();
-
-        incomingSnapshot.docs.forEach((doc: any) => {
-          requests.push({
-            id: doc.id,
-            ...doc.data(),
-            type: 'incoming',
-            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-            respondedAt: doc.data().respondedAt?.toDate?.()?.toISOString() || doc.data().respondedAt,
-          });
-        });
-      }
-
-      if (type === 'outgoing' || type === 'all') {
-        const outgoingSnapshot = await db.collection('communityConnections')
-          .where('fromUserId', '==', userId)
-          .orderBy('createdAt', 'desc')
-          .get();
-
-        outgoingSnapshot.docs.forEach((doc: any) => {
-          requests.push({
-            id: doc.id,
-            ...doc.data(),
-            type: 'outgoing',
-            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
-            respondedAt: doc.data().respondedAt?.toDate?.()?.toISOString() || doc.data().respondedAt,
-          });
-        });
-      }
-
-      // Sort by date
-      requests.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-      return NextResponse.json({
-        success: true,
-        requests,
-      });
-    } else {
-      return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
+    if (type === 'incoming' || type === 'all') {
+      const incomingDocs = await getConnectionDocsOrdered(
+        db.collection('communityConnections').where('toUserId', '==', userId),
+      );
+      incomingDocs.forEach((doc) => pushRequestFromDoc(requests, doc, 'incoming'));
     }
+
+    if (type === 'outgoing' || type === 'all') {
+      const outgoingDocs = await getConnectionDocsOrdered(
+        db.collection('communityConnections').where('fromUserId', '==', userId),
+      );
+      outgoingDocs.forEach((doc) => pushRequestFromDoc(requests, doc, 'outgoing'));
+    }
+
+    requests.sort(
+      (a, b) =>
+        new Date(String((b as { createdAt?: string }).createdAt ?? 0)).getTime() -
+        new Date(String((a as { createdAt?: string }).createdAt ?? 0)).getTime()
+    );
+
+    return NextResponse.json({
+      success: true,
+      requests,
+    });
   } catch (error: any) {
     devLog.error('Error fetching connection requests:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch connection requests' }, { status: 500 });

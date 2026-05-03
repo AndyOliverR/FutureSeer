@@ -249,7 +249,7 @@ export default function AkashicRecordsPage() {
           {showAkashicViral && !viralUnlock.hydrated ? (
             <div className="py-12 text-center text-slate-400">Loading report…</div>
           ) : (
-            <div className="relative min-h-[320px]">
+            <div className={cn('relative', akashicLocked && 'min-h-[320px]')}>
               {akashicLocked && (
                 <ViralLockOverlay
                   onUnlockClick={handleShareToUnlock}
@@ -771,11 +771,6 @@ export default function AkashicRecordsPage() {
             )}
           </TabsContent>
 
-              </div>
-            </div>
-          )}
-
-          {/* Ask The Seer Tab */}
           <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
             {reading ? (
               <AkashicSeerChatInterface reading={reading} userProfile={userProfile} />
@@ -792,6 +787,10 @@ export default function AkashicRecordsPage() {
               </div>
             )}
           </TabsContent>
+
+              </div>
+            </div>
+          )}
         </Tabs>
         </div>
 

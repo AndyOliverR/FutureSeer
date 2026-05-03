@@ -1,6 +1,8 @@
 import { getChart } from './astronomia-vedic'
 import { devLog } from '@/lib/devLogger';
 
+const verboseAstroLogs = process.env.VERBOSE_ASTRO_LOGS === '1';
+
 export interface TransitData {
   favorable: TransitEffect[]
   challenging: TransitEffect[]
@@ -45,7 +47,9 @@ export function calculateTransitData(
     const transitPlace = birthData.transitPlace ?? birthData.birthPlace
     const transitLat = birthData.transitLatitude ?? birthData.latitude
     const transitLon = birthData.transitLongitude ?? birthData.longitude
-    devLog.debug('Calculating transit data', { birthDate: birthData.birthDate, birthTime: birthData.birthTime, birthPlace: birthData.birthPlace, transitPlace }, 'transitCalculatorServer');
+    if (verboseAstroLogs) {
+      devLog.debug('Calculating transit data', { birthDate: birthData.birthDate, birthTime: birthData.birthTime, birthPlace: birthData.birthPlace, transitPlace }, 'transitCalculatorServer');
+    }
 
     // Get current planetary positions (use current residence when provided)
     const currentDate = new Date()
@@ -61,16 +65,20 @@ export function calculateTransitData(
       houseSystem: 'placidus'
     })
 
-    devLog.debug('📊 Current chart generated:', !!currentChart);
-    devLog.debug('📊 Current chart planets:', currentChart?.planets ? Object.keys(currentChart.planets).length : 0);
-    devLog.debug('📊 Current chart ascendant:', !!currentChart?.ascendant);
-    devLog.debug('📊 Natal chart available:', !!natalChart);
-    devLog.debug('📊 Natal chart ascendant:', !!natalChart?.ascendant);
-    devLog.debug('📊 Natal chart ascendant lonSidereal:', natalChart?.ascendant?.lonSidereal);
-    devLog.debug('📊 Natal chart planets:', natalChart?.planets ? Object.keys(natalChart.planets).length : 0);
+    if (verboseAstroLogs) {
+      devLog.debug('📊 Current chart generated:', !!currentChart);
+      devLog.debug('📊 Current chart planets:', currentChart?.planets ? Object.keys(currentChart.planets).length : 0);
+      devLog.debug('📊 Current chart ascendant:', !!currentChart?.ascendant);
+      devLog.debug('📊 Natal chart available:', !!natalChart);
+      devLog.debug('📊 Natal chart ascendant:', !!natalChart?.ascendant);
+      devLog.debug('📊 Natal chart ascendant lonSidereal:', natalChart?.ascendant?.lonSidereal);
+      devLog.debug('📊 Natal chart planets:', natalChart?.planets ? Object.keys(natalChart.planets).length : 0);
+    }
 
     if (!currentChart || !natalChart) {
-      devLog.debug('⚠️ Missing chart data, returning empty transits');
+      if (verboseAstroLogs) {
+        devLog.debug('⚠️ Missing chart data, returning empty transits');
+      }
       return {
         favorable: [],
         challenging: [],
@@ -79,9 +87,11 @@ export function calculateTransitData(
     }
 
     if (!currentChart.planets || !natalChart.ascendant) {
-      devLog.debug('⚠️ Missing required chart data (planets or ascendant), returning empty transits');
-      devLog.debug('  Current chart planets:', !!currentChart.planets);
-      devLog.debug('  Natal chart ascendant:', !!natalChart.ascendant);
+      if (verboseAstroLogs) {
+        devLog.debug('⚠️ Missing required chart data (planets or ascendant), returning empty transits');
+        devLog.debug('  Current chart planets:', !!currentChart.planets);
+        devLog.debug('  Natal chart ascendant:', !!natalChart.ascendant);
+      }
       return {
         favorable: [],
         challenging: [],
@@ -94,18 +104,20 @@ export function calculateTransitData(
     const challengingTransits = calculateChallengingTransits(currentChart, natalChart)
     const upcomingTransits = calculateUpcomingTransits(natalChart, birthData)
     
-    devLog.debug('📊 Transit calculation details:', {
-      favorableCount: favorableTransits.length,
-      challengingCount: challengingTransits.length,
-      upcomingCount: upcomingTransits.length,
-      sampleFavorable: favorableTransits[0],
-      sampleChallenging: challengingTransits[0]
-    })
+    if (verboseAstroLogs) {
+      devLog.debug('📊 Transit calculation details:', {
+        favorableCount: favorableTransits.length,
+        challengingCount: challengingTransits.length,
+        upcomingCount: upcomingTransits.length,
+        sampleFavorable: favorableTransits[0],
+        sampleChallenging: challengingTransits[0]
+      })
 
-    devLog.debug('✅ Transit calculation results:');
-    devLog.debug('  Favorable:', favorableTransits.length);
-    devLog.debug('  Challenging:', challengingTransits.length);
-    devLog.debug('  Upcoming:', upcomingTransits.length);
+      devLog.debug('✅ Transit calculation results:');
+      devLog.debug('  Favorable:', favorableTransits.length);
+      devLog.debug('  Challenging:', challengingTransits.length);
+      devLog.debug('  Upcoming:', upcomingTransits.length);
+    }
 
     return {
       favorable: favorableTransits,

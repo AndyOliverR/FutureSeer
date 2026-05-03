@@ -1,10 +1,8 @@
 // Vedic Intelligence Service
 // Bridges Universal API with UI and adds AI interpretations
 
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { normalizeTimeString, normalizeDateString } from './timeUtils';
-import { getFirebaseDB } from './firebase';
 import { getServerBaseUrl } from './serverBaseUrl';
 import { universalInterpretationEngine } from './universalInterpretationEngine';
 import { createAICompletion } from './aiGateway';

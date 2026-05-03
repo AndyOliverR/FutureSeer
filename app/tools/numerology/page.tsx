@@ -321,9 +321,13 @@ export default function NumerologyPage() {
       <div className="relative z-10 container mx-auto w-full min-w-0 px-4 pt-4 pb-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="m3-headline-large mb-6 flex items-center justify-center gap-3">
-            <span className="text-amber-400">🔢</span>
-            <span className="bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent">Numerology</span>
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 tracking-[0.08em] md:tracking-[0.12em]">
+            <span className="text-3xl sm:text-5xl lg:text-6xl leading-none text-amber-400" aria-hidden>
+              🔢
+            </span>
+            <span className="bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent">
+              Numerology
+            </span>
           </h1>
           <p className="m3-body-large text-slate-300">
             Ancient Babylonian number system revealing life patterns and destiny

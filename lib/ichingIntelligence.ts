@@ -1,6 +1,5 @@
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from './firebase';
 
 export interface IChingHexagram {
   number: number
@@ -1113,26 +1112,17 @@ class IChingIntelligence {
   }
 
   async saveAnalysis(userId: string, analysis: IChingAnalysis): Promise<void> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'iching-readings', analysis.id)
-    await setDoc(docRef, analysis)
+    await userSubdocSet(userId, 'iching-readings', analysis.id, analysis as unknown as Record<string, unknown>)
   }
 
   async getAnalysis(userId: string, analysisId: string): Promise<IChingAnalysis | null> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'iching-readings', analysisId)
-    const docSnap = await getDoc(docRef)
-    
-    if (docSnap.exists()) {
-      return docSnap.data() as IChingAnalysis
-    }
-    return null
+    const data = await userSubdocGet(userId, 'iching-readings', analysisId)
+    if (!data) return null
+    return data as unknown as IChingAnalysis
   }
 
   async saveCoaching(userId: string, coaching: IChingCoaching): Promise<void> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'iching-coaching', coaching.id)
-    await setDoc(docRef, coaching)
+    await userSubdocSet(userId, 'iching-coaching', coaching.id, coaching as unknown as Record<string, unknown>)
   }
 
   getSystemStatus() {

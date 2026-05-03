@@ -1,6 +1,6 @@
-import { doc, getDoc, setDoc, getFirestore } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB, UserProfile } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { getEntranceRecommendations, getAuspiciousPadas, getInauspiciousPadas, getWorstPadas, type VastuPada } from './vastu32Padas';
 import { calculatePersonalizedVastuDirections, matchAstrologicalElements, getPersonalizedRoomRecommendations } from './vastuPersonalization';
 
@@ -122,6 +122,30 @@ export interface VastuReading {
 
 // Cache version for invalidating old cached data when recommendation generation logic changes
 const CACHE_VERSION = '2.0'; // Updated for varied wording implementation
+
+type VastuReadingDocId = 'current' | 'personalized'
+
+async function vastuReadingGet(
+  userId: string,
+  readingId: VastuReadingDocId,
+): Promise<{ exists: boolean; data: () => VastuReading } | null> {
+  const db = getFirebaseDB()
+  if (!db) return null
+  const raw = await userSubdocGet(userId, 'vastu-readings', readingId)
+  if (!raw) {
+    return { exists: false, data: () => null as unknown as VastuReading }
+  }
+  return {
+    exists: true,
+    data: () => raw as unknown as VastuReading,
+  }
+}
+
+async function vastuReadingSet(userId: string, readingId: VastuReadingDocId, reading: VastuReading): Promise<void> {
+  const db = getFirebaseDB()
+  if (!db) return
+  await userSubdocSet(userId, 'vastu-readings', readingId, reading as unknown as Record<string, unknown>)
+}
 
 // Vastu calculation constants
 const DIRECTION_DATA = {
@@ -1291,13 +1315,11 @@ export async function getIntelligentVastuData(
   if (!db) {
     throw new Error('Firestore not initialized');
   }
-  const docRef = doc(db, 'users', userId, 'vastu-readings', 'current');
-  
+
   try {
-    // Check if we have cached data
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const cachedData = docSnap.data() as VastuReading;
+    const snap = await vastuReadingGet(userId, 'current');
+    if (snap?.exists) {
+      const cachedData = snap.data();
       const lastUpdated = cachedData.metadata.lastUpdated;
       const lastUpdatedMs = lastUpdated instanceof Date ? lastUpdated.getTime() : (lastUpdated as { toDate(): Date }).toDate().getTime();
       const hoursSinceUpdate = (new Date().getTime() - lastUpdatedMs) / (1000 * 60 * 60);
@@ -1362,7 +1384,7 @@ export async function getIntelligentVastuData(
   
   // Cache the data
   try {
-    await setDoc(docRef, reading);
+    await vastuReadingSet(userId, 'current', reading);
     devLog.debug('Cached Vastu data for user:', userId);
   } catch (error) {
     devLog.warn('Error caching Vastu data:', error, 'vastuIntelligence');
@@ -1382,11 +1404,10 @@ export async function getPersonalizedVastuReport(
   }
   
   // Check cache first - but force refresh if metadata doesn't have isProfileBased flag or cache version mismatch
-  const docRef = doc(db, 'users', userId, 'vastu-readings', 'personalized');
   try {
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const cachedData = docSnap.data() as VastuReading;
+    const snap = await vastuReadingGet(userId, 'personalized');
+    if (snap?.exists) {
+      const cachedData = snap.data();
       const cachedVersion = cachedData.metadata?.cacheVersion;
       
       // Force refresh if cached data doesn't have isProfileBased flag (legacy data) or cache version mismatch
@@ -1496,7 +1517,7 @@ export async function getPersonalizedVastuReport(
   
   // Cache the personalized report
   try {
-    await setDoc(docRef, reading);
+    await vastuReadingSet(userId, 'personalized', reading);
     devLog.debug('Cached personalized Vastu report for user:', userId);
   } catch (error) {
     devLog.warn('Error caching personalized Vastu report:', error, 'vastuIntelligence');
@@ -1507,13 +1528,10 @@ export async function getPersonalizedVastuReport(
 
 // Function to clear Vastu data cache
 export async function clearVastuDataCache(userId: string): Promise<void> {
-  const db = getFirebaseDB();
-  if (!db) return;
-  
-  const docRef = doc(db, 'users', userId, 'vastu-readings', 'current');
-  
+  if (!getFirebaseDB()) return;
+
   try {
-    await setDoc(docRef, {});
+    await userSubdocSet(userId, 'vastu-readings', 'current', {});
     devLog.debug('Cleared Vastu data cache for user:', userId);
   } catch (error) {
     devLog.warn('Error clearing Vastu data cache:', error, 'vastuIntelligence');

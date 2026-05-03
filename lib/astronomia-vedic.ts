@@ -375,9 +375,13 @@ export const getPlanetCoords = (
         throw new Error(`Moon calc failed for Julian Day ${jd}`);
       }
       const ay = ayanamshaValue(jd, ayanamshaType);
-      devLog.debug(`🕉️ Moon calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${m.lon}°`);
+      if (verboseAstroLogs) {
+        devLog.debug(`🕉️ Moon calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${m.lon}°`);
+      }
       const lonSidereal = norm360(m.lon - ay);
-      devLog.debug(`🕉️ Moon sidereal longitude: ${lonSidereal}° (${m.lon}° - ${ay}°)`);
+      if (verboseAstroLogs) {
+        devLog.debug(`🕉️ Moon sidereal longitude: ${lonSidereal}° (${m.lon}° - ${ay}°)`);
+      }
       const sign = Math.floor(lonSidereal / 30);
       const degreeInSign = lonSidereal % 30;
       const { nakshatra, nakshatraPada } = getNakshatraInfo(lonSidereal);
@@ -467,9 +471,13 @@ export const getPlanetCoords = (
         throw new Error(`Unsupported planet: ${name}`);
     }
     const ay = ayanamshaValue(jd, ayanamshaType);
-    devLog.debug(`🕉️ ${name} calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${lon}°`);
+    if (verboseAstroLogs) {
+      devLog.debug(`🕉️ ${name} calculation - JD: ${jd}, Ayanamsha: ${ay}°, Tropical lon: ${lon}°`);
+    }
     const lonSidereal = norm360(lon - ay);
-    devLog.debug(`🕉️ ${name} sidereal longitude: ${lonSidereal}° (${lon}° - ${ay}°)`);
+    if (verboseAstroLogs) {
+      devLog.debug(`🕉️ ${name} sidereal longitude: ${lonSidereal}° (${lon}° - ${ay}°)`);
+    }
     const sign = Math.floor(lonSidereal / 30);
     const degreeInSign = lonSidereal % 30;
     const { nakshatra, nakshatraPada } = getNakshatraInfo(lonSidereal);
@@ -544,8 +552,8 @@ const calculateAscendant = (jd: number, latitude: number, longitude: number, aya
     // Calculate RAMC (Right Ascension of Midheaven)
     const ramc = lst;
     
-    // DEBUG: Log LST and RAMC values for Feb 24, 1983
-    if (Math.abs(jd - 2445389.865) < 0.1) { // Feb 24, 1983 test case
+    // DEBUG: Log LST and RAMC values for Feb 24, 1983 (opt-in)
+    if (verboseAstroLogs && Math.abs(jd - 2445389.865) < 0.1) {
       devLog.debug('🔍 ASCENDANT DEBUG for Feb 24, 1983:');
       devLog.debug('  JD:', jd);
       devLog.debug('  JD at 0h UT:', jd0);
@@ -701,7 +709,7 @@ export const getChart = (
     
     // Calculate Vimshottari Dasha (requires Moon position)
     const moonData = planets.moon;
-    if (moonData) {
+    if (moonData && verboseAstroLogs) {
       devLog.debug('🔮 MOON DATA FOR DASHA:');
       devLog.debug('  Moon lonSidereal:', moonData.lonSidereal);
       devLog.debug('  Moon sign:', moonData.sign, '(' + moonData.signName + ')');
@@ -713,7 +721,9 @@ export const getChart = (
     // Handle explicit null birthDate to skip Dasha calculation
     const actualBirthDate = birthData.birthDate === null ? null : (birthData.birthDate ?? birthData.date);
     const actualBirthDateObj = actualBirthDate == null ? undefined : (actualBirthDate instanceof Date ? actualBirthDate : new Date(actualBirthDate));
-    devLog.debug('🔮 DASHA BIRTH DATE:', actualBirthDate);
+    if (verboseAstroLogs) {
+      devLog.debug('🔮 DASHA BIRTH DATE:', actualBirthDate);
+    }
     const dashaList = moonData && actualBirthDateObj 
       ? calculateVimshottariDasha(moonData.lonSidereal, actualBirthDateObj) 
       : [];
@@ -849,13 +859,17 @@ const DASHA_SEQUENCE = [
  * @returns Array of Mahadasha periods with start/end dates
  */
 export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
-  devLog.debug('🔮 DASHA CALCULATION DEBUG:');
-  devLog.debug('  Moon longitude:', moonLon);
-  devLog.debug('  Birth date:', birthDate);
+  if (verboseAstroLogs) {
+    devLog.debug('🔮 DASHA CALCULATION DEBUG:');
+    devLog.debug('  Moon longitude:', moonLon);
+    devLog.debug('  Birth date:', birthDate);
+  }
   
   // Determine starting nakshatra (0-26)
   const nakIndex = Math.floor((moonLon % 360) / (360 / 27));
-  devLog.debug('  Nakshatra index:', nakIndex);
+  if (verboseAstroLogs) {
+    devLog.debug('  Nakshatra index:', nakIndex);
+  }
   
   // Calculate how much of the first dasha has already elapsed at birth
   const degreesInNak = moonLon % (360 / 27);
@@ -863,10 +877,14 @@ export function calculateVimshottariDasha(moonLon: number, birthDate: Date) {
   
   // Starting dasha lord based on nakshatra
   const startDashaIndex = nakIndex % 9;
-  devLog.debug('  Start Dasha index:', startDashaIndex);
+  if (verboseAstroLogs) {
+    devLog.debug('  Start Dasha index:', startDashaIndex);
+  }
   
   const startLord = DASHA_SEQUENCE[startDashaIndex];
-  devLog.debug('  Start Dasha lord:', startLord.lord);
+  if (verboseAstroLogs) {
+    devLog.debug('  Start Dasha lord:', startLord.lord);
+  }
   
   // Validate startLord exists
   if (!startLord || typeof startLord.years !== 'number') {
@@ -1003,7 +1021,9 @@ export function validateVedicPosition(date: Date, expectedSun: number, expectedA
     const ascCorrect = Math.abs(expectedAsc - 73) < 5;
     
     if (sunCorrect && ascCorrect) {
-      devLog.debug('✅ Feb 24, 1983 Vedic positions CORRECT');
+      if (verboseAstroLogs) {
+        devLog.debug('✅ Feb 24, 1983 Vedic positions CORRECT');
+      }
     } else {
       if (verboseAstroLogs) {
         devLog.warn('Feb 24, 1983 Vedic positions WRONG', undefined, 'astronomia-vedic');

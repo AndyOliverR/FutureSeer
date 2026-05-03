@@ -284,8 +284,10 @@ function calculateLunarNodeTropical(jd: number) {
 export function calculateTropicalPlanets(date: Date) {
   const jd = toJD_TT(date);
   
-  devLog.debug('🔮 Calculating TROPICAL positions for JD:', jd);
-  devLog.debug('🔮 Date:', date.toISOString());
+  if (verboseAstroLogs) {
+    devLog.debug('🔮 Calculating TROPICAL positions for JD:', jd);
+    devLog.debug('🔮 Date:', date.toISOString());
+  }
   
   // Calculate each planet's tropical position
   const sun = calculateSunTropical(jd);
@@ -310,8 +312,10 @@ export function calculateTropicalPlanets(date: Date) {
     speed: northNode.speed
   };
   
-  devLog.debug('✅ Sun longitude:', sun.longitude);
-  devLog.debug('✅ Sun sign:', getTropicalSign(sun.longitude));
+  if (verboseAstroLogs) {
+    devLog.debug('✅ Sun longitude:', sun.longitude);
+    devLog.debug('✅ Sun sign:', getTropicalSign(sun.longitude));
+  }
   
   // Validation for Feb 24, 1983
   if (date.getUTCFullYear() === 1983 && 
@@ -319,7 +323,9 @@ export function calculateTropicalPlanets(date: Date) {
       date.getUTCDate() === 24) {
     const expectedLon = 334; // ~4° Pisces
     if (Math.abs(sun.longitude - expectedLon) < 2) {
-      devLog.debug('Feb 24, 1983 Sun position CORRECT', undefined, 'tropicalCalculator');
+      if (verboseAstroLogs) {
+        devLog.debug('Feb 24, 1983 Sun position CORRECT', undefined, 'tropicalCalculator');
+      }
     } else {
       devLog.error('Feb 24, 1983 Sun position WRONG', { sunLongitude: sun.longitude, expectedLon }, 'tropicalCalculator');
     }

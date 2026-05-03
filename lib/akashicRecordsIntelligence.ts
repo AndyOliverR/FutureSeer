@@ -4,9 +4,10 @@
  * Access the universal library of souls for personalized insights
  */
 
-import { doc, setDoc, getDoc, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore'
+import { Timestamp } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
+import { userSubdocGet, userSubdocSet, userSubcollectionQueryOrdered } from '@/lib/userSubcollectionFirestore'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
 import { REPORT_VOICE_RULE } from './reportVoiceRule'
@@ -996,11 +997,10 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
     }
 
     try {
-      const readingRef = doc(this.db, 'users', userId, 'akashic-readings', reading.id)
-      await setDoc(readingRef, {
+      await userSubdocSet(userId, 'akashic-readings', reading.id, {
         ...reading,
-        timestamp: Timestamp.fromDate(reading.timestamp)
-      })
+        timestamp: Timestamp.fromDate(reading.timestamp),
+      } as unknown as Record<string, unknown>)
       devLog.debug('✅ Saved Akashic Records reading to Firestore')
     } catch (error) {
       devLog.error('Error saving Akashic Records reading:', error, 'akashicRecordsIntelligence')
@@ -1016,18 +1016,14 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
     }
 
     try {
-      const readingRef = doc(this.db, 'users', userId, 'akashic-readings', readingId)
-      const docSnap = await getDoc(readingRef)
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        return {
-          ...data,
-          timestamp: data.timestamp.toDate()
-        } as AkashicReading
-      }
-      
-      return null
+      const data = await userSubdocGet(userId, 'akashic-readings', readingId)
+      if (!data?.timestamp) return null
+      const ts = data.timestamp as { toDate?: () => Date }
+      const timestamp = typeof ts.toDate === 'function' ? ts.toDate() : new Date(data.timestamp as string)
+      return {
+        ...data,
+        timestamp,
+      } as AkashicReading
     } catch (error) {
       devLog.error('Error loading Akashic Records reading:', error, 'akashicRecordsIntelligence')
       return null
@@ -1043,17 +1039,13 @@ Remember: Use plain text only. No markdown formatting. Be specific and personal.
     }
 
     try {
-      // Use correct Firestore path structure
-      const userDocRef = doc(this.db, 'users', userId)
-      const readingsRef = collection(userDocRef, 'akashic-readings')
-      const q = query(readingsRef, orderBy('timestamp', 'desc'))
-      const querySnapshot = await getDocs(q)
-      
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data()
+      const rows = await userSubcollectionQueryOrdered(userId, 'akashic-readings', 'timestamp', 'desc')
+      return rows.map((data) => {
+        const ts = data.timestamp as { toDate?: () => Date }
+        const timestamp = typeof ts.toDate === 'function' ? ts.toDate() : new Date(data.timestamp as string)
         return {
           ...data,
-          timestamp: data.timestamp.toDate()
+          timestamp,
         } as AkashicReading
       })
     } catch (error) {

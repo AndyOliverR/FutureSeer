@@ -1,9 +1,9 @@
 // Intelligent Name Analysis System
 // Analyzes names using various numerological and mystical systems
 
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 
 export interface NameAnalysis {
   id: string;
@@ -382,19 +382,15 @@ export async function getIntelligentNameAnalysisData(
   userId: string,
   fullName: string
 ): Promise<NameAnalysis> {
-  const app = getFirebaseDB();
-  if (!app) {
+  const db = getFirebaseDB();
+  if (!db) {
     throw new Error('Firebase app not initialized');
   }
-  
-  const db = getFirebaseDB();
-  const docRef = doc(db, 'users', userId, 'name-analysis', 'current');
-  
+
   try {
-    // Check if we have cached data
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const cachedData = docSnap.data() as NameAnalysis;
+    const cachedRaw = await userSubdocGet(userId, 'name-analysis', 'current');
+    if (cachedRaw) {
+      const cachedData = cachedRaw as unknown as NameAnalysis;
       const lastUpdated = cachedData.metadata.lastUpdated;
       let lastUpdatedDate: Date;
       if (lastUpdated && typeof (lastUpdated as { toDate?: () => Date }).toDate === 'function') {
@@ -487,7 +483,7 @@ export async function getIntelligentNameAnalysisData(
   
   // Cache the data
   try {
-    await setDoc(docRef, analysis);
+    await userSubdocSet(userId, 'name-analysis', 'current', analysis as unknown as Record<string, unknown>);
     devLog.debug('Cached name analysis data for user:', userId);
   } catch (error) {
     devLog.warn('Error caching name analysis data:', error, 'nameAnalysisIntelligence');
@@ -498,14 +494,10 @@ export async function getIntelligentNameAnalysisData(
 
 // Function to clear name analysis data cache
 export async function clearNameAnalysisDataCache(userId: string): Promise<void> {
-  const app = getFirebaseDB();
-  if (!app) return;
-  
-  const db = getFirebaseDB();
-  const docRef = doc(db, 'users', userId, 'name-analysis', 'current');
-  
+  if (!getFirebaseDB()) return;
+
   try {
-    await setDoc(docRef, {});
+    await userSubdocSet(userId, 'name-analysis', 'current', {});
     devLog.debug('Cleared name analysis data cache for user:', userId);
   } catch (error) {
     devLog.warn('Error clearing name analysis data cache:', error, 'nameAnalysisIntelligence');

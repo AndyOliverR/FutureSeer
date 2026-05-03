@@ -1,9 +1,8 @@
 // Advanced Predictive Algorithms for FutureSeer
 // Combining ancient wisdom with modern mathematics
 
-import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from './firebase'
+import { userSubdocSet } from '@/lib/userSubcollectionFirestore';
 
 // ============================================================================
 // MARKOV CHAIN PREDICTIONS
@@ -496,9 +495,9 @@ export class LifePathMarkovChain {
     
     // Store in Firebase for persistence
     try {
-      const db = getFirebaseDB()
-      const docRef = doc(db, 'users', userId, 'markovTransitions', transition.timestamp.toString())
-      await setDoc(docRef, transition)
+      await userSubdocSet(userId, 'markovTransitions', String(transition.timestamp), {
+        ...(JSON.parse(JSON.stringify(transition)) as Record<string, unknown>),
+      });
     } catch (error) {
       devLog.warn('Failed to store transition in Firebase:', error, 'predictiveAlgorithms')
     }
@@ -1063,15 +1062,13 @@ export class PredictiveSystem {
     
     // Store outcome in Firebase for analysis
     try {
-      const db = getFirebaseDB()
-      const docRef = doc(db, 'users', userId, 'predictionOutcomes', timestamp.toString())
-      await setDoc(docRef, {
+      await userSubdocSet(userId, 'predictionOutcomes', String(timestamp), {
         prediction,
         actualOutcome,
         success,
         timestamp,
-        userId
-      })
+        userId,
+      });
     } catch (error) {
       devLog.warn('Failed to store prediction outcome:', error, 'predictiveAlgorithms')
     }

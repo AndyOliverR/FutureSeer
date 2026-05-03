@@ -1,6 +1,4 @@
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from './firebase';
 
 export interface DreamData {
   dreamDescription: string

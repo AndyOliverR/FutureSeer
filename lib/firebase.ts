@@ -24,7 +24,12 @@ import {
   browserSessionPersistence,
   getRedirectResult as firebaseGetRedirectResult
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, orderBy, limit, getDocs, updateDoc, serverTimestamp, enableNetwork } from 'firebase/firestore';
+import { getFirestore, enableNetwork } from 'firebase/firestore';
+
+/** Lazy-load to avoid circular import: `userSubcollectionFirestore` imports `getFirebaseDB` from this module. */
+async function userSubcollectionFirestoreHelpers() {
+  return await import('@/lib/userSubcollectionFirestore');
+}
 import { getStorage } from 'firebase/storage';
 import { 
   saveLocalAskHistory, 
@@ -500,32 +505,29 @@ export async function waitForAuthenticatedSession(timeoutMs = 3000): Promise<boo
 
   return await new Promise<boolean>((resolve) => {
     let settled = false;
-    let pollId: ReturnType<typeof setInterval> | undefined;
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    let unsub: (() => void) | undefined;
 
     const finish = (ok: boolean) => {
       if (settled) return;
       settled = true;
-      if (pollId !== undefined) clearInterval(pollId);
-      if (timeoutId !== undefined) clearTimeout(timeoutId);
+      clearInterval(pollId);
+      clearTimeout(timeoutId);
       try {
-        unsub?.();
+        unsub();
       } catch {
         /* noop */
       }
       resolve(ok);
     };
 
-    pollId = setInterval(() => {
+    const pollId = setInterval(() => {
       if (auth.currentUser) finish(true);
     }, 150);
 
-    unsub = onAuthStateChanged(auth, (nextUser) => {
+    const unsub = onAuthStateChanged(auth, (nextUser) => {
       if (nextUser) finish(true);
     });
 
-    timeoutId = setTimeout(() => finish(false), timeoutMs);
+    const timeoutId = setTimeout(() => finish(false), timeoutMs);
   });
 }
 
@@ -658,7 +660,8 @@ export const signUpWithEmail = async (
 
     for (let attempt = 0; attempt < SIGNUP_MAX_ATTEMPTS; attempt++) {
       try {
-        await setDoc(doc(db, 'users', user.uid), cleanUserProfile);
+        const { userRootDocSet } = await userSubcollectionFirestoreHelpers();
+        await userRootDocSet(user.uid, cleanUserProfile as unknown as Record<string, unknown>, { merge: false });
         break;
       } catch (error: unknown) {
         const retry = isTransientFirestoreWriteError(error) && attempt < SIGNUP_MAX_ATTEMPTS - 1;
@@ -669,7 +672,7 @@ export const signUpWithEmail = async (
     }
     if (referralCode && referralCode.trim()) {
       try {
-        await trackReferralSignup(user.uid, referralCode.trim(), db);
+        await trackReferralSignup(user.uid, referralCode.trim());
       } catch (error) {
         devLog.warn('Failed to track referral signup (non-fatal)', error, 'firebase');
       }
@@ -869,14 +872,9 @@ export const ensureFirestoreConnection = async (): Promise<boolean> => {
 // Firestore user profile data
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return null;
-    const userRef = doc(db, 'users', uid);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-      return userSnap.data() as UserProfile;
-    }
-    return null;
+    const { userRootDocGet } = await userSubcollectionFirestoreHelpers();
+    const row = await userRootDocGet(uid);
+    return row ? (row as unknown as UserProfile) : null;
   } catch (error) {
     devLog.error('Error getting user profile:', error, 'firebase');
     return null;
@@ -885,19 +883,20 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 
 export const updateUserProfile = async (uid: string, data: Partial<UserProfile>): Promise<void> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return;
-    const userRef = doc(db, 'users', uid);
+    if (!getFirebaseDB()) return;
     // Firestore does not accept undefined; omit undefined fields
     const clean = Object.fromEntries(
       Object.entries(data).filter(([, v]) => v !== undefined)
     ) as Partial<UserProfile>;
     const now = Date.now();
-    const snap = await getDoc(userRef);
+
+    const { userRootDocGet, userRootDocSet } = await userSubcollectionFirestoreHelpers();
+    const existing = await userRootDocGet(uid);
+    const docPresent = existing != null;
 
     let payload: Record<string, unknown>;
 
-    if (!snap.exists()) {
+    if (!docPresent) {
       const auth = getFirebaseAuth();
       const cur = auth?.currentUser;
       const authMatches = cur?.uid === uid;
@@ -933,7 +932,7 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
       };
     }
 
-    await setDoc(userRef, payload as Partial<UserProfile>, { merge: true });
+    await userRootDocSet(uid, payload, { merge: true });
   } catch (error) {
     devLog.error('Error updating user profile:', error, 'firebase');
     throw error;
@@ -1017,15 +1016,13 @@ export const getProfileCompletionStatus = (profile: UserProfile | null) => {
 
 export const markProfileAsGenerated = async (uid: string, profileData?: Partial<UserProfile>): Promise<void> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return;
-    const userRef = doc(db, 'users', uid);
+    const { userRootDocUpdate } = await userSubcollectionFirestoreHelpers();
     const newHash = profileData ? calculateProfileDataHash(profileData) : '';
-    await updateDoc(userRef, {
+    await userRootDocUpdate(uid, {
       mysticalProfileGenerated: true,
       mysticalProfileGeneratedAt: Date.now(),
       profileDataHash: newHash,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
   } catch (error) {
     devLog.error('Error marking profile as generated:', error, 'firebase');
@@ -1034,14 +1031,12 @@ export const markProfileAsGenerated = async (uid: string, profileData?: Partial<
 
 export const resetProfileGenerationStatus = async (uid: string): Promise<void> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return;
-    const userRef = doc(db, 'users', uid);
-    await updateDoc(userRef, {
+    const { userRootDocUpdate } = await userSubcollectionFirestoreHelpers();
+    await userRootDocUpdate(uid, {
       mysticalProfileGenerated: false,
       mysticalProfileGeneratedAt: null,
       profileDataHash: null,
-      updatedAt: Date.now()
+      updatedAt: Date.now(),
     });
     clearAstroDataCache(uid);
   } catch (error) {
@@ -1052,12 +1047,11 @@ export const resetProfileGenerationStatus = async (uid: string): Promise<void> =
 // Activity Logging
 export const saveUserActivity = async (uid: string, activity: any): Promise<void> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return;
-    const activityRef = collection(db, 'users', uid, 'activities');
-    await addDoc(activityRef, {
-      ...activity,
-      timestamp: serverTimestamp()
+    if (!getFirebaseDB()) return;
+    const { userSubcollectionAdd } = await userSubcollectionFirestoreHelpers();
+    await userSubcollectionAdd(uid, 'activities', {
+      ...(activity as Record<string, unknown>),
+      timestamp: Date.now(),
     });
   } catch (error) {
     devLog.error('Error saving user activity:', error, 'firebase');
@@ -1067,14 +1061,12 @@ export const saveUserActivity = async (uid: string, activity: any): Promise<void
 // Notes Management
 export const saveNote = async (uid: string, note: any): Promise<string | null> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return null;
-    const notesRef = collection(db, 'users', uid, 'notes');
-    const docRef = await addDoc(notesRef, {
-      ...note,
-      updatedAt: serverTimestamp()
+    if (!getFirebaseDB()) return null;
+    const { userSubcollectionAdd } = await userSubcollectionFirestoreHelpers();
+    return await userSubcollectionAdd(uid, 'notes', {
+      ...(note as Record<string, unknown>),
+      updatedAt: Date.now(),
     });
-    return docRef.id;
   } catch (error) {
     devLog.error('Error saving note:', error, 'firebase');
     return null;
@@ -1083,12 +1075,13 @@ export const saveNote = async (uid: string, note: any): Promise<string | null> =
 
 export const getNotes = async (uid: string): Promise<any[]> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return [];
-    const notesRef = collection(db, 'users', uid, 'notes');
-    const q = query(notesRef, orderBy('updatedAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (!getFirebaseDB()) return [];
+    const { userSubcollectionQueryOrdered } = await userSubcollectionFirestoreHelpers();
+    const rows = await userSubcollectionQueryOrdered(uid, 'notes', 'updatedAt', 'desc');
+    return rows.map((r) => {
+      const { id, ...rest } = r;
+      return { id, ...rest };
+    });
   } catch (error) {
     devLog.error('Error getting notes:', error, 'firebase');
     return [];
@@ -1138,12 +1131,10 @@ export interface UserActivityItem {
 /** Returns recent activity for a user from Firestore (users/{uid}/activities). */
 export const getUserActivity = async (uid: string, limitCount: number = 50): Promise<UserActivityItem[]> => {
   try {
-    const db = getFirebaseDB();
-    if (!db) return [];
-    const activityRef = collection(db, 'users', uid, 'activities');
-    const q = query(activityRef, orderBy('timestamp', 'desc'), limit(limitCount));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as UserActivityItem));
+    if (!getFirebaseDB()) return [];
+    const { userSubcollectionQueryOrdered } = await userSubcollectionFirestoreHelpers();
+    const rows = await userSubcollectionQueryOrdered(uid, 'activities', 'timestamp', 'desc', limitCount);
+    return rows as unknown as UserActivityItem[];
   } catch {
     return [];
   }
@@ -1231,6 +1222,9 @@ export interface UserProfile {
   creationTime?: number;
   updatedAt?: number;
   mysticalProfileGenerated?: boolean;
+  /** Unified mystical pipeline: every tool report is ready (see generate-mystical / generationLocks). */
+  allReportsReady?: boolean;
+  pendingToolSlugs?: string[];
   profileDataHash?: string;
   profileStatus?:
     | 'incomplete'

@@ -41,6 +41,14 @@ export function getToolRoute(toolSlug: string): string {
 }
 
 /**
+ * URL segment used to resolve `comprehensiveProfile` rows and `toolStatus` on the tools list.
+ * Matches redirect rules in {@link getToolRoute} (e.g. `vedic-astrology` → `vedic`, `i-ching` → `iching`).
+ */
+export function toolListSlugToProfilePathKey(listSlug: string): string {
+  return getToolRoute(listSlug).replace(/^\/tools\//, "")
+}
+
+/**
  * Navigate to a tool page
  * This is a helper function that can be used with Next.js router
  * 

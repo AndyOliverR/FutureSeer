@@ -65,16 +65,6 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "lastActivityAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "communityDiscussions",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
           "fieldPath": "status",
           "order": "ASCENDING"
         },
@@ -113,26 +103,6 @@
       ]
     },
     {
-      "collectionGroup": "comments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "comments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "authorId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "communityVotes",
       "queryScope": "COLLECTION",
       "fields": [
@@ -161,26 +131,6 @@
       ]
     },
     {
-      "collectionGroup": "communityMembers",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "karma",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "communityMembers",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "lastActive",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "supportTickets",
       "queryScope": "COLLECTION",
       "fields": [
@@ -192,6 +142,47 @@
           "fieldPath": "createdAt",
           "order": "DESCENDING"
         }
+      ]
+    },
+    {
+      "collectionGroup": "communityConnections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "toUserId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "communityConnections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "fromUserId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "communityConnections",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "fromUserId", "order": "ASCENDING" },
+        { "fieldPath": "toUserId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "communityContributions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "referrals",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "referrerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],

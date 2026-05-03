@@ -51,6 +51,94 @@ function humanizePipelineSlug(slug: string): string {
     .trim()
 }
 
+function MysticalProfileWhatYouHaveCallout({
+  variant,
+  pipelineComplete,
+  generationInFlight,
+}: {
+  variant: "m3" | "web"
+  pipelineComplete: boolean
+  /** When true, always show the “reports still landing” note (first run / progress). */
+  generationInFlight: boolean
+}) {
+  const headingId = variant === "m3" ? "mystical-what-you-have-m3" : "mystical-what-you-have-web"
+  const bullets = [
+    "A private library of full reports—one per tool—stored on your account.",
+    "This page is the map: tap any card for the deep dive in that tradition.",
+    "Ask the Seer ties threads across tools using what you generated, not a generic script.",
+  ]
+  if (variant === "m3") {
+    return (
+      <section
+        className="rounded-2xl border border-outline-variant bg-surface-container-high p-4 mt-8 mb-4 text-left"
+        role="region"
+        aria-labelledby={headingId}
+      >
+        <h2
+          id={headingId}
+          className="text-xs font-bold text-on-surface uppercase tracking-widest mb-2"
+        >
+          What you have now
+        </h2>
+        <p className="text-sm text-surface-on-variant leading-relaxed">
+          You crossed the line from curious browser to someone with a working occult stack. Here is what that means in
+          practice.
+        </p>
+        <ul className="mt-3 space-y-1.5 text-xs text-surface-on-variant list-disc pl-4 marker:text-primary">
+          {bullets.map((b) => (
+            <li key={b}>{b}</li>
+          ))}
+        </ul>
+        {!pipelineComplete || generationInFlight ? (
+          <p className="mt-3 text-[11px] text-surface-on-variant/90">
+            Some tools may still be finishing—cards appear as each report lands. You can open ready tools anytime.
+          </p>
+        ) : null}
+        <p className="mt-3 text-xs">
+          <Link href="/ask-the-seer" className="text-primary font-semibold underline-offset-2 hover:underline">
+            Ask the Seer
+          </Link>
+          <span className="text-surface-on-variant"> — one well-chosen question shows the cross-profile superpower.</span>
+        </p>
+      </section>
+    )
+  }
+  return (
+    <section
+      className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/25 rounded-2xl p-6 mt-10 mb-6 text-left"
+      role="region"
+      aria-labelledby={headingId}
+    >
+      <h2
+        id={headingId}
+        className="text-sm font-heading font-light text-amber-400 uppercase tracking-widest mb-2"
+      >
+        What you have now
+      </h2>
+      <p className="text-slate-300 text-sm leading-relaxed">
+        You crossed the line from curious browser to someone with a working occult stack. Here is what that means in
+        practice.
+      </p>
+      <ul className="mt-3 space-y-1.5 text-sm text-slate-400 list-disc pl-4 marker:text-amber-500/80">
+        {bullets.map((b) => (
+          <li key={b}>{b}</li>
+        ))}
+      </ul>
+      {!pipelineComplete || generationInFlight ? (
+        <p className="mt-3 text-xs text-slate-500">
+          Some tools may still be finishing—cards appear as each report lands. You can open ready tools anytime.
+        </p>
+      ) : null}
+      <p className="mt-4 text-sm text-slate-300">
+        <Link href="/ask-the-seer" className="text-amber-400 font-semibold hover:text-amber-300 underline-offset-2 hover:underline">
+          Ask the Seer
+        </Link>
+        <span className="text-slate-400"> — one well-chosen question shows the cross-profile superpower.</span>
+      </p>
+    </section>
+  )
+}
+
 export default function MysticalProfilePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -97,6 +185,39 @@ export default function MysticalProfilePage() {
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const hasGeneratingIntent = searchParams.get("generating") === "1"
+  /**
+   * POST sets `mysticalProfileGenerated` on the user doc before tools finish — use `allReportsReady`, not that flag alone.
+   * Session `failed` (e.g. old 409) must not hide the progress panel while reports are still filling.
+   */
+  const generationActive = useMemo(() => {
+    if (userProfile?.allReportsReady === true) return false
+
+    const pipelineStillFilling =
+      Boolean(userProfile?.mysticalProfileGenerated) && !userProfile?.allReportsReady
+    if (pipelineStillFilling) return true
+
+    if (typeof window !== "undefined") {
+      const st = sessionStorage.getItem("futureSeer:generationStatus")
+      if (st === "failed") return false
+      if (st === "completed") return false
+      if (st === "in_progress") return true
+    }
+    if (generationPending) return true
+    if (hasGeneratingIntent) return true
+    return false
+  }, [
+    generationPending,
+    hasGeneratingIntent,
+    userProfile?.mysticalProfileGenerated,
+    userProfile?.allReportsReady,
+  ])
+  const hasUsableMysticalData = useMemo(() => {
+    if (!p) return false
+    return ALL_TOOL_SLUGS.some((slug) => {
+      const report = resolveToolReportFromProfile(p, slug)
+      return isUsableStoredReport(report)
+    })
+  }, [p])
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
   const staleRecoveryRef = useRef(false)
@@ -111,6 +232,13 @@ export default function MysticalProfilePage() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
+    if (hasGeneratingIntent) {
+      sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
+    }
+  }, [hasGeneratingIntent])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
     const onGenerationCompleted = (event: Event) => {
       const detail = (event as CustomEvent<{ success?: boolean; error?: string; pending?: boolean; phase?: string; completedTools?: number; totalTools?: number }>).detail
       if (detail?.success) {
@@ -120,6 +248,9 @@ export default function MysticalProfilePage() {
         } else {
           sessionStorage.setItem("futureSeer:generationStatus", "completed")
           setGenerationPending(false)
+          if (typeof window !== "undefined" && window.location.search.includes("generating=")) {
+            router.replace("/mystical-profile", { scroll: false })
+          }
         }
         sessionStorage.removeItem("futureSeer:generationError")
         setGenerationError(null)
@@ -141,11 +272,11 @@ export default function MysticalProfilePage() {
 
     window.addEventListener("futureSeer:profileGenerationCompleted", onGenerationCompleted)
     return () => window.removeEventListener("futureSeer:profileGenerationCompleted", onGenerationCompleted)
-  }, [refreshAuthProfile, refreshMysticalProfile])
+  }, [refreshAuthProfile, refreshMysticalProfile, router])
 
   useEffect(() => {
-    if (!generationPending || !user) return
-    const interval = window.setInterval(() => {
+    if (!user || !generationActive) return
+    const poll = () => {
       void refreshAuthProfile()
       void refreshMysticalProfile()
       void user
@@ -184,7 +315,7 @@ export default function MysticalProfilePage() {
           setCurrentToolElapsedMs(typeof data.currentToolElapsedMs === "number" ? data.currentToolElapsedMs : null)
           setLastHeartbeatAt(typeof data.lastHeartbeatAt === "number" ? data.lastHeartbeatAt : null)
           setResumeAttempted(Boolean(data.resumeAttempted))
-          setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : null)
+          setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : Date.now())
           if (data.inProgress) {
             setGenerationWarning(null)
           }
@@ -194,12 +325,18 @@ export default function MysticalProfilePage() {
             setGenerationPending(false)
             setGenerationError(null)
             setGenerationWarning(null)
+            if (typeof window !== "undefined" && window.location.search.includes("generating=")) {
+              router.replace("/mystical-profile", { scroll: false })
+            }
             return
           }
           if (!data.inProgress && (data.partialReady || data.generated || data.hasProfile)) {
             if (data.allReportsReady) {
               sessionStorage.setItem("futureSeer:generationStatus", "completed")
               setGenerationPending(false)
+              if (typeof window !== "undefined" && window.location.search.includes("generating=")) {
+                router.replace("/mystical-profile", { scroll: false })
+              }
             } else {
               sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
               setGenerationPending(true)
@@ -221,25 +358,35 @@ export default function MysticalProfilePage() {
         .catch(() => {
           // ignore transient polling errors
         })
-    }, 4000)
+    }
+    void poll()
+    const interval = window.setInterval(poll, 4000)
     return () => window.clearInterval(interval)
-  }, [generationPending, user, refreshAuthProfile, refreshMysticalProfile])
+  }, [generationActive, user, refreshAuthProfile, refreshMysticalProfile, router])
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    if (userProfile?.mysticalProfileGenerated && p && !generationPending) {
+    if (
+      userProfile?.mysticalProfileGenerated &&
+      userProfile?.allReportsReady === true &&
+      p &&
+      !generationPending
+    ) {
       sessionStorage.setItem("futureSeer:generationStatus", "completed")
       sessionStorage.removeItem("futureSeer:generationError")
       const timer = window.setTimeout(() => {
         setGenerationPending(false)
         setGenerationError(null)
+        if (window.location.search.includes("generating=")) {
+          router.replace("/mystical-profile", { scroll: false })
+        }
       }, 0)
       return () => window.clearTimeout(timer)
     }
-  }, [userProfile?.mysticalProfileGenerated, p, generationPending])
+  }, [userProfile?.mysticalProfileGenerated, userProfile?.allReportsReady, p, generationPending, router])
 
   useEffect(() => {
-    if (!generationPending) return
+    if (!generationActive) return
     const kickoff = window.setTimeout(() => {
       setCurrentTimeMs(Date.now())
     }, 0)
@@ -254,13 +401,13 @@ export default function MysticalProfilePage() {
       window.clearInterval(timer)
       window.clearInterval(loadingCopyTimer)
     }
-  }, [generationPending, loadingMessages.length])
+  }, [generationActive, loadingMessages.length])
 
   const progressLooksStale = useMemo(() => {
-    if (!generationPending || !lastProgressUpdatedAt) return false
+    if (!generationActive || !lastProgressUpdatedAt) return false
     const staleThresholdMs = useMaterial3Layout ? 15_000 : 22_000
     return currentTimeMs - lastProgressUpdatedAt > staleThresholdMs
-  }, [generationPending, lastProgressUpdatedAt, currentTimeMs, useMaterial3Layout])
+  }, [generationActive, lastProgressUpdatedAt, currentTimeMs, useMaterial3Layout])
   const lastUpdatedLabel = useMemo(() => {
     if (!lastProgressUpdatedAt) return null
     const deltaSec = Math.max(0, Math.floor((currentTimeMs - lastProgressUpdatedAt) / 1000))
@@ -285,7 +432,7 @@ export default function MysticalProfilePage() {
   }, [generationPhase])
 
   useEffect(() => {
-    if (!generationPending || !progressLooksStale || !user || staleRecoveryRef.current) return
+    if (!generationActive || !progressLooksStale || !user || staleRecoveryRef.current) return
     staleRecoveryRef.current = true
     const warningTimer = window.setTimeout(() => {
       setGenerationWarning("Still generating in the background. Checking latest progress now…")
@@ -320,12 +467,18 @@ export default function MysticalProfilePage() {
           setGenerationPending(false)
           setGenerationError(null)
           setGenerationWarning(null)
+          if (typeof window !== "undefined" && window.location.search.includes("generating=")) {
+            router.replace("/mystical-profile", { scroll: false })
+          }
           return
         }
         if (!data.inProgress && (data.partialReady || data.generated || data.hasProfile)) {
           if (data.allReportsReady) {
             sessionStorage.setItem("futureSeer:generationStatus", "completed")
             setGenerationPending(false)
+            if (typeof window !== "undefined" && window.location.search.includes("generating=")) {
+              router.replace("/mystical-profile", { scroll: false })
+            }
           } else {
             sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
             setGenerationPending(true)
@@ -344,10 +497,12 @@ export default function MysticalProfilePage() {
     return () => {
       window.clearTimeout(warningTimer)
     }
-  }, [generationPending, progressLooksStale, user])
+  }, [generationActive, progressLooksStale, user, router])
 
   const showMysticalPageLoader = useMemo(() => {
     if (authLoading) return true
+    // Never paint an empty main slot while auth is unknown (avoids blank shell + FAB only).
+    if (!user) return true
     if (user && !authLoading && userProfile === null && !isSuperadmin && !isAdmin) return true
     if (
       user &&
@@ -413,14 +568,15 @@ export default function MysticalProfilePage() {
       !userProfile.mysticalProfileGenerated &&
       !isSuperadmin &&
       !isAdmin &&
-      !generationPending
+      !hasUsableMysticalData &&
+      !generationPending &&
+      !hasGeneratingIntent &&
+      (typeof window === "undefined" ||
+        sessionStorage.getItem("futureSeer:generationStatus") !== "in_progress")
     ) {
-      if (hasGeneratingIntent) {
-        return
-      }
       router.replace("/profile")
     }
-  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, generationPending, requiresReturningPaymentCommit, needsFirstGenerationSetup, hasGeneratingIntent])
+  }, [authLoading, user, userProfile, router, isSuperadmin, isAdmin, hasUsableMysticalData, generationPending, requiresReturningPaymentCommit, needsFirstGenerationSetup, hasGeneratingIntent])
 
   useEffect(() => {
     if (!authLoading && user && !requiresReturningPaymentCommit && !isSuperadmin && !isAdmin && !bypassTrackedRef.current) {
@@ -503,14 +659,35 @@ export default function MysticalProfilePage() {
     )
   }
 
-  if (!user || (userProfile != null && !hasRequiredProfileSetup(userProfile) && !isSuperadmin && !isAdmin)) {
-    return null
+  /** Short redirect / gate transitions: never return null (users see a broken empty page). */
+  const routeTransitionShell = (message: string, subline?: string) => (
+    <div className="relative min-h-screen">
+      <MysticalLoadingState variant="fullscreen" message={message} subline={subline} />
+      <div className="pointer-events-none absolute inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
+        <div className="pointer-events-auto w-full max-w-md">
+          <OnboardingStuckBanner
+            stuck={mysticalPageLoaderStall}
+            variant={useMaterial3Layout ? "m3" : "devotionist"}
+            onSignOutTryAgain={async () => {
+              await signOut()
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+
+  if (userProfile != null && !hasRequiredProfileSetup(userProfile) && !isSuperadmin && !isAdmin) {
+    return routeTransitionShell(
+      "Almost there…",
+      "We need your birth details on file. Taking you to the right page.",
+    )
   }
   if (needsFirstGenerationSetup && !isSuperadmin && !isAdmin) {
-    return null
+    return routeTransitionShell("Setting up your profile…", "Redirecting to complete a few details.")
   }
   if (user && requiresReturningPaymentCommit && !isSuperadmin && !isAdmin) {
-    return null
+    return routeTransitionShell("Opening your plan…", "One moment while we continue.")
   }
 
   if (
@@ -518,9 +695,10 @@ export default function MysticalProfilePage() {
     !userProfile.mysticalProfileGenerated &&
     !isSuperadmin &&
     !isAdmin &&
-    !generationPending
+    !hasUsableMysticalData &&
+    !generationActive
   ) {
-    if (hasGeneratingIntent && generationError) {
+    if (generationError) {
       return (
         <div className="min-h-screen pt-24 px-4 flex flex-col items-center justify-center text-center">
           <p className="text-red-300 mb-4 max-w-md">{generationError}</p>
@@ -530,7 +708,7 @@ export default function MysticalProfilePage() {
         </div>
       )
     }
-    return null
+    return routeTransitionShell("Taking you to Profile…", "Start or resume mystical profile generation there.")
   }
 
   if (error) {
@@ -583,15 +761,20 @@ export default function MysticalProfilePage() {
             </div>
           </div>
           <p className="text-surface-on-variant text-sm leading-relaxed">
-            A glimpse across your readings—tap a card to go deeper in each tool.
+            Your cross-tool map—tap a card for depth in each tradition, then Ask the Seer to connect the threads.
           </p>
         </div>
         {ctaRow}
-        {generationPending ? (
+        {generationActive ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
       <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
       <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
+      {typeof completedTools !== "number" || typeof totalTools !== "number" ? (
+        <p className="mt-2 text-xs text-surface-on-variant">
+          This run can take several minutes. Counts and the current tool appear as soon as the server reports progress—you do not need to refresh.
+        </p>
+      ) : null}
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
         <p className="mt-2 text-xs text-surface-on-variant">Progress: {completedTools}/{totalTools} tools ({generationPhaseLabel})</p>
       ) : null}
@@ -620,15 +803,17 @@ export default function MysticalProfilePage() {
           </div>
         ) : groupedCards.length === 0 ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
-            No report snippets found yet. Open{" "}
-            <Link href="/tools" className="text-primary underline">
-              Tools
-            </Link>{" "}
-            or check generation status in{" "}
-            <Link href="/profile" className="text-primary underline">
-              Profile
-            </Link>
-            .
+            <p>
+              No report snippets yet—either generation is still running in the background, or reports are not ready for cards. Open{" "}
+              <Link href="/tools" className="text-primary underline">
+                Tools
+              </Link>{" "}
+              for per-tool status, or{" "}
+              <Link href="/profile" className="text-primary underline">
+                Profile
+              </Link>{" "}
+              to retry generation.
+            </p>
           </div>
         ) : (
           <div className="space-y-8 pb-8">
@@ -675,7 +860,12 @@ export default function MysticalProfilePage() {
             ))}
           </div>
         )}
-        {requiresReturningPaymentCommit && (trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
+        <MysticalProfileWhatYouHaveCallout
+          variant="m3"
+          pipelineComplete={userProfile?.allReportsReady === true}
+          generationInFlight={generationActive}
+        />
+        {requiresReturningPaymentCommit && (trialActive || missingFullFields.length > 0) && !generationActive && groupedCards.length > 2 ? (
           <p className="mt-3 text-center text-xs text-surface-on-variant">
             Ready for deeper reports? Complete your plan and billing in{" "}
             <Link href="/settings" className="underline">
@@ -701,15 +891,21 @@ export default function MysticalProfilePage() {
             Mystical profile
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto font-light italic">
-            Highlights from every tradition we generated for you—step into each tool for the full reading.
+            Highlights from every tradition we generated—open any card for the full reading, then Ask the Seer for the
+            unified read.
           </p>
         </div>
         {ctaRow}
-        {generationPending ? (
+        {generationActive ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
       <p>Generating your mystical profile. Reports unlock one by one in tools order.</p>
       <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
+      {typeof completedTools !== "number" || typeof totalTools !== "number" ? (
+        <p className="mt-2 text-xs text-slate-400">
+          This run can take several minutes. Progress and the active tool name appear here as the pipeline advances—no need to refresh the page.
+        </p>
+      ) : null}
       {typeof completedTools === "number" && typeof totalTools === "number" ? (
         <p className="mt-2 text-xs text-slate-400">Progress: {completedTools}/{totalTools} tools ({generationPhaseLabel})</p>
       ) : null}
@@ -797,7 +993,12 @@ export default function MysticalProfilePage() {
             ))}
           </div>
         )}
-        {requiresReturningPaymentCommit && (trialActive || missingFullFields.length > 0) && !generationPending && groupedCards.length > 2 ? (
+        <MysticalProfileWhatYouHaveCallout
+          variant="web"
+          pipelineComplete={userProfile?.allReportsReady === true}
+          generationInFlight={generationActive}
+        />
+        {requiresReturningPaymentCommit && (trialActive || missingFullFields.length > 0) && !generationActive && groupedCards.length > 2 ? (
           <p className="mt-3 text-center text-xs text-slate-400">
             Ready for deeper reports? Complete your plan and billing in{" "}
             <Link href="/settings" className="underline">

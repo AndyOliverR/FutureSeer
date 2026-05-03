@@ -181,6 +181,7 @@ function BaziPageContent() {
 
   const [fetchedComprehensive, setFetchedComprehensive] = useState<typeof comprehensiveAnalysis>(null);
   const [isLoadingComprehensive, setIsLoadingComprehensive] = useState(false);
+  const baziComprehensiveAbortRef = useRef<AbortController | null>(null);
   const [isGeneratingBaziReport, setIsGeneratingBaziReport] = useState(false);
   const [baziGenerateError, setBaziGenerateError] = useState<string | null>(null);
   const effectiveComprehensive = comprehensiveAnalysis || fetchedComprehensive;
@@ -246,11 +247,15 @@ function BaziPageContent() {
     if (!user?.uid || !baziReport || comprehensiveAnalysis != null) return;
     const chart = (baziReport as BaziReading).chart;
     if (!chart?.dayMaster) return;
-    let cancelled = false;
+    baziComprehensiveAbortRef.current?.abort();
+    const ac = new AbortController();
+    baziComprehensiveAbortRef.current = ac;
+    const { signal } = ac;
     setIsLoadingComprehensive(true);
     fetch('/api/bazi/comprehensive', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal,
       body: JSON.stringify({
         userId: user.uid,
         reading: baziReport,
@@ -265,7 +270,7 @@ function BaziPageContent() {
     })
       .then((res) => res.json())
       .then(async (json) => {
-        if (cancelled || !json?.success || !json?.data) return;
+        if (signal.aborted || !json?.success || !json?.data) return;
         const comp = json.data as typeof comprehensiveAnalysis;
         if (comp) {
           setFetchedComprehensive(comp);
@@ -285,11 +290,18 @@ function BaziPageContent() {
           }
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        /* ignore abort + network */
+      })
       .finally(() => {
-        if (!cancelled) setIsLoadingComprehensive(false);
+        setIsLoadingComprehensive(false);
+        if (baziComprehensiveAbortRef.current === ac) {
+          baziComprehensiveAbortRef.current = null;
+        }
       });
-    return () => { cancelled = true; };
+    return () => {
+      ac.abort();
+    };
   }, [user?.uid, user, baziReport, comprehensiveAnalysis, refreshProfile, userProfile]);
 
   const prefersReducedMotion = useMemo(() => {

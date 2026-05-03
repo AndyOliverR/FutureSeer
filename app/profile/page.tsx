@@ -30,7 +30,6 @@ import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
 import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
-import { ProfileNextStepsBanner } from "@/components/onboarding/ProfileNextStepsBanner"
 import { compressImageFile } from "@/lib/imageCompression"
 import { PROFILE_PLAN_PRICING_CTA_LABEL, PROFILE_PLAN_REQUIRED_BODY } from "@/lib/accessGatingCopy"
 import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics"
@@ -39,7 +38,21 @@ import { clearProfileDraft, loadProfileDraft, saveProfileDraft } from "@/lib/pro
 import { SeerNewsHeadlinesToggle } from "@/components/integrations/SeerNewsHeadlinesToggle"
 import { isClientWorkspaceEmail } from "@/lib/clientWorkspace"
 import { getMissingFirstGenerationFields, isTrialActive } from "@/lib/subscriptionConfig"
+
+type BirthTimeAmPm = "AM" | "PM"
+
+function parseBirthTimeAmPm(v: string | undefined | null): BirthTimeAmPm {
+  return String(v ?? "").toUpperCase() === "PM" ? "PM" : "AM"
+}
 import { ONBOARDING_FULL_REPORT_BYPASS_KEY } from "@/lib/authRouting"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 const PROFILE_PHOTO_FETCH_ATTEMPTS = 3
 const PROFILE_PHOTO_FIRESTORE_ATTEMPTS = 3
@@ -248,6 +261,85 @@ async function updateUserProfilePhotoWithRetries(uid: string, key: "facePhotoUrl
   }
 }
 
+const PROFILE_GENDER_UNSET = "__profile_gender_unset__" as const
+
+function ProfileGenderSelect({
+  value,
+  onChange,
+  platform,
+  borderClassName,
+}: {
+  value: UserProfile["gender"] | undefined
+  onChange: (next: UserProfile["gender"] | undefined) => void
+  platform: "mobile" | "web"
+  borderClassName: string
+}) {
+  const radixValue = value ?? PROFILE_GENDER_UNSET
+  const h = platform === "mobile" ? "h-14" : "h-12"
+  const bg = platform === "mobile" ? "bg-surface-container-low" : "bg-white/5"
+  return (
+    <Select
+      value={radixValue}
+      onValueChange={(v) =>
+        onChange(v === PROFILE_GENDER_UNSET ? undefined : (v as UserProfile["gender"]))
+      }
+    >
+      <SelectTrigger
+        className={cn(
+          `${h} w-full rounded-2xl border px-4 text-white [color-scheme:dark]`,
+          bg,
+          borderClassName,
+          "focus:ring-2 focus:ring-amber-500/30 focus:ring-offset-0",
+        )}
+      >
+        <SelectValue placeholder="Not set" />
+      </SelectTrigger>
+      <SelectContent className="z-[100]" position="popper">
+        <SelectItem value={PROFILE_GENDER_UNSET}>Not set</SelectItem>
+        <SelectItem value="male">Male</SelectItem>
+        <SelectItem value="female">Female</SelectItem>
+        <SelectItem value="non-binary">Non-binary</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+}
+
+function ProfileAmPmSelect({
+  value,
+  onChange,
+  disabled,
+  platform,
+}: {
+  value: BirthTimeAmPm
+  onChange: (next: BirthTimeAmPm) => void
+  disabled: boolean
+  platform: "mobile" | "web"
+}) {
+  const h = platform === "mobile" ? "h-14" : "h-12"
+  const bg = platform === "mobile" ? "bg-surface-container-low" : "bg-white/5"
+  const border =
+    platform === "mobile" ? "border border-outline-variant" : "border border-amber-400/30"
+  return (
+    <Select value={value} onValueChange={(v) => onChange(v as BirthTimeAmPm)} disabled={disabled}>
+      <SelectTrigger
+        className={cn(
+          h,
+          "min-w-[72px] rounded-2xl px-3 text-white",
+          bg,
+          border,
+          "focus:ring-2 focus:ring-amber-500/30 focus:ring-offset-0",
+        )}
+      >
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="z-[100]" position="popper">
+        <SelectItem value="AM">AM</SelectItem>
+        <SelectItem value="PM">PM</SelectItem>
+      </SelectContent>
+    </Select>
+  )
+}
+
 export default function ProfilePage() {
   const { user, userProfile, signOut, loading: authLoading, refreshProfile, isSuperadmin, isAdmin } = useAuth()
   const { applyGeneratedProfile, refreshProfile: refreshComprehensiveProfile, hasProfile, canViewFullProfile } = useComprehensiveMysticalProfile()
@@ -313,7 +405,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     displayName: "", fullName: "", email: "",
     gender: undefined as UserProfile['gender'],
-    birthDate: "", birthTime: "", birthTimeAMPM: "AM",
+    birthDate: "", birthTime: "", birthTimeAMPM: "AM" as BirthTimeAmPm,
     birthTimeKnown: true,
     birthTimePeriod: undefined as BirthTimePeriodId | undefined,
     birthTimeNote: "", birthPlace: "", currentLocation: "",
@@ -454,7 +546,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (userProfile && !isEditing) {
-      const bt = String(userProfile.birthTime || ""); let btAMPM = "AM"
+      const bt = String(userProfile.birthTime || "")
+      let btAMPM: BirthTimeAmPm = "AM"
       if (bt && !/^\d{13,}$/.test(bt)) {
         const p = bt.split(':')
         if (p.length >= 2) {
@@ -511,7 +604,7 @@ export default function ProfilePage() {
       fullName: prev.fullName || d.fullName,
       birthDate: prev.birthDate || d.birthDate,
       birthTime: prev.birthTime || d.birthTime,
-      birthTimeAMPM: prev.birthTimeAMPM || d.birthTimeAMPM,
+      birthTimeAMPM: parseBirthTimeAmPm(prev.birthTimeAMPM || d.birthTimeAMPM),
       birthTimeKnown: prev.birthTimeKnown ?? d.birthTimeKnown ?? true,
       birthPlace: prev.birthPlace || d.birthPlace,
       currentLocation: prev.currentLocation || d.currentLocation,
@@ -567,7 +660,7 @@ export default function ProfilePage() {
         gender: undefined,
         birthDate: "",
         birthTime: "",
-        birthTimeAMPM: "AM",
+        birthTimeAMPM: "AM" as BirthTimeAmPm,
         birthTimeKnown: true,
         birthTimePeriod: undefined,
         birthTimeNote: "",
@@ -684,6 +777,10 @@ export default function ProfilePage() {
 
   const handleGenerateMysticalProfile = async (surface: string, mode: "preview" | "full" = "full") => {
     if (isGeneratingProfile) return
+    if (isEditing) {
+      setError("Please save your profile changes before generating the full report.")
+      return
+    }
     if (missingGenerationFieldKeys.length > 0) {
       const missingLabels = missingGenerationFieldKeys.map((field) => FULL_FIELD_LABELS[field] ?? field)
       analytics.trackProfileGenerateBlockedMissingFields(missingGenerationFieldKeys, { surface, mode })
@@ -733,6 +830,21 @@ export default function ProfilePage() {
         signal: abort.signal,
       })
       const data = await res.json().catch(() => ({}))
+      if (res.status === 409) {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
+          sessionStorage.removeItem("futureSeer:generationError")
+        }
+        setError(null)
+        if (mode === "full") {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(ONBOARDING_FULL_REPORT_BYPASS_KEY, "1")
+            window.dispatchEvent(new CustomEvent("futureSeer:onboardingBypassChanged"))
+          }
+          router.push("/mystical-profile?generating=1")
+        }
+        return
+      }
       if (!res.ok) {
         if (res.status === 403) setCanGenerateMysticalProfile(false)
         const payload = data as { error?: string; blockReason?: string; missingFields?: string[] }
@@ -793,7 +905,9 @@ export default function ProfilePage() {
       }
       if (user?.uid && isGrowthProfileDraftEnabled()) clearProfileDraft(user.uid)
       if (isMountedRef.current) {
-        setSuccess("Mystical Profile Generated!")
+        setSuccess(
+          "Generation is running—open Mystical profile to watch cards appear, then Ask the Seer for the cross-tool read.",
+        )
       }
       try {
         if (typeof window !== "undefined") {
@@ -1167,12 +1281,6 @@ export default function ProfilePage() {
           </Alert>
         )}
 
-        {userProfile &&
-          !userProfile.mysticalProfileGenerated &&
-          !isSuperadmin &&
-          !isAdmin && (
-          <ProfileNextStepsBanner variant="m3" isConsultantWorkspace={isConsultantWorkspace} />
-        )}
           </>
         )}
 
@@ -1236,12 +1344,12 @@ export default function ProfilePage() {
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("gender") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("gender") ? "Missing" : "Done"}</span>
               </div>
               {isEditing ? (
-                <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-14 w-full bg-surface-container-low border rounded-2xl px-4 text-white [color-scheme:dark] ${getRequiredFieldClasses("gender", "mobile")}`}>
-                  <option value="">Not set</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="non-binary">Non-binary</option>
-                </select>
+                <ProfileGenderSelect
+                  value={formData.gender}
+                  onChange={(gender) => setFormData({ ...formData, gender })}
+                  platform="mobile"
+                  borderClassName={getRequiredFieldClasses("gender", "mobile")}
+                />
               ) : (
                 <p className="text-lg font-bold text-white ml-1">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
               )}
@@ -1274,10 +1382,12 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <div className="flex gap-2 items-center">
                       <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className={`h-14 bg-surface-container-low rounded-2xl [color-scheme:dark] flex-1 ${getRequiredFieldClasses("birthTime", "mobile")}`} />
-                      <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-14 bg-surface-container-low border border-outline-variant rounded-2xl px-3 text-white min-w-[72px]">
-                        <option value="AM">AM</option>
-                        <option value="PM">PM</option>
-                      </select>
+                      <ProfileAmPmSelect
+                        value={formData.birthTimeAMPM}
+                        onChange={(birthTimeAMPM) => setFormData({ ...formData, birthTimeAMPM })}
+                        disabled={!formData.birthTimeKnown}
+                        platform="mobile"
+                      />
                     </div>
                     <label className="flex items-center gap-2 text-xs text-amber-200/90">
                       <input
@@ -1376,7 +1486,7 @@ export default function ProfilePage() {
               </div>
                 <Button
                   onClick={() => void handleGenerateMysticalProfile("profile_primary", "full")}
-                  disabled={isGeneratingProfile || !canGenerateFromOnboarding}
+                  disabled={isGeneratingProfile || isEditing || !canGenerateFromOnboarding}
                   className="w-full h-16 bg-gradient-to-r from-amber-600 to-yellow-500 text-slate-900 rounded-[24px] font-bold text-lg shadow-xl active:scale-95 transition-all"
                 >
                   {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
@@ -1396,6 +1506,9 @@ export default function ProfilePage() {
                 )}
                 {missingLabels.length > 0 && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/60 text-xs mt-2">Complete all required profile fields to unlock Generate.</p>
+                )}
+                {isEditing && !isGeneratingProfile && (
+                  <p className="text-center text-amber-400/60 text-xs mt-2">Save profile changes before generating.</p>
                 )}
                 {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                   <p className="text-center text-amber-400/70 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>
@@ -1550,12 +1663,6 @@ export default function ProfilePage() {
             </Alert>
           )}
 
-          {userProfile &&
-            !userProfile.mysticalProfileGenerated &&
-            !isSuperadmin &&
-            !isAdmin && (
-            <ProfileNextStepsBanner variant="devotionist" isConsultantWorkspace={isConsultantWorkspace} />
-          )}
           </>
           )}
 
@@ -1622,12 +1729,12 @@ export default function ProfilePage() {
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFieldMissing("gender") ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>{isFieldMissing("gender") ? "Missing" : "Done"}</span>
                 </div>
                 {isEditing ? (
-                  <select value={formData.gender ?? ''} onChange={e => setFormData({...formData, gender: e.target.value === '' ? undefined : (e.target.value as UserProfile['gender'])})} className={`h-12 w-full bg-white/5 border rounded-2xl px-4 text-white [color-scheme:dark] ${getRequiredFieldClasses("gender", "web")}`}>
-                    <option value="">Not set</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="non-binary">Non-binary</option>
-                  </select>
+                  <ProfileGenderSelect
+                    value={formData.gender}
+                    onChange={(gender) => setFormData({ ...formData, gender })}
+                    platform="web"
+                    borderClassName={getRequiredFieldClasses("gender", "web")}
+                  />
                 ) : (
                   <p className="text-lg font-medium text-white">{formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('-', ' ') : "Not set"}</p>
                 )}
@@ -1660,10 +1767,12 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                       <div className="flex gap-2 items-center">
                         <Input type="time" value={formData.birthTime} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTime: e.target.value})} className={`h-12 bg-white/5 rounded-2xl [color-scheme:dark] flex-1 ${getRequiredFieldClasses("birthTime", "web")}`} />
-                        <select value={formData.birthTimeAMPM} disabled={!formData.birthTimeKnown} onChange={e => setFormData({...formData, birthTimeAMPM: e.target.value as "AM" | "PM"})} className="h-12 bg-white/5 border border-amber-400/30 rounded-2xl px-3 text-white min-w-[72px]">
-                          <option value="AM">AM</option>
-                          <option value="PM">PM</option>
-                        </select>
+                        <ProfileAmPmSelect
+                          value={formData.birthTimeAMPM}
+                          onChange={(birthTimeAMPM) => setFormData({ ...formData, birthTimeAMPM })}
+                          disabled={!formData.birthTimeKnown}
+                          platform="web"
+                        />
                       </div>
                       <label className="flex items-center gap-2 text-xs text-amber-200/90">
                         <input
@@ -1779,7 +1888,7 @@ export default function ProfilePage() {
                 </div>
                   <Button
                     onClick={() => void handleGenerateMysticalProfile("profile_secondary", "full")}
-                    disabled={isGeneratingProfile || !canGenerateFromOnboarding}
+                    disabled={isGeneratingProfile || isEditing || !canGenerateFromOnboarding}
                     className="w-full h-14 bg-gradient-to-r from-amber-600 to-yellow-500 text-[#020617] rounded-2xl font-bold shadow-xl hover:opacity-95 transition-opacity"
                   >
                     {isGeneratingProfile ? <Loader2 className="animate-spin" /> : <><Sparkles className="mr-2" /> Generate Full Report</>}
@@ -1799,6 +1908,9 @@ export default function ProfilePage() {
                   )}
                   {missingLabels.length > 0 && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/80 text-xs mt-2">Complete all required profile fields to unlock Generate.</p>
+                  )}
+                  {isEditing && !isGeneratingProfile && (
+                    <p className="text-center text-amber-200/80 text-xs mt-2">Save profile changes before generating.</p>
                   )}
                   {formData.birthDate && formData.birthPlace && !canGenerateMysticalProfile && !isGeneratingProfile && (
                     <p className="text-center text-amber-200/80 text-xs mt-2">{getOverQuotaMessage(userProfile?.selectedPlan)}</p>

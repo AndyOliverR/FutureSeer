@@ -1,6 +1,9 @@
 /**
  * POST /api/profile/generate-mystical
  *
+ * Stage B work is scheduled with `after()` so it can continue after the 202 response (serverless).
+ * Parallel tools: env `MYSTICAL_TOOL_RUN_CONCURRENCY` (default 4, max 8). On Vercel Pro try `5` if 429/rate-limit errors stay rare.
+ *
  * ONE-TIME, ATOMIC profile generation.
  * 1. Lock profile generation
  * 2. Run ALL tools (no exceptions)
@@ -12,6 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb, getDocument, setDocument } from '@/lib/firebase-admin';
 import { ALL_TOOL_SLUGS, summarizeToolReadiness } from '@/lib/profileGenerationOrchestrator';
@@ -33,12 +37,13 @@ import { tryResumeMysticalStageB } from '@/lib/mysticalStageB';
 import type { PersistedToolStatusMap } from '@/lib/mysticalStageB';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 120; // 2 minutes for all tools
+/** Stage B runs via `after()` after the 202 response; allow enough wall time for full sequential/parallel pipeline. */
+export const maxDuration = 600;
 const HEARTBEAT_STALE_MS = 45_000;
 
 /** Grace past `maxDuration` before treating a lock as stale (failed/crashed run). */
 function mysticalLockStaleMs(): number {
-  return maxDuration * 1000 + 90_000;
+  return maxDuration * 1000 + 120_000;
 }
 
 function buildToolStatus(
@@ -394,7 +399,15 @@ export async function POST(request: NextRequest) {
       lastHeartbeatAt: now,
     });
 
-    void tryResumeMysticalStageB(uid);
+    if (!uid) {
+      throw new Error('[generate-mystical] invariant: uid missing after auth before Stage B');
+    }
+    const uidStageB: string = uid;
+    after(() => {
+      void tryResumeMysticalStageB(uidStageB).catch((e) => {
+        devLog.error('[generate-mystical] after(tryResumeMysticalStageB) failed', e, 'generate-mystical');
+      });
+    });
 
     return NextResponse.json({
       success: true,
@@ -543,7 +556,11 @@ export async function GET(request: NextRequest) {
           updatedAt: Date.now(),
         });
       }
-      void tryResumeMysticalStageB(uid);
+      after(() => {
+        void tryResumeMysticalStageB(uid).catch((e) => {
+          devLog.error('[generate-mystical] GET after(tryResumeMysticalStageB) failed', e, 'generate-mystical');
+        });
+      });
     }
 
     const generationJobCompletedToolsRaw = generationJob?.completedTools;

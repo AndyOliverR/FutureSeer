@@ -171,6 +171,22 @@ export function inferCountryCodeFromPlace(place: string): string | null {
     'NEW DELHI': 'IN',
     'DELHI': 'IN',
     'MUMBAI': 'IN',
+    'BANGALORE': 'IN',
+    'BENGALURU': 'IN',
+    'MYSURU': 'IN',
+    'MYSORE': 'IN',
+    'CHENNAI': 'IN',
+    'HYDERABAD': 'IN',
+    'KOCHI': 'IN',
+    'KOLKATA': 'IN',
+    'CALCUTTA': 'IN',
+    'PUNE': 'IN',
+    'AHMEDABAD': 'IN',
+    'SURAT': 'IN',
+    'JAIPUR': 'IN',
+    'KARNATAKA': 'IN',
+    'TAMIL NADU': 'IN',
+    'MAHARASHTRA': 'IN',
     'WASHINGTON': 'US',
     'NEW YORK': 'US',
     'LONDON': 'GB',
@@ -191,6 +207,42 @@ export function inferCountryCodeFromPlace(place: string): string | null {
 }
 
 /**
+ * Infer country code from a Nominatim-style display_name (after geocoding).
+ */
+export function inferCountryCodeFromGeocodedDisplayName(displayName: string): string | null {
+  if (!displayName || typeof displayName !== 'string') return null;
+  const u = displayName.toUpperCase();
+  if (/\bINDIA\b/.test(u)) return 'IN';
+  if (/\bUNITED STATES OF AMERICA\b|\bUNITED STATES\b|\b, USA\b|\b USA\b/.test(u)) return 'US';
+  if (/\bUNITED KINGDOM\b|\b, UK\b|\bENGLAND\b|\bSCOTLAND\b|\bWALES\b/.test(u)) return 'GB';
+  if (/\bCANADA\b/.test(u)) return 'CA';
+  if (/\bAUSTRALIA\b/.test(u)) return 'AU';
+  return null;
+}
+
+/** IANA timezone for ingress display (best-effort from country code). */
+export function timeZoneForCountryCode(countryCode: string | null): string {
+  switch (countryCode?.trim().toUpperCase()) {
+    case 'IN':
+    case 'IND':
+      return 'Asia/Kolkata';
+    case 'US':
+    case 'USA':
+      return 'America/New_York';
+    case 'GB':
+      return 'Europe/London';
+    case 'CA':
+    case 'CAN':
+      return 'America/Toronto';
+    case 'AU':
+    case 'AUS':
+      return 'Australia/Sydney';
+    default:
+      return 'UTC';
+  }
+}
+
+/**
  * Get national chart record by country code. Prefer 2-letter, then 3-letter.
  */
 export function getNationalChart(countryCode: string | null): NationalChartRecord | null {
@@ -200,13 +252,23 @@ export function getNationalChart(countryCode: string | null): NationalChartRecor
 }
 
 /**
+ * National capital coordinates when country is known (fallback for chart if geocode fails).
+ * Returns null if country is unknown — callers must geocode or error instead of assuming US.
+ */
+export function getCapitalCoordinatesOrNull(
+  countryCode: string | null,
+): { lat: number; lng: number; name: string } | null {
+  const rec = getNationalChart(countryCode);
+  if (!rec) return null;
+  return { lat: rec.capitalLat, lng: rec.capitalLng, name: rec.capital };
+}
+
+/**
  * Get capital coordinates for a country (for casting ingress chart).
- * Falls back to Washington D.C. if unknown.
+ * @deprecated Prefer getCapitalCoordinatesOrNull + explicit geocode in API; unknown country no longer defaults to Washington D.C.
  */
 export function getCapitalCoordinates(countryCode: string | null): { lat: number; lng: number; name: string } {
-  const rec = getNationalChart(countryCode);
-  if (rec) return { lat: rec.capitalLat, lng: rec.capitalLng, name: rec.capital };
-  return { lat: 38.9072, lng: -77.0369, name: 'Washington, D.C.' };
+  return getCapitalCoordinatesOrNull(countryCode) ?? { lat: 38.9072, lng: -77.0369, name: 'Washington, D.C.' };
 }
 
 export { NATIONAL_CHARTS };

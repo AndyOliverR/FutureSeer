@@ -1,7 +1,5 @@
 import { ThirteenSignsAnalysis, BirthData, ZodiacSign, CompatibilityMatch } from '@/hooks/useThirteenSignsZodiac'
 import { devLog } from '@/lib/devLogger';
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
-import { getFirebaseDB } from './firebase';
 
 class ThirteenSignsZodiacIntelligence {
   private zodiacSigns: ZodiacSign[] = [

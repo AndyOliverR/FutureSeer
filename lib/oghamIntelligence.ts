@@ -4,9 +4,10 @@
  * Comprehensive Ogham divination with AI-enhanced interpretations
  */
 
-import { doc, setDoc, getDoc, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore'
+import { Timestamp } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
+import { userSubdocSet, userSubcollectionQueryOrdered } from '@/lib/userSubcollectionFirestore'
 import { UserProfile } from './firebase'
 import { createAICompletion } from './aiGateway'
 import {
@@ -346,18 +347,19 @@ Practices:
     if (!this.db) return []
 
     try {
-      // Use proper Firestore v9 pattern
-      const userDocRef = doc(this.db, 'users', userId)
-      const readingsRef = collection(userDocRef, 'oghamReadings')
-      const q = query(readingsRef, orderBy('timestamp', 'desc'))
-      const querySnapshot = await getDocs(q)
-      
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data()
+      const rows = await userSubcollectionQueryOrdered(userId, 'oghamReadings', 'timestamp', 'desc')
+      return rows.map((data) => {
+        const ts = data.timestamp as { toDate?: () => Date } | undefined
+        const timestamp =
+          ts && typeof ts.toDate === 'function'
+            ? ts.toDate()
+            : data.timestamp instanceof Date
+              ? data.timestamp
+              : new Date()
         return {
           ...data,
-          timestamp: data.timestamp?.toDate() || new Date(),
-          id: doc.id
+          timestamp,
+          id: String(data.id ?? ''),
         } as OghamReport
       })
     } catch (error) {
@@ -373,12 +375,10 @@ Practices:
     if (!this.db) return
 
     try {
-      // Use proper Firestore v9 pattern
-      const readingRef = doc(this.db, 'users', userId, 'oghamReadings', reading.id)
-      await setDoc(readingRef, {
+      await userSubdocSet(userId, 'oghamReadings', reading.id, {
         ...reading,
-        timestamp: Timestamp.fromDate(reading.timestamp)
-      })
+        timestamp: Timestamp.fromDate(reading.timestamp),
+      } as unknown as Record<string, unknown>)
     } catch (error) {
       devLog.error('Error saving reading:', error, 'oghamIntelligence')
     }

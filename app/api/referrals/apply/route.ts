@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
 import { applyReferralCredit } from '@/lib/referralUtils';
 
 /**
@@ -19,16 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getFirebaseDB();
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 500 }
-      );
-    }
-
-    // Apply referral credit (award 1 free month)
-    await applyReferralCredit(referrerId, db);
+    await applyReferralCredit(referrerId);
 
     return NextResponse.json({
       success: true,

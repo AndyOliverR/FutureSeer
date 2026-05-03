@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
+import type { AdvancedUserProfile, PersonalizedContext } from '@/lib/advancedPersonalization';
 import { generateAdvancedPersonalizedRemedies } from '@/lib/comprehensiveRemedyGenerator';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
+import { userRootDocGet, userRootDocUpdate } from '@/lib/userSubcollectionFirestore';
 
 export const dynamic = 'force-static'
 
@@ -28,24 +29,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getFirebaseDB();
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 500 }
-      );
-    }
+    const userData = await userRootDocGet(userId);
 
-    const { doc, getDoc } = await import('firebase/firestore');
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    
-    if (!userDoc.exists()) {
+    if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const userData = userDoc.data();
-    const advancedProfile = userData.advancedProfile || {};
-    const context = userData.currentContext || {};
+    const advancedProfile = (userData.advancedProfile ?? {}) as AdvancedUserProfile;
+    const context = (userData.currentContext ?? {}) as PersonalizedContext;
 
     // Generate personalized remedies
     const personalizedRemedies = await generateAdvancedPersonalizedRemedies({
@@ -53,9 +44,7 @@ export async function POST(request: NextRequest) {
       userProfile: userData
     }, question, advancedProfile, context);
 
-    // Save remedies to user's profile
-    const { updateDoc } = await import('firebase/firestore');
-    await updateDoc(doc(db, 'users', userId), {
+    await userRootDocUpdate(userId, {
       savedRemedies: personalizedRemedies,
       lastRemedyGeneration: new Date().toISOString()
     });
@@ -89,26 +78,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const db = getFirebaseDB();
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 500 }
-      );
-    }
+    const userData = await userRootDocGet(userId);
 
-    const { doc, getDoc } = await import('firebase/firestore');
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    
-    if (!userDoc.exists()) {
+    if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const userData = userDoc.data();
-    const savedRemedies = userData.savedRemedies || [];
-    
+    const rawSaved = userData.savedRemedies;
+    const savedRemedies = Array.isArray(rawSaved) ? rawSaved : [];
+
     // Filter by category if specified
-    const filteredRemedies = category 
+    const filteredRemedies = category
       ? savedRemedies.filter((remedy: { category?: string }) => remedy.category === category)
       : savedRemedies;
 
@@ -124,4 +104,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

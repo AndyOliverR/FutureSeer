@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import { devLog } from '@/lib/devLogger';
+import { userSubdocGet, userSubdocSet, userSubcollectionQueryOrdered } from '@/lib/userSubcollectionFirestore';
 
 export interface LenormandCard {
   number: number
@@ -239,12 +240,10 @@ class LenormandIntelligence {
       return
     }
     try {
-      const { doc, setDoc } = await import('firebase/firestore')
-      const readingRef = doc(this.db, 'users', userId, 'lenormand-readings', reading.id)
-      await setDoc(readingRef, {
+      await userSubdocSet(userId, 'lenormand-readings', reading.id, {
         ...reading,
-        timestamp: reading.timestamp.toISOString()
-      })
+        timestamp: reading.timestamp.toISOString(),
+      } as Record<string, unknown>);
       devLog.debug('✅ Saved Lenormand reading for user:', userId)
     } catch (error) {
       devLog.error('Error saving Lenormand reading:', error, 'lenormandIntelligence')
@@ -257,17 +256,21 @@ class LenormandIntelligence {
       return null
     }
     try {
-      const { doc, getDoc } = await import('firebase/firestore')
-      const readingRef = doc(this.db, 'users', userId, 'lenormand-readings', readingId)
-      const readingSnap = await getDoc(readingRef)
-      if (readingSnap.exists()) {
-        const data = readingSnap.data()
-        return {
-          ...data,
-          timestamp: new Date(data.timestamp)
-        } as LenormandReading
-      }
-      return null
+      const data = await userSubdocGet(userId, 'lenormand-readings', readingId)
+      if (!data) return null
+      const rawTs = data.timestamp
+      const timestamp =
+        rawTs instanceof Date
+          ? rawTs
+          : typeof rawTs === 'string' || typeof rawTs === 'number'
+            ? new Date(rawTs)
+            : typeof (rawTs as { toDate?: () => Date })?.toDate === 'function'
+              ? (rawTs as { toDate: () => Date }).toDate()
+              : new Date()
+      return {
+        ...data,
+        timestamp,
+      } as LenormandReading
     } catch (error) {
       devLog.error('Error getting Lenormand reading:', error, 'lenormandIntelligence')
       return null
@@ -280,20 +283,28 @@ class LenormandIntelligence {
       return []
     }
     try {
-      const firestoreModule = await import('firebase/firestore')
-      const { collection, query, orderBy, limit: limitFn, getDocs } = firestoreModule
-      const readingsRef = collection(this.db, 'users', userId, 'lenormand-readings')
-      const q = query(readingsRef, orderBy('timestamp', 'desc'), limitFn(limit))
-      const querySnapshot = await getDocs(q)
-      const readings: LenormandReading[] = []
-      querySnapshot.forEach((doc) => {
-        const data = doc.data()
-        readings.push({
+      const rows = await userSubcollectionQueryOrdered(
+        userId,
+        'lenormand-readings',
+        'timestamp',
+        'desc',
+        limit
+      )
+      return rows.map((data) => {
+        const rawTs = data.timestamp
+        const timestamp =
+          rawTs instanceof Date
+            ? rawTs
+            : typeof rawTs === 'string' || typeof rawTs === 'number'
+              ? new Date(rawTs)
+              : typeof (rawTs as { toDate?: () => Date })?.toDate === 'function'
+                ? (rawTs as { toDate: () => Date }).toDate()
+                : new Date()
+        return {
           ...data,
-          timestamp: new Date(data.timestamp)
-        } as LenormandReading)
+          timestamp,
+        } as LenormandReading
       })
-      return readings
     } catch (error) {
       devLog.error('Error getting Lenormand reading history:', error, 'lenormandIntelligence')
       return []

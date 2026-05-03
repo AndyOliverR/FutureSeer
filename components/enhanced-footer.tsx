@@ -1,6 +1,5 @@
 "use client";
 import { useState, FormEvent } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { MessageCircle, Mailbox, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -141,19 +140,21 @@ export function EnhancedFooter() {
               aria-label="Coming Soon — App Store badge — join the iOS app waitlist"
             >
               <span className="text-[11px] uppercase tracking-wide text-surface-on-variant/90">Coming Soon</span>
-              <Image
+              <img
                 src="/badges/app-store-dark.svg"
                 alt=""
                 width={124}
                 height={40}
-                className="block dark:hidden"
+                className="block h-auto w-auto dark:hidden"
+                loading="lazy"
               />
-              <Image
+              <img
                 src="/badges/app-store-light.svg"
                 alt=""
                 width={124}
                 height={40}
-                className="hidden dark:block"
+                className="hidden h-auto w-auto dark:block"
+                loading="lazy"
               />
             </Link>
             <Link
@@ -162,19 +163,21 @@ export function EnhancedFooter() {
               aria-label="Coming Soon — Google Play badge — join the Android app waitlist"
             >
               <span className="text-[11px] uppercase tracking-wide text-surface-on-variant/90">Coming Soon</span>
-              <Image
+              <img
                 src="/badges/google-play-dark.svg"
                 alt=""
                 width={135}
                 height={40}
-                className="block dark:hidden"
+                className="block h-auto w-auto dark:hidden"
+                loading="lazy"
               />
-              <Image
+              <img
                 src="/badges/google-play-light.svg"
                 alt=""
                 width={135}
                 height={40}
-                className="hidden dark:block"
+                className="hidden h-auto w-auto dark:block"
+                loading="lazy"
               />
             </Link>
           </div>

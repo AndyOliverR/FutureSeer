@@ -149,17 +149,29 @@ class FirestoreErrorHandler {
   // Validate Firestore connection
   async validateConnection(): Promise<boolean> {
     try {
+      const { adminDb } = await import('@/lib/firebase-admin');
+      if (adminDb) {
+        try {
+          await adminDb.collection('_test').doc('connection').get();
+          return true;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          if (errorMessage.includes('permission-denied') || errorMessage.includes('not-found')) {
+            return true;
+          }
+          devLog.error('🔥 Firestore connection validation failed:', errorMessage, 'firestoreErrorHandler');
+          return false;
+        }
+      }
+
       const db = getFirebaseDB();
       if (!db) {
         devLog.error('🔥 Firestore not initialized', undefined, 'firestoreErrorHandler');
         return false;
       }
 
-      // Test connection with a simple operation
       const { doc, getDoc } = await import('firebase/firestore');
       const testDoc = doc(db, '_test', 'connection');
-      
-      // This should fail with permission denied, but confirms connection works
       await getDoc(testDoc);
       return true;
     } catch (error) {

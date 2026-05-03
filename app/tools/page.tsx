@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useTools } from "@/hooks/useTools"
 import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
-import { navigateToTool } from '@/lib/utils/toolRouting'
+import { navigateToTool, toolListSlugToProfilePathKey } from '@/lib/utils/toolRouting'
 import { ArrowLeft, Search, Sparkles, ChevronRight, Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useIsMobileLayout } from "@/hooks/useIsMobileLayout"
@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { BACK_NAV_LINK_CLASSES } from "@/components/navigation/BackButton"
 import { analytics } from "@/lib/analytics"
-import { summarizeToolReadiness, ALL_TOOL_SLUGS } from "@/lib/profileGenerationOrchestrator"
+import { summarizeToolReadiness, ALL_TOOL_SLUGS, isReadyToolReport } from "@/lib/profileGenerationOrchestrator"
 import { isNumerologyChartsV2Enabled } from "@/lib/charts/featureFlags"
 import { buildItemListSchema } from "@/components/schema-markup"
 import { normalizeSeoBaseUrl } from "@/lib/seo/locales"
@@ -32,7 +32,7 @@ function ToolsPageContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const { user, userProfile, loading: authLoading, isSuperadmin, isAdmin, requiresReturningPaymentCommit } = useAuth();
-  const { profile: comprehensiveProfile } = useComprehensiveMysticalProfile();
+  const { profile: comprehensiveProfile, refreshProfile: refreshMysticalProfile } = useComprehensiveMysticalProfile();
   const { tools, searchTerm, setSearchTerm } = useTools();
   const readiness = useMemo(
     () => summarizeToolReadiness((comprehensiveProfile as Record<string, unknown> | null) ?? null, ALL_TOOL_SLUGS),
@@ -53,14 +53,21 @@ function ToolsPageContent() {
         | undefined) ?? {},
     [comprehensiveProfile],
   )
+  /** Status rows keyed by the same path segment as profile cards / pending set (not raw list slugs like vedic-astrology). */
+  const toolStatusByPath = useMemo(() => {
+    const m: Record<string, { updatedAt?: number; generatedAt?: number; state?: string; unchanged?: boolean }> = {}
+    for (const [slug, status] of Object.entries(toolStatusMap)) {
+      m[toolPathForSlug(slug)] = status
+    }
+    return m
+  }, [toolStatusMap])
   const toolStateByPath = useMemo(() => {
     const stateMap: Record<string, string> = {}
-    for (const [slug, status] of Object.entries(toolStatusMap)) {
-      const pathSlug = toolPathForSlug(slug)
+    for (const [pathSlug, status] of Object.entries(toolStatusByPath)) {
       if (typeof status?.state === 'string') stateMap[pathSlug] = status.state
     }
     return stateMap
-  }, [toolStatusMap])
+  }, [toolStatusByPath])
   const profileByPath = useMemo(() => {
     const profileObj = (comprehensiveProfile as Record<string, unknown> | null) ?? {}
     const map: Record<string, unknown> = {}
@@ -91,25 +98,21 @@ function ToolsPageContent() {
       ]),
     []
   )
-  const isToolPending = (toolSlug: string) =>
-    {
-      if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
-      const state = toolStateByPath[toolSlug]
-      if (state === 'ready') return false
-      if (state === 'running' || state === 'pending' || state === 'placeholder') return true
-      const report = profileByPath[toolSlug]
-      const hasUsableReport =
-        report != null &&
-        typeof report === 'object' &&
-        (report as { placeholder?: boolean; status?: string }).placeholder !== true &&
-        (report as { status?: string }).status !== 'failed'
-      if (hasUsableReport) return false
-      return pendingToolsSet.has(toolSlug)
-    }
-  const isBaselineNextStepReady = (toolSlug: string) => {
-    if (isToolPending(toolSlug)) return false
-    if (!baselineNextStepTools.has(toolSlug)) return false
-    const report = profileByPath[toolSlug]
+  const isToolPending = (listSlug: string) => {
+    if (!Boolean(userProfile?.mysticalProfileGenerated)) return false
+    const pathKey = toolListSlugToProfilePathKey(listSlug)
+    const state = toolStateByPath[pathKey]
+    if (state === 'ready') return false
+    if (state === 'running' || state === 'pending' || state === 'placeholder') return true
+    const report = profileByPath[pathKey]
+    if (isReadyToolReport(report)) return false
+    return pendingToolsSet.has(pathKey)
+  }
+  const isBaselineNextStepReady = (listSlug: string) => {
+    if (isToolPending(listSlug)) return false
+    if (!baselineNextStepTools.has(listSlug)) return false
+    const pathKey = toolListSlugToProfilePathKey(listSlug)
+    const report = profileByPath[pathKey]
     if (!report || typeof report !== 'object') return false
     return (report as { requiresNextStep?: boolean }).requiresNextStep === true
   }
@@ -128,6 +131,15 @@ function ToolsPageContent() {
     const timer = window.setInterval(() => setNowMs(Date.now()), 10_000)
     return () => window.clearInterval(timer)
   }, [])
+
+  /** While Stage B is still filling tools, nudge Firestore in case the snapshot is slow—keeps list in sync with mystical profile cards. */
+  useEffect(() => {
+    if (!user?.uid || !generationHasPendingTools) return
+    const id = window.setInterval(() => {
+      void refreshMysticalProfile()
+    }, 8000)
+    return () => window.clearInterval(id)
+  }, [user?.uid, generationHasPendingTools, refreshMysticalProfile])
 
   useEffect(() => {
     if (
@@ -277,7 +289,7 @@ function ToolsPageContent() {
                               Complete Next Step
                             </span>
                           ) : null}
-                          {toolStatusMap[tool.slug]?.unchanged ? (
+                          {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
                             <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
                               No new data yet
                             </span>
@@ -286,7 +298,7 @@ function ToolsPageContent() {
                         <p className="text-xs text-surface-on-variant uppercase font-bold opacity-70 tracking-wide mt-1">{tool.category}</p>
                         {isToolPending(tool.slug) ? (
                           <p className="text-xs text-surface-on-variant mt-1">
-                            {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                            {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
                           </p>
                         ) : null}
                       </div>
@@ -317,7 +329,7 @@ function ToolsPageContent() {
                           Complete Next Step
                         </span>
                       ) : null}
-                      {toolStatusMap[tool.slug]?.unchanged ? (
+                      {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
                         <span className="rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
                           No new data yet
                         </span>
@@ -326,7 +338,7 @@ function ToolsPageContent() {
                     <p className="text-xs text-surface-on-variant uppercase font-bold opacity-70 tracking-wide mt-1">{tool.category}</p>
                     {isToolPending(tool.slug) ? (
                       <p className="text-xs text-surface-on-variant mt-1">
-                        {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                        {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
                       </p>
                     ) : null}
                   </div>
@@ -398,7 +410,7 @@ function ToolsPageContent() {
                             Complete Next Step
                           </span>
                         ) : null}
-                        {toolStatusMap[tool.slug]?.unchanged ? (
+                        {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
                           <span className="mb-2 rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
                             No new data yet
                           </span>
@@ -406,7 +418,7 @@ function ToolsPageContent() {
                         <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                         {isToolPending(tool.slug) ? (
                           <p className="mt-2 text-xs text-surface-on-variant">
-                            {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                            {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
                           </p>
                         ) : null}
                         <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
@@ -440,7 +452,7 @@ function ToolsPageContent() {
                     Complete Next Step
                   </span>
                 ) : null}
-                {toolStatusMap[tool.slug]?.unchanged ? (
+                {toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.unchanged ? (
                   <span className="mb-2 rounded-full bg-slate-500/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-slate-300">
                     No new data yet
                   </span>
@@ -448,7 +460,7 @@ function ToolsPageContent() {
                 <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                 {isToolPending(tool.slug) ? (
                   <p className="mt-2 text-xs text-surface-on-variant">
-                    {formatAgo(toolStatusMap[tool.slug]?.updatedAt ?? toolStatusMap[tool.slug]?.generatedAt) ?? 'processing'}
+                    {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
                   </p>
                 ) : null}
                 <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
