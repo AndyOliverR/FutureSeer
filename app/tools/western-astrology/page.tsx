@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect, useMemo } from 'react'
+import { Suspense, useState, useEffect, useMemo, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -101,6 +101,7 @@ function WesternAstrologyPageContent() {
   }, [westernPipelineReport])
   const [fetchedComprehensiveAnalysis, setFetchedComprehensiveAnalysis] = useState<typeof comprehensiveWesternReport>(null)
   const [isLoadingComprehensiveAnalysis, setIsLoadingComprehensiveAnalysis] = useState(false)
+  const westernComprehensiveOnceRef = useRef<string | null>(null)
   const effectiveComprehensiveReport = comprehensiveWesternReport || fetchedComprehensiveAnalysis
 
   const teaser = useMemo(
@@ -119,9 +120,17 @@ function WesternAstrologyPageContent() {
 
   // When we have chart data but no comprehensive analysis from profile, fetch once and persist so returning visits load from cache
   useEffect(() => {
-    if (!user?.uid || !analysis?.data || comprehensiveWesternReport?.chartOverview) return
+    if (!user?.uid) {
+      westernComprehensiveOnceRef.current = null
+      return
+    }
+    if (!analysis?.data || comprehensiveWesternReport?.chartOverview) return
     const chartData = analysis.data as { planets?: unknown[]; houses?: unknown[]; aspects?: unknown[]; transits?: unknown[] }
     if (!chartData.planets?.length) return
+
+    const dedupeKey = `${user.uid}:western-comprehensive`
+    if (westernComprehensiveOnceRef.current === dedupeKey) return
+    westernComprehensiveOnceRef.current = dedupeKey
 
     let cancelled = false
     setIsLoadingComprehensiveAnalysis(true)
@@ -156,7 +165,11 @@ function WesternAstrologyPageContent() {
       .finally(() => {
         if (!cancelled) setIsLoadingComprehensiveAnalysis(false)
       })
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      // Strict Mode remounts the effect: reset so the real mount can fetch again (server still dedupes).
+      westernComprehensiveOnceRef.current = null
+    }
   }, [user?.uid, user, analysis?.data, comprehensiveWesternReport?.chartOverview, refreshProfile])
 
   // When we have chart but no transits (e.g. profile generated before transits were requested), fetch transits on demand

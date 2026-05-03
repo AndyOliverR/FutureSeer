@@ -3,7 +3,7 @@
 
 import { getFirebaseDB } from '@/lib/firebase';
 import { devLog } from '@/lib/devLogger';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import {
   ChakraAnalysis,
   AuraReading,
@@ -93,9 +93,8 @@ export async function storeEnergyHealingAnalysis(
       userId
     };
 
-    const docRef = doc(db, 'users', userId, 'energyHealing', method);
-    await setDoc(docRef, storedAnalysis);
-    
+    await userSubdocSet(userId, 'energyHealing', method, storedAnalysis as unknown as Record<string, unknown>);
+
     devLog.debug(`✅ Stored ${method} analysis for user ${userId}`);
   } catch (error) {
     devLog.error(`❌ Error storing ${method} analysis:`, error, 'energyHealingStorage');
@@ -117,11 +116,10 @@ export async function getEnergyHealingAnalysis(
       return null;
     }
 
-    const docRef = doc(db, 'users', userId, 'energyHealing', method);
-    const docSnap = await getDoc(docRef);
+    const row = await userSubdocGet(userId, 'energyHealing', method);
     
-    if (docSnap.exists()) {
-      const data = docSnap.data() as StoredEnergyHealingAnalysis;
+    if (row) {
+      const data = row as unknown as StoredEnergyHealingAnalysis;
       devLog.debug(`✅ Retrieved ${method} analysis for user ${userId}`);
       return data;
     }

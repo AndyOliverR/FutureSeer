@@ -1,9 +1,9 @@
 // Intelligent Western Astrology System
 // Analyzes Western astrological charts using tropical zodiac and modern interpretations
 
-import { doc, setDoc, getDoc, getFirestore } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { generatePersonalizedInsights, generateCareerGuidance, generateRelationshipInsights } from './western/interpretationEngine';
 
 export interface WesternAstrologyReading {
@@ -456,14 +456,11 @@ export async function getIntelligentWesternAstrologyData(
   if (!db) {
     throw new Error('Firestore not initialized');
   }
-  
-  const docRef = doc(db, 'users', userId, 'western-astrology', 'current');
-  
+
   try {
-    // Check if we have cached data
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const cachedData = docSnap.data() as WesternAstrologyReading;
+    const cachedRaw = await userSubdocGet(userId, 'western-astrology', 'current');
+    if (cachedRaw) {
+      const cachedData = cachedRaw as unknown as WesternAstrologyReading;
       const lastUpdated = cachedData.metadata.lastUpdated;
       const lastUpdatedMs = lastUpdated instanceof Date ? lastUpdated.getTime() : (lastUpdated as { toDate(): Date }).toDate().getTime();
       const hoursSinceUpdate = (new Date().getTime() - lastUpdatedMs) / (1000 * 60 * 60);
@@ -552,7 +549,7 @@ export async function getIntelligentWesternAstrologyData(
   
   // Cache the data
   try {
-    await setDoc(docRef, reading);
+    await userSubdocSet(userId, 'western-astrology', 'current', reading as unknown as Record<string, unknown>);
     devLog.debug('Cached Western Astrology data for user:', userId);
   } catch (error) {
     devLog.warn('Error caching Western Astrology data:', error, 'westernAstrologyIntelligence');
@@ -563,13 +560,10 @@ export async function getIntelligentWesternAstrologyData(
 
 // Function to clear Western Astrology data cache
 export async function clearWesternAstrologyDataCache(userId: string): Promise<void> {
-  const db = getFirebaseDB();
-  if (!db) return;
-  
-  const docRef = doc(db, 'users', userId, 'western-astrology', 'current');
-  
+  if (!getFirebaseDB()) return;
+
   try {
-    await setDoc(docRef, {});
+    await userSubdocSet(userId, 'western-astrology', 'current', {});
     devLog.debug('Cleared Western Astrology data cache for user:', userId);
   } catch (error) {
     devLog.warn('Error clearing Western Astrology data cache:', error, 'westernAstrologyIntelligence');

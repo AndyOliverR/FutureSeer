@@ -17,6 +17,45 @@ interface EnergyHealingResponse {
   error?: string;
 }
 
+const ASTRO_CONTEXT_TTL_MS = 30_000;
+const astroContextCache = new Map<string, { data: unknown; expiresAt: number }>();
+const astroContextInFlight = new Map<string, Promise<unknown>>();
+
+function buildAstroContextKey(userProfile: any): string {
+  return [
+    String(userProfile?.uid ?? userProfile?.id ?? userProfile?.userId ?? ''),
+    String(userProfile?.birthDate ?? ''),
+    String(userProfile?.birthTime ?? ''),
+    String(userProfile?.birthPlace ?? ''),
+    String(userProfile?.birthLatitude ?? userProfile?.latitude ?? ''),
+    String(userProfile?.birthLongitude ?? userProfile?.longitude ?? ''),
+  ].join('|');
+}
+
+async function getAstroDataWithDedupe(userProfile: any): Promise<unknown> {
+  if (!userProfile?.birthPlace || !userProfile?.birthDate) return null;
+  const cacheKey = buildAstroContextKey(userProfile);
+  const now = Date.now();
+  const cached = astroContextCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) return cached.data;
+
+  const existing = astroContextInFlight.get(cacheKey);
+  if (existing) return existing;
+
+  const req = getAllDivinationData(userProfile)
+    .then((data) => {
+      astroContextCache.set(cacheKey, { data, expiresAt: Date.now() + ASTRO_CONTEXT_TTL_MS });
+      return data;
+    })
+    .catch(() => null)
+    .finally(() => {
+      astroContextInFlight.delete(cacheKey);
+    });
+
+  astroContextInFlight.set(cacheKey, req);
+  return req;
+}
+
 export async function POST(request: NextRequest) {
   let method: EnergyHealingRequest['method'] | undefined;
   try {
@@ -41,10 +80,7 @@ export async function POST(request: NextRequest) {
     // Extract user context for personalization
     let astroData = null;
     try {
-      // Try to fetch astrological data if birth place is available
-      if (userProfile?.birthPlace && userProfile?.birthDate) {
-        astroData = await getAllDivinationData(userProfile).catch(() => null);
-      }
+      astroData = await getAstroDataWithDedupe(userProfile);
     } catch (error) {
       devLog.warn('⚠️ Could not fetch astrological data, using minimal context:', error, 'energy-healing');
     }

@@ -1,4 +1,5 @@
 import { adminDb, batchSetDocuments, getDocument, setDocument } from '@/lib/firebase-admin';
+import { userRootDocSet } from '@/lib/userSubcollectionFirestore';
 import { generateAllReports, getCoreStageToolCount } from '@/lib/reportGenerationService';
 import {
   ALL_TOOL_SLUGS,
@@ -181,16 +182,20 @@ export async function runMysticalStageBJob(params: {
       }
       await setDocument('comprehensiveMysticalProfiles', uid, profilePatch);
       const readiness = summarizeToolReadiness(nextProfile, ALL_TOOL_SLUGS);
-      await setDocument('users', uid, {
-        toolStatus: nextToolStatus,
-        allReportsReady: readiness.allReportsReady,
-        pendingToolSlugs: readiness.pendingToolSlugs,
-        corePhaseCompleted: readiness.readyToolsCount >= coreCount,
-        coreReadyCount: Math.min(readiness.readyToolsCount, coreCount),
-        longTailReadyCount: Math.max(0, readiness.readyToolsCount - coreCount),
-        lastProgressAt: updatedAt,
-        updatedAt,
-      });
+      await userRootDocSet(
+        uid,
+        {
+          toolStatus: nextToolStatus,
+          allReportsReady: readiness.allReportsReady,
+          pendingToolSlugs: readiness.pendingToolSlugs,
+          corePhaseCompleted: readiness.readyToolsCount >= coreCount,
+          coreReadyCount: Math.min(readiness.readyToolsCount, coreCount),
+          longTailReadyCount: Math.max(0, readiness.readyToolsCount - coreCount),
+          lastProgressAt: updatedAt,
+          updatedAt,
+        },
+        { merge: true }
+      );
     },
     onProgress: async ({ completedTools, toolSlug }) => {
       const stageBCompleted = Math.max(0, completedTools - coreCount);

@@ -86,6 +86,10 @@ function MundaneAstrologyPageContent() {
           birthPlace: profile.birthPlace,
           birthLatitude: profile.birthLatitude ?? 0,
           birthLongitude: profile.birthLongitude ?? 0,
+          currentLocation:
+            typeof profile.currentLocation === 'string' && profile.currentLocation.trim()
+              ? profile.currentLocation.trim()
+              : undefined,
         },
       }),
     })
@@ -331,7 +335,34 @@ function MundaneAstrologyPageContent() {
                           >
                             <p className="text-slate-700 text-sm">
                               {report.countryName ? (
-                                <>{(report.countryName as string)} (capital: {String(report.capitalName ?? '—')}), year {String(report.year ?? '—')}.{report.ingressDatetime && <> Aries Ingress: {new Date(String(report.ingressDatetime)).toUTCString()}.</>}</>
+                                <>
+                                  {(report.countryName as string)}, year {String(report.year ?? '—')}. Chart cast for:{' '}
+                                  <span className="font-medium text-slate-800">
+                                    {String(
+                                      (report.chartLocationName as string | undefined) ??
+                                        report.capitalName ??
+                                        '—',
+                                    )}
+                                  </span>
+                                  .
+                                  {report.capitalName ? (
+                                    <> National administrative capital: {String(report.capitalName)}.</>
+                                  ) : null}
+                                  {report.ingressDatetime ? (
+                                    <>
+                                      {' '}
+                                      Aries Ingress:{' '}
+                                      {typeof report.ingressDisplayLocal === 'string' &&
+                                      (report.ingressDisplayLocal as string).trim()
+                                        ? String(report.ingressDisplayLocal)
+                                        : new Date(String(report.ingressDatetime)).toUTCString()}{' '}
+                                      <span className="text-slate-500">
+                                        ({new Date(String(report.ingressDatetime)).toISOString()})
+                                      </span>
+                                      .
+                                    </>
+                                  ) : null}
+                                </>
                               ) : (
                                 <>Scope not set. Regenerate your mystical profile from your Profile page to update.</>
                               )}

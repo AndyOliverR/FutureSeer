@@ -363,8 +363,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -383,8 +383,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
             options: { includeTransits: true },
           }),
@@ -406,8 +406,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -428,8 +428,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -450,8 +450,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -472,8 +472,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -494,8 +494,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -516,8 +516,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -537,8 +537,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              birthLatitude: profile.birthLatitude ?? 0,
-              birthLongitude: profile.birthLongitude ?? 0,
+              birthLatitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              birthLongitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -615,8 +615,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -857,8 +857,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -898,8 +898,8 @@ async function runTool(
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -918,18 +918,28 @@ async function runTool(
       }
 
       case 'mundaneAstrology': {
+        const currentLocRaw = (profile as { currentLocation?: string }).currentLocation;
+        const currentLocation =
+          typeof currentLocRaw === 'string' && currentLocRaw.trim() ? currentLocRaw.trim() : undefined;
         const res = await fetch(`${baseUrl}/api/mundane-astrology/comprehensive`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId,
-            userProfile: profile,
+            userProfile: {
+              birthDate: profile.birthDate,
+              birthTime: profile.birthTime || '12:00:00',
+              birthPlace: profile.birthPlace,
+              birthLatitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              birthLongitude: profile.birthLongitude ?? profile.longitude ?? 0,
+              currentLocation,
+            },
             birthData: {
               birthDate: profile.birthDate,
               birthTime: profile.birthTime || '12:00:00',
               birthPlace: profile.birthPlace,
-              latitude: profile.birthLatitude ?? 0,
-              longitude: profile.birthLongitude ?? 0,
+              latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+              longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             },
           }),
         });
@@ -967,8 +977,8 @@ async function runTool(
             person1BirthDate: profile.birthDate,
             person1BirthTime: profile.birthTime || '12:00:00',
             person1BirthLocation: profile.birthPlace,
-            person1Latitude: profile.birthLatitude ?? 0,
-            person1Longitude: profile.birthLongitude ?? 0,
+            person1Latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+            person1Longitude: profile.birthLongitude ?? profile.longitude ?? 0,
             person2Name: (rec.partnerName as string | undefined) ?? 'Partner',
             person2BirthDate,
             person2BirthTime,
@@ -1189,8 +1199,8 @@ async function runTool(
                 birthDate: profile.birthDate,
                 birthTime: profile.birthTime || '12:00:00',
                 birthPlace: profile.birthPlace,
-                latitude: profile.birthLatitude ?? 0,
-                longitude: profile.birthLongitude ?? 0,
+                latitude: profile.birthLatitude ?? profile.latitude ?? 0,
+                longitude: profile.birthLongitude ?? profile.longitude ?? 0,
               },
             }),
           });
@@ -1653,8 +1663,15 @@ export async function runProfileGeneration(
     birthTime: normalizeBirthTime(userProfile.birthTime) || userProfile.birthTime || '12:00:00',
   };
 
-  // 1) Run tools in canonical UI grid order.
-  for (const slug of ALL_TOOL_SLUGS) {
+  const rawConc =
+    typeof process.env.MYSTICAL_TOOL_RUN_CONCURRENCY === 'string'
+      ? parseInt(process.env.MYSTICAL_TOOL_RUN_CONCURRENCY, 10)
+      : Number.NaN;
+  /** Default 4 for Pro-tier throughput; cap 8. Set `MYSTICAL_TOOL_RUN_CONCURRENCY=5` on Vercel if stable under Groq/tool API limits. */
+  const toolRunConcurrency =
+    Number.isFinite(rawConc) && rawConc >= 1 ? Math.min(8, Math.floor(rawConc)) : 4;
+
+  const runOneSlug = async (slug: string): Promise<void> => {
     const toolStartedAt = Date.now();
     if (options?.onToolHeartbeat) {
       await options.onToolHeartbeat({
@@ -1705,6 +1722,12 @@ export async function runProfileGeneration(
         });
       }
     }
+  };
+
+  // 1) Run tools in canonical UI grid order (bounded parallelism to cut wall time vs strict serial).
+  for (let i = 0; i < ALL_TOOL_SLUGS.length; i += toolRunConcurrency) {
+    const slice = ALL_TOOL_SLUGS.slice(i, i + toolRunConcurrency);
+    await Promise.all(slice.map((slug) => runOneSlug(slug)));
   }
 
   let interpretations: Record<string, unknown> = {};

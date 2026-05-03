@@ -9,9 +9,9 @@
 // - Ancient texts: Ptolemy (Tetrabiblos), Vettius Valens, Dorotheus of Sidon
 // - Philosophical influences: Stoicism, Neoplatonism, Neopythagoreanism
 
-import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { calculateTropicalPlanets, calculateTropicalHouses, getTropicalSign, getDegreeInSign, calculateTropicalAspects } from './western/tropicalCalculator';
 
 // Algorithm version - increment when interpretation logic changes
@@ -1125,24 +1125,20 @@ export async function getIntelligentHellenisticAstrologyData(
   latitude: number,
   longitude: number
 ): Promise<HellenisticAstrologyReading> {
-  // Skip Firestore on server (API route): client SDK doc/getDoc/setDoc are not compatible with Admin SDK db
-  const isServer = typeof window === 'undefined';
   let db: any = null;
-  if (!isServer) {
-    try {
-      db = getFirebaseDB();
-    } catch {
-      db = null;
-    }
+  try {
+    db = getFirebaseDB();
+  } catch {
+    db = null;
   }
+
   const useCache = !!db;
 
   if (useCache) {
     try {
-      const docRef = doc(db, 'users', userId, 'hellenistic-astrology', 'current');
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const cachedData = docSnap.data() as HellenisticAstrologyReading;
+      const cachedRaw = await userSubdocGet(userId, 'hellenistic-astrology', 'current');
+      if (cachedRaw) {
+        const cachedData = cachedRaw as unknown as HellenisticAstrologyReading;
         const lastUpdated = cachedData.metadata?.lastUpdated;
         const lastUpdatedDate = lastUpdated && typeof (lastUpdated as { toDate?: () => Date }).toDate === 'function'
           ? (lastUpdated as unknown as { toDate: () => Date }).toDate()
@@ -1163,7 +1159,9 @@ export async function getIntelligentHellenisticAstrologyData(
       devLog.warn('Error checking cached Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
     }
   } else {
-    devLog.debug('Firestore not available, computing Hellenistic reading without cache');
+    if (userId !== 'anonymous') {
+      devLog.debug('Firestore not available, computing Hellenistic reading without cache');
+    }
   }
 
   // Calculate new Hellenistic Astrology analysis
@@ -1335,8 +1333,12 @@ export async function getIntelligentHellenisticAstrologyData(
   // Cache the data only when Firestore is available (e.g. client or server with compatible SDK)
   if (useCache && db) {
     try {
-      const docRef = doc(db, 'users', userId, 'hellenistic-astrology', 'current');
-      await setDoc(docRef, reading);
+      await userSubdocSet(
+        userId,
+        'hellenistic-astrology',
+        'current',
+        reading as unknown as Record<string, unknown>
+      );
       devLog.debug('Cached Hellenistic Astrology data for user:', userId);
     } catch (error) {
       devLog.warn('Error caching Hellenistic Astrology data:', error, 'hellenisticAstrologyIntelligence');
@@ -1348,13 +1350,10 @@ export async function getIntelligentHellenisticAstrologyData(
 
 // Function to clear Hellenistic Astrology data cache
 export async function clearHellenisticAstrologyDataCache(userId: string): Promise<void> {
-  const db = getFirebaseDB();
-  if (!db) return;
-  
-  const docRef = doc(db, 'users', userId, 'hellenistic-astrology', 'current');
-  
+  if (!getFirebaseDB()) return;
+
   try {
-    await setDoc(docRef, {});
+    await userSubdocSet(userId, 'hellenistic-astrology', 'current', {});
     devLog.debug('Cleared Hellenistic Astrology data cache for user:', userId);
   } catch (error) {
     devLog.warn('Error clearing Hellenistic Astrology data cache:', error, 'hellenisticAstrologyIntelligence');

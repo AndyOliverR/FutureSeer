@@ -1,8 +1,12 @@
 /* eslint-disable security/detect-non-literal-regexp, security/detect-unsafe-regex */
 import { createAICompletion } from './aiGateway';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  userSubcollectionListDocuments,
+  userSubdocDelete,
+  userSubdocGet,
+  userSubdocSet,
+} from '@/lib/userSubcollectionFirestore';
 import { VERIFIED_VEDIC_FALLBACKS } from './verifiedFallbacks';
 
 // Remove top-level Groq initialization - will be done inside methods
@@ -10,7 +14,11 @@ import { VERIFIED_VEDIC_FALLBACKS } from './verifiedFallbacks';
 const VEDIC_CACHE_VERSION = 5; // Increment to invalidate all caches (v5: Adds personalized userName to divisional charts)
 
 export class VedicInterpretationEnhancer {
-  
+  /** Firestore document IDs cannot contain `/`; call sites use paths like `planets/Moon`. */
+  private vedicCacheDocId(cachePath: string): string {
+    return cachePath.replace(/\//g, '__');
+  }
+
   // Generate enhanced overview
   async generateEnhancedOverview(chartData: any, userId: string): Promise<string> {
     devLog.debug('🔍 Generating overview for degree:', chartData.ascendant?.degree);
@@ -388,25 +396,28 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
     chartData?: any
   ): Promise<string | null> {
     try {
-      const db = getFirebaseDB();
-      const docRef = doc(db, 'users', userId, 'vedicInterpretations', path);
-      const snapshot = await getDoc(docRef);
+      const data = await userSubdocGet(userId, 'vedicInterpretations', this.vedicCacheDocId(path));
       
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        
+      if (data) {
+        const row = data as Record<string, unknown>;
+        const rawVersion = row.version;
+        const versionNum =
+          typeof rawVersion === 'number' && Number.isFinite(rawVersion) ? rawVersion : 0;
+
         // Check cache version FIRST
-        if (!data.version || data.version < VEDIC_CACHE_VERSION) {
-          devLog.debug(`🗑️ Old cache version (${data.version || 0}) detected for ${path}, deleting...`);
+        if (!rawVersion || versionNum < VEDIC_CACHE_VERSION) {
+          devLog.debug(`🗑️ Old cache version (${versionNum || 0}) detected for ${path}, deleting...`);
           await this.deleteCachedInterpretation(userId, path);
           return null; // Force regeneration
         }
         
         // Then check validity
-        if (this.isCacheValid(path, data.generatedAt)) {
-          const cachedText = data.text;
-          
-          if (this.isValidInterpretation(cachedText, chartData)) {
+        const generatedAtMs = Number(row.generatedAt);
+        const generatedAt = Number.isFinite(generatedAtMs) ? generatedAtMs : 0;
+        if (this.isCacheValid(path, generatedAt)) {
+          const cachedText = row.text;
+
+          if (typeof cachedText === 'string' && this.isValidInterpretation(cachedText, chartData)) {
             return cachedText;
           } else {
             devLog.debug(`🗑️ Invalid cached content detected for ${path}, deleting...`);
@@ -427,10 +438,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
     path: string
   ): Promise<void> {
     try {
-      const db = getFirebaseDB();
-      const { deleteDoc } = await import('firebase/firestore');
-      const docRef = doc(db, 'users', userId, 'vedicInterpretations', path);
-      await deleteDoc(docRef);
+      await userSubdocDelete(userId, 'vedicInterpretations', this.vedicCacheDocId(path));
       devLog.debug('✅ Bad cache deleted:', path);
     } catch (error) {
       devLog.error('Error deleting cache:', error, 'vedicInterpretationEnhancer');
@@ -444,9 +452,7 @@ Write in a mystical, insightful tone. Address the person as "${addressForm}" or 
     text: string
   ): Promise<void> {
     try {
-      const db = getFirebaseDB();
-      const docRef = doc(db, 'users', userId, 'vedicInterpretations', path);
-      await setDoc(docRef, {
+      await userSubdocSet(userId, 'vedicInterpretations', this.vedicCacheDocId(path), {
         text,
         generatedAt: Date.now(),
         version: VEDIC_CACHE_VERSION, // Save current version
@@ -734,19 +740,9 @@ Tone: Warm, insightful, empowering. Mix practical wisdom with mystical insights.
   // Public method to delete all cached interpretations for a user
   public async deleteAllVedicInterpretationsForUser(userId: string): Promise<void> {
     try {
-      const db = getFirebaseDB();
-      const { collection, query, getDocs, deleteDoc } = await import('firebase/firestore');
-      const interpretationsRef = collection(db, 'users', userId, 'vedicInterpretations');
-      const q = query(interpretationsRef);
-      const querySnapshot = await getDocs(q);
-
-      const deletePromises: Promise<void>[] = [];
-      querySnapshot.forEach((document) => {
-        deletePromises.push(deleteDoc(document.ref));
-      });
-
-      await Promise.all(deletePromises);
-      devLog.debug(`🗑️ Deleted ${querySnapshot.size} cached interpretations for user ${userId}`);
+      const docs = await userSubcollectionListDocuments(userId, 'vedicInterpretations');
+      await Promise.all(docs.map((d) => userSubdocDelete(userId, 'vedicInterpretations', d.id)));
+      devLog.debug(`🗑️ Deleted ${docs.length} cached interpretations for user ${userId}`);
     } catch (error) {
       devLog.error('Error deleting all interpretations:', error, 'vedicInterpretationEnhancer');
     }

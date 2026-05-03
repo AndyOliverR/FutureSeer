@@ -162,7 +162,7 @@ import { getVedicReading } from './vedicIntelligence';
 import { dreamSymbolsIntelligence } from './dreamSymbolsIntelligence';
 import { getChart } from './astronomia-vedic';
 import { calculateTransitData } from './transitCalculator';
-import { calculateAccuratePanchanga } from './enhancedPanchangaCalculator';
+import { calculateAccuratePanchanga, isPanchangaChartCompatible } from './enhancedPanchangaCalculator';
 import { detectYogas } from './enhancedYogaDetection';
 import { calculateNakshatraAnalysis } from './nakshatraCalculator';
 import { CACHE_TTL as CACHE_CONSTANTS } from './cacheConstants';
@@ -498,8 +498,9 @@ const getHellenisticAstrologyReading = async (profile: any, question?: string) =
     const { getIntelligentHellenisticAstrologyData } = await import('./hellenisticAstrologyIntelligence');
     
     // Get Hellenistic chart data
+    const hellenisticUserId = profile.userId || profile.uid || 'anonymous';
     const reading = await getIntelligentHellenisticAstrologyData(
-      profile.userId || 'anonymous',
+      hellenisticUserId,
       profile.birthDate,
       profile.birthTime,
       profile.birthPlace,
@@ -4002,7 +4003,7 @@ const DIVINATION_SYSTEMS = {
 
 
 
-export async function getAllDivinationData(
+async function getAllDivinationDataImpl(
 
 
 
@@ -5154,7 +5155,11 @@ export async function getAllDivinationData(
 
 
 
-        devLog.warn('⚠️ Server-side execution detected - using minimal chart structure', undefined, 'aggregator');
+        devLog.warn(
+          '⚠️ Server-side execution: using reduced chart payload (no browser / client ephemeris context)',
+          undefined,
+          'aggregator'
+        );
 
 
 
@@ -5185,6 +5190,24 @@ export async function getAllDivinationData(
 
 
 
+
+        let serverLatitude = (userProfile as any).birthLatitude ?? (userProfile as any).latitude ?? 0;
+        let serverLongitude = (userProfile as any).birthLongitude ?? (userProfile as any).longitude ?? 0;
+        if (
+          serverLatitude === 0 &&
+          serverLongitude === 0 &&
+          typeof userProfile.birthPlace === 'string' &&
+          userProfile.birthPlace.trim().length > 0
+        ) {
+          try {
+            const { getCoordinatesWithFallback } = await import('@/lib/geocoding');
+            const coords = await getCoordinatesWithFallback(userProfile.birthPlace.trim());
+            serverLatitude = coords.latitude;
+            serverLongitude = coords.longitude;
+          } catch {
+            // Keep 0,0 fallback if geocoding fails in this non-blocking path.
+          }
+        }
 
         chartData = {
 
@@ -5282,7 +5305,7 @@ export async function getAllDivinationData(
 
 
 
-            latitude: (userProfile as any).latitude || 0,
+            latitude: serverLatitude,
 
 
 
@@ -5314,7 +5337,7 @@ export async function getAllDivinationData(
 
 
 
-            longitude: (userProfile as any).longitude || 0,
+            longitude: serverLongitude,
 
 
 
@@ -5826,7 +5849,7 @@ export async function getAllDivinationData(
 
 
 
-            latitude: (userProfile as any).latitude || 0,
+            latitude: (userProfile as any).birthLatitude ?? (userProfile as any).latitude ?? 0,
 
 
 
@@ -5858,7 +5881,7 @@ export async function getAllDivinationData(
 
 
 
-            longitude: (userProfile as any).longitude || 0,
+            longitude: (userProfile as any).birthLongitude ?? (userProfile as any).longitude ?? 0,
 
 
 
@@ -15783,11 +15806,13 @@ async function collectVedicData(userProfile: UserProfile, chartData: any) {
 
 
 
-    const panchanga = await calculateAccuratePanchanga(chartData, {
-      birthDate: userProfile.birthDate ?? '',
-      birthTime: userProfile.birthTime || '12:00',
-      birthPlace: userProfile.birthPlace ?? ''
-    })
+    const panchanga = isPanchangaChartCompatible(chartData)
+      ? await calculateAccuratePanchanga(chartData, {
+          birthDate: userProfile.birthDate ?? '',
+          birthTime: userProfile.birthTime || '12:00',
+          birthPlace: userProfile.birthPlace ?? ''
+        })
+      : null
 
 
 
@@ -16814,6 +16839,45 @@ const CACHE_TTL = CACHE_CONSTANTS.DIVINATION_DATA; // 24 hours
 
 
 
+
+const aggregatorInFlight = new Map<string, Promise<UniversalDivinationData>>();
+
+function buildAggregatorInFlightKey(
+  userProfile: UserProfile,
+  question?: string,
+  preGeneratedChart?: any,
+): string {
+  return [
+    String(userProfile.uid ?? ''),
+    String(userProfile.birthDate ?? ''),
+    String(userProfile.birthTime ?? ''),
+    String(userProfile.birthPlace ?? ''),
+    String(userProfile.birthLatitude ?? userProfile.latitude ?? ''),
+    String(userProfile.birthLongitude ?? userProfile.longitude ?? ''),
+    String(question ?? ''),
+    preGeneratedChart ? 'withChart' : 'noChart',
+  ].join('|');
+}
+
+export async function getAllDivinationData(
+  userProfile: UserProfile,
+  question?: string,
+  preGeneratedChart?: any,
+): Promise<UniversalDivinationData> {
+  const inFlightKey = buildAggregatorInFlightKey(userProfile, question, preGeneratedChart);
+  const inFlight = aggregatorInFlight.get(inFlightKey);
+  if (inFlight) {
+    devLog.info('♻️ Reusing in-flight universal aggregation request', undefined, 'aggregator');
+    return inFlight;
+  }
+
+  const run = getAllDivinationDataImpl(userProfile, question, preGeneratedChart)
+    .finally(() => {
+      aggregatorInFlight.delete(inFlightKey);
+    });
+  aggregatorInFlight.set(inFlightKey, run);
+  return run;
+}
 
 export function getCachedDivinationData(userId: string): UniversalDivinationData | null {
 

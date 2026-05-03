@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase-admin';
 import { devLog } from '@/lib/devLogger';
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic';
 
 export async function generateStaticParams() {
   return [{ userId: '_' }]
@@ -28,10 +28,7 @@ export async function GET(
       return NextResponse.json({ error: 'Database not available' }, { status: 500 });
     }
 
-    if (typeof window === 'undefined') {
-      // Server-side: Use Admin SDK
-      
-      // Fetch contributions
+    // Fetch contributions
       let contributions: any[] = [];
       let impactScore = 0;
       let implementedCount = 0;
@@ -181,19 +178,16 @@ export async function GET(
         );
       }
 
-      return NextResponse.json({
-        success: true,
-        attribution: {
-          contributions,
-          referralStats,
-          totalImpact: impactScore,
-          implementedSuggestions: implementedCount,
-          thankYouMessages,
-        },
-      });
-    } else {
-      return NextResponse.json({ error: 'Client-side not supported for this endpoint' }, { status: 400 });
-    }
+    return NextResponse.json({
+      success: true,
+      attribution: {
+        contributions,
+        referralStats,
+        totalImpact: impactScore,
+        implementedSuggestions: implementedCount,
+        thankYouMessages,
+      },
+    });
   } catch (error: any) {
     devLog.error('Error fetching user attribution:', error, 'route');
     return NextResponse.json({ error: error.message || 'Failed to fetch user attribution' }, { status: 500 });

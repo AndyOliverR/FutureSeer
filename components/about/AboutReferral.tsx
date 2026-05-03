@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/use-toast';
 import { getReferralStats } from '@/lib/referralUtils';
-import { getFirebaseDB } from '@/lib/firebase';
 import { safeCopyToClipboard } from '@/lib/safeClipboard';
 import { AboutSection } from './AboutSection';
 import { motion } from 'framer-motion';
@@ -28,11 +27,8 @@ export function AboutReferral() {
       const fetchReferralStats = async () => {
         try {
           setLoading(true);
-          const db = getFirebaseDB();
-          if (db) {
-            const stats = await getReferralStats(user.uid, db);
-            setReferralStats(stats);
-          }
+          const stats = await getReferralStats(user.uid);
+          setReferralStats(stats);
         } catch (error) {
           if (process.env.NODE_ENV === 'development') {
             devLog.debug('Error fetching referral stats:', error);

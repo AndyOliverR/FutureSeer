@@ -8,16 +8,22 @@ import { devLog } from '@/lib/devLogger'
 import { normalizeBirthTime } from '@/lib/birthTimeUtils'
 import { birthLocalToUTC } from '@/lib/birthDateTimeToUTC'
 
+const verboseKpTransitLogs = process.env.VERBOSE_ASTRO_LOGS === '1'
+
 /**
  * Server-side geocoding with fallback to common Indian cities
  */
 async function getCoordinatesWithFallback(place: string): Promise<{ latitude: number; longitude: number }> {
   try {
-    devLog.debug('📍 Geocoding birth place:', place, 'kp-astrology')
+    if (verboseKpTransitLogs) {
+      devLog.debug('📍 Geocoding birth place:', place, 'kp-astrology')
+    }
     const coords = await geocodePlace(place)
     
     if (coords) {
-      devLog.debug('✅ Geocoded successfully:', place, 'kp-astrology')
+      if (verboseKpTransitLogs) {
+        devLog.debug('✅ Geocoded successfully:', place, 'kp-astrology')
+      }
       return {
         latitude: coords.latitude,
         longitude: coords.longitude
@@ -42,7 +48,9 @@ async function getCoordinatesWithFallback(place: string): Promise<{ latitude: nu
   const placeLower = place.toLowerCase()
   for (const [city, coords] of Object.entries(fallbacks)) {
     if (placeLower.includes(city)) {
-      devLog.debug('📍 Using fallback coordinates for:', place, 'kp-astrology')
+      if (verboseKpTransitLogs) {
+        devLog.debug('📍 Using fallback coordinates for:', place, 'kp-astrology')
+      }
       return coords
     }
   }
@@ -64,7 +72,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    devLog.info('🔄 Calculating current transits for KP astrology...', undefined, 'kp-astrology')
+    if (verboseKpTransitLogs) {
+      devLog.info('🔄 Calculating current transits for KP astrology...', undefined, 'kp-astrology')
+    }
 
     let userBirthData = birthData
     let coordinates: { latitude: number; longitude: number } | null = null
@@ -108,7 +118,9 @@ export async function POST(request: NextRequest) {
             birthPlace: birthData.birthPlace,
             displayName: birthData.displayName || 'User'
           }
-          devLog.debug('📋 Using birth data from request body (profile unavailable)', undefined, 'kp-astrology')
+          if (verboseKpTransitLogs) {
+            devLog.debug('📋 Using birth data from request body (profile unavailable)', undefined, 'kp-astrology')
+          }
         }
       }
     }
@@ -147,12 +159,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    devLog.debug('🔮 Natal chart calculated successfully:', {
-      hasAscendant: !!natalChart.ascendant,
-      hasPlanets: !!natalChart.planets,
-      planetCount: natalChart.planets ? Object.keys(natalChart.planets).length : 0,
-      ascendantLon: natalChart.ascendant?.lonSidereal
-    }, 'kp-astrology')
+    if (verboseKpTransitLogs) {
+      devLog.debug('🔮 Natal chart calculated successfully:', {
+        hasAscendant: !!natalChart.ascendant,
+        hasPlanets: !!natalChart.planets,
+        planetCount: natalChart.planets ? Object.keys(natalChart.planets).length : 0,
+        ascendantLon: natalChart.ascendant?.lonSidereal
+      }, 'kp-astrology')
+    }
 
     // Use current residence for transit chart when available; otherwise birth place
     const transitPayload: Parameters<typeof calculateTransitData>[1] = {
@@ -168,7 +182,9 @@ export async function POST(request: NextRequest) {
         transitPayload.transitPlace = currentLocation
         transitPayload.transitLatitude = transitCoords.latitude
         transitPayload.transitLongitude = transitCoords.longitude
-        devLog.debug('📍 Using current residence for transit chart:', currentLocation, 'kp-astrology')
+        if (verboseKpTransitLogs) {
+          devLog.debug('📍 Using current residence for transit chart:', currentLocation, 'kp-astrology')
+        }
       } catch {
         // Keep birth place for transit if geocoding current residence fails
       }
@@ -179,11 +195,13 @@ export async function POST(request: NextRequest) {
     try {
       transitData = calculateTransitData(natalChart, transitPayload)
 
-      devLog.debug('📊 Transit data calculated:', {
-        favorable: transitData.favorable.length,
-        challenging: transitData.challenging.length,
-        upcoming: transitData.upcoming.length
-      }, 'kp-astrology')
+      if (verboseKpTransitLogs) {
+        devLog.debug('📊 Transit data calculated:', {
+          favorable: transitData.favorable.length,
+          challenging: transitData.challenging.length,
+          upcoming: transitData.upcoming.length
+        }, 'kp-astrology')
+      }
     } catch (transitError: any) {
       devLog.error('❌ Error in calculateTransitData:', transitError, 'route')
       devLog.error('Stack:', transitError.stack, 'route')

@@ -157,13 +157,21 @@ async function initializeNodeSwissEphemeris() {
 
 // Unified Swiss Ephemeris initialization
 async function getSwissEphemeris() {
-  // Try WASM first (for Vercel/Firebase)
+  // On server runtimes, prefer Node first to avoid WASM asset fetch issues in local/dev.
+  if (typeof window === 'undefined') {
+    const nodeSwe = await initializeNodeSwissEphemeris()
+    if (nodeSwe) return nodeSwe
+  }
+
+  // WASM path (primarily production/serverless where bundling provides assets)
   const wasmSwe = await initializeWasmSwissEphemeris()
   if (wasmSwe) return wasmSwe
 
-  // Fallback to Node (for local development)
-  const nodeSwe = await initializeNodeSwissEphemeris()
-  if (nodeSwe) return nodeSwe
+  // Last fallback if we are in a non-browser environment and Node import works.
+  if (typeof window === 'undefined') {
+    const nodeSwe = await initializeNodeSwissEphemeris()
+    if (nodeSwe) return nodeSwe
+  }
 
   throw new Error('Swiss Ephemeris initialization failed')
 }

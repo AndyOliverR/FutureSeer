@@ -9,16 +9,27 @@ import type { RiskScores } from './riskScoring';
 
 export interface MundaneReportInput {
   countryName: string;
-  capitalName: string;
+  /** National administrative capital (narrative context only). */
+  nationalCapitalName: string | null;
+  /** Geocoded or resolved place where the ingress chart is cast. */
+  chartLocationName: string;
   chart: MundaneChart;
   riskScores: RiskScores;
   nationalChartNote?: string;
   year: number;
+  /** Human-readable ingress time in a best-effort timezone for the country. */
+  ingressDisplayLocal: string;
+}
+
+function formatLatLon(lat: number, lon: number): string {
+  const ns = lat >= 0 ? 'N' : 'S';
+  const ew = lon >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(2)}°${ns}, ${Math.abs(lon).toFixed(2)}°${ew}`;
 }
 
 function formatChartSummary(chart: MundaneChart): string {
   const lines: string[] = [
-    `Aries Ingress chart: ${chart.datetime.toISOString()} at ${chart.latitude.toFixed(2)}°N, ${chart.longitude.toFixed(2)}°E.`,
+    `Aries Ingress chart: ${chart.datetime.toISOString()} at ${formatLatLon(chart.latitude, chart.longitude)}.`,
     `Ascendant: ${chart.ascendant.sign} ${chart.ascendant.degree.toFixed(1)}°. MC: ${chart.midheaven.sign} ${chart.midheaven.degree.toFixed(1)}°.`,
     'Planets: ' +
       chart.planets
@@ -54,11 +65,17 @@ Do not include markdown or code fences. Only the JSON object.`;
 function buildUserPrompt(input: MundaneReportInput): string {
   const chartText = formatChartSummary(input.chart);
   const r = input.riskScores;
+  const capitalLine = input.nationalCapitalName
+    ? `National administrative capital (context only): ${input.nationalCapitalName}.`
+    : '';
   return `
-Generate a mundane astrology report for ${input.countryName} (capital: ${input.capitalName}) for the year ${input.year}.
+Generate a mundane astrology report for ${input.countryName} for the year ${input.year}.
+The Aries Ingress chart is cast for: ${input.chartLocationName}.
+${capitalLine}
 ${input.nationalChartNote ? `National foundation context: ${input.nationalChartNote}.` : ''}
+Ingress (reference local display): ${input.ingressDisplayLocal}.
 
-Chart data (Aries Ingress at capital):
+Chart data:
 ${chartText}
 
 Pre-computed risk bands (use these; do not contradict):
@@ -99,9 +116,14 @@ export interface MundaneReportSections {
 
 export interface MundaneComprehensiveAnalysis {
   countryName: string;
-  capitalName: string;
+  /** National administrative capital when known (e.g. New Delhi). */
+  capitalName: string | null;
+  /** Place the ingress chart was cast for (geocoded scope or fallback label). */
+  chartLocationName: string;
   year: number;
   ingressDatetime: string;
+  /** Formatted ingress time for the user’s region (best-effort timezone). */
+  ingressDisplayLocal: string;
   chartSummary: string;
   riskScores: RiskScores;
   sections: MundaneReportSections;
@@ -138,9 +160,11 @@ export async function buildMundaneReport(input: MundaneReportInput): Promise<Mun
 
   return {
     countryName: input.countryName,
-    capitalName: input.capitalName,
+    capitalName: input.nationalCapitalName,
+    chartLocationName: input.chartLocationName,
     year: input.year,
     ingressDatetime: input.chart.datetime.toISOString(),
+    ingressDisplayLocal: input.ingressDisplayLocal,
     chartSummary: formatChartSummary(input.chart),
     riskScores: input.riskScores,
     sections,

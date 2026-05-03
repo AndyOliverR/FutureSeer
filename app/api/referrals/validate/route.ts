@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { getFirebaseDB } from '@/lib/firebase';
 import { validateReferralCode } from '@/lib/referralUtils';
 
 export const dynamic = 'force-static'
@@ -22,16 +21,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const db = getFirebaseDB();
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Database not available' },
-        { status: 500 }
-      );
-    }
-
-    // Validate the referral code
-    const result = await validateReferralCode(code, db);
+    const result = await validateReferralCode(code);
 
     if (result.valid) {
       return NextResponse.json({

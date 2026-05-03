@@ -4,8 +4,7 @@
 import { generateAstrologicalChart, validateBirthData } from './astroCalculations'
 import { devLog } from '@/lib/devLogger';
 import { generateFallbackAstroData } from './astroFallback'
-import { doc, setDoc, getDoc, collection, addDoc } from 'firebase/firestore'
-import { getFirebaseDB } from './firebase';
+import { rootCollectionAdd } from '@/lib/userSubcollectionFirestore';
 
 interface LearningData {
   id: string
@@ -333,8 +332,7 @@ class AstroIntelligence {
   // Store learning data in Firebase
   private async storeLearningData(learningData: LearningData) {
     try {
-      const db = getFirebaseDB();
-      await addDoc(collection(db, 'astroLearning'), learningData)
+      await rootCollectionAdd('astroLearning', learningData as unknown as Record<string, unknown>)
       devLog.debug('🤖 AstroIntelligence: Learning data stored')
     } catch (error) {
       devLog.warn('🤖 AstroIntelligence: Failed to store learning data:', error, 'astroIntelligence')
@@ -347,12 +345,11 @@ class AstroIntelligence {
     
     // Store improvements for future reference
     try {
-      const db = getFirebaseDB();
-      await addDoc(collection(db, 'astroImprovements'), {
+      await rootCollectionAdd('astroImprovements', {
         timestamp: Date.now(),
         improvements,
-        systemMetrics: this.systemMetrics
-      })
+        systemMetrics: this.systemMetrics,
+      } as Record<string, unknown>)
     } catch (error) {
       devLog.warn('🤖 AstroIntelligence: Failed to store improvements:', error, 'astroIntelligence')
     }

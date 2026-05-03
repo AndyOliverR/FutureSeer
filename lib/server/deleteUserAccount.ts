@@ -9,6 +9,7 @@ import type { DocumentReference, Firestore, Query } from 'firebase-admin/firesto
 import { adminDb, getAuth } from '@/lib/firebase-admin';
 import { devLog } from '@/lib/devLogger';
 import { cancelSubscription } from '@/lib/razorpay';
+import { userRootDocGet } from '@/lib/userSubcollectionFirestore';
 
 const BATCH = 400;
 
@@ -91,8 +92,7 @@ export async function deleteUserAccount(uid: string): Promise<DeleteUserAccountR
   const paths: string[] = [];
 
   try {
-    const userSnap = await db.collection('users').doc(uid).get();
-    const userData = userSnap.data() as Record<string, unknown> | undefined;
+    const userData = (await userRootDocGet(uid)) as Record<string, unknown> | undefined;
     const subscriptionId =
       typeof userData?.subscriptionId === 'string' ? userData.subscriptionId : undefined;
     await tryCancelRazorpay(subscriptionId);

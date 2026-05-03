@@ -24,6 +24,9 @@ const nextConfig = {
       ...(config.ignoreWarnings || []),
       /Invalid source map/,
       /Only conformant source maps can be used/,
+      // Firestore / protobufjs dynamic require (harmless; traced via @protobufjs/inquire)
+      /Critical dependency: the request of a dependency is an expression/,
+      { module: /@protobufjs[\\/]inquire/ },
     ];
     
     // Allow JSON assertions for ESM (astronomia VSOP data)

@@ -38,8 +38,35 @@ function getSignFromLongitude(lon: number): string {
 
 // Convert tropical to sidereal
 export function calculateSiderealPlanets(date: Date, latitude: number, longitude: number) {
-  devLog.debug('🕉️ Calculating SIDEREAL positions for Vedic astrology');
-  devLog.debug('🕉️ DEBUG - Input coordinates:', { latitude, longitude });
+  if (verboseAstroLogs) {
+    devLog.debug('🕉️ Calculating SIDEREAL positions for Vedic astrology');
+  }
+  const rawLongitude = longitude;
+  const normalizedLongitude =
+    Number.isFinite(longitude) && Math.abs(longitude) > 180
+      ? ((longitude + 180) % 360 + 360) % 360 - 180
+      : longitude;
+  const latL = Number.isFinite(latitude) ? Number(latitude.toFixed(6)) : latitude;
+  const lonL = Number.isFinite(normalizedLongitude) ? Number(normalizedLongitude.toFixed(6)) : normalizedLongitude;
+  const rawL = Number.isFinite(rawLongitude) ? Number(rawLongitude.toFixed(6)) : rawLongitude;
+  if (verboseAstroLogs) {
+    devLog.debug('🕉️ DEBUG - Input coordinates:', { latitude: latL, longitude: lonL, rawLongitude: rawL });
+  }
+  if (Number.isFinite(longitude) && Math.abs(longitude) > 180) {
+    devLog.warn(
+      `Longitude out of range detected (${longitude}). Using normalized value ${normalizedLongitude} for diagnostics.`,
+      undefined,
+      'siderealCalculator',
+    );
+    if (process.env.NODE_ENV === 'development') {
+      const stack = new Error('sidereal-coordinate-source').stack
+        ?.split('\n')
+        .slice(1, 5)
+        .map((line) => line.trim())
+        .join(' | ');
+      devLog.warn(`Longitude source trace: ${stack ?? 'unavailable'}`, undefined, 'siderealCalculator');
+    }
+  }
   
   // Step 1: Get TROPICAL positions (verified working)
   const tropicalPlanets = calculateTropicalPlanets(date);
@@ -48,7 +75,9 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
   const jd = toJD_TT(date);
   const ayanamsha = calculateLahiriAyanamsha(jd);
   
-  devLog.debug(`🕉️ Lahiri Ayanamsha: ${ayanamsha.toFixed(2)}°`);
+  if (verboseAstroLogs) {
+    devLog.debug(`🕉️ Lahiri Ayanamsha: ${ayanamsha.toFixed(2)}°`);
+  }
   
   // Step 3: Convert each planet from tropical to sidereal
   const siderealPlanets: any = {};
@@ -57,7 +86,9 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
     const tropicalLon = data.longitude;
     const siderealLon = norm360(tropicalLon - ayanamsha);
     
-    devLog.debug(`🕉️ ${name}: Tropical ${tropicalLon.toFixed(2)}° → Sidereal ${siderealLon.toFixed(2)}°`);
+    if (verboseAstroLogs) {
+      devLog.debug(`🕉️ ${name}: Tropical ${tropicalLon.toFixed(2)}° → Sidereal ${siderealLon.toFixed(2)}°`);
+    }
     
     siderealPlanets[name] = {
       ...data,
@@ -105,7 +136,9 @@ export function calculateSiderealPlanets(date: Date, latitude: number, longitude
     const ascCorrect = Math.abs(ascLon - 97) < 5;
     
     if (sunCorrect && ascCorrect) {
-      devLog.debug('Feb 24, 1983 Vedic positions CORRECT', undefined, 'siderealCalculator');
+      if (verboseAstroLogs) {
+        devLog.debug('Feb 24, 1983 Vedic positions CORRECT', undefined, 'siderealCalculator');
+      }
     } else {
       if (verboseAstroLogs) {
         devLog.warn('Feb 24, 1983 Vedic positions WRONG', { sunLon, ascLon, expectedSun: 311, expectedAsc: 97 }, 'siderealCalculator');

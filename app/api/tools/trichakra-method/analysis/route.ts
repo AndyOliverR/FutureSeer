@@ -12,14 +12,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, birthData, userProfile: customProfile } = body;
 
-    let userProfile: TrichakraUserProfile | null = null;
+    let userProfileFromDb: TrichakraUserProfile | null = null;
 
-    // If userId is provided, fetch from database
+    // If userId is provided, fetch from database (coordinates often live here while orchestrator payload is partial)
     if (userId) {
       try {
         const profile: UserProfile | null = await getUserProfile(userId);
         if (profile) {
-          userProfile = {
+          userProfileFromDb = {
             fullName: profile.fullName,
             birthDate: profile.birthDate,
             birthTime: profile.birthTime,
@@ -33,8 +33,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Use custom profile if provided, otherwise use fetched profile
-    const finalProfile = customProfile || userProfile || birthData;
+    const overlay = (customProfile || birthData) as
+      | (TrichakraUserProfile & { birthLatitude?: number; birthLongitude?: number })
+      | null;
+
+    const finalProfile: TrichakraUserProfile | null =
+      userProfileFromDb && overlay
+        ? {
+            ...userProfileFromDb,
+            ...overlay,
+            fullName: overlay.fullName ?? userProfileFromDb.fullName,
+            birthDate: overlay.birthDate ?? userProfileFromDb.birthDate,
+            birthTime: overlay.birthTime ?? userProfileFromDb.birthTime,
+            birthPlace: overlay.birthPlace ?? userProfileFromDb.birthPlace,
+            latitude:
+              overlay.latitude ??
+              overlay.birthLatitude ??
+              userProfileFromDb.latitude,
+            longitude:
+              overlay.longitude ??
+              overlay.birthLongitude ??
+              userProfileFromDb.longitude,
+          }
+        : overlay || userProfileFromDb || null;
 
     if (!finalProfile) {
       return NextResponse.json(
@@ -51,9 +72,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const src = finalProfile as TrichakraUserProfile & {
+      birthLatitude?: number;
+      birthLongitude?: number;
+    };
     const normalizedProfile: TrichakraUserProfile = {
-      ...finalProfile,
+      ...src,
       birthTime: normalizeBirthTime(finalProfile.birthTime),
+      latitude: src.latitude ?? src.birthLatitude,
+      longitude: src.longitude ?? src.birthLongitude,
     };
 
     devLog.info('🕉️ Generating Trichakra analysis for user:', userId || 'anonymous', 'trichakra-method');
@@ -61,8 +88,8 @@ export async function POST(request: NextRequest) {
       birthDate: normalizedProfile.birthDate,
       birthTime: normalizedProfile.birthTime,
       birthPlace: normalizedProfile.birthPlace,
-      latitude: normalizedProfile.latitude,
-      longitude: normalizedProfile.longitude
+      latitude: normalizedProfile.latitude ?? null,
+      longitude: normalizedProfile.longitude ?? null,
     }, 'trichakra-method');
 
     // Generate Trichakra analysis

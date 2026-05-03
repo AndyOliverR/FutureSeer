@@ -6,6 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --webpack",
+    "dev:nocache": "cross-env DISABLE_WEBPACK_CACHE=1 next dev --webpack",
     "generate:starfield": "node scripts/generate-starfield-8k.js",
     "build": "next build --webpack",
     "start": "next start",

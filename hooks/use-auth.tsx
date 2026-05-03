@@ -162,9 +162,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('⚠️ Firestore connection check failed during auth initialization:', connectionError);
       });
 
+      const auth = getFirebaseAuth();
+      if (!auth) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      /** Do not block onAuthStateChanged on redirect; cap wait so global bootstrap promise always settles. */
+      const REDIRECT_RESULT_TIMEOUT_MS = 5000;
+
       const runRedirectBootstrap = async (): Promise<void> => {
         try {
-          const redirectResult = await getRedirectResult();
+          const redirectResult = await Promise.race([
+            getRedirectResult(),
+            new Promise<null>((resolve) => {
+              setTimeout(() => resolve(null), REDIRECT_RESULT_TIMEOUT_MS);
+            }),
+          ]);
           if (cancelled) return;
           if (redirectResult?.user) {
             devLog.debug('Redirect authentication completed successfully', 'auth');
@@ -193,15 +207,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         setGlobalAuthBootstrapPromise(bootstrapPromise);
       }
-      await bootstrapPromise;
+      void bootstrapPromise;
 
       if (cancelled) return;
-
-      const auth = getFirebaseAuth();
-      if (!auth) {
-        if (!cancelled) setLoading(false);
-        return;
-      }
 
       const PROFILE_LOAD_TIMEOUT_MS = 8000;
       const PROFILE_RETRY_DELAY_MS = 2000;

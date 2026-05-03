@@ -11,6 +11,15 @@ import {
   fetchWithFirebaseAuthRequired,
   MissingFirebaseAuthError,
 } from '@/lib/clientFirebaseFetch';
+import { cn } from '@/lib/utils';
+
+const MAIN_SEER_FIRST_SUCCESS_KEY = 'futureseer:mainSeerFirstSuccess';
+
+const MAIN_STARTER_QUESTIONS = [
+  'Across my saved readings—Western, Vedic, numerology, tarot—which pattern should I take seriously first?',
+  'What should I prioritize this week given my profile?',
+  'What does my profile suggest about timing for a meaningful career or relationship move in the next few months?',
+];
 
 interface MainSeerChatInterfaceProps {
   userId: string | undefined;
@@ -30,12 +39,6 @@ interface Message {
   content: string;
   timestamp: number;
 }
-
-const MAIN_STARTER_QUESTIONS = [
-  'What is my life purpose?',
-  'What should I focus on right now?',
-  'When is a favorable period for me?',
-];
 
 const SEE_MORE_THRESHOLD = 320;
 const PREVIEW_LENGTH = 320;
@@ -61,8 +64,20 @@ export default function MainSeerChatInterface({
   const [expandedMessageIds, setExpandedMessageIds] = useState<Set<string>>(new Set());
   const [responseStyle, setResponseStyle] = useState<ResponseStyle>('balanced');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  /** After first successful API reply, we tone down "first session" framing. */
+  const [seerFirstSuccessRecorded, setSeerFirstSuccessRecorded] = useState(false);
 
   const messages = useMemo(() => threadToMessages(thread), [thread]);
+
+  useEffect(() => {
+    try {
+      setSeerFirstSuccessRecorded(
+        typeof window !== 'undefined' && localStorage.getItem(MAIN_SEER_FIRST_SUCCESS_KEY) === '1',
+      );
+    } catch {
+      setSeerFirstSuccessRecorded(false);
+    }
+  }, []);
 
   const toggleExpanded = (id: string) => {
     setExpandedMessageIds((prev) => {
@@ -132,6 +147,14 @@ export default function MainSeerChatInterface({
         interaction: 'response_ok',
         httpStatus: res.status,
       });
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(MAIN_SEER_FIRST_SUCCESS_KEY, '1');
+        }
+      } catch {
+        /* ignore quota / private mode */
+      }
+      setSeerFirstSuccessRecorded(true);
       setThread(data.thread ?? []);
     } catch (e) {
       analytics.trackMainSeerChat({
@@ -290,13 +313,19 @@ export default function MainSeerChatInterface({
             >
               <span className="text-6xl mx-auto mb-4 block" aria-hidden>🔮</span>
               <p className="text-amber-900 font-semibold mb-2 font-serif tracking-tight">
-                Welcome. The Seer speaks across your full profile.
+                Welcome. This is the cross-tool seat.
               </p>
               <p className="text-slate-700 text-sm mt-1 mb-2 max-w-md mx-auto leading-relaxed">
-                Guidance draws on Western and Vedic astrology, tarot, numerology, and more—grounded in your saved
-                readings, not generic predictions.
+                The Seer reasons across what you already generated—Western and Vedic lines, tarot, numerology, and the
+                rest of your library—so one answer can echo several traditions at once.
               </p>
-              <p className="text-slate-600 text-sm font-medium mt-3 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
+              {!seerFirstSuccessRecorded ? (
+                <p className="text-amber-900/90 text-xs max-w-md mx-auto mb-3 px-1 py-2 rounded-lg bg-amber-100/60 border border-amber-200/80">
+                  <span className="font-semibold">First session:</span> use the highlighted question below once. A
+                  strong opening reply is the moment this product clicks.
+                </p>
+              ) : null}
+              <p className="text-slate-600 text-sm font-medium mt-1 mb-1 text-left max-w-md mx-auto">You can ask about:</p>
               <ul className="text-slate-700 text-sm text-left max-w-md mx-auto mb-4 space-y-0.5 list-disc list-inside">
                 <li>Life purpose, relationships, and compatibility</li>
                 <li>Career direction and favorable periods</li>
@@ -311,13 +340,27 @@ export default function MainSeerChatInterface({
                     size="sm"
                     onClick={() => sendMessage(q)}
                     disabled={isLoading}
-                    className="text-xs text-amber-800 border-amber-200 hover:bg-amber-100"
+                    className={cn(
+                      'text-xs text-amber-800 border-amber-200 hover:bg-amber-100 max-w-[min(100%,22rem)] whitespace-normal h-auto min-h-9 py-2 text-left justify-start',
+                      i === 0 && !seerFirstSuccessRecorded && 'ring-2 ring-amber-500/70 border-amber-400 bg-amber-50',
+                    )}
                   >
-                    {q}
+                    {i === 0 && !seerFirstSuccessRecorded ? (
+                      <span className="flex flex-col items-start gap-0.5 w-full">
+                        <span className="text-[10px] font-bold uppercase tracking-wide text-amber-900/80">
+                          Start here
+                        </span>
+                        <span>{q}</span>
+                      </span>
+                    ) : (
+                      q
+                    )}
                   </Button>
                 ))}
               </div>
-              <p className="text-slate-600 text-xs mt-4">Best for: clarity, direction, and grounded insight.</p>
+              <p className="text-slate-600 text-xs mt-4">
+                Best for: one-session clarity—pattern, tension, and timing in plain language.
+              </p>
             </motion.div>
           ) : (
             <div className="space-y-4">
@@ -353,7 +396,7 @@ export default function MainSeerChatInterface({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Ask about life, purpose, relationships, career, or future..."
+              placeholder="Ask how your saved readings agree or disagree on one real decision…"
               disabled={isLoading}
               className="flex-1 bg-white border-amber-200 text-slate-800 placeholder-slate-500 focus:border-amber-400 focus:ring-amber-200 transition-all duration-300"
               aria-label="Your question for the Seer"

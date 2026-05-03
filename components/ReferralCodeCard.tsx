@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { getReferralStats } from '@/lib/referralUtils';
-import { getFirebaseDB } from '@/lib/firebase';
 import { safeCopyToClipboard } from '@/lib/safeClipboard';
 
 interface ReferralCodeCardProps {
@@ -78,18 +77,15 @@ export function ReferralCodeCard({ userId, targetCount }: ReferralCodeCardProps)
     if (userId) {
       const fetchStats = async () => {
         try {
-          const db = getFirebaseDB();
-          if (db) {
-            const stats = await getReferralStats(userId, db);
-            
-            if (!isMounted) return;
-            
-            setReferralStats(stats);
-            
-            // Auto-generate if missing
-            if (!stats.referralCode && isMounted) {
-              await generateMissingCode();
-            }
+          const stats = await getReferralStats(userId);
+
+          if (!isMounted) return;
+
+          setReferralStats(stats);
+
+          // Auto-generate if missing
+          if (!stats.referralCode && isMounted) {
+            await generateMissingCode();
           }
         } catch (error) {
           devLog.error('Error fetching referral stats:', error, 'ReferralCodeCard');

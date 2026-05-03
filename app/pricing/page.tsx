@@ -41,6 +41,10 @@ export default function PricingPage() {
           <p className="text-white/80 text-sm md:text-base max-w-2xl mx-auto">
             Start with a 30-day trial, then choose monthly, quarterly, or annual membership.
           </p>
+          <p className="text-white/70 text-xs md:text-sm max-w-2xl mx-auto mt-3 leading-relaxed">
+            You are not buying another horoscope feed—you are backing the full generate-once library plus Ask the Seer,
+            which reasons across every stored report in your account.
+          </p>
         </div>
 
         {/* Contribution Tiers */}

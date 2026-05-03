@@ -71,6 +71,18 @@ jest.mock('@/lib/mysticalStageB', () => ({
   tryResumeMysticalStageB: (...args: unknown[]) => mockTryResumeMysticalStageB(...args),
 }));
 
+jest.mock('next/server', () => {
+  const actual = jest.requireActual<typeof import('next/server')>('next/server');
+  return {
+    ...actual,
+    /** Run deferred work synchronously in tests (production uses Vercel/Next `after` lifecycle). */
+    after: (fn: () => void | Promise<void>) => {
+      const out = fn();
+      if (out && typeof (out as Promise<void>).then === 'function') void (out as Promise<void>);
+    },
+  };
+});
+
 // Import route after mocks so it sees mocked dependencies
 import { GET, POST } from '@/app/api/profile/generate-mystical/route';
 
@@ -471,7 +483,8 @@ describe('Profile generate-mystical API', () => {
     });
 
     it('recovers stale running lock and returns partial_ready without endless inProgress', async () => {
-      const staleTs = Date.now() - (120_000 + 90_000 + 60_000);
+      // Must exceed route `mysticalLockStaleMs` (= maxDuration 600s + 120s grace) so lock is treated stale.
+      const staleTs = Date.now() - (600_000 + 120_000 + 60_000);
       mockGetDocument.mockImplementation((collection: string) => {
         if (collection === 'users') {
           return Promise.resolve({

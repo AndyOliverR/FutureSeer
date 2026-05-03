@@ -4,7 +4,7 @@
  */
 
 import type { WesternReportChunks, WesternChunkKey } from './westernReportChunks';
-import { adminDb } from './firebase-admin';
+import { userSubdocGet } from '@/lib/userSubcollectionFirestore';
 
 /** Western question types that map to report chunk keys. */
 export type WesternIntent =
@@ -63,15 +63,8 @@ export function getSectionsForIntent(intent: string): WesternChunkKey[] {
  */
 export async function getWesternReportChunksForUser(userId: string): Promise<WesternReportChunks | null> {
   if (!userId) return null;
-  if (!adminDb) return null;
   try {
-    const ref = adminDb
-      .collection('users')
-      .doc(userId)
-      .collection('westernAstrologyReports')
-      .doc('comprehensive');
-    const snap = await ref.get();
-    const data = snap.exists ? snap.data() : null;
+    const data = await userSubdocGet(userId, 'westernAstrologyReports', 'comprehensive');
     const chunks = data?.reportChunks;
     if (chunks && typeof chunks === 'object') return chunks as WesternReportChunks;
     return null;

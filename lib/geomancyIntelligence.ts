@@ -1,8 +1,5 @@
 import { GeomanticAnalysis, GeomanticFigure, GeomanticHouse } from '@/hooks/useGeomancy'
 import { devLog } from '@/lib/devLogger';
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
-import { getFirebaseDB } from './firebase';
-
 class GeomancyIntelligence {
   private geomanticFigures: GeomanticFigure[] = [
     {

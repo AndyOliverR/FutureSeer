@@ -2,8 +2,7 @@ import { generateChartData } from './astrology'
 import { devLog, devWarn } from '@/lib/devLogger';
 import { generateFallbackAstroData, isFallbackDataReliable } from './astroFallback'
 import { getIntelligentAstroData, getSystemStatus } from './astroIntelligence'
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
-import { getFirebaseDB } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { CACHE_TTL } from './cacheConstants';
 
 // Comprehensive astrological data structure
@@ -133,12 +132,10 @@ export async function getComprehensiveAstroData(
   // Check Firebase storage (skip if force refresh)
   if (!forceRefresh) {
     try {
-      const db = getFirebaseDB()
-      const docRef = doc(db, 'users', userId, 'astroProfile', 'comprehensive')
-      const docSnap = await getDoc(docRef)
+      const storedRow = await userSubdocGet(userId, 'astroProfile', 'comprehensive')
       
-      if (docSnap.exists()) {
-        const storedData = docSnap.data() as ComprehensiveAstroData
+      if (storedRow) {
+        const storedData = storedRow as unknown as ComprehensiveAstroData
         // TEMPORARILY DISABLED: Check if data is still valid and matches current birth details
         // if (Date.now() - storedData.lastFetched < 24 * 60 * 60 * 1000 &&
         //     storedData.birthDate === birthDate &&
@@ -211,9 +208,7 @@ export async function getComprehensiveAstroData(
     
     // Store in Firebase
     try {
-      const db = getFirebaseDB()
-      const docRef = doc(db, 'users', userId, 'astroProfile', 'comprehensive')
-      await setDoc(docRef, comprehensiveData)
+      await userSubdocSet(userId, 'astroProfile', 'comprehensive', comprehensiveData as unknown as Record<string, unknown>)
       devLog.info('Stored intelligent astro data in Firebase for user:', userId, 'astroData')
     } catch (storageError) {
       devWarn('Error storing intelligent astro data in Firebase:', storageError)
@@ -506,10 +501,8 @@ export async function hasComprehensiveData(userId: string): Promise<boolean> {
   
   // Check Firebase
   try {
-    const db = getFirebaseDB()
-    const docRef = doc(db, 'users', userId, 'astroProfile', 'comprehensive')
-    const docSnap = await getDoc(docRef)
-    return docSnap.exists()
+    const row = await userSubdocGet(userId, 'astroProfile', 'comprehensive')
+    return row != null
   } catch (error) {
     return false
   }

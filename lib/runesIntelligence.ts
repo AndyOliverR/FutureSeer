@@ -1,5 +1,4 @@
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore'
-import { getFirebaseDB } from './firebase';
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 
 export interface Rune {
   name: string
@@ -921,26 +920,17 @@ class RunesIntelligence {
   }
 
   async saveReading(userId: string, reading: RuneReading): Promise<void> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'rune-readings', reading.id)
-    await setDoc(docRef, reading)
+    await userSubdocSet(userId, 'rune-readings', reading.id, reading as unknown as Record<string, unknown>);
   }
 
   async getReading(userId: string, readingId: string): Promise<RuneReading | null> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'rune-readings', readingId)
-    const docSnap = await getDoc(docRef)
-    
-    if (docSnap.exists()) {
-      return docSnap.data() as RuneReading
-    }
-    return null
+    const data = await userSubdocGet(userId, 'rune-readings', readingId);
+    if (!data) return null;
+    return data as unknown as RuneReading;
   }
 
   async saveCoaching(userId: string, coaching: RunesCoaching): Promise<void> {
-    const db = getFirebaseDB();
-    const docRef = doc(db, 'users', userId, 'rune-coaching', coaching.id)
-    await setDoc(docRef, coaching)
+    await userSubdocSet(userId, 'rune-coaching', coaching.id, coaching as unknown as Record<string, unknown>);
   }
 
   getAllRunes(): Rune[] {

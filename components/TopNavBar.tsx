@@ -43,6 +43,7 @@ export function TopNavBar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuToggleRef = useRef<HTMLButtonElement>(null);
   const { registerModal } = useModalOpen();
 
   useEffect(() => {
@@ -62,6 +63,31 @@ export function TopNavBar() {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowMenu(false); };
     if (showMenu) document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
+  }, [showMenu]);
+
+  // Close when pressing outside the sheet and outside the hamburger (mouse / touch / pen).
+  // Use composedPath + data attr: capture-phase + ref/target alone can miss Framer's button or
+  // false-close before click, so the next click does setShowMenu(!false) and reopens the menu.
+  useEffect(() => {
+    if (!showMenu) return;
+    const closeIfOutside = (event: PointerEvent) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const hitMenu = path.some(
+        (n) => n instanceof Node && menuRef.current && menuRef.current.contains(n)
+      );
+      const hitToggle = path.some((n) => {
+        if (!(n instanceof Element)) return false;
+        if (menuToggleRef.current?.contains(n)) return true;
+        return Boolean(n.closest?.("[data-topnav-menu-toggle]"));
+      });
+      if (hitMenu || hitToggle) return;
+      setShowMenu(false);
+    };
+    document.addEventListener("pointerdown", closeIfOutside, { capture: true });
+    return () => {
+      document.removeEventListener("pointerdown", closeIfOutside, { capture: true });
+    };
   }, [showMenu]);
 
   return (
@@ -107,25 +133,31 @@ export function TopNavBar() {
             </div>
           )}
 
-          {/* Hamburger menu - Increased to 48px for Android */}
+          {/* Hamburger + panel: panel must sit below the trigger (top-14 vs safe-area used to overlap the row on iPhone). */}
+          <div className="relative shrink-0">
           <motion.button
-            className="flex flex-col justify-center items-center w-12 h-12 relative z-[102]"
-            onClick={() => setShowMenu(!showMenu)}
-            aria-label="Menu"
+            ref={menuToggleRef}
+            type="button"
+            data-topnav-menu-toggle
+            className="touch-manipulation flex flex-col justify-center items-center w-12 h-12 relative z-10"
+            onClick={() => setShowMenu((open) => !open)}
+            aria-expanded={showMenu}
+            aria-haspopup="true"
+            aria-label={showMenu ? "Close menu" : "Open menu"}
           >
             <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1.5'}`}></span>
             <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? 'opacity-0' : 'mb-1.5'}`}></span>
             <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
           </motion.button>
-        
+
         <AnimatePresence>
           {showMenu && (
             <motion.div
               ref={menuRef}
-              className="absolute right-3 sm:right-4 top-14 flex flex-col items-end z-[9999] w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-1rem)] sm:w-[min(20rem,calc(100vw-2.5rem))] md:w-auto bg-surface-container-high border border-outline-variant rounded-2xl p-2 shadow-2xl"
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="absolute right-0 top-full z-[10000] mt-2 flex flex-col items-end w-[min(18rem,calc(100vw-2rem))] max-w-[calc(100vw-1rem)] sm:w-[min(20rem,calc(100vw-2.5rem))] md:w-auto bg-surface-container-high border border-outline-variant rounded-2xl p-2 shadow-2xl"
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
             >
               {visibleNavLinks.map((link) =>
                 link.isModal && link.name === "Tip Jar" ? (
@@ -179,9 +211,23 @@ export function TopNavBar() {
             </motion.div>
           )}
         </AnimatePresence>
+          </div>
       </div>
       </nav>
     </TooltipProvider>
+    {showMenu ? (
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Dismiss menu"
+        className="fixed inset-0 z-[99] cursor-default bg-black/25 touch-none"
+        onPointerDown={(e) => {
+          if (e.pointerType === "mouse" && e.button !== 0) return;
+          setShowMenu(false);
+        }}
+        onClick={() => setShowMenu(false)}
+      />
+    ) : null}
     <ShareAppModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
     </>
   );

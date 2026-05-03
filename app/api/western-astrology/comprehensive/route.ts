@@ -4,6 +4,11 @@ import { createAICompletion } from '@/lib/aiGateway';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { transformComprehensiveToChunks } from '@/lib/westernReportChunks';
 import {
+  extractJsonCandidate,
+  parseJsonWithRepairs,
+  stripMarkdownCodeFences,
+} from '@/lib/westernJsonParser';
+import {
   elementModalityPolarityCounts,
   partOfFortuneFromPlanets,
   type PlanetLike,
@@ -96,7 +101,37 @@ async function setCachedDoc(collectionPath: string[], docId: string, data: any):
 // Schema version for predictive insights format
 // Version 2.0: Structured object with time-based predictions (today, week, month, year, etc.)
 const PREDICTIVE_INSIGHTS_SCHEMA_VERSION = '2.0';
-const inFlightWesternComprehensive = new Set<string>();
+
+/** Coordinates concurrent POSTs for the same user; waiters re-read Firestore after the leader finishes. */
+const westernComprehensiveInFlight = new Map<string, Promise<void>>();
+
+async function readValidWesternComprehensiveCache(userId: string): Promise<unknown | null> {
+  try {
+    const docSnap = await getCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive');
+    if (!docSnap || !docSnap.exists()) return null;
+    const cachedData = docSnap.data();
+    const lastUpdated = cachedData?.timestamp;
+    if (!lastUpdated) return null;
+    const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+    if (hoursSinceUpdate >= 24) return null;
+    const actualData = cachedData.data || cachedData;
+    const comprehensiveAnalysis = actualData?.comprehensiveAnalysis || actualData;
+    const predictiveInsights = comprehensiveAnalysis?.predictiveInsights;
+    const schemaVersion = cachedData?.schemaVersion || actualData?.schemaVersion;
+    const isOldFormat = typeof predictiveInsights === 'string';
+    if (isOldFormat || !schemaVersion || schemaVersion !== PREDICTIVE_INSIGHTS_SCHEMA_VERSION) {
+      devLog.info(
+        '🔄 Cached report has old format or schema version mismatch - forcing regeneration for user:',
+        userId,
+        'western',
+      );
+      return null;
+    }
+    return actualData;
+  } catch {
+    return null;
+  }
+}
 
 
 interface ComprehensiveWesternRequest {
@@ -311,14 +346,18 @@ Make each section comprehensive yet concise. Focus on practical guidance, self-a
 
 // Parse Groq response and extract structured data
 type WesternComprehensiveAnalysis = NonNullable<ComprehensiveWesternResponse['data']>['comprehensiveAnalysis'];
+
 function parseGroqResponse(response: string, planets: any[], houses: any[], aspects: any[], transits: any[] = []): WesternComprehensiveAnalysis {
-  devLog.debug('🔍 ========== STARTING PARSE GROQ RESPONSE ==========', undefined, 'western');
-  devLog.debug('🔍 Response length:', response.length, 'western');
-  devLog.debug('🔍 Planets available:', planets.length, 'western');
-  devLog.debug('🔍 Houses available:', houses.length, 'western');
-  devLog.debug('🔍 Aspects available:', aspects.length, 'western');
-  devLog.debug('🔍 Transits available:', transits.length, 'western');
-  
+  const verboseParse = process.env.VERBOSE_ASTRO_LOGS === '1';
+  if (verboseParse) {
+    devLog.debug('🔍 ========== STARTING PARSE GROQ RESPONSE ==========', undefined, 'western');
+    devLog.debug('🔍 Response length:', response.length, 'western');
+    devLog.debug('🔍 Planets available:', planets.length, 'western');
+    devLog.debug('🔍 Houses available:', houses.length, 'western');
+    devLog.debug('🔍 Aspects available:', aspects.length, 'western');
+    devLog.debug('🔍 Transits available:', transits.length, 'western');
+  }
+
   // Verify response structure before parsing
   if (!response || response.length === 0) {
     devLog.error('❌ Response is empty - cannot parse');
@@ -326,7 +365,7 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
   }
   
   // Check if response contains any JSON-like structure
-  const hasJsonStructure = /\{[\s\S]*\}/.test(response);
+  const hasJsonStructure = response.includes('{');
   if (!hasJsonStructure) {
     devLog.error('❌ Response does not contain JSON structure');
     devLog.error('❌ Response preview:', response.substring(0, 500));
@@ -336,72 +375,73 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
   try {
     // Strategy 0: Try direct JSON match (most common)
     devLog.debug('🔍 Strategy 0: Trying direct JSON match...', undefined, 'western');
-    let jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch && jsonMatch[0].length > 100) {
-      devLog.debug(`✅ Strategy 0: Found JSON match, length: ${jsonMatch[0].length}`, undefined, 'western');
+    let jsonCandidate = extractJsonCandidate(response);
+    if (jsonCandidate && jsonCandidate.length > 100) {
+      devLog.debug(`✅ Strategy 0: Found JSON candidate, length: ${jsonCandidate.length}`, undefined, 'western');
     } else {
-      devLog.warn(`⚠️ Strategy 0: JSON match too short or not found, length: ${jsonMatch?.[0]?.length ?? 0}`, undefined, 'western');
+      devLog.warn(`⚠️ Strategy 0: JSON candidate too short or not found, length: ${jsonCandidate?.length ?? 0}`, undefined, 'western');
     }
     
     // Strategy 1: Try extracting from markdown code blocks (most common)
-    if (!jsonMatch || jsonMatch[0].length < 100) {
+    if (!jsonCandidate || jsonCandidate.length < 100) {
       devLog.debug('🔍 Strategy 1: Trying markdown code block extraction...', undefined, 'western');
       const codeBlockMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
       if (codeBlockMatch && codeBlockMatch[1]) {
-        jsonMatch = [codeBlockMatch[1]]; // Use the captured group
-        devLog.debug(`✅ Strategy 1: Extracted JSON from markdown code block, length: ${jsonMatch[0].length}`, undefined, 'western');
+        jsonCandidate = codeBlockMatch[1];
+        devLog.debug(`✅ Strategy 1: Extracted JSON from markdown code block, length: ${jsonCandidate.length}`, undefined, 'western');
       } else {
         devLog.warn('⚠️ Strategy 1: No markdown code block found', undefined, 'western');
       }
     }
     
     // Strategy 2: Try finding JSON after common prefixes
-    if (!jsonMatch || jsonMatch[0].length < 100) {
+    if (!jsonCandidate || jsonCandidate.length < 100) {
       devLog.debug('🔍 Strategy 2: Trying JSON after prefix...', undefined, 'western');
       const prefixMatch = response.match(/(?:Here'?s?|Here is|Here's|The analysis|The chart analysis|Analysis):\s*(\{[\s\S]*\})/i);
       if (prefixMatch && prefixMatch[1]) {
-        jsonMatch = [prefixMatch[1]];
-        devLog.debug(`✅ Strategy 2: Extracted JSON after prefix, length: ${jsonMatch[0].length}`, undefined, 'western');
+        jsonCandidate = prefixMatch[1];
+        devLog.debug(`✅ Strategy 2: Extracted JSON after prefix, length: ${jsonCandidate.length}`, undefined, 'western');
       } else {
         devLog.warn('⚠️ Strategy 2: No prefix match found', undefined, 'western');
       }
     }
     
     // Strategy 3: Try finding the largest JSON object
-    if (!jsonMatch || jsonMatch[0].length < 100) {
+    if (!jsonCandidate || jsonCandidate.length < 100) {
       devLog.debug('🔍 Strategy 3: Trying to find largest JSON object...', undefined, 'western');
       const allMatches = response.match(/\{[\s\S]*?\}(?=\s*\{|\s*$)/g);
       if (allMatches && allMatches.length > 0) {
         // Find the largest JSON object (likely the main response)
-        jsonMatch = [allMatches.sort((a, b) => b.length - a.length)[0]];
-        devLog.debug(`✅ Strategy 3: Extracted largest JSON object from ${allMatches.length} matches, length: ${jsonMatch[0].length}`, undefined, 'western');
+        jsonCandidate = allMatches.sort((a, b) => b.length - a.length)[0];
+        devLog.debug(`✅ Strategy 3: Extracted largest JSON object from ${allMatches.length} matches, length: ${jsonCandidate.length}`, undefined, 'western');
       } else {
         devLog.warn('⚠️ Strategy 3: No JSON objects found', undefined, 'western');
       }
     }
     
-    if (jsonMatch && jsonMatch[0]) {
-      devLog.debug(`✅ Found JSON candidate, length: ${jsonMatch[0].length}`, undefined, 'western');
-      devLog.debug('🔍 JSON preview (first 1000 chars):', jsonMatch[0].substring(0, 1000), 'western');
-      devLog.debug('🔍 JSON preview (last 500 chars):', jsonMatch[0].substring(Math.max(0, jsonMatch[0].length - 500)), 'western');
+    if (jsonCandidate) {
+      devLog.debug(`✅ Found JSON candidate, length: ${jsonCandidate.length}`, undefined, 'western');
+      devLog.debug('🔍 JSON preview (first 1000 chars):', jsonCandidate.substring(0, 1000), 'western');
+      devLog.debug('🔍 JSON preview (last 500 chars):', jsonCandidate.substring(Math.max(0, jsonCandidate.length - 500)), 'western');
       
       let parsed;
-      let jsonString = jsonMatch[0];
+      let jsonString = jsonCandidate;
       
       // Clean up JSON string - remove common issues
       devLog.debug('🔍 Cleaning JSON string...', undefined, 'western');
       const originalLength = jsonString.length;
-      // Remove trailing commas before closing braces/brackets
+      jsonString = stripMarkdownCodeFences(jsonString);
+      const extracted = extractJsonCandidate(jsonString);
+      if (extracted) jsonString = extracted;
       jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
-      // Remove control characters
-      jsonString = jsonString.replace(/[\x00-\x1F\x7F]/g, '');
+      jsonString = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
       if (originalLength !== jsonString.length) {
         devLog.debug(`🔍 Cleaned JSON string, removed ${originalLength - jsonString.length}`, undefined, 'western');
       }
       
       devLog.debug('🔍 Attempting JSON.parse...', undefined, 'western');
       try {
-        parsed = JSON.parse(jsonString);
+        parsed = parseJsonWithRepairs(jsonString);
         devLog.debug('✅ JSON.parse successful!', undefined, 'western');
         devLog.debug(`🔍 Parsed object keys: ${Object.keys(parsed || {}).join(', ')}`, undefined, 'western');
       } catch (parseError: any) {
@@ -412,17 +452,17 @@ function parseGroqResponse(response: string, planets: any[], houses: any[], aspe
         devLog.debug('🔍 Attempting to fix JSON...', undefined, 'western');
         try {
           // Try to extract just the main object if nested incorrectly
-          const fixedMatch = jsonString.match(/\{[\s\S]*"chartOverview"[\s\S]*\}/);
+          const fixedMatch = jsonString.match(/\{[\s\S]*"chartOverview"[\s\S]*/);
           if (fixedMatch) {
             devLog.debug('🔍 Found chartOverview in JSON, attempting to extract main object...', undefined, 'western');
-            parsed = JSON.parse(fixedMatch[0]);
+            parsed = parseJsonWithRepairs(fixedMatch[0]);
             devWarn('⚠️ Fixed JSON by extracting main object');
           } else {
             // Try to find the main JSON object by looking for key fields
-            const alternativeMatch = jsonString.match(/\{[\s\S]*?(?:"chartOverview"|"planetaryAnalysis"|"houseAnalysis")[\s\S]*\}/);
+            const alternativeMatch = jsonString.match(/\{[\s\S]*?(?:"chartOverview"|"planetaryAnalysis"|"houseAnalysis")[\s\S]*/);
             if (alternativeMatch) {
               devLog.debug('🔍 Found alternative JSON structure, attempting to parse...', undefined, 'western');
-              parsed = JSON.parse(alternativeMatch[0]);
+              parsed = parseJsonWithRepairs(alternativeMatch[0]);
               devWarn('⚠️ Fixed JSON by extracting alternative structure');
             } else {
               throw parseError;
@@ -760,6 +800,8 @@ function generateChartBasedPredictions(
 
 export async function POST(request: NextRequest) {
   let lockKey: string | null = null;
+  /** Holder so TS does not narrow the resolver to `never` across try/finally (Promise executor assignment). */
+  const westernLeaderRelease: { fn: (() => void) | null } = { fn: null };
   try {
     const { userId, chartData }: ComprehensiveWesternRequest = await request.json();
 
@@ -771,57 +813,38 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     lockKey = `western-comprehensive:${userId}`;
-    if (inFlightWesternComprehensive.has(lockKey)) {
+
+    const leaderWait = westernComprehensiveInFlight.get(lockKey);
+    if (leaderWait) {
+      await leaderWait;
+      const afterWait = await readValidWesternComprehensiveCache(userId);
+      if (afterWait) {
+        devLog.info('✅ Returning Western comprehensive after in-flight run for user:', userId, 'western');
+        return NextResponse.json({ success: true, data: afterWait });
+      }
       return NextResponse.json(
         {
-          success: true,
-          inProgress: true,
-          message: 'Western comprehensive generation is already in progress for this user.',
+          success: false,
+          error: 'Western comprehensive did not become available after in-flight run; please retry.',
         },
-        { status: 202 },
+        { status: 503 },
       );
     }
-    inFlightWesternComprehensive.add(lockKey);
+
+    const donePromise = new Promise<void>((resolve) => {
+      westernLeaderRelease.fn = resolve;
+    });
+    westernComprehensiveInFlight.set(lockKey, donePromise);
 
     devLog.info('🔮 Comprehensive Western Astrology API: Generating comprehensive report for user:', userId, 'western');
 
-    // Check Firebase cache
     try {
-      const docSnap = await getCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive');
-      
-      if (docSnap && docSnap.exists()) {
-        const cachedData = docSnap.data();
-        const lastUpdated = cachedData?.timestamp;
-        
-        if (lastUpdated) {
-          const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
-          
-          // Check if cache is still valid (less than 24 hours old)
-          if (hoursSinceUpdate < 24) {
-            // Check schema version and format compatibility
-            const actualData = cachedData.data || cachedData;
-            const comprehensiveAnalysis = actualData?.comprehensiveAnalysis || actualData;
-            const predictiveInsights = comprehensiveAnalysis?.predictiveInsights;
-            
-            // Check if predictiveInsights is in old format (string) or schema version mismatch
-            const schemaVersion = cachedData?.schemaVersion || actualData?.schemaVersion;
-            const isOldFormat = typeof predictiveInsights === 'string';
-            
-            if (isOldFormat || !schemaVersion || schemaVersion !== PREDICTIVE_INSIGHTS_SCHEMA_VERSION) {
-              devLog.info('🔄 Cached report has old format or schema version mismatch - forcing regeneration for user:', userId, 'western');
-              // Skip cache and proceed with generation
-            } else {
-              devLog.info('✅ Returning cached comprehensive Western astrology report for user:', userId, 'western');
-              return NextResponse.json({
-                success: true,
-                data: actualData
-              });
-            }
-          }
-        }
+      const cached = await readValidWesternComprehensiveCache(userId);
+      if (cached) {
+        devLog.info('✅ Returning cached comprehensive Western astrology report for user:', userId, 'western');
+        return NextResponse.json({ success: true, data: cached });
       }
     } catch (cacheError: any) {
-      // Log error but don't fail the request - cache is optional
       if (process.env.NODE_ENV === 'development') {
         devWarn('⚠️ Error checking cache, proceeding with generation:', cacheError?.message || cacheError, 'western-astrology');
       }
@@ -864,34 +887,33 @@ export async function POST(request: NextRequest) {
 
     const aiResponse = result.content || '';
     devLog.info('✅ Groq API response received', undefined, 'western');
-    
-    // Comprehensive raw response logging BEFORE any parsing
-    devLog.debug('📝 ========== RAW GROQ RESPONSE ==========', undefined, 'western');
-    devLog.debug('📝 Response length:', aiResponse.length, 'western');
-    devLog.debug('📝 Response is empty:', !aiResponse || aiResponse.length === 0, 'western');
-    
-    // Log full response for debugging (truncate if too long)
-    if (aiResponse.length > 0) {
-      devLog.debug('📝 First 2000 characters:', aiResponse.substring(0, 2000), 'western');
-      if (aiResponse.length > 2000) {
-        devLog.debug('📝 Last 500 characters:', aiResponse.substring(Math.max(0, aiResponse.length - 500)), 'western');
+
+    const verboseWestern = process.env.VERBOSE_ASTRO_LOGS === '1';
+    if (verboseWestern) {
+      devLog.debug('📝 ========== RAW GROQ RESPONSE ==========', undefined, 'western');
+      devLog.debug('📝 Response length:', aiResponse.length, 'western');
+      devLog.debug('📝 Response is empty:', !aiResponse || aiResponse.length === 0, 'western');
+      if (aiResponse.length > 0) {
+        devLog.debug('📝 First 2000 characters:', aiResponse.substring(0, 2000), 'western');
+        if (aiResponse.length > 2000) {
+          devLog.debug('📝 Last 500 characters:', aiResponse.substring(Math.max(0, aiResponse.length - 500)), 'western');
+        }
+        const hasJson = /\{[\s\S]*\}/.test(aiResponse);
+        const hasMarkdownCodeBlock = /```(?:json)?\s*\{/.test(aiResponse);
+        const hasChartOverview = /chartOverview/i.test(aiResponse);
+        const hasPlanetaryAnalysis = /planetaryAnalysis/i.test(aiResponse);
+        devLog.debug('📝 Response structure analysis:', undefined, 'western');
+        devLog.debug('📝   - Contains JSON braces:', hasJson, 'western');
+        devLog.debug('📝   - Contains markdown code blocks:', hasMarkdownCodeBlock, 'western');
+        devLog.debug('📝   - Mentions "chartOverview":', hasChartOverview, 'western');
+        devLog.debug('📝   - Mentions "planetaryAnalysis":', hasPlanetaryAnalysis, 'western');
+      } else {
+        devLog.error('❌ ERROR: Groq response is EMPTY!');
       }
-      
-      // Check response structure
-      const hasJson = /\{[\s\S]*\}/.test(aiResponse);
-      const hasMarkdownCodeBlock = /```(?:json)?\s*\{/.test(aiResponse);
-      const hasChartOverview = /chartOverview/i.test(aiResponse);
-      const hasPlanetaryAnalysis = /planetaryAnalysis/i.test(aiResponse);
-      
-      devLog.debug('📝 Response structure analysis:', undefined, 'western');
-      devLog.debug('📝   - Contains JSON braces:', hasJson, 'western');
-      devLog.debug('📝   - Contains markdown code blocks:', hasMarkdownCodeBlock, 'western');
-      devLog.debug('📝   - Mentions "chartOverview":', hasChartOverview, 'western');
-      devLog.debug('📝   - Mentions "planetaryAnalysis":', hasPlanetaryAnalysis, 'western');
-    } else {
+      devLog.debug('📝 =======================================', undefined, 'western');
+    } else if (!aiResponse || aiResponse.length === 0) {
       devLog.error('❌ ERROR: Groq response is EMPTY!');
     }
-    devLog.debug('📝 =======================================', undefined, 'western');
 
     // Parse the response with error handling
     let comprehensiveAnalysis;
@@ -1011,7 +1033,8 @@ export async function POST(request: NextRequest) {
       error: error.message || 'Failed to generate comprehensive Western astrology analysis'
     }, { status: 500 });
   } finally {
-    if (lockKey) inFlightWesternComprehensive.delete(lockKey);
+    westernLeaderRelease.fn?.();
+    if (lockKey) westernComprehensiveInFlight.delete(lockKey);
   }
 }
 

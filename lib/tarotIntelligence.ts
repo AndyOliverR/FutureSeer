@@ -1,6 +1,5 @@
-import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { devLog } from '@/lib/devLogger';
-import { db } from '@/lib/firebase'
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore';
 import { LOCAL_TAROT_CARDS } from './tarotApiService'
 
 export interface TarotCard {
@@ -518,32 +517,26 @@ class TarotIntelligence {
   }
 
   async saveReading(userId: string, reading: TarotReading): Promise<void> {
-    const docRef = doc(db, 'users', userId, 'tarot-readings', reading.id)
-    await setDoc(docRef, {
+    await userSubdocSet(userId, 'tarot-readings', reading.id, {
       ...reading,
-      timestamp: reading.timestamp.toISOString()
-    })
+      timestamp: reading.timestamp.toISOString(),
+    } as Record<string, unknown>)
   }
 
   async getReading(userId: string, readingId: string): Promise<TarotReading | null> {
-    const docRef = doc(db, 'users', userId, 'tarot-readings', readingId)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const data = docSnap.data()
-      return {
-        ...data,
-        timestamp: new Date(data.timestamp)
-      } as TarotReading
-    }
-    return null
+    const data = await userSubdocGet(userId, 'tarot-readings', readingId)
+    if (!data) return null
+    return {
+      ...data,
+      timestamp: new Date(data.timestamp as string),
+    } as TarotReading
   }
 
   async saveCoaching(userId: string, coaching: TarotCoaching): Promise<void> {
-    const docRef = doc(db, 'users', userId, 'tarot-coaching', coaching.id)
-    await setDoc(docRef, {
+    await userSubdocSet(userId, 'tarot-coaching', coaching.id, {
       ...coaching,
-      timestamp: coaching.timestamp.toISOString()
-    })
+      timestamp: coaching.timestamp.toISOString(),
+    } as Record<string, unknown>)
   }
 
   getSystemStatus() {

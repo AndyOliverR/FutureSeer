@@ -38,6 +38,12 @@ let wasmSingleton: SwissWasm | null | undefined
 
 async function getSwissWasm(): Promise<SwissWasm | null> {
   if (wasmSingleton !== undefined) return wasmSingleton
+  // In local/dev server runtimes, swisseph-wasm asset fetch can 404 (`/_next/static/media/...data`).
+  // We intentionally skip WASM here and let callers use the Astronomia fallback path.
+  if (process.env.NODE_ENV !== 'production') {
+    wasmSingleton = null
+    return null
+  }
   try {
     const mod = await import('swisseph-wasm')
     const swe = new mod.default()

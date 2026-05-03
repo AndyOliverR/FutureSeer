@@ -54,9 +54,19 @@ function formatMundaneReportContext(report: Record<string, unknown> | undefined)
   if (!report || typeof report !== 'object') return '';
   const lines: string[] = [];
   lines.push(`Country: ${report.countryName ?? '—'}`);
-  lines.push(`Capital: ${report.capitalName ?? '—'}`);
+  const chartLoc =
+    typeof report.chartLocationName === 'string' && report.chartLocationName.trim()
+      ? report.chartLocationName
+      : null;
+  if (chartLoc) lines.push(`Ingress chart cast for: ${chartLoc}`);
+  if (report.capitalName != null && String(report.capitalName).trim()) {
+    lines.push(`National administrative capital: ${report.capitalName}`);
+  }
   lines.push(`Year: ${report.year ?? '—'}`);
-  if (report.ingressDatetime) lines.push(`Aries Ingress: ${report.ingressDatetime}`);
+  if (report.ingressDatetime) lines.push(`Aries Ingress (UTC): ${report.ingressDatetime}`);
+  if (typeof report.ingressDisplayLocal === 'string' && report.ingressDisplayLocal.trim()) {
+    lines.push(`Aries Ingress (local display): ${report.ingressDisplayLocal}`);
+  }
   if (report.chartSummary) lines.push(`Chart summary: ${report.chartSummary}`);
 
   const bands = (report.riskBands ?? (report.riskScores as Record<string, unknown>)?.bands) as Record<string, string> | undefined;

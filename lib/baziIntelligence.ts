@@ -1,4 +1,5 @@
 import { getFirebaseDB } from './firebase'
+import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { getCoordinatesWithFallback } from './geocoding'
 import { devLog, devWarn } from './devLogger'
 import { CACHE_TTL } from './cacheConstants'
@@ -1259,13 +1260,10 @@ class BaziIntelligence {
     try {
       const db = getFirebaseDB()
       if (db) {
-        const { doc, getDoc, setDoc } = await import('firebase/firestore')
         const birthDataKey = `${userProfile.birthDate}_${userProfile.birthTime}_${userProfile.birthPlace}`
-        const cacheDocRef = doc(db, 'users', userId, 'baziReports', 'current')
-        const docSnap = await getDoc(cacheDocRef)
-        
-        if (docSnap.exists()) {
-          const cachedData = docSnap.data() as BaziReading
+        const cachedRaw = await userSubdocGet(userId, 'baziReports', 'current')
+        if (cachedRaw) {
+          const cachedData = cachedRaw as unknown as BaziReading
           const cachedBirthKey = cachedData.metadata?.lastUpdated ? 
             `${userProfile.birthDate}_${userProfile.birthTime}_${userProfile.birthPlace}` : null
           
@@ -1282,11 +1280,11 @@ class BaziIntelligence {
         }
         
         const reading = await this.analyzeBazi(baziData)
-        await setDoc(cacheDocRef, {
+        await userSubdocSet(userId, 'baziReports', 'current', {
           ...reading,
           birthDataKey,
-          lastUpdated: new Date()
-        })
+          lastUpdated: new Date(),
+        } as unknown as Record<string, unknown>)
         devLog.info('Cached BaZi reading for user:', userId, 'bazi')
         return reading
       }
