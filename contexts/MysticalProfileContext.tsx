@@ -111,6 +111,7 @@ const profileCache = new Map<string, { data: ComprehensiveMysticalProfile; times
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 const COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS = 15_000
+const WARN_THROTTLE_MS = 30_000
 
 async function firestoreReadWithTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -139,12 +140,25 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
   const lastAppliedGeneratedAtRef = useRef<string | null>(null)
   const profileUserIdRef = useRef<string | null>(null)
   const noProfileLoggedForUserRef = useRef<string | null>(null)
+  const lastWarnAtRef = useRef<Record<string, number>>({})
 
   const [profile, setProfile] = useState<ComprehensiveMysticalProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const stale = isReportsStale(userProfile)
+  const warnThrottled = useCallback((key: string, message: string, payload?: unknown) => {
+    if (process.env.NODE_ENV !== 'development') return
+    const now = Date.now()
+    const last = lastWarnAtRef.current[key] ?? 0
+    if (now - last < WARN_THROTTLE_MS) return
+    lastWarnAtRef.current[key] = now
+    if (payload !== undefined) {
+      console.warn(message, payload)
+      return
+    }
+    console.warn(message)
+  }, [])
 
   const applyFirestoreProfile = useCallback((userId: string, data: ComprehensiveMysticalProfile | null) => {
     // Always apply incoming server data so that real-time updates (e.g. after generate-mystical)
@@ -197,7 +211,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
 
       const profileRef = doc(db, 'comprehensiveMysticalProfiles', userId)
       let profileSnap
-      if (useCache) {
+      if (useCache || background) {
         profileSnap = await firestoreReadWithTimeout(
           getDoc(profileRef),
           COMPREHENSIVE_PROFILE_READ_TIMEOUT_MS
@@ -217,15 +231,14 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
             serverErrMessage.includes('permission-denied') ||
             serverErrMessage.includes('Missing or insufficient permissions') ||
             serverErrMessage.toLowerCase().includes('insufficient permissions')
-          if (process.env.NODE_ENV === 'development') {
-            if (isTransientServerReadPermissionIssue) {
-              console.warn(
-                '⚠️ Server read permission transient, falling back to cache/listener:',
-                serverErrMessage
-              )
-            } else {
-              console.warn('⚠️ Server read failed, using cache:', serverErr)
-            }
+          if (isTransientServerReadPermissionIssue) {
+            warnThrottled(
+              'server_read_permission_transient',
+              '⚠️ Server read permission transient, falling back to cache/listener:',
+              serverErrMessage
+            )
+          } else {
+            warnThrottled('server_read_failed', '⚠️ Server read failed, using cache:', serverErr)
           }
           profileSnap = await firestoreReadWithTimeout(
             getDoc(profileRef),
@@ -283,11 +296,18 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         errorMessage.includes('permission-denied') ||
         errorMessage.includes('Missing or insufficient permissions') ||
         errorMessage.toLowerCase().includes('insufficient permissions')
-      if (isReadTimeout && process.env.NODE_ENV === 'development') {
-        console.warn('⚠️ Comprehensive profile Firestore read exceeded timeout; trying cache/listener')
+      if (isReadTimeout) {
+        warnThrottled(
+          'profile_read_timeout',
+          '⚠️ Comprehensive profile Firestore read exceeded timeout; trying cache/listener'
+        )
       }
-      if (isBenignFirestoreError && process.env.NODE_ENV === 'development') {
-        console.warn('⚠️ Profile fetch hit known Firestore quirk, will use cache/listener:', errorMessage)
+      if (isBenignFirestoreError) {
+        warnThrottled(
+          'profile_fetch_benign_error',
+          '⚠️ Profile fetch hit known Firestore quirk, will use cache/listener:',
+          errorMessage
+        )
       } else if (isReadTimeout) {
         setError(
           'Your mystical profile is taking longer than usual to load. Check your connection; saved readings may appear shortly.'
@@ -335,7 +355,7 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
     } finally {
       if (!background) setLoading(false)
     }
-  }, [applyFirestoreProfile, pathname, user])
+  }, [applyFirestoreProfile, pathname, user, warnThrottled])
 
   const refreshProfile = useCallback(async () => {
     if (user?.uid) {

@@ -185,6 +185,9 @@ export default function MysticalProfilePage() {
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const hasGeneratingIntent = searchParams.get("generating") === "1"
+  const hasSessionGenerationInProgress =
+    typeof window !== "undefined" &&
+    sessionStorage.getItem("futureSeer:generationStatus") === "in_progress"
   /**
    * POST sets `mysticalProfileGenerated` on the user doc before tools finish — use `allReportsReady`, not that flag alone.
    * Session `failed` (e.g. old 409) must not hide the progress panel while reports are still filling.
@@ -204,10 +207,12 @@ export default function MysticalProfilePage() {
     }
     if (generationPending) return true
     if (hasGeneratingIntent) return true
+    if (hasSessionGenerationInProgress) return true
     return false
   }, [
     generationPending,
     hasGeneratingIntent,
+    hasSessionGenerationInProgress,
     userProfile?.mysticalProfileGenerated,
     userProfile?.allReportsReady,
   ])
@@ -696,7 +701,9 @@ export default function MysticalProfilePage() {
     !isSuperadmin &&
     !isAdmin &&
     !hasUsableMysticalData &&
-    !generationActive
+    !generationActive &&
+    !hasGeneratingIntent &&
+    !hasSessionGenerationInProgress
   ) {
     if (generationError) {
       return (
