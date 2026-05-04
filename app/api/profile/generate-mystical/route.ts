@@ -41,6 +41,23 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 const HEARTBEAT_STALE_MS = 45_000;
 
+function resolveBaseUrlSource(): string {
+  if (process.env.INTERNAL_BASE_URL) return 'INTERNAL_BASE_URL';
+  if (process.env.NEXT_PUBLIC_BASE_URL) return 'NEXT_PUBLIC_BASE_URL';
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return 'VERCEL_PROJECT_PRODUCTION_URL';
+  if (process.env.VERCEL_URL) return 'VERCEL_URL';
+  if (process.env.NODE_ENV === 'development') return 'localhost_fallback';
+  return 'futureseer_app_fallback';
+}
+
+function auditGeneration(tag: string, payload: Record<string, unknown>): void {
+  // Temporary production diagnostics for local/prod parity verification.
+  const safe = Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined)
+  );
+  console.info(`[GENERATE-MYSTICAL-AUDIT] ${tag}`, safe);
+}
+
 /** Grace past `maxDuration` before treating a lock as stale (failed/crashed run). */
 function mysticalLockStaleMs(): number {
   return maxDuration * 1000 + 120_000;
@@ -112,7 +129,12 @@ async function writeRegenDecisionTelemetry(
 export async function POST(request: NextRequest) {
   let uid: string | undefined;
   try {
+    const baseUrlSource = resolveBaseUrlSource();
     if (!ensureAdminAvailable('POST /api/profile/generate-mystical')) {
+      auditGeneration('post_admin_unavailable', {
+        uid: uid ?? null,
+        baseUrlSource,
+      });
       return NextResponse.json(
         {
           error: 'Profile generation is temporarily unavailable on this deployment. Please retry shortly.',
@@ -337,6 +359,11 @@ export async function POST(request: NextRequest) {
 
     const lockResult = await acquireMysticalGenerationLock(uid, idempotencyKey, mysticalLockStaleMs());
     if (lockResult === 'idempotent_in_progress') {
+      auditGeneration('post_idempotent_in_progress', {
+        uid,
+        lockResult,
+        baseUrlSource,
+      });
       return NextResponse.json(
         {
           success: true,
@@ -349,6 +376,11 @@ export async function POST(request: NextRequest) {
       );
     }
     if (lockResult === 'concurrent') {
+      auditGeneration('post_concurrent_lock', {
+        uid,
+        lockResult,
+        baseUrlSource,
+      });
       return NextResponse.json(
         { error: 'Profile generation is already in progress. Please wait for it to complete.', generationState: 'in_progress' },
         { status: 409 }
@@ -411,6 +443,14 @@ export async function POST(request: NextRequest) {
     if (!userWriteOk || !lockWriteOk || !jobWriteOk) {
       throw new Error('Failed to persist generation state. Check Firebase Admin availability.');
     }
+    auditGeneration('post_enqueued', {
+      uid,
+      lockResult,
+      generationMode,
+      decisionReason: hashMatches ? 'missing_tools_backfill' : 'profile_hash_changed',
+      baseUrlSource,
+      pendingCount: ALL_TOOL_SLUGS.length,
+    });
 
     if (!uid) {
       throw new Error('[generate-mystical] invariant: uid missing after auth before Stage B');
@@ -462,7 +502,12 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    const baseUrlSource = resolveBaseUrlSource();
     if (!ensureAdminAvailable('GET /api/profile/generate-mystical')) {
+      auditGeneration('get_admin_unavailable', {
+        uid: null,
+        baseUrlSource,
+      });
       return NextResponse.json(
         {
           error: 'Generation status is temporarily unavailable on this deployment. Please retry shortly.',
@@ -596,6 +641,21 @@ export async function GET(request: NextRequest) {
       typeof generationJobCompletedToolsRaw === 'number' ? generationJobCompletedToolsRaw : null;
     const generationJobTotalTools =
       typeof generationJobTotalToolsRaw === 'number' ? generationJobTotalToolsRaw : null;
+    auditGeneration('get_status_summary', {
+      uid,
+      generationState,
+      jobStatus: generationJobStatus,
+      lockStatus: lockStatus ?? null,
+      lastHeartbeatAt,
+      readyToolsCount: readiness.readyToolsCount,
+      pendingCount: pendingToolSlugs.length,
+      resumeAttempted,
+      currentToolSlug:
+        (generationJob?.currentToolSlug as string | undefined) ??
+        (lock?.currentToolSlug as string | undefined) ??
+        null,
+      baseUrlSource,
+    });
     return NextResponse.json({
       success: true,
       inProgress,
