@@ -71,6 +71,16 @@ export function isAdminAvailable(): boolean {
   return adminDb !== null;
 }
 
+export function ensureAdminAvailable(context: string): boolean {
+  if (adminDb) return true;
+  devLog.error(
+    `[firebase-admin] Firebase Admin unavailable for ${context}. Check FIREBASE_ADMIN_* env vars in this environment.`,
+    undefined,
+    'firebase-admin'
+  );
+  return false;
+}
+
 export async function getDocument(collection: string, docId: string) {
   if (adminDb) {
     const docRef = adminDb.collection(collection).doc(docId);
@@ -86,13 +96,25 @@ export async function setDocument(collection: string, docId: string, data: any) 
     await docRef.set(data, { merge: true });
     return true;
   }
+  devLog.warn(
+    `[firebase-admin] setDocument skipped: admin unavailable for ${collection}/${docId}`,
+    undefined,
+    'firebase-admin'
+  );
   return false;
 }
 
 export async function batchSetDocuments(
   writes: Array<{ collection: string; docId: string; data: any }>
 ): Promise<boolean> {
-  if (!adminDb) return false;
+  if (!adminDb) {
+    devLog.warn(
+      '[firebase-admin] batchSetDocuments skipped: admin unavailable',
+      undefined,
+      'firebase-admin'
+    );
+    return false;
+  }
   const batch = adminDb.batch();
   for (const w of writes) {
     const docRef = adminDb.collection(w.collection).doc(w.docId);

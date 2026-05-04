@@ -17,7 +17,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { adminDb, getDocument, setDocument } from '@/lib/firebase-admin';
+import { adminDb, ensureAdminAvailable, getDocument, setDocument } from '@/lib/firebase-admin';
 import { ALL_TOOL_SLUGS, summarizeToolReadiness } from '@/lib/profileGenerationOrchestrator';
 import type { UserProfile } from '@/lib/firebase';
 import { calculateProfileDataHash } from '@/lib/firebase';
@@ -112,6 +112,16 @@ async function writeRegenDecisionTelemetry(
 export async function POST(request: NextRequest) {
   let uid: string | undefined;
   try {
+    if (!ensureAdminAvailable('POST /api/profile/generate-mystical')) {
+      return NextResponse.json(
+        {
+          error: 'Profile generation is temporarily unavailable on this deployment. Please retry shortly.',
+          code: 'admin_unavailable',
+        },
+        { status: 503 },
+      );
+    }
+
     const authHeader = request.headers.get('Authorization');
     const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!idToken) {
@@ -371,8 +381,8 @@ export async function POST(request: NextRequest) {
       if (profileWithUid[key] !== undefined) userUpdate[key] = profileWithUid[key];
     }
 
-    await setDocument('users', uid, userUpdate);
-    await setDocument('generationLocks', uid, {
+    const userWriteOk = await setDocument('users', uid, userUpdate);
+    const lockWriteOk = await setDocument('generationLocks', uid, {
       status: 'running',
       phase: 'running',
       totalTools: ALL_TOOL_SLUGS.length,
@@ -381,7 +391,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
       currentToolSlug: null,
     });
-    await setDocument('generationJobs', uid, {
+    const jobWriteOk = await setDocument('generationJobs', uid, {
       uid,
       status: 'queued',
       phase: 'running',
@@ -398,6 +408,9 @@ export async function POST(request: NextRequest) {
       lastProgressAt: now,
       lastHeartbeatAt: now,
     });
+    if (!userWriteOk || !lockWriteOk || !jobWriteOk) {
+      throw new Error('Failed to persist generation state. Check Firebase Admin availability.');
+    }
 
     if (!uid) {
       throw new Error('[generate-mystical] invariant: uid missing after auth before Stage B');
@@ -449,6 +462,16 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    if (!ensureAdminAvailable('GET /api/profile/generate-mystical')) {
+      return NextResponse.json(
+        {
+          error: 'Generation status is temporarily unavailable on this deployment. Please retry shortly.',
+          code: 'admin_unavailable',
+        },
+        { status: 503 },
+      );
+    }
+
     const authHeader = request.headers.get('Authorization');
     const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
     if (!idToken) {
@@ -540,9 +563,13 @@ export async function GET(request: NextRequest) {
       generated &&
       !allReportsReady &&
       (
+        generationJobStatus == null ||
         generationJobStatus === 'queued' ||
         generationJobStatus === 'failed' ||
         generationJobStatus === 'stale_running' ||
+        generationJobStatus === 'failed_terminal' ||
+        lockStatus === 'failed' ||
+        (lockRuntime.isRunning && lockRuntime.isStale) ||
         runningHeartbeatStale
       );
     if (shouldResume) {
