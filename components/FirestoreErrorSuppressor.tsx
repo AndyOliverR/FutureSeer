@@ -74,6 +74,8 @@ export function FirestoreErrorSuppressor() {
     const originalConsoleError = console.error;
     const originalConsoleWarn = console.warn;
     let corruptionRecoveryTriggered = false;
+    const warnBuckets = new Map<string, number>();
+    const WARN_THROTTLE_MS = 30_000;
 
     const triggerCorruptionRecovery = () => {
       if (corruptionRecoveryTriggered || typeof window === 'undefined') return;
@@ -170,6 +172,21 @@ export function FirestoreErrorSuppressor() {
     console.warn = (...args: any[]) => {
       const message = args.map((a: any) => (typeof a === 'string' ? a : String(a))).join(' ');
       if (isCOOPWindowClosedMessage(message, args)) return;
+      if (
+        message.includes('Server read failed, using cache') ||
+        message.includes('Profile fetch hit known Firestore quirk') ||
+        message.includes('Server read permission transient')
+      ) {
+        const key = message.includes('Server read failed')
+          ? 'server_read_failed'
+          : message.includes('Profile fetch hit known Firestore quirk')
+            ? 'profile_fetch_benign'
+            : 'server_read_permission_transient';
+        const now = Date.now();
+        const last = warnBuckets.get(key) ?? 0;
+        if (now - last < WARN_THROTTLE_MS) return;
+        warnBuckets.set(key, now);
+      }
       originalConsoleWarn.apply(console, args);
     };
 
