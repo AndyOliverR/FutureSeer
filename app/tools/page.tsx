@@ -83,7 +83,18 @@ function ToolsPageContent() {
     if (sec < 5) return 'updated now'
     if (sec < 60) return `updated ${sec}s ago`
     const min = Math.floor(sec / 60)
+    if (min > 180) return 'updated 3h+ ago'
     return `updated ${min}m ago`
+  }
+  const getPendingSubtitle = (listSlug: string) => {
+    const pathKey = toolListSlugToProfilePathKey(listSlug)
+    const status = toolStatusByPath[pathKey]
+    const ts = status?.updatedAt ?? status?.generatedAt
+    if (!ts) return 'processing'
+    const ageMs = Math.max(0, nowMs - ts)
+    if (status?.state === 'running') return formatAgo(ts) ?? 'processing'
+    if (ageMs > 20 * 60 * 1000) return 'syncing status...'
+    return formatAgo(ts) ?? 'processing'
   }
   const numerologyPreviewBypassEnabled = isNumerologyChartsV2Enabled()
   const baselineNextStepTools = useMemo(
@@ -140,6 +151,31 @@ function ToolsPageContent() {
     }, 8000)
     return () => window.clearInterval(id)
   }, [user?.uid, generationHasPendingTools, refreshMysticalProfile])
+
+  /**
+   * Resume bridge for production: tools page may be the only active surface.
+   * Triggering status GET periodically helps recover stalled queued/failed jobs.
+   */
+  useEffect(() => {
+    if (!user || !generationHasPendingTools) return
+    const run = async () => {
+      try {
+        const idToken = await user.getIdToken()
+        await fetch('/api/profile/generate-mystical', {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${idToken}` },
+          cache: 'no-store',
+        })
+      } catch {
+        // best-effort bridge; rely on existing polling and snapshots
+      }
+    }
+    void run()
+    const id = window.setInterval(() => {
+      void run()
+    }, 15_000)
+    return () => window.clearInterval(id)
+  }, [user, generationHasPendingTools])
 
   useEffect(() => {
     if (
@@ -298,7 +334,7 @@ function ToolsPageContent() {
                         <p className="text-xs text-surface-on-variant uppercase font-bold opacity-70 tracking-wide mt-1">{tool.category}</p>
                         {isToolPending(tool.slug) ? (
                           <p className="text-xs text-surface-on-variant mt-1">
-                            {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
+                            {getPendingSubtitle(tool.slug)}
                           </p>
                         ) : null}
                       </div>
@@ -338,7 +374,7 @@ function ToolsPageContent() {
                     <p className="text-xs text-surface-on-variant uppercase font-bold opacity-70 tracking-wide mt-1">{tool.category}</p>
                     {isToolPending(tool.slug) ? (
                       <p className="text-xs text-surface-on-variant mt-1">
-                        {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
+                        {getPendingSubtitle(tool.slug)}
                       </p>
                     ) : null}
                   </div>
@@ -418,7 +454,7 @@ function ToolsPageContent() {
                         <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                         {isToolPending(tool.slug) ? (
                           <p className="mt-2 text-xs text-surface-on-variant">
-                            {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
+                            {getPendingSubtitle(tool.slug)}
                           </p>
                         ) : null}
                         <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
@@ -460,7 +496,7 @@ function ToolsPageContent() {
                 <p className="text-surface-on-variant text-sm font-light leading-relaxed flex-grow">{tool.description}</p>
                 {isToolPending(tool.slug) ? (
                   <p className="mt-2 text-xs text-surface-on-variant">
-                    {formatAgo(toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.updatedAt ?? toolStatusByPath[toolListSlugToProfilePathKey(tool.slug)]?.generatedAt) ?? 'processing'}
+                    {getPendingSubtitle(tool.slug)}
                   </p>
                 ) : null}
                 <div className="mt-4 text-amber-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">

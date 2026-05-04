@@ -15,6 +15,7 @@ const mockBatchSetDocuments = jest.fn();
 const mockGenerateAllReports = jest.fn();
 const mockClearCachedDivinationData = jest.fn();
 const mockTryResumeMysticalStageB = jest.fn();
+const mockEnsureAdminAvailable = jest.fn();
 
 jest.mock('firebase-admin/auth', () => ({
   getAuth: () => ({ verifyIdToken: mockVerifyIdToken }),
@@ -55,6 +56,7 @@ jest.mock('@/lib/firebase-admin', () => {
     setDocument: (...args: unknown[]) => mockSetDocument(...args),
     batchSetDocuments: (...args: unknown[]) => mockBatchSetDocuments(...args),
     isAdminAvailable: () => true,
+    ensureAdminAvailable: (...args: unknown[]) => mockEnsureAdminAvailable(...args),
     adminDb: mockAdminDb,
   };
 });
@@ -101,8 +103,9 @@ describe('Profile generate-mystical API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockVerifyIdToken.mockResolvedValue({ uid });
-    mockSetDocument.mockResolvedValue(undefined);
+    mockSetDocument.mockResolvedValue(true);
     mockBatchSetDocuments.mockResolvedValue(true);
+    mockEnsureAdminAvailable.mockReturnValue(true);
     mockClearCachedDivinationData.mockReturnValue(undefined);
     mockGenerateAllReports.mockResolvedValue({
       success: true,
