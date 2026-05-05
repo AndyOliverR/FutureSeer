@@ -26,7 +26,7 @@ export default function PricingPage() {
   if (!isMounted) return null
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen py-12 px-3 sm:px-4 md:px-6 overflow-hidden relative">
+    <div className="starfield-ultra-sharp min-h-screen py-12 px-3 sm:px-4 md:px-6 pb-32 md:pb-12 overflow-x-hidden relative">
       {/* Logo - Top Left */}
       <Link href="/" className="futureseer-logo text-2xl font-semibold tracking-wide transition-transform text-amber-400 absolute top-4 left-4 z-50">
         FutureSeer

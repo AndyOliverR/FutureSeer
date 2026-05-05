@@ -3,6 +3,12 @@
 import { useEffect } from 'react';
 import { devLog } from '@/lib/devLogger';
 
+declare global {
+  interface Window {
+    __futureSeerWarnBuckets?: Map<string, number>;
+  }
+}
+
 /**
  * Suppresses Firestore internal assertion errors before Next.js error overlay catches them
  * This component runs early and patches global error handlers
@@ -74,8 +80,11 @@ export function FirestoreErrorSuppressor() {
     const originalConsoleError = console.error;
     const originalConsoleWarn = console.warn;
     let corruptionRecoveryTriggered = false;
-    const warnBuckets = new Map<string, number>();
-    const WARN_THROTTLE_MS = 30_000;
+    const warnBuckets =
+      typeof window !== 'undefined'
+        ? (window.__futureSeerWarnBuckets ??= new Map<string, number>())
+        : new Map<string, number>();
+    const WARN_THROTTLE_MS = 120_000;
 
     const triggerCorruptionRecovery = () => {
       if (corruptionRecoveryTriggered || typeof window === 'undefined') return;
