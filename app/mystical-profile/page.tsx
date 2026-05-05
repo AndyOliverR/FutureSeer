@@ -782,18 +782,13 @@ export default function MysticalProfilePage() {
       </p>
           </div>
         ) : null}
-        {groupedCards.length === 0 && !generationActive ? (
-          <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
-            <p>
-              No report snippets yet—either generation is still running in the background, or reports are not ready for cards. Open{" "}
-              <Link href="/tools" className="text-primary underline">
-                Tools
-              </Link>{" "}
-              for per-tool status, or{" "}
-              <Link href="/profile" className="text-primary underline">
-                Profile
-              </Link>{" "}
-              to retry generation.
+        {groupedCards.length === 0 ? (
+          <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm mb-4">
+            <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
+            <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
+            <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
+            <p className="mt-2 text-xs text-surface-on-variant">
+              Snippets will appear one by one as each report is ready. You can stay on this page.
             </p>
           </div>
         ) : (
@@ -887,18 +882,14 @@ export default function MysticalProfilePage() {
       </p>
           </div>
         ) : null}
-        {groupedCards.length === 0 && !generationActive ? (
-          <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
+        {groupedCards.length === 0 ? (
+          <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400 mb-6">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-            <p>No snippets available yet. The pipeline may still be processing; browse the tool library or check profile status.</p>
-            <div className="mt-4 flex flex-wrap gap-3 justify-center">
-              <Button asChild className="bg-amber-500/90 text-slate-950 hover:bg-amber-500">
-                <Link href="/profile">Profile</Link>
-              </Button>
-              <Button asChild variant="outline" className="border-amber-500/40 text-amber-200">
-                <Link href="/tools">Tools</Link>
-              </Button>
-            </div>
+            <p>Generating your mystical profile. Reports unlock one by one in tools order.</p>
+            <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
+            <p className="mt-2 text-xs text-slate-400">
+              Snippets will appear one by one as each report is ready. You can stay on this page.
+            </p>
           </div>
         ) : (
           <div className="space-y-14">
