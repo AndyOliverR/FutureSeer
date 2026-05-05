@@ -73,6 +73,14 @@ jest.mock('@/lib/mysticalStageB', () => ({
   tryResumeMysticalStageB: (...args: unknown[]) => mockTryResumeMysticalStageB(...args),
 }));
 
+jest.mock('@/lib/rateLimitFirestore', () => ({
+  checkRateLimitWithOptionalFirestore: async (
+    limiter: { check: (identifier: string) => { allowed: boolean; remaining: number; resetTime: number } },
+    _logicalKey: string,
+    identifier: string,
+  ) => limiter.check(identifier),
+}));
+
 jest.mock('next/server', () => {
   const actual = jest.requireActual<typeof import('next/server')>('next/server');
   return {
@@ -89,6 +97,7 @@ jest.mock('next/server', () => {
 import { GET, POST } from '@/app/api/profile/generate-mystical/route';
 
 describe('Profile generate-mystical API', () => {
+  let consoleInfoSpy: jest.SpyInstance;
   const uid = 'test-uid-123';
 
   const baseProfile = {
@@ -102,6 +111,7 @@ describe('Profile generate-mystical API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined);
     mockVerifyIdToken.mockResolvedValue({ uid });
     mockSetDocument.mockResolvedValue(true);
     mockBatchSetDocuments.mockResolvedValue(true);
@@ -117,6 +127,10 @@ describe('Profile generate-mystical API', () => {
       aggregateUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     });
     mockTryResumeMysticalStageB.mockResolvedValue({ started: true });
+  });
+
+  afterEach(() => {
+    consoleInfoSpy.mockRestore();
   });
 
   async function callGenerate(
