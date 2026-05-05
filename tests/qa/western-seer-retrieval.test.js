@@ -4,10 +4,26 @@
  */
 
 jest.mock('@/lib/firebase-admin', () => ({ adminDb: null }));
+jest.mock('@/lib/userSubcollectionFirestore', () => ({
+  userSubdocGet: jest.fn(),
+}));
 
 const { getSectionsForIntent, formatChunksForPrompt } = require('@/lib/westernSeerRetrieval');
 
 describe('Western Seer retrieval', () => {
+  let consoleErrorSpy;
+  let consoleInfoSpy;
+
+  beforeEach(() => {
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    consoleInfoSpy.mockRestore();
+  });
+
   describe('getSectionsForIntent', () => {
     test('career returns career, sun, timing', () => {
       expect(getSectionsForIntent('career')).toEqual(['career', 'sun', 'timing']);

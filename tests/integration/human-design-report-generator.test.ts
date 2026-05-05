@@ -11,6 +11,8 @@ jest.mock('@/lib/aiGateway', () => ({
 }));
 
 describe('Human Design report generator provider path', () => {
+  let consoleErrorSpy: jest.SpyInstance;
+
   const chart = {
     type: { id: 'manifestor', name: 'Manifestor', description: 'Initiates', notSelfTheme: 'Anger', strategy: 'Inform' },
     strategy: 'Inform',
@@ -32,6 +34,11 @@ describe('Human Design report generator provider path', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   it('uses aiGateway completion and does not call /api/openai fetch', async () => {

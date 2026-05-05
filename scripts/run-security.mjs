@@ -4,8 +4,20 @@
  */
 import { spawnSync } from 'node:child_process';
 
+function buildSanitizedEnv() {
+  const env = { ...process.env };
+  delete env.npm_config_npm_globalconfig;
+  delete env.npm_config_verify_deps_before_run;
+  delete env.npm_config__jsr_registry;
+  return env;
+}
+
 function runShell(command) {
-  const result = spawnSync(command, { stdio: 'inherit', shell: true });
+  const result = spawnSync(command, {
+    stdio: 'inherit',
+    shell: true,
+    env: buildSanitizedEnv(),
+  });
   if (result.signal) {
     return 1;
   }
