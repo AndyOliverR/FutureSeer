@@ -228,9 +228,9 @@ export default function MysticalProfilePage() {
   const staleRecoveryRef = useRef(false)
   const loadingMessages = useMemo(
     () => [
-      "Calibrating charts...",
-      "Synthesizing insights...",
-      "Finalizing highlights...",
+      "Your reports are being generated...",
+      "Preparing your next ready snippet...",
+      "Loading cards as each tool finishes...",
     ],
     [],
   )
@@ -777,39 +777,12 @@ export default function MysticalProfilePage() {
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
       <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
       <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
-      {typeof completedTools !== "number" || typeof totalTools !== "number" ? (
-        <p className="mt-2 text-xs text-surface-on-variant">
-          This run can take several minutes. Counts and the current tool appear as soon as the server reports progress—you do not need to refresh.
-        </p>
-      ) : null}
-      {typeof completedTools === "number" && typeof totalTools === "number" ? (
-        <p className="mt-2 text-xs text-surface-on-variant">Progress: {completedTools}/{totalTools} tools ({generationPhaseLabel})</p>
-      ) : null}
-      {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
-        <p className="mt-1 text-xs text-surface-on-variant">Ready reports: {readyToolsCount}/{totalTools}</p>
-      ) : null}
-      {currentToolSlug ? (
-        <p className="mt-1 text-xs text-surface-on-variant">Current tool: {humanizePipelineSlug(currentToolSlug)}</p>
-      ) : null}
-      {lastUpdatedLabel ? (
-        <p className="mt-1 text-[11px] text-surface-on-variant/80">{lastUpdatedLabel}</p>
-      ) : null}
-      {generationWarning ? (
-        <p className="mt-2 text-xs text-surface-on-variant">
-          {resumeAttempted ? "Recovering generation and continuing in tools order..." : "Still processing; open Explore all tools for the ready reports."}
-        </p>
-      ) : progressLooksStale ? (
-        <p className="mt-2 text-xs text-surface-on-variant">Slow network detected; recovering generation in background.</p>
-      ) : null}
-      {heartbeatLabel ? (
-        <p className="mt-1 text-[11px] text-surface-on-variant/80">{heartbeatLabel}</p>
-      ) : null}
-      {currentToolElapsedLabel ? (
-        <p className="mt-1 text-[11px] text-surface-on-variant/80">{currentToolElapsedLabel}</p>
-      ) : null}
+      <p className="mt-2 text-xs text-surface-on-variant">
+        Snippets will appear one by one as each report is ready. You can stay on this page.
+      </p>
           </div>
         ) : null}
-        {groupedCards.length === 0 ? (
+        {groupedCards.length === 0 && !generationActive ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm">
             <p>
               No report snippets yet—either generation is still running in the background, or reports are not ready for cards. Open{" "}
@@ -909,37 +882,12 @@ export default function MysticalProfilePage() {
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
       <p>Generating your mystical profile. Reports unlock one by one in tools order.</p>
       <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
-      {typeof completedTools !== "number" || typeof totalTools !== "number" ? (
-        <p className="mt-2 text-xs text-slate-400">
-          This run can take several minutes. Progress and the active tool name appear here as the pipeline advances—no need to refresh the page.
-        </p>
-      ) : null}
-      {typeof completedTools === "number" && typeof totalTools === "number" ? (
-        <p className="mt-2 text-xs text-slate-400">Progress: {completedTools}/{totalTools} tools ({generationPhaseLabel})</p>
-      ) : null}
-      {typeof readyToolsCount === "number" && typeof totalTools === "number" ? (
-        <p className="mt-1 text-xs text-slate-400">Ready reports: {readyToolsCount}/{totalTools}</p>
-      ) : null}
-      {currentToolSlug ? (
-        <p className="mt-1 text-xs text-slate-400">Current tool: {humanizePipelineSlug(currentToolSlug)}</p>
-      ) : null}
-      {lastUpdatedLabel ? (
-        <p className="mt-1 text-[11px] text-slate-400/80">{lastUpdatedLabel}</p>
-      ) : null}
-      {generationWarning ? (
-        <p className="mt-2 text-xs text-slate-400">{generationWarning}</p>
-      ) : progressLooksStale ? (
-        <p className="mt-2 text-xs text-slate-400">Recovering generation in the background. Open Explore all tools for reports that are already ready.</p>
-      ) : null}
-      {heartbeatLabel ? (
-        <p className="mt-1 text-[11px] text-slate-400/80">{heartbeatLabel}</p>
-      ) : null}
-      {currentToolElapsedLabel ? (
-        <p className="mt-1 text-[11px] text-slate-400/80">{currentToolElapsedLabel}</p>
-      ) : null}
+      <p className="mt-2 text-xs text-slate-400">
+        Snippets will appear one by one as each report is ready. You can stay on this page.
+      </p>
           </div>
         ) : null}
-        {groupedCards.length === 0 ? (
+        {groupedCards.length === 0 && !generationActive ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
             <p>No snippets available yet. The pipeline may still be processing; browse the tool library or check profile status.</p>

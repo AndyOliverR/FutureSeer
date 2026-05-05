@@ -178,8 +178,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className={cn("pt-20 pb-4 max-w-3xl mx-auto", isMobileLayout ? "px-5" : "px-4")}>
+    <div className="starfield-ultra-sharp min-h-screen overflow-x-hidden">
+      <div className={cn("pt-20 max-w-3xl mx-auto", isMobileLayout ? "px-5 pb-28" : "px-4 pb-6")}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
