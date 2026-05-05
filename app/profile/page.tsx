@@ -376,8 +376,10 @@ export default function ProfilePage() {
     surface: "profile_auth_loading",
     logOnboarding,
   })
-  const faceInputRef = useRef<HTMLInputElement>(null)
-  const palmInputRef = useRef<HTMLInputElement>(null)
+  const faceCameraInputRef = useRef<HTMLInputElement>(null)
+  const faceUploadInputRef = useRef<HTMLInputElement>(null)
+  const palmCameraInputRef = useRef<HTMLInputElement>(null)
+  const palmUploadInputRef = useRef<HTMLInputElement>(null)
   const isUploadBusy = uploadingFace || uploadingPalm || optimizingFace || optimizingPalm
   const isSaveDisabled = isLoading || isUploadBusy
 
@@ -1438,15 +1440,25 @@ export default function ProfilePage() {
                 {isEditing && (
                   <div className="flex flex-col gap-1">
                     <input
-                      ref={faceInputRef}
+                      ref={faceCameraInputRef}
                       type="file"
                       accept="image/*"
                       capture="user"
                       className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }}
                     />
-                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>
+                    <input
+                      ref={faceUploadInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }}
+                    />
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => faceCameraInputRef.current?.click()} disabled={uploadingFace}>
                       Open camera
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => faceUploadInputRef.current?.click()} disabled={uploadingFace}>
+                      Upload
                     </Button>
                     {formData.facePhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("face")}>Remove</Button>}
                   </div>
@@ -1464,15 +1476,25 @@ export default function ProfilePage() {
                 {isEditing && (
                   <div className="flex flex-col gap-1">
                     <input
-                      ref={palmInputRef}
+                      ref={palmCameraInputRef}
                       type="file"
                       accept="image/*"
                       capture="environment"
                       className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }}
                     />
-                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>
+                    <input
+                      ref={palmUploadInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }}
+                    />
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => palmCameraInputRef.current?.click()} disabled={uploadingPalm}>
                       Open camera
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="text-xs" onClick={() => palmUploadInputRef.current?.click()} disabled={uploadingPalm}>
+                      Upload
                     </Button>
                     {formData.palmPhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("palm")}>Remove</Button>}
                   </div>
@@ -1821,8 +1843,10 @@ export default function ProfilePage() {
                   </div>
                   {isEditing && (
                     <div className="flex flex-col gap-1">
-                      <input ref={faceInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }} />
-                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => faceInputRef.current?.click()} disabled={uploadingFace}>Upload</Button>
+                      <input ref={faceCameraInputRef} type="file" accept="image/*" capture="user" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }} />
+                      <input ref={faceUploadInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "face"); e.target.value = ""; }} />
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => faceCameraInputRef.current?.click()} disabled={uploadingFace}>Open camera</Button>
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => faceUploadInputRef.current?.click()} disabled={uploadingFace}>Upload</Button>
                       {formData.facePhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("face")}>Remove</Button>}
                     </div>
                   )}
@@ -1838,8 +1862,10 @@ export default function ProfilePage() {
                   </div>
                   {isEditing && (
                     <div className="flex flex-col gap-1">
-                      <input ref={palmInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }} />
-                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => palmInputRef.current?.click()} disabled={uploadingPalm}>Upload</Button>
+                      <input ref={palmCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }} />
+                      <input ref={palmUploadInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f, "palm"); e.target.value = ""; }} />
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => palmCameraInputRef.current?.click()} disabled={uploadingPalm}>Open camera</Button>
+                      <Button type="button" variant="outline" size="sm" className="text-xs border-amber-400/30 text-amber-400" onClick={() => palmUploadInputRef.current?.click()} disabled={uploadingPalm}>Upload</Button>
                       {formData.palmPhotoUrl && <Button type="button" variant="ghost" size="sm" className="text-xs text-red-400" onClick={() => handleRemovePhoto("palm")}>Remove</Button>}
                     </div>
                   )}

@@ -68,7 +68,7 @@
       "next>postcss": "^8.5.10",
       "preact": "^10.27.3",
       "lodash": "^4.17.24",
-      "uuid": "^14.0.0",
+      "uuid": "^9.0.1",
       "@tootallnate/once": "^3.0.1",
       "@isaacs/brace-expansion": "^5.0.1"
     }
@@ -122,7 +122,7 @@
     "dotenv": "^17.2.2",
     "embla-carousel-react": "latest",
     "firebase": "latest",
-    "firebase-admin": "^13.4.0",
+    "firebase-admin": "13.4.0",
     "framer-motion": "^12.23.0",
     "groq-sdk": "^0.34.0",
     "heic2any": "^0.0.4",
