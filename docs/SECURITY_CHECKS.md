@@ -14,6 +14,12 @@ For recurring operations, route-level examples, and incident workflow, see the [
 | `pnpm run audit:fix` | Runs `pnpm audit --fix` to apply automatic fixes where possible. |
 | `pnpm run lint` | Runs ESLint including security rules (risky patterns like `eval`, unsafe regex, child_process, etc.). |
 
+### Temporary advisory exception (`uuid` / GHSA-w5hq-g745-h8pq)
+
+- Current baseline may report one moderate advisory for `uuid` (`GHSA-w5hq-g745-h8pq`) through the Firebase Admin / Google SDK transitive chain.
+- This is temporarily accepted because forcing `uuid@14` in this repo's dependency tree has caused production runtime failures on Vercel (`ERR_REQUIRE_ESM` from the `gaxios` path), which broke critical APIs such as photo upload and account deletion.
+- Until upstream packages provide a safe path that removes the vulnerable transitive `uuid` without reintroducing runtime breakage, keep the working production-safe pin and treat this advisory as an explicit temporary exception.
+
 ## What’s included
 
 - **Dependency audit**: `pnpm audit` uses the built-in npm advisory database. No signup or external service.
