@@ -47,6 +47,9 @@ export function PersonalNote() {
         {/* Content Body - full width, spread out to match page layout */}
         <div className="space-y-10">
           <div className="space-y-5 font-sans text-sm sm:text-base leading-relaxed text-surface-on">
+            <p className="pt-2 text-white font-medium">
+              Crafted with <span className="text-[#B91C1C] text-2xl align-middle">♥</span> in India for the World.
+            </p>
             <p>
               I&apos;ve been drawn to the occult and divination for years, not out of superstition, but out of disciplined curiosity. Across cultures and civilizations, systems like Vedic Astrology, Bazi, Tarot, Numerology, Bibliomancy, and Geomancy were treated as structured frameworks of knowledge. They were consulted seriously, studied deeply, and refined over centuries.
             </p>
@@ -82,9 +85,6 @@ export function PersonalNote() {
             </p>
             <p>
               If you&apos;re here early, you&apos;re ahead of the curve.
-            </p>
-            <p className="pt-2 text-white font-medium">
-              Crafted with <span className="text-[#B91C1C] text-2xl align-middle">♥</span> in India for the World.
             </p>
           </div>
 

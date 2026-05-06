@@ -59,9 +59,6 @@ export function HeroSection() {
           >
             Already have an account? Sign In
           </Link>
-          <p className="text-sm text-white tracking-wide font-medium">
-            Crafted with <span className="text-[#B91C1C] text-2xl align-middle">♥</span> in India for the World.
-          </p>
         </div>
       </div>
 
