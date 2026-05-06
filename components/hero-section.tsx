@@ -13,7 +13,7 @@ export function HeroSection() {
   const { trackEvent } = useAnalytics()
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-[75vh] md:min-h-[85vh] px-4 text-center pt-24 md:pt-32 pb-12 relative bg-transparent">
+    <section className="flex flex-col items-center justify-center min-h-[75vh] md:min-h-[85vh] px-4 text-center pt-20 md:pt-24 pb-12 relative bg-transparent">
       <div className="max-w-5xl mx-auto space-y-8 md:space-y-12">
         {/* Responsive Headline: Large on web, fits perfectly on mobile */}
         <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-9xl font-heading text-primary leading-tight tracking-[0.1em] md:tracking-[0.2em] font-light uppercase">
@@ -59,6 +59,9 @@ export function HeroSection() {
           >
             Already have an account? Sign In
           </Link>
+          <p className="text-sm text-white tracking-wide font-medium">
+            Crafted with <span className="text-[#B91C1C] text-2xl align-middle">♥</span> in India for the World.
+          </p>
         </div>
       </div>
 
