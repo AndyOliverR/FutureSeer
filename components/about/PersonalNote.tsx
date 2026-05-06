@@ -83,6 +83,9 @@ export function PersonalNote() {
             <p>
               If you&apos;re here early, you&apos;re ahead of the curve.
             </p>
+            <p className="pt-2 text-white font-medium">
+              Crafted with <span className="text-[#B91C1C] text-2xl align-middle">♥</span> in India for the World.
+            </p>
           </div>
 
         </div>
