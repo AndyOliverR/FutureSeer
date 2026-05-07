@@ -770,7 +770,7 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {ctaRow}
-        {generationActive ? (
+        {generationActive && groupedCards.length === 0 ? (
           <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm mb-4">
             <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
       <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
@@ -870,7 +870,7 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {ctaRow}
-        {generationActive ? (
+        {generationActive && groupedCards.length === 0 ? (
           <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400 mb-6">
             <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
       <p>Generating your mystical profile. Reports unlock one by one in tools order.</p>
