@@ -53,6 +53,9 @@ export default function SettingsPage() {
   const [showDelete, setShowDelete] = useState(false)
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [cancelBusy, setCancelBusy] = useState(false)
+  const [cancelError, setCancelError] = useState<string | null>(null)
+  const [cancelSuccess, setCancelSuccess] = useState<string | null>(null)
   const missingFullProfileFields = useMemo(
     () => getMissingFullProfileFields(userProfile).map((f) => FULL_FIELD_LABELS[f] ?? f),
     [userProfile],
@@ -87,6 +90,45 @@ export default function SettingsPage() {
       setDeleteBusy(false)
     }
   }, [user, signOut])
+
+  const handleCancelSubscription = useCallback(async () => {
+    if (!user || !userProfile?.uid || !userProfile?.subscriptionId) {
+      setCancelSuccess(null)
+      setCancelError("No active subscription found on your account.")
+      return
+    }
+    setCancelSuccess(null)
+    setCancelError(null)
+    setCancelBusy(true)
+    try {
+      const token = await user.getIdToken()
+      const response = await fetch("/api/payments/cancel-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          subscriptionId: userProfile.subscriptionId,
+          userId: userProfile.uid,
+        }),
+      })
+      const data = (await response.json().catch(() => ({}))) as { error?: string }
+      if (!response.ok) {
+        setCancelSuccess(null)
+        setCancelError(data.error || "Could not cancel subscription. Please try again.")
+        return
+      }
+      await refreshProfile()
+      setCancelSuccess("Subscription cancelled successfully.")
+    } catch (error) {
+      devLog.error("Cancel subscription failed:", error, "page")
+      setCancelSuccess(null)
+      setCancelError("Something went wrong. Check your connection and try again.")
+    } finally {
+      setCancelBusy(false)
+    }
+  }, [user, userProfile?.uid, userProfile?.subscriptionId, refreshProfile])
 
   // Memoized formatting functions for performance
   const formattedBirthDate = useMemo(
@@ -601,6 +643,33 @@ export default function SettingsPage() {
                   <Link href="/subscribe">Add or update payment method</Link>
                 </Button>
               </div>
+              {!!userProfile?.subscriptionId && userProfile?.subscriptionStatus !== "cancelled" && (
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full",
+                      isMobileLayout
+                        ? "border border-red-500/40 bg-[var(--m3-surface-container)] text-red-400 text-sm rounded-xl"
+                        : "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-red-500/30 hover:border-red-500/50 text-red-400 text-sm transition-all duration-300",
+                    )}
+                    disabled={cancelBusy}
+                    onClick={() => void handleCancelSubscription()}
+                  >
+                    {cancelBusy ? "Cancelling subscription..." : "Cancel Subscription"}
+                  </Button>
+                  {cancelError && (
+                    <p className="text-red-300 text-xs mt-2" role="alert">
+                      {cancelError}
+                    </p>
+                  )}
+                  {cancelSuccess && (
+                    <p className="text-amber-300 text-xs mt-2" role="status">
+                      {cancelSuccess}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -643,6 +712,9 @@ export default function SettingsPage() {
                   >
                     <div className="mb-2">
                       This permanently deletes your account and profile data. This cannot be undone.
+                    </div>
+                    <div className="mb-2 text-red-300/90">
+                      If you have an active subscription, it will also be cancelled as part of account deletion.
                     </div>
                     {deleteError && (
                       <p className="text-red-300 text-xs mt-2" role="alert">
