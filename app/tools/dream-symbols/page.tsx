@@ -113,7 +113,7 @@ export default function DreamSymbolsPage() {
     'shrink-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 transition-all'
 
   return (
-    <div className="min-h-screen starfield-ultra-sharp text-white p-4 overflow-hidden">
+    <div className="min-h-screen starfield-ultra-sharp text-white px-2 sm:px-4 py-4 overflow-x-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         {/* Header */}
         <motion.div
@@ -310,7 +310,7 @@ export default function DreamSymbolsPage() {
                 {/* Tabs — strip and content share px-4 sm:px-6 for alignment */}
                 <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DreamTabKey)} className="w-full min-w-0">
-                  <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 px-4 sm:px-6 py-2 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
+                  <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 px-2 sm:px-6 py-2 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
                     <TabsTrigger value="introduction" className={tabTriggerClass}>
                       Introduction
                     </TabsTrigger>
@@ -335,7 +335,7 @@ export default function DreamSymbolsPage() {
                   </TabsList>
 
                   {activeTab === "ask-the-seer" ? (
-                  <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     {user?.uid ? (
                       <DreamSymbolsSeerChatInterface
                         analysis={analysis ?? undefined}
@@ -371,12 +371,12 @@ export default function DreamSymbolsPage() {
                         )}
                       >
                   {/* Introduction Tab */}
-                  <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <ToolIntroductionTab toolSlug="dream-symbols" />
                   </TabsContent>
 
                   {/* Overview Tab */}
-                  <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="overview" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <AnimatePresence mode="wait">
                       {isLoading ? (
                         <motion.div
@@ -500,7 +500,7 @@ export default function DreamSymbolsPage() {
                   </TabsContent>
 
                   {/* Symbols Tab */}
-                  <TabsContent value="symbols" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="symbols" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <AnimatePresence mode="wait">
                       {isLoading ? (
                         <motion.div
@@ -573,7 +573,7 @@ export default function DreamSymbolsPage() {
                   </TabsContent>
 
                   {/* Meaning Tab */}
-                  <TabsContent value="meaning" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="meaning" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <AnimatePresence mode="wait">
                       {isLoading ? (
                         <motion.div
@@ -628,7 +628,7 @@ export default function DreamSymbolsPage() {
                   </TabsContent>
 
                   {/* Guidance Tab */}
-                  <TabsContent value="guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="guidance" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <AnimatePresence mode="wait">
                       {isLoading ? (
                         <motion.div
@@ -683,7 +683,7 @@ export default function DreamSymbolsPage() {
                   </TabsContent>
 
                   {/* Archetypes Tab */}
-                  <TabsContent value="archetypes" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="archetypes" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <AnimatePresence mode="wait">
                       {isLoading ? (
                         <motion.div

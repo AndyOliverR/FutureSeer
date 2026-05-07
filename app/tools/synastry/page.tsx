@@ -70,7 +70,7 @@ export default function SynastryPage() {
   ], [])
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+    <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 py-4 overflow-x-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         {/* Header */}
         <div className="text-center mb-8 pt-4">
@@ -371,7 +371,7 @@ export default function SynastryPage() {
 
                 {/* Tab Content with Material 3 Transitions */}
                 {tabsConfig.map((tab) => (
-                  <TabsContent key={tab.value} value={tab.value} className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent key={tab.value} value={tab.value} className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     {tab.value === 'ask-seer' ? (
                       <SynastrySeerChatInterface analysis={analysis} userId={user?.uid} />
                     ) : (

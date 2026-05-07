@@ -835,8 +835,8 @@ export default function CommunityAttributionPage() {
   return (
     <>
       <RecaptchaScript />
-      <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-16 sm:pt-20 pb-8">
+      <div className="starfield-ultra-sharp min-h-screen overflow-x-hidden">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-16 sm:pt-20 pb-24 sm:pb-8">
         {/* Header */}
         <div className="text-center mb-8 pt-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
@@ -913,11 +913,11 @@ export default function CommunityAttributionPage() {
         ) : null}
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 bg-transparent p-0 mb-8">
+        <div className="flex flex-nowrap overflow-x-auto gap-2 bg-transparent p-0 mb-8 pb-1">
           <Button
             variant="ghost"
             onClick={() => setActiveTab('members')}
-            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
+            className={`shrink-0 min-w-[128px] sm:min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
               activeTab === 'members'
                 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
                 : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
@@ -933,7 +933,7 @@ export default function CommunityAttributionPage() {
               setNewDiscussionCount(0);
               localStorage.setItem('community_last_seen_discussion_at', new Date().toISOString());
             }}
-            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
+            className={`shrink-0 min-w-[128px] sm:min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
               activeTab === 'discussions'
                 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
                 : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
@@ -951,7 +951,7 @@ export default function CommunityAttributionPage() {
               setActiveTab('requests');
               void refreshConnectionRequests();
             }}
-            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
+            className={`shrink-0 min-w-[128px] sm:min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
               activeTab === 'requests'
                 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
                 : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
@@ -966,7 +966,7 @@ export default function CommunityAttributionPage() {
           <Button
             variant="ghost"
             onClick={() => setActiveTab('contributions')}
-            className={`flex-1 min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
+            className={`shrink-0 min-w-[128px] sm:min-w-[140px] transition-all duration-200 rounded-xl px-3 sm:px-4 py-2.5 text-sm font-medium relative overflow-hidden active:scale-[0.98] ${
               activeTab === 'contributions'
                 ? 'bg-gradient-to-br from-amber-100 to-yellow-100 text-amber-900 shadow-md'
                 : 'text-amber-200 hover:text-amber-100 hover:bg-slate-800/30'
@@ -1025,7 +1025,7 @@ export default function CommunityAttributionPage() {
                         <div className="flex items-center gap-2 mb-1 min-w-0">
                           <h4 className="font-semibold text-slate-800 truncate">{member.name}</h4>
                           {getReputationIcon(member.reputation)}
-                          <Badge variant="outline" className="text-xs bg-amber-100 border-amber-400/50 text-amber-800 shrink-0">
+                          <Badge variant="outline" className="text-xs bg-amber-100 border-amber-400/50 text-amber-800 shrink-0 max-w-full">
                             {member.flair}
                           </Badge>
                         </div>
@@ -1036,14 +1036,14 @@ export default function CommunityAttributionPage() {
                               <span className="text-slate-700">Level: <span className="font-semibold text-slate-800">{member.level}</span></span>
                               <span className="text-slate-700">Streak: <span className="text-orange-700 font-semibold">{member.streak}</span> days</span>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 min-w-0">
                               {member.badges.slice(0, 2).map((badge, index) => (
-                                <Badge key={index} variant="outline" className="text-xs bg-purple-100/80 border-purple-400/40 text-purple-800">
+                                <Badge key={index} variant="outline" className="text-xs bg-purple-100/80 border-purple-400/40 text-purple-800 max-w-full break-words whitespace-normal">
                                   {badge}
                                 </Badge>
                               ))}
                               {member.badges.length > 2 && (
-                                <Badge variant="outline" className="text-xs bg-blue-100/80 border-blue-400/40 text-blue-800">
+                                <Badge variant="outline" className="text-xs bg-blue-100/80 border-blue-400/40 text-blue-800 shrink-0">
                                   +{member.badges.length - 2} more
                                 </Badge>
                               )}

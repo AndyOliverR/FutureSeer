@@ -214,14 +214,14 @@ export function SynastryCoachInterface({
         </p>
         
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[720px]">
             <thead>
               <tr className="border-b border-amber-200/80">
-                <th className="text-left p-3 text-slate-800 font-semibold">Planets</th>
-                <th className="text-left p-3 text-slate-800 font-semibold">Aspect</th>
-                <th className="text-left p-3 text-slate-800 font-semibold">Orb</th>
-                <th className="text-left p-3 text-slate-800 font-semibold">Influence</th>
-                <th className="text-left p-3 text-slate-800 font-semibold">Description</th>
+                <th className="text-left p-2 sm:p-3 text-slate-800 font-semibold">Planets</th>
+                <th className="text-left p-2 sm:p-3 text-slate-800 font-semibold">Aspect</th>
+                <th className="text-left p-2 sm:p-3 text-slate-800 font-semibold">Orb</th>
+                <th className="text-left p-2 sm:p-3 text-slate-800 font-semibold">Influence</th>
+                <th className="text-left p-2 sm:p-3 text-slate-800 font-semibold">Description</th>
               </tr>
             </thead>
             <tbody>
@@ -233,12 +233,12 @@ export function SynastryCoachInterface({
                   transition={{ delay: index * 0.05 }}
                   className="border-b border-amber-100"
                 >
-                  <td className="p-3 text-slate-800 font-medium">
+                  <td className="p-2 sm:p-3 text-slate-800 font-medium">
                     {aspect.planet1} - {aspect.planet2}
                   </td>
-                  <td className="p-3 text-slate-800">{aspect.aspect}</td>
-                  <td className="p-3 text-slate-800">{aspect.orb.toFixed(1)}°</td>
-                  <td className="p-3">
+                  <td className="p-2 sm:p-3 text-slate-800">{aspect.aspect}</td>
+                  <td className="p-2 sm:p-3 text-slate-800">{aspect.orb.toFixed(1)}°</td>
+                  <td className="p-2 sm:p-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       aspect.influence === 'harmonious' 
                         ? 'bg-green-500/25 text-green-800' 
@@ -249,7 +249,7 @@ export function SynastryCoachInterface({
                       {aspect.influence}
                     </span>
                   </td>
-                  <td className="p-3 text-slate-800 text-sm max-w-xs">{aspect.description}</td>
+                  <td className="p-2 sm:p-3 text-slate-800 text-sm max-w-xs">{aspect.description}</td>
                 </motion.tr>
               ))}
             </tbody>

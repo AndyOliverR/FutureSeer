@@ -196,7 +196,7 @@ export default function ComprehensiveVedicReport({
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Star className="w-8 h-8 text-yellow-600" />
             </div>
@@ -209,7 +209,7 @@ export default function ComprehensiveVedicReport({
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-blue-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Moon className="w-8 h-8 text-blue-600" />
             </div>
@@ -222,7 +222,7 @@ export default function ComprehensiveVedicReport({
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-purple-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-8 h-8 text-purple-600" />
             </div>
@@ -308,7 +308,7 @@ export default function ComprehensiveVedicReport({
             <CardContent>
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {/* Chart Overview */}
-                <AccordionItem value="overview" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-amber-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-amber-50 md:to-yellow-50 px-4 shadow-sm">
+                <AccordionItem value="overview" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-amber-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-amber-50 md:to-yellow-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-amber-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Star className="w-5 h-5 text-amber-600" />
@@ -326,7 +326,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Ascendant Analysis */}
-                <AccordionItem value="ascendant" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-yellow-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-yellow-50 md:to-amber-50 px-4 shadow-sm">
+                <AccordionItem value="ascendant" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-yellow-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-yellow-50 md:to-amber-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-yellow-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-yellow-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Target className="w-5 h-5 text-yellow-600" />
@@ -348,7 +348,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Planetary Analysis */}
-                <AccordionItem value="planets" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-blue-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-blue-50 md:to-cyan-50 px-4 shadow-sm">
+                <AccordionItem value="planets" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-blue-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-blue-50 md:to-cyan-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-blue-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-blue-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Star className="w-5 h-5 text-blue-600" />
@@ -373,7 +373,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* House Analysis */}
-                <AccordionItem value="houses" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-purple-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-purple-50 md:to-pink-50 px-4 shadow-sm">
+                <AccordionItem value="houses" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-purple-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-purple-50 md:to-pink-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-purple-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-purple-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Home className="w-5 h-5 text-purple-600" />
@@ -398,7 +398,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Dasha Analysis */}
-                <AccordionItem value="dasha" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-green-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-green-50 md:to-emerald-50 px-4 shadow-sm">
+                <AccordionItem value="dasha" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-green-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-green-50 md:to-emerald-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-green-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-green-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-green-600" />
@@ -420,7 +420,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Yogas Analysis */}
-                <AccordionItem value="yogas" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-orange-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-orange-50 md:to-amber-50 px-4 shadow-sm">
+                <AccordionItem value="yogas" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-orange-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-orange-50 md:to-amber-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-orange-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-orange-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Sparkles className="w-5 h-5 text-orange-600" />
@@ -442,7 +442,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Nakshatra Analysis */}
-                <AccordionItem value="nakshatra" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-pink-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-pink-50 md:to-purple-50 px-4 shadow-sm">
+                <AccordionItem value="nakshatra" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-pink-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-pink-50 md:to-purple-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-pink-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-pink-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Moon className="w-5 h-5 text-pink-600" />
@@ -464,7 +464,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Challenges & Opportunities */}
-                <AccordionItem value="challenges-opportunities" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-orange-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-orange-50 md:to-amber-50 px-4 shadow-sm">
+                <AccordionItem value="challenges-opportunities" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-orange-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-orange-50 md:to-amber-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-orange-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-orange-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <TrendingUp className="w-5 h-5 text-orange-600" />
@@ -498,7 +498,7 @@ export default function ComprehensiveVedicReport({
                 </AccordionItem>
 
                 {/* Predictive Insights */}
-                <AccordionItem value="predictions" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-cyan-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-cyan-50 md:to-blue-50 px-4 shadow-sm">
+                <AccordionItem value="predictions" className="border border-[var(--m3-outline-variant)] md:border-2 md:border-cyan-200 rounded-xl md:rounded-lg bg-[var(--m3-surface-container-high)] md:bg-gradient-to-br md:from-cyan-50 md:to-blue-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-[var(--m3-on-surface)] md:text-slate-800 hover:text-amber-400 md:hover:text-cyan-700 py-4 [&[data-state=open]]:text-amber-400 md:[&[data-state=open]]:text-cyan-700 [&>svg]:text-slate-400 md:[&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Activity className="w-5 h-5 text-cyan-600" />

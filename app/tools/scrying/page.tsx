@@ -134,7 +134,7 @@ function ScryingPageContent() {
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Scrying">
-      <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+      <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 overflow-x-hidden">
         <div className="relative z-10 max-w-7xl mx-auto py-8">
           <div className="text-center mb-8 pt-4">
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
@@ -222,7 +222,7 @@ function ScryingPageContent() {
                   >
                     <TabsContent
                       value="ask-the-seer"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                      className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"
                     >
                       {!hasReport || !scryingReport ? (
                         <div className="text-center py-12">
@@ -254,7 +254,7 @@ function ScryingPageContent() {
                           )}
                         </div>
                       ) : (
-                        <div className="h-[800px] min-h-0">
+                        <div className="h-auto md:h-[800px] min-h-[50vh] max-h-[85vh] min-h-0">
                           <ScryingSeerChatInterface
                             report={scryingReport}
                             userProfile={userProfile as unknown as Record<string, unknown>}
@@ -278,7 +278,7 @@ function ScryingPageContent() {
                   >
                     <TabsContent
                       value="introduction"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                      className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"
                     >
                       <ToolIntroductionTab toolSlug="scrying" />
                     </TabsContent>
@@ -296,7 +296,7 @@ function ScryingPageContent() {
                   >
                     <TabsContent
                       value="report"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 border-0 bg-transparent"
+                      className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0 border-0 bg-transparent"
                     >
                       {isLoading ? (
                         <div className="text-center py-12">
@@ -370,7 +370,7 @@ function ScryingPageContent() {
                   >
                     <TabsContent
                       value="introduction"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                      className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"
                     >
                       <ToolIntroductionTab toolSlug="scrying" />
                     </TabsContent>
@@ -388,7 +388,7 @@ function ScryingPageContent() {
                   >
                     <TabsContent
                       value="report"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 border-0 bg-transparent"
+                      className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0 border-0 bg-transparent"
                     >
                       {isLoading ? (
                         <div className="text-center py-12">

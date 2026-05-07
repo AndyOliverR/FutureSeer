@@ -223,7 +223,7 @@ function MundaneAstrologyPageContent() {
 
   return (
     <ToolReportGuard loading={effectiveLoading} error={effectiveError ?? null} toolLabel="Mundane Astrology">
-      <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+      <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 overflow-x-hidden">
         <div className="relative z-10 max-w-7xl mx-auto py-8">
           <div className="text-center mb-8 pt-4">
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
@@ -266,7 +266,7 @@ function MundaneAstrologyPageContent() {
                     exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                     transition={motionConfig}
                   >
-                    <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                       <ToolIntroductionTab toolSlug="mundane-astrology" />
                     </TabsContent>
                   </motion.div>
@@ -280,7 +280,7 @@ function MundaneAstrologyPageContent() {
                     exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                     transition={motionConfig}
                   >
-                    <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 bg-gradient-to-b from-purple-50/98 via-indigo-50/50 to-slate-100/98 min-h-[60vh] border-0">
+                    <TabsContent value="report" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0 bg-gradient-to-b from-purple-50/98 via-indigo-50/50 to-slate-100/98 min-h-[60vh] border-0">
                       {effectiveLoading ? (
                         <div className="text-center py-12">
                           <Loader2 className="w-12 h-12 text-purple-500 mx-auto mb-4 animate-spin" />
@@ -499,7 +499,7 @@ function MundaneAstrologyPageContent() {
                     exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                     transition={motionConfig}
                   >
-                    <TabsContent value="ask-the-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <TabsContent value="ask-the-seer" className="pt-6 px-2 sm:px-6 pb-6 mt-0">
                       {user?.uid ? (
                         <MundaneSeerChatInterface
                           userId={user.uid}

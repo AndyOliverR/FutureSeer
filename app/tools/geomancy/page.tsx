@@ -89,8 +89,8 @@ export default function GeomancyPage() {
   const [activeTab, setActiveTab] = useState("overview")
 
   return (
-    <div className="relative min-h-screen overflow-hidden starfield-ultra-sharp">
-      <div className="relative z-10 p-4">
+    <div className="relative min-h-screen overflow-x-hidden starfield-ultra-sharp">
+      <div className="relative z-10 px-2 sm:px-4 py-4">
         <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div

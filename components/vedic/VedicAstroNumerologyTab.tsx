@@ -299,7 +299,7 @@ export default function VedicAstroNumerologyTab({
         colorScheme="amber"
         variant="callout"
       />
-      <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-6">
+      <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-3 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(numerologyProfile.planetaryInfluences).map(([key, value]) => (
               <Card key={key} className="bg-slate-800/50 border-slate-700">
@@ -364,10 +364,10 @@ export default function VedicAstroNumerologyTab({
             colorScheme="amber"
             variant="callout"
           />
-          <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-6 mt-6">
+          <div className="bg-white/80 border-2 border-amber-300 rounded-xl p-3 sm:p-6 mt-6">
               <Accordion type="single" collapsible className="w-full flex flex-col gap-4">
                 {/* Personality Synthesis */}
-                <AccordionItem value="personality" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="personality" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Moon className="w-5 h-5" />
@@ -380,7 +380,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Karmic Insights */}
-                <AccordionItem value="karma" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="karma" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Target className="w-5 h-5" />
@@ -393,7 +393,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Remedial Measures */}
-                <AccordionItem value="remedies" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="remedies" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Gem className="w-5 h-5" />
@@ -406,7 +406,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Career Guidance */}
-                <AccordionItem value="career" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="career" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-5 h-5" />
@@ -419,7 +419,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Relationship Insights */}
-                <AccordionItem value="relationships" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="relationships" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Heart className="w-5 h-5" />
@@ -432,7 +432,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Life Purpose */}
-                <AccordionItem value="purpose" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="purpose" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Target className="w-5 h-5" />
@@ -445,7 +445,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Personal Growth */}
-                <AccordionItem value="growth" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="growth" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <TrendingUp className="w-5 h-5" />
@@ -458,7 +458,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Challenges & Opportunities */}
-                <AccordionItem value="challenges" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="challenges" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Zap className="w-5 h-5" />
@@ -494,7 +494,7 @@ export default function VedicAstroNumerologyTab({
                 </AccordionItem>
 
                 {/* Yearly Forecast */}
-                <AccordionItem value="forecast" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-4 mb-0">
+                <AccordionItem value="forecast" className="border border-amber-500/20 bg-slate-800/30 rounded-lg px-3 sm:px-4 mb-0">
                   <AccordionTrigger className="text-amber-200 hover:text-amber-300 [&[data-state=open]]:text-amber-300">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-5 h-5" />

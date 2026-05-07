@@ -144,8 +144,8 @@ export default function AkashicRecordsPage() {
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Akashic Records">
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="relative z-10 container mx-auto px-4 pt-4 pb-8">
+    <div className="starfield-ultra-sharp min-h-screen overflow-x-hidden">
+      <div className="relative z-10 container mx-auto px-2 sm:px-4 pt-4 pb-8">
         {/* Header - centred */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -264,7 +264,7 @@ export default function AkashicRecordsPage() {
                 )}
               >
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="overview" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             <DevotionistStyleCard
               icon={<BookOpen className="w-6 h-6" />}
               title="What Are the Akashic Records?"
@@ -325,7 +325,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Access Records Tab */}
-          <TabsContent value="access" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="access" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             <DevotionistStyleCard
               icon={<Sparkles className="w-6 h-6" />}
               title="Access Your Akashic Records"
@@ -426,7 +426,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Soul Journey Tab */}
-          <TabsContent value="soul-journey" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="soul-journey" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<Heart className="w-6 h-6" />}
@@ -518,7 +518,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Past Lives Tab */}
-          <TabsContent value="past-lives" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="past-lives" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<History className="w-6 h-6" />}
@@ -595,7 +595,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Karmic Patterns Tab */}
-          <TabsContent value="karmic" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="karmic" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<Target className="w-6 h-6" />}
@@ -687,7 +687,7 @@ export default function AkashicRecordsPage() {
           </TabsContent>
 
           {/* Life Purpose Tab */}
-          <TabsContent value="purpose" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="purpose" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             {reading ? (
               <DevotionistStyleCard
                 icon={<Star className="w-6 h-6" />}
@@ -771,7 +771,7 @@ export default function AkashicRecordsPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="ask-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             {reading ? (
               <AkashicSeerChatInterface reading={reading} userProfile={userProfile} />
             ) : (

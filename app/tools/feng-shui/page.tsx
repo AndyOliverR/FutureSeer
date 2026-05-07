@@ -223,8 +223,8 @@ export default function FengShuiPage() {
   }
 
   return (
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="p-4">
+    <div className="starfield-ultra-sharp min-h-screen overflow-x-hidden">
+      <div className="px-2 sm:px-4 py-4">
         <div className="max-w-7xl mx-auto">
           {/* Header - match Western Astrology typography */}
           <motion.div
@@ -344,7 +344,7 @@ export default function FengShuiPage() {
                   </TabsList>
 
                   {activeTab === 'ask-seer' ? (
-                  <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="ask-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-md">
                       <FengShuiSeerChatInterface
                         analysis={analysis}
@@ -407,7 +407,7 @@ export default function FengShuiPage() {
                 </div>
               </motion.div>
 
-                  <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="overview" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300">
                         <CardHeader>
@@ -582,30 +582,30 @@ export default function FengShuiPage() {
                     </Card>
                   </TabsContent>
 
-                  <TabsContent value="bagua" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="bagua" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <BaguaMap 
                       areas={analysis.bagua} 
                       favorableDirections={analysis.favorableDirections}
                     />
                   </TabsContent>
 
-                  <TabsContent value="rooms" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="rooms" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <RoomGuidance rooms={reading.roomGuidance} />
                   </TabsContent>
 
-                  <TabsContent value="elements" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="elements" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <ElementBalance elementAnalysis={analysis.elementAnalysis} />
                   </TabsContent>
 
-                  <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="report" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <FengShuiReport reading={reading} />
                   </TabsContent>
 
-                  <TabsContent value="cures" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="cures" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <FengShuiCures cures={reading.cures} />
                   </TabsContent>
 
-                  <TabsContent value="quick-fixes" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                  <TabsContent value="quick-fixes" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                     <FengShuiPracticalGuides wealthTips={reading.wealthTips} />
                   </TabsContent>
                     </div>
