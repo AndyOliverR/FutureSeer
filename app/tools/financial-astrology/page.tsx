@@ -209,7 +209,7 @@ function FinancialAstrologyPageContent() {
 
   return (
     <ToolReportGuard loading={effectiveLoading} error={effectiveError ?? null} toolLabel="Financial Astrology">
-      <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+      <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 overflow-x-hidden">
         <div className="relative z-10 max-w-7xl mx-auto py-8">
           <div className="text-center mb-8 pt-4">
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
@@ -261,7 +261,7 @@ function FinancialAstrologyPageContent() {
                   >
                     <TabsContent
                       value="introduction"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                      className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"
                     >
                       <ToolIntroductionTab toolSlug="financial-astrology" />
                     </TabsContent>
@@ -278,7 +278,7 @@ function FinancialAstrologyPageContent() {
                   >
                     <TabsContent
                       value="report"
-                      className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"
+                      className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"
                     >
                       {effectiveLoading ? (
                         <div className="text-center py-12">
@@ -485,7 +485,7 @@ function FinancialAstrologyPageContent() {
                   >
                     <TabsContent
                       value="ask-the-seer"
-                      className="pt-6 px-4 sm:px-6 pb-6 mt-0"
+                      className="pt-6 px-2 sm:px-6 pb-6 mt-0"
                     >
                       {user?.uid && (
                         <FinancialSeerChatInterface

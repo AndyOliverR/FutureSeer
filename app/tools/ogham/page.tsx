@@ -105,8 +105,8 @@ export default function OghamPage() {
 
   return (
     <ToolReportGuard loading={isGeneratingReport} error={error ?? null} toolLabel="Ogham">
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
-      <div className="container mx-auto px-4 py-8 pt-4">
+    <div className="starfield-ultra-sharp min-h-screen overflow-x-hidden">
+      <div className="container mx-auto px-2 sm:px-4 py-8 pt-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
@@ -238,7 +238,7 @@ export default function OghamPage() {
             </TabsList>
 
             {activeTab === 'ask-seer' ? (
-            <TabsContent value="ask-seer" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="ask-seer" className="pt-6 px-2 sm:px-6 pb-6 mt-0">
               {user?.uid && userProfile ? (
                 report ? (
                   <OghamSeerChatInterface
@@ -283,7 +283,7 @@ export default function OghamPage() {
                   )}
                 >
             {/* Overview Tab */}
-            <TabsContent value="overview" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="overview" className="pt-6 px-2 sm:px-6 pb-6 mt-0">
               <ToolIntroductionTab toolSlug="ogham" />
               
               {!hasReport && (
@@ -299,7 +299,7 @@ export default function OghamPage() {
             </TabsContent>
 
             {/* Report Tab */}
-            <TabsContent value="report" className="pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="report" className="pt-6 px-2 sm:px-6 pb-6 mt-0">
               {report ? (
                 <OghamReportDisplay report={report} isLoading={isGeneratingReport} />
               ) : (

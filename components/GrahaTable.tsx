@@ -118,7 +118,7 @@ export default function GrahaTable({ placements, className = "" }: GrahaTablePro
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[760px]">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left">

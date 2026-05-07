@@ -222,7 +222,7 @@ export default function ComprehensiveWesternReport({
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Sun className="w-8 h-8 text-yellow-600" />
             </div>
@@ -242,7 +242,7 @@ export default function ComprehensiveWesternReport({
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-blue-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Moon className="w-8 h-8 text-blue-600" />
             </div>
@@ -262,7 +262,7 @@ export default function ComprehensiveWesternReport({
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-purple-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <ArrowUp className="w-8 h-8 text-purple-600" />
             </div>
@@ -396,7 +396,7 @@ export default function ComprehensiveWesternReport({
             <CardContent>
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {/* Chart Overview */}
-                <AccordionItem value="overview" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-4 shadow-sm">
+                <AccordionItem value="overview" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Star className="w-5 h-5 text-amber-600" />
@@ -442,7 +442,7 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Planetary Analysis */}
-                <AccordionItem value="planets" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-4 shadow-sm">
+                <AccordionItem value="planets" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-blue-700 py-4 [&[data-state=open]]:text-blue-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Activity className="w-5 h-5 text-blue-600" />
@@ -474,7 +474,7 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* House Analysis */}
-                <AccordionItem value="houses" className="border-2 border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 px-4 shadow-sm">
+                <AccordionItem value="houses" className="border-2 border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-purple-700 py-4 [&[data-state=open]]:text-purple-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Home className="w-5 h-5 text-purple-600" />
@@ -512,7 +512,7 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Aspect Analysis */}
-                <AccordionItem value="aspects" className="border-2 border-pink-200 rounded-lg bg-gradient-to-br from-pink-50 to-rose-50 px-4 shadow-sm">
+                <AccordionItem value="aspects" className="border-2 border-pink-200 rounded-lg bg-gradient-to-br from-pink-50 to-rose-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-pink-700 py-4 [&[data-state=open]]:text-pink-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Zap className="w-5 h-5 text-pink-600" />
@@ -547,7 +547,7 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Transit Analysis */}
-                <AccordionItem value="transits" className="border-2 border-green-200 rounded-lg bg-gradient-to-br from-green-50 to-teal-50 px-4 shadow-sm">
+                <AccordionItem value="transits" className="border-2 border-green-200 rounded-lg bg-gradient-to-br from-green-50 to-teal-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-green-700 py-4 [&[data-state=open]]:text-green-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <TrendingUp className="w-5 h-5 text-green-600" />
@@ -583,7 +583,7 @@ export default function ComprehensiveWesternReport({
                 </AccordionItem>
 
                 {/* Predictive Insights */}
-                <AccordionItem value="predictive" className="border-2 border-cyan-200 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 px-4 shadow-sm">
+                <AccordionItem value="predictive" className="border-2 border-cyan-200 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-cyan-700 py-4 [&[data-state=open]]:text-cyan-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-cyan-600" />

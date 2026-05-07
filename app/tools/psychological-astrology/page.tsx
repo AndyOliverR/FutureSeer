@@ -113,7 +113,7 @@ function PsychologicalAstrologyPageContent() {
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Psychological Astrology">
-    <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+    <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 overflow-x-hidden">
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         <div className="text-center mb-8 pt-4">
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
@@ -164,7 +164,7 @@ function PsychologicalAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                   <ToolIntroductionTab toolSlug="psychological-astrology" />
                 </TabsContent>
               </motion.div>
@@ -178,7 +178,7 @@ function PsychologicalAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="report" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                   {isLoading ? (
                     <div className="text-center py-8">
                       <motion.div
@@ -499,8 +499,8 @@ function PsychologicalAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                  <div className="h-[800px] min-h-0">
+                <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
+                  <div className="h-auto md:h-[800px] min-h-[50vh] max-h-[85vh] min-h-0">
                     <PsychologicalSeerChatInterface
                       userId={user?.uid || ''}
                       userProfile={userProfile}

@@ -260,7 +260,7 @@ export default function AstroNumerologyTab({
         className="text-center mb-8"
       >
         <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-center gap-3 mb-3">
               <div className="bg-purple-200/60 rounded-full p-2">
                 <Sparkles className="w-8 h-8 text-purple-600" />
@@ -283,7 +283,7 @@ export default function AstroNumerologyTab({
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 shadow-lg rounded-3xl">
-            <CardContent className="p-6 text-center">
+            <CardContent className="p-3 sm:p-6 text-center">
               <div className="w-16 h-16 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Sun className="w-8 h-8 text-yellow-600" />
               </div>
@@ -306,7 +306,7 @@ export default function AstroNumerologyTab({
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 shadow-lg rounded-3xl">
-            <CardContent className="p-6 text-center">
+            <CardContent className="p-3 sm:p-6 text-center">
               <div className="w-16 h-16 bg-blue-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Hash className="w-8 h-8 text-blue-600" />
               </div>
@@ -337,7 +337,7 @@ export default function AstroNumerologyTab({
           transition={{ duration: 0.5, delay: 0.3 }}
         >
           <Card className="bg-gradient-to-br from-pink-50 to-rose-50 border-2 border-pink-200 shadow-lg rounded-3xl">
-            <CardContent className="p-6 text-center">
+            <CardContent className="p-3 sm:p-6 text-center">
               <div className="w-16 h-16 bg-pink-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User className="w-8 h-8 text-pink-600" />
               </div>
@@ -420,7 +420,7 @@ export default function AstroNumerologyTab({
             <CardContent>
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {/* Personality Synthesis */}
-                <AccordionItem value="personality" className="border-2 border-amber-300 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 px-4 shadow-md">
+                <AccordionItem value="personality" className="border-2 border-amber-300 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 px-3 sm:px-4 shadow-md">
                   <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Sun className="w-5 h-5 text-yellow-400" />
@@ -428,18 +428,24 @@ export default function AstroNumerologyTab({
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-2 pb-4">
-                    <DevotionistStyleCard
-                      icon={<Sparkles className="w-6 h-6" />}
-                      title="Your Unique Personality Blend"
-                      subtitle={`${actualSunSign} Sun + Life Path ${lifePathNumber ?? '—'} + Name Number ${nameNumber ?? '—'}`}
-                      summary={comprehensiveAnalysis.personalitySynthesis?.substring(0, 250) || comprehensiveAnalysis.personalitySynthesis || 'Personality analysis will be available soon.'}
-                      items={extractKeyInsights(comprehensiveAnalysis.personalitySynthesis || '').slice(0, 4).map(insight => ({
-                        text: insight.description,
-                        highlight: insight.highlight
-                      }))}
-                      variant="callout"
-                      colorScheme="amber"
-                    />
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 sm:p-4">
+                      <div className="mb-3">
+                        <h4 className="text-slate-900 font-semibold">Your Unique Personality Blend</h4>
+                        <p className="text-xs sm:text-sm text-slate-600">
+                          {actualSunSign} Sun + Life Path {lifePathNumber ?? '—'} + Name Number {nameNumber ?? '—'}
+                        </p>
+                      </div>
+                      <p className="text-slate-700 text-sm leading-relaxed">
+                        {comprehensiveAnalysis.personalitySynthesis?.substring(0, 250) || comprehensiveAnalysis.personalitySynthesis || 'Personality analysis will be available soon.'}
+                      </p>
+                      <ul className="mt-3 space-y-2">
+                        {extractKeyInsights(comprehensiveAnalysis.personalitySynthesis || '').slice(0, 4).map((insight, index) => (
+                          <li key={`personality-insight-${index}`} className="text-sm text-slate-700">
+                            - {insight.description}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
 

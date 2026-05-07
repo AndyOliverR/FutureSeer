@@ -147,7 +147,7 @@ export default function PalmistryPage() {
       exit="exit"
       variants={pageVariants}
       transition={{ duration: 0.6, ease: "easeOut" }}
-      className="starfield-ultra-sharp min-h-screen p-4 pt-4 overflow-hidden"
+      className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 pt-4 overflow-x-hidden"
     >
       <div className="relative z-10 max-w-7xl mx-auto py-8">
         {/* Header */}
@@ -241,7 +241,7 @@ export default function PalmistryPage() {
           </TabsList>
 
           {activeTab === "ask-the-seer" ? (
-          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+          <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             <motion.div
               variants={cardVariants}
               initial="initial"
@@ -249,7 +249,7 @@ export default function PalmistryPage() {
               exit="exit"
               transition={{ duration: 0.3 }}
             >
-              <Card className="bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-3xl h-[800px] overflow-hidden">
+              <Card className="bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50 border-2 border-purple-200 shadow-lg hover:shadow-xl transition-shadow duration-200 rounded-3xl h-auto md:h-[800px] min-h-[50vh] max-h-[85vh] overflow-hidden">
                 <div className="h-full bg-gradient-to-b from-transparent to-white/30">
                   <PalmistrySeerChatInterface
                     userId={user?.uid || ""}
@@ -279,7 +279,7 @@ export default function PalmistryPage() {
                 )}
               >
           {/* Introduction Tab */}
-            <TabsContent key="introduction" value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent key="introduction" value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               <motion.div
                 variants={cardVariants}
                 initial="initial"
@@ -292,7 +292,7 @@ export default function PalmistryPage() {
             </TabsContent>
 
           {/* Palmistry Analysis Tab */}
-            <TabsContent key="palmistry-analysis" value="palmistry-analysis" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent key="palmistry-analysis" value="palmistry-analysis" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {isLoading ? (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -478,7 +478,7 @@ export default function PalmistryPage() {
             </TabsContent>
 
           {/* Timing & Guidance Tab */}
-            <TabsContent key="timing-guidance" value="timing-guidance" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent key="timing-guidance" value="timing-guidance" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {analysisData ? (
                 <motion.div
                   variants={cardVariants}
@@ -665,7 +665,7 @@ export default function PalmistryPage() {
             </TabsContent>
 
           {/* Remedies Tab */}
-            <TabsContent key="remedies" value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent key="remedies" value="remedies" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               <motion.div
                 variants={cardVariants}
                 initial="initial"

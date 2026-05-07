@@ -179,7 +179,7 @@ export default function ComprehensiveNumerologyReport({
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-yellow-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Target className="w-8 h-8 text-yellow-600" />
             </div>
@@ -192,7 +192,7 @@ export default function ComprehensiveNumerologyReport({
         </Card>
 
         <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-blue-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Hash className="w-8 h-8 text-blue-600" />
             </div>
@@ -205,7 +205,7 @@ export default function ComprehensiveNumerologyReport({
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 shadow-lg rounded-3xl">
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-3 sm:p-6 text-center">
             <div className="w-16 h-16 bg-purple-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="w-8 h-8 text-purple-600" />
             </div>
@@ -274,7 +274,7 @@ export default function ComprehensiveNumerologyReport({
             <CardContent>
               <Accordion type="single" collapsible className="w-full space-y-2">
                 {/* Profile Overview */}
-                <AccordionItem value="overview" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-4 shadow-sm">
+                <AccordionItem value="overview" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Star className="w-5 h-5 text-amber-600" />
@@ -292,7 +292,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Core Numbers Analysis */}
-                <AccordionItem value="core-numbers" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-4 shadow-sm">
+                <AccordionItem value="core-numbers" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-blue-700 py-4 [&[data-state=open]]:text-blue-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Hash className="w-5 h-5 text-blue-600" />
@@ -313,7 +313,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Life Path Analysis */}
-                <AccordionItem value="life-path" className="border-2 border-yellow-200 rounded-lg bg-gradient-to-br from-yellow-50 to-amber-50 px-4 shadow-sm">
+                <AccordionItem value="life-path" className="border-2 border-yellow-200 rounded-lg bg-gradient-to-br from-yellow-50 to-amber-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-yellow-700 py-4 [&[data-state=open]]:text-yellow-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Target className="w-5 h-5 text-yellow-600" />
@@ -335,7 +335,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Expression Analysis */}
-                <AccordionItem value="expression" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-4 shadow-sm">
+                <AccordionItem value="expression" className="border-2 border-blue-200 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-blue-700 py-4 [&[data-state=open]]:text-blue-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Hash className="w-5 h-5 text-blue-600" />
@@ -357,7 +357,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Soul Urge Analysis */}
-                <AccordionItem value="soul-urge" className="border-2 border-pink-200 rounded-lg bg-gradient-to-br from-pink-50 to-purple-50 px-4 shadow-sm">
+                <AccordionItem value="soul-urge" className="border-2 border-pink-200 rounded-lg bg-gradient-to-br from-pink-50 to-purple-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-pink-700 py-4 [&[data-state=open]]:text-pink-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Heart className="w-5 h-5 text-pink-600" />
@@ -379,7 +379,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Personality Analysis */}
-                <AccordionItem value="personality" className="border-2 border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 px-4 shadow-sm">
+                <AccordionItem value="personality" className="border-2 border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-purple-700 py-4 [&[data-state=open]]:text-purple-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Eye className="w-5 h-5 text-purple-600" />
@@ -401,7 +401,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Destiny Analysis */}
-                <AccordionItem value="destiny" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-4 shadow-sm">
+                <AccordionItem value="destiny" className="border-2 border-amber-200 rounded-lg bg-gradient-to-br from-amber-50 to-yellow-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-amber-700 py-4 [&[data-state=open]]:text-amber-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Sparkles className="w-5 h-5 text-amber-600" />
@@ -423,7 +423,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Personal Year Analysis */}
-                <AccordionItem value="personal-year" className="border-2 border-green-200 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 px-4 shadow-sm">
+                <AccordionItem value="personal-year" className="border-2 border-green-200 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-green-700 py-4 [&[data-state=open]]:text-green-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Calendar className="w-5 h-5 text-green-600" />
@@ -445,7 +445,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Challenges & Opportunities */}
-                <AccordionItem value="challenges-opportunities" className="border-2 border-orange-200 rounded-lg bg-gradient-to-br from-orange-50 to-amber-50 px-4 shadow-sm">
+                <AccordionItem value="challenges-opportunities" className="border-2 border-orange-200 rounded-lg bg-gradient-to-br from-orange-50 to-amber-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-orange-700 py-4 [&[data-state=open]]:text-orange-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <TrendingUp className="w-5 h-5 text-orange-600" />
@@ -479,7 +479,7 @@ export default function ComprehensiveNumerologyReport({
                 </AccordionItem>
 
                 {/* Predictive Insights */}
-                <AccordionItem value="predictions" className="border-2 border-cyan-200 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 px-4 shadow-sm">
+                <AccordionItem value="predictions" className="border-2 border-cyan-200 rounded-lg bg-gradient-to-br from-cyan-50 to-blue-50 px-3 sm:px-4 shadow-sm">
                   <AccordionTrigger className="text-slate-800 hover:text-cyan-700 py-4 [&[data-state=open]]:text-cyan-700 [&>svg]:text-slate-600">
                     <div className="flex items-center gap-3">
                       <Activity className="w-5 h-5 text-cyan-600" />
