@@ -312,8 +312,8 @@ function WesternAstrologyPageContent() {
 
   return (
     <ToolReportGuard loading={isLoading} error={profileError ?? null} toolLabel="Western astrology" report={westernPipelineReport}>
-    <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
-      <div className="relative z-10 max-w-7xl mx-auto py-8">
+    <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 overflow-x-clip">
+      <div className="relative z-10 max-w-7xl mx-auto py-6 sm:py-8 min-w-0">
         <div className="text-center mb-8 pt-4">
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
             <span className="text-yellow-400">⭐</span>{' '}
@@ -361,7 +361,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                   {analysis?.data && (
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pb-2">
                       <Button
@@ -391,7 +391,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="compatibility" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="compatibility" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                   <CompatibilityTab toolSlug="western-astrology" />
                 </TabsContent>
               </motion.div>
@@ -407,7 +407,7 @@ function WesternAstrologyPageContent() {
                 transition={motionConfig}
                 className="bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]"
               >
-                <TabsContent value="western-astrology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 border-0 bg-transparent">
+                <TabsContent value="western-astrology" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0 border-0 bg-transparent">
             {isLoading ? (
               <motion.div 
                 className="text-center py-8"
@@ -876,7 +876,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="astro-numerology" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="astro-numerology" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                   <AstroNumerologyTab
                     userId={user?.uid}
                     birthDate={userProfile?.birthDate}
@@ -899,7 +899,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="advanced" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="advanced" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
             <div className="space-y-6">
               <Card className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg rounded-3xl">
                 <CardHeader>
@@ -971,7 +971,7 @@ function WesternAstrologyPageContent() {
                 exit={prefersReducedMotion ? {} : { opacity: 0, y: -20 }}
                 transition={motionConfig}
               >
-                <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                   <div className="min-h-[60vh] max-h-[85vh] min-w-0">
                     <WesternSeerChatInterface
                       userId={user?.uid || ''}

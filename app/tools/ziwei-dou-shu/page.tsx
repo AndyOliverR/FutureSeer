@@ -165,7 +165,7 @@ function ZiWeiDouShuPageContent() {
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Zi Wei Dou Shu">
-      <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+      <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 overflow-x-hidden">
         <div className="relative z-10 max-w-7xl mx-auto py-8">
           <div className="text-center mb-8 pt-4">
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
@@ -238,8 +238,8 @@ function ZiWeiDouShuPageContent() {
               </TabsList>
 
               {activeTab === 'ask-the-seer' ? (
-                    <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                      <div className="h-[800px] min-h-0">
+                    <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
+                      <div className="h-auto md:h-[800px] min-h-[50vh] max-h-[85vh] min-h-0">
                         <ZiWeiDouShuSeerChatInterface
                           userId={user?.uid ?? ''}
                           userProfile={userProfile ?? undefined}
@@ -264,11 +264,11 @@ function ZiWeiDouShuPageContent() {
                             'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
                         )}
                       >
-                    <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                       <ToolIntroductionTab toolSlug="ziwei-dou-shu" />
                     </TabsContent>
 
-                    <TabsContent value="chart" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <TabsContent value="chart" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                       {isLoading ? (
                         <div className="text-center py-8">
                           <motion.div
@@ -321,7 +321,7 @@ function ZiWeiDouShuPageContent() {
                       )}
                     </TabsContent>
 
-                    <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+                    <TabsContent value="report" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                       {isLoading ? (
                         <div className="text-center py-8">
                           <motion.div

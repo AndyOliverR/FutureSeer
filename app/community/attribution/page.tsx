@@ -1011,8 +1011,8 @@ export default function CommunityAttributionPage() {
             <CardContent>
               <div className="grid gap-4">
                 {communityMembers.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between p-4 bg-blue-100/60 rounded-lg border-2 border-blue-200">
-                    <div className="flex items-center gap-4">
+                  <div key={member.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-blue-100/60 rounded-lg border-2 border-blue-200 min-w-0">
+                    <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
                       <div className="relative">
                         <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
                           {member.name.charAt(0)}
@@ -1021,22 +1021,22 @@ export default function CommunityAttributionPage() {
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-slate-800"></div>
                         )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-slate-800">{member.name}</h4>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1 min-w-0">
+                          <h4 className="font-semibold text-slate-800 truncate">{member.name}</h4>
                           {getReputationIcon(member.reputation)}
-                          <Badge variant="outline" className="text-xs bg-amber-100 border-amber-400/50 text-amber-800">
+                          <Badge variant="outline" className="text-xs bg-amber-100 border-amber-400/50 text-amber-800 shrink-0">
                             {member.flair}
                           </Badge>
                         </div>
                         {!member.hideStats && (
                           <>
-                            <div className="flex items-center gap-4 text-sm mb-1">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mb-1">
                               <span className="text-slate-700 font-medium">Karma: <span className="text-amber-700">{member.karma.toLocaleString()}</span></span>
                               <span className="text-slate-700">Level: <span className="font-semibold text-slate-800">{member.level}</span></span>
                               <span className="text-slate-700">Streak: <span className="text-orange-700 font-semibold">{member.streak}</span> days</span>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               {member.badges.slice(0, 2).map((badge, index) => (
                                 <Badge key={index} variant="outline" className="text-xs bg-purple-100/80 border-purple-400/40 text-purple-800">
                                   {badge}
@@ -1054,7 +1054,7 @@ export default function CommunityAttributionPage() {
                     </div>
                     <Button
                       onClick={() => handleConnectionRequest(member)}
-                      className="bg-amber-100 border border-amber-500/50 text-amber-800 hover:bg-amber-200/80"
+                      className="w-full sm:w-auto bg-amber-100 border border-amber-500/50 text-amber-800 hover:bg-amber-200/80"
                       size="sm"
                     >
                       <UserPlus className="w-4 h-4 mr-2" />

@@ -122,7 +122,7 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
   const dominantModality = calculateDominantModality(planets)
   
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 min-w-0">
       {/* Chart Visualization */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
@@ -130,12 +130,12 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
         transition={{ duration: 0.6 }}
       >
         <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg rounded-2xl overflow-hidden text-slate-900">
-          <CardContent className="p-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-amber-900 mb-2">
+          <CardContent className="p-3 sm:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-amber-900 mb-2">
                 Your Birth Chart
               </h2>
-              <p className="text-slate-700 text-sm">
+              <p className="text-slate-700 text-xs sm:text-sm">
                 {userProfile?.birthPlace && `Born in ${userProfile.birthPlace}`}
                 {userProfile?.birthDate && ` • ${new Date(userProfile.birthDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
               </p>
@@ -268,7 +268,7 @@ export function WesternDashboardHero({ chartData, userProfile }: WesternDashboar
       >
         <Card className="bg-gradient-to-r from-slate-100 to-slate-50 border-2 border-slate-300 shadow-lg rounded-3xl text-slate-900">
           <CardContent className="p-4">
-            <div className="flex flex-wrap items-center gap-4 justify-center">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 justify-center min-w-0">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-slate-700" />
                 <span className="text-sm font-semibold text-slate-900">Quick Insights:</span>

@@ -7,6 +7,7 @@ import ChartMetadataComponent, { ChartMetadata } from './ChartMetadata'
 import { UnifiedChartRenderer, createWesternChartData } from '@/components/charts/UnifiedChartRenderer';
 import ColorfulWesternChart from './ColorfulWesternChart';
 import { isUnifiedChartsEnabled } from '@/lib/charts/featureFlags';
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
 
 interface Planet {
   name: string;
@@ -59,6 +60,10 @@ export default function DualChartDisplay({
   natalMetadata,
   transitMetadata
 }: DualChartDisplayProps) {
+  const isMobileLayout = useIsMobileLayout();
+  const chartWidth = isMobileLayout ? 320 : _width;
+  const chartHeight = isMobileLayout ? 300 : _height;
+
   // Debug logs only in development
   if (process.env.NODE_ENV === 'development') {
     devLog.debug('DualChartDisplay: Received transit planets:', transitPlanets)
@@ -68,16 +73,16 @@ export default function DualChartDisplay({
   return (
     <div className="w-full">
       {/* Dual Chart Display - Side by Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
         {/* Natal Chart */}
         <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200 shadow-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-center text-lg font-bold text-blue-800 flex items-center justify-center gap-2">
+          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-center text-base sm:text-lg font-bold text-blue-800 flex items-center justify-center gap-2">
               <span className="text-2xl">☉</span>
               Natal Chart
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
                 {/* Natal Chart Metadata */}
                 {natalMetadata && (
                   <ChartMetadataComponent 
@@ -85,7 +90,7 @@ export default function DualChartDisplay({
                   />
                 )}
                 
-                <div className="w-full h-full min-h-[400px] flex items-center justify-center">
+                <div className="w-full h-full min-h-[280px] sm:min-h-[400px] flex items-center justify-center overflow-x-auto">
                   {isUnifiedChartsEnabled() ? (
                     <UnifiedChartRenderer
                       chart={createWesternChartData({
@@ -101,8 +106,8 @@ export default function DualChartDisplay({
                       planets={natalPlanets}
                       houses={natalHouses}
                       aspects={natalAspects}
-                      width={_width}
-                      height={_height}
+                      width={chartWidth}
+                      height={chartHeight}
                       title=""
                       backgroundColor="#f3f4f9"
                     />
@@ -113,13 +118,13 @@ export default function DualChartDisplay({
 
         {/* Transit Chart */}
         <Card className="bg-gradient-to-br from-green-50 to-teal-50 border-2 border-green-200 shadow-lg">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-center text-lg font-bold text-green-800 flex items-center justify-center gap-2">
+          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-center text-base sm:text-lg font-bold text-green-800 flex items-center justify-center gap-2">
               <span className="text-2xl">♅</span>
               Transit Chart
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-3 sm:p-4">
             {/* Transit Chart Metadata */}
             {transitMetadata && (
               <ChartMetadataComponent 
@@ -127,7 +132,7 @@ export default function DualChartDisplay({
               />
             )}
             
-            <div className="w-full h-full min-h-[400px] flex items-center justify-center">
+            <div className="w-full h-full min-h-[280px] sm:min-h-[400px] flex items-center justify-center overflow-x-auto">
               {isUnifiedChartsEnabled() ? (
                 <UnifiedChartRenderer
                   chart={createWesternChartData({
@@ -143,8 +148,8 @@ export default function DualChartDisplay({
                   planets={transitPlanets}
                   houses={transitHouses}
                   aspects={[]}
-                  width={_width}
-                  height={_height}
+                  width={chartWidth}
+                  height={chartHeight}
                   title=""
                   backgroundColor="#f0fdf4"
                 />
