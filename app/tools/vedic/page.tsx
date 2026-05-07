@@ -358,7 +358,7 @@ function VedicAstrologyPageContent() {
 
   return (
     <ToolReportGuard loading={false} error={profileError ?? null} toolLabel="Vedic astrology" hasReport={hasVedicData}>
-      <div className="min-h-screen p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-24 md:pt-4 md:pb-8 overflow-hidden bg-[var(--m3-surface)] md:bg-transparent">
+      <div className="min-h-screen px-2 sm:px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-24 md:pt-4 md:pb-8 overflow-x-hidden bg-[var(--m3-surface)] md:bg-transparent">
         <div className="fixed inset-0 -z-10 hidden md:block starfield-ultra-sharp" aria-hidden />
         <div className="relative z-10 max-w-7xl mx-auto py-4 md:py-8">
           {/* Mobile: ToolPageHeader (Material 3) */}
@@ -438,7 +438,7 @@ function VedicAstrologyPageContent() {
             </TabsList>
 
             {activeTab === 'ask-the-seer' ? (
-            <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {user?.uid && userProfile ? (
                 <div className="p-6 bg-slate-900/40 border border-amber-500/20 rounded-3xl min-h-[400px]">
                   <h3 className="text-xl font-heading text-amber-400 mb-4 uppercase tracking-widest flex items-center gap-2">
@@ -473,9 +473,9 @@ function VedicAstrologyPageContent() {
                     'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
                 )}
               >
-            <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"><ToolIntroductionTab toolSlug="vedic-astrology" /></TabsContent>
-            <TabsContent value="compatibility" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0"><CompatibilityTab toolSlug="vedic-astrology" /></TabsContent>
-            <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"><ToolIntroductionTab toolSlug="vedic-astrology" /></TabsContent>
+            <TabsContent value="compatibility" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"><CompatibilityTab toolSlug="vedic-astrology" /></TabsContent>
+            <TabsContent value="overview" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {hasVedicData && user?.uid && userProfile ? (
                 <ComprehensiveVedicReport
                   userId={user.uid}
@@ -518,7 +518,7 @@ function VedicAstrologyPageContent() {
                 </div>
               )}
             </TabsContent>
-            <TabsContent value="charts" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="charts" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {normalizedVedic ? (() => {
                 const { ascendantSign, ascendantDegree, planets: normPlanets, ascendantLongitude } = normalizedVedic;
                 const chartPlanets = normPlanets.map((p) => ({ name: p.name, sign: p.sign, degreeInSign: p.degreeInSign, isRetrograde: p.isRetrograde }));
@@ -591,7 +591,7 @@ function VedicAstrologyPageContent() {
                 </div>
               )}
             </TabsContent>
-            <TabsContent value="planets" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="planets" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {!effectiveVedicReport && hasVedicData && user?.uid && (
                 <div className="p-4 bg-slate-800/50 border border-amber-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   {vedicComprehensiveError ? (
@@ -657,7 +657,7 @@ function VedicAstrologyPageContent() {
                 )}
               </DevotionistStyleCard>
             </TabsContent>
-            <TabsContent value="houses" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="houses" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {!effectiveVedicReport && hasVedicData && user?.uid && (
                 <div className="p-4 bg-slate-800/50 border border-amber-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   {vedicComprehensiveError ? (
@@ -717,7 +717,7 @@ function VedicAstrologyPageContent() {
                 )}
               </DevotionistStyleCard>
             </TabsContent>
-            <TabsContent value="dasha" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="dasha" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {hasVedicData && compProfile?.vedic?.currentDasha && (compProfile.vedic.currentDasha as any).startDate && (compProfile.vedic.currentDasha as any).endDate ? (
                 <DashaPanelSimplified
                   chartData={{
@@ -738,7 +738,7 @@ function VedicAstrologyPageContent() {
                 </div>
               )}
             </TabsContent>
-            <TabsContent value="remedies" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="remedies" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {!effectiveVedicReport && hasVedicData && user?.uid && (
                 <div className="p-4 bg-slate-800/50 border border-amber-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   {vedicComprehensiveError ? (
@@ -868,7 +868,7 @@ function VedicAstrologyPageContent() {
                 })()}
               </DevotionistStyleCard>
             </TabsContent>
-            <TabsContent value="gotra" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="gotra" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {hasVedicData && userProfile ? (() => {
                 const moon = (compProfile?.vedic?.planets as any[])?.find((p: any) => (p.name || p.planet) === 'Moon');
                 const moonLongitude = moon?.longitude ?? moon?.degree ?? 0;

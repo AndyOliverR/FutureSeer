@@ -343,7 +343,7 @@ function BaziPageContent() {
       toolLabel="BaZi (Four Pillars)"
       hasReport={hasAnyGeneratedProfile || !!baziReport}
     >
-      <div className="starfield-ultra-sharp min-h-screen p-4 overflow-hidden">
+      <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 overflow-x-hidden">
         <div className="relative z-10 max-w-7xl mx-auto py-8">
           <div className="text-center mb-8 pt-4">
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6">
@@ -402,7 +402,7 @@ function BaziPageContent() {
               </TabsList>
 
               {activeTab === 'ask-the-seer' ? (
-              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                       {baziReport ? (
                         <div className="min-h-[60vh] max-h-[85vh] min-w-0">
                           <BaZiCoachInterface reading={baziReport} />
@@ -467,11 +467,11 @@ function BaziPageContent() {
                       'pointer-events-none select-none blur-sm filter transition-[filter] duration-300 [&_*]:pointer-events-none'
                   )}
                 >
-              <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <ToolIntroductionTab toolSlug="bazi" />
               </TabsContent>
 
-              <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0 bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]">
+              <TabsContent value="report" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0 bg-gradient-to-b from-amber-50/98 to-slate-100/98 min-h-[60vh]">
                       {isLoading ? (
                         <div className="text-center py-8">
                           <motion.div

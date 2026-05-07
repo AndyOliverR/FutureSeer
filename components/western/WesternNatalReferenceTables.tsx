@@ -46,7 +46,8 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div className="rounded-xl border border-slate-200 overflow-hidden">
             <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Polarity (10 classical planets)</div>
-            <table className="w-full text-left text-slate-800">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[320px] text-left text-slate-800">
               <tbody>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2 text-slate-800">Masculine</td>
@@ -58,10 +59,12 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
           <div className="rounded-xl border border-slate-200 overflow-hidden">
             <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Elements</div>
-            <table className="w-full text-left text-slate-800">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[320px] text-left text-slate-800">
               <tbody>
                 <tr className="border-t border-slate-100">
                   <td className="px-3 py-2">Fire</td>
@@ -81,12 +84,14 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 overflow-hidden">
           <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Modalities</div>
-          <table className="w-full text-sm text-left text-slate-800">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[320px] text-sm text-left text-slate-800">
             <tbody>
               <tr className="border-t border-slate-100">
                 <td className="px-3 py-2">Cardinal</td>
@@ -102,11 +107,13 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 overflow-hidden">
           <div className="bg-slate-100 px-3 py-2 font-semibold text-slate-800">Lots &amp; nodes</div>
-          <table className="w-full text-sm text-left text-slate-800">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[360px] text-sm text-left text-slate-800">
             <tbody>
               {pof && (
                 <tr className="border-t border-slate-100">
@@ -144,6 +151,7 @@ export function WesternNatalReferenceTables({ chartData }: WesternNatalReference
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </CardContent>
     </Card>

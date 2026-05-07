@@ -171,27 +171,27 @@ export function AspectLegendPanel({ aspects, onFilterAspect, activeFilter }: Asp
             <h4 className="text-sm font-semibold text-slate-900">All aspects ({sortedAspects.length})</h4>
             <p className="text-xs text-slate-600">Sorted by smallest orb first</p>
           </div>
-          <div className="max-h-[min(420px,50vh)] overflow-y-auto">
-            <table className="w-full text-sm">
+          <div className="max-h-[min(420px,50vh)] overflow-y-auto overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
               <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-600">
                 <tr>
-                  <th className="px-3 py-2 font-semibold">Point A</th>
-                  <th className="px-3 py-2 font-semibold">Aspect</th>
-                  <th className="px-3 py-2 font-semibold">Point B</th>
-                  <th className="px-3 py-2 font-semibold text-right">Orb</th>
-                  <th className="px-3 py-2 font-semibold text-right">Score</th>
+                  <th className="px-2 sm:px-3 py-2 font-semibold">Point A</th>
+                  <th className="px-2 sm:px-3 py-2 font-semibold">Aspect</th>
+                  <th className="px-2 sm:px-3 py-2 font-semibold">Point B</th>
+                  <th className="px-2 sm:px-3 py-2 font-semibold text-right">Orb</th>
+                  <th className="hidden sm:table-cell px-2 sm:px-3 py-2 font-semibold text-right">Score</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedAspects.map((a, idx) => (
                   <tr key={`${a.planet1}-${a.planet2}-${a.type}-${idx}`} className="border-b border-slate-100 hover:bg-amber-50/50">
-                    <td className="px-3 py-2 font-medium text-slate-900">{a.planet1}</td>
-                    <td className="px-3 py-2 text-violet-900">{formatAspectType(a.type || '')}</td>
-                    <td className="px-3 py-2 font-medium text-slate-900">{a.planet2}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-700">
+                    <td className="px-2 sm:px-3 py-2 font-medium text-slate-900">{a.planet1}</td>
+                    <td className="px-2 sm:px-3 py-2 text-violet-900">{formatAspectType(a.type || '')}</td>
+                    <td className="px-2 sm:px-3 py-2 font-medium text-slate-900">{a.planet2}</td>
+                    <td className="px-2 sm:px-3 py-2 text-right tabular-nums text-slate-700">
                       {typeof a.orb === 'number' && !Number.isNaN(a.orb) ? `${a.orb.toFixed(1)}°` : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums text-slate-600" title="Relative ease vs friction (app formula, not comparable to other sites)">
+                    <td className="hidden sm:table-cell px-2 sm:px-3 py-2 text-right tabular-nums text-slate-600" title="Relative ease vs friction (app formula, not comparable to other sites)">
                       {typeof a.orb === 'number' && !Number.isNaN(a.orb)
                         ? aspectHarmonyScore(a.type || '', a.orb)
                         : '—'}

@@ -129,13 +129,13 @@ export function DashboardSection({
       transition={{ duration: 0.4 }}
       className={className}
     >
-      <Card className={`border-2 ${colors.border} ${colors.hoverBorder} shadow-lg rounded-3xl transition-all duration-300 overflow-hidden`}>
+      <Card className={`border-2 ${colors.border} ${colors.hoverBorder} shadow-lg rounded-2xl sm:rounded-3xl transition-all duration-300 overflow-hidden`}>
         {/* Accent Bar */}
         <div className={`h-1 ${colors.accentBar}`} />
 
         {/* Header */}
         <CardHeader
-          className={`${colors.headerBg} cursor-pointer select-none`}
+          className={`${colors.headerBg} cursor-pointer select-none px-3 py-3 sm:p-6`}
           onClick={toggleExpanded}
           role="button"
           tabIndex={0}
@@ -148,21 +148,21 @@ export function DashboardSection({
             }
           }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-wrap">
               {/* Icon */}
               <div className={`${colors.iconColor} flex-shrink-0`}>
                 {icon}
               </div>
 
               {/* Title */}
-              <h3 className={`${colors.titleColor} text-xl font-bold`}>
+              <h3 className={`${colors.titleColor} text-lg sm:text-xl font-bold min-w-0`}>
                 {title}
               </h3>
 
               {/* Badge */}
               {badge && (
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="secondary" className="ml-0 sm:ml-2 text-xs sm:text-sm">
                   {badge}
                 </Badge>
               )}
@@ -174,7 +174,7 @@ export function DashboardSection({
               transition={{ duration: 0.3 }}
               className={colors.iconColor}
             >
-              <ChevronDown className="w-6 h-6" />
+              <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6" />
             </motion.div>
           </div>
         </CardHeader>
@@ -189,7 +189,7 @@ export function DashboardSection({
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
             >
-              <CardContent className={`bg-gradient-to-br ${colors.gradient} p-6`}>
+              <CardContent className={`bg-gradient-to-br ${colors.gradient} p-3 sm:p-6`}>
                 {children}
               </CardContent>
             </motion.div>

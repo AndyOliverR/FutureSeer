@@ -260,7 +260,7 @@ export default function HumanDesignPage() {
 
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="Human Design">
-    <div className="starfield-ultra-sharp min-h-screen overflow-hidden">
+    <div className="starfield-ultra-sharp min-h-screen overflow-x-hidden">
       <div className="p-4">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -384,8 +384,8 @@ export default function HumanDesignPage() {
               </TabsList>
 
               {activeTab === 'ask-seer' ? (
-              <TabsContent value="ask-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
-                <div className="h-[800px] min-h-0">
+              <TabsContent value="ask-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
+                <div className="h-auto md:h-[800px] min-h-[50vh] max-h-[85vh] min-h-0">
                   <HumanDesignSeerChatInterface
                     userId={user?.uid ?? ''}
                     userProfile={userProfile}
@@ -412,7 +412,7 @@ export default function HumanDesignPage() {
                   )}
                 >
               {/* Overview Tab */}
-              <TabsContent value="overview" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="overview" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -467,7 +467,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* BodyGraph Tab */}
-              <TabsContent value="bodygraph" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="bodygraph" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -499,7 +499,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Centers Tab */}
-              <TabsContent value="centers" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="centers" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                     <div className="h-1 bg-amber-400" />
@@ -560,7 +560,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Gates & Channels Tab */}
-              <TabsContent value="gates" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="gates" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -606,7 +606,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Profile Tab */}
-              <TabsContent value="profile" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="profile" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -650,7 +650,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Incarnation Cross Tab */}
-              <TabsContent value="cross" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="cross" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">
@@ -686,7 +686,7 @@ export default function HumanDesignPage() {
               </TabsContent>
 
               {/* Full Report Tab */}
-              <TabsContent value="report" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+              <TabsContent value="report" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
                 <Card className="border-2 border-amber-300 hover:border-amber-400 shadow-lg rounded-3xl transition-all duration-300 overflow-hidden">
                   <div className="h-1 bg-amber-400" />
                   <CardHeader className="bg-gradient-to-r from-amber-100 to-yellow-100">

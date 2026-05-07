@@ -169,7 +169,7 @@ export default function HellenisticAstrologyPage() {
   // Full-page loading only when profile is loading and we have no reading yet
   return (
     <ToolReportGuard loading={isLoading && !effectiveReading} error={effectiveError ?? null} toolLabel="Hellenistic chart">
-    <div className="starfield-ultra-sharp min-h-screen p-4 pt-4 overflow-hidden">
+    <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 pt-4 overflow-x-hidden">
       {/* Softening overlay to integrate content with starfield */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-900/10 via-slate-900/30 to-slate-900/40 pointer-events-none"></div>
       
@@ -267,7 +267,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Introduction Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="introduction" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="introduction" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               <motion.div
                 key="introduction"
                 initial={{ opacity: 0, y: 20 }}
@@ -282,7 +282,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Chart Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="chart" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="chart" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {effectiveLoading ? (
                 <motion.div
                   key="loading"
@@ -381,7 +381,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Planets Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="planets" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="planets" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {effectiveLoading ? (
                 <motion.div
                   key="loading"
@@ -474,7 +474,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Houses Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="houses" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="houses" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {effectiveLoading ? (
                 <motion.div
                   key="loading"
@@ -550,7 +550,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Lots Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="lots" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="lots" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {effectiveLoading ? (
                 <motion.div
                   key="loading"
@@ -671,7 +671,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Sect Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="sect" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="sect" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {effectiveLoading ? (
                 <motion.div
                   key="loading"
@@ -742,7 +742,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Profections Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="profections" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="profections" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {effectiveLoading ? (
                 <motion.div
                   key="loading"
@@ -826,7 +826,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Interpretations Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="interpretations" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="interpretations" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {effectiveLoading ? (
                 <motion.div
                   key="loading"
@@ -985,7 +985,7 @@ export default function HellenisticAstrologyPage() {
 
           {/* Ask the Seer Tab */}
           <AnimatePresence mode="wait">
-            <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-4 sm:px-6 pb-6 mt-0">
+            <TabsContent value="ask-the-seer" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               <motion.div
                 key="ask-seer"
                 initial={{ opacity: 0, y: 20 }}
@@ -993,7 +993,7 @@ export default function HellenisticAstrologyPage() {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3, ease: MATERIAL_3_EASING }}
               >
-                <Card className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-300 shadow-lg rounded-3xl h-[800px] overflow-hidden">
+                <Card className="bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 border-2 border-amber-300 shadow-lg rounded-3xl h-auto md:h-[800px] min-h-[50vh] max-h-[85vh] overflow-hidden">
                   <div className="h-full bg-gradient-to-b from-transparent to-white/30">
                     <HellenisticSeerChatInterface 
                       userId={user?.uid || ''}
