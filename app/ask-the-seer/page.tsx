@@ -154,8 +154,8 @@ export default function AskTheSeerPage() {
           background: "radial-gradient(circle at 50% 30%, rgba(90, 60, 160, 0.25), transparent 60%)",
         }}
       />
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative">
-        <div className="w-full max-w-2xl h-[85vh] min-h-[50vh]">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 pb-24 md:pb-8 relative">
+        <div className="w-full max-w-2xl h-[calc(100dvh-12rem)] md:h-[85vh] min-h-[50vh]">
           <MainSeerChatInterface
             userId={user?.uid}
             layout={layout}

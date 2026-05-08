@@ -199,6 +199,11 @@ export default function EnergyHealingPage() {
     if (hasAnyGeneratedProfile || hasRealReport) return null
     return error
   }, [error, hasAnyGeneratedProfile, hasRealReport])
+  const guardLoading = useMemo(() => {
+    // Returning users should see the page shell/tabs immediately while data resolves.
+    if (hasAnyGeneratedProfile || hasRealReport) return false
+    return loading
+  }, [loading, hasAnyGeneratedProfile, hasRealReport])
 
   const viralUnlock = useToolReportUnlock('energyHealing')
   const bypassViral = useViralReportBypass()
@@ -256,68 +261,71 @@ export default function EnergyHealingPage() {
     showEnergyHealingViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   const allAnalyses = useMemo((): AllAnalyses => {
-    let raw = effectiveReport as Record<string, unknown> | undefined
-    if (!raw || typeof raw !== 'object') return { chakra: null, aura: null, reiki: null, crystal: null, energy: null }
-    if (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
-      raw = raw.data as Record<string, unknown>
-    }
-    let chakra: ChakraAnalysis | null = null
-    // Prefer normalizing from raw.chakra (orchestrator stores { chakra, aura, ... } from API)
-    if (raw.chakra && typeof raw.chakra === 'object') {
-      chakra = normalizeToChakraAnalysis(raw.chakra as Record<string, unknown>) ?? null
-    }
-    if (!chakra && looksLikeChakraData(raw)) {
-      chakra = normalizeToChakraAnalysis(raw) ?? null
-    }
-    if (!chakra && isChakraShape(raw)) {
-      chakra = raw as unknown as ChakraAnalysis
-    }
-    if (!chakra && raw.chakra && typeof raw.chakra === 'object' && isChakraShape(raw.chakra as Record<string, unknown>)) {
-      chakra = raw.chakra as ChakraAnalysis
-    }
-    let aura: AuraReading | null = (raw.aura as AuraReading) ?? null
-    if (!aura && raw.aura && typeof raw.aura === 'object') {
-      try {
-        aura = energyHealingImageAnalyzer.formatAuraReading(raw.aura as Parameters<typeof energyHealingImageAnalyzer.formatAuraReading>[0])
-      } catch {
-        aura = null
+    try {
+      let raw = effectiveReport as Record<string, unknown> | undefined
+      if (!raw || typeof raw !== 'object') return { chakra: null, aura: null, reiki: null, crystal: null, energy: null }
+      if (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+        raw = raw.data as Record<string, unknown>
       }
-    }
-    let reiki: ReikiAnalysis | null = (raw.reiki as ReikiAnalysis) ?? null
-    if (!reiki && raw.reiki && typeof raw.reiki === 'object') {
-      try {
-        reiki = energyHealingImageAnalyzer.formatReikiAnalysis(raw.reiki as Parameters<typeof energyHealingImageAnalyzer.formatReikiAnalysis>[0])
-      } catch {
-        reiki = null
+      let chakra: ChakraAnalysis | null = null
+      // Prefer normalizing from raw.chakra (orchestrator stores { chakra, aura, ... } from API)
+      if (raw.chakra && typeof raw.chakra === 'object') {
+        chakra = normalizeToChakraAnalysis(raw.chakra as Record<string, unknown>) ?? null
       }
-    }
-    let crystal: CrystalRecommendation | null = null
-    if (raw.crystal && typeof raw.crystal === 'object') {
-      const crystalRaw = normalizeCrystalRaw(raw.crystal as Record<string, unknown>)
-      try {
-        crystal = energyHealingImageAnalyzer.formatCrystalAnalysis(crystalRaw as Parameters<typeof energyHealingImageAnalyzer.formatCrystalAnalysis>[0])
-      } catch {
-        if (Array.isArray((raw.crystal as Record<string, unknown>).crystals)) {
-          crystal = raw.crystal as CrystalRecommendation
+      if (!chakra && looksLikeChakraData(raw)) {
+        chakra = normalizeToChakraAnalysis(raw) ?? null
+      }
+      if (!chakra && isChakraShape(raw)) {
+        chakra = raw as unknown as ChakraAnalysis
+      }
+      if (!chakra && raw.chakra && typeof raw.chakra === 'object' && isChakraShape(raw.chakra as Record<string, unknown>)) {
+        chakra = raw.chakra as ChakraAnalysis
+      }
+      let aura: AuraReading | null = (raw.aura as AuraReading) ?? null
+      if (!aura && raw.aura && typeof raw.aura === 'object') {
+        try {
+          aura = energyHealingImageAnalyzer.formatAuraReading(raw.aura as Parameters<typeof energyHealingImageAnalyzer.formatAuraReading>[0])
+        } catch {
+          aura = null
         }
       }
-    }
-    let energy: EnergyBalanceAnalysis | null = null
-    if (raw.energy && typeof raw.energy === 'object') {
-      const energyRaw = normalizeEnergyRaw(raw.energy as Record<string, unknown>)
-      try {
-        energy = energyHealingImageAnalyzer.formatEnergyBalance(energyRaw as Parameters<typeof energyHealingImageAnalyzer.formatEnergyBalance>[0])
-      } catch {
-        energy = null
+      let reiki: ReikiAnalysis | null = (raw.reiki as ReikiAnalysis) ?? null
+      if (!reiki && raw.reiki && typeof raw.reiki === 'object') {
+        try {
+          reiki = energyHealingImageAnalyzer.formatReikiAnalysis(raw.reiki as Parameters<typeof energyHealingImageAnalyzer.formatReikiAnalysis>[0])
+        } catch {
+          reiki = null
+        }
       }
-      if (!energy) energy = (raw.energy as EnergyBalanceAnalysis) ?? null
-    }
-    return {
-      chakra: chakra ?? null,
-      aura: aura ?? null,
-      reiki: reiki ?? null,
-      crystal: crystal ?? null,
-      energy: energy ?? null
+      let crystal: CrystalRecommendation | null = null
+      if (raw.crystal && typeof raw.crystal === 'object') {
+        const crystalRaw = normalizeCrystalRaw(raw.crystal as Record<string, unknown>)
+        try {
+          crystal = energyHealingImageAnalyzer.formatCrystalAnalysis(crystalRaw as Parameters<typeof energyHealingImageAnalyzer.formatCrystalAnalysis>[0])
+        } catch {
+          crystal = null
+        }
+      }
+      let energy: EnergyBalanceAnalysis | null = null
+      if (raw.energy && typeof raw.energy === 'object') {
+        const energyRaw = normalizeEnergyRaw(raw.energy as Record<string, unknown>)
+        try {
+          energy = energyHealingImageAnalyzer.formatEnergyBalance(energyRaw as Parameters<typeof energyHealingImageAnalyzer.formatEnergyBalance>[0])
+        } catch {
+          energy = null
+        }
+        if (!energy) energy = (raw.energy as EnergyBalanceAnalysis) ?? null
+      }
+      return {
+        chakra: chakra ?? null,
+        aura: aura ?? null,
+        reiki: reiki ?? null,
+        crystal: crystal ?? null,
+        energy: energy ?? null
+      }
+    } catch {
+      // Fail-soft: keep the page usable even when a section payload is malformed.
+      return { chakra: null, aura: null, reiki: null, crystal: null, energy: null }
     }
   }, [effectiveReport])
 
@@ -355,7 +363,7 @@ export default function EnergyHealingPage() {
   ]
 
   return (
-    <ToolReportGuard loading={loading} error={guardError ?? null} toolLabel="Energy & Healing">
+    <ToolReportGuard loading={guardLoading} error={guardError ?? null} toolLabel="Energy & Healing">
     <div className="relative min-h-screen starfield-ultra-sharp">
       <div className="relative z-10 container mx-auto px-2 sm:px-4 py-8">
         <div className="max-w-7xl mx-auto">
@@ -377,12 +385,12 @@ export default function EnergyHealingPage() {
           </div>
 
           {/* Error Display */}
-          {error && (
+          {guardError && (
             <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-2xl shadow-md mb-8">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 text-amber-700">
                   <AlertTriangle className="h-5 w-5" />
-                  <span className="text-amber-900">{error}</span>
+                  <span className="text-amber-900">{guardError}</span>
                 </div>
               </CardContent>
             </Card>
