@@ -42,6 +42,8 @@ interface ComprehensiveVedicReportProps {
   isLoadingReport?: boolean
   /** When the report is loaded (from cache or fetch), call this so the parent can use it for Planets/Houses/Remedies tabs */
   onReportLoaded?: (report: ComprehensiveAnalysis) => void
+  /** Optional retry handler from parent to retry without page reload. */
+  onRetryLoad?: () => void
 }
 
 export interface ComprehensiveAnalysis {
@@ -72,7 +74,8 @@ export default function ComprehensiveVedicReport({
   cachedReport,
   isProfileLoading = false,
   isLoadingReport = false,
-  onReportLoaded
+  onReportLoaded,
+  onRetryLoad
 }: ComprehensiveVedicReportProps) {
   const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(
     cachedReport || null
@@ -282,8 +285,11 @@ export default function ComprehensiveVedicReport({
               <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Error Generating Report</h3>
               <p className="text-slate-200 mb-4">{analysisError}</p>
-              <Button 
-                onClick={() => window.location.reload()} 
+              <Button
+                onClick={() => {
+                  setAnalysisError(null)
+                  onRetryLoad?.()
+                }}
                 className="bg-amber-500 hover:bg-amber-600 text-white"
               >
                 <RefreshCw className="w-4 h-4 mr-2" />

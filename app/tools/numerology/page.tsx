@@ -318,7 +318,7 @@ export default function NumerologyPage() {
       ) : (
     <div className="relative min-h-screen w-full min-w-0 max-w-full overflow-x-hidden">
       {/* Content */}
-      <div className="relative z-10 container mx-auto w-full min-w-0 px-4 pt-4 pb-8">
+      <div className="relative z-10 container mx-auto w-full min-w-0 px-2 sm:px-4 pt-4 pb-8">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif font-semibold mb-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3 tracking-[0.08em] md:tracking-[0.12em]">

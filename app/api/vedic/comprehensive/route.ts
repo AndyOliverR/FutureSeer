@@ -425,8 +425,15 @@ function parseGroqResponse(response: string, vedicData: any): NonNullable<Compre
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const reqStartedAt = Date.now();
+  const stageMs: Record<string, number> = {};
+  const markStage = (label: string, startedAt: number) => {
+    stageMs[label] = Date.now() - startedAt;
+  };
   try {
+    const parseStartedAt = Date.now();
     const body: ComprehensiveVedicRequest = await request.json();
+    markStage('request_parse', parseStartedAt);
     const { userId, vedicChartData, userProfile } = body;
 
     if (!userId) {
@@ -446,7 +453,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     devLog.info('🔮 Comprehensive Vedic API: Generating report for user:', userId, 'vedic');
 
     // Check cache first
+    const cacheReadStartedAt = Date.now();
     const cacheDoc = await getCachedDoc(['users', userId, 'mysticalProfile'], 'comprehensiveVedic');
+    markStage('cache_read', cacheReadStartedAt);
     if (cacheDoc.exists()) {
       const cached = cacheDoc.data();
       if (cached?.schemaVersion === COMPREHENSIVE_REPORT_SCHEMA_VERSION &&
@@ -454,6 +463,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           cached?.birthTime === userProfile.birthTime &&
           cached?.birthPlace === userProfile.birthPlace &&
           Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000) { // 7 days cache
+        if (process.env.NODE_ENV === 'development') {
+          devLog.info('⏱️ [vedic/comprehensive][server] cache_hit_timing', {
+            stages: stageMs,
+            totalMs: Date.now() - reqStartedAt
+          }, 'vedic');
+        }
         devLog.info('✅ Returning cached comprehensive Vedic report for user:', userId, 'vedic');
         return NextResponse.json({
           success: true,
@@ -466,7 +481,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Get Vedic reading data
+    const geocodeStartedAt = Date.now();
     const coords = await getCoordinatesWithFallback(userProfile.birthPlace);
+    markStage('geocoding', geocodeStartedAt);
+    const readingStartedAt = Date.now();
     const vedicReading = await getVedicReading(
       userId,
       userProfile.birthDate,
@@ -475,13 +493,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       coords.latitude,
       coords.longitude
     );
+    markStage('vedic_reading', readingStartedAt);
 
     // Build prompt with chart data
+    const promptStartedAt = Date.now();
     const chartData = vedicReading?.chartData || vedicChartData || {};
     const prompt = buildGroqPrompt(chartData, userProfile);
+    markStage('prompt_build', promptStartedAt);
 
     // Generate comprehensive analysis using AI
     devLog.info('🤖 Calling AI Gateway/Groq API for comprehensive Vedic analysis...', undefined, 'vedic');
+    const aiStartedAt = Date.now();
     const aiResponse = await createAICompletion({
       messages: [
         {
@@ -497,15 +519,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       temperature: 0.7,
       maxTokens: 4000
     });
+    markStage('ai_completion', aiStartedAt);
 
     if (!aiResponse || !aiResponse.content) {
       throw new Error('Failed to generate AI analysis');
     }
 
     // Parse response
+    const parseAiStartedAt = Date.now();
     const comprehensiveAnalysis = parseGroqResponse(aiResponse.content, chartData);
+    markStage('ai_response_parse', parseAiStartedAt);
 
     // Cache the result
+    const cacheWriteStartedAt = Date.now();
     await setCachedDoc(['users', userId, 'mysticalProfile'], 'comprehensiveVedic', {
       comprehensiveAnalysis,
       timestamp: Date.now(),
@@ -514,6 +540,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       birthPlace: userProfile.birthPlace,
       schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION
     });
+    markStage('cache_write', cacheWriteStartedAt);
+
+    if (process.env.NODE_ENV === 'development') {
+      devLog.info('⏱️ [vedic/comprehensive][server] timing', {
+        stages: stageMs,
+        totalMs: Date.now() - reqStartedAt
+      }, 'vedic');
+    }
 
     devLog.info('✅ Cached comprehensive Vedic report in Firebase', undefined, 'vedic');
 
@@ -527,6 +561,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
   } catch (error: any) {
+    if (process.env.NODE_ENV === 'development') {
+      devLog.warn('⏱️ [vedic/comprehensive][server] timing_error', {
+        stages: stageMs,
+        totalMs: Date.now() - reqStartedAt,
+        error: error?.message || String(error)
+      }, 'vedic');
+    }
     devLog.error('❌ Error generating comprehensive Vedic report:', error, 'vedic');
     return NextResponse.json(
       {

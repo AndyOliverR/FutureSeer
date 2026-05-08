@@ -29,6 +29,7 @@ import HellenisticChartWheel from '@/components/hellenistic/HellenisticChartWhee
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab'
 import HellenisticSeerChatInterface from '@/components/hellenistic/HellenisticSeerChatInterface'
 import { DashboardSection } from '@/components/western/DashboardSection'
+import { useIsMobileLayout } from '@/hooks/useIsMobileLayout'
 
 // Constants
 const HOUSE_MEANINGS: Record<number, string> = {
@@ -51,6 +52,7 @@ const MATERIAL_3_EASING = [0.4, 0, 0.2, 1] as const;
 
 export default function HellenisticAstrologyPage() {
   const { user, userProfile } = useAuth()
+  const isMobileLayout = useIsMobileLayout()
   const [activeTab, setActiveTab] = useState<'introduction' | 'chart' | 'planets' | 'houses' | 'lots' | 'sect' | 'profections' | 'interpretations' | 'ask-the-seer'>('introduction')
   const { report: pipelineReport, loading: isLoading, error, refreshProfile } = useToolReport('hellenistic')
   const reading = useMemo((): HellenisticAstrologyReading | null => {
@@ -167,6 +169,8 @@ export default function HellenisticAstrologyPage() {
   }
 
   // Full-page loading only when profile is loading and we have no reading yet
+  const chartWheelSize = isMobileLayout ? 320 : CHART_WHEEL_SIZE
+
   return (
     <ToolReportGuard loading={isLoading && !effectiveReading} error={effectiveError ?? null} toolLabel="Hellenistic chart">
     <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 pt-4 overflow-x-hidden">
@@ -339,8 +343,8 @@ export default function HellenisticAstrologyPage() {
                         houses={effectiveReading.houses}
                         lots={[effectiveReading.lots.partOfFortune, effectiveReading.lots.partOfSpirit]}
                         ascendant={effectiveReading.ascendant}
-                        width={CHART_WHEEL_SIZE}
-                        height={CHART_WHEEL_SIZE}
+                        width={chartWheelSize}
+                        height={chartWheelSize}
                       />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

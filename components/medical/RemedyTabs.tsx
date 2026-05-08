@@ -53,36 +53,36 @@ export function RemedyTabs({ selectedCondition, bodyPart, zodiacSign, precompute
       </div>
 
       {/* Tabs - devotionist style: purple / green / cyan per type */}
-      <div className="flex gap-2 border-b border-green-200 pb-4">
+      <div className="grid grid-cols-2 sm:flex gap-2 border-b border-green-200 pb-4">
         <button
           onClick={() => setActiveTab('homeopathy')}
-          className={`px-6 py-3 rounded-xl transition-all font-medium flex items-center ${
+          className={`px-3 sm:px-6 py-3 rounded-xl transition-all font-medium flex items-center justify-center text-sm ${
             activeTab === 'homeopathy'
               ? 'bg-gradient-to-br from-purple-100 to-pink-100 text-purple-900 shadow-md'
               : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/30'
           }`}
         >
-          <Gem className="inline-block mr-2 w-4 h-4" /> Homeopathy ({homeopathicResults.length})
+          <Gem className="inline-block mr-2 w-4 h-4 shrink-0" /> Homeopathy ({homeopathicResults.length})
         </button>
         <button
           onClick={() => setActiveTab('herbal')}
-          className={`px-6 py-3 rounded-xl transition-all font-medium flex items-center ${
+          className={`px-3 sm:px-6 py-3 rounded-xl transition-all font-medium flex items-center justify-center text-sm ${
             activeTab === 'herbal'
               ? 'bg-gradient-to-br from-green-100 to-teal-100 text-green-900 shadow-md'
               : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/30'
           }`}
         >
-          <Leaf className="inline-block mr-2 w-4 h-4" /> Herbal ({herbalResults.length})
+          <Leaf className="inline-block mr-2 w-4 h-4 shrink-0" /> Herbal ({herbalResults.length})
         </button>
         <button
           onClick={() => setActiveTab('acupuncture')}
-          className={`px-6 py-3 rounded-xl transition-all font-medium flex items-center ${
+          className={`col-span-2 sm:col-span-1 px-3 sm:px-6 py-3 rounded-xl transition-all font-medium flex items-center justify-center text-sm ${
             activeTab === 'acupuncture'
               ? 'bg-gradient-to-br from-cyan-100 to-blue-100 text-cyan-900 shadow-md'
               : 'text-slate-300 hover:text-slate-100 hover:bg-slate-800/30'
           }`}
         >
-          <Activity className="inline-block mr-2 w-4 h-4" /> Acupuncture ({acupunctureResults.length})
+          <Activity className="inline-block mr-2 w-4 h-4 shrink-0" /> Acupuncture ({acupunctureResults.length})
         </button>
       </div>
 

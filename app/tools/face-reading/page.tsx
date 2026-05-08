@@ -115,7 +115,7 @@ export default function FaceReadingPage() {
   }, [])
 
   return (
-    <div className="min-h-screen p-4 starfield-ultra-sharp">
+    <div className="min-h-screen px-2 sm:px-4 py-4 starfield-ultra-sharp overflow-x-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -136,7 +136,7 @@ export default function FaceReadingPage() {
             elevation={2} 
             className="bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 border-2 border-purple-200 shadow-lg m3-elevation-transition rounded-2xl max-w-2xl mx-auto"
           >
-            <CardContent className="p-6">
+            <CardContent className="p-3 sm:p-6">
               <p className="text-xl italic text-purple-900 font-serif mb-2">
                 {'\u201cThe face is the mirror of the soul, and every feature tells the story of character written by the hand of destiny.\u201d'}
               </p>
@@ -188,7 +188,7 @@ export default function FaceReadingPage() {
               elevation={1} 
               className="bg-amber-50/80 border-2 border-amber-300 shadow-md m3-elevation-transition rounded-3xl"
             >
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <h2 className="text-2xl text-amber-900 font-semibold mb-6 text-center">Facial Wisdom</h2>
               
               {/* Profile Image Display */}
@@ -374,7 +374,7 @@ export default function FaceReadingPage() {
               elevation={1} 
               className="bg-blue-50/80 border-2 border-blue-300 shadow-md m3-elevation-transition rounded-3xl"
             >
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="rounded-2xl border border-amber-500/30 bg-slate-900/80 overflow-hidden">
                 <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="w-full min-w-0">
                   <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
@@ -506,11 +506,11 @@ export default function FaceReadingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <Card 
+            <Card 
             elevation={2} 
             className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 shadow-lg m3-elevation-transition rounded-3xl mt-12"
           >
-            <CardContent className="p-8">
+            <CardContent className="p-3 sm:p-8">
               <h3 className="text-2xl text-amber-900 font-semibold mb-6 text-center">✨ Face Reading Features</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
@@ -529,7 +529,7 @@ export default function FaceReadingPage() {
               <p className="text-slate-600 text-sm">Communication style</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl mb-3">🧠</div>
+              <div className="text-3xl mb-3">🧑</div>
               <h4 className="text-slate-700 font-semibold mb-2">Forehead Wisdom</h4>
               <p className="text-slate-600 text-sm">Intellectual capacity</p>
             </div>

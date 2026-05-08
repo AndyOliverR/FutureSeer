@@ -48,7 +48,7 @@ function signNameToIndex(name: string): number {
 function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
   const { profile: compProfile, loading: profileLoading, error: profileError } = useComprehensiveMysticalProfile();
-  const { reportUpdatedAt, reportGeneratedAt, reportUnchanged } = useToolReport("vedic");
+  const { report: vedicToolReport, reportUpdatedAt, reportGeneratedAt, reportUnchanged } = useToolReport("vedic");
   const [activeTab, setActiveTab] = useState('introduction');
   const freshnessLabel = useMemo(() => {
     const ts = reportUpdatedAt ?? reportGeneratedAt;
@@ -62,7 +62,18 @@ function VedicAstrologyPageContent() {
     return `Updated ${Math.floor(delta / 86_400_000)}d ago`;
   }, [reportGeneratedAt, reportUpdatedAt]);
 
-  const hasVedicData = !!compProfile?.vedic;
+  const vedicProfileData = useMemo(() => {
+    const fromProfile = (compProfile as Record<string, unknown> | null)?.vedic
+    if (fromProfile && typeof fromProfile === 'object') return fromProfile as Record<string, unknown>
+    if (vedicToolReport && typeof vedicToolReport === 'object') {
+      const t = vedicToolReport as Record<string, unknown>
+      const inner = (t.data && typeof t.data === 'object') ? (t.data as Record<string, unknown>) : t
+      return inner
+    }
+    return null
+  }, [compProfile, vedicToolReport]);
+
+  const hasVedicData = !!vedicProfileData;
 
   // Reduced motion (match Western astrology page)
   const prefersReducedMotion = useMemo(() => {
@@ -89,6 +100,7 @@ function VedicAstrologyPageContent() {
   const [loadingVedicComprehensive, setLoadingVedicComprehensive] = useState(false);
   const [vedicComprehensiveError, setVedicComprehensiveError] = useState<string | null>(null);
   const [vedicReportFetchTrigger, setVedicReportFetchTrigger] = useState(0);
+  const [vedicRetryAttempt, setVedicRetryAttempt] = useState(0);
   // Prefer page state, then stored profile (from generate-mystical): vedic.comprehensiveAnalysis, toolReports.vedic.data, or top-level
   const effectiveVedicReport =
     vedicComprehensiveReport ??
@@ -211,10 +223,12 @@ function VedicAstrologyPageContent() {
 
   const onVedicReportLoaded = useCallback((report: ComprehensiveAnalysis) => {
     setVedicComprehensiveReport(report);
+    setVedicRetryAttempt(0);
   }, []);
 
   const retryVedicComprehensive = useCallback(() => {
     setVedicComprehensiveError(null);
+    setVedicRetryAttempt(0);
     setVedicReportFetchTrigger((t) => t + 1);
   }, []);
 
@@ -228,7 +242,15 @@ function VedicAstrologyPageContent() {
     setVedicComprehensiveError(null);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 70000);
+    const clientReqStartedAt = Date.now();
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[vedic/comprehensive][client] request_start', {
+        startedAt: new Date(clientReqStartedAt).toISOString(),
+        trigger: vedicReportFetchTrigger,
+        retryAttempt: vedicRetryAttempt,
+      });
+    }
 
     fetch('/api/vedic/comprehensive', {
       method: 'POST',
@@ -236,7 +258,7 @@ function VedicAstrologyPageContent() {
       signal: controller.signal,
       body: JSON.stringify({
         userId: user.uid,
-        vedicChartData: compProfile?.vedic,
+        vedicChartData: vedicProfileData,
         userProfile: {
           birthDate: userProfile.birthDate,
           birthTime,
@@ -246,9 +268,25 @@ function VedicAstrologyPageContent() {
         },
       }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        const responseAt = Date.now();
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[vedic/comprehensive][client] response_received', {
+            status: res.status,
+            durationMs: responseAt - clientReqStartedAt,
+          });
+        }
+        return res.json();
+      })
       .then((data) => {
         if (cancelled) return;
+        const parsedAt = Date.now();
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[vedic/comprehensive][client] json_parsed', {
+            success: Boolean(data?.success),
+            durationMs: parsedAt - clientReqStartedAt,
+          });
+        }
         const report = data?.data?.comprehensiveAnalysis ?? data?.comprehensiveAnalysis ?? data?.data;
         if (data?.success && report && typeof report === 'object') {
           setVedicComprehensiveReport(report);
@@ -259,18 +297,41 @@ function VedicAstrologyPageContent() {
       })
       .catch((err) => {
         if (cancelled) return;
+        const failedAt = Date.now();
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[vedic/comprehensive][client] request_failed', {
+            name: err?.name,
+            message: String(err?.message ?? ''),
+            durationMs: failedAt - clientReqStartedAt,
+          });
+        }
         const message = err?.name === 'AbortError' ? 'Request timed out. Please try again.' : (err?.message || 'Could not load report. Please try again.');
+        // One automatic retry for transient timeout/network abort cases to avoid manual refresh.
+        if ((err?.name === 'AbortError' || /network/i.test(String(err?.message ?? ''))) && vedicRetryAttempt < 1) {
+          if (process.env.NODE_ENV === 'development') {
+            console.debug('[vedic/comprehensive][client] scheduling_auto_retry', {
+              previousRetryAttempt: vedicRetryAttempt,
+            });
+          }
+          setVedicRetryAttempt((r) => r + 1);
+          return;
+        }
         setVedicComprehensiveError(message);
       })
       .finally(() => {
         clearTimeout(timeoutId);
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('[vedic/comprehensive][client] request_complete', {
+            durationMs: Date.now() - clientReqStartedAt,
+          });
+        }
         if (!cancelled) setLoadingVedicComprehensive(false);
       });
     return () => { cancelled = true; controller.abort(); clearTimeout(timeoutId); };
     // Intentionally omit compProfile?.vedic from deps: it is passed in the body when the effect runs, but
     // including it causes the effect to re-run whenever the profile context updates (new object reference),
     // which aborts the in-flight fetch and prevents the report from ever loading.
-  }, [hasVedicData, user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, effectiveVedicReport, loadingVedicComprehensive, vedicComprehensiveError, vedicReportFetchTrigger]);
+  }, [hasVedicData, user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, effectiveVedicReport, loadingVedicComprehensive, vedicComprehensiveError, vedicReportFetchTrigger, vedicProfileData, vedicRetryAttempt]);
 
   // Helper to safely get sign name from potentially number or object
   const getSignName = (val: any) => {
@@ -282,7 +343,7 @@ function VedicAstrologyPageContent() {
 
   // Normalized Vedic data: single source of truth for charts, planets, houses
   const normalizedVedic = useMemo(() => {
-    const raw = compProfile?.vedic as Record<string, unknown> | undefined;
+    const raw = vedicProfileData as Record<string, unknown> | undefined;
     if (!raw?.planets || !Array.isArray(raw.planets)) return null;
     const asc = raw.ascendant as any;
     const ascLongitude = typeof asc?.longitude === 'number' ? asc.longitude : (typeof asc === 'number' ? asc : null);
@@ -309,7 +370,7 @@ function VedicAstrologyPageContent() {
       return { houseNumber: h.number ?? h.houseNumber ?? i + 1, signName: h.signName ?? h.sign ?? SIGN_NAMES[signIdx], sign: signIdx, lord: h.lord ?? SIGN_LORDS[signIdx] };
     }) : Array.from({ length: 12 }, (_, i) => ({ houseNumber: i + 1, signName: SIGN_NAMES[(ascSign + i) % 12], sign: (ascSign + i) % 12, lord: SIGN_LORDS[(ascSign + i) % 12] }));
     return { ascendantSign: ascSign, ascendantDegree: ascDegree, ascendantSignName: ascSignName, ascendantLongitude: ascLongitude ?? ascSign * 30 + ascDegree, planets, houses };
-  }, [compProfile?.vedic]);
+  }, [vedicProfileData]);
 
   const defaultPlanets = useMemo(() => [
     { name: 'Sun', signName: '—', degreeInSign: 0, house: '—' },
@@ -323,6 +384,21 @@ function VedicAstrologyPageContent() {
     { name: 'Ketu', signName: '—', degreeInSign: 0, house: '—' },
   ], []);
   const defaultHouses = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ houseNumber: i + 1, signName: '—', lord: '—' })), []);
+
+  const resolvedCurrentDasha = useMemo(() => {
+    const current = ((vedicProfileData as any)?.currentDasha ?? null) as Record<string, unknown> | null
+    if (!current) return null
+    if (current.startDate && current.endDate) return current
+    const dashaList = (((vedicProfileData as any)?.dasha ?? []) as Array<Record<string, unknown>>)
+    const currentPlanet = String(current.planet ?? '').toLowerCase()
+    const fromList = dashaList.find((d) => String(d?.planet ?? '').toLowerCase() === currentPlanet && d?.startDate && d?.endDate)
+    if (!fromList) return current
+    return {
+      ...current,
+      startDate: fromList.startDate,
+      endDate: fromList.endDate,
+    }
+  }, [vedicProfileData]);
 
   if (profileLoading) {
     return (
@@ -447,7 +523,7 @@ function VedicAstrologyPageContent() {
                   <VedicSeerChatInterface
                     userId={user.uid}
                     userProfile={userProfile}
-                    vedicChartData={compProfile?.vedic ?? undefined}
+                    vedicChartData={vedicProfileData ?? undefined}
                   />
                 </div>
               ) : (
@@ -479,12 +555,13 @@ function VedicAstrologyPageContent() {
               {hasVedicData && user?.uid && userProfile ? (
                 <ComprehensiveVedicReport
                   userId={user.uid}
-                  vedicChartData={compProfile?.vedic}
+                  vedicChartData={vedicProfileData}
                   userProfile={userProfile}
                   cachedReport={effectiveVedicReport ?? (compProfile as any)?.vedicComprehensiveAnalysis ?? null}
                   isProfileLoading={profileLoading}
                   isLoadingReport={!effectiveVedicReport && loadingVedicComprehensive}
                   onReportLoaded={onVedicReportLoaded}
+                  onRetryLoad={retryVedicComprehensive}
                 />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -498,13 +575,13 @@ function VedicAstrologyPageContent() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2">Ascendant</span>
-                      <span className="text-2xl font-heading text-white">{getSignName(compProfile?.vedic?.ascendant)}</span>
+                      <span className="text-2xl font-heading text-white">{getSignName((vedicProfileData as any)?.ascendant)}</span>
                     </div>
                     <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2">Moon sign</span>
                       <span className="text-2xl font-heading text-white">
                         {(() => {
-                          const planets = (compProfile?.vedic as Record<string, unknown>)?.planets as Array<{ name?: string; sign?: number; signName?: string }> | undefined;
+                          const planets = (vedicProfileData as Record<string, unknown> | undefined)?.planets as Array<{ name?: string; sign?: number; signName?: string }> | undefined;
                           const moon = planets?.find((p) => String(p?.name).toLowerCase() === 'moon');
                           return moon ? getSignName(moon) : '—';
                         })()}
@@ -512,7 +589,7 @@ function VedicAstrologyPageContent() {
                     </div>
                     <div className="p-6 bg-slate-900/40 border border-white/5 rounded-3xl flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2">Mahadasha</span>
-                      <span className="text-2xl font-heading text-white">{compProfile?.vedic?.currentDasha?.planet || "N/A"}</span>
+                      <span className="text-2xl font-heading text-white">{(vedicProfileData as any)?.currentDasha?.planet || "N/A"}</span>
                     </div>
                   </div>
                 </div>
@@ -627,7 +704,7 @@ function VedicAstrologyPageContent() {
                   <p className="mb-4 text-slate-700 text-sm">Your graha (planetary) positions from your Vedic chart are shown below. Open the Overview tab to load the full comprehensive report.</p>
                 )}
                 <div className="grid gap-4">
-                  {((normalizedVedic?.planets ?? compProfile?.vedic?.planets) ?? defaultPlanets).map((planet: any, i: number) => {
+                  {((normalizedVedic?.planets ?? (vedicProfileData as any)?.planets) ?? defaultPlanets).map((planet: any, i: number) => {
                     const planetName = (planet.name ?? planet.planet ?? '?').toString().trim();
                     const analysisArr = normalizedReport?.planetaryAnalysis ?? [];
                     const analysisEntry = analysisArr.find(
@@ -652,7 +729,7 @@ function VedicAstrologyPageContent() {
                     );
                   })}
                 </div>
-                {!(normalizedVedic?.planets?.length || compProfile?.vedic?.planets?.length) && (
+                {!(normalizedVedic?.planets?.length || (vedicProfileData as any)?.planets?.length) && (
                   <p className="text-slate-600 text-center py-4 text-sm">Generate your profile from the Profile page to see your actual planetary positions.</p>
                 )}
               </DevotionistStyleCard>
@@ -693,7 +770,7 @@ function VedicAstrologyPageContent() {
                   <p className="mb-4 text-slate-700 text-sm">Your house positions from your Vedic chart are shown below. Open the Overview tab to load the full comprehensive report.</p>
                 )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {((normalizedVedic?.houses ?? compProfile?.vedic?.houses) ?? defaultHouses).map((h: any, i: number) => {
+                  {((normalizedVedic?.houses ?? (vedicProfileData as any)?.houses) ?? defaultHouses).map((h: any, i: number) => {
                     const houseNum = h.houseNumber ?? h.number ?? i + 1;
                     const houseArr = normalizedReport?.houseAnalysis ?? [];
                     const analysisEntry = houseArr.find(
@@ -712,24 +789,24 @@ function VedicAstrologyPageContent() {
                     );
                   })}
                 </div>
-                {!(normalizedVedic?.houses?.length || compProfile?.vedic?.houses?.length) && (
+                {!(normalizedVedic?.houses?.length || (vedicProfileData as any)?.houses?.length) && (
                   <p className="text-slate-600 text-center py-4 text-sm">Generate your profile from the Profile page to see your actual house positions.</p>
                 )}
               </DevotionistStyleCard>
             </TabsContent>
             <TabsContent value="dasha" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
-              {hasVedicData && compProfile?.vedic?.currentDasha && (compProfile.vedic.currentDasha as any).startDate && (compProfile.vedic.currentDasha as any).endDate ? (
+              {hasVedicData && resolvedCurrentDasha && (resolvedCurrentDasha as any).startDate && (resolvedCurrentDasha as any).endDate ? (
                 <DashaPanelSimplified
                   chartData={{
-                    currentDasha: compProfile.vedic.currentDasha as any,
-                    dasha: (compProfile.vedic.dasha as any[]) ?? [],
+                    currentDasha: resolvedCurrentDasha as any,
+                    dasha: ((vedicProfileData as any).dasha as any[]) ?? [],
                   }}
                   birthData={userProfile?.birthDate ? { birthDate: userProfile.birthDate, birthTime: userProfile.birthTime ?? '', birthPlace: userProfile.birthPlace ?? '' } : undefined}
                 />
-              ) : hasVedicData && compProfile?.vedic?.currentDasha ? (
+              ) : hasVedicData && resolvedCurrentDasha ? (
                 <div className="p-8 bg-slate-900/40 border border-amber-500/20 rounded-3xl">
                   <h3 className="text-xl font-heading text-amber-400 uppercase tracking-widest mb-4">Current Dasha</h3>
-                  <p className="text-white text-lg">{(compProfile.vedic.currentDasha as any).planet ?? 'N/A'}</p>
+                  <p className="text-white text-lg">{(resolvedCurrentDasha as any).planet ?? 'N/A'}</p>
                   <p className="text-slate-400 text-sm mt-2">Generate your full report to see detailed Dasha timeline.</p>
                 </div>
               ) : (
@@ -764,7 +841,7 @@ function VedicAstrologyPageContent() {
                 {(() => {
                   const interp = compProfile?.interpretations as Record<string, unknown> | undefined;
                   const report = reportForTabs ?? (effectiveVedicReport as Record<string, unknown>);
-                  const remediesRaw = interp?.remedies ?? (interp?.vedic as Record<string, unknown> | undefined)?.remedies ?? (compProfile?.vedic as Record<string, unknown> | undefined)?.remedies ?? report?.remedies;
+                  const remediesRaw = interp?.remedies ?? (interp?.vedic as Record<string, unknown> | undefined)?.remedies ?? (vedicProfileData as Record<string, unknown> | undefined)?.remedies ?? report?.remedies;
                   const remedyKeys = ['overview', 'mantras', 'gemstones', 'rituals', 'lifestyle', 'practices'];
                   const hasContent = (obj: Record<string, unknown>) =>
                     remedyKeys.some((k) => {
@@ -870,7 +947,7 @@ function VedicAstrologyPageContent() {
             </TabsContent>
             <TabsContent value="gotra" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {hasVedicData && userProfile ? (() => {
-                const moon = (compProfile?.vedic?.planets as any[])?.find((p: any) => (p.name || p.planet) === 'Moon');
+                const moon = ((vedicProfileData as any)?.planets as any[])?.find((p: any) => (p.name || p.planet) === 'Moon');
                 const moonLongitude = moon?.longitude ?? moon?.degree ?? 0;
                 const moonNakshatra = moon?.nakshatra ?? 'Punarvasu';
                 return (
@@ -878,7 +955,7 @@ function VedicAstrologyPageContent() {
                     moonNakshatra={moonNakshatra}
                     moonLongitude={moonLongitude}
                     userProfile={userProfile}
-                    chartData={compProfile?.vedic}
+                    chartData={vedicProfileData}
                   />
                 );
               })() : (

@@ -144,7 +144,7 @@ export default function RunesPage() {
   return (
     <div className="relative min-h-screen starfield-ultra-sharp">
       
-      <div className="relative z-10 container mx-auto px-4 py-8">
+      <div className="relative z-10 container mx-auto px-2 sm:px-4 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -417,7 +417,7 @@ export default function RunesPage() {
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                         placeholder="Ask your question here... Remember, runes provide guidance and perspective, not fixed predictions."
-                        className="w-full p-3 bg-white border-2 border-amber-200 rounded-2xl text-slate-800 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all duration-300"
+                        className="w-full min-h-[96px] p-3 bg-white border-2 border-amber-200 rounded-2xl text-slate-800 placeholder:text-xs sm:placeholder:text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-500 transition-all duration-300"
                         rows={3}
                       />
                     </div>

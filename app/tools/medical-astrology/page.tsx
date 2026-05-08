@@ -396,7 +396,7 @@ export default function MedicalAstrologyPage() {
   return (
     <ToolReportGuard loading={isLoading} error={error ?? null} toolLabel="medical astrology">
     <div className="relative min-h-screen starfield-ultra-sharp">
-      <div className="relative z-10 max-w-7xl mx-auto px-4 pt-4 pb-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-2 sm:px-4 pt-4 pb-8">
         {/* Medical Disclaimer */}
         <div className="mb-6 p-4 bg-amber-50/90 border-2 border-amber-300 rounded-xl space-y-3">
           <p className="text-sm text-slate-800 text-center">
@@ -472,37 +472,37 @@ export default function MedicalAstrologyPage() {
           <TabsList className="flex w-full flex-nowrap overflow-x-auto gap-1 sm:gap-2 p-2 sm:p-3 bg-slate-800/50 border-b border-amber-500/20 rounded-none h-auto min-h-0 justify-start [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-amber-500/30">
             <TabsTrigger 
               value="overview" 
-              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="shrink-0 min-w-[116px] sm:min-w-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="health" 
-              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="shrink-0 min-w-[116px] sm:min-w-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Health
             </TabsTrigger>
             <TabsTrigger 
               value="body-parts" 
-              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="shrink-0 min-w-[116px] sm:min-w-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Body Parts
             </TabsTrigger>
             <TabsTrigger 
               value="remedies" 
-              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="shrink-0 min-w-[116px] sm:min-w-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Remedies
             </TabsTrigger>
             <TabsTrigger 
               value="timing" 
-              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="shrink-0 min-w-[116px] sm:min-w-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Health Timing
             </TabsTrigger>
             <TabsTrigger 
               value="ask-seer" 
-              className="shrink-0 w-full sm:w-auto data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
+              className="shrink-0 min-w-[116px] sm:min-w-0 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:m3-elevation-1 rounded-t-lg rounded-b-none px-3 py-2 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all border border-transparent data-[state=inactive]:border-slate-600/50"
             >
               Ask the Seer
             </TabsTrigger>

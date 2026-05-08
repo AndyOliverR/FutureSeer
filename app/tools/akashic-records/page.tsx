@@ -153,13 +153,9 @@ export default function AkashicRecordsPage() {
           transition={{ duration: 0.5 }}
           className="text-center mb-8"
         >
-          <motion.div
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="text-5xl mb-4"
-          >
+          <div className="text-5xl mb-4">
             📚
-          </motion.div>
+          </div>
           <h1 className="text-2xl sm:text-4xl lg:text-5xl font-serif bg-gradient-to-b from-amber-200 via-yellow-400 to-amber-600 bg-clip-text text-transparent mb-4">
             Akashic Records
           </h1>
@@ -533,11 +529,11 @@ export default function AkashicRecordsPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="rounded-xl p-6 border-2 border-purple-300 bg-purple-100/95"
+                      className="rounded-xl p-3 sm:p-6 border-2 border-purple-300 bg-purple-100/95"
                     >
                       <div className="flex items-start justify-between mb-4">
                         <div>
-                          <h3 className="text-xl font-semibold text-slate-900 mb-2">Life #{index + 1}</h3>
+                          <h3 className="text-lg sm:text-xl font-semibold text-slate-900 mb-2">Life #{index + 1}</h3>
                           <div className="flex flex-wrap gap-2">
                             <Badge className="bg-purple-700 text-white border-purple-800 font-medium shadow-sm">
                               <Calendar className="w-3 h-3 mr-1" />
@@ -557,7 +553,7 @@ export default function AkashicRecordsPage() {
                       <div className="space-y-4">
                         <div>
                           <h4 className="text-slate-900 font-semibold mb-2">Lessons Learned</h4>
-                          <ul className="list-disc list-inside space-y-1 text-slate-800">
+                          <ul className="list-disc list-inside space-y-1 text-slate-800 break-words">
                             {life.lessons.map((lesson, i) => (
                               <li key={i}>{lesson}</li>
                             ))}
@@ -565,11 +561,11 @@ export default function AkashicRecordsPage() {
                         </div>
                         <div>
                           <h4 className="text-slate-900 font-semibold mb-2">Connection to Current Life</h4>
-                          <p className="text-slate-800">{life.connections}</p>
+                          <p className="text-slate-800 break-words">{life.connections}</p>
                         </div>
                         <div>
                           <h4 className="text-slate-900 font-semibold mb-2">Significance</h4>
-                          <p className="text-slate-800">{life.significance}</p>
+                          <p className="text-slate-800 break-words">{life.significance}</p>
                         </div>
                       </div>
                     </motion.div>
