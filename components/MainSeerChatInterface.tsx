@@ -260,7 +260,12 @@ export default function MainSeerChatInterface({
           You have consulted the Seer on {streakDays} consecutive days—steady practice builds clarity.
         </div>
       ) : null}
-      <Card className="flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden">
+      <Card
+        className={cn(
+          'flex flex-col h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 shadow-lg transition-all duration-300 min-h-[50vh] max-h-[85vh] overflow-hidden',
+          layout === 'mobile' && 'max-h-[calc(100dvh-12rem)]'
+        )}
+      >
       <CardHeader className="border-b border-amber-200 bg-white/80 flex flex-row items-center justify-between gap-2 shrink-0">
         <div className="flex-1 min-w-0">
           <CardTitle className="text-amber-900 flex items-center gap-2">
@@ -384,7 +389,12 @@ export default function MainSeerChatInterface({
           )}
         </div>
 
-        <div className="shrink-0 border-t border-amber-200 bg-white/80 p-4">
+        <div
+          className={cn(
+            'shrink-0 border-t border-amber-200 bg-white/80 p-4',
+            layout === 'mobile' && 'pb-[max(1rem,env(safe-area-inset-bottom))]'
+          )}
+        >
           <form
             onSubmit={(e) => {
               e.preventDefault();

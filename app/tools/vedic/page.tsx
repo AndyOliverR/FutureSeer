@@ -553,16 +553,49 @@ function VedicAstrologyPageContent() {
             <TabsContent value="compatibility" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0"><CompatibilityTab toolSlug="vedic-astrology" /></TabsContent>
             <TabsContent value="overview" className="space-y-6 pt-6 px-2 sm:px-6 pb-6 mt-0">
               {hasVedicData && user?.uid && userProfile ? (
-                <ComprehensiveVedicReport
-                  userId={user.uid}
-                  vedicChartData={vedicProfileData}
-                  userProfile={userProfile}
-                  cachedReport={effectiveVedicReport ?? (compProfile as any)?.vedicComprehensiveAnalysis ?? null}
-                  isProfileLoading={profileLoading}
-                  isLoadingReport={!effectiveVedicReport && loadingVedicComprehensive}
-                  onReportLoaded={onVedicReportLoaded}
-                  onRetryLoad={retryVedicComprehensive}
-                />
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-slate-900/40 border border-amber-500/20 rounded-2xl text-center">
+                      <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2 block">Ascendant</span>
+                      <span className="text-xl font-heading text-white">{getSignName((vedicProfileData as any)?.ascendant)}</span>
+                    </div>
+                    <div className="p-4 bg-slate-900/40 border border-amber-500/20 rounded-2xl text-center">
+                      <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2 block">Moon sign</span>
+                      <span className="text-xl font-heading text-white">
+                        {(() => {
+                          const planets = (vedicProfileData as Record<string, unknown> | undefined)?.planets as Array<{ name?: string; sign?: number; signName?: string }> | undefined;
+                          const moon = planets?.find((p) => String(p?.name).toLowerCase() === 'moon');
+                          return moon ? getSignName(moon) : '—';
+                        })()}
+                      </span>
+                    </div>
+                    <div className="p-4 bg-slate-900/40 border border-amber-500/20 rounded-2xl text-center">
+                      <span className="text-[10px] uppercase tracking-widest text-amber-400 font-bold mb-2 block">Mahadasha</span>
+                      <span className="text-xl font-heading text-white">{(resolvedCurrentDasha as any)?.planet ?? "N/A"}</span>
+                    </div>
+                  </div>
+                  {!effectiveVedicReport && (
+                    <div className="p-3 bg-slate-800/50 border border-amber-500/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <p className="text-sm text-slate-300">
+                        Detailed Vedic interpretation is loading in background. You can continue exploring all tabs.
+                      </p>
+                      <Button size="sm" onClick={retryVedicComprehensive} className="shrink-0 bg-amber-500/80 hover:bg-amber-500 text-white">
+                        <RefreshCw className="w-4 h-4 mr-2" /> Retry
+                      </Button>
+                    </div>
+                  )}
+                  <ComprehensiveVedicReport
+                    userId={user.uid}
+                    vedicChartData={vedicProfileData}
+                    userProfile={userProfile}
+                    cachedReport={effectiveVedicReport ?? (compProfile as any)?.vedicComprehensiveAnalysis ?? null}
+                    isProfileLoading={profileLoading}
+                    isLoadingReport={!effectiveVedicReport && loadingVedicComprehensive}
+                    onReportLoaded={onVedicReportLoaded}
+                    onRetryLoad={retryVedicComprehensive}
+                    lastUpdatedLabel={freshnessLabel}
+                  />
+                </>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="p-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-amber-500/20 rounded-[40px] shadow-2xl">

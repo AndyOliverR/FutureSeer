@@ -44,6 +44,8 @@ interface ComprehensiveVedicReportProps {
   onReportLoaded?: (report: ComprehensiveAnalysis) => void
   /** Optional retry handler from parent to retry without page reload. */
   onRetryLoad?: () => void
+  /** Optional freshness label from parent (e.g., "Updated 3m ago"). */
+  lastUpdatedLabel?: string | null
 }
 
 export interface ComprehensiveAnalysis {
@@ -75,7 +77,8 @@ export default function ComprehensiveVedicReport({
   isProfileLoading = false,
   isLoadingReport = false,
   onReportLoaded,
-  onRetryLoad
+  onRetryLoad,
+  lastUpdatedLabel = null
 }: ComprehensiveVedicReportProps) {
   const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(
     cachedReport || null
@@ -261,15 +264,38 @@ export default function ComprehensiveVedicReport({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.3 }}
-          className="text-center py-8 md:py-12"
+          className="py-5 md:py-8"
         >
-          <Card className="bg-[var(--m3-surface-container-high)] md:glass-card border border-[var(--m3-outline-variant)] md:border-white/10 max-w-md mx-auto text-[var(--m3-on-surface)] md:text-white">
-            <CardContent className="p-8 text-white">
-              <Loader2 className="w-12 h-12 text-amber-400 mx-auto mb-4 animate-spin" />
-              <h3 className="text-xl font-semibold text-white mb-2">Generating Your Comprehensive Report</h3>
-              <p className="text-slate-200">
-                FutureSeer is analyzing your Vedic chart with AI insights...
-              </p>
+          <Card className="bg-[var(--m3-surface-container-high)] md:glass-card border border-[var(--m3-outline-variant)] md:border-white/10 max-w-2xl mx-auto text-[var(--m3-on-surface)] md:text-white">
+            <CardContent className="p-4 md:p-5">
+              <div className="flex items-start gap-3">
+                <Loader2 className="w-5 h-5 text-amber-400 animate-spin mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="text-sm md:text-base font-semibold text-white mb-1">Building deeper Vedic insights in background</h3>
+                  <p className="text-slate-200 text-xs md:text-sm">
+                    Your report shell is ready. You can continue exploring other tabs now while detailed interpretations load.
+                  </p>
+                  <div className="mt-2 flex items-center gap-1.5" aria-hidden>
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-pulse" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-pulse [animation-delay:150ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-pulse [animation-delay:300ms]" />
+                  </div>
+                  {lastUpdatedLabel ? (
+                    <p className="text-[11px] md:text-xs text-slate-300 mt-2">{lastUpdatedLabel}</p>
+                  ) : null}
+                  {onRetryLoad ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={onRetryLoad}
+                      className="mt-2 h-auto p-0 text-xs text-amber-300 hover:text-amber-200 hover:bg-transparent"
+                    >
+                      Retry now
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
