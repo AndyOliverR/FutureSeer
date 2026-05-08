@@ -1018,7 +1018,7 @@ export default function KPAstrologyPage() {
 
   return (
     <ToolReportGuard loading={isLoadingPipeline} error={profileError ?? null} toolLabel="KP Astrology">
-    <div className="starfield-ultra-sharp min-h-screen p-4">
+    <div className="starfield-ultra-sharp min-h-screen px-2 sm:px-4 py-4 overflow-x-hidden">
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
@@ -1027,7 +1027,7 @@ export default function KPAstrologyPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-12 pt-4"
         >
-          <h1 className="text-5xl font-bold gold-glow mb-6">
+          <h1 className="text-3xl sm:text-5xl font-bold gold-glow mb-6">
             <span className="text-yellow-400">🎯</span>{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600">KP Astrology</span>
           </h1>
@@ -1350,10 +1350,10 @@ export default function KPAstrologyPage() {
                   return (
                     <>
                       {/* Chart Images Display */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
                         {/* North Indian Chart */}
-                        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-8 shadow-md hover:shadow-xl transition-shadow duration-300">
-                          <h3 className="text-2xl font-bold text-amber-900 mb-6 text-center flex items-center justify-center gap-3">
+                        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-3 sm:p-8 shadow-md hover:shadow-xl transition-shadow duration-300">
+                          <h3 className="text-lg sm:text-2xl font-bold text-amber-900 mb-4 sm:mb-6 text-center flex items-center justify-center gap-2 sm:gap-3">
                             <Globe className="w-6 h-6 text-amber-700" />
                             North Indian Chart
                           </h3>
@@ -1370,13 +1370,13 @@ export default function KPAstrologyPage() {
                 </div>
 
                         {/* South Indian Chart */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-2xl p-8 shadow-md hover:shadow-xl transition-shadow duration-300">
-                          <h3 className="text-2xl font-bold text-purple-900 mb-6 text-center flex items-center justify-center gap-3">
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-2xl p-3 sm:p-8 shadow-md hover:shadow-xl transition-shadow duration-300">
+                          <h3 className="text-lg sm:text-2xl font-bold text-purple-900 mb-4 sm:mb-6 text-center flex items-center justify-center gap-2 sm:gap-3">
                             <Globe className="w-6 h-6 text-purple-700" />
                             South Indian Chart
                           </h3>
                           <ResponsiveChartWrap>
-                            <VedicSouthChart chart={chartData} />
+                            <VedicSouthChart chart={chartData} className="w-full h-full" />
                     </ResponsiveChartWrap>
                     </div>
                     </div>

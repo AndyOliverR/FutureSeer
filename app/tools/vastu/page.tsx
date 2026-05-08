@@ -318,8 +318,8 @@ export default function VastuPage() {
     showVastuViral && viralUnlock.hydrated && !viralUnlock.isUnlocked && !bypassViral
 
   return (
-    <div className="min-h-screen starfield-ultra-sharp p-4">
-      <div className="max-w-7xl mx-auto relative z-10 pt-4 pb-8">
+    <div className="min-h-screen starfield-ultra-sharp px-2 sm:px-4 py-4 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto relative z-10 pt-4 pb-8 min-w-0">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -337,7 +337,7 @@ export default function VastuPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-4 max-w-2xl mx-auto mb-4 shadow-sm"
+              className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-3 sm:p-4 max-w-2xl mx-auto mb-4 shadow-sm"
             >
               <div className="flex items-center gap-3 justify-center">
                 <User className="w-5 h-5 text-amber-700" />
@@ -354,7 +354,7 @@ export default function VastuPage() {
           )}
 
           {/* Inspirational Quote */}
-          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 max-w-2xl mx-auto shadow-sm">
+          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-3 sm:p-6 max-w-2xl mx-auto shadow-sm">
             <p className="text-xl italic text-amber-900 font-serif mb-2">
               "When the home aligns with cosmic energies, prosperity flows like a river and peace dwells in every corner."
             </p>
@@ -461,7 +461,7 @@ export default function VastuPage() {
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="shrink-0 devotionist-tab-trigger flex items-center gap-2 rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
+                      className="shrink-0 min-w-[120px] sm:min-w-0 devotionist-tab-trigger flex items-center gap-2 rounded-t-lg rounded-b-none px-3 sm:px-4 py-2.5 text-sm font-medium text-slate-200 hover:text-slate-100 data-[state=inactive]:hover:bg-slate-800/30 border border-transparent data-[state=inactive]:border-slate-600/50 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-100 data-[state=active]:to-yellow-100 data-[state=active]:text-amber-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-b-amber-400/80 transition-all"
                     >
                       <Icon className="w-4 h-4" />
                       {tab.label}
@@ -498,7 +498,7 @@ export default function VastuPage() {
                   )}
                 >
             {personalizedDirections && personalizedDirections.bestDirections.length > 0 && (
-              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-6 shadow-sm mx-4 sm:mx-6 mt-6">
+              <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-3 sm:p-6 shadow-sm mx-2 sm:mx-6 mt-6">
                 <div className="flex items-center gap-3 mb-4">
                   <Sparkles className="w-6 h-6 text-amber-700" />
                   <h3 className="text-2xl font-bold text-amber-900">Personalized Vastu Recommendations</h3>

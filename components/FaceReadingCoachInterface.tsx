@@ -227,7 +227,17 @@ export function FaceReadingCoachInterface({
               className="p-4 rounded-xl border-2 border-cyan-200 bg-white"
             >
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">{feature.type === 'eyes' ? '👁️' : feature.type === 'nose' ? '👃' : feature.type === 'mouth' ? '👄' : '🧠'}</span>
+                <span className="text-2xl">
+                  {feature.type === 'eyes'
+                    ? '👁️'
+                    : feature.type === 'nose'
+                    ? '👃'
+                    : feature.type === 'mouth'
+                    ? '👄'
+                    : feature.type === 'forehead'
+                    ? '🧑'
+                    : '✨'}
+                </span>
                 <div>
                   <h4 className="text-slate-700 font-semibold">{feature.name}</h4>
                   <p className="text-slate-500 text-xs capitalize">{feature.type}</p>

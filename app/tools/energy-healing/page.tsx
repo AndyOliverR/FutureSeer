@@ -193,6 +193,13 @@ export default function EnergyHealingPage() {
     return keys.length > 0
   }, [effectiveReport])
 
+  const guardError = useMemo(() => {
+    // Avoid hard-blocking returning users on transient profile-context errors;
+    // section-level empty states below still render safely from available data.
+    if (hasAnyGeneratedProfile || hasRealReport) return null
+    return error
+  }, [error, hasAnyGeneratedProfile, hasRealReport])
+
   const viralUnlock = useToolReportUnlock('energyHealing')
   const bypassViral = useViralReportBypass()
   const [showShareCard, setShowShareCard] = useState(false)
@@ -348,9 +355,9 @@ export default function EnergyHealingPage() {
   ]
 
   return (
-    <ToolReportGuard loading={loading} error={error ?? null} toolLabel="Energy & Healing">
+    <ToolReportGuard loading={loading} error={guardError ?? null} toolLabel="Energy & Healing">
     <div className="relative min-h-screen starfield-ultra-sharp">
-      <div className="relative z-10 container mx-auto px-4 py-8">
+      <div className="relative z-10 container mx-auto px-2 sm:px-4 py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8 pt-4">
