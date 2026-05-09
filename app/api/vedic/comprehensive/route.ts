@@ -179,6 +179,22 @@ interface ComprehensiveVedicResponse {
   error?: string;
 }
 
+function extractPersistedComprehensiveAnalysis(src: unknown): Record<string, unknown> | null {
+  if (!src || typeof src !== 'object') return null;
+  const rec = src as Record<string, unknown>;
+  const direct = rec.comprehensiveAnalysis;
+  if (direct && typeof direct === 'object') return direct as Record<string, unknown>;
+  const nestedCandidates = [
+    rec.vedicComprehensiveAnalysis,
+    (rec.vedic as Record<string, unknown> | undefined)?.comprehensiveAnalysis,
+    ((rec.toolReports as Record<string, { data?: Record<string, unknown> }> | undefined)?.vedic?.data as Record<string, unknown> | undefined)?.comprehensiveAnalysis,
+  ];
+  for (const candidate of nestedCandidates) {
+    if (candidate && typeof candidate === 'object') return candidate as Record<string, unknown>;
+  }
+  return null;
+}
+
 function isRateLimitedError(error: unknown): boolean {
   const maybeErr = error as { status?: number; statusCode?: number; code?: string; message?: string };
   const status = maybeErr?.status ?? maybeErr?.statusCode;
@@ -460,6 +476,40 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     devLog.info('🔮 Comprehensive Vedic API: Generating report for user:', userId, 'vedic');
+
+    // Fast path: caller already has comprehensive analysis attached.
+    const inlineAnalysis = extractPersistedComprehensiveAnalysis(vedicChartData);
+    if (inlineAnalysis) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis: inlineAnalysis,
+          timestamp: Date.now(),
+        },
+      });
+    }
+
+    // Fast path: use already-persisted comprehensive analysis from mystical profile doc.
+    const profileDocReadStartedAt = Date.now();
+    const profileDoc = await getCachedDoc(['users'], userId);
+    markStage('profile_doc_read', profileDocReadStartedAt);
+    if (profileDoc.exists()) {
+      const userDoc = profileDoc.data() as Record<string, unknown> | undefined;
+      const mysticalProfile = userDoc?.mysticalProfile as Record<string, unknown> | undefined;
+      const persistedAnalysis =
+        extractPersistedComprehensiveAnalysis(mysticalProfile) ??
+        extractPersistedComprehensiveAnalysis(userDoc);
+
+      if (persistedAnalysis) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            comprehensiveAnalysis: persistedAnalysis,
+            timestamp: Date.now(),
+          },
+        });
+      }
+    }
 
     // Check cache first
     const cacheReadStartedAt = Date.now();

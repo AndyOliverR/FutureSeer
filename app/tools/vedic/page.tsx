@@ -45,6 +45,26 @@ function signNameToIndex(name: string): number {
   return i >= 0 ? i : 0;
 }
 
+function extractComprehensiveFromAny(source: unknown): Record<string, unknown> | null {
+  if (!source || typeof source !== 'object') return null;
+  const rec = source as Record<string, unknown>;
+  const candidates: unknown[] = [
+    rec.comprehensiveAnalysis,
+    (rec.data as Record<string, unknown> | undefined)?.comprehensiveAnalysis,
+    rec.vedicComprehensiveAnalysis,
+    (rec.vedic as Record<string, unknown> | undefined)?.comprehensiveAnalysis,
+    ((rec.toolReports as Record<string, { data?: Record<string, unknown> }> | undefined)?.vedic?.data as Record<string, unknown> | undefined)?.comprehensiveAnalysis,
+  ];
+  for (const c of candidates) {
+    if (c && typeof c === 'object') return c as Record<string, unknown>;
+  }
+  // If the object already looks like a comprehensive payload, use it directly.
+  if (typeof rec.chartOverview === 'string' || Array.isArray(rec.planetaryAnalysis) || Array.isArray(rec.houseAnalysis)) {
+    return rec;
+  }
+  return null;
+}
+
 function VedicAstrologyPageContent() {
   const { user, userProfile } = useAuth();
   const { profile: compProfile, loading: profileLoading, error: profileError } = useComprehensiveMysticalProfile();
@@ -104,10 +124,9 @@ function VedicAstrologyPageContent() {
   // Prefer page state, then stored profile (from generate-mystical): vedic.comprehensiveAnalysis, toolReports.vedic.data, or top-level
   const effectiveVedicReport =
     vedicComprehensiveReport ??
-    ((compProfile as Record<string, unknown> | null)?.vedic as Record<string, unknown> | undefined)?.comprehensiveAnalysis ??
-    (compProfile as Record<string, unknown> | null)?.vedicComprehensiveAnalysis ??
-    ((compProfile as Record<string, unknown> | null)?.toolReports as Record<string, { data?: Record<string, unknown> }> | undefined)?.vedic?.data?.comprehensiveAnalysis ??
-    ((compProfile as Record<string, unknown> | null)?.toolReports as Record<string, { data?: Record<string, unknown> }> | undefined)?.vedic?.data ?? null;
+    extractComprehensiveFromAny(vedicToolReport) ??
+    extractComprehensiveFromAny(compProfile) ??
+    null;
 
   // Normalize report so Planets/Houses/Remedies always get arrays (API may return different key names or shapes)
   // Single source for tabs: normalized report or raw report (so we always have something when Overview has loaded)

@@ -1706,6 +1706,43 @@ export async function runProfileGeneration(
     }
     try {
       const entry = await withTimeout(runTool(slug, userId, profile, baseUrl), 90_000, slug);
+      if (
+        slug === 'vedic' &&
+        entry.status === 'success' &&
+        entry.data &&
+        typeof entry.data === 'object' &&
+        !(entry.data as Record<string, unknown>).comprehensiveAnalysis
+      ) {
+        // Ensure Vedic comprehensive analysis is attached before persistence/progress callbacks.
+        try {
+          const res = await fetch(`${baseUrl}/api/vedic/comprehensive`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              vedicChartData: entry.data,
+              userProfile: {
+                birthDate: profile.birthDate,
+                birthTime: profile.birthTime ?? '12:00:00',
+                birthPlace: profile.birthPlace,
+                fullName: (profile as unknown as Record<string, unknown>).fullName ?? profile.displayName,
+                displayName: profile.displayName,
+              },
+            }),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            addResponseUsage(aggregateUsage, json);
+            const analysis = json?.data?.comprehensiveAnalysis ?? json?.comprehensiveAnalysis ?? json?.data;
+            if (analysis && typeof analysis === 'object') {
+              (entry.data as Record<string, unknown>).comprehensiveAnalysis = analysis;
+              devLog.info('[ProfileOrchestrator] Vedic comprehensive report attached before callbacks', userId, 'profileGenerationOrchestrator');
+            }
+          }
+        } catch (err) {
+          devLog.warn('[ProfileOrchestrator] Inline Vedic comprehensive attach failed (non-blocking):', err, 'profileGenerationOrchestrator');
+        }
+      }
       toolReports[slug] = entry;
       if (entry.status === 'failed') failedTools.push(slug);
       if (options?.onToolRun) {
@@ -1736,9 +1773,13 @@ export async function runProfileGeneration(
     }
   };
 
-  // 1) Run tools in canonical UI grid order (bounded parallelism to cut wall time vs strict serial).
-  for (let i = 0; i < ALL_TOOL_SLUGS.length; i += toolRunConcurrency) {
-    const slice = ALL_TOOL_SLUGS.slice(i, i + toolRunConcurrency);
+  // 1) Run Vedic first as a strict priority path so critical report data lands early.
+  await runOneSlug('vedic');
+
+  // 1a) Run remaining tools in canonical UI grid order (bounded parallelism).
+  const remainingToolSlugs = ALL_TOOL_SLUGS.filter((slug) => slug !== 'vedic');
+  for (let i = 0; i < remainingToolSlugs.length; i += toolRunConcurrency) {
+    const slice = remainingToolSlugs.slice(i, i + toolRunConcurrency);
     await Promise.all(slice.map((slug) => runOneSlug(slug)));
   }
 
@@ -1760,35 +1801,7 @@ export async function runProfileGeneration(
       devLog.warn('[ProfileOrchestrator] Interpretation engine failed:', err, 'profileGenerationOrchestrator');
     }
 
-    // 2a) Fetch Vedic comprehensive report and attach to stored Vedic payload.
-    try {
-      const res = await fetch(`${baseUrl}/api/vedic/comprehensive`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          vedicChartData: vedicEntry.data,
-          userProfile: {
-            birthDate: profile.birthDate,
-            birthTime: profile.birthTime ?? '12:00:00',
-            birthPlace: profile.birthPlace,
-            fullName: (profile as unknown as Record<string, unknown>).fullName ?? profile.displayName,
-            displayName: profile.displayName,
-          },
-        }),
-      });
-      if (res.ok) {
-        const json = await res.json();
-        addResponseUsage(aggregateUsage, json);
-        const analysis = json?.data?.comprehensiveAnalysis ?? json?.comprehensiveAnalysis ?? json?.data;
-        if (analysis && typeof analysis === 'object') {
-          (vedicEntry.data as Record<string, unknown>).comprehensiveAnalysis = analysis;
-          devLog.info('[ProfileOrchestrator] Vedic comprehensive report stored for user', userId, 'profileGenerationOrchestrator');
-        }
-      }
-    } catch (err) {
-      devLog.warn('[ProfileOrchestrator] Vedic comprehensive fetch failed (non-blocking):', err, 'profileGenerationOrchestrator');
-    }
+    // 2a) Vedic comprehensive report is now attempted in the strict-priority section above.
 
     // 2b) Run Vedic Astro-Numerology derived payload.
     const vedicAstroNumGeneratedAt = new Date().toISOString();
