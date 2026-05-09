@@ -172,16 +172,16 @@ export default function MysticalProfilePage() {
     if (typeof window === "undefined") return null
     return sessionStorage.getItem("futureSeer:generationError")
   })
-  const [generationPhase, setGenerationPhase] = useState<string | null>(null)
-  const [completedTools, setCompletedTools] = useState<number | null>(null)
-  const [totalTools, setTotalTools] = useState<number | null>(null)
-  const [readyToolsCount, setReadyToolsCount] = useState<number | null>(null)
-  const [currentToolSlug, setCurrentToolSlug] = useState<string | null>(null)
-  const [currentToolElapsedMs, setCurrentToolElapsedMs] = useState<number | null>(null)
-  const [lastHeartbeatAt, setLastHeartbeatAt] = useState<number | null>(null)
-  const [resumeAttempted, setResumeAttempted] = useState(false)
+  const [, setGenerationPhase] = useState<string | null>(null)
+  const [, setCompletedTools] = useState<number | null>(null)
+  const [, setTotalTools] = useState<number | null>(null)
+  const [, setReadyToolsCount] = useState<number | null>(null)
+  const [, setCurrentToolSlug] = useState<string | null>(null)
+  const [, setCurrentToolElapsedMs] = useState<number | null>(null)
+  const [, setLastHeartbeatAt] = useState<number | null>(null)
+  const [, setResumeAttempted] = useState(false)
   const [lastProgressUpdatedAt, setLastProgressUpdatedAt] = useState<number | null>(null)
-  const [generationWarning, setGenerationWarning] = useState<string | null>(null)
+  const [, setGenerationWarning] = useState<string | null>(null)
   const [currentTimeMs, setCurrentTimeMs] = useState<number>(0)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
   const hasGeneratingIntent = searchParams.get("generating") === "1"
@@ -320,6 +320,8 @@ export default function MysticalProfilePage() {
           setResumeAttempted(Boolean(data.resumeAttempted))
           setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : Date.now())
           if (data.inProgress) {
+            sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
+            setGenerationPending(true)
             setGenerationWarning(null)
           }
           if (data.completed || data.allReportsReady) {
@@ -368,6 +370,19 @@ export default function MysticalProfilePage() {
   }, [generationActive, user, router])
 
   useEffect(() => {
+    // Keep snippet cards fresh while generation is active so users don't need a manual refresh.
+    if (!generationActive) return
+    const refreshNow = () => {
+      void refreshMysticalProfile()
+      void refreshAuthProfile()
+    }
+    refreshNow()
+    const intervalMs = hasUsableMysticalData ? 4500 : 2500
+    const interval = window.setInterval(refreshNow, intervalMs)
+    return () => window.clearInterval(interval)
+  }, [generationActive, hasUsableMysticalData, refreshAuthProfile, refreshMysticalProfile])
+
+  useEffect(() => {
     if (typeof window === "undefined") return
     if (
       userProfile?.mysticalProfileGenerated &&
@@ -411,29 +426,6 @@ export default function MysticalProfilePage() {
     const staleThresholdMs = useMaterial3Layout ? 15_000 : 22_000
     return currentTimeMs - lastProgressUpdatedAt > staleThresholdMs
   }, [generationActive, lastProgressUpdatedAt, currentTimeMs, useMaterial3Layout])
-  const lastUpdatedLabel = useMemo(() => {
-    if (!lastProgressUpdatedAt) return null
-    const deltaSec = Math.max(0, Math.floor((currentTimeMs - lastProgressUpdatedAt) / 1000))
-    if (deltaSec <= 2) return "Updated just now"
-    return `Updated ${deltaSec}s ago`
-  }, [lastProgressUpdatedAt, currentTimeMs])
-  const heartbeatLabel = useMemo(() => {
-    if (!lastHeartbeatAt) return null
-    const deltaSec = Math.max(0, Math.floor((currentTimeMs - lastHeartbeatAt) / 1000))
-    if (deltaSec <= 2) return "Heartbeat: just now"
-    return `Heartbeat: ${deltaSec}s ago`
-  }, [lastHeartbeatAt, currentTimeMs])
-  const currentToolElapsedLabel = useMemo(() => {
-    if (typeof currentToolElapsedMs !== "number") return null
-    const secs = Math.floor(Math.max(0, currentToolElapsedMs) / 1000)
-    return `Current tool elapsed: ${secs}s`
-  }, [currentToolElapsedMs])
-  const generationPhaseLabel = useMemo(() => {
-    if (!generationPhase) return "running"
-    if (generationPhase.includes("stage")) return "running"
-    return generationPhase
-  }, [generationPhase])
-
   useEffect(() => {
     if (!generationActive || !progressLooksStale || !user || staleRecoveryRef.current) return
     staleRecoveryRef.current = true
@@ -588,7 +580,7 @@ export default function MysticalProfilePage() {
     }
   }, [authLoading, user, requiresReturningPaymentCommit, isSuperadmin, isAdmin])
 
-  const groupedCards = useMemo(() => {
+  const groupedCards = (() => {
     if (!p) return []
     type Card = {
       slug: string
@@ -638,7 +630,7 @@ export default function MysticalProfilePage() {
       if (items?.length) ordered.push({ category: cat, items })
     }
     return ordered
-  }, [p])
+  })()
 
   if (showMysticalPageLoader) {
     return (

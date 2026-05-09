@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/use-auth'
@@ -134,7 +134,7 @@ function normalizeToChakraAnalysis(raw: Record<string, unknown>): ChakraAnalysis
   if (typeof ob === 'number') {
     const balance = Math.max(0, Math.min(100, ob))
     return {
-      chakras: CHAKRA_NAMES.map((name, i) => ({
+      chakras: CHAKRA_NAMES.map((name) => ({
         name,
         balance,
         status: 'balanced' as const,
@@ -153,8 +153,8 @@ function normalizeToChakraAnalysis(raw: Record<string, unknown>): ChakraAnalysis
 export default function EnergyHealingPage() {
   const { user, userProfile } = useAuth()
   const [activeTab, setActiveTab] = useState<'introduction' | 'chakra' | 'aura' | 'reiki' | 'crystal' | 'energy' | 'ask-the-seer'>('introduction')
-  const { report: pipelineReport, loading, error } = useToolReport('energyHealing')
-  const { profile } = useComprehensiveMysticalProfile()
+  const { report: pipelineReport, loading, error, refreshProfile: refreshToolProfile } = useToolReport('energyHealing')
+  const { profile, refreshProfile: refreshMysticalProfile } = useComprehensiveMysticalProfile()
   const reportFromProfile = useMemo(() => {
     const p = profile as Record<string, unknown> | null
     if (!p || typeof p !== 'object') return undefined
@@ -170,6 +170,7 @@ export default function EnergyHealingPage() {
 
   /** True if the user has already generated a mystical profile (returning user). Don't show "generate again" in that case. */
   const hasAnyGeneratedProfile = useMemo(() => {
+    if (userProfile?.mysticalProfileGenerated) return true
     const p = profile as Record<string, unknown> | null
     if (!p || typeof p !== 'object') return false
     return (
@@ -177,7 +178,7 @@ export default function EnergyHealingPage() {
       p.interpretations != null ||
       (p.metadata as { generatedAt?: string } | undefined)?.generatedAt != null
     )
-  }, [profile])
+  }, [profile, userProfile?.mysticalProfileGenerated])
 
   const hasRealReport = useMemo(() => {
     if (!effectiveReport || typeof effectiveReport !== 'object') return false
@@ -196,14 +197,23 @@ export default function EnergyHealingPage() {
   const guardError = useMemo(() => {
     // Avoid hard-blocking returning users on transient profile-context errors;
     // section-level empty states below still render safely from available data.
-    if (hasAnyGeneratedProfile || hasRealReport) return null
+    if (userProfile?.mysticalProfileGenerated || hasAnyGeneratedProfile || hasRealReport) return null
     return error
-  }, [error, hasAnyGeneratedProfile, hasRealReport])
+  }, [error, hasAnyGeneratedProfile, hasRealReport, userProfile?.mysticalProfileGenerated])
   const guardLoading = useMemo(() => {
     // Returning users should see the page shell/tabs immediately while data resolves.
-    if (hasAnyGeneratedProfile || hasRealReport) return false
+    if (userProfile?.mysticalProfileGenerated || hasAnyGeneratedProfile || hasRealReport) return false
     return loading
-  }, [loading, hasAnyGeneratedProfile, hasRealReport])
+  }, [loading, hasAnyGeneratedProfile, hasRealReport, userProfile?.mysticalProfileGenerated])
+
+  useEffect(() => {
+    if (!user?.uid || !userProfile?.mysticalProfileGenerated || !error || hasRealReport) return
+    const timer = window.setTimeout(() => {
+      void refreshToolProfile()
+      void refreshMysticalProfile()
+    }, 1500)
+    return () => window.clearTimeout(timer)
+  }, [error, hasRealReport, refreshMysticalProfile, refreshToolProfile, user?.uid, userProfile?.mysticalProfileGenerated])
 
   const viralUnlock = useToolReportUnlock('energyHealing')
   const bypassViral = useViralReportBypass()
