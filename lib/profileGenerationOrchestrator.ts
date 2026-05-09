@@ -282,6 +282,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
 
 /** List of all tools to run at profile generation time. No lazy loading. Exported so API can check for missing reports. */
 export const ALL_TOOL_SLUGS = [
+  // Highest-priority unlocks first (critical user wow path)
+  'vedic',
   'western',
   'hellenistic',
   'esotericAstrology',
@@ -304,8 +306,6 @@ export const ALL_TOOL_SLUGS = [
   'lenormand',
   'geomancy',
   'akashicRecords',
-  'ogham',
-  'sortilege',
   'numerology',
   'angelNumbers',
   'kabbalisticNumerology',
@@ -316,17 +316,20 @@ export const ALL_TOOL_SLUGS = [
   'ziweiDouShu',
   'bazi',
   'fengShui',
-  'vedic',
   'dailyDecisions',
   'kp',
   'vastu',
   'trichakra',
   'navaratna',
   'humanDesign',
+  // Deferred under pressure: allow graceful fallback without blocking critical reports
+  'ogham',
+  'sortilege',
   'energyHealing',
 ] as const;
 
 const CORE10_TOOL_SLUGS = [
+  'vedic',
   'western',
   'hellenistic',
   'esotericAstrology',
@@ -336,7 +339,6 @@ const CORE10_TOOL_SLUGS = [
   'synastry',
   'financialAstrology',
   'hermeticAstrology',
-  'shamanicAstrology',
 ] as const;
 
 export function getCoreToolSlugsCore10(): string[] {
@@ -696,22 +698,32 @@ async function runTool(
       }
 
       case 'sortilege': {
-        const res = await fetch(`${baseUrl}/api/tools/sortilege/reading`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            question: 'Birth-path sortilege guidance',
-            method: 'coins',
-            userProfile: profile,
-          }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error((err as { error?: string })?.error ?? `Sortilege API: ${res.status}`);
+        try {
+          const res = await fetch(`${baseUrl}/api/tools/sortilege/reading`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId,
+              question: 'Birth-path sortilege guidance',
+              method: 'coins',
+              userProfile: profile,
+            }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error((err as { error?: string })?.error ?? `Sortilege API: ${res.status}`);
+          }
+          const json = await res.json();
+          return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          devLog.warn('[ProfileOrchestrator] Sortilege failed:', msg, 'profileGenerationOrchestrator');
+          return {
+            status: 'success',
+            data: { placeholder: true, reason: msg },
+            generatedAt,
+          };
         }
-        const json = await res.json();
-        return { status: 'success', data: (json.data ?? json) as Record<string, unknown>, generatedAt, _usage: json._usage ?? json.usage };
       }
 
       case 'faceReading': {

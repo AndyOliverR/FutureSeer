@@ -21,6 +21,16 @@ const isGatewayAvailable = () => {
 const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 3000];
 
+function makeRateLimitedError(): Error & { code: string; status: number } {
+  const err = new Error('Our AI service is currently busy. Please wait a moment and try again.') as Error & {
+    code: string;
+    status: number;
+  };
+  err.code = 'AI_RATE_LIMITED';
+  err.status = 429;
+  return err;
+}
+
 /**
  * Retry wrapper for AI SDK calls. Retries on transient errors (429 rate
  * limit, 5xx server errors, network timeouts). Returns the result on
@@ -43,7 +53,7 @@ async function withRetry<T>(fn: () => Promise<T>, label = 'AI call'): Promise<T>
 
       if (!isRetryable || attempt === MAX_RETRIES) {
         if (status === 429) {
-          throw new Error('Our AI service is currently busy. Please wait a moment and try again.');
+          throw makeRateLimitedError();
         }
         throw err;
       }

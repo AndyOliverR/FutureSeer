@@ -17,6 +17,32 @@ interface EnergyHealingResponse {
   error?: string;
 }
 
+function extractJsonPayload(rawText: string): string | null {
+  const text = rawText.trim();
+  if (!text) return null;
+
+  // Direct JSON payload.
+  if (text.startsWith('{') && text.endsWith('}')) return text;
+
+  // Common markdown fence variants.
+  const fencedMatch =
+    text.match(/```json\s*([\s\S]*?)\s*```/i) ||
+    text.match(/```\s*([\s\S]*?)\s*```/i);
+  if (fencedMatch?.[1]) {
+    const fencedJson = fencedMatch[1].trim();
+    if (fencedJson.startsWith('{') && fencedJson.endsWith('}')) return fencedJson;
+  }
+
+  // Last resort: grab largest object-like region.
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return text.slice(firstBrace, lastBrace + 1).trim();
+  }
+
+  return null;
+}
+
 const ASTRO_CONTEXT_TTL_MS = 30_000;
 const astroContextCache = new Map<string, { data: unknown; expiresAt: number }>();
 const astroContextInFlight = new Map<string, Promise<unknown>>();
@@ -209,7 +235,11 @@ Return JSON.`;
     // Parse JSON response
     let healingData: any;
     try {
-      healingData = JSON.parse(analysisText);
+      const jsonPayload = extractJsonPayload(analysisText);
+      if (!jsonPayload) {
+        throw new Error('No JSON payload found in AI response');
+      }
+      healingData = JSON.parse(jsonPayload);
       
       // Log response structure for debugging (especially for aura)
       if (method === 'aura') {
@@ -226,13 +256,7 @@ Return JSON.`;
     } catch (parseError) {
       devLog.error('Failed to parse Groq response:', parseError, 'route');
       devLog.debug('Raw response:', analysisText, 'energy-healing');
-      // Try to extract JSON from markdown code blocks if present
-      const jsonMatch = analysisText.match(/```json\s*([\s\S]*?)\s*```/) || analysisText.match(/```\s*([\s\S]*?)\s*```/);
-      if (jsonMatch) {
-        healingData = JSON.parse(jsonMatch[1]);
-      } else {
-        throw new Error('Invalid JSON response from Groq API');
-      }
+      throw new Error('Invalid JSON response from Groq API');
     }
 
     devLog.info(`✅ ${method} analysis completed successfully`, undefined, 'energy-healing');

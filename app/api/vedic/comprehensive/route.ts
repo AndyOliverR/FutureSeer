@@ -179,6 +179,15 @@ interface ComprehensiveVedicResponse {
   error?: string;
 }
 
+function isRateLimitedError(error: unknown): boolean {
+  const maybeErr = error as { status?: number; statusCode?: number; code?: string; message?: string };
+  const status = maybeErr?.status ?? maybeErr?.statusCode;
+  if (status === 429) return true;
+  if (maybeErr?.code === 'AI_RATE_LIMITED' || maybeErr?.code === 'rate_limit_exceeded') return true;
+  const message = String(maybeErr?.message ?? '').toLowerCase();
+  return message.includes('rate limit') || message.includes('currently busy');
+}
+
 // Build comprehensive Groq prompt for Vedic Astrology
 function buildGroqPrompt(vedicData: any, userProfile?: any): string {
   const today = new Date();
@@ -504,21 +513,38 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Generate comprehensive analysis using AI
     devLog.info('🤖 Calling AI Gateway/Groq API for comprehensive Vedic analysis...', undefined, 'vedic');
     const aiStartedAt = Date.now();
-    const aiResponse = await createAICompletion({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert Vedic Astrologer (Jyotish) providing comprehensive birth chart analysis. Always respond with valid JSON.'
+    let aiResponse: Awaited<ReturnType<typeof createAICompletion>> | null = null;
+    try {
+      aiResponse = await createAICompletion({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert Vedic Astrologer (Jyotish) providing comprehensive birth chart analysis. Always respond with valid JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.7,
+        maxTokens: 4000
+      });
+    } catch (aiError) {
+      if (!isRateLimitedError(aiError)) {
+        throw aiError;
+      }
+      devLog.warn('⚠️ Vedic AI temporarily rate-limited; returning fallback analysis', aiError, 'vedic');
+      const fallbackAnalysis = parseGroqResponse('', chartData);
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis: fallbackAnalysis,
+          timestamp: Date.now()
         },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.7,
-      maxTokens: 4000
-    });
+        degraded: true,
+      });
+    }
     markStage('ai_completion', aiStartedAt);
 
     if (!aiResponse || !aiResponse.content) {
