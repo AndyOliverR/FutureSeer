@@ -354,7 +354,19 @@ function VedicAstrologyPageContent() {
     // Intentionally omit compProfile?.vedic from deps: it is passed in the body when the effect runs, but
     // including it causes the effect to re-run whenever the profile context updates (new object reference),
     // which aborts the in-flight fetch and prevents the report from ever loading.
-  }, [hasVedicData, user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, effectiveVedicReport, vedicComprehensiveError, vedicReportFetchTrigger, vedicRetryAttempt]);
+  }, [
+    hasVedicData,
+    user?.uid,
+    userProfile?.birthDate,
+    userProfile?.birthTime,
+    userProfile?.birthPlace,
+    userProfile?.displayName,
+    userProfile?.fullName,
+    effectiveVedicReport,
+    vedicComprehensiveError,
+    vedicReportFetchTrigger,
+    vedicRetryAttempt,
+  ]);
 
   // Helper to safely get sign name from potentially number or object
   const getSignName = (val: any) => {
