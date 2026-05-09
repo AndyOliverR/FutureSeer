@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useEffect, useMemo, useCallback } from "react";
+import React, { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
@@ -101,13 +101,20 @@ function VedicAstrologyPageContent() {
   const [vedicComprehensiveError, setVedicComprehensiveError] = useState<string | null>(null);
   const [vedicReportFetchTrigger, setVedicReportFetchTrigger] = useState(0);
   const [vedicRetryAttempt, setVedicRetryAttempt] = useState(0);
+  const vedicComprehensiveInFlightRef = useRef(false);
+  const vedicComprehensiveRequestIdRef = useRef(0);
+  const vedicProfileDataRef = useRef<Record<string, unknown> | null>(null);
   // Prefer page state, then stored profile (from generate-mystical): vedic.comprehensiveAnalysis, toolReports.vedic.data, or top-level
   const effectiveVedicReport =
     vedicComprehensiveReport ??
     ((compProfile as Record<string, unknown> | null)?.vedic as Record<string, unknown> | undefined)?.comprehensiveAnalysis ??
     (compProfile as Record<string, unknown> | null)?.vedicComprehensiveAnalysis ??
     ((compProfile as Record<string, unknown> | null)?.toolReports as Record<string, { data?: Record<string, unknown> }> | undefined)?.vedic?.data?.comprehensiveAnalysis ??
-    ((compProfile as Record<string, unknown> | null)?.toolReports as Record<string, { data?: Record<string, unknown> }> | undefined)?.vedic?.data ?? null;
+    null;
+
+  useEffect(() => {
+    vedicProfileDataRef.current = vedicProfileData;
+  }, [vedicProfileData]);
 
   // Normalize report so Planets/Houses/Remedies always get arrays (API may return different key names or shapes)
   // Single source for tabs: normalized report or raw report (so we always have something when Overview has loaded)
@@ -227,6 +234,9 @@ function VedicAstrologyPageContent() {
   }, []);
 
   const retryVedicComprehensive = useCallback(() => {
+    vedicComprehensiveInFlightRef.current = false;
+    vedicComprehensiveRequestIdRef.current += 1;
+    setLoadingVedicComprehensive(false);
     setVedicComprehensiveError(null);
     setVedicRetryAttempt(0);
     setVedicReportFetchTrigger((t) => t + 1);
@@ -234,10 +244,13 @@ function VedicAstrologyPageContent() {
 
   useEffect(() => {
     if (!hasVedicData || !user?.uid || !userProfile?.birthDate || !userProfile?.birthPlace) return;
-    if (effectiveVedicReport || loadingVedicComprehensive || vedicComprehensiveError) return;
+    if (effectiveVedicReport || vedicComprehensiveInFlightRef.current || vedicComprehensiveError) return;
 
     const birthTime = userProfile.birthTime || '12:00:00';
     let cancelled = false;
+    const requestId = vedicComprehensiveRequestIdRef.current + 1;
+    vedicComprehensiveRequestIdRef.current = requestId;
+    vedicComprehensiveInFlightRef.current = true;
     setLoadingVedicComprehensive(true);
     setVedicComprehensiveError(null);
 
@@ -258,7 +271,7 @@ function VedicAstrologyPageContent() {
       signal: controller.signal,
       body: JSON.stringify({
         userId: user.uid,
-        vedicChartData: vedicProfileData,
+        vedicChartData: vedicProfileDataRef.current,
         userProfile: {
           birthDate: userProfile.birthDate,
           birthTime,
@@ -325,13 +338,23 @@ function VedicAstrologyPageContent() {
             durationMs: Date.now() - clientReqStartedAt,
           });
         }
+        if (vedicComprehensiveRequestIdRef.current === requestId) {
+          vedicComprehensiveInFlightRef.current = false;
+        }
         if (!cancelled) setLoadingVedicComprehensive(false);
       });
-    return () => { cancelled = true; controller.abort(); clearTimeout(timeoutId); };
+    return () => {
+      cancelled = true;
+      if (vedicComprehensiveRequestIdRef.current === requestId) {
+        vedicComprehensiveInFlightRef.current = false;
+      }
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
     // Intentionally omit compProfile?.vedic from deps: it is passed in the body when the effect runs, but
     // including it causes the effect to re-run whenever the profile context updates (new object reference),
     // which aborts the in-flight fetch and prevents the report from ever loading.
-  }, [hasVedicData, user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, effectiveVedicReport, loadingVedicComprehensive, vedicComprehensiveError, vedicReportFetchTrigger, vedicProfileData, vedicRetryAttempt]);
+  }, [hasVedicData, user?.uid, userProfile?.birthDate, userProfile?.birthTime, userProfile?.birthPlace, effectiveVedicReport, vedicComprehensiveError, vedicReportFetchTrigger, vedicRetryAttempt]);
 
   // Helper to safely get sign name from potentially number or object
   const getSignName = (val: any) => {

@@ -163,9 +163,9 @@ export default function ComprehensiveVedicReport({
     }
 
     fetchComprehensiveAnalysis()
-  }, [userId, vedicChartData, cachedReport, isLoadingReport, comprehensiveAnalysis, userProfile])
+  }, [userId, vedicChartData, cachedReport, isProfileLoading, isLoadingReport, comprehensiveAnalysis, userProfile, onReportLoaded])
 
-  if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
+  if (!userProfile?.birthDate || !userProfile?.birthPlace) {
     return (
       <div className="text-center py-12">
         <Card className="glass-card border-white/10 max-w-md mx-auto text-white">
@@ -173,7 +173,7 @@ export default function ComprehensiveVedicReport({
             <Star className="w-16 h-16 text-amber-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">Birth Data Needed</h3>
             <p className="text-slate-200">
-              Please ensure your birth date, time, and place are complete to view the comprehensive report.
+              Please ensure your birth date and place are complete to view the comprehensive report.
             </p>
           </CardContent>
         </Card>

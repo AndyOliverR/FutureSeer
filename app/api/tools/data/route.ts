@@ -2,22 +2,35 @@
 // Fetches comprehensive profile data for specific tools
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
+import { isAdminAvailable, getDocument } from '@/lib/firebase-admin';
 import { log } from '@/lib/consoleLogger';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await verifyUserRequest(request, 'tool-data-api');
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const requestedUserId = searchParams.get('userId');
+    const userId = resolveOwnedUserId(requestedUserId, auth.uid);
     const toolName = searchParams.get('toolName');
     
-    if (!userId || !toolName) {
+    if (!requestedUserId || !toolName) {
       return NextResponse.json({
         success: false,
         error: 'Missing userId or toolName parameter'
       }, { status: 400 });
+    }
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'User ID must match authenticated user'
+      }, { status: 403 });
     }
     
     log.info('🔍 Fetching tool data from comprehensive profile', {
@@ -81,15 +94,27 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper function to get all available tools for a user
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json();
+    const auth = await verifyUserRequest(request, 'tool-data-api');
+    if (!auth.ok) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { userId: requestedUserId } = await request.json();
     
-    if (!userId) {
+    if (!requestedUserId) {
       return NextResponse.json({
         success: false,
         error: 'Missing userId'
       }, { status: 400 });
+    }
+    const userId = resolveOwnedUserId(requestedUserId, auth.uid);
+    if (!userId) {
+      return NextResponse.json({
+        success: false,
+        error: 'User ID must match authenticated user'
+      }, { status: 403 });
     }
     
     log.info('🔍 Fetching available tools for user', { userId }, 'tool-data-api');
