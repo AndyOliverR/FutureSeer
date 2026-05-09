@@ -415,34 +415,44 @@ export default function ProfilePage() {
   })
 
   const fullProfileChecklist = useMemo(() => {
-    const profileForChecklist: Partial<UserProfile> = {
-      displayName: formData.displayName || undefined,
-      fullName: formData.fullName || undefined,
-      gender: formData.gender,
-      birthDate: formData.birthDate || undefined,
-      birthTime: formData.birthTime || undefined,
-      birthTimeKnown: formData.birthTimeKnown,
-      birthPlace: formData.birthPlace || undefined,
-      currentLocation: formData.currentLocation || undefined,
-      facePhotoUrl: formData.facePhotoUrl || undefined,
-      palmPhotoUrl: formData.palmPhotoUrl || undefined,
+    try {
+      const profileForChecklist: Partial<UserProfile> = {
+        displayName: formData.displayName || undefined,
+        fullName: formData.fullName || undefined,
+        gender: formData.gender,
+        birthDate: formData.birthDate || undefined,
+        birthTime: formData.birthTime || undefined,
+        birthTimeKnown: formData.birthTimeKnown,
+        birthPlace: formData.birthPlace || undefined,
+        currentLocation: formData.currentLocation || undefined,
+        facePhotoUrl: formData.facePhotoUrl || undefined,
+        palmPhotoUrl: formData.palmPhotoUrl || undefined,
+      }
+      const missing = getMissingFirstGenerationFields(profileForChecklist, { allowUnknownBirthTime: true })
+      return Array.isArray(missing) ? missing.map((f) => FULL_FIELD_LABELS[f] ?? f) : []
+    } catch {
+      return []
     }
-    return getMissingFirstGenerationFields(profileForChecklist, { allowUnknownBirthTime: true }).map((f) => FULL_FIELD_LABELS[f] ?? f)
   }, [formData])
   const missingGenerationFieldKeys = useMemo(() => {
-    const profileForChecklist: Partial<UserProfile> = {
-      displayName: formData.displayName || undefined,
-      fullName: formData.fullName || undefined,
-      gender: formData.gender,
-      birthDate: formData.birthDate || undefined,
-      birthTime: formData.birthTime || undefined,
-      birthTimeKnown: formData.birthTimeKnown,
-      birthPlace: formData.birthPlace || undefined,
-      currentLocation: formData.currentLocation || undefined,
-      facePhotoUrl: formData.facePhotoUrl || undefined,
-      palmPhotoUrl: formData.palmPhotoUrl || undefined,
+    try {
+      const profileForChecklist: Partial<UserProfile> = {
+        displayName: formData.displayName || undefined,
+        fullName: formData.fullName || undefined,
+        gender: formData.gender,
+        birthDate: formData.birthDate || undefined,
+        birthTime: formData.birthTime || undefined,
+        birthTimeKnown: formData.birthTimeKnown,
+        birthPlace: formData.birthPlace || undefined,
+        currentLocation: formData.currentLocation || undefined,
+        facePhotoUrl: formData.facePhotoUrl || undefined,
+        palmPhotoUrl: formData.palmPhotoUrl || undefined,
+      }
+      const missing = getMissingFirstGenerationFields(profileForChecklist, { allowUnknownBirthTime: true })
+      return Array.isArray(missing) ? missing : []
+    } catch {
+      return []
     }
-    return getMissingFirstGenerationFields(profileForChecklist, { allowUnknownBirthTime: true })
   }, [formData])
   const canGenerateFromOnboarding = canGenerateMysticalProfile && missingGenerationFieldKeys.length === 0
   const completedStepsTrackedRef = useRef<Set<RequiredStepId>>(new Set())
