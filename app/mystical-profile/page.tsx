@@ -226,6 +226,8 @@ export default function MysticalProfilePage() {
   const gateTrackedRef = useRef(false)
   const bypassTrackedRef = useRef(false)
   const staleRecoveryRef = useRef(false)
+  const lastSyncedProgressAtRef = useRef<number | null>(null)
+  const lastProfileRefreshAtRef = useRef<number>(0)
   const loadingMessages = useMemo(
     () => [
       "Your reports are being generated...",
@@ -318,7 +320,23 @@ export default function MysticalProfilePage() {
           setCurrentToolElapsedMs(typeof data.currentToolElapsedMs === "number" ? data.currentToolElapsedMs : null)
           setLastHeartbeatAt(typeof data.lastHeartbeatAt === "number" ? data.lastHeartbeatAt : null)
           setResumeAttempted(Boolean(data.resumeAttempted))
-          setLastProgressUpdatedAt(typeof data.updatedAt === "number" ? data.updatedAt : Date.now())
+          const progressUpdatedAt = typeof data.updatedAt === "number" ? data.updatedAt : Date.now()
+          setLastProgressUpdatedAt(progressUpdatedAt)
+          // Refresh card data in-place when backend progress changes so snippets appear
+          // without requiring manual page refresh or route remounts.
+          const backendHasReadyPayload =
+            Boolean(data.partialReady) || Boolean(data.generated) || Boolean(data.hasProfile)
+          const progressMoved =
+            typeof data.updatedAt === "number" &&
+            data.updatedAt > (lastSyncedProgressAtRef.current ?? 0)
+          if (backendHasReadyPayload && (progressMoved || !hasUsableMysticalData)) {
+            const now = Date.now()
+            if (now - lastProfileRefreshAtRef.current > 2500) {
+              lastProfileRefreshAtRef.current = now
+              lastSyncedProgressAtRef.current = progressUpdatedAt
+              void refreshMysticalProfile()
+            }
+          }
           if (data.inProgress) {
             sessionStorage.setItem("futureSeer:generationStatus", "in_progress")
             setGenerationPending(true)
@@ -367,7 +385,7 @@ export default function MysticalProfilePage() {
     void poll()
     const interval = window.setInterval(poll, 4000)
     return () => window.clearInterval(interval)
-  }, [generationActive, user, router])
+  }, [generationActive, hasUsableMysticalData, refreshMysticalProfile, user, router])
 
   useEffect(() => {
     // Keep snippets updated during generation, but avoid aggressive loops that destabilize UI.
