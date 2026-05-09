@@ -370,17 +370,18 @@ export default function MysticalProfilePage() {
   }, [generationActive, user, router])
 
   useEffect(() => {
-    // Keep snippet cards fresh while generation is active so users don't need a manual refresh.
+    // Keep snippets updated during generation, but avoid aggressive loops that destabilize UI.
     if (!generationActive) return
     const refreshNow = () => {
       void refreshMysticalProfile()
-      void refreshAuthProfile()
     }
-    refreshNow()
-    const intervalMs = hasUsableMysticalData ? 4500 : 2500
-    const interval = window.setInterval(refreshNow, intervalMs)
-    return () => window.clearInterval(interval)
-  }, [generationActive, hasUsableMysticalData, refreshAuthProfile, refreshMysticalProfile])
+    const timeout = window.setTimeout(refreshNow, 1200)
+    const interval = window.setInterval(refreshNow, 8000)
+    return () => {
+      window.clearTimeout(timeout)
+      window.clearInterval(interval)
+    }
+  }, [generationActive, refreshMysticalProfile])
 
   useEffect(() => {
     if (typeof window === "undefined") return
