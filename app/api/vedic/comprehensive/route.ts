@@ -195,6 +195,16 @@ function extractPersistedComprehensiveAnalysis(src: unknown): Record<string, unk
   return null;
 }
 
+function hasMatchingBirthContext(src: unknown, userProfile: ComprehensiveVedicRequest['userProfile']): boolean {
+  if (!src || typeof src !== 'object' || !userProfile) return false;
+  const rec = src as Record<string, unknown>;
+  return (
+    rec.birthDate === userProfile.birthDate &&
+    rec.birthTime === userProfile.birthTime &&
+    rec.birthPlace === userProfile.birthPlace
+  );
+}
+
 function isRateLimitedError(error: unknown): boolean {
   const maybeErr = error as { status?: number; statusCode?: number; code?: string; message?: string };
   const status = maybeErr?.status ?? maybeErr?.statusCode;
@@ -489,16 +499,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    // Fast path: use already-persisted comprehensive analysis from mystical profile doc.
+    // Fast path: use already-persisted comprehensive analysis from the canonical mystical profile doc,
+    // but only when its birth context matches this request. Regeneration updates the user root doc
+    // before tools finish, so root-level legacy payloads can be stale after a birth-data edit.
     const profileDocReadStartedAt = Date.now();
-    const profileDoc = await getCachedDoc(['users'], userId);
+    const profileDoc = await getCachedDoc(['comprehensiveMysticalProfiles'], userId);
     markStage('profile_doc_read', profileDocReadStartedAt);
     if (profileDoc.exists()) {
-      const userDoc = profileDoc.data() as Record<string, unknown> | undefined;
-      const mysticalProfile = userDoc?.mysticalProfile as Record<string, unknown> | undefined;
-      const persistedAnalysis =
-        extractPersistedComprehensiveAnalysis(mysticalProfile) ??
-        extractPersistedComprehensiveAnalysis(userDoc);
+      const mysticalProfile = profileDoc.data() as Record<string, unknown> | undefined;
+      const persistedAnalysis = hasMatchingBirthContext(mysticalProfile, userProfile)
+        ? extractPersistedComprehensiveAnalysis(mysticalProfile)
+        : null;
 
       if (persistedAnalysis) {
         return NextResponse.json({
