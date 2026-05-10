@@ -84,8 +84,8 @@ function MysticalProfileGeneratingPlaceholder({
         onClick={onSnippetRefresh}
         disabled={snippetRefreshBusy}
         className={cn(
-          "absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200",
-          "border-emerald-500/45 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-400/60",
+          "absolute top-2 right-2 flex h-11 w-11 items-center justify-center rounded-full",
+          "border-none bg-transparent p-0 transition-opacity duration-200 hover:opacity-90",
           "focus-visible:outline-2 focus-visible:outline-emerald-400 focus-visible:outline-offset-2",
           "disabled:pointer-events-none disabled:opacity-55",
         )}
@@ -94,7 +94,7 @@ function MysticalProfileGeneratingPlaceholder({
       >
         <RefreshCw
           className={cn(
-            "h-5 w-5 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.55)]",
+            "h-7 w-7 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.6)]",
             snippetRefreshBusy && "animate-spin",
           )}
           aria-hidden
