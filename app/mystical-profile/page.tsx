@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
 import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
-import { ChevronRight, Loader2, Sparkles } from "lucide-react"
+import { ChevronRight, Loader2, RefreshCw, Sparkles } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
 import { useComprehensiveMysticalProfile } from "@/hooks/useComprehensiveMysticalProfile"
 import { useIsPortraitNarrowLayout } from "@/hooks/useIsPortraitNarrowLayout"
@@ -49,6 +49,65 @@ function humanizePipelineSlug(slug: string): string {
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (s) => s.toUpperCase())
     .trim()
+}
+
+function MysticalProfileGeneratingPlaceholder({
+  variant,
+  loadingMessages,
+  loadingMessageIndex,
+  onSnippetRefresh,
+  snippetRefreshBusy,
+}: {
+  variant: "m3" | "web"
+  loadingMessages: readonly string[]
+  loadingMessageIndex: number
+  onSnippetRefresh: () => void
+  snippetRefreshBusy: boolean
+}) {
+  const isM3 = variant === "m3"
+  const outerClass = isM3
+    ? "relative rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm mb-4"
+    : "relative backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400 mb-6"
+  const loaderClass = isM3
+    ? "w-6 h-6 animate-spin text-primary mx-auto mb-3"
+    : "w-8 h-8 animate-spin text-amber-400 mx-auto mb-3"
+  const line1 = isM3
+    ? "Generating now; ready cards appear as each report finishes."
+    : "Generating your mystical profile. Reports unlock one by one in tools order."
+  const tipClass = isM3 ? "mt-2 text-xs text-surface-on-variant" : "mt-2 text-xs text-slate-400"
+  const titleClass = isM3 ? "text-on-surface" : ""
+
+  return (
+    <div className={outerClass}>
+      <button
+        type="button"
+        onClick={onSnippetRefresh}
+        disabled={snippetRefreshBusy}
+        className={cn(
+          "absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-full border transition-all duration-200",
+          "border-emerald-500/45 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-400/60",
+          "focus-visible:outline-2 focus-visible:outline-emerald-400 focus-visible:outline-offset-2",
+          "disabled:pointer-events-none disabled:opacity-55",
+        )}
+        aria-label="Refresh snippets and profile data"
+        title="Refresh snippets if cards are slow to appear"
+      >
+        <RefreshCw
+          className={cn(
+            "h-5 w-5 text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.55)]",
+            snippetRefreshBusy && "animate-spin",
+          )}
+          aria-hidden
+        />
+      </button>
+      <Loader2 className={loaderClass} />
+      <p className={cn("pr-11", titleClass)}>{line1}</p>
+      <p className={tipClass}>{loadingMessages[loadingMessageIndex]}</p>
+      <p className={tipClass}>
+        Snippets will appear one by one as each report is ready. You can stay on this page.
+      </p>
+    </div>
+  )
 }
 
 function MysticalProfileWhatYouHaveCallout({
@@ -228,6 +287,8 @@ export default function MysticalProfilePage() {
   const staleRecoveryRef = useRef(false)
   const lastSyncedProgressAtRef = useRef<number | null>(null)
   const lastProfileRefreshAtRef = useRef<number>(0)
+  const snippetRefreshLockRef = useRef(false)
+  const [snippetManualRefreshing, setSnippetManualRefreshing] = useState(false)
   const loadingMessages = useMemo(
     () => [
       "Your reports are being generated...",
@@ -236,6 +297,17 @@ export default function MysticalProfilePage() {
     ],
     [],
   )
+
+  const handleSnippetManualRefresh = useCallback(() => {
+    if (snippetRefreshLockRef.current) return
+    snippetRefreshLockRef.current = true
+    setSnippetManualRefreshing(true)
+    lastProfileRefreshAtRef.current = 0
+    void Promise.allSettled([refreshMysticalProfile(), refreshAuthProfile()]).finally(() => {
+      snippetRefreshLockRef.current = false
+      setSnippetManualRefreshing(false)
+    })
+  }, [refreshMysticalProfile, refreshAuthProfile])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -782,24 +854,22 @@ export default function MysticalProfilePage() {
         </div>
         {ctaRow}
         {generationActive && groupedCards.length === 0 ? (
-          <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm mb-4">
-            <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
-      <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
-      <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
-      <p className="mt-2 text-xs text-surface-on-variant">
-        Snippets will appear one by one as each report is ready. You can stay on this page.
-      </p>
-          </div>
+          <MysticalProfileGeneratingPlaceholder
+            variant="m3"
+            loadingMessages={loadingMessages}
+            loadingMessageIndex={loadingMessageIndex}
+            onSnippetRefresh={handleSnippetManualRefresh}
+            snippetRefreshBusy={snippetManualRefreshing}
+          />
         ) : null}
         {groupedCards.length === 0 && !generationActive ? (
-          <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-6 text-center text-surface-on-variant text-sm mb-4">
-            <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto mb-3" />
-            <p className="text-on-surface">Generating now; ready cards appear as each report finishes.</p>
-            <p className="mt-2 text-xs text-surface-on-variant">{loadingMessages[loadingMessageIndex]}</p>
-            <p className="mt-2 text-xs text-surface-on-variant">
-              Snippets will appear one by one as each report is ready. You can stay on this page.
-            </p>
-          </div>
+          <MysticalProfileGeneratingPlaceholder
+            variant="m3"
+            loadingMessages={loadingMessages}
+            loadingMessageIndex={loadingMessageIndex}
+            onSnippetRefresh={handleSnippetManualRefresh}
+            snippetRefreshBusy={snippetManualRefreshing}
+          />
         ) : (
           <div className="space-y-8 pb-8">
             {groupedCards.map(({ category, items }) => (
@@ -882,24 +952,22 @@ export default function MysticalProfilePage() {
         </div>
         {ctaRow}
         {generationActive && groupedCards.length === 0 ? (
-          <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400 mb-6">
-            <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-      <p>Generating your mystical profile. Reports unlock one by one in tools order.</p>
-      <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
-      <p className="mt-2 text-xs text-slate-400">
-        Snippets will appear one by one as each report is ready. You can stay on this page.
-      </p>
-          </div>
+          <MysticalProfileGeneratingPlaceholder
+            variant="web"
+            loadingMessages={loadingMessages}
+            loadingMessageIndex={loadingMessageIndex}
+            onSnippetRefresh={handleSnippetManualRefresh}
+            snippetRefreshBusy={snippetManualRefreshing}
+          />
         ) : null}
         {groupedCards.length === 0 && !generationActive ? (
-          <div className="backdrop-blur-sm bg-slate-900/50 border border-amber-500/20 rounded-2xl p-8 text-center text-slate-400 mb-6">
-            <Loader2 className="w-8 h-8 animate-spin text-amber-400 mx-auto mb-3" />
-            <p>Generating your mystical profile. Reports unlock one by one in tools order.</p>
-            <p className="mt-2 text-xs text-slate-400">{loadingMessages[loadingMessageIndex]}</p>
-            <p className="mt-2 text-xs text-slate-400">
-              Snippets will appear one by one as each report is ready. You can stay on this page.
-            </p>
-          </div>
+          <MysticalProfileGeneratingPlaceholder
+            variant="web"
+            loadingMessages={loadingMessages}
+            loadingMessageIndex={loadingMessageIndex}
+            onSnippetRefresh={handleSnippetManualRefresh}
+            snippetRefreshBusy={snippetManualRefreshing}
+          />
         ) : (
           <div className="space-y-14">
             {groupedCards.map(({ category, items }) => (
