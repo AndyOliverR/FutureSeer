@@ -32,20 +32,24 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
   const { user, userProfile, signOut, isAdmin, isSuperadmin } = useAuth()
   const router = useRouter()
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside.
+  // Uses a delayed `click` listener instead of `mousedown` to avoid iOS Safari
+  // dispatching residual mouse events from the same tap that opened the dropdown.
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    if (!isOpen) return
+    let handler: ((e: MouseEvent) => void) | null = null
+    const timerId = window.setTimeout(() => {
+      handler = (e: MouseEvent) => {
+        const target = e.target as Node | null
+        if (!target) return
+        if (dropdownRef.current?.contains(target)) return
         setIsOpen(false)
       }
-    }
-
-    if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside)
-    }
-
+      document.addEventListener("click", handler, true)
+    }, 50)
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
+      clearTimeout(timerId)
+      if (handler) document.removeEventListener("click", handler, true)
     }
   }, [isOpen])
 
@@ -118,7 +122,7 @@ export function UserMenuDropdown({ userName, userEmail, userPhotoURL }: UserMenu
       {/* Avatar Button - M3 on mobile, amber accent on web */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="group flex items-center gap-2 p-1 pr-0 rounded-full hover:bg-[var(--m3-primary-container)] md:hover:bg-amber-500/20 m3-transition-standard m3-ripple focus:outline-none focus:ring-2 focus:ring-[var(--m3-primary)] md:focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[var(--m3-surface)] md:focus:ring-offset-slate-900"
+        className="touch-manipulation group flex items-center gap-2 p-1 pr-0 rounded-full hover:bg-[var(--m3-primary-container)] md:hover:bg-amber-500/20 m3-transition-standard m3-ripple focus:outline-none focus:ring-2 focus:ring-[var(--m3-primary)] md:focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-[var(--m3-surface)] md:focus:ring-offset-slate-900"
         aria-label="User menu"
       >
         <div className="relative">
