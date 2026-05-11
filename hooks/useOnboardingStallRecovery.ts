@@ -37,14 +37,17 @@ export function useOnboardingStallRecovery(
       setStuck(true)
       if (loggedRef.current) return
       loggedRef.current = true
+      const tabHidden =
+        typeof document !== "undefined" && document.visibilityState === "hidden"
       void logOnboarding(
         "loading_stall",
         `Onboarding wait exceeded ${ms}ms (${surface})`,
-        "error",
+        tabHidden ? "warning" : "error",
         {
           surface,
           reason: "loading_timeout",
           msWaited: ms,
+          ...(tabHidden ? { tabHidden: true } : {}),
           ...(funnelNewUser === true || funnelNewUser === false
             ? { funnelNewUser: funnelNewUser ? "new_user" : "returning" }
             : {}),
