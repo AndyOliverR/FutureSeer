@@ -44,7 +44,6 @@ export function TopNavBar() {
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuToggleRef = useRef<HTMLButtonElement>(null);
-  const menuOpenedAtRef = useRef<number>(0);
   const { registerModal } = useModalOpen();
 
   useEffect(() => {
@@ -66,29 +65,25 @@ export function TopNavBar() {
     return () => document.removeEventListener("keydown", handleEscape);
   }, [showMenu]);
 
-  // Close when pressing outside the sheet and outside the hamburger (mouse / touch / pen).
-  // Use composedPath + data attr: capture-phase + ref/target alone can miss Framer's button or
-  // false-close before click, so the next click does setShowMenu(!false) and reopens the menu.
+  // Close when tapping/clicking outside the menu panel and hamburger toggle.
+  // Uses a delayed `click` listener instead of `pointerdown` to avoid iOS Safari
+  // dispatching residual pointer/mouse events from the same tap that opened the menu.
   useEffect(() => {
     if (!showMenu) return;
-    const closeIfOutside = (event: PointerEvent) => {
-      if (Date.now() - menuOpenedAtRef.current < 300) return;
-      if (event.pointerType === "mouse" && event.button !== 0) return;
-      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
-      const hitMenu = path.some(
-        (n) => n instanceof Node && menuRef.current && menuRef.current.contains(n)
-      );
-      const hitToggle = path.some((n) => {
-        if (!(n instanceof Element)) return false;
-        if (menuToggleRef.current?.contains(n)) return true;
-        return Boolean(n.closest?.("[data-topnav-menu-toggle]"));
-      });
-      if (hitMenu || hitToggle) return;
-      setShowMenu(false);
-    };
-    document.addEventListener("pointerdown", closeIfOutside, { capture: true });
+    let handler: ((e: MouseEvent) => void) | null = null;
+    const timerId = window.setTimeout(() => {
+      handler = (e: MouseEvent) => {
+        const target = e.target as Node | null;
+        if (!target) return;
+        if (menuRef.current?.contains(target)) return;
+        if (menuToggleRef.current?.contains(target)) return;
+        setShowMenu(false);
+      };
+      document.addEventListener("click", handler, true);
+    }, 50);
     return () => {
-      document.removeEventListener("pointerdown", closeIfOutside, { capture: true });
+      clearTimeout(timerId);
+      if (handler) document.removeEventListener("click", handler, true);
     };
   }, [showMenu]);
 
@@ -142,12 +137,7 @@ export function TopNavBar() {
             type="button"
             data-topnav-menu-toggle
             className="touch-manipulation flex flex-col justify-center items-center w-12 h-12 relative z-10"
-            onClick={() => {
-              setShowMenu((prev) => {
-                if (!prev) menuOpenedAtRef.current = Date.now();
-                return !prev;
-              });
-            }}
+            onClick={() => setShowMenu((prev) => !prev)}
             aria-expanded={showMenu}
             aria-haspopup="true"
             aria-label={showMenu ? "Close menu" : "Open menu"}
@@ -222,23 +212,9 @@ export function TopNavBar() {
       </div>
       </nav>
     </TooltipProvider>
-    {showMenu ? (
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Dismiss menu"
-        className="fixed inset-0 z-[99] cursor-default bg-black/25 touch-none"
-        onPointerDown={(e) => {
-          if (e.pointerType === "mouse" && e.button !== 0) return;
-          if (Date.now() - menuOpenedAtRef.current < 300) return;
-          setShowMenu(false);
-        }}
-        onClick={() => {
-          if (Date.now() - menuOpenedAtRef.current < 300) return;
-          setShowMenu(false);
-        }}
-      />
-    ) : null}
+    {showMenu && (
+      <div className="fixed inset-0 z-[99] bg-black/25" aria-hidden="true" />
+    )}
     <ShareAppModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
     </>
   );
