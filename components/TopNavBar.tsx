@@ -44,6 +44,7 @@ export function TopNavBar() {
   const [showShareModal, setShowShareModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuToggleRef = useRef<HTMLButtonElement>(null);
+  const menuOpenedAtRef = useRef<number>(0);
   const { registerModal } = useModalOpen();
 
   useEffect(() => {
@@ -71,6 +72,7 @@ export function TopNavBar() {
   useEffect(() => {
     if (!showMenu) return;
     const closeIfOutside = (event: PointerEvent) => {
+      if (Date.now() - menuOpenedAtRef.current < 300) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
       const path = typeof event.composedPath === "function" ? event.composedPath() : [];
       const hitMenu = path.some(
@@ -135,12 +137,17 @@ export function TopNavBar() {
 
           {/* Hamburger + panel: panel must sit below the trigger (top-14 vs safe-area used to overlap the row on iPhone). */}
           <div className="relative shrink-0">
-          <motion.button
+          <button
             ref={menuToggleRef}
             type="button"
             data-topnav-menu-toggle
             className="touch-manipulation flex flex-col justify-center items-center w-12 h-12 relative z-10"
-            onClick={() => setShowMenu((open) => !open)}
+            onClick={() => {
+              setShowMenu((prev) => {
+                if (!prev) menuOpenedAtRef.current = Date.now();
+                return !prev;
+              });
+            }}
             aria-expanded={showMenu}
             aria-haspopup="true"
             aria-label={showMenu ? "Close menu" : "Open menu"}
@@ -148,7 +155,7 @@ export function TopNavBar() {
             <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? 'rotate-45 translate-y-1.5' : 'mb-1.5'}`}></span>
             <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? 'opacity-0' : 'mb-1.5'}`}></span>
             <span className={`block w-6 h-0.5 bg-amber-400 transition-all ${showMenu ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
-          </motion.button>
+          </button>
 
         <AnimatePresence>
           {showMenu && (
@@ -223,9 +230,13 @@ export function TopNavBar() {
         className="fixed inset-0 z-[99] cursor-default bg-black/25 touch-none"
         onPointerDown={(e) => {
           if (e.pointerType === "mouse" && e.button !== 0) return;
+          if (Date.now() - menuOpenedAtRef.current < 300) return;
           setShowMenu(false);
         }}
-        onClick={() => setShowMenu(false)}
+        onClick={() => {
+          if (Date.now() - menuOpenedAtRef.current < 300) return;
+          setShowMenu(false);
+        }}
       />
     ) : null}
     <ShareAppModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />

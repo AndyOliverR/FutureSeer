@@ -9,6 +9,7 @@ import { initializeSubscriptionCheckout } from "@/lib/razorpayClient";
 import { updateUserProfile } from "@/lib/firebase";
 import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { CHECKOUT_DISPLAY_NAME } from "@/lib/checkoutBranding";
+import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch";
 
 interface SubscriptionConfig {
   available: boolean;
@@ -237,7 +238,7 @@ export function useSubscribe(options: UseSubscribeOptions = {}) {
     setLoading(true);
 
     try {
-      const createRes = await fetch('/api/payments/create-subscription', {
+      const createRes = await fetchWithFirebaseAuthRequired('/api/payments/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
