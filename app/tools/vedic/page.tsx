@@ -271,9 +271,9 @@ function VedicAstrologyPageContent() {
       });
     }
 
-    fetch('/api/vedic/comprehensive', {
+    user.getIdToken().then((token) => fetch('/api/vedic/comprehensive', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       signal: controller.signal,
       body: JSON.stringify({
         userId: user.uid,
@@ -286,7 +286,7 @@ function VedicAstrologyPageContent() {
           displayName: userProfile.displayName,
         },
       }),
-    })
+    }))
       .then((res) => {
         const responseAt = Date.now();
         if (process.env.NODE_ENV === 'development') {

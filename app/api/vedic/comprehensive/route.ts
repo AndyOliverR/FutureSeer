@@ -4,6 +4,7 @@ import { createAICompletion } from '@/lib/aiGateway';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { getVedicReading } from '@/lib/vedicIntelligence';
 import { geocodePlace } from '@/services/geocoding';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -82,6 +83,34 @@ async function setCachedDoc(collectionPath: string[], docId: string, data: any):
 }
 
 const COMPREHENSIVE_REPORT_SCHEMA_VERSION = '1.0';
+
+async function resolveOptionalOwnedUserId(
+  request: NextRequest,
+  requestedUserId: string,
+): Promise<{ ownedUserId: string | null; response?: NextResponse }> {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { ownedUserId: null };
+  }
+
+  const auth = await verifyUserRequest(request, 'vedic-comprehensive');
+  if (!auth.ok) {
+    return {
+      ownedUserId: null,
+      response: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const ownedUserId = resolveOwnedUserId(requestedUserId, auth.uid);
+  if (!ownedUserId) {
+    return {
+      ownedUserId: null,
+      response: NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 }),
+    };
+  }
+
+  return { ownedUserId };
+}
 
 // Server-side geocoding helper with fallback
 async function getCoordinatesWithFallback(place: string): Promise<{ latitude: number; longitude: number }> {
@@ -475,6 +504,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const ownership = await resolveOptionalOwnedUserId(request, userId);
+    if (ownership.response) return ownership.response;
+    const ownedUserId = ownership.ownedUserId;
+
     devLog.info('🔮 Comprehensive Vedic API: Generating report for user:', userId, 'vedic');
 
     // Fast path: caller already has comprehensive analysis attached.
@@ -490,52 +523,56 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Fast path: use already-persisted comprehensive analysis from mystical profile doc.
-    const profileDocReadStartedAt = Date.now();
-    const profileDoc = await getCachedDoc(['users'], userId);
-    markStage('profile_doc_read', profileDocReadStartedAt);
-    if (profileDoc.exists()) {
-      const userDoc = profileDoc.data() as Record<string, unknown> | undefined;
-      const mysticalProfile = userDoc?.mysticalProfile as Record<string, unknown> | undefined;
-      const persistedAnalysis =
-        extractPersistedComprehensiveAnalysis(mysticalProfile) ??
-        extractPersistedComprehensiveAnalysis(userDoc);
+    if (ownedUserId) {
+      const profileDocReadStartedAt = Date.now();
+      const profileDoc = await getCachedDoc(['users'], ownedUserId);
+      markStage('profile_doc_read', profileDocReadStartedAt);
+      if (profileDoc.exists()) {
+        const userDoc = profileDoc.data() as Record<string, unknown> | undefined;
+        const mysticalProfile = userDoc?.mysticalProfile as Record<string, unknown> | undefined;
+        const persistedAnalysis =
+          extractPersistedComprehensiveAnalysis(mysticalProfile) ??
+          extractPersistedComprehensiveAnalysis(userDoc);
 
-      if (persistedAnalysis) {
-        return NextResponse.json({
-          success: true,
-          data: {
-            comprehensiveAnalysis: persistedAnalysis,
-            timestamp: Date.now(),
-          },
-        });
+        if (persistedAnalysis) {
+          return NextResponse.json({
+            success: true,
+            data: {
+              comprehensiveAnalysis: persistedAnalysis,
+              timestamp: Date.now(),
+            },
+          });
+        }
       }
     }
 
     // Check cache first
-    const cacheReadStartedAt = Date.now();
-    const cacheDoc = await getCachedDoc(['users', userId, 'mysticalProfile'], 'comprehensiveVedic');
-    markStage('cache_read', cacheReadStartedAt);
-    if (cacheDoc.exists()) {
-      const cached = cacheDoc.data();
-      if (cached?.schemaVersion === COMPREHENSIVE_REPORT_SCHEMA_VERSION &&
-          cached?.birthDate === userProfile.birthDate &&
-          cached?.birthTime === userProfile.birthTime &&
-          cached?.birthPlace === userProfile.birthPlace &&
-          Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000) { // 7 days cache
-        if (process.env.NODE_ENV === 'development') {
-          devLog.info('⏱️ [vedic/comprehensive][server] cache_hit_timing', {
-            stages: stageMs,
-            totalMs: Date.now() - reqStartedAt
-          }, 'vedic');
-        }
-        devLog.info('✅ Returning cached comprehensive Vedic report for user:', userId, 'vedic');
-        return NextResponse.json({
-          success: true,
-          data: {
-            comprehensiveAnalysis: cached.comprehensiveAnalysis,
-            timestamp: cached.timestamp
+    if (ownedUserId) {
+      const cacheReadStartedAt = Date.now();
+      const cacheDoc = await getCachedDoc(['users', ownedUserId, 'mysticalProfile'], 'comprehensiveVedic');
+      markStage('cache_read', cacheReadStartedAt);
+      if (cacheDoc.exists()) {
+        const cached = cacheDoc.data();
+        if (cached?.schemaVersion === COMPREHENSIVE_REPORT_SCHEMA_VERSION &&
+            cached?.birthDate === userProfile.birthDate &&
+            cached?.birthTime === userProfile.birthTime &&
+            cached?.birthPlace === userProfile.birthPlace &&
+            Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000) { // 7 days cache
+          if (process.env.NODE_ENV === 'development') {
+            devLog.info('⏱️ [vedic/comprehensive][server] cache_hit_timing', {
+              stages: stageMs,
+              totalMs: Date.now() - reqStartedAt
+            }, 'vedic');
           }
-        });
+          devLog.info('✅ Returning cached comprehensive Vedic report for user:', ownedUserId, 'vedic');
+          return NextResponse.json({
+            success: true,
+            data: {
+              comprehensiveAnalysis: cached.comprehensiveAnalysis,
+              timestamp: cached.timestamp
+            }
+          });
+        }
       }
     }
 
@@ -606,17 +643,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const comprehensiveAnalysis = parseGroqResponse(aiResponse.content, chartData);
     markStage('ai_response_parse', parseAiStartedAt);
 
-    // Cache the result
-    const cacheWriteStartedAt = Date.now();
-    await setCachedDoc(['users', userId, 'mysticalProfile'], 'comprehensiveVedic', {
-      comprehensiveAnalysis,
-      timestamp: Date.now(),
-      birthDate: userProfile.birthDate,
-      birthTime: userProfile.birthTime,
-      birthPlace: userProfile.birthPlace,
-      schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION
-    });
-    markStage('cache_write', cacheWriteStartedAt);
+    // Cache only after the Firebase token proves the requested user owns this document.
+    if (ownedUserId) {
+      const cacheWriteStartedAt = Date.now();
+      await setCachedDoc(['users', ownedUserId, 'mysticalProfile'], 'comprehensiveVedic', {
+        comprehensiveAnalysis,
+        timestamp: Date.now(),
+        birthDate: userProfile.birthDate,
+        birthTime: userProfile.birthTime,
+        birthPlace: userProfile.birthPlace,
+        schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION
+      });
+      markStage('cache_write', cacheWriteStartedAt);
+    }
 
     if (process.env.NODE_ENV === 'development') {
       devLog.info('⏱️ [vedic/comprehensive][server] timing', {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { devLog } from '@/lib/devLogger';
+import { useAuth } from '@/hooks/use-auth'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -80,6 +81,7 @@ export default function ComprehensiveVedicReport({
   onRetryLoad,
   lastUpdatedLabel = null
 }: ComprehensiveVedicReportProps) {
+  const { user } = useAuth()
   const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(
     cachedReport || null
   )
@@ -122,10 +124,12 @@ export default function ComprehensiveVedicReport({
       setAnalysisError(null)
 
       try {
+        const token = user?.uid && user.uid === userId ? await user.getIdToken() : null
         const response = await fetch('/api/vedic/comprehensive', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             userId,
@@ -163,7 +167,7 @@ export default function ComprehensiveVedicReport({
     }
 
     fetchComprehensiveAnalysis()
-  }, [userId, vedicChartData, cachedReport, isLoadingReport, comprehensiveAnalysis, userProfile])
+  }, [user, userId, vedicChartData, cachedReport, isLoadingReport, comprehensiveAnalysis, userProfile])
 
   if (!userProfile?.birthDate || !userProfile?.birthTime || !userProfile?.birthPlace) {
     return (

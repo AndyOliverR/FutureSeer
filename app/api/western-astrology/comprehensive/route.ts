@@ -13,6 +13,7 @@ import {
   partOfFortuneFromPlanets,
   type PlanetLike,
 } from '@/lib/western/chartDerivedFacts';
+import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
 
 // Helper to check if we're using Admin SDK
 function isAdminSDK(db: any): boolean {
@@ -101,6 +102,34 @@ async function setCachedDoc(collectionPath: string[], docId: string, data: any):
 // Schema version for predictive insights format
 // Version 2.0: Structured object with time-based predictions (today, week, month, year, etc.)
 const PREDICTIVE_INSIGHTS_SCHEMA_VERSION = '2.0';
+
+async function resolveOptionalOwnedUserId(
+  request: NextRequest,
+  requestedUserId: string,
+): Promise<{ ownedUserId: string | null; response?: NextResponse }> {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return { ownedUserId: null };
+  }
+
+  const auth = await verifyUserRequest(request, 'western-comprehensive');
+  if (!auth.ok) {
+    return {
+      ownedUserId: null,
+      response: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  const ownedUserId = resolveOwnedUserId(requestedUserId, auth.uid);
+  if (!ownedUserId) {
+    return {
+      ownedUserId: null,
+      response: NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 }),
+    };
+  }
+
+  return { ownedUserId };
+}
 
 /** Coordinates concurrent POSTs for the same user; waiters re-read Firestore after the leader finishes. */
 const westernComprehensiveInFlight = new Map<string, Promise<void>>();
@@ -812,14 +841,20 @@ export async function POST(request: NextRequest) {
         error: 'Missing required parameters: userId or chartData'
       }, { status: 400 });
     }
-    lockKey = `western-comprehensive:${userId}`;
+    const ownership = await resolveOptionalOwnedUserId(request, userId);
+    if (ownership.response) return ownership.response;
+    const ownedUserId = ownership.ownedUserId;
 
-    const leaderWait = westernComprehensiveInFlight.get(lockKey);
-    if (leaderWait) {
+    if (ownedUserId) {
+      lockKey = `western-comprehensive:${ownedUserId}`;
+    }
+
+    const leaderWait = lockKey ? westernComprehensiveInFlight.get(lockKey) : undefined;
+    if (leaderWait && ownedUserId) {
       await leaderWait;
-      const afterWait = await readValidWesternComprehensiveCache(userId);
+      const afterWait = await readValidWesternComprehensiveCache(ownedUserId);
       if (afterWait) {
-        devLog.info('✅ Returning Western comprehensive after in-flight run for user:', userId, 'western');
+        devLog.info('✅ Returning Western comprehensive after in-flight run for user:', ownedUserId, 'western');
         return NextResponse.json({ success: true, data: afterWait });
       }
       return NextResponse.json(
@@ -831,17 +866,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const donePromise = new Promise<void>((resolve) => {
-      westernLeaderRelease.fn = resolve;
-    });
-    westernComprehensiveInFlight.set(lockKey, donePromise);
+    if (lockKey) {
+      const donePromise = new Promise<void>((resolve) => {
+        westernLeaderRelease.fn = resolve;
+      });
+      westernComprehensiveInFlight.set(lockKey, donePromise);
+    }
 
     devLog.info('🔮 Comprehensive Western Astrology API: Generating comprehensive report for user:', userId, 'western');
 
     try {
-      const cached = await readValidWesternComprehensiveCache(userId);
+      const cached = ownedUserId ? await readValidWesternComprehensiveCache(ownedUserId) : null;
       if (cached) {
-        devLog.info('✅ Returning cached comprehensive Western astrology report for user:', userId, 'western');
+        devLog.info('✅ Returning cached comprehensive Western astrology report for user:', ownedUserId, 'western');
         return NextResponse.json({ success: true, data: cached });
       }
     } catch (cacheError: any) {
@@ -1004,20 +1041,22 @@ export async function POST(request: NextRequest) {
       timestamp: Date.now()
     };
 
-    // Cache in Firebase (include reportChunks for retrieval-only Seer)
-    try {
-      const reportChunks = transformComprehensiveToChunks(comprehensiveAnalysis, chartData);
-      await setCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive', {
-        data: responseData,
-        timestamp: Date.now(),
-        schemaVersion: PREDICTIVE_INSIGHTS_SCHEMA_VERSION,
-        reportChunks
-      });
-      devLog.info('✅ Cached comprehensive Western astrology report in Firebase with schema version:', PREDICTIVE_INSIGHTS_SCHEMA_VERSION, 'western-astrology');
-    } catch (cacheError: any) {
-      // Log error but don't fail the request - caching is optional
-      if (process.env.NODE_ENV === 'development') {
-        devWarn('⚠️ Error caching report:', cacheError?.message || cacheError, 'western-astrology');
+    // Cache only after the Firebase token proves the requested user owns this document.
+    if (ownedUserId) {
+      try {
+        const reportChunks = transformComprehensiveToChunks(comprehensiveAnalysis, chartData);
+        await setCachedDoc(['users', ownedUserId, 'westernAstrologyReports'], 'comprehensive', {
+          data: responseData,
+          timestamp: Date.now(),
+          schemaVersion: PREDICTIVE_INSIGHTS_SCHEMA_VERSION,
+          reportChunks
+        });
+        devLog.info('✅ Cached comprehensive Western astrology report in Firebase with schema version:', PREDICTIVE_INSIGHTS_SCHEMA_VERSION, 'western-astrology');
+      } catch (cacheError: any) {
+        // Log error but don't fail the request - caching is optional
+        if (process.env.NODE_ENV === 'development') {
+          devWarn('⚠️ Error caching report:', cacheError?.message || cacheError, 'western-astrology');
+        }
       }
     }
 

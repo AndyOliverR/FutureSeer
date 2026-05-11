@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { devLog } from '@/lib/devLogger';
+import { useAuth } from '@/hooks/use-auth'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -90,6 +91,7 @@ export default function ComprehensiveWesternReport({
   cachedReport,
   isLoadingReport = false
 }: ComprehensiveWesternReportProps) {
+  const { user } = useAuth()
   // Use cached report if available, otherwise use local state
   const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(
     cachedReport || null
@@ -141,10 +143,12 @@ export default function ComprehensiveWesternReport({
       setAnalysisError(null)
 
       try {
+        const token = user?.uid && user.uid === userId ? await user.getIdToken() : null
         const response = await fetch('/api/western-astrology/comprehensive', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             userId,
@@ -186,7 +190,7 @@ export default function ComprehensiveWesternReport({
       cancelled = true
       comprehensiveFetchOnceRef.current = null
     }
-  }, [userId, chartData, cachedReport, isLoadingReport, comprehensiveAnalysis, planets, houses, aspects, transits, userProfile])
+  }, [user, userId, chartData, cachedReport, isLoadingReport, comprehensiveAnalysis, planets, houses, aspects, transits, userProfile])
 
   if (!chartData) {
     return (
