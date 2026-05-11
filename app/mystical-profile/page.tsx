@@ -420,6 +420,8 @@ export default function MysticalProfilePage() {
             setGenerationPending(false)
             setGenerationError(null)
             setGenerationWarning(null)
+            void refreshAuthProfile()
+            void refreshMysticalProfile()
             if (typeof window !== "undefined" && window.location.search.includes("generating=")) {
               router.replace("/mystical-profile", { scroll: false })
             }
@@ -429,6 +431,8 @@ export default function MysticalProfilePage() {
             if (data.allReportsReady) {
               sessionStorage.setItem("futureSeer:generationStatus", "completed")
               setGenerationPending(false)
+              void refreshAuthProfile()
+              void refreshMysticalProfile()
               if (typeof window !== "undefined" && window.location.search.includes("generating=")) {
                 router.replace("/mystical-profile", { scroll: false })
               }
@@ -457,7 +461,7 @@ export default function MysticalProfilePage() {
     void poll()
     const interval = window.setInterval(poll, 4000)
     return () => window.clearInterval(interval)
-  }, [generationActive, hasUsableMysticalData, refreshMysticalProfile, user, router])
+  }, [generationActive, hasUsableMysticalData, refreshAuthProfile, refreshMysticalProfile, user, router])
 
   useEffect(() => {
     // Keep snippets updated during generation, but avoid aggressive loops that destabilize UI.
