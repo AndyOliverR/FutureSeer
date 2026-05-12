@@ -127,3 +127,22 @@ After `pnpm install`, a warning about "Ignored build scripts" appears. `sharp` (
 
 - The SSR error `Bail out to client-side rendering: next/dynamic` in dev server logs is expected — the app uses `next/dynamic` heavily and renders client-side.
 - The project includes Electron (`pnpm desktop`) and Capacitor (`pnpm mobile:build`) shells — these are optional and not needed for web development.
+
+### Occult Knowledge Base (`knowledge/`)
+
+The `knowledge/` folder contains deep reference material (markdown files) organized by divination domain. It supplements the structured data files in `lib/` with richer interpretive guidance for the Seer AI.
+
+**Structure**: `knowledge/{domain}/{topic}.md` — domains include `astrology/vedic`, `astrology/western`, `astrology/financial`, `tarot`, `numerology`, `i-ching`, `runes`, and `cross-tool`.
+
+**How it works**:
+- `lib/knowledgeLoader.ts` provides `searchKnowledge(query, tools?)`, `loadKnowledge(tool, topic)`, and `formatKnowledgeForPrompt(results)`.
+- The loader reads markdown files at runtime (server-side only), caches them in a module-level Map, and indexes keywords from headings and file names.
+- Seer API routes (`ask-vedic-seer`, `ask-tarot-seer`, `ask-western-seer`) call `searchKnowledge()` with the user's question topics and inject relevant KB content into the system prompt as a `## Reference Material` section.
+- Content is truncated to ~2000 tokens per request to stay within model context limits.
+
+**Rules for adding knowledge files**:
+- Content must follow traditional rules of each divination system. Cite established sources (Parashara, Waite, King Wen, etc.).
+- Depth over breadth — each file should be 150–300 lines of expert-level material.
+- No disclaimers in knowledge files — legal disclaimers are in the UI.
+- Use kebab-case filenames. H2/H3 markdown headers for structure.
+- The loader re-caches on server restart; no hot-reload for KB changes.

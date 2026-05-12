@@ -307,9 +307,12 @@ export class PredictionEngine {
         bayesianPrediction: {
           prediction: comprehensivePrediction.bayesianPrediction.prediction,
           confidence: comprehensivePrediction.bayesianPrediction.confidence,
+          calibrated: comprehensivePrediction.bayesianPrediction.calibrated,
           factors: comprehensivePrediction.bayesianPrediction.factors,
           reasoning: comprehensivePrediction.bayesianPrediction.reasoning
-        }
+        },
+        calibratedConfidence: comprehensivePrediction.calibratedConfidence,
+        combinedPrediction: comprehensivePrediction.combinedPrediction,
       }
     } catch (error) {
       devLog.warn('⚠️ Advanced predictions failed:', error, 'prediction-engine')

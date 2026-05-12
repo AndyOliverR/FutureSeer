@@ -13,6 +13,7 @@ import { buildChartState, getChartSliceForQuestionType } from '@/lib/westernChar
 import { SEER_GOVERNING_SENTENCE } from '@/lib/askTheSeerDiscipline';
 import { getWesternReportChunksForUser, getSectionsForIntent, formatChunksForPrompt } from '@/lib/westernSeerRetrieval';
 import { buildWesternRetrievalSystemPrompt } from '@/lib/westernSeerPrompts';
+import { searchKnowledge, formatKnowledgeForPrompt, extractKeyTopics } from '@/lib/knowledgeLoader';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-western-seer';
@@ -321,12 +322,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Prefer retrieval from stored report chunks when available; else chart-slice fallback
+    let knowledgeContext = '';
+    if (questionType !== 'refusal') {
+      try {
+        const topics = extractKeyTopics(question);
+        const kbResults = searchKnowledge(topics.join(' '), ['astrology/western', 'astrology']);
+        knowledgeContext = formatKnowledgeForPrompt(kbResults);
+      } catch { /* KB is optional; do not fail the request */ }
+    }
+
     let systemPromptContent: string;
     const reportChunks = await getWesternReportChunksForUser(userId);
     if (reportChunks) {
       const chunkKeys = getSectionsForIntent(questionType);
       const chunkContext = formatChunksForPrompt(reportChunks, chunkKeys);
-      systemPromptContent = buildWesternRetrievalSystemPrompt(chunkContext);
+      systemPromptContent = buildWesternRetrievalSystemPrompt(chunkContext, knowledgeContext);
       devLog.info('✅ Western Seer: using retrieval path (report chunks)', undefined, 'ask-western-seer');
     } else {
       const chartState = buildChartState(
@@ -337,6 +347,7 @@ export async function POST(request: NextRequest) {
       const chartSlice = getChartSliceForQuestionType(questionType, chartState);
       const numerologyContext = numerologyData ? buildAstroNumerologyContext(numerologyData) : '';
       systemPromptContent = buildWesternSystemPrompt(chartSlice, numerologyContext, questionType);
+      if (knowledgeContext) systemPromptContent += knowledgeContext;
     }
 
     // Stream conversational response via AI Gateway or direct Groq

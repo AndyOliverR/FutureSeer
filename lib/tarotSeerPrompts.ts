@@ -7,7 +7,7 @@ import { SEER_GOVERNING_SENTENCE } from './askTheSeerDiscipline';
 import { SPREAD_SUGGESTION_BY_TYPE, type TarotQuestionType } from './tarotSeerState';
 
 /** Builds the Tarot Seer system prompt with role boundary, tiers, and timing fallback. */
-export function buildTarotSeerSystemPrompt(chartSlice: string, questionType: TarotQuestionType): string {
+export function buildTarotSeerSystemPrompt(chartSlice: string, questionType: TarotQuestionType, knowledgeContext?: string): string {
   const suggestedSpread =
     questionType !== 'refusal' && questionType !== 'profile_only'
       ? SPREAD_SUGGESTION_BY_TYPE[questionType]
@@ -46,5 +46,5 @@ ${suggestedSpread ? `\nSuggested spread for this type of question: ${suggestedSp
 
 ## STYLE
 - Keep answers short: 1–2 sentences when possible; expand only if the user asks for more.
-- Be conversational, warm, and supportive. State why you're saying something by referencing the slice explicitly. Be direct; no beating around the bush.`;
+- Be conversational, warm, and supportive. State why you're saying something by referencing the slice explicitly. Be direct; no beating around the bush.${knowledgeContext ? `\n\n${knowledgeContext}` : ''}`;
 }

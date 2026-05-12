@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import { Suspense, useState, useMemo, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
@@ -12,10 +12,16 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToolIntroductionTab } from '@/components/ToolIntroductionTab';
 import { DashboardSection } from '@/components/western/DashboardSection';
+import type { AstroEvent } from '@/lib/financialAstrology/astroMarketCorrelation';
 import FinancialSeerChatInterface from '@/components/FinancialSeerChatInterface';
+import { MarketOverviewCards } from '@/components/charts/MarketOverviewCards';
+import { MarketTransitChart } from '@/components/charts/MarketTransitChart';
+import { TemperamentGauge } from '@/components/charts/TemperamentGauge';
+import { ClimateHeatmap } from '@/components/charts/ClimateHeatmap';
 import {
   AlertTriangle,
   TrendingUp,
+  TrendingDown,
   DollarSign,
   BarChart3,
   Shield,
@@ -23,6 +29,8 @@ import {
   FileText,
   Zap,
   Loader2,
+  Globe,
+  Star,
 } from 'lucide-react';
 
 type TabValue = 'introduction' | 'report' | 'ask-the-seer';
@@ -40,6 +48,12 @@ function FinancialAstrologyPageContent() {
   useLayoutEffect(() => {
     refreshProfileRef.current = refreshProfile;
   }, [refreshProfile]);
+
+  const [marketSnapshot, setMarketSnapshot] = useState<Record<string, unknown> | null>(null);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [historicalData, setHistoricalData] = useState<Array<{ date: string; close: number }>>([]);
+  const [astroEvents, setAstroEvents] = useState<AstroEvent[]>([]);
+  const [selectedSymbol, setSelectedSymbol] = useState('^GSPC');
 
   const hasCompleteDetails = useMemo(
     () => !!(userProfile?.birthDate && userProfile?.birthTime && userProfile?.birthPlace),
@@ -126,6 +140,50 @@ function FinancialAstrologyPageContent() {
       cancelled = true;
     };
   }, [user?.uid, userProfile, hasCompleteDetails, hasCompletePipelineReport, isLoading, onDemandLoading, onDemandReport]);
+
+  useEffect(() => {
+    if (activeTab !== 'report') return;
+    let cancelled = false;
+    setMarketLoading(true);
+    fetch('/api/market-data?type=snapshot')
+      .then((r) => r.json())
+      .then((data) => { if (!cancelled) setMarketSnapshot(data); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setMarketLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab]);
+
+  const handleSymbolChange = useCallback((symbol: string) => {
+    setSelectedSymbol(symbol);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'report') return;
+    let cancelled = false;
+    fetch(`/api/market-data?type=historical&symbol=${encodeURIComponent(selectedSymbol)}&months=12`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data?.data) setHistoricalData(data.data);
+        else if (Array.isArray(data)) setHistoricalData(data);
+      })
+      .catch(() => {});
+
+    const now = new Date();
+    const yearAgo = new Date();
+    yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+    fetch(`/api/market-data?type=snapshot`)
+      .then(() => {
+        import('@/lib/financialAstrology/astroMarketCorrelation').then((mod) => {
+          if (cancelled) return;
+          const events = mod.getAstrologicalEventsForPeriod(yearAgo, now);
+          setAstroEvents(events);
+        });
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [activeTab, selectedSymbol]);
 
   const effectiveReport = useMemo(() => {
     if (onDemandReport) return { comprehensiveAnalysis: onDemandReport } as Record<string, unknown>;
@@ -288,6 +346,7 @@ function FinancialAstrologyPageContent() {
                               ? "Your report appears incomplete. We're generating a full report for you."
                               : 'Generating your Financial Astrology report...'}
                           </p>
+                          <MarketOverviewCards snapshot={marketSnapshot as Parameters<typeof MarketOverviewCards>[0]['snapshot']} loading={marketLoading} />
                         </div>
                       ) : effectiveError ? (
                         <div className="text-center py-8">
@@ -318,6 +377,8 @@ function FinancialAstrologyPageContent() {
                       ) : report ? (
                         <ToolReportViralShell toolSlug="financialAstrology" reportForTeaser={effectiveReport ?? pipelineReport}>
                         <div className="space-y-6">
+                          <MarketOverviewCards snapshot={marketSnapshot as Parameters<typeof MarketOverviewCards>[0]['snapshot']} loading={marketLoading} />
+
                           <DashboardSection
                             title="Disclaimer"
                             icon={<Shield className="w-6 h-6" />}
@@ -338,27 +399,27 @@ function FinancialAstrologyPageContent() {
                               colorScheme="green"
                               storageKey="financial-temperament"
                             >
-                              <div className="space-y-3 text-slate-700">
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                  <div>
-                                    <p className="text-xs text-slate-500">Income Stability</p>
-                                    <p className="font-semibold">{`${temperament.incomeStabilityScore ?? '—'}/100`}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-slate-500">Speculative Risk</p>
-                                    <p className="font-semibold">{`${temperament.speculativeRiskIndex ?? '—'}/100`}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-slate-500">Long-Term Accumulation</p>
-                                    <p className="font-semibold">{`${temperament.longTermAccumulationScore ?? '—'}/100`}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-slate-500">Liquidity Stress</p>
-                                    <p className="font-semibold">{`${temperament.liquidityStressIndex ?? '—'}/100`}</p>
-                                  </div>
+                              <div className="space-y-4">
+                                <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
+                                  <TemperamentGauge
+                                    label="Income Stability"
+                                    value={Number(temperament.incomeStabilityScore ?? 0)}
+                                  />
+                                  <TemperamentGauge
+                                    label="Speculative Risk"
+                                    value={Number(temperament.speculativeRiskIndex ?? 0)}
+                                  />
+                                  <TemperamentGauge
+                                    label="Long-Term Accumulation"
+                                    value={Number(temperament.longTermAccumulationScore ?? 0)}
+                                  />
+                                  <TemperamentGauge
+                                    label="Liquidity Stress"
+                                    value={Number(temperament.liquidityStressIndex ?? 0)}
+                                  />
                                 </div>
                                 {(temperament.temperamentSummary as string) && (
-                                  <p className="text-sm leading-relaxed">
+                                  <p className="text-sm leading-relaxed text-slate-700 text-center">
                                     {String(temperament.temperamentSummary)}
                                   </p>
                                 )}
@@ -387,6 +448,61 @@ function FinancialAstrologyPageContent() {
                                 {(alignment.rationale as string) && (
                                   <p className="text-sm">{String(alignment.rationale)}</p>
                                 )}
+                              </div>
+                            </DashboardSection>
+                          )}
+
+                          {historicalData.length > 0 && (
+                            <DashboardSection
+                              title="Market-Transit Correlation"
+                              icon={<Globe className="w-6 h-6" />}
+                              defaultExpanded
+                              colorScheme="green"
+                              storageKey="financial-market-transit"
+                            >
+                              <MarketTransitChart
+                                historicalData={historicalData}
+                                astroEvents={astroEvents}
+                                selectedSymbol={selectedSymbol}
+                                onSymbolChange={handleSymbolChange}
+                              />
+                            </DashboardSection>
+                          )}
+
+                          {wealthPlanets.length > 0 && (
+                            <DashboardSection
+                              title="Wealth Planets"
+                              icon={<Star className="w-6 h-6" />}
+                              defaultExpanded
+                              colorScheme="purple"
+                              storageKey="financial-wealth-planets"
+                            >
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {wealthPlanets.map((p, i) => {
+                                  const dignity = String(p.dignity ?? '');
+                                  const isStrong = ['domicile', 'exalted', 'own sign'].some((d) => dignity.toLowerCase().includes(d));
+                                  return (
+                                    <div key={i} className="rounded-lg border border-slate-700/40 bg-slate-800/30 p-3">
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm font-semibold text-white">{String(p.planet ?? '')}</span>
+                                        <span className={`text-xs px-2 py-0.5 rounded-full ${isStrong ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700/50 text-slate-400'}`}>
+                                          {dignity || 'Neutral'}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-slate-400">
+                                        {String(p.sign ?? '')} in House {String(p.house ?? '')}
+                                      </p>
+                                      {p.score != null && (
+                                        <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                          <div
+                                            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-emerald-500 transition-all duration-500"
+                                            style={{ width: `${Math.min(Number(p.score), 100)}%` }}
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </DashboardSection>
                           )}
@@ -451,16 +567,23 @@ function FinancialAstrologyPageContent() {
                           {climateMap.length > 0 && (
                             <DashboardSection
                               title="12-Month Financial Climate Map"
-                              icon={<BarChart3 className="w-6 h-6" />}
-                              defaultExpanded={false}
+                              icon={<TrendingDown className="w-6 h-6" />}
+                              defaultExpanded
                               colorScheme="pink"
                               storageKey="financial-climate-map"
                             >
-                              <ul className="space-y-1 text-slate-700 text-sm list-disc list-inside">
-                                {climateMap.slice(0, 12).map((m, i) => (
-                                  <li key={i}>{String(m)}</li>
-                                ))}
-                              </ul>
+                              <ClimateHeatmap
+                                months={climateMap.slice(0, 12).map((m, i) => {
+                                  const text = String(m);
+                                  const monthLabel = text.split(':')[0]?.trim() || `Month ${i + 1}`;
+                                  const desc = text.split(':').slice(1).join(':').trim() || text;
+                                  const isHighVol = /high volatility|mercury rx|mars-uranus/i.test(text);
+                                  const isCaution = /caution|retrograde|stress/i.test(text);
+                                  const isMod = /moderate/i.test(text);
+                                  const score = isHighVol ? 20 : isCaution ? 35 : isMod ? 55 : 75;
+                                  return { label: monthLabel, score, description: desc };
+                                })}
+                              />
                             </DashboardSection>
                           )}
                         </div>

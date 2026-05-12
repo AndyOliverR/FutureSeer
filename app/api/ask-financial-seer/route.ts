@@ -5,6 +5,8 @@ import { devLog } from '@/lib/devLogger';
 import { chartSignLabel } from '@/lib/chartSignLabel';
 import { createAIStream } from '@/lib/aiGateway';
 import { buildFinancialSeerSystemPrompt } from '@/lib/financialAstrology/financialAstrologyPrompts';
+import { fetchMarketSnapshot, formatMarketSnapshotForPrompt } from '@/lib/financialAstrology/marketDataService';
+import { getCurrentAstroMarketSummary } from '@/lib/financialAstrology/astroMarketCorrelation';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-financial-seer';
@@ -136,7 +138,18 @@ export async function POST(request: NextRequest) {
       (reportData as Record<string, unknown>) ?? undefined
     );
     const chartSummary = formatChartSummary(westernChartData);
-    const systemPrompt = buildFinancialSeerSystemPrompt(reportContext, chartSummary);
+
+    let marketSnapshotText = '';
+    let astroConditionsText = '';
+    try {
+      const snapshot = await fetchMarketSnapshot();
+      marketSnapshotText = formatMarketSnapshotForPrompt(snapshot);
+      astroConditionsText = getCurrentAstroMarketSummary();
+    } catch {
+      devLog.warn('Failed to fetch market snapshot for Financial Seer — continuing without it', undefined, 'ask-financial-seer');
+    }
+
+    const systemPrompt = buildFinancialSeerSystemPrompt(reportContext, chartSummary, marketSnapshotText, astroConditionsText);
 
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
