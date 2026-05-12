@@ -6,6 +6,12 @@
 
 import * as julian from "astronomia/julian";
 import { devLog } from '@/lib/devLogger';
+import {
+  celestineHouses,
+  celestineHousesToLegacyFormat,
+  type CelestineHouseSystem,
+  SUPPORTED_HOUSE_SYSTEMS as CELESTINE_HOUSE_SYSTEMS,
+} from '@/lib/celestine-bridge';
 const verboseAstroLogs = process.env.VERBOSE_ASTRO_LOGS === '1';
 import * as solarxyz from "astronomia/solarxyz";
 import * as planetposition from "astronomia/planetposition";
@@ -680,4 +686,39 @@ export function calculateTropicalAspects(planets: any) {
   }
   
   return aspects;
+}
+
+export type WesternHouseSystem = CelestineHouseSystem;
+export { CELESTINE_HOUSE_SYSTEMS as SUPPORTED_WESTERN_HOUSE_SYSTEMS };
+
+/**
+ * Calculate tropical house cusps using any of the 7 supported house systems:
+ * placidus, koch, equal, whole-sign, porphyry, regiomontanus, campanus.
+ *
+ * For Placidus this delegates to the existing VSOP87-based implementation
+ * for backward compatibility; all other systems use the MIT-licensed Celestine
+ * library (validated against Swiss Ephemeris / JPL Horizons).
+ */
+export function calculateTropicalHousesMultiSystem(
+  date: Date,
+  latitude: number,
+  longitude: number,
+  system: WesternHouseSystem = 'placidus',
+) {
+  if (system === 'placidus') {
+    return {
+      system,
+      houses: calculateTropicalHouses(date, latitude, longitude),
+    };
+  }
+
+  const result = celestineHouses(
+    { date, latitude, longitude, timezoneOffsetHours: 0 },
+    system,
+  );
+
+  return {
+    system,
+    houses: celestineHousesToLegacyFormat(result),
+  };
 }

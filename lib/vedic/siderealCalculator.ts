@@ -2,6 +2,12 @@ import { calculateTropicalPlanets, calculateTropicalHouses } from '@/lib/western
 import { devLog } from '@/lib/devLogger';
 const verboseAstroLogs = process.env.VERBOSE_ASTRO_LOGS === '1';
 import * as julian from "astronomia/julian";
+import {
+  celestineHouses,
+  celestineHousesToLegacyFormat,
+  type CelestineHouseSystem,
+  SUPPORTED_HOUSE_SYSTEMS,
+} from '@/lib/celestine-bridge';
 
 // Helper to normalize degree
 const norm360 = (deg: number) => ((deg % 360) + 360) % 360;
@@ -223,3 +229,54 @@ export function calculateVedicHouses(ascendantSidereal: number) {
   
   return houses;
 }
+
+/**
+ * Calculate Vedic (sidereal) houses using any Celestine-supported house system.
+ * Supported: placidus, koch, equal, whole-sign, porphyry, regiomontanus, campanus.
+ *
+ * Celestine computes tropical cusps; this function subtracts the Lahiri ayanamsha
+ * to produce sidereal cusps, matching how sidereal planets are derived above.
+ */
+export function calculateVedicHousesMultiSystem(
+  date: Date,
+  latitude: number,
+  longitude: number,
+  system: CelestineHouseSystem = 'whole-sign',
+) {
+  if (system === 'whole-sign') {
+    const { ascendant } = calculateSiderealPlanets(date, latitude, longitude);
+    return {
+      system,
+      houses: calculateVedicHouses(ascendant.siderealLongitude),
+      ascendant: ascendant.siderealLongitude,
+    };
+  }
+
+  const jd = toJD_TT(date);
+  const ayanamsha = calculateLahiriAyanamsha(jd);
+
+  const tropicalResult = celestineHouses(
+    { date, latitude, longitude, timezoneOffsetHours: 0 },
+    system,
+  );
+
+  const tropicalLegacy = celestineHousesToLegacyFormat(tropicalResult);
+
+  const siderealHouses = tropicalLegacy.map((h) => {
+    const sLon = norm360(h.longitude - ayanamsha);
+    return {
+      number: h.number,
+      sign: getSignFromLongitude(sLon),
+      siderealLongitude: sLon,
+      degree: sLon % 30,
+    };
+  });
+
+  return {
+    system,
+    houses: siderealHouses,
+    ascendant: norm360(tropicalResult.ascendant - ayanamsha),
+  };
+}
+
+export { SUPPORTED_HOUSE_SYSTEMS };

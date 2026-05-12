@@ -1,5 +1,6 @@
 import { userSubdocGet, userSubdocSet } from '@/lib/userSubcollectionFirestore'
 import { devLog } from '@/lib/devLogger';
+import { getEnrichedHexagram, type EnrichedHexagram } from '@/lib/iching/yijingBridge';
 
 export interface IChingHexagram {
   number: number
@@ -631,9 +632,18 @@ class IChingIntelligence {
   /**
    * Get hexagram data by number (with fallback for missing hexagrams)
    */
-  private getHexagramByNumber(number: number): Omit<IChingHexagram, 'lines' | 'changingLines' | 'changingTo' | 'trigramUpper' | 'trigramLower' | 'elementUpper' | 'elementLower'> {
+  private getHexagramByNumber(number: number): Omit<IChingHexagram, 'lines' | 'changingLines' | 'changingTo' | 'trigramUpper' | 'trigramLower' | 'elementUpper' | 'elementLower'> & { enriched?: EnrichedHexagram } {
+    const enriched = getEnrichedHexagram(number) ?? undefined;
+
     const hexagram = this.hexagrams.find(h => h.number === number)
     if (hexagram) {
+      if (enriched) {
+        return {
+          ...hexagram,
+          description: enriched.description || hexagram.description,
+          enriched,
+        };
+      }
       return hexagram
     }
     
@@ -685,6 +695,23 @@ class IChingIntelligence {
       64: { name: "Before Completion", chinese: "未濟", pinyin: "Wèi Jì", trigram: "Fire over Water", element: "Fire", meaning: "Before Completion, Transition" }
     };
     
+    // Prefer yi-jing-oracle enriched data
+    if (enriched) {
+      const upperName = enriched.upperTrigram?.name ?? '';
+      const lowerName = enriched.lowerTrigram?.name ?? '';
+      return {
+        number,
+        name: enriched.name,
+        chinese: enriched.chineseName,
+        pinyin: enriched.pinyin,
+        trigram: `${upperName} over ${lowerName}`,
+        element: enriched.upperTrigram?.attribute ?? 'Unknown',
+        meaning: enriched.summary || enriched.title,
+        description: enriched.description,
+        enriched,
+      };
+    }
+
     // Use lookup table if available
     const hexagramData = hexagramNames[number];
     if (hexagramData) {
@@ -701,7 +728,7 @@ class IChingIntelligence {
     }
     
     // Final fallback - should never happen if lookup table is complete
-    devLog.warn(`⚠️ ichingIntelligence: Hexagram ${number} not found in lookup table, using generic fallback`, 'ichingIntelligence');
+    devLog.warn(`Hexagram ${number} not found in lookup table, using generic fallback`, undefined, 'ichingIntelligence');
     return {
       number,
       name: `Hexagram ${number}`,

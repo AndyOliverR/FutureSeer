@@ -284,6 +284,9 @@ importers:
       yahoo-finance2:
         specifier: ^3.14.0
         version: 3.14.0
+      yi-jing-oracle:
+        specifier: ^1.0.2
+        version: 1.0.2
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -6011,6 +6014,10 @@ packages:
 
   yauzl@2.10.0:
     resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
+
+  yi-jing-oracle@1.0.2:
+    resolution: {integrity: sha512-Lusq+hs2vJYIJBiJryL9u50ouqZoJ2RZVsIVboA6cgI4iWSDGDTfRuyUeyn32qKqwQ20/0A+yfLKriTqaAW16g==}
+    engines: {node: '>=14.0.0'}
 
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
@@ -12740,6 +12747,8 @@ snapshots:
     dependencies:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0
+
+  yi-jing-oracle@1.0.2: {}
 
   yocto-queue@0.1.0: {}
 

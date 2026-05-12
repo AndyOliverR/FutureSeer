@@ -727,15 +727,33 @@ export const getChart = (
     const dashaList = moonData && actualBirthDateObj 
       ? calculateVimshottariDasha(moonData.lonSidereal, actualBirthDateObj) 
       : [];
+
+    const ashtakavarga = calculateFullAshtakavarga(planets, ascLon);
+
+    const fullVimshottari = moonData && actualBirthDateObj
+      ? calculateFullVimshottariDasha(moonData.lonSidereal, actualBirthDateObj)
+      : null;
+    const yoginiDasha = moonData && actualBirthDateObj
+      ? calculateYoginiDasha(moonData.lonSidereal, actualBirthDateObj)
+      : null;
+    const ashtottariDasha = moonData && actualBirthDateObj
+      ? calculateAshtottariDasha(moonData.lonSidereal, actualBirthDateObj)
+      : null;
     
     return {
       birthData,
       ascendant: houses.ascendant,
       planets,
       houses: houses.houses,
-      divisionalCharts, // D9, D10, D12, D30
-      dasha: dashaList, // Vimshottari Dasha periods
+      divisionalCharts,
+      dasha: dashaList,
       currentDasha: dashaList.find(d => d.isCurrent) || null,
+      dashaDetails: {
+        vimshottari: fullVimshottari,
+        yogini: yoginiDasha,
+        ashtottari: ashtottariDasha,
+      },
+      ashtakavarga,
       metadata: {
         ...houses.metadata,
         latitude: birthData.latitude,
@@ -757,82 +775,44 @@ export const getChart = (
 };
 
 // ============================================================================
-// DIVISIONAL CHARTS (VARGAS) - D9, D10, D12, D30
+// DIVISIONAL CHARTS (VARGAS) — Full 16 Shoda-Varga via vargaCalculator
 // ============================================================================
 
+import { computeAllVargas, ALL_VARGAS } from '@/lib/vedic/vargaCalculator';
+import {
+  calculateFullVimshottariDasha,
+  calculateYoginiDasha,
+  calculateAshtottariDasha,
+} from '@/lib/vedic/dashaCalculator';
+import { calculateFullAshtakavarga } from '@/lib/vedic/ashtakavargaEngine';
+
 /**
- * Calculate divisional sign for a given longitude and division number
- * Based on Parashara's rules for Varga calculations
- * 
- * @param lon - Sidereal longitude (0-360)
- * @param division - Division number (9 for D9, 10 for D10, etc.)
- * @returns Sign index (0-11) in the divisional chart
+ * Calculate divisional sign for a given longitude and division number.
+ * Delegates to the per-varga Parashara functions in vargaCalculator.ts.
+ * Kept for backward compatibility.
  */
 export function getDivisionalSign(lon: number, division: number): number {
-  const signIndex = Math.floor(lon / 30); // 0..11 Aries..Pisces
-  const degreesInSign = lon % 30;
-  const part = Math.floor((degreesInSign / (30 / division))); // which subdivision (0-based)
+  const varga = ALL_VARGAS.find(v => v.division === division);
+  if (varga) return varga.fn(lon);
 
-  // Standard odd/even sign correction (Parashara rule)
-  // Odd signs (Aries, Gemini, Leo, etc.) count forward
-  // Even signs (Taurus, Cancer, Virgo, etc.) count from 9th sign
+  const signIndex = Math.floor(lon / 30);
+  const degreesInSign = lon % 30;
+  const part = Math.floor((degreesInSign / (30 / division)));
   const isEvenSign = signIndex % 2 !== 0;
   const divisionalStart = isEvenSign ? (signIndex + 8) % 12 : signIndex;
-
   return (divisionalStart + part) % 12;
 }
 
 /**
- * Get all divisional charts for given planets
- * 
- * @param planets - Object with planet data from getChart()
- * @param ascendantLonSidereal - Sidereal longitude of the ascendant
- * @returns Object with D9, D10, D12, D30 charts
+ * Get ALL 16 Shoda-Varga divisional charts.
+ * Backward compatible: the returned object still has D9, D10, D12, D30 keys
+ * at the top level, plus D1, D2, D3, D4, D7, D16, D20, D24, D27, D40, D45, D60.
  */
 export function getDivisionalCharts(
   planets: Record<string, any>, 
   ascendantLonSidereal: number
 ): Record<string, any> {
-  const divisions = { 
-    D9: 9,   // Navamsa - Marriage, spirituality
-    D10: 10, // Dasamsa - Career, profession
-    D12: 12, // Dwadasamsa - Parents, ancestors
-    D30: 30  // Trimsamsa - Health, misfortunes
-  };
-  
-  const result: Record<string, any> = {};
-
-  Object.entries(divisions).forEach(([chartName, divisionNumber]) => {
-    result[chartName] = {};
-    
-    // Calculate divisional ascendant
-    const divAscSign = getDivisionalSign(ascendantLonSidereal, divisionNumber);
-    const divAscDegree = (ascendantLonSidereal % 30); // Keep degree within sign
-    
-    result[chartName].ascendant = {
-      divSign: divAscSign,
-      signName: SIGNS[divAscSign],
-      degreeInSign: divAscDegree,
-      lonSidereal: ascendantLonSidereal
-    };
-    
-    // Calculate divisional planets
-    Object.entries(planets).forEach(([planetName, planetData]: [string, any]) => {
-      const divSign = getDivisionalSign(planetData.lonSidereal, divisionNumber);
-      
-      result[chartName][planetName] = {
-        name: planetName,
-        lonSidereal: planetData.lonSidereal,
-        divSign: divSign,
-        signName: SIGNS[divSign],
-        degreeInSign: planetData.degreeInSign, // Keep original degree for reference
-        nakshatra: planetData.nakshatra,
-        nakshatraPada: planetData.nakshatraPada
-      };
-    });
-  });
-
-  return result;
+  return computeAllVargas(planets, ascendantLonSidereal);
 }
 
 // ============================================================================
