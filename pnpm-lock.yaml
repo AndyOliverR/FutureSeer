@@ -152,6 +152,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.20
         version: 10.4.21(postcss@8.5.14)
+      celestine:
+        specifier: ^0.2.1
+        version: 0.2.1
       chart.js:
         specifier: ^4.5.0
         version: 4.5.0
@@ -2768,6 +2771,10 @@ packages:
 
   caniuse-lite@1.0.30001769:
     resolution: {integrity: sha512-BCfFL1sHijQlBGWBMuJyhZUhzo7wer5sVj9hqekB/7xn0Ypy+pER/edCYQm4exbXj4WiySGp40P8UuTh6w1srg==}
+
+  celestine@0.2.1:
+    resolution: {integrity: sha512-+AXIi4mPRTgK1n3TxUPf+UUiNyjeAmUR8FAKLb+ZQGN7O7vqv+vinFt/KzIKLg2DslMXJdLef2NeIsEL8zPhqA==}
+    engines: {node: '>=18.0.0', npm: '>=9.0.0'}
 
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
@@ -8872,6 +8879,8 @@ snapshots:
   caniuse-lite@1.0.30001733: {}
 
   caniuse-lite@1.0.30001769: {}
+
+  celestine@0.2.1: {}
 
   chalk@4.1.2:
     dependencies:
