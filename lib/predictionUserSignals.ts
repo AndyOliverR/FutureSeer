@@ -59,10 +59,27 @@ export async function buildMarkovUserBehaviorSignals(
   return [...new Set(tokens)];
 }
 
+import type { CalibratedConfidence, EvidenceLevel } from '@/lib/predictiveAlgorithms';
+
+const LEVEL_LABELS: Record<CalibratedConfidence['level'], string> = {
+  low: 'LOW',
+  moderate: 'MODERATE',
+  high: 'HIGH',
+  very_high: 'VERY HIGH',
+};
+
+const EVIDENCE_STRENGTH_PREFIX: Record<EvidenceLevel, string> = {
+  strong: 'Strong',
+  moderate: 'Moderate',
+  weak: 'Weak',
+  neutral: 'Neutral',
+};
+
 /** Short prose for the Vedic Seer system prompt — dasha/chart remain authoritative. */
 export function formatPredictiveHintForVedicPrompt(predictive: {
   combinedPrediction?: string;
   confidence?: number;
+  calibratedConfidence?: CalibratedConfidence;
   timing?: string;
   recommendations?: string[];
 } | null): string | undefined {
@@ -71,9 +88,28 @@ export function formatPredictiveHintForVedicPrompt(predictive: {
   if (predictive.combinedPrediction) {
     parts.push(`Life-phase orientation (supporting, not overriding dasha): ${predictive.combinedPrediction}`);
   }
-  if (typeof predictive.confidence === 'number') {
+
+  const cal = predictive.calibratedConfidence;
+  if (cal) {
+    parts.push(`Confidence: ${LEVEL_LABELS[cal.level]} (${cal.evidenceCount} evidence source${cal.evidenceCount !== 1 ? 's' : ''}, strongest: ${cal.strongestEvidence})`);
+
+    if (cal.evidenceSummary.length > 0) {
+      parts.push('Evidence summary:');
+      for (const e of cal.evidenceSummary.slice(0, 5)) {
+        const prefix = EVIDENCE_STRENGTH_PREFIX[e.level] || 'Neutral';
+        parts.push(`  - ${prefix}: ${e.label} -- likelihood ratio ${e.ratio.toFixed(1)}:1`);
+      }
+    }
+
+    if (cal.convergent) {
+      parts.push('Markov + Bayesian convergent: Yes (both models point to the same outcome)');
+    }
+
+    parts.push('When explaining confidence to the user, cite the strongest evidence source specifically.');
+  } else if (typeof predictive.confidence === 'number') {
     parts.push(`Model confidence (probabilistic layer): ${Math.round(Math.min(1, Math.max(0, predictive.confidence)) * 100)}%`);
   }
+
   if (predictive.timing) {
     parts.push(`Suggested framing for timing language: ${predictive.timing}`);
   }

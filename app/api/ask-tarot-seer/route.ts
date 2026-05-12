@@ -10,6 +10,7 @@ import {
   getTarotSliceForQuestionType
 } from '@/lib/tarotSeerState'
 import { buildTarotSeerSystemPrompt } from '@/lib/tarotSeerPrompts'
+import { searchKnowledge, formatKnowledgeForPrompt, extractKeyTopics } from '@/lib/knowledgeLoader'
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet'
 const SEER_MARKER_FAMILY = 'ask-tarot-seer'
@@ -90,7 +91,15 @@ export async function POST(request: NextRequest) {
     const profileSource = tarotProfileData || combinedSystemData?.tarotProfile
     const tarotState = buildTarotState(profileSource, currentReading)
     const chartSlice = getTarotSliceForQuestionType(questionType, tarotState)
-    const systemPrompt = buildTarotSeerSystemPrompt(chartSlice, questionType)
+
+    let knowledgeContext = '';
+    try {
+      const topics = extractKeyTopics(question);
+      const kbResults = searchKnowledge(topics.join(' '), ['tarot']);
+      knowledgeContext = formatKnowledgeForPrompt(kbResults);
+    } catch { /* KB is optional; do not fail the request */ }
+
+    const systemPrompt = buildTarotSeerSystemPrompt(chartSlice, questionType, knowledgeContext)
 
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',

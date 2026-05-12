@@ -795,7 +795,9 @@ export function buildVedicSeerSystemPrompt(
   slice: string,
   questionType: VedicQuestionType,
   /** Optional probabilistic layer (Markov/Bayesian) — never overrides dasha/chart. */
-  predictiveResonanceHint?: string
+  predictiveResonanceHint?: string,
+  /** Optional deep knowledge base context for richer interpretations. */
+  knowledgeContext?: string,
 ): string {
   const resonanceBlock =
     predictiveResonanceHint && predictiveResonanceHint.trim().length > 0
@@ -805,6 +807,11 @@ export function buildVedicSeerSystemPrompt(
 The following is a **supporting** life-phase orientation from an internal model. It must **not** contradict the chart slice or dasha logic above. Use it only to tune empathy and wording where appropriate.
 
 ${predictiveResonanceHint.trim()}
+
+### Confidence transparency
+When referencing the probabilistic resonance above, briefly explain WHY confidence is at the stated level. Cite the strongest evidence source specifically using astrological or numerological language the user will understand.
+Example: "Your chart shows strong career alignment — your dasha lord governs the 10th house, and this matches the pattern in your recent questions — giving high confidence in career momentum during this period."
+Do NOT expose internal terminology (likelihood ratio, Bayesian, Markov, entropy, posterior). Speak in astrological language. Use hedging words that match the confidence level: LOW → "may", MODERATE → "suggests", HIGH → "indicates", VERY HIGH → "strongly points to".
 `
       : ''
 
@@ -834,5 +841,5 @@ ${slice}
 ## Question type
 ${questionType}
 ${resonanceBlock}
-Answer the user's question with specific references to the state above. Use Tier 1 when supported, Tier 2 when mixed, Tier 3 only when the slice indicates missing data.`;
+Answer the user's question with specific references to the state above. Use Tier 1 when supported, Tier 2 when mixed, Tier 3 only when the slice indicates missing data.${knowledgeContext ? `\n\n${knowledgeContext}` : ''}`;
 }

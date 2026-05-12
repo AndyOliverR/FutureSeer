@@ -6,7 +6,7 @@
 import { SEER_GOVERNING_SENTENCE } from './askTheSeerDiscipline';
 
 /** Builds the system prompt when answering from retrieved report chunks only. */
-export function buildWesternRetrievalSystemPrompt(retrievedChunkContext: string): string {
+export function buildWesternRetrievalSystemPrompt(retrievedChunkContext: string, knowledgeContext?: string): string {
   return `You are a Western Astrology expert. You may only answer using the provided natal chart report sections below.
 ${SEER_GOVERNING_SENTENCE}
 
@@ -34,5 +34,5 @@ ${retrievedChunkContext || '(No report sections provided.)'}
 - Rephrase raw report text into warm, direct language. Example: instead of "Venus square Mars indicates tension," say "Your chart shows an inner push-pull in relationships — you desire closeness, but independence interferes. This isn't failure, it's a pattern."
 - Keep answers concise: 1–3 sentences when possible. Be direct; no beating around the bush.
 - Avoid absolutes; use "often correlates with," "can suggest," "may indicate" where appropriate.
-- For questions astrology cannot or should not answer (e.g. death, exact life expectancy), refuse in one short sentence. Do not claim missing data for those.`;
+- For questions astrology cannot or should not answer (e.g. death, exact life expectancy), refuse in one short sentence. Do not claim missing data for those.${knowledgeContext ? `\n\n${knowledgeContext}` : ''}`;
 }

@@ -10,6 +10,7 @@ import {
 import { PredictiveSystem } from '@/lib/predictiveAlgorithms';
 import { createAIStream } from '@/lib/aiGateway';
 import { devLog } from '@/lib/devLogger';
+import { searchKnowledge, formatKnowledgeForPrompt, extractKeyTopics } from '@/lib/knowledgeLoader';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import {
   buildVedicState,
@@ -192,12 +193,19 @@ export async function POST(request: NextRequest) {
     );
     const predictiveHint = formatPredictiveHintForVedicPrompt(predictiveAnalysis);
 
+    let knowledgeContext = '';
+    try {
+      const topics = extractKeyTopics(question);
+      const kbResults = searchKnowledge(topics.join(' '), ['astrology/vedic', 'astrology']);
+      knowledgeContext = formatKnowledgeForPrompt(kbResults);
+    } catch { /* KB is optional; do not fail the request */ }
+
     const stream = await createAIStream({
       model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
-          content: buildVedicSeerSystemPrompt(chartSlice, questionType, predictiveHint),
+          content: buildVedicSeerSystemPrompt(chartSlice, questionType, predictiveHint, knowledgeContext),
         },
         ...conversationHistory.flatMap((h) => [
           { role: 'user' as const, content: h.question },
@@ -350,6 +358,7 @@ async function generatePredictiveAnalysis(
       bayesianPrediction: prediction.bayesianPrediction,
       combinedPrediction: prediction.combinedPrediction,
       confidence: prediction.confidence,
+      calibratedConfidence: prediction.calibratedConfidence,
       recommendations: prediction.recommendations,
       timing: prediction.timing,
     };

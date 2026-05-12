@@ -598,17 +598,98 @@ export class LifePathMarkovChain {
 // BAYESIAN NETWORK PREDICTIONS
 // ============================================================================
 
+export interface EvidenceStrength {
+  label: string
+  likelihoodIfTrue: number
+  likelihoodIfFalse: number
+}
+
+export type EvidenceLevel = 'strong' | 'moderate' | 'weak' | 'neutral';
+
+export function rateEvidence(e: EvidenceStrength): EvidenceLevel {
+  const ratio = e.likelihoodIfTrue / Math.max(e.likelihoodIfFalse, 0.01);
+  if (ratio >= 8) return 'strong';
+  if (ratio >= 3) return 'moderate';
+  if (ratio > 1.05) return 'weak';
+  return 'neutral';
+}
+
+export interface CalibratedConfidence {
+  score: number
+  level: 'low' | 'moderate' | 'high' | 'very_high'
+  evidenceCount: number
+  strongestEvidence: string
+  convergent: boolean
+  evidenceSummary: Array<{ label: string; level: EvidenceLevel; ratio: number }>
+}
+
+const DEFAULT_PRIORS: Record<string, number> = {
+  'spiritual_service': 0.3,
+  'creative_expression': 0.25,
+  'leadership': 0.2,
+  'healing': 0.15,
+  'innovation': 0.1,
+};
+
+const FOCUS_TO_OUTCOME: Record<string, Record<string, number>> = {
+  'focus:career': { 'leadership': 0.35, 'innovation': 0.25, 'creative_expression': 0.2, 'spiritual_service': 0.1, 'healing': 0.1 },
+  'focus:relationship': { 'healing': 0.3, 'spiritual_service': 0.25, 'creative_expression': 0.2, 'leadership': 0.15, 'innovation': 0.1 },
+  'focus:spiritual': { 'spiritual_service': 0.4, 'healing': 0.25, 'creative_expression': 0.15, 'leadership': 0.1, 'innovation': 0.1 },
+  'focus:health': { 'healing': 0.4, 'spiritual_service': 0.25, 'creative_expression': 0.15, 'innovation': 0.1, 'leadership': 0.1 },
+  'focus:wealth': { 'leadership': 0.3, 'innovation': 0.3, 'creative_expression': 0.15, 'healing': 0.1, 'spiritual_service': 0.15 },
+  'focus:timing': { 'leadership': 0.25, 'innovation': 0.2, 'creative_expression': 0.2, 'spiritual_service': 0.2, 'healing': 0.15 },
+};
+
+/**
+ * Derive Bayesian priors from user behavior signals instead of hardcoded values.
+ * Falls back to DEFAULT_PRIORS when no signals are available.
+ */
+export function computeUserDrivenPriors(behaviorSignals: string[]): Record<string, number> {
+  const focusTokens = behaviorSignals.filter((t) => t.startsWith('focus:'));
+  if (focusTokens.length === 0) return { ...DEFAULT_PRIORS };
+
+  const accumulated: Record<string, number> = {
+    'spiritual_service': 0,
+    'creative_expression': 0,
+    'leadership': 0,
+    'healing': 0,
+    'innovation': 0,
+  };
+
+  let matched = 0;
+  for (const token of focusTokens) {
+    const mapping = FOCUS_TO_OUTCOME[token];
+    if (!mapping) continue;
+    matched++;
+    for (const [outcome, weight] of Object.entries(mapping)) {
+      accumulated[outcome] = (accumulated[outcome] || 0) + weight;
+    }
+  }
+
+  if (matched === 0) return { ...DEFAULT_PRIORS };
+
+  const total = Object.values(accumulated).reduce((s, v) => s + v, 0);
+  if (total === 0) return { ...DEFAULT_PRIORS };
+
+  const priors: Record<string, number> = {};
+  for (const [key, val] of Object.entries(accumulated)) {
+    priors[key] = val / total;
+  }
+  return priors;
+}
+
 interface BayesianNode {
   variable: string
   parents: string[]
   probabilityTable: Map<string, number>
-  evidence: any[]
+  evidence: Array<{ supports?: string[]; contradicts?: string[]; strength?: EvidenceStrength }>
   cosmicInfluence: number
 }
 
 interface BayesianPrediction {
   prediction: string
   confidence: number
+  calibrated?: CalibratedConfidence
   factors: string[]
   probabilityDistribution: Map<string, number>
   reasoning: string[]
@@ -618,11 +699,13 @@ export class MysticalBayesianNetwork {
   private nodes: Map<string, BayesianNode>
   private evidence: Map<string, any>
   private cosmicFactors: Map<string, number>
+  private collectedEvidence: CalibratedConfidence['evidenceSummary']
 
   constructor() {
     this.nodes = new Map()
     this.evidence = new Map()
     this.cosmicFactors = new Map()
+    this.collectedEvidence = []
     this.initializeNetwork()
   }
 
@@ -671,12 +754,26 @@ export class MysticalBayesianNetwork {
     this.nodes.set(variable, node)
   }
 
+  applyUserDrivenPriors(behaviorSignals: string[]): void {
+    const priors = computeUserDrivenPriors(behaviorSignals);
+    const lifePurposeNode = this.nodes.get('life_purpose');
+    if (lifePurposeNode) {
+      lifePurposeNode.probabilityTable = new Map(Object.entries(priors));
+    }
+  }
+
   calculatePrediction(
     evidence: any,
     astroData: any,
-    numerologyData: any
+    numerologyData: any,
+    behaviorSignals?: string[],
   ): BayesianPrediction {
     devLog.debug('🔮 BayesianNetwork: Calculating prediction...')
+    this.collectedEvidence = [];
+
+    if (behaviorSignals && behaviorSignals.length > 0) {
+      this.applyUserDrivenPriors(behaviorSignals);
+    }
     
     // Set evidence
     this.setEvidence(evidence)
@@ -690,8 +787,8 @@ export class MysticalBayesianNetwork {
     // Find most likely outcome
     const prediction = this.findMostLikelyOutcome(probabilityDistribution)
     
-    // Calculate confidence
-    const confidence = this.calculateConfidence(probabilityDistribution)
+    // Calculate calibrated confidence
+    const calibrated = this.calculateCalibratedConfidence(probabilityDistribution)
     
     // Generate factors and reasoning
     const factors = this.generateFactors(evidence, astroData, numerologyData)
@@ -699,7 +796,8 @@ export class MysticalBayesianNetwork {
     
     return {
       prediction,
-      confidence,
+      confidence: calibrated.score,
+      calibrated,
       factors,
       probabilityDistribution,
       reasoning
@@ -744,45 +842,77 @@ export class MysticalBayesianNetwork {
   }
 
   private getPlanetaryInfluence(variable: string, planet: any): number {
-    // Define planetary influences on different variables
-    const influences: { [key: string]: { [key: string]: number } } = {
+    const influences: Record<string, Record<string, EvidenceStrength>> = {
       'life_purpose': {
-        'Sun': 1.3, 'Jupiter': 1.2, 'Saturn': 0.9, 'Neptune': 1.4
+        'Sun': { label: 'Sun influence on life purpose', likelihoodIfTrue: 1.6, likelihoodIfFalse: 1.1 },
+        'Jupiter': { label: 'Jupiter expansion on life purpose', likelihoodIfTrue: 1.4, likelihoodIfFalse: 1.1 },
+        'Saturn': { label: 'Saturn restraint on life purpose', likelihoodIfTrue: 0.8, likelihoodIfFalse: 1.0 },
+        'Neptune': { label: 'Neptune spiritual influence on purpose', likelihoodIfTrue: 1.8, likelihoodIfFalse: 1.1 },
       },
       'relationship_status': {
-        'Venus': 1.4, 'Moon': 1.3, 'Mars': 1.1, 'Saturn': 0.8
+        'Venus': { label: 'Venus influence on relationships', likelihoodIfTrue: 1.8, likelihoodIfFalse: 1.1 },
+        'Moon': { label: 'Moon emotional influence on relationships', likelihoodIfTrue: 1.5, likelihoodIfFalse: 1.1 },
+        'Mars': { label: 'Mars drive in relationships', likelihoodIfTrue: 1.2, likelihoodIfFalse: 1.0 },
+        'Saturn': { label: 'Saturn restriction on relationships', likelihoodIfTrue: 0.7, likelihoodIfFalse: 1.0 },
       },
       'career_path': {
-        'Mercury': 1.2, 'Jupiter': 1.3, 'Saturn': 1.1, 'Uranus': 1.4
+        'Mercury': { label: 'Mercury influence on career', likelihoodIfTrue: 1.4, likelihoodIfFalse: 1.1 },
+        'Jupiter': { label: 'Jupiter expansion in career', likelihoodIfTrue: 1.6, likelihoodIfFalse: 1.1 },
+        'Saturn': { label: 'Saturn structure in career', likelihoodIfTrue: 1.3, likelihoodIfFalse: 1.1 },
+        'Uranus': { label: 'Uranus innovation in career', likelihoodIfTrue: 1.8, likelihoodIfFalse: 1.1 },
       },
       'spiritual_growth': {
-        'Neptune': 1.5, 'Pluto': 1.4, 'Jupiter': 1.2, 'Saturn': 0.9
-      }
-    }
-    
-    const variableInfluences = influences[variable] || {}
-    return variableInfluences[planet.name] || 1.0
+        'Neptune': { label: 'Neptune spiritual awakening', likelihoodIfTrue: 2.0, likelihoodIfFalse: 1.1 },
+        'Pluto': { label: 'Pluto transformative depth', likelihoodIfTrue: 1.8, likelihoodIfFalse: 1.1 },
+        'Jupiter': { label: 'Jupiter spiritual expansion', likelihoodIfTrue: 1.4, likelihoodIfFalse: 1.1 },
+        'Saturn': { label: 'Saturn karmic discipline', likelihoodIfTrue: 0.8, likelihoodIfFalse: 1.0 },
+      },
+    };
+
+    const variableInfluences = influences[variable];
+    if (!variableInfluences) return 1.0;
+    const es = variableInfluences[planet.name];
+    if (!es) return 1.0;
+
+    const ratio = es.likelihoodIfTrue / Math.max(es.likelihoodIfFalse, 0.01);
+    this.collectedEvidence.push({ label: es.label, level: rateEvidence(es), ratio });
+    return ratio;
   }
 
   private getNumerologicalInfluence(variable: string, personalYear: number): number {
-    // Define numerological influences on different variables
-    const influences: { [key: string]: { [key: number]: number } } = {
+    const influences: Record<string, Record<number, EvidenceStrength>> = {
       'life_purpose': {
-        1: 1.3, 3: 1.2, 7: 1.4, 9: 1.3
+        1: { label: 'Personal Year 1 — new beginnings for purpose', likelihoodIfTrue: 1.5, likelihoodIfFalse: 1.1 },
+        3: { label: 'Personal Year 3 — creative expression cycle', likelihoodIfTrue: 1.4, likelihoodIfFalse: 1.1 },
+        7: { label: 'Personal Year 7 — spiritual seeking cycle', likelihoodIfTrue: 1.8, likelihoodIfFalse: 1.1 },
+        9: { label: 'Personal Year 9 — completion and purpose', likelihoodIfTrue: 1.5, likelihoodIfFalse: 1.1 },
       },
       'relationship_status': {
-        2: 1.4, 6: 1.3, 9: 1.2
+        2: { label: 'Personal Year 2 — partnership emphasis', likelihoodIfTrue: 1.8, likelihoodIfFalse: 1.1 },
+        6: { label: 'Personal Year 6 — domestic harmony', likelihoodIfTrue: 1.6, likelihoodIfFalse: 1.1 },
+        9: { label: 'Personal Year 9 — relationship completion', likelihoodIfTrue: 1.3, likelihoodIfFalse: 1.1 },
       },
       'career_path': {
-        1: 1.3, 4: 1.2, 8: 1.4
+        1: { label: 'Personal Year 1 — career initiation', likelihoodIfTrue: 1.5, likelihoodIfFalse: 1.1 },
+        4: { label: 'Personal Year 4 — career foundation', likelihoodIfTrue: 1.4, likelihoodIfFalse: 1.1 },
+        8: { label: 'Personal Year 8 — material achievement', likelihoodIfTrue: 1.8, likelihoodIfFalse: 1.1 },
       },
       'spiritual_growth': {
-        7: 1.5, 9: 1.4, 11: 1.6, 22: 1.7
-      }
-    }
-    
-    const variableInfluences = influences[variable] || {}
-    return variableInfluences[personalYear] || 1.0
+        7: { label: 'Personal Year 7 — deep spiritual growth', likelihoodIfTrue: 2.0, likelihoodIfFalse: 1.1 },
+        9: { label: 'Personal Year 9 — universal consciousness', likelihoodIfTrue: 1.7, likelihoodIfFalse: 1.1 },
+        11: { label: 'Master Year 11 — intuitive awakening', likelihoodIfTrue: 2.2, likelihoodIfFalse: 1.1 },
+        22: { label: 'Master Year 22 — master builder cycle', likelihoodIfTrue: 2.5, likelihoodIfFalse: 1.1 },
+      },
+    };
+
+    const variableInfluences = influences[variable];
+    if (!variableInfluences) return 1.0;
+    const es = variableInfluences[personalYear];
+    if (!es) return 1.0;
+
+    const ratio = es.likelihoodIfTrue / Math.max(es.likelihoodIfFalse, 0.01);
+    this.collectedEvidence.push({ label: es.label, level: rateEvidence(es), ratio });
+    return ratio;
   }
 
   private calculatePosteriorProbabilities(): Map<string, number> {
@@ -813,20 +943,33 @@ export class MysticalBayesianNetwork {
   }
 
   private calculateNodeProbability(node: BayesianNode, outcome: string): number {
-    // Get base probability from probability table
     const baseProb = node.probabilityTable.get(outcome) || 0.1
-    
-    // Adjust based on evidence
     let adjustedProb = baseProb
-    
-    node.evidence.forEach(evidence => {
-      if (evidence.supports && evidence.supports.includes(outcome)) {
-        adjustedProb *= 1.2
-      } else if (evidence.contradicts && evidence.contradicts.includes(outcome)) {
-        adjustedProb *= 0.8
+
+    for (const evidence of node.evidence) {
+      if (evidence.strength) {
+        const ratio = evidence.strength.likelihoodIfTrue / Math.max(evidence.strength.likelihoodIfFalse, 0.01);
+        const supports = evidence.supports?.includes(outcome);
+        const contradicts = evidence.contradicts?.includes(outcome);
+        if (supports) {
+          adjustedProb *= ratio;
+        } else if (contradicts) {
+          adjustedProb *= (1 / ratio);
+        }
+        this.collectedEvidence.push({
+          label: evidence.strength.label,
+          level: rateEvidence(evidence.strength),
+          ratio,
+        });
+      } else {
+        if (evidence.supports?.includes(outcome)) {
+          adjustedProb *= 1.2
+        } else if (evidence.contradicts?.includes(outcome)) {
+          adjustedProb *= 0.8
+        }
       }
-    })
-    
+    }
+
     return adjustedProb
   }
 
@@ -844,13 +987,53 @@ export class MysticalBayesianNetwork {
     return mostLikely
   }
 
-  private calculateConfidence(probabilities: Map<string, number>): number {
-    const values = Array.from(probabilities.values())
-    const maxProb = Math.max(...values)
-    const totalProb = values.reduce((sum, prob) => sum + prob, 0)
-    
-    // Confidence based on how much the highest probability dominates
-    return maxProb / totalProb
+  private calculateCalibratedConfidence(probabilities: Map<string, number>): CalibratedConfidence {
+    const values = Array.from(probabilities.values());
+    const total = values.reduce((s, v) => s + v, 0);
+    const normalized = total > 0 ? values.map((v) => v / total) : values;
+
+    const maxProb = Math.max(...normalized);
+    const dominance = total > 0 ? maxProb : 0;
+
+    // Shannon entropy: lower entropy = more decisive distribution = higher confidence
+    let entropy = 0;
+    for (const p of normalized) {
+      if (p > 0) entropy -= p * Math.log2(p);
+    }
+    const maxEntropy = Math.log2(Math.max(normalized.length, 2));
+    const entropyScore = maxEntropy > 0 ? 1 - (entropy / maxEntropy) : 0;
+
+    const evidenceCount = this.collectedEvidence.length;
+    const strongEvidence = this.collectedEvidence.filter((e) => e.level === 'strong');
+    const moderateEvidence = this.collectedEvidence.filter((e) => e.level === 'moderate');
+
+    const evidenceBonus = Math.min(
+      0.15,
+      strongEvidence.length * 0.06 + moderateEvidence.length * 0.03,
+    );
+
+    const rawScore = Math.min(1, dominance * 0.4 + entropyScore * 0.35 + evidenceBonus + (evidenceCount > 0 ? 0.1 : 0));
+
+    let level: CalibratedConfidence['level'];
+    if (rawScore >= 0.75) level = 'very_high';
+    else if (rawScore >= 0.55) level = 'high';
+    else if (rawScore >= 0.35) level = 'moderate';
+    else level = 'low';
+
+    const strongest = this.collectedEvidence.length > 0
+      ? [...this.collectedEvidence].sort((a, b) => b.ratio - a.ratio)[0]
+      : null;
+
+    return {
+      score: Math.round(rawScore * 100) / 100,
+      level,
+      evidenceCount,
+      strongestEvidence: strongest?.label || 'general cosmic alignment',
+      convergent: false,
+      evidenceSummary: [...this.collectedEvidence]
+        .sort((a, b) => b.ratio - a.ratio)
+        .slice(0, 5),
+    };
   }
 
   private generateFactors(evidence: any, astroData: any, numerologyData: any): string[] {
@@ -943,12 +1126,12 @@ export class PredictiveSystem {
     bayesianPrediction: BayesianPrediction
     combinedPrediction: string
     confidence: number
+    calibratedConfidence?: CalibratedConfidence
     recommendations: string[]
     timing: string
   }> {
     devLog.debug('🔮 PredictiveSystem: Generating comprehensive prediction...')
     
-    // Generate Markov Chain prediction
     const markovPrediction = this.markovChain.predictNextState(
       userId,
       currentState,
@@ -957,16 +1140,15 @@ export class PredictiveSystem {
       userBehavior
     )
     
-    // Generate Bayesian Network prediction
     const bayesianPrediction = this.bayesianNetwork.calculatePrediction(
       evidence,
       astroData,
-      numerologyData
+      numerologyData,
+      userBehavior,
     )
     
-    // Combine predictions
     const combinedPrediction = this.combinePredictions(markovPrediction, bayesianPrediction)
-    const confidence = this.calculateCombinedConfidence(markovPrediction, bayesianPrediction)
+    const calibratedConfidence = this.calculateCombinedCalibratedConfidence(markovPrediction, bayesianPrediction)
     const recommendations = this.combineRecommendations(markovPrediction, bayesianPrediction)
     const timing = this.predictCombinedTiming(markovPrediction, bayesianPrediction)
     
@@ -974,7 +1156,8 @@ export class PredictiveSystem {
       markovPrediction,
       bayesianPrediction,
       combinedPrediction,
-      confidence,
+      confidence: calibratedConfidence.score,
+      calibratedConfidence,
       recommendations,
       timing
     }
@@ -1006,12 +1189,35 @@ export class PredictiveSystem {
     }
   }
 
-  private calculateCombinedConfidence(markov: MarkovState, bayesian: BayesianPrediction): number {
-    const markovConfidence = markov.confidence
-    const bayesianConfidence = bayesian.confidence
-    
-    // Weighted average of confidences
-    return (markovConfidence * 0.6) + (bayesianConfidence * 0.4)
+  private calculateCombinedCalibratedConfidence(markov: MarkovState, bayesian: BayesianPrediction): CalibratedConfidence {
+    const bc = bayesian.calibrated;
+    if (!bc) {
+      const raw = (markov.confidence * 0.6) + (bayesian.confidence * 0.4);
+      let level: CalibratedConfidence['level'] = 'low';
+      if (raw >= 0.75) level = 'very_high';
+      else if (raw >= 0.55) level = 'high';
+      else if (raw >= 0.35) level = 'moderate';
+      return { score: raw, level, evidenceCount: 0, strongestEvidence: 'general alignment', convergent: false, evidenceSummary: [] };
+    }
+
+    const markovPrimary = markov.possibleTransitions[0]?.nextState || '';
+    const bayesianPrimary = bayesian.prediction;
+    const convergent = markovPrimary === bayesianPrimary;
+    const convergenceBonus = convergent ? 0.08 : 0;
+
+    const combinedScore = Math.min(1, bc.score * 0.7 + markov.confidence * 0.3 * bc.score + convergenceBonus);
+
+    let level: CalibratedConfidence['level'] = 'low';
+    if (combinedScore >= 0.75) level = 'very_high';
+    else if (combinedScore >= 0.55) level = 'high';
+    else if (combinedScore >= 0.35) level = 'moderate';
+
+    return {
+      ...bc,
+      score: Math.round(combinedScore * 100) / 100,
+      level,
+      convergent,
+    };
   }
 
   private combineRecommendations(markov: MarkovState, bayesian: BayesianPrediction): string[] {
