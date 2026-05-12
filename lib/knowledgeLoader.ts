@@ -31,6 +31,7 @@ function resolveKnowledgePath(tool: string, topic: string): string {
 function readFileWithCache(filePath: string): string | null {
   if (fileCache.has(filePath)) return fileCache.get(filePath)!;
   try {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     const content = fs.readFileSync(filePath, 'utf-8');
     fileCache.set(filePath, content);
     return content;
@@ -47,6 +48,7 @@ function buildIndex(): KnowledgeIndexEntry[] {
   function walkDir(dir: string, toolPath: string[] = []) {
     let items: fs.Dirent[];
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       items = fs.readdirSync(dir, { withFileTypes: true });
     } catch {
       return;

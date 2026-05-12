@@ -66,16 +66,15 @@ const HISTORICAL_TTL_MS = 60 * 60 * 1000;
 async function fetchQuote(symbol: string): Promise<MarketQuote | null> {
   try {
     const yahooFinance = (await import('yahoo-finance2')).default;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await yahooFinance.quote(symbol);
+    const result = await yahooFinance.quote(symbol) as Record<string, unknown> | null;
     if (!result || !result.regularMarketPrice) return null;
 
     return {
       symbol,
-      name: result.shortName || result.longName || symbol,
+      name: (result.shortName || result.longName || symbol) as string,
       price: result.regularMarketPrice as number,
-      change: (result.regularMarketChange ?? 0) as number,
-      changePercent: (result.regularMarketChangePercent ?? 0) as number,
+      change: ((result.regularMarketChange ?? 0) as number),
+      changePercent: ((result.regularMarketChangePercent ?? 0) as number),
       currency: (result.currency || 'USD') as string,
       timestamp: result.regularMarketTime
         ? new Date(String(result.regularMarketTime)).getTime()
@@ -145,14 +144,14 @@ export async function fetchHistoricalData(
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await yahooFinance.chart(symbol, {
+    const result = await yahooFinance.chart(symbol, {
       period1: startDate,
       period2: endDate,
       interval: '1d',
-    });
+    }) as Record<string, unknown> | null;
 
-    if (!result || !result.quotes || result.quotes.length === 0) return null;
+    const quotes = (result?.quotes ?? []) as Record<string, unknown>[];
+    if (!result || quotes.length === 0) return null;
 
     const symbolInfo = MARKET_SYMBOLS.indices
       .concat(MARKET_SYMBOLS.crypto)
@@ -162,15 +161,15 @@ export async function fetchHistoricalData(
     const series: HistoricalSeries = {
       symbol,
       name: symbolInfo?.name || symbol,
-      data: result.quotes
-        .filter((q: any) => q.close != null)
-        .map((q: any) => ({
-          date: new Date(q.date).toISOString().split('T')[0],
-          close: q.close!,
-          open: q.open ?? q.close!,
-          high: q.high ?? q.close!,
-          low: q.low ?? q.close!,
-          volume: q.volume ?? 0,
+      data: quotes
+        .filter((q) => q.close != null)
+        .map((q) => ({
+          date: new Date(String(q.date)).toISOString().split('T')[0],
+          close: q.close as number,
+          open: (q.open ?? q.close) as number,
+          high: (q.high ?? q.close) as number,
+          low: (q.low ?? q.close) as number,
+          volume: (q.volume ?? 0) as number,
         })),
       fetchedAt: Date.now(),
     };
