@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { logClientError, type ErrorSeverity } from '@/lib/errorLogging';
+import { buildClientErrorTelemetryContext } from '@/lib/clientErrorTelemetryContext';
 import { useAuth } from '@/hooks/use-auth';
 
 interface UseErrorLoggerOptions {
@@ -19,17 +20,15 @@ export function useErrorLogger(options: UseErrorLoggerOptions) {
         typeof navigator !== 'undefined'
           ? `${navigator.userAgent} | ${navigator.language || ''}`
           : undefined;
-      const online = typeof navigator !== 'undefined' ? navigator.onLine : undefined;
-      const visibilityState = typeof document !== 'undefined' ? document.visibilityState : undefined;
-      const platform =
-        typeof document !== 'undefined'
-          ? document.documentElement.getAttribute('data-platform') || undefined
-          : undefined;
-      const connectionType =
-        typeof navigator !== 'undefined' && 'connection' in navigator
-          ? (navigator as Navigator & { connection?: { effectiveType?: string } }).connection
-              ?.effectiveType
-          : undefined;
+
+      let idToken: string | null = null;
+      if (user) {
+        try {
+          idToken = await user.getIdToken();
+        } catch {
+          idToken = null;
+        }
+      }
 
       try {
         await logClientError({
@@ -39,14 +38,8 @@ export function useErrorLogger(options: UseErrorLoggerOptions) {
           severity,
           route: pathname || undefined,
           browser,
-          meta: {
-            ...meta,
-            hasUser: !!user,
-            online,
-            visibilityState,
-            platform,
-            connectionType,
-          },
+          idToken,
+          meta: buildClientErrorTelemetryContext(user, meta),
         });
       } catch {
         // Never block auth UX on telemetry failures.

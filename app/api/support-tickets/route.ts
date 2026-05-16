@@ -3,6 +3,7 @@ import { devLog } from '@/lib/devLogger';
 import { getAuth } from 'firebase-admin/auth';
 import { adminDb } from '@/lib/firebase-admin';
 import { isAdminDecoded } from '@/lib/adminConfig';
+import { logApiPain } from '@/lib/painLogging';
 
 async function verifyAuth(request: NextRequest): Promise<{ uid: string; email?: string; isAdmin: boolean } | null> {
   const authHeader = request.headers.get('Authorization');
@@ -72,6 +73,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     devLog.error('Support tickets POST error:', err, 'route');
+    await logApiPain(request, err, {
+      area: 'support',
+      action: 'create_ticket_failed',
+    });
     return NextResponse.json({ error: 'Failed to create ticket' }, { status: 500 });
   }
 }

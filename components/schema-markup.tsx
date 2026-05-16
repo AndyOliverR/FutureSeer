@@ -5,7 +5,7 @@ export function SchemaMarkup() {
     "name": "FutureSeer",
     "alternateName": "FutureSeer",
     "url": "https://futureseer.app",
-    "logo": "https://futureseer.app/placeholder-logo.png",
+    "logo": "https://futureseer.app/icons/icon-512.png",
     "description": "AI-powered mystical insights platform combining traditional astrological wisdom with advanced AI algorithms",
     "foundingDate": "2025",
     "contactPoint": {

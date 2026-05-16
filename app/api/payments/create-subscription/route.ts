@@ -9,6 +9,7 @@ import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { getAuth, setDocument, isAdminAvailable, getDocument } from '@/lib/firebase-admin';
 import { CHECKOUT_DISPLAY_NAME } from '@/lib/checkoutBranding';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
+import { logApiPain } from '@/lib/painLogging';
 
 async function userIsSpecialForSubscription(uid: string): Promise<boolean> {
   if (!isAdminAvailable()) return false;
@@ -279,6 +280,12 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     devLog.error('Error creating subscription:', error, 'route');
     const message = error instanceof Error ? error.message : 'Failed to create subscription';
+    await logApiPain(request, error, {
+      area: 'payments',
+      action: 'create_subscription_failed',
+      userId: null,
+      message,
+    });
     return NextResponse.json(
       { error: message },
       { status: 500 }

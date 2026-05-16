@@ -10,6 +10,7 @@ import { updateUserProfile } from "@/lib/firebase";
 import { analytics, ANALYTICS_EVENTS } from "@/lib/analytics";
 import { CHECKOUT_DISPLAY_NAME } from "@/lib/checkoutBranding";
 import { fetchWithFirebaseAuthRequired } from "@/lib/clientFirebaseFetch";
+import { logUserPain } from "@/lib/painLogging";
 
 interface SubscriptionConfig {
   available: boolean;
@@ -153,8 +154,18 @@ export function useSubscribe(options: UseSubscribeOptions = {}) {
       setSubscriptionConfig(subConfig);
     } catch (err) {
       console.error("Error fetching subscription config:", err);
-      setError("Failed to load subscription options");
+      const msg = "Failed to load subscription options";
+      setError(msg);
       setSubscriptionConfig({ available: false, plans: [], features: [], communityFeatures: [] });
+      void logUserPain({
+        area: "payments",
+        action: "config_load_failed",
+        message: err instanceof Error ? err.message : msg,
+        severity: "error",
+        route: "/subscribe",
+        user,
+        meta: { country },
+      });
     }
   }, [country, requireReturningCommit]);
 
@@ -207,7 +218,13 @@ export function useSubscribe(options: UseSubscribeOptions = {}) {
         }
       } catch (err) {
         console.error("Error marking special user as active:", err);
-        // Fall through to tools even if profile update fails
+        void logUserPain({
+          area: "payments",
+          action: "special_user_profile_update_failed",
+          message: err instanceof Error ? err.message : "Failed to mark special user active",
+          severity: "warning",
+          user,
+        });
       }
       router.push('/tools');
       setLoading(false);
@@ -324,13 +341,34 @@ export function useSubscribe(options: UseSubscribeOptions = {}) {
             router.push(redirectAfterCommit || '/tools');
           } catch (err) {
             console.error('Subscribe verify error:', err);
-            setError(err instanceof Error ? err.message : 'Verification failed');
+            const msg = err instanceof Error ? err.message : 'Verification failed';
+            setError(msg);
+            void logUserPain({
+              area: "payments",
+              action: "verify_payment_failed",
+              message: msg,
+              severity: "error",
+              user,
+              meta: { planId, subscriptionId },
+            });
           } finally {
             setLoading(false);
           }
         },
-        onError: () => {
+        onError: (razorpayErr?: unknown) => {
           setLoading(false);
+          const checkoutMsg =
+            razorpayErr instanceof Error
+              ? razorpayErr.message
+              : "Razorpay checkout closed or failed";
+          void logUserPain({
+            area: "payments",
+            action: "razorpay_checkout_error",
+            message: checkoutMsg,
+            severity: "warning",
+            user,
+            meta: { planId },
+          });
         },
       });
     } catch (err) {
@@ -338,6 +376,17 @@ export function useSubscribe(options: UseSubscribeOptions = {}) {
       const msg = err instanceof Error ? err.message : 'Failed to subscribe';
       setError(msg);
       setLoading(false);
+      void logUserPain({
+        area: "payments",
+        action: "subscribe_failed",
+        message: msg,
+        severity: "error",
+        user,
+        meta: {
+          planId,
+          httpStatus: err && typeof err === "object" && "status" in err ? (err as { status?: number }).status : undefined,
+        },
+      });
       throw err;
     }
   }, [user, userProfile, router, authLoading, isSpecialUser, requireReturningCommit, redirectAfterCommit]);

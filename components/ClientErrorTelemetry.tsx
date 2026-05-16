@@ -4,7 +4,9 @@ import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { logClientError } from '@/lib/errorLogging';
+import { buildClientErrorTelemetryContext } from '@/lib/clientErrorTelemetryContext';
 import { getFirebaseAuth } from '@/lib/firebase';
+import type { User } from 'firebase/auth';
 
 const TELEMETRY_THROTTLE_MS = 60_000;
 const INDEXEDDB_WARNING_EMIT_MS = 5 * 60_000;
@@ -43,6 +45,11 @@ function isTransientAuthError(reason: unknown): boolean {
   return code !== null && (TRANSIENT_AUTH_ERROR_CODES as readonly string[]).includes(code);
 }
 
+/** Firebase Auth SDK internal race; often harmless after OAuth redirect/popup. */
+function isFirebaseAuthInternalAssertion(message: string): boolean {
+  return message.includes('INTERNAL ASSERTION FAILED') && message.includes('Pending promise was never set');
+}
+
 /**
  * Registers global client handlers (window error, unhandled rejection) and sends
  * payloads to `/api/log-client-error` → Firestore `errorEvents`.
@@ -50,10 +57,15 @@ function isTransientAuthError(reason: unknown): boolean {
 export function ClientErrorTelemetry() {
   const pathname = usePathname();
   const { user } = useAuth();
+  const userRef = useRef<User | null>(null);
   const idTokenRef = useRef<string | null>(null);
   const recentEventRef = useRef<Map<string, number>>(new Map());
   const suppressedIndexedDbCountRef = useRef<Map<string, number>>(new Map());
   const indexedDbWarnAtRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     if (!user) {
@@ -75,6 +87,9 @@ export function ClientErrorTelemetry() {
   }, [user]);
 
   useEffect(() => {
+    const telemetryMeta = (extra?: Record<string, unknown>) =>
+      buildClientErrorTelemetryContext(userRef.current, extra);
+
     const shouldThrottle = (key: string): boolean => {
       const now = Date.now();
       const previous = recentEventRef.current.get(key);
@@ -105,11 +120,11 @@ export function ClientErrorTelemetry() {
         route: route || undefined,
         browser,
         idToken: idTokenRef.current,
-        meta: {
+        meta: telemetryMeta({
           source,
           count,
           sample: message.slice(0, 240),
-        },
+        }),
       });
     };
 
@@ -131,12 +146,12 @@ export function ClientErrorTelemetry() {
         route: pathname || undefined,
         browser: browserLine(),
         idToken: idTokenRef.current,
-        meta: {
+        meta: telemetryMeta({
           filename: ev.filename,
           lineno: ev.lineno,
           colno: ev.colno,
           stack: err?.stack,
-        },
+        }),
       });
     };
 
@@ -177,10 +192,28 @@ export function ClientErrorTelemetry() {
           route: pathname || undefined,
           browser: browserLine(),
           idToken: idTokenRef.current,
-          meta: {
+          meta: telemetryMeta({
             authCode,
             stack: reason instanceof Error ? reason.stack : undefined,
-          },
+          }),
+        });
+        return;
+      }
+
+      if (isFirebaseAuthInternalAssertion(text)) {
+        const key = `firebase_auth_internal|${pathname || ''}|${text.slice(0, 120)}`;
+        if (shouldThrottle(key)) return;
+        void logClientError({
+          severity: 'warning',
+          area: 'auth',
+          action: 'firebase_auth_internal_assertion',
+          message: text.slice(0, 800),
+          route: pathname || undefined,
+          browser: browserLine(),
+          idToken: idTokenRef.current,
+          meta: telemetryMeta({
+            stack: reason instanceof Error ? reason.stack : undefined,
+          }),
         });
         return;
       }
@@ -194,9 +227,9 @@ export function ClientErrorTelemetry() {
         route: pathname || undefined,
         browser: browserLine(),
         idToken: idTokenRef.current,
-        meta: {
+        meta: telemetryMeta({
           stack: reason instanceof Error ? reason.stack : undefined,
-        },
+        }),
       });
     };
 

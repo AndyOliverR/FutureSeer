@@ -4,6 +4,7 @@ import { cancelSubscription } from '@/lib/razorpay';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
+import { logApiPain } from '@/lib/painLogging';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     devLog.error('Error cancelling subscription:', error, 'route');
+    await logApiPain(request, error, {
+      area: 'payments',
+      action: 'cancel_subscription_failed',
+    });
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to cancel subscription' },
       { status: 500 }

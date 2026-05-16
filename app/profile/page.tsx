@@ -29,6 +29,7 @@ import { SEQ_PROMPT_AFTER_PROFILE_GEN } from "@/lib/metricsSession"
 import { type BirthTimePeriodId } from "@/lib/birthTimeResolver"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
+import { logUserPain } from "@/lib/painLogging"
 import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { compressImageFile } from "@/lib/imageCompression"
 import { PROFILE_PLAN_PRICING_CTA_LABEL, PROFILE_PLAN_REQUIRED_BODY } from "@/lib/accessGatingCopy"
@@ -1049,8 +1050,17 @@ export default function ProfilePage() {
       }
 
       setTimeout(() => refreshProfile(), 500)
-    } catch {
-      setError("Failed to save profile.")
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to save profile.";
+      setError("Failed to save profile.");
+      void logUserPain({
+        area: "profile",
+        action: "save_profile",
+        message: msg,
+        severity: "error",
+        user,
+        route: "/profile",
+      });
     }
     finally { setIsLoading(false) }
   }

@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Copy, Info, Loader2 } from "lucide-react";
+import { formatUserLabelFromMeta } from "@/lib/clientErrorTelemetryContext";
 
 type ErrorSeverity = "error" | "warning" | "info";
 type ErrorEnvironment = "production" | "preview" | "development" | "unknown";
@@ -74,6 +75,21 @@ function describeErrorSimple(event: ErrorEventDoc): string {
     if (area === "seer" && action === "api_unauthorized") {
       return "Ask the Seer or a tool Seer API returned 401/403 after a token refresh — check client Authorization headers, session expiry, or server auth rules.";
     }
+    if (area === "payments") {
+      return "A user hit a subscription or payment failure (checkout, verify, or cancel).";
+    }
+    if (area === "api" && action === "request_failed") {
+      return "An authenticated API call returned a non-auth HTTP error (4xx/5xx).";
+    }
+    if (area === "mystical-profile" && action.startsWith("generation_")) {
+      return "Mystical profile generation stalled, failed to start, or poll/network errors during generation.";
+    }
+    if (area === "feedback") {
+      return "In-app feedback form submission failed on the server.";
+    }
+    if (area === "support") {
+      return "Support ticket creation failed.";
+    }
     return "Something went wrong while a user was using the app.";
   }
 
@@ -121,6 +137,11 @@ function buildCopyPayload(event: ErrorEventDoc): string {
   lines.push(`- Message: ${event.message}`);
   if (event.route) lines.push(`- Route: ${event.route}`);
   lines.push(`- UserId: ${event.userId ?? "unknown"}`);
+  const userLabel = formatUserLabelFromMeta(event.meta);
+  if (userLabel) lines.push(`- User: ${userLabel}`);
+  const mobileOS =
+    event.meta && typeof event.meta.mobileOS === "string" ? event.meta.mobileOS : null;
+  if (mobileOS) lines.push(`- Device: ${mobileOS}`);
   lines.push(`- Triage: ${event.triageStatus}`);
   if (event.triageNote) lines.push(`- Triage note: ${event.triageNote}`);
   if (event.browser) lines.push(`- Browser: ${event.browser}`);
@@ -698,6 +719,23 @@ export default function AdminErrorsPage() {
                   <p>
                     <span className="font-semibold text-slate-200">UserId:</span> {selected.userId ?? "Unknown"}
                   </p>
+                  {(() => {
+                    const userLabel = formatUserLabelFromMeta(selected.meta);
+                    return userLabel ? (
+                      <p>
+                        <span className="font-semibold text-slate-200">User:</span> {userLabel}
+                      </p>
+                    ) : null;
+                  })()}
+                  {selected.meta && typeof selected.meta.mobileOS === "string" && (
+                    <p>
+                      <span className="font-semibold text-slate-200">Device:</span>{" "}
+                      {selected.meta.mobileOS}
+                      {typeof selected.meta.platform === "string"
+                        ? ` (layout: ${selected.meta.platform})`
+                        : ""}
+                    </p>
+                  )}
                   <p>
                     <span className="font-semibold text-slate-200">Route:</span> {selected.route || "-"}
                   </p>

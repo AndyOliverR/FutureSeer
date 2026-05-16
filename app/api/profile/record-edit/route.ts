@@ -16,6 +16,7 @@ import {
 } from '@/lib/profileEditQuota';
 import { isNoChargeSubscriptionEmail } from '@/lib/subscriptionConfig';
 import { devLog } from '@/lib/devLogger';
+import { logApiPain } from '@/lib/painLogging';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,6 +91,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ count, limit, canGenerate });
   } catch (err) {
     devLog.error('Profile record-edit API error', err, 'record-edit');
+    await logApiPain(request, err, {
+      area: 'profile',
+      action: 'record_edit_failed',
+    });
     return NextResponse.json({ error: 'Failed to record edit' }, { status: 500 });
   }
 }

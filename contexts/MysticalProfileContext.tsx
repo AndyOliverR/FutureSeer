@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { getFirebaseDB, isReportsStale } from '@/lib/firebase'
 import { logClientError } from '@/lib/errorLogging'
+import { logUserPain } from '@/lib/painLogging'
 import { doc, getDoc, getDocFromServer, onSnapshot } from 'firebase/firestore'
 import {
   getPersistentProfile,
@@ -314,6 +315,14 @@ export function MysticalProfileProvider({ children }: { children: React.ReactNod
         )
       } else {
         setError(errorMessage)
+        void logUserPain({
+          area: 'mystical-profile',
+          action: 'profile_load_failed',
+          message: errorMessage,
+          severity: 'error',
+          user,
+          route: pathname || undefined,
+        })
         if (process.env.NODE_ENV === 'development') {
           console.error('❌ Error fetching comprehensive mystical profile:', err)
         }

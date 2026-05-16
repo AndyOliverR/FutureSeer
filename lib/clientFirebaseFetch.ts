@@ -1,6 +1,7 @@
 'use client';
 
 import { getFirebaseAuth } from '@/lib/firebase';
+import { buildClientErrorTelemetryContext } from '@/lib/clientErrorTelemetryContext';
 import { logClientError } from '@/lib/errorLogging';
 
 export class MissingFirebaseAuthError extends Error {
@@ -21,6 +22,7 @@ export async function getFirebaseIdToken(forceRefresh = false): Promise<string |
 }
 
 const SEER_401_TELEMETRY_THROTTLE_MS = 10 * 60 * 1000;
+const API_FAILURE_TELEMETRY_THROTTLE_MS = 5 * 60 * 1000;
 
 function browserLine(): string | undefined {
   if (typeof navigator === 'undefined') return undefined;
@@ -61,6 +63,67 @@ function markSeer401Telemetry(key: string): void {
   } catch {
     /* ignore */
   }
+}
+
+function apiFailureThrottleKey(path: string, status: number): string {
+  const auth = getFirebaseAuth();
+  const uid = auth?.currentUser?.uid ?? 'anon';
+  return `fs_api_fail_${status}_${path}_${uid}`;
+}
+
+function shouldThrottleApiFailureTelemetry(key: string): boolean {
+  if (typeof window === 'undefined') return true;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return false;
+    const t = parseInt(raw, 10);
+    if (Number.isNaN(t)) return false;
+    return Date.now() - t < API_FAILURE_TELEMETRY_THROTTLE_MS;
+  } catch {
+    return false;
+  }
+}
+
+function markApiFailureTelemetry(key: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(key, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Non-auth API failures (4xx/5xx) for Admin → Errors. */
+function reportApiFailureToAdmin(input: RequestInfo | URL, res: Response): void {
+  if (typeof window === 'undefined') return;
+  if (res.ok) return;
+  if (res.status === 401 || res.status === 403) return;
+
+  const path = apiPathForMeta(input);
+  const key = apiFailureThrottleKey(path, res.status);
+  if (shouldThrottleApiFailureTelemetry(key)) return;
+  markApiFailureTelemetry(key);
+
+  const route = window.location.pathname;
+  const auth = getFirebaseAuth();
+  const cu = auth?.currentUser;
+
+  void (async () => {
+    const idToken = await getFirebaseIdToken(false);
+    await logClientError({
+      severity: res.status >= 500 ? 'error' : 'warning',
+      area: 'api',
+      action: 'request_failed',
+      message: `API ${res.status}: ${path}`.slice(0, 800),
+      route,
+      browser: browserLine(),
+      idToken,
+      meta: buildClientErrorTelemetryContext(cu, {
+        apiPath: path,
+        httpStatus: res.status,
+      }),
+    });
+  })();
 }
 
 /**
@@ -124,6 +187,8 @@ export async function fetchWithFirebaseAuthRequired(
   }
   if (res.status === 401 || res.status === 403) {
     reportSeerUnauthorizedToAdmin(input, res.status);
+  } else if (!res.ok) {
+    reportApiFailureToAdmin(input, res);
   }
   return res;
 }
