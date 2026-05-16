@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import crypto from 'crypto';
 import { getSubscription, refundPayment } from '@/lib/razorpay';
+import { logApiPain } from '@/lib/painLogging';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,10 +57,16 @@ export async function POST(request: NextRequest) {
       paymentMethodId: razorpay_payment_id,
       subscriptionId: razorpay_subscription_id,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     devLog.error('Error verifying payment:', error, 'route');
+    const message = error instanceof Error ? error.message : 'Failed to verify payment';
+    await logApiPain(request, error, {
+      area: 'payments',
+      action: 'verify_payment_failed',
+      message,
+    });
     return NextResponse.json(
-      { error: error.message || 'Failed to verify payment' },
+      { error: message },
       { status: 500 }
     );
   }

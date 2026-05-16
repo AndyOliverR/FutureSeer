@@ -1,10 +1,7 @@
 // Server-side error capture to Firestore `errorEvents` (same pipeline as client logging).
 
-import {
-  formatUnknownError,
-  getErrorEventEnvironment,
-  writeErrorEventToFirestore,
-} from '@/lib/errorEvents';
+import { formatUnknownError } from '@/lib/errorEvents';
+import { logServerError } from '@/lib/serverErrorLogging';
 
 type Extra = Record<string, unknown>;
 
@@ -36,11 +33,8 @@ export async function captureServerException(error: unknown, extra?: Extra): Pro
       }
     }
 
-    await writeErrorEventToFirestore({
-      timestamp: new Date().toISOString(),
-      environment: getErrorEventEnvironment(),
+    await logServerError({
       severity: 'error',
-      source: 'server',
       area,
       action,
       message: message.slice(0, 2000),

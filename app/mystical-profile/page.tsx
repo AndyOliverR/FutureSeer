@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useOnboardingStallRecovery } from "@/hooks/useOnboardingStallRecovery"
 import { OnboardingStuckBanner } from "@/components/onboarding/OnboardingStuckBanner"
 import { useErrorLogger } from "@/hooks/useErrorLogger"
+import { logUserPain } from "@/lib/painLogging"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
@@ -363,7 +364,18 @@ export default function MysticalProfilePage() {
             method: "GET",
             headers: { Authorization: `Bearer ${token}` },
           })
-          if (!res.ok) return
+          if (!res.ok) {
+            void logUserPain({
+              area: "mystical-profile",
+              action: "generation_poll_http_error",
+              message: `Generation status poll returned HTTP ${res.status}`,
+              severity: res.status >= 500 ? "error" : "warning",
+              user,
+              route: "/mystical-profile",
+              meta: { httpStatus: res.status },
+            });
+            return;
+          }
           const data = (await res.json()) as {
             success?: boolean
             generated?: boolean
@@ -452,10 +464,27 @@ export default function MysticalProfilePage() {
             setGenerationPending(false)
             setGenerationError(msg)
             setGenerationWarning(null)
+            void logUserPain({
+              area: "mystical-profile",
+              action: "generation_not_started",
+              message: msg,
+              severity: "error",
+              user,
+              route: "/mystical-profile",
+              meta: { phase: data.phase ?? null },
+            });
           }
         })
-        .catch(() => {
-          // ignore transient polling errors
+        .catch((pollErr) => {
+          void logUserPain({
+            area: "mystical-profile",
+            action: "generation_poll_network_error",
+            message:
+              pollErr instanceof Error ? pollErr.message : "Generation poll network error",
+            severity: "warning",
+            user,
+            route: "/mystical-profile",
+          });
         })
     }
     void poll()

@@ -36,12 +36,25 @@ export async function POST(request: NextRequest) {
     }
 
     let userId: string | null = null;
+    let meta: Record<string, unknown> | undefined =
+      body.meta && typeof body.meta === 'object' ? { ...body.meta } : undefined;
     try {
       const authHeader = request.headers.get('Authorization');
       const idToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
       if (idToken) {
         const decoded = await getAuth().verifyIdToken(idToken);
         userId = decoded.uid;
+        if (!meta) meta = {};
+        const email =
+          typeof decoded.email === 'string' && decoded.email.trim()
+            ? decoded.email.trim()
+            : undefined;
+        const name =
+          typeof decoded.name === 'string' && decoded.name.trim()
+            ? decoded.name.trim()
+            : undefined;
+        if (email && meta.userEmail == null) meta.userEmail = email;
+        if (name && meta.userDisplayName == null) meta.userDisplayName = name;
       }
     } catch {
       // If token is invalid, we still record the error but without userId
@@ -58,7 +71,7 @@ export async function POST(request: NextRequest) {
       userId,
       route: truncate(body.route, 400),
       browser: truncate(body.browser, 512),
-      meta: body.meta && typeof body.meta === 'object' ? body.meta : undefined,
+      meta,
     });
 
     return NextResponse.json({ success: true });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStorage } from 'firebase-admin/storage'
 import { getFirebaseDB, getFirebaseStorage } from '@/lib/firebase'
 import { devLog } from '@/lib/devLogger'
+import { logApiPain } from '@/lib/painLogging'
 
 interface FeedbackData {
   rating: number
@@ -182,7 +183,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     devLog.error('❌ Feedback submission error:', error, 'route')
-    
+    await logApiPain(request, error, {
+      area: 'feedback',
+      action: 'submit_failed',
+    });
+
     return NextResponse.json(
       { error: 'Failed to submit feedback. Please try again.' },
       { status: 500 }
