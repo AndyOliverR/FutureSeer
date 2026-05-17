@@ -9,6 +9,7 @@
     "dev:nocache": "cross-env DISABLE_WEBPACK_CACHE=1 next dev --webpack",
     "generate:starfield": "node scripts/generate-starfield-8k.js",
     "build": "next build --webpack",
+    "build:clean": "node scripts/clean-next-build.mjs && cross-env DISABLE_WEBPACK_CACHE=1 next build --webpack",
     "start": "next start",
     "lint": "npx eslint .",
     "lint:security": "pnpm exec eslint app/api scripts lib --ext .js,.ts --max-warnings 100000 --rule \"@typescript-eslint/no-explicit-any:off\" --rule \"@typescript-eslint/no-unused-vars:off\"",

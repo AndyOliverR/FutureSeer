@@ -50,6 +50,37 @@ export function isAuthRedirectInitiatedError(error: unknown): boolean {
   return error instanceof Error && error.message === AUTH_REDIRECT_INITIATED_MESSAGE;
 }
 
+/** Firebase Auth SDK internal race during overlapping redirect/popup handlers. */
+export function isFirebaseAuthInternalAssertionError(error: unknown): boolean {
+  const msg =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+  return (
+    msg.includes('INTERNAL ASSERTION FAILED') &&
+    msg.includes('Pending promise was never set')
+  );
+}
+
+/** Serialize redirect-result + popup OAuth so they never run concurrently in the SDK. */
+let authOperationChain: Promise<unknown> = Promise.resolve();
+
+function runSerializedAuthOperation<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  const run = authOperationChain.then(() => fn());
+  authOperationChain = run.then(
+    () => undefined,
+    (err) => {
+      if (!isFirebaseAuthInternalAssertionError(err)) {
+        devLog.debug(`Auth op chain (${label}) settled with error`, err, 'firebase');
+      }
+      return undefined;
+    }
+  );
+  return run;
+}
+
 /** Bare Firebase project id only; avoids blank/URL values that break auth hostnames in prod. */
 function sanitizeFirebaseProjectId(preferAdminFirst: boolean): string {
   const admin = (process.env.FIREBASE_ADMIN_PROJECT_ID || '').trim();
@@ -376,6 +407,7 @@ async function signInWithOAuthWeb(
   const preferRedirect =
     typeof window !== 'undefined' && shouldPreferOAuthRedirect();
 
+  return runSerializedAuthOperation(`oauth-${label}`, async () => {
   if (preferRedirect) {
     devLog.debug(`OAuth ${label}: signInWithRedirect (WebKit-friendly)`, { attemptId }, 'firebase');
     await signInWithRedirect(auth, provider);
@@ -424,6 +456,17 @@ async function signInWithOAuthWeb(
       );
       throw new Error(AUTH_REDIRECT_INITIATED_MESSAGE);
     }
+    if (isFirebaseAuthInternalAssertionError(error)) {
+      devLog.debug(
+        `OAuth ${label}: internal assertion — checking session`,
+        { attemptId, mode: 'popup' },
+        'firebase'
+      );
+      const sessionOk = await waitForAuthenticatedSession(8000);
+      if (sessionOk && auth.currentUser) {
+        return auth.currentUser;
+      }
+    }
     devLog.debug(
       `OAuth ${label}: popup/redirect flow failed`,
       { attemptId, mode: 'popup', code },
@@ -431,6 +474,7 @@ async function signInWithOAuthWeb(
     );
     throw error;
   }
+  });
 }
 
 export const signInWithGoogle = async (): Promise<User> => {
@@ -535,19 +579,68 @@ export async function waitForAuthenticatedSession(timeoutMs = 3000): Promise<boo
  * After popup-closed / cancelled-popup errors: check redirect result, then wait for session.
  * Call this instead of waitForAuthenticatedSession alone for better recovery on production.
  */
+function hasOAuthRedirectReturnInUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  const blob = `${window.location.search}${window.location.hash}`;
+  return /apiKey=|authType=|sessionId=/i.test(blob);
+}
+
+/**
+ * After popup dismiss or Firebase internal OAuth assertion: wait for session.
+ * Only calls getRedirectResult on WebKit redirect flows or when URL has redirect params
+ * (popup-blocked → redirect fallback) — avoids races on Chromium popup sign-up.
+ */
 export async function recoverOAuthSessionAfterPopupDismiss(
   timeoutMs = AUTH_DISMISS_RECOVERY_WINDOW_MS
 ): Promise<boolean> {
   const auth = getFirebaseAuth();
   if (!auth) return false;
   if (auth.currentUser) return true;
-  try {
-    const cred = await getRedirectResult();
-    if (cred?.user) return true;
-  } catch {
-    /* no pending redirect */
+
+  const mayHaveRedirectResult =
+    typeof window !== 'undefined' &&
+    (shouldPreferOAuthRedirect() || hasOAuthRedirectReturnInUrl());
+
+  if (mayHaveRedirectResult) {
+    try {
+      const cred = await getRedirectResult();
+      if (cred?.user) return true;
+    } catch (err) {
+      if (isFirebaseAuthInternalAssertionError(err)) {
+        devLog.debug('recoverOAuth: redirect result internal assertion', err, 'firebase');
+      }
+    }
   }
+
   return waitForAuthenticatedSession(timeoutMs);
+}
+
+/**
+ * Recover a signed-in user after dismiss or Firebase internal OAuth assertion (popup flows).
+ */
+export async function recoverOAuthUserAfterError(
+  error: unknown,
+  timeoutMs = AUTH_DISMISS_RECOVERY_WINDOW_MS
+): Promise<User | null> {
+  const auth = getFirebaseAuth();
+  if (!auth) return null;
+  if (auth.currentUser) {
+    await ensureUserDocumentFromAuth(auth.currentUser).catch(() => {});
+    return auth.currentUser;
+  }
+
+  const recoverable =
+    isUserDismissedAuthError(error as { code?: string }) ||
+    isFirebaseAuthInternalAssertionError(error);
+
+  if (!recoverable) return null;
+
+  const ok = await recoverOAuthSessionAfterPopupDismiss(timeoutMs);
+  if (ok && auth.currentUser) {
+    await ensureUserDocumentFromAuth(auth.currentUser).catch(() => {});
+    return auth.currentUser;
+  }
+  return null;
 }
 
 export const signInWithEmail = async (email: string, password: string): Promise<User> => {
@@ -822,35 +915,50 @@ function setGlobalRedirectResultPromise(value: Promise<UserCredential | null> | 
 }
 
 export const getRedirectResult = async (): Promise<UserCredential | null> => {
-  const auth = getFirebaseAuth();
-  if (!auth) return null;
-  const startedAt = Date.now();
-  let inFlightPromise = getGlobalRedirectResultPromise();
-  if (!inFlightPromise) {
-    const nextPromise = firebaseGetRedirectResult(auth)
-      .then((result) => {
-        devLog.debug(
-          'getRedirectResult: completed',
-          { hasUser: !!result?.user, elapsedMs: Date.now() - startedAt },
-          'firebase'
-        );
-        return result;
-      })
-      .catch((e: unknown) => {
-        devLog.debug('getRedirectResult: no result or error', e, 'firebase');
-        return null;
-      })
-      .finally(() => {
-        if (getGlobalRedirectResultPromise() === nextPromise) {
-          setGlobalRedirectResultPromise(null);
-        }
-      });
-    inFlightPromise = nextPromise;
-    setGlobalRedirectResultPromise(nextPromise);
-  } else {
-    devLog.debug('getRedirectResult: using in-flight promise', undefined, 'firebase');
-  }
-  return inFlightPromise;
+  return runSerializedAuthOperation('getRedirectResult', async () => {
+    const auth = getFirebaseAuth();
+    if (!auth) return null;
+
+    if (
+      typeof window !== 'undefined' &&
+      !shouldPreferOAuthRedirect() &&
+      !hasOAuthRedirectReturnInUrl()
+    ) {
+      return null;
+    }
+
+    const startedAt = Date.now();
+    let inFlightPromise = getGlobalRedirectResultPromise();
+    if (!inFlightPromise) {
+      const nextPromise = firebaseGetRedirectResult(auth)
+        .then((result) => {
+          devLog.debug(
+            'getRedirectResult: completed',
+            { hasUser: !!result?.user, elapsedMs: Date.now() - startedAt },
+            'firebase'
+          );
+          return result;
+        })
+        .catch((e: unknown) => {
+          if (isFirebaseAuthInternalAssertionError(e)) {
+            devLog.debug('getRedirectResult: internal assertion (ignored)', e, 'firebase');
+          } else {
+            devLog.debug('getRedirectResult: no result or error', e, 'firebase');
+          }
+          return null;
+        })
+        .finally(() => {
+          if (getGlobalRedirectResultPromise() === nextPromise) {
+            setGlobalRedirectResultPromise(null);
+          }
+        });
+      inFlightPromise = nextPromise;
+      setGlobalRedirectResultPromise(nextPromise);
+    } else {
+      devLog.debug('getRedirectResult: using in-flight promise', undefined, 'firebase');
+    }
+    return inFlightPromise;
+  });
 };
 
 // Enhanced Firestore connection management
@@ -1201,6 +1309,9 @@ export interface UserProfile {
   isTipped: boolean;
   createdAt: number;
   lastLoginAt: number;
+  /** Updated on session attach and throttled navigation (admin journey / active today). */
+  lastSeenAt?: number;
+  lastSeenRoute?: string;
   birthDate?: string;
   birthPlace?: string;
   birthTime?: string;

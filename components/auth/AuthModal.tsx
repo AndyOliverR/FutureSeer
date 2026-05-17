@@ -18,9 +18,9 @@ import {
   isInvalidCredentialAuthError,
   isAuthRedirectInitiatedError,
   isUserDismissedAuthError,
-  recoverOAuthSessionAfterPopupDismiss,
+  isFirebaseAuthInternalAssertionError,
+  recoverOAuthUserAfterError,
   AUTH_DISMISS_RECOVERY_WINDOW_MS,
-  getFirebaseAuth,
 } from '@/lib/firebase';
 import { isAppleSignInEnabledClient } from '@/lib/authFeatureFlags';
 import { useIsMobileLayout } from '@/hooks/useIsMobileLayout';
@@ -89,26 +89,27 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         devLog.debug('Redirect authentication initiated', undefined, 'AuthModal');
         return;
       }
-      if (isUserDismissedAuthError(error)) {
-        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS);
-        if (resolvedSession) {
-          devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
-          return;
-        }
-        const auth = getFirebaseAuth();
-        if (auth?.currentUser) {
-          devLog.debug('Popup dismissed but currentUser is available', undefined, 'AuthModal');
-          return;
-        }
+      const recoveredUser = await recoverOAuthUserAfterError(error, AUTH_DISMISS_RECOVERY_WINDOW_MS);
+      if (recoveredUser) {
+        const returning = isReturningUser(recoveredUser);
+        toast({
+          title: returning ? "Welcome back! 🌟" : "Welcome to FutureSeer! 🌟",
+          description: returning ? "Your mystical journey continues." : "Your mystical journey begins now.",
+        });
+        onClose();
+        router.push(returning ? getReturningUserWithReportsDestination() : '/profile');
+        return;
       }
-      
+
       const msg = getAuthErrorMessage(error);
       setError(msg);
-      toast({
-        title: "Sign-in failed",
-        description: msg,
-        variant: "destructive",
-      });
+      if (!isUserDismissedAuthError(error) && !isFirebaseAuthInternalAssertionError(error)) {
+        toast({
+          title: "Sign-in failed",
+          description: msg,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -143,26 +144,27 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
         devLog.debug('Redirect authentication initiated', undefined, 'AuthModal');
         return;
       }
-      if (isUserDismissedAuthError(error)) {
-        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS);
-        if (resolvedSession) {
-          devLog.debug('Popup dismissed but auth session resolved', undefined, 'AuthModal');
-          return;
-        }
-        const auth = getFirebaseAuth();
-        if (auth?.currentUser) {
-          devLog.debug('Popup dismissed but currentUser is available', undefined, 'AuthModal');
-          return;
-        }
+      const recoveredUser = await recoverOAuthUserAfterError(error, AUTH_DISMISS_RECOVERY_WINDOW_MS);
+      if (recoveredUser) {
+        const returning = isReturningUser(recoveredUser);
+        toast({
+          title: returning ? "Welcome back! 🌟" : "Welcome to FutureSeer! 🌟",
+          description: returning ? "Your mystical journey continues." : "Your mystical journey begins now.",
+        });
+        onClose();
+        router.push(returning ? getReturningUserWithReportsDestination() : '/profile');
+        return;
       }
 
       const msg = getAuthErrorMessage(error);
       setError(msg);
-      toast({
-        title: "Sign-in failed",
-        description: msg,
-        variant: "destructive",
-      });
+      if (!isUserDismissedAuthError(error) && !isFirebaseAuthInternalAssertionError(error)) {
+        toast({
+          title: "Sign-in failed",
+          description: msg,
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }

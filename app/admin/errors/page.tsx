@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -155,6 +156,7 @@ type SeverityFilter = "errors" | "warnings" | "info" | "all";
 type TriageFilter = "open" | "resolved" | "ignored" | "all";
 
 export default function AdminErrorsPage() {
+  const searchParams = useSearchParams();
   const { user, isAdmin, isSuperadmin } = useAuth();
   const { toast } = useToast();
 
@@ -251,6 +253,11 @@ export default function AdminErrorsPage() {
     void loadEvents();
   }, [loadEvents]);
 
+  useEffect(() => {
+    const userIdFromUrl = searchParams.get("userId")?.trim();
+    if (userIdFromUrl) setSearch(userIdFromUrl);
+  }, [searchParams]);
+
   const filtered = useMemo(() => {
     return errors.filter((e) => {
       if (envFilter !== "all" && e.environment !== envFilter) return false;
@@ -261,11 +268,24 @@ export default function AdminErrorsPage() {
       if (severityFilter === "info" && e.severity !== "info") return false;
       if (search.trim()) {
         const s = search.toLowerCase();
+        const metaEmail =
+          e.meta && typeof e.meta.userEmail === "string"
+            ? e.meta.userEmail.toLowerCase()
+            : "";
+        const metaName =
+          e.meta && typeof e.meta.userDisplayName === "string"
+            ? e.meta.userDisplayName.toLowerCase()
+            : "";
+        const userLabel = formatUserLabelFromMeta(e.meta)?.toLowerCase() ?? "";
         if (
           !(
             e.message.toLowerCase().includes(s) ||
             e.route?.toLowerCase().includes(s) ||
-            e.action.toLowerCase().includes(s)
+            e.action.toLowerCase().includes(s) ||
+            (e.userId?.toLowerCase().includes(s) ?? false) ||
+            metaEmail.includes(s) ||
+            metaName.includes(s) ||
+            userLabel.includes(s)
           )
         ) {
           return false;
@@ -502,7 +522,7 @@ export default function AdminErrorsPage() {
               </Select>
             </div>
             <Input
-              placeholder="Search message or route"
+              placeholder="Search message, route, userId, or email"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-8 max-w-xs text-xs bg-slate-800 border-slate-600 text-slate-200 placeholder:text-slate-500"

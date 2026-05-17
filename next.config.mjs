@@ -15,8 +15,15 @@ const nextConfig = {
   // Use webpack instead of Turbopack (project has custom webpack config)
   turbopack: {},
   webpack: (config, { dev, isServer, webpack }) => {
-    // In CI/sandbox, disable filesystem cache to avoid EPERM on rename
-    if (process.env.CI === 'true' || process.env.DISABLE_WEBPACK_CACHE === '1') {
+    // Disable webpack filesystem cache when it is unsafe or flaky:
+    // - CI/sandbox EPERM on cache rename (see AGENTS.md)
+    // - Windows local builds: occasional corrupt cache → uncaughtException reading `.length`
+    // Set ENABLE_WEBPACK_CACHE=1 on Windows to opt back into caching.
+    const disableWebpackCache =
+      process.env.DISABLE_WEBPACK_CACHE === '1' ||
+      process.env.CI === 'true' ||
+      (process.platform === 'win32' && process.env.ENABLE_WEBPACK_CACHE !== '1');
+    if (disableWebpackCache) {
       config.cache = false;
     }
     // Suppress source map warnings for Firebase Admin SDK

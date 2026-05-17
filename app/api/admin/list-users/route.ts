@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getAuth, adminDb } from '@/lib/firebase-admin';
 import { isAdminDecoded } from '@/lib/adminConfig';
+import { mergeFirestoreFunnelIntoAdminUsers, type AdminListUserRecord } from '@/lib/adminUserListMerge';
 
 async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?: string } | null> {
   const authHeader = request.headers.get('Authorization');
@@ -23,11 +24,11 @@ async function verifyAdmin(request: NextRequest): Promise<{ uid: string; email?:
   }
 }
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   if (process.env.CAPACITOR_BUILD === '1') {
-    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 })
+    return NextResponse.json({ error: 'Not available in static export' }, { status: 404 });
   }
   try {
     const auth = await verifyAdmin(request);
@@ -50,36 +51,21 @@ export async function GET(request: NextRequest) {
       result = await authInstance.listUsers(maxResults, pageToken);
     }
 
-    const users = result.users.map((u) => {
-      const record: Record<string, unknown> = {
-        uid: u.uid,
-        email: u.email,
-        displayName: u.displayName ?? null,
-        disabled: u.disabled,
-        claims: u.customClaims || {},
-      };
-      return record;
-    });
+    const users: AdminListUserRecord[] = result.users.map((u) => ({
+      uid: u.uid,
+      email: u.email,
+      displayName: u.displayName ?? null,
+      disabled: u.disabled,
+      claims: u.customClaims || {},
+    }));
 
-    if (adminDb && users.length > 0) {
-      const uids = users.map((u) => u.uid as string);
-      const snap = await adminDb.collection('users').get();
-      const userDataByUid: Record<string, Record<string, unknown>> = {};
-      snap.docs.forEach((d) => {
-        if (uids.includes(d.id)) userDataByUid[d.id] = d.data();
-      });
-      users.forEach((u) => {
-        const data = userDataByUid[u.uid as string];
-        if (data) {
-          u.subscriptionStatus = data.subscriptionStatus;
-          u.nextBillingDate = data.nextBillingDate;
-          u.subscriptionId = data.subscriptionId;
-        }
-      });
-    }
+    const merged =
+      adminDb && users.length > 0
+        ? await mergeFirestoreFunnelIntoAdminUsers(adminDb, users)
+        : users;
 
     return NextResponse.json({
-      users,
+      users: merged,
       nextPageToken: result.pageToken || undefined,
     });
   } catch (err) {

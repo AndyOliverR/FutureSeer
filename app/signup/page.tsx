@@ -17,11 +17,12 @@ import {
   signInWithGoogle,
   signInWithApple,
   signUpWithEmail,
-  recoverOAuthSessionAfterPopupDismiss,
+  recoverOAuthUserAfterError,
   getAuthErrorMessage,
   getFirebaseAuth,
   isReturningUser,
   isUserDismissedAuthError,
+  isFirebaseAuthInternalAssertionError,
   isUnauthorizedDomainAuthError,
   isAuthRedirectInitiatedError,
   isBenignAuthUserInputError,
@@ -205,20 +206,22 @@ function SignUpPageContent() {
         trackAuthOutcomeDeferred("google", "signup", "redirect_initiated")
         return;
       }
-      if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
-        if (resolvedSession) {
-          await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
-            provider: "google",
-            code: err.code ?? null,
-            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
-          })
-          trackAuthOutcomeDeferred("google", "signup", "success", { recoveredAfterDismiss: true })
-          return
-        }
+      const recoveredUser = await recoverOAuthUserAfterError(error, AUTH_DISMISS_RECOVERY_WINDOW_MS)
+      if (recoveredUser) {
+        const returning = isReturningUser(recoveredUser)
+        const destination = getPostAuthDestination(redirectTo, returning)
+        await logError("signup_oauth_recovered", "OAuth transient error but session resolved", "info", {
+          provider: "google",
+          code: err.code ?? null,
+          internalAssertion: isFirebaseAuthInternalAssertionError(error),
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
+        })
+        trackAuthOutcomeDeferred("google", "signup", "success", { recoveredAfterTransient: true, redirectTo: destination })
+        router.push(destination)
+        return
       }
       const msg = getAuthErrorMessage(err)
-      setDismissAuthInfo(isUserDismissedAuthError(err))
+      setDismissAuthInfo(isUserDismissedAuthError(err) || isFirebaseAuthInternalAssertionError(error))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         trackAuthOutcomeDeferred("google", "signup", "dismissed", { code: err.code ?? null })
@@ -274,20 +277,22 @@ function SignUpPageContent() {
         trackAuthOutcomeDeferred("apple", "signup", "redirect_initiated")
         return;
       }
-      if (isUserDismissedAuthError(err)) {
-        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
-        if (resolvedSession) {
-          await logError("signup_dismissed_recovered", "Popup dismissed but session resolved", "info", {
-            provider: "apple",
-            code: err.code ?? null,
-            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
-          })
-          trackAuthOutcomeDeferred("apple", "signup", "success", { recoveredAfterDismiss: true })
-          return
-        }
+      const recoveredUser = await recoverOAuthUserAfterError(error, AUTH_DISMISS_RECOVERY_WINDOW_MS)
+      if (recoveredUser) {
+        const returning = isReturningUser(recoveredUser)
+        const destination = getPostAuthDestination(redirectTo, returning)
+        await logError("signup_oauth_recovered", "OAuth transient error but session resolved", "info", {
+          provider: "apple",
+          code: err.code ?? null,
+          internalAssertion: isFirebaseAuthInternalAssertionError(error),
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
+        })
+        trackAuthOutcomeDeferred("apple", "signup", "success", { recoveredAfterTransient: true, redirectTo: destination })
+        router.push(destination)
+        return
       }
       const msg = getAuthErrorMessage(err)
-      setDismissAuthInfo(isUserDismissedAuthError(err))
+      setDismissAuthInfo(isUserDismissedAuthError(err) || isFirebaseAuthInternalAssertionError(error))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         trackAuthOutcomeDeferred("apple", "signup", "dismissed", { code: err.code ?? null })
