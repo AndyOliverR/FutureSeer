@@ -15,6 +15,7 @@ import {
   getRedirectResult,
   ensureUserDocumentFromAuth,
 } from '@/lib/firebase';
+import { recordUserPresenceDeferred } from '@/lib/userPresence';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 
 interface AuthContextType {
@@ -183,6 +184,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (redirectResult?.user) {
             devLog.debug('Redirect authentication completed successfully', 'auth');
             void ensureUserDocumentFromAuth(redirectResult.user).catch(() => {});
+            recordUserPresenceDeferred(redirectResult.user.uid, {
+              route: typeof window !== 'undefined' ? window.location.pathname : undefined,
+              force: true,
+            });
             setUser(redirectResult.user);
             setLoading(false);
             void getUserProfile(redirectResult.user.uid)
@@ -233,12 +238,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
+      const presenceUidRef = { current: null as string | null };
+
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (cancelled) return;
 
         setUser(firebaseUser);
 
         if (firebaseUser) {
+          const isNewSessionForTab = presenceUidRef.current !== firebaseUser.uid;
+          presenceUidRef.current = firebaseUser.uid;
+          const route =
+            typeof window !== 'undefined' ? window.location.pathname : undefined;
+          recordUserPresenceDeferred(firebaseUser.uid, {
+            route,
+            force: isNewSessionForTab,
+          });
           try {
             analytics.identifyUser(firebaseUser.uid, {
               email: firebaseUser.email ?? undefined,
@@ -297,6 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               roles.isSpecialUser || claimSpecial || profileIndicatesSpecialUser(profile)
             );
           } else {
+            presenceUidRef.current = null;
             setUserProfile(null);
             setIsSuperadmin(false);
             setIsAdmin(false);
@@ -307,6 +323,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (firebaseUser) {
             setUserProfile(null);
           } else {
+            presenceUidRef.current = null;
             setUserProfile(null);
             setIsSuperadmin(false);
             setIsAdmin(false);

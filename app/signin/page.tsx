@@ -16,9 +16,10 @@ import {
   signInWithGoogle,
   signInWithApple,
   signInWithEmail,
-  recoverOAuthSessionAfterPopupDismiss,
+  recoverOAuthUserAfterError,
   getAuthErrorMessage,
   isReturningUser,
+  isFirebaseAuthInternalAssertionError,
   resetPassword,
   isUserDismissedAuthError,
   isBenignAuthUserInputError,
@@ -179,23 +180,28 @@ function SignInContent() {
         trackAuthOutcomeDeferred("google", "signin", "redirect_initiated")
         return
       }
-      if (isUserDismissedAuthError(err)) {
+      const oauthRecoverable =
+        isUserDismissedAuthError(err) || isFirebaseAuthInternalAssertionError(error)
+      if (oauthRecoverable) {
         setError(null)
         setSuccess("Completing sign-in…")
-        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
-        setSuccess(null)
-        if (resolvedSession) {
-          await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
-            method: "google",
-            code: err.code ?? null,
-            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
-          })
-          trackAuthOutcomeDeferred("google", "signin", "success", { recoveredAfterDismiss: true })
-          return
-        }
+      }
+      const recoveredUser = await recoverOAuthUserAfterError(error, AUTH_DISMISS_RECOVERY_WINDOW_MS)
+      if (oauthRecoverable) setSuccess(null)
+      if (recoveredUser) {
+        const destination = getPostAuthDestination(redirectTo, isReturningUser(recoveredUser))
+        await logError("signin_oauth_recovered", "OAuth transient error but session resolved", "info", {
+          method: "google",
+          code: err.code ?? null,
+          internalAssertion: isFirebaseAuthInternalAssertionError(error),
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
+        })
+        trackAuthOutcomeDeferred("google", "signin", "success", { recoveredAfterTransient: true, redirectTo: destination })
+        router.push(destination)
+        return
       }
       const msg = getAuthErrorMessage(err)
-      setDismissAuthInfo(isUserDismissedAuthError(err))
+      setDismissAuthInfo(isUserDismissedAuthError(err) || isFirebaseAuthInternalAssertionError(error))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         trackAuthOutcomeDeferred("google", "signin", "dismissed", { code: err.code ?? null })
@@ -255,23 +261,28 @@ function SignInContent() {
         trackAuthOutcomeDeferred("apple", "signin", "redirect_initiated")
         return
       }
-      if (isUserDismissedAuthError(err)) {
+      const oauthRecoverable =
+        isUserDismissedAuthError(err) || isFirebaseAuthInternalAssertionError(error)
+      if (oauthRecoverable) {
         setError(null)
         setSuccess("Completing sign-in…")
-        const resolvedSession = await recoverOAuthSessionAfterPopupDismiss(AUTH_DISMISS_RECOVERY_WINDOW_MS)
-        setSuccess(null)
-        if (resolvedSession) {
-          await logError("signin_dismissed_recovered", "Popup dismissed but session resolved", "info", {
-            method: "apple",
-            code: err.code ?? null,
-            recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
-          })
-          trackAuthOutcomeDeferred("apple", "signin", "success", { recoveredAfterDismiss: true })
-          return
-        }
+      }
+      const recoveredUser = await recoverOAuthUserAfterError(error, AUTH_DISMISS_RECOVERY_WINDOW_MS)
+      if (oauthRecoverable) setSuccess(null)
+      if (recoveredUser) {
+        const destination = getPostAuthDestination(redirectTo, isReturningUser(recoveredUser))
+        await logError("signin_oauth_recovered", "OAuth transient error but session resolved", "info", {
+          method: "apple",
+          code: err.code ?? null,
+          internalAssertion: isFirebaseAuthInternalAssertionError(error),
+          recoveryWindowMs: AUTH_DISMISS_RECOVERY_WINDOW_MS,
+        })
+        trackAuthOutcomeDeferred("apple", "signin", "success", { recoveredAfterTransient: true, redirectTo: destination })
+        router.push(destination)
+        return
       }
       const msg = getAuthErrorMessage(err)
-      setDismissAuthInfo(isUserDismissedAuthError(err))
+      setDismissAuthInfo(isUserDismissedAuthError(err) || isFirebaseAuthInternalAssertionError(error))
       setError(msg)
       if (isUserDismissedAuthError(err)) {
         trackAuthOutcomeDeferred("apple", "signin", "dismissed", { code: err.code ?? null })

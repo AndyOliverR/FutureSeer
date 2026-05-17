@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { Download, Search, Eye, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, AlertTriangle } from 'lucide-react';
+import { Download, Search, Eye, ChevronRight, CheckSquare, Square, Trash2, Shield, Users, Activity, AlertTriangle, Route } from 'lucide-react';
 import Link from 'next/link';
 import { getPricingHealthSnapshot } from '@/lib/pricingConfig';
 
@@ -25,6 +25,35 @@ interface AdminUserRow {
   email: string;
   displayName?: string;
   claims: Record<string, boolean | undefined>;
+  profileComplete?: boolean;
+  mysticalReady?: boolean;
+  activeToday?: boolean;
+  lastSeenAt?: string | null;
+  lastSeenRoute?: string | null;
+  subscriptionStatus?: string | null;
+  profileStatus?: string | null;
+}
+
+function formatLastSeenShort(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function FunnelYesNo({ value }: { value: boolean | undefined }) {
+  if (value === true) {
+    return <span className="text-emerald-400 font-medium">Yes</span>;
+  }
+  if (value === false) {
+    return <span className="text-slate-500">No</span>;
+  }
+  return <span className="text-slate-500">—</span>;
 }
 
 interface AuditLogRow {
@@ -455,7 +484,11 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
                   </button>
                 </th>
                 <th className="sticky left-10 z-10 bg-slate-800/80 p-2 min-w-[12rem]">Email</th>
-                <th className="sticky left-[14.5rem] z-10 bg-slate-800/80 p-2 min-w-[8rem] border-r border-slate-600 shadow-[2px_0_4px_0_rgba(0,0,0,0.2)]">Display Name</th>
+                <th className="sticky left-[14.5rem] z-10 bg-slate-800/80 p-2 min-w-[8rem]">Display Name</th>
+                <th className="p-2 min-w-[4.5rem]">Profile</th>
+                <th className="p-2 min-w-[4.5rem]">Mystical</th>
+                <th className="p-2 min-w-[4.5rem]">Today</th>
+                <th className="p-2 min-w-[9rem] border-r border-slate-600 shadow-[2px_0_4px_0_rgba(0,0,0,0.2)]">Last seen</th>
                 <th className="p-2">Superadmin</th>
                 <th className="p-2">Admin</th>
                 <th className="p-2">Support</th>
@@ -487,7 +520,24 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
                     </button>
                   </td>
                   <td className="sticky left-10 z-10 bg-slate-900 p-2 min-w-[12rem] font-mono">{user.email}</td>
-                  <td className="sticky left-[14.5rem] z-10 bg-slate-900 p-2 min-w-[8rem] border-r border-slate-600 shadow-[2px_0_4px_0_rgba(0,0,0,0.2)]">{user.displayName}</td>
+                  <td className="sticky left-[14.5rem] z-10 bg-slate-900 p-2 min-w-[8rem]">{user.displayName}</td>
+                  <td className="p-2 text-center">
+                    <FunnelYesNo value={user.profileComplete} />
+                  </td>
+                  <td className="p-2 text-center">
+                    <FunnelYesNo value={user.mysticalReady} />
+                  </td>
+                  <td className="p-2 text-center">
+                    <FunnelYesNo value={user.activeToday} />
+                  </td>
+                  <td className="p-2 text-xs text-slate-400 border-r border-slate-700/60 min-w-[9rem]">
+                    <div>{formatLastSeenShort(user.lastSeenAt)}</div>
+                    {user.lastSeenRoute && (
+                      <div className="truncate max-w-[8rem] text-slate-500" title={user.lastSeenRoute}>
+                        {user.lastSeenRoute}
+                      </div>
+                    )}
+                  </td>
                   {['superadmin','admin','support','userManagement','logs','codeEditor','billing','featureFlags','dataExport','specialUser','impersonate','deleteUser'].map((claim) => (
                     <td className="p-2 text-center" key={claim}>
                       <Switch
@@ -498,6 +548,12 @@ function UserManagement({ adminToken, getToken }: { adminToken: string | null; g
                     </td>
                   ))}
                   <td className="p-2 space-x-2">
+                    <Button size="sm" variant="outline" asChild className="border-slate-500 text-slate-200 hover:bg-slate-800">
+                      <Link href={`/admin/users/${user.uid}`} className="flex items-center gap-1">
+                        <Route className="w-3 h-3" />
+                        Journey
+                      </Link>
+                    </Button>
                     <Button
                       onClick={() => handleImpersonate(user.uid, user.email)}
                       disabled={impersonating[user.uid] || !user.claims.impersonate}

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
 import { saveUserActivity } from '@/lib/firebase'
+import { recordUserPresenceDeferred } from '@/lib/userPresence'
 
 /**
  * Records a page_view or tool_open activity when the user lands on a key route.
@@ -20,6 +21,8 @@ export function useActivityLogger() {
     loggedRef.current = pathname
 
     const path = pathname as string
+    recordUserPresenceDeferred(user.uid, { route: path })
+
     if (path.startsWith('/tools/')) {
       const toolSlug = path.split('/').filter(Boolean)[1]
       if (toolSlug) {

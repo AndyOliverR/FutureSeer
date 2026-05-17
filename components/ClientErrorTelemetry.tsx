@@ -201,6 +201,7 @@ export function ClientErrorTelemetry() {
       }
 
       if (isFirebaseAuthInternalAssertion(text)) {
+        ev.preventDefault();
         const key = `firebase_auth_internal|${pathname || ''}|${text.slice(0, 120)}`;
         if (shouldThrottle(key)) return;
         void logClientError({
