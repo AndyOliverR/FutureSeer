@@ -35,7 +35,7 @@ export function useOnboardingStallRecovery(
       return undefined
     }
 
-    let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+    let timeoutId: number | undefined
 
     const clearTimer = () => {
       if (timeoutId !== undefined) {
