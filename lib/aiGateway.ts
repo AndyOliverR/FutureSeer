@@ -9,6 +9,11 @@
  */
 
 import { streamText, generateText } from 'ai';
+import {
+  assertAiCircuitClosed,
+  recordAiCircuitFailure,
+  recordAiCircuitSuccess,
+} from '@/lib/aiCircuitBreakerControl';
 import { devLog } from '@/lib/devLogger';
 import Groq from 'groq-sdk';
 import OpenAI from 'openai';
@@ -20,6 +25,11 @@ const isGatewayAvailable = () => {
 
 const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 3000];
+
+function retryDelayMs(attemptIndex: number): number {
+  const base = RETRY_DELAYS[attemptIndex] ?? 3000;
+  return base + Math.floor(Math.random() * 200);
+}
 
 function makeRateLimitedError(): Error & { code: string; status: number } {
   const err = new Error('Our AI service is currently busy. Please wait a moment and try again.') as Error & {
@@ -37,12 +47,18 @@ function makeRateLimitedError(): Error & { code: string; status: number } {
  * success, throws on permanent failures or after all retries exhausted.
  */
 async function withRetry<T>(fn: () => Promise<T>, label = 'AI call'): Promise<T> {
+  await assertAiCircuitClosed();
   let lastError: unknown;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      return await fn();
+      const result = await fn();
+      await recordAiCircuitSuccess();
+      return result;
     } catch (err: any) {
       lastError = err;
+      if (err?.code === 'AI_CIRCUIT_OPEN') {
+        throw err;
+      }
       const status = err?.status ?? err?.statusCode ?? err?.error?.status;
       const isRetryable =
         status === 429 ||
@@ -52,12 +68,13 @@ async function withRetry<T>(fn: () => Promise<T>, label = 'AI call'): Promise<T>
         err?.message?.includes('timeout');
 
       if (!isRetryable || attempt === MAX_RETRIES) {
+        await recordAiCircuitFailure();
         if (status === 429) {
           throw makeRateLimitedError();
         }
         throw err;
       }
-      const delay = RETRY_DELAYS[attempt] ?? 3000;
+      const delay = retryDelayMs(attempt);
       devLog.warn(`${label} attempt ${attempt + 1} failed (status=${status}), retrying in ${delay}ms`, 'aiGateway');
       await new Promise(r => setTimeout(r, delay));
     }
@@ -98,7 +115,7 @@ const getProviderFromModel = (model: string): 'groq' | 'openai' => {
   return 'groq';
 };
 
-interface AIStreamOptions {
+export interface AIStreamOptions {
   model: string;
   messages: Array<{ 
     role: 'system' | 'user' | 'assistant'; 
@@ -117,8 +134,16 @@ interface AIStreamOptions {
   response_format?: { type: 'json_object' };
 }
 
-interface AICompletionOptions extends AIStreamOptions {
+export interface AICompletionOptions extends AIStreamOptions {
   stream?: false;
+}
+
+async function recordProviderOutcome(success: boolean): Promise<void> {
+  if (success) {
+    await recordAiCircuitSuccess();
+  } else {
+    await recordAiCircuitFailure();
+  }
 }
 
 /**
@@ -128,6 +153,7 @@ interface AICompletionOptions extends AIStreamOptions {
 export async function createAIStream(options: AIStreamOptions): Promise<AsyncIterable<{
   choices: Array<{ delta: { content?: string } }>;
 }>> {
+  await assertAiCircuitClosed();
   if (isGatewayAvailable()) {
     try {
       const gatewayModel = mapModelToGateway(options.model);
@@ -142,6 +168,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
       } as Parameters<typeof streamText>[0]);
 
       // Convert AI SDK stream to Groq-compatible format
+      await recordAiCircuitSuccess();
       return {
         async *[Symbol.asyncIterator]() {
           for await (const chunk of result.textStream as AsyncIterable<string>) {
@@ -155,6 +182,7 @@ export async function createAIStream(options: AIStreamOptions): Promise<AsyncIte
       };
     } catch (error) {
       devLog.error('AI Gateway error, falling back to direct SDK:', error, 'aiGateway');
+      await recordProviderOutcome(false);
       // Fall through to direct SDK
     }
   }
@@ -236,6 +264,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
   usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
   finishReason?: string;
 }> {
+  await assertAiCircuitClosed();
   if (isGatewayAvailable()) {
     try {
       const gatewayModel = mapModelToGateway(options.model);
@@ -271,14 +300,17 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
           : undefined,
         finishReason: result.finishReason,
       };
+      await recordAiCircuitSuccess();
       return out;
     } catch (error) {
       devLog.error('AI Gateway error, falling back to direct SDK:', error, 'aiGateway');
+      await recordProviderOutcome(false);
       // Fall through to direct SDK
     }
   }
 
   // Fallback to direct SDK
+  try {
   const provider = getProviderFromModel(options.model);
   
   // Extract model name: strip provider prefixes (groq/, openai/) but keep vendor prefixes (meta-llama/)
@@ -321,6 +353,7 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
         : undefined,
       finishReason: completion.choices[0]?.finish_reason,
     };
+    await recordAiCircuitSuccess();
     return out;
   }
   if (!process.env.OPENAI_API_KEY) {
@@ -357,7 +390,12 @@ export async function createAICompletion(options: AICompletionOptions): Promise<
       : undefined,
     finishReason: openaiCompletion.choices[0]?.finish_reason,
   };
+  await recordAiCircuitSuccess();
   return openaiOut;
+  } catch (error) {
+    await recordProviderOutcome(false);
+    throw error;
+  }
 }
 
 

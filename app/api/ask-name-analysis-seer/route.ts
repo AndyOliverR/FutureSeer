@@ -3,7 +3,9 @@ import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate'
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { devLog } from '@/lib/devLogger';
 import { ConversationalMemory, MemoryMessage } from '@/lib/conversationalMemory';
 import {
@@ -194,18 +196,16 @@ export async function POST(request: NextRequest) {
       .filter((item): item is { question: string; answer: string } => item !== null)
       .slice(-10);
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...conversationHistory.flatMap((h: { question: string; answer: string } | null) =>
-          h ? [
-            { role: 'user' as const, content: h.question },
-            { role: 'assistant' as const, content: h.answer },
-          ] : []
-        ),
-        { role: 'user', content: question },
-      ],
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPrompt,
+      userMessage: question,
+      history: conversationHistory,
+    });
+
+    const { stream } = await callTextStream({ label: 'ask-name-analysis-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
       temperature: 0.6,
       maxTokens: 800,
     });
@@ -267,6 +267,9 @@ export async function POST(request: NextRequest) {
               }
             } catch {
               /* non-fatal */
+            if (fullResponse.trim()) {
+              await cacheToolSeerAnswer('ask-name-analysis-seer', userId, question, fullResponse);
+            }
             }
           } catch (error) {
             devLog.error('Error during streaming:', error);

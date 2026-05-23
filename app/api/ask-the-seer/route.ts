@@ -3,6 +3,7 @@ import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { log } from '@/lib/consoleLogger';
 import { getServerBaseUrl } from '@/lib/serverBaseUrl';
 import { verifyUserRequest, resolveOwnedUserId } from '@/lib/userApiAuth';
+import { blockSeerQuestionIfNeeded } from '@/lib/seerGateResponses';
 
 const X_ROBOTS_TAG = 'noindex, nofollow, noarchive, nosnippet';
 const SEER_MARKER_FAMILY = 'ask-the-seer';
@@ -58,6 +59,16 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Missing/invalid userId or question' },
         { status: 400 }
       );
+    }
+
+    const inputBlocked = blockSeerQuestionIfNeeded(String(question).trim(), 'ask-the-seer', {
+      blockedResponseFormat: 'ask_the_seer',
+      userId: ownedUserId,
+    });
+    if (inputBlocked) {
+      const headers = new Headers(inputBlocked.headers);
+      headers.set('X-Robots-Tag', X_ROBOTS_TAG);
+      return new Response(inputBlocked.body, { status: inputBlocked.status, headers });
     }
 
     const thread = (conversationHistory as Array<{ type?: string; content?: string }>)

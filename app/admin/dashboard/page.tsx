@@ -749,6 +749,11 @@ function SupportTools() {
               Security
             </Button>
           </Link>
+          <Link href="/admin/social-posts">
+            <Button variant="outline" className="border-slate-500 text-slate-200 hover:bg-slate-800">
+              Social post generator
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>

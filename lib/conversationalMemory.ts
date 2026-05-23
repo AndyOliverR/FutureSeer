@@ -995,7 +995,7 @@ export class ConversationalMemory {
   // CONTEXT SUMMARIZATION METHODS
   async generateAISummary(exchanges: MemoryMessage[]): Promise<ContextSummary> {
     try {
-      const { createAICompletion } = await import('./aiGateway');
+      const { callStructuredAI } = await import('./aiStructuredOutput');
       
       // Build conversation text
       const conversationText = exchanges.map(ex => 
@@ -1031,7 +1031,8 @@ Respond in JSON format:
   "sentiment": "positive|neutral|negative"
 }`;
 
-      const response = await createAICompletion({
+      const structured = await callStructuredAI({
+        label: 'conversation-memory-summary',
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: 'You are a helpful assistant that summarizes conversations in JSON format.' },
@@ -1039,16 +1040,16 @@ Respond in JSON format:
         ],
         maxTokens: 500,
         temperature: 0.3,
-        responseFormat: { type: 'json_object' }
+        maxAttempts: 2,
       });
 
       let summaryData: any;
       try {
-        summaryData = JSON.parse(response.content);
+        summaryData = structured.raw ?? JSON.parse(structured.lastRaw ?? '{}');
       } catch {
         // Fallback if JSON parsing fails
         summaryData = {
-          summary: response.content,
+          summary: structured.lastRaw ?? '',
           keyTopics: allKeywords.slice(0, 5),
           keyInsights: [],
           sentiment: 'neutral' as const
@@ -1059,7 +1060,7 @@ Respond in JSON format:
         id: `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         sessionId: this.shortTermMemory.sessionId,
         timestamp: Date.now(),
-        summary: summaryData.summary || response.content,
+        summary: summaryData.summary || structured.lastRaw || '',
         keyTopics: summaryData.keyTopics || allKeywords.slice(0, 5),
         keyInsights: summaryData.keyInsights || [],
         questionTypes: questionTypes,

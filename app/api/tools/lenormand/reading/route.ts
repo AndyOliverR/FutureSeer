@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { lenormandIntelligence, LenormandReading } from '@/lib/lenormandIntelligence'
 import { getUserProfile } from '@/lib/firebase'
 import { analyzeSpreadCombinations, generateFallbackInterpretation } from '@/lib/lenormandCombinations'
-import { createAICompletion } from '@/lib/aiGateway'
+import { callTextAI } from '@/lib/aiStructuredOutput'
 import { devLog } from '@/lib/devLogger'
 
 export async function POST(request: NextRequest) {
@@ -118,17 +118,19 @@ Generate:
 
 Write in a warm, practical voice addressing ${displayName} directly.`
 
-      const result = await createAICompletion({
+      const result = await callTextAI({
+        label: 'lenormand-reading',
         model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.7,
-        maxTokens: 1500
+        maxTokens: 1500,
+        maxAttempts: 2,
       })
 
-      const aiResponse = result.content || ''
+      const aiResponse = result.content
       
       // Parse AI response into sections
       const sections = aiResponse.split(/\d+\.\s+(.+?):/g)

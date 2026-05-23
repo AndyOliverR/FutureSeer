@@ -6,9 +6,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
+import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
+import type { GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
-import { adminDb } from '@/lib/firebase-admin';
 import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
 
 export const dynamic = 'force-dynamic';
@@ -104,17 +110,38 @@ Respond with a single JSON object (no markdown, no code fence) with exactly thes
 14. "summarySnapshot" (string): One-page bullet summary—best geographic zones for career, best for relationships, regions to approach cautiously. Concise bullets only.`;
 }
 
-function parseReportResponse(content: string): Record<string, unknown> {
-  const trimmed = content.trim();
-  let jsonStr = trimmed;
-  const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-  if (codeBlock?.[1]) jsonStr = codeBlock[1];
-  else {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (match?.[0]) jsonStr = match[0];
+function parseReportResponse(content: GroqStructuredParseInput): Record<string, unknown> {
+  const parsed = parseLlmJsonRecord(content);
+  if (!parsed) {
+    throw new Error('Astrocartography report JSON parse failed');
   }
-  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(jsonStr) as Record<string, unknown>;
+  return parsed;
+}
+
+function buildAstrocartographyDeterministic(
+  planets: any[],
+  cover: Record<string, string>,
+): Record<string, unknown> {
+  const sunPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'sun');
+  const moonPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'moon');
+  const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
+  const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
+  return {
+    cover,
+    overview: `Your chart (Sun in ${sunSign}, Moon in ${moonSign}) suggests different planetary energies are emphasized in different parts of the world. Astrocartography maps where MC, IC, ASC, and DSC lines fall—these indicate where career, home, identity, and relationship themes are activated. This is about activation of energies, not guaranteed outcomes.`,
+    keyPlanetaryLines: [
+      { angle: 'MC', planet: 'Sun', theme: 'Career and visibility activation' },
+      { angle: 'IC', planet: 'Moon', theme: 'Home and roots activation' },
+      { angle: 'ASC', planet: 'Venus', theme: 'Social and relational activation' },
+      { angle: 'DSC', planet: 'Mars', theme: 'Partnership and action activation' },
+    ],
+    themesByRegion:
+      'Regional themes depend on where your planetary lines cross the globe. General guidance: consider which life area you want to emphasize (career, home, relationships) and use astrocartography as one input among many when choosing where to live or travel.',
+    relocationGuidance:
+      'Use astrocartography to understand where certain energies are stronger for you. It does not guarantee success or replace practical planning. When relocating, combine this insight with career, family, and financial considerations.',
+    limitations:
+      'This report is interpretive, not deterministic. Local culture, economics, and personal choice also shape your experience in any location.',
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -124,6 +151,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+    }
+
+    const freshCached = await readAdminComprehensiveCache(userId, 'astrocartographyReports', 'comprehensive', {
+      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+    });
+    if (freshCached) {
+      return NextResponse.json({
+        success: true,
+        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+      });
     }
 
     const birthData: BirthData | null = bodyBirthData
@@ -169,62 +206,61 @@ export async function POST(request: NextRequest) {
     const chartContext = formatChartContextForAstro(planets, houses);
     const systemPrompt = buildAstrocartographyReportPrompt(chartContext);
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: 'You are an expert in Astrocartography. Respond only with a single valid JSON object, no other text.' },
-        { role: 'user', content: systemPrompt },
-      ],
-      temperature: 0.5,
-      maxTokens: 3600,
-      responseFormat: { type: 'json_object' },
-    });
-
-    const content = result.content || '';
-    let comprehensiveAnalysis: Record<string, unknown>;
     const cover = buildCover(userProfile ?? undefined, birthData);
 
-    try {
-      comprehensiveAnalysis = parseReportResponse(content);
-      Object.assign(comprehensiveAnalysis, { cover });
-    } catch {
-      const sunPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'sun');
-      const moonPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'moon');
-      const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
-      const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
-      comprehensiveAnalysis = {
-        cover,
-        overview: `Your chart (Sun in ${sunSign}, Moon in ${moonSign}) suggests different planetary energies are emphasized in different parts of the world. Astrocartography maps where MC, IC, ASC, and DSC lines fall—these indicate where career, home, identity, and relationship themes are activated. This is about activation of energies, not guaranteed outcomes.`,
-        keyPlanetaryLines: [
-          { angle: 'MC', planet: 'Sun', theme: 'Career and visibility activation' },
-          { angle: 'IC', planet: 'Moon', theme: 'Home and roots activation' },
-          { angle: 'ASC', planet: 'Venus', theme: 'Social and relational activation' },
-          { angle: 'DSC', planet: 'Mars', theme: 'Partnership and action activation' },
-        ],
-        themesByRegion: 'Regional themes depend on where your planetary lines cross the globe. General guidance: consider which life area you want to emphasize (career, home, relationships) and use astrocartography as one input among many when choosing where to live or travel.',
-        relocationGuidance: 'Use astrocartography to understand where certain energies are stronger for you. It does not guarantee success or replace practical planning. When relocating, combine this insight with career, family, and financial considerations.',
-        limitations: 'This report is interpretive, not deterministic. Local culture, economics, and personal choice also shape your experience in any location.',
-      };
+    const resolved = await resolveAiReportWithFallback({
+      label: 'astrocartography-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'astrocartography-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert in Astrocartography. Respond only with a single valid JSON object, no other text.',
+            },
+            { role: 'user', content: systemPrompt },
+          ],
+          temperature: 0.5,
+          maxTokens: 3600,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, (parsed) => {
+          const report = parseReportResponse(parsed);
+          return { ...report, cover };
+        });
+      },
+      readFirestoreCache: () =>
+        readAdminComprehensiveCache(userId, 'astrocartographyReports', 'comprehensive', {
+          allowStale: true,
+          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+        }),
+      buildDeterministic: () => buildAstrocartographyDeterministic(planets, cover),
+    });
+
+    const comprehensiveAnalysis = resolved.data;
+
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
+        },
+      });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('users')
-          .doc(userId)
-          .collection('astrocartographyReports')
-          .doc('comprehensive')
-          .set(
-            {
-              comprehensiveAnalysis,
-              timestamp: Date.now(),
-            },
-            { merge: true }
-          );
-      } catch (e) {
-        devLog.warn('Astrocartography report cache write failed:', e, 'route');
-      }
-    }
+    await writeAdminComprehensiveCache(userId, 'astrocartographyReports', 'comprehensive', {
+      comprehensiveAnalysis,
+    });
 
     return NextResponse.json({
       success: true,
@@ -232,7 +268,6 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
-      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Astrocartography comprehensive API error:', err, 'route');

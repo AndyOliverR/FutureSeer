@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { enhancedUniversalInterpretationEngine } from '@/lib/enhancedToolIntegration'
+import { kerykeionIntegration } from '@/lib/kerykeionIntegration'
 import { 
   BarChart3, 
   Calendar,
@@ -62,18 +62,17 @@ export default function KerykeionPage() {
       setError(null)
 
       const birthData = {
-        date: userProfile.birthDate,
-        time: userProfile.birthTime,
-        place: userProfile.birthPlace,
+        date: userProfile.birthDate as string,
+        time: userProfile.birthTime as string,
+        place: userProfile.birthPlace as string,
         latitude: userProfile.birthLatitude ?? 0,
-        longitude: userProfile.birthLongitude ?? 0
+        longitude: userProfile.birthLongitude ?? 0,
       }
 
-      const result = await enhancedUniversalInterpretationEngine.generateComprehensiveReading(
+      const result = await kerykeionIntegration.generateKerykeionReading(
         user.uid,
-        'kerykeion',
         birthData,
-        userProfile
+        { includeSynastry: true, includeTransits: true },
       )
 
       setAnalysis(result)

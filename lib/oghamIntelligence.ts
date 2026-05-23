@@ -9,7 +9,7 @@ import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from './firebase'
 import { userSubdocSet, userSubcollectionQueryOrdered } from '@/lib/userSubcollectionFirestore'
 import { UserProfile } from './firebase'
-import { createAICompletion } from './aiGateway'
+import { callTextAI } from './aiStructuredOutput'
 import {
   generateOghamReportStructure,
   generateNameAnalysis,
@@ -222,17 +222,19 @@ Practices:
 - [Practice 3]
 - [Practice 4]`
 
-      const result = await createAICompletion({
+      const result = await callTextAI({
+        label: 'ogham-reading',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
         model: 'llama-3.3-70b-versatile',
         temperature: 0.7,
-        maxTokens: 2000
+        maxTokens: 2000,
+        maxAttempts: 2,
       })
 
-      const aiResponse = result.content || ''
+      const aiResponse = result.content
 
       // Parse AI response
       const aiInsights = this.parseAIResponse(aiResponse, displayName)

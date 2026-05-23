@@ -80,6 +80,15 @@ export default [
     files: ["scripts/**/*.{js,mjs,cjs}"],
     rules: {
       "prefer-const": "error",
+      "security/detect-non-literal-fs-filename": "off",
+      "security/detect-non-literal-regexp": "off",
+      "security/detect-unsafe-regex": "off",
+    },
+  },
+  {
+    files: ["lib/seerInputGuard.ts"],
+    rules: {
+      "security/detect-unsafe-regex": "off",
     },
   },
   {

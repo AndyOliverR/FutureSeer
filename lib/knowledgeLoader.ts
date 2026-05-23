@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { allocateTokenBudget, APPROX_CHARS_PER_TOKEN } from '@/lib/aiTokenBudget';
 
 export interface KnowledgeResult {
   tool: string;
@@ -11,7 +12,6 @@ export interface KnowledgeResult {
 
 const KNOWLEDGE_ROOT = path.join(process.cwd(), 'knowledge');
 const MAX_CONTEXT_TOKENS = 2000;
-const APPROX_CHARS_PER_TOKEN = 4;
 const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS * APPROX_CHARS_PER_TOKEN;
 
 const fileCache = new Map<string, string>();
@@ -155,30 +155,38 @@ export function searchKnowledge(
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score);
 
+  const chunks = scored
+    .map(({ entry, score }, index) => {
+      const content = readFileWithCache(entry.filePath);
+      if (!content) return null;
+      return {
+        id: `${entry.tool}/${entry.topic}`,
+        priority: index,
+        text: content,
+        entry,
+        score,
+      };
+    })
+    .filter((c): c is NonNullable<typeof c> => c !== null);
+
+  const allocated = allocateTokenBudget(
+    chunks.map((c) => ({ id: c.id, priority: c.priority, text: c.text })),
+    MAX_CONTEXT_TOKENS,
+  );
+
+  const byId = new Map(chunks.map((c) => [c.id, c]));
   const results: KnowledgeResult[] = [];
-  let totalChars = 0;
 
-  for (const { entry, score } of scored) {
-    if (totalChars >= MAX_CONTEXT_CHARS) break;
-
-    const content = readFileWithCache(entry.filePath);
-    if (!content) continue;
-
-    const remainingChars = MAX_CONTEXT_CHARS - totalChars;
-    const truncatedContent =
-      content.length > remainingChars
-        ? content.slice(0, remainingChars) + '\n\n[... truncated for context limits]'
-        : content;
-
+  for (const { id, text, truncated } of allocated.chunks) {
+    const chunk = byId.get(id);
+    if (!chunk) continue;
     results.push({
-      tool: entry.tool,
-      topic: entry.topic,
-      filePath: entry.filePath,
-      content: truncatedContent,
-      relevanceScore: score,
+      tool: chunk.entry.tool,
+      topic: chunk.entry.topic,
+      filePath: chunk.entry.filePath,
+      content: truncated ? text : chunk.text,
+      relevanceScore: chunk.score,
     });
-
-    totalChars += truncatedContent.length;
   }
 
   return results;

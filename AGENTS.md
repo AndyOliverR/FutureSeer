@@ -128,6 +128,40 @@ After `pnpm install`, a warning about "Ignored build scripts" appears. `sharp` (
 - The SSR error `Bail out to client-side rendering: next/dynamic` in dev server logs is expected — the app uses `next/dynamic` heavily and renders client-side.
 - The project includes Electron (`pnpm desktop`) and Capacitor (`pnpm mobile:build`) shells — these are optional and not needed for web development.
 
+### AI control layer (Phases 1–4)
+
+Server-side LLM calls use a shared control stack under `lib/`:
+
+| Module | Role |
+|--------|------|
+| `seerInputGuard.ts` | Pre-LLM input guard (empty, length, regex + semantic injection) |
+| `seerInjectionClassifier.ts` | Heuristic injection scoring (no extra LLM call) |
+| `aiStructuredOutput.ts` | Structured JSON + prose/text/stream calls; retries with mutation hints |
+| `aiGateway.ts` | Provider transport + circuit breaker |
+| `aiCircuitBreakerControl.ts` | In-process + optional Firestore distributed breaker |
+| `aiCircuitBreakerStore.ts` | Firestore `_aiCircuitBreaker` when `AI_CIRCUIT_STORE=firestore` |
+| `aiFallbackRouter.ts` | LLM → stale Firestore cache → deterministic report fallback |
+| `seerQuestionCache.ts` | Similar-question cache for tool Seer chats (Admin Firestore) |
+| `aiAuditEvents.ts` | Append-only `aiCallEvents` Firestore audit trail |
+| `aiTokenBudget.ts` | Priority-ordered context budgeting (~4 chars/token) |
+| `aiPromptBuilder.ts` | `buildSeerMessages()` — system slot order + trimmed history |
+
+**Prompt assembly:** Per-tool Seer routes use `buildToolSeerMessages({ systemContent, userMessage, history? })` (wraps `buildSeerMessages`). Slot order: system → constraints → chart → knowledge → context → history → user. Tool-specific copy stays in `*SeerPrompts.ts`. History is trimmed by turn count and per-message token cap; use `truncateHistoryAnswers` when a route previously capped assistant turns (iching, geomancy, navaratna).
+
+**Knowledge budget:** `searchKnowledge()` uses `allocateTokenBudget` (default ~2000 tokens). Highest relevance files are kept first.
+
+**Audit queries (Firestore `aiCallEvents`):** filter by `label`, `kind` (`structured` \| `text` \| `stream` \| `gate_block`), `passed`, `failureMode`, `fallbackSource`, `userId`, and `createdAt`. Use for “demo works, prod fails” debugging.
+
+**Seer gates:** `enforceToolSeerGate` + `blockSeerQuestionIfNeeded` on all tool Seer routes and `/api/seer/chat`.
+
+**Phase 4 — production hardening**
+
+- **Distributed circuit breaker:** set `AI_CIRCUIT_STORE=firestore` (same Admin requirement as `RATE_LIMIT_STORE=firestore`). Coordinates open/half-open state in `_aiCircuitBreaker/{providerKey}`.
+- **Semantic injection:** `validateSeerInput` runs `seerInjectionClassifier` after regex checks. Tune via `INJECTION_BLOCK_SCORE` (default 4); gate blocks log `injectionScore` / `injectionReasons` to `aiCallEvents` — see [docs/AI_INJECTION_TUNING.md](docs/AI_INJECTION_TUNING.md).
+- **Question cache:** pass `userId` + `cacheQuestion` on `callTextStream` for any `ask-*-seer` label (auto-resolves `{tool}SeerCache` via `lib/toolSeerQuestionCache.ts`). After streaming, call `cacheToolSeerAnswer(label, userId, question, fullResponse)`. Circuit-open fallback uses the same cache when enabled.
+
+When adding a new Seer or comprehensive route: use `callStructuredAI` / `callTextStream` / `resolveAiReportWithFallback` (reports with Firestore cache); do not call Groq/OpenAI SDKs directly.
+
 ### Occult Knowledge Base (`knowledge/`)
 
 The `knowledge/` folder contains deep reference material (markdown files) organized by divination domain. It supplements the structured data files in `lib/` with richer interpretive guidance for the Seer AI.

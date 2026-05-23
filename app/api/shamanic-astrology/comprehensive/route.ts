@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
+import type { GroqStructuredParseInput } from '@/lib/groqStructuredParse';
+import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import {
   buildShamanicReportSystemPrompt,
   buildShamanicProfileContext,
 } from '@/lib/shamanicSeerPrompts';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
-import { adminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -182,17 +188,10 @@ function buildPrecomputedBlock(
   return lines.join('\n');
 }
 
-function parseShamanicResponse(response: string): Record<string, unknown> {
-  const trimmed = response.trim();
-  let jsonStr = trimmed;
-  const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-  if (codeBlock?.[1]) jsonStr = codeBlock[1];
-  else {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (match?.[0]) jsonStr = match[0];
-  }
-  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(jsonStr) as Record<string, unknown>;
+function parseShamanicResponse(response: GroqStructuredParseInput): Record<string, unknown> {
+  const parsed = parseLlmJsonRecord(response);
+  if (!parsed) throw new Error('Shamanic report JSON parse failed');
+  return parsed;
 }
 
 function str(val: unknown): string {
@@ -220,6 +219,33 @@ function normalizeAnalysis(parsed: Record<string, unknown>): Record<string, unkn
   };
 }
 
+function buildShamanicDeterministic(planets: any[]): Record<string, unknown> {
+  const sunPlanet = getPlanet(planets, 'Sun');
+  const moonPlanet = getPlanet(planets, 'Moon');
+  const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
+  const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
+  const venus = computeVenusPhase(planets);
+  return normalizeAnalysis({
+    orientation:
+      'Shamanic Astrology emphasizes life purpose and sacred timing through initiatory cycles, not personality labels or prediction.',
+    sacred_birth_signature: `Sun ${sunSign}, Moon ${moonSign}—interpret through mythic and soul lens.`,
+    life_purpose_axis: 'North and South Node indicate soul lineage and evolutionary direction; see chart for details.',
+    elemental_medicine: 'Balance of Fire, Earth, Air, Water shapes inner medicine and spiritual style.',
+    initiatory_cycles: `Venus phase: ${venus.phase}. Saturn and nodal phases indicate current life initiation.`,
+    relationship_sacred_mirror: '7th house and Venus/Mars reflect sacred mirror and polarity lessons.',
+    power_shadow: 'Pluto and 8th/12th house themes point to power retrieval and transformation.',
+    current_cycle_snapshot: '',
+    integration_ceremony: 'Reflection, nature alignment, journaling, and embodiment support integration.',
+    executive_summary: 'Soul-aligned growth; chart supports deeper initiatory theme.',
+    life_cycle_phase: `Initiatory phase (Sun ${sunSign}, Moon ${moonSign})—archetypal mapping`,
+    archetypal_theme: 'Soul-aligned growth; full chart supports deeper theme.',
+    shadow_pattern: 'Integration of visibility and authority.',
+    power_dynamic: 'Oscillation between doubt and claiming; chart refines this.',
+    spiritual_threshold: 'Stepping into responsibility and service.',
+    integration_path: 'Owning your path without domination.',
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: ShamanicComprehensiveRequest = await request.json();
@@ -227,6 +253,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+    }
+
+    const freshCached = await readAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
+      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+    });
+    if (freshCached) {
+      return NextResponse.json({
+        success: true,
+        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+      });
     }
 
     let planets: any[] = [];
@@ -286,67 +322,56 @@ export async function POST(request: NextRequest) {
     const precomputed = buildPrecomputedBlock(planets, birthDate, userProfile);
     const systemPrompt = buildShamanicReportSystemPrompt(chartContext, profileContext, precomputed);
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        { role: 'system', content: 'You are an expert in Shamanic Astrology. Respond only with a single valid JSON object, no other text.' },
-        { role: 'user', content: systemPrompt },
-      ],
-      temperature: 0.6,
-      maxTokens: 4000,
-      responseFormat: { type: 'json_object' },
+    const resolved = await resolveAiReportWithFallback({
+      label: 'shamanic-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'shamanic-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert in Shamanic Astrology. Respond only with a single valid JSON object, no other text.',
+            },
+            { role: 'user', content: systemPrompt },
+          ],
+          temperature: 0.6,
+          maxTokens: 4000,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, normalizeAnalysis);
+      },
+      readFirestoreCache: () =>
+        readAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
+          allowStale: true,
+          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+        }),
+      buildDeterministic: () => buildShamanicDeterministic(planets),
     });
 
-    const content = result.content || '';
-    let comprehensiveAnalysis: Record<string, unknown>;
+    const comprehensiveAnalysis = resolved.data;
 
-    try {
-      const parsed = parseShamanicResponse(content);
-      comprehensiveAnalysis = normalizeAnalysis(parsed);
-    } catch {
-      const sunPlanet = getPlanet(planets, 'Sun');
-      const moonPlanet = getPlanet(planets, 'Moon');
-      const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
-      const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
-      const venus = computeVenusPhase(planets);
-      comprehensiveAnalysis = normalizeAnalysis({
-        orientation: 'Shamanic Astrology emphasizes life purpose and sacred timing through initiatory cycles, not personality labels or prediction.',
-        sacred_birth_signature: `Sun ${sunSign}, Moon ${moonSign}—interpret through mythic and soul lens.`,
-        life_purpose_axis: 'North and South Node indicate soul lineage and evolutionary direction; see chart for details.',
-        elemental_medicine: 'Balance of Fire, Earth, Air, Water shapes inner medicine and spiritual style.',
-        initiatory_cycles: `Venus phase: ${venus.phase}. Saturn and nodal phases indicate current life initiation.`,
-        relationship_sacred_mirror: '7th house and Venus/Mars reflect sacred mirror and polarity lessons.',
-        power_shadow: 'Pluto and 8th/12th house themes point to power retrieval and transformation.',
-        current_cycle_snapshot: '',
-        integration_ceremony: 'Reflection, nature alignment, journaling, and embodiment support integration.',
-        executive_summary: 'Soul-aligned growth; chart supports deeper initiatory theme.',
-        life_cycle_phase: `Initiatory phase (Sun ${sunSign}, Moon ${moonSign})—archetypal mapping`,
-        archetypal_theme: 'Soul-aligned growth; full chart supports deeper theme.',
-        shadow_pattern: 'Integration of visibility and authority.',
-        power_dynamic: 'Oscillation between doubt and claiming; chart refines this.',
-        spiritual_threshold: 'Stepping into responsibility and service.',
-        integration_path: 'Owning your path without domination.',
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
+        },
       });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('users')
-          .doc(userId)
-          .collection('shamanicAstrologyReports')
-          .doc('comprehensive')
-          .set(
-            {
-              comprehensiveAnalysis,
-              timestamp: Date.now(),
-            },
-            { merge: true }
-          );
-      } catch (e) {
-        devLog.warn('Shamanic report cache write failed:', e, 'route');
-      }
-    }
+    await writeAdminComprehensiveCache(userId, 'shamanicAstrologyReports', 'comprehensive', {
+      comprehensiveAnalysis,
+    });
 
     return NextResponse.json({
       success: true,
@@ -354,7 +379,6 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
-      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Shamanic comprehensive API error:', err, 'route');

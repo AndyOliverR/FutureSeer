@@ -5,7 +5,7 @@ import { devLog } from '@/lib/devLogger';
 import { normalizeTimeString, normalizeDateString } from './timeUtils';
 import { getServerBaseUrl } from './serverBaseUrl';
 import { universalInterpretationEngine } from './universalInterpretationEngine';
-import { createAICompletion } from './aiGateway';
+import { callTextAI } from './aiStructuredOutput';
 
 export interface VedicReading {
   id: string;
@@ -246,10 +246,12 @@ class VedicIntelligence {
   // Generate AI interpretations using Groq-first provider abstraction
   private async generateAIInterpretations(chartData: any, userId: string) {
     try {
-      const completion = await createAICompletion({
+      const completion = await callTextAI({
+        label: 'vedic-intelligence-interpretation',
         model: 'llama-3.3-70b-versatile',
         temperature: 0.7,
         maxTokens: 1400,
+        maxAttempts: 2,
         messages: [
           {
             role: 'system',

@@ -224,5 +224,22 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid;
       allow read, update, delete: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
     }
+
+    // Server-only control plane (Admin SDK writes; deny all client access)
+    match /_aiCircuitBreaker/{providerKey} {
+      allow read, write: if false;
+    }
+    match /_apiRateLimits/{docId} {
+      allow read, write: if false;
+    }
+    match /aiCallEvents/{eventId} {
+      allow read, write: if false;
+    }
+
+    // Per-tool Seer similar-question cache: {tool}SeerCache/{userId}/questions/{entryId}
+    match /{seerCacheCollection}/{userId}/questions/{entryId} {
+      allow read, write: if isOwner(userId)
+        && seerCacheCollection.matches('.*SeerCache$');
+    }
   }
 }

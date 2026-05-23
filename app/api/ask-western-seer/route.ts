@@ -3,7 +3,9 @@ import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
 import { appendAttribution } from '@/lib/attribution/attributionStamp';
 import { getFirebaseDB } from '@/lib/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
+import { buildToolSeerMessages } from '@/lib/aiPromptBuilder';
 import { parseDatesFromQuestion, formatDateForContext } from '@/lib/dateParser';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
 import { calculateLifePathNumber, calculateDestinyNumber } from '@/lib/numerologyCalculations';
@@ -350,27 +352,20 @@ export async function POST(request: NextRequest) {
       if (knowledgeContext) systemPromptContent += knowledgeContext;
     }
 
-    // Stream conversational response via AI Gateway or direct Groq
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile', // Fast, high-quality, free tier
-      messages: [
-        {
-          role: 'system',
-          content: systemPromptContent
-        },
-        ...conversationHistory.flatMap((h) =>
-          h ? [
-            { role: 'user' as const, content: h.question },
-            { role: 'assistant' as const, content: h.answer },
-          ] : []
-        ),
-        {
-          role: 'user',
-          content: question
-        }
-      ],
+    const { messages } = buildToolSeerMessages({
+      systemContent: systemPromptContent,
+      userMessage: question,
+      history: conversationHistory,
+    });
+
+    const { stream } = await callTextStream({
+      label: 'ask-western-seer',
+      model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
+      messages,
       temperature: 0.7,
-      maxTokens: 1000
+      maxTokens: 1000,
     });
 
     // Return streaming response (500+ tokens/second!)
@@ -430,7 +425,7 @@ export async function POST(request: NextRequest) {
               },
               followUpQuestions: generateWesternFollowUpQuestions(questionType, numerologyData)
             });
-            
+          await cacheToolSeerAnswer('ask-western-seer', userId, question, fullResponse);
           } catch (error) {
             devLog.error('Error during streaming:', error);
             controller.enqueue(new TextEncoder().encode(stampText('I apologize, but I encountered an error. Please try again.')));

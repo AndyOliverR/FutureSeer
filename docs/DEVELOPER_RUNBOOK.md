@@ -28,7 +28,9 @@ Use this file as the **single index** for how to build, ship, and audit FutureSe
 - Industry mobile growth trends vs this repo (Adjust 2026 synthesis): [analytics/ADJUST_2026_MOBILE_TRENDS_SYNTHESIS.md](./analytics/ADJUST_2026_MOBILE_TRENDS_SYNTHESIS.md)
 - Roadmap prioritization (impact–effort, second-order): [ROADMAP_PRIORITIZATION.md](./ROADMAP_PRIORITIZATION.md)
 - Marketing and asset workflow (message, channels, frequency, MJ/Firefly, optional Rive/Spline): [MARKETING_AND_ASSET_WORKFLOW.md](./MARKETING_AND_ASSET_WORKFLOW.md)
+- Organic growth (user share cards + social scheduler architecture): [ORGANIC_GROWTH_ARCHITECTURE.md](./ORGANIC_GROWTH_ARCHITECTURE.md)
 - Google OAuth branding verification (Search Console + consent screen): [GOOGLE_OAUTH_BRANDING_VERIFICATION.md](./GOOGLE_OAUTH_BRANDING_VERIFICATION.md)
+- AI control layer (gateway, fallback, prompt assembly, Phase 4 hardening): [AGENTS.md](../AGENTS.md) — `buildToolSeerMessages`, optional `AI_CIRCUIT_STORE=firestore`, semantic injection tuning ([AI_INJECTION_TUNING.md](./AI_INJECTION_TUNING.md)), tool Seer Q&A cache via `cacheQuestion` + `cacheToolSeerAnswer`.
 
 ## Firebase Auth domain: local dev vs production
 

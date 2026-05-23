@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserProfile } from '@/lib/firebase'
 import { LENORMAND_DECK } from '@/lib/lenormandIntelligence'
-import { createAICompletion } from '@/lib/aiGateway'
+import { callTextAI } from '@/lib/aiStructuredOutput'
 import { devLog } from '@/lib/devLogger'
 
 
@@ -56,17 +56,19 @@ Provide a helpful, educational response about Lenormand. Be specific, practical,
 
 Keep your response conversational yet informative, helping ${displayName} deepen their understanding of Lenormand reading.`
 
-    const result = await createAICompletion({
+    const result = await callTextAI({
+      label: 'lenormand-coaching',
       model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      maxTokens: 800
+      maxTokens: 800,
+      maxAttempts: 2,
     })
 
-    const aiResponse = result.content || ''
+    const aiResponse = result.content
     
     devLog.info('✅ Groq generated coaching response successfully', undefined, 'lenormand')
 

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { callStructuredAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
 import { computeNatalWealthProfile } from '@/lib/financialAstrology/natalWealthEngine';
 import { computeMarketCycleProfile } from '@/lib/financialAstrology/marketCycleEngine';
@@ -82,19 +87,6 @@ function formatChartContext(planets: any[], houses: any[], aspects: any[]): stri
   return `PLANETS:\n${planetsText || 'None'}\n\nHOUSES:\n${housesText || 'None'}\n\nASPECTS:\n${aspectsText || 'None'}`;
 }
 
-function parseJsonResponse(response: string): Record<string, unknown> {
-  const trimmed = response.trim();
-  let jsonStr = trimmed;
-  const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-  if (codeBlock?.[1]) jsonStr = codeBlock[1];
-  else {
-    const match = trimmed.match(/\{[\s\S]*\}/);
-    if (match?.[0]) jsonStr = match[0];
-  }
-  jsonStr = jsonStr.replace(/,(\s*[}\]])/g, '$1');
-  return JSON.parse(jsonStr) as Record<string, unknown>;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body: FinancialComprehensiveRequest = await request.json();
@@ -102,6 +94,16 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+    }
+
+    const freshCached = await readAdminComprehensiveCache(userId, 'financialAstrologyReports', 'comprehensive', {
+      extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+    });
+    if (freshCached) {
+      return NextResponse.json({
+        success: true,
+        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+      });
     }
 
     const birthData: BirthData | null = bodyBirthData
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest) {
     const precomputed = { natalWealth, marketCycle, alignment, chartSummary: chartContext };
     const systemPrompt = buildFinancialReportSystemPrompt(chartContext, precomputed);
 
-    let strategicSection: Record<string, unknown> = {
+    const buildDeterministicStrategic = (): Record<string, unknown> => ({
       strategic_recommendations: [
         `Based on your composite score (${alignment.compositeScore}/100) and ${alignment.actionBias} bias: prioritize ${alignment.riskBand}-risk approaches.`,
         natalWealth.temperamentSummary,
@@ -183,9 +185,12 @@ export async function POST(request: NextRequest) {
         'Consult a licensed financial advisor for specific decisions.',
       ],
       high_volatility_warnings: marketCycle.volatilityWindows.map(
-        (w) => `${w.name}: ${w.description}`
+        (w) => `${w.name}: ${w.description}`,
       ),
-      opportunity_windows: marketCycle.currentPhase === 'Expansion' ? ['Current expansion phase may favor gradual accumulation.'] : [],
+      opportunity_windows:
+        marketCycle.currentPhase === 'Expansion'
+          ? ['Current expansion phase may favor gradual accumulation.']
+          : [],
       avoid_periods: marketCycle.volatilityWindows
         .filter((w) => w.severity === 'high')
         .map((w) => w.name + (w.startDate ? ` (${w.startDate}–${w.endDate ?? ''})` : '')),
@@ -195,53 +200,96 @@ export async function POST(request: NextRequest) {
         'During high volatility windows, favor review over new commitments.',
         'Align decisions with your financial temperament and risk band.',
       ],
+    });
+
+    const mergeStrategicFromParsed = (parsed: Record<string, unknown>): Record<string, unknown> => {
+      const base = buildDeterministicStrategic();
+      return {
+        strategic_recommendations: Array.isArray(parsed.strategic_recommendations)
+          ? parsed.strategic_recommendations
+          : base.strategic_recommendations,
+        high_volatility_warnings: Array.isArray(parsed.high_volatility_warnings)
+          ? parsed.high_volatility_warnings
+          : base.high_volatility_warnings,
+        opportunity_windows: Array.isArray(parsed.opportunity_windows)
+          ? parsed.opportunity_windows
+          : base.opportunity_windows,
+        avoid_periods: Array.isArray(parsed.avoid_periods)
+          ? parsed.avoid_periods
+          : base.avoid_periods,
+        wealth_building_strategy:
+          typeof parsed.wealth_building_strategy === 'string'
+            ? parsed.wealth_building_strategy
+            : (base.wealth_building_strategy as string),
+        risk_management_tips: Array.isArray(parsed.risk_management_tips)
+          ? parsed.risk_management_tips
+          : base.risk_management_tips,
+      };
     };
 
-    let aiUsage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;
-    try {
-      const result = await createAICompletion({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an expert in Financial Astrology. Respond only with a single valid JSON object, no other text. Do not include markdown.',
-          },
-          { role: 'user', content: systemPrompt },
-        ],
-        temperature: 0.6,
-        maxTokens: 1200,
-        responseFormat: { type: 'json_object' },
-      });
-      aiUsage = result?.usage;
-      const content = result?.content || '';
-      if (content.trim()) {
-        const parsed = parseJsonResponse(content);
-        strategicSection = {
-          strategic_recommendations: Array.isArray(parsed.strategic_recommendations)
-            ? parsed.strategic_recommendations
-            : strategicSection.strategic_recommendations,
-          high_volatility_warnings: Array.isArray(parsed.high_volatility_warnings)
-            ? parsed.high_volatility_warnings
-            : strategicSection.high_volatility_warnings,
-          opportunity_windows: Array.isArray(parsed.opportunity_windows)
-            ? parsed.opportunity_windows
-            : strategicSection.opportunity_windows,
-          avoid_periods: Array.isArray(parsed.avoid_periods)
-            ? parsed.avoid_periods
-            : strategicSection.avoid_periods,
-          wealth_building_strategy:
-            typeof parsed.wealth_building_strategy === 'string'
-              ? parsed.wealth_building_strategy
-              : (strategicSection.wealth_building_strategy as string),
-          risk_management_tips: Array.isArray(parsed.risk_management_tips)
-            ? parsed.risk_management_tips
-            : strategicSection.risk_management_tips,
+    const strategicResolved = await resolveAiReportWithFallback({
+      label: 'financial-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const structured = await callStructuredAI({
+          label: 'financial-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          userId,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert in Financial Astrology. Respond only with a single valid JSON object, no other text. Do not include markdown.',
+            },
+            { role: 'user', content: systemPrompt },
+          ],
+          temperature: 0.6,
+          maxTokens: 1200,
+          responseFormat: { type: 'json_object' },
+          maxAttempts: 3,
+        });
+
+        if (structured.ok && structured.raw) {
+          return {
+            data: mergeStrategicFromParsed(structured.raw),
+            attempts: structured.attempts,
+            failureMode: 'none',
+          };
+        }
+        if (structured.failureMode !== 'none') {
+          devLog.warn(
+            `financial-comprehensive structured AI: ${structured.failureMode} after ${structured.attempts} attempt(s)`,
+            undefined,
+            'route',
+          );
+        }
+        return {
+          data: null,
+          attempts: structured.attempts,
+          failureMode: structured.failureMode,
+          parsingFailed: true,
         };
-      }
-    } catch (aiErr) {
-      devLog.warn('Financial astrology AI fallback used:', aiErr, 'route');
-    }
+      },
+      readFirestoreCache: async () => {
+        const cached = await readAdminComprehensiveCache(
+          userId,
+          'financialAstrologyReports',
+          'comprehensive',
+          {
+            allowStale: true,
+            extract: (d) => {
+              const analysis = d.comprehensiveAnalysis as Record<string, unknown> | undefined;
+              const strategic = analysis?.strategicRecommendations as Record<string, unknown> | undefined;
+              return strategic ?? null;
+            },
+          },
+        );
+        return cached;
+      },
+      buildDeterministic: buildDeterministicStrategic,
+    });
+
+    const strategicSection = strategicResolved.data;
 
     const comprehensiveAnalysis = {
       financialTemperamentProfile: {
@@ -268,13 +316,32 @@ export async function POST(request: NextRequest) {
       generatedAt: new Date().toISOString(),
     };
 
+    if (strategicResolved.degraded && strategicResolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: strategicResolved.parsingFailed ?? true,
+          fallbackSource: strategicResolved.source,
+          error:
+            strategicResolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based financial guidance',
+        },
+      });
+    }
+
+    await writeAdminComprehensiveCache(userId, 'financialAstrologyReports', 'comprehensive', {
+      comprehensiveAnalysis,
+    });
+
     return NextResponse.json({
       success: true,
       data: {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
-      _usage: aiUsage,
     });
   } catch (err) {
     devLog.error('Financial astrology comprehensive API error:', err, 'route');

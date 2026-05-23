@@ -32,6 +32,8 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { getMissingFullProfileFields, isTrialActive } from "@/lib/subscriptionConfig"
 import { analytics } from "@/lib/analytics"
+import { buildMysticalSharePayload } from "@/lib/growth/mysticalShareCard"
+import { MysticalShareCardPanel } from "@/components/growth/MysticalShareCardPanel"
 
 const CATEGORY_ORDER = [
   "Astrology",
@@ -756,6 +758,22 @@ export default function MysticalProfilePage() {
     return ordered
   })()
 
+  const mysticalSharePayload = useMemo(() => {
+    if (!p || groupedCards.length === 0) return null
+    const prof = userProfile as Record<string, unknown> | null | undefined
+    return buildMysticalSharePayload(p, {
+      displayName:
+        typeof prof?.displayName === "string"
+          ? prof.displayName
+          : typeof prof?.fullName === "string"
+            ? prof.fullName
+            : undefined,
+      referralCode:
+        typeof prof?.referralCode === "string" ? prof.referralCode : undefined,
+      userId: user?.uid,
+    })
+  }, [p, groupedCards.length, userProfile, user?.uid])
+
   if (showMysticalPageLoader) {
     return (
       <div className="relative min-h-screen">
@@ -886,6 +904,9 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {ctaRow}
+        {mysticalSharePayload ? (
+          <MysticalShareCardPanel payload={mysticalSharePayload} variant="m3" />
+        ) : null}
         {generationActive && groupedCards.length === 0 ? (
           <MysticalProfileGeneratingPlaceholder
             variant="m3"
@@ -984,6 +1005,9 @@ export default function MysticalProfilePage() {
           </p>
         </div>
         {ctaRow}
+        {mysticalSharePayload ? (
+          <MysticalShareCardPanel payload={mysticalSharePayload} variant="web" />
+        ) : null}
         {generationActive && groupedCards.length === 0 ? (
           <MysticalProfileGeneratingPlaceholder
             variant="web"

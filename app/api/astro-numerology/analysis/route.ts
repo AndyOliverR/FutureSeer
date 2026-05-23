@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAICompletion } from '@/lib/aiGateway';
+import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
+import { callStructuredAI } from '@/lib/aiStructuredOutput';
+import { parseStructuredJsonFromResponse } from '@/lib/aiStructuredOutputParse';
+import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { calculateLifePathNumber, calculateDestinyNumber } from '@/lib/numerologyCalculations';
 import { devLog } from '@/lib/devLogger';
 
@@ -144,29 +147,85 @@ Format your response as a JSON object with the following structure:
 Make each section comprehensive yet concise, providing valuable insights that help the user understand themselves better and navigate their life path.`;
 }
 
-// Parse Groq response and extract structured data
-function parseGroqResponse(response: string): NonNullable<AstroNumerologyResponse['data']>['comprehensiveAnalysis'] {
+type AstroNumerologyComprehensiveAnalysis = NonNullable<
+  AstroNumerologyResponse['data']
+>['comprehensiveAnalysis'];
+
+function extractAstroNumerologyAnalysisFromCache(
+  cachedData: Record<string, unknown>,
+): AstroNumerologyComprehensiveAnalysis | null {
+  const data =
+    (cachedData.data as AstroNumerologyResponse['data'] | undefined) ||
+    (cachedData as AstroNumerologyResponse['data']);
+  const analysis = data?.comprehensiveAnalysis;
+  if (!analysis?.personalitySynthesis?.trim()) return null;
+  return analysis;
+}
+
+async function readAstroNumerologyCache(
+  userId: string,
+  birthDataKey: string,
+  options?: { allowStale?: boolean },
+): Promise<AstroNumerologyComprehensiveAnalysis | null> {
   try {
-    // Try to extract JSON from the response
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
-        personalitySynthesis: parsed.personalitySynthesis || '',
-        careerGuidance: parsed.careerGuidance || '',
-        relationshipInsights: parsed.relationshipInsights || '',
-        lifePurpose: parsed.lifePurpose || '',
-        personalGrowth: parsed.personalGrowth || '',
-        challenges: Array.isArray(parsed.challenges) ? parsed.challenges : [],
-        opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : [],
-        yearlyForecast: parsed.yearlyForecast || ''
-      };
+    const docSnap = await getCachedDoc(['users', userId, 'astroNumerologyReports'], 'current');
+    if (!docSnap?.exists()) return null;
+    const cachedData = docSnap.data() as Record<string, unknown>;
+    const cachedBirthKey = cachedData.birthDataKey as string | undefined;
+    if (cachedBirthKey !== birthDataKey) return null;
+    const lastUpdated = cachedData.timestamp as number | undefined;
+    if (!lastUpdated) return null;
+    if (!options?.allowStale) {
+      const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+      if (hoursSinceUpdate >= 24) return null;
     }
-  } catch (error) {
-    devLog.warn('Failed to parse JSON from Groq response, using fallback', undefined, 'astro-numerology');
+    return extractAstroNumerologyAnalysisFromCache(cachedData);
+  } catch {
+    return null;
   }
-  
-  // Fallback: Split response into sections if JSON parsing fails
+}
+
+function buildDeterministicAstroNumerology(
+  actualSunSign: string,
+  lifePathNumber: number,
+  nameNumber: number,
+): AstroNumerologyComprehensiveAnalysis {
+  return {
+    personalitySynthesis: `Your ${actualSunSign} sun sign combines with Life Path ${lifePathNumber} and Name Number ${nameNumber} to create a unique personality blend.`,
+    careerGuidance: `Career paths that align with Life Path ${lifePathNumber} and your ${actualSunSign} traits would be most fulfilling.`,
+    relationshipInsights: `Your relationship style is influenced by both your ${actualSunSign} nature and your numerological patterns.`,
+    lifePurpose: 'Your life purpose is revealed through the combination of your astrological and numerological influences.',
+    personalGrowth:
+      'Focus on developing the strengths of both your sun sign and your life path number for optimal growth.',
+    challenges: [
+      'Balancing different aspects of your personality',
+      'Aligning actions with your life purpose',
+    ],
+    opportunities: [
+      'Leveraging your unique combination of energies',
+      'Connecting with like-minded individuals',
+    ],
+    yearlyForecast:
+      'This year brings opportunities to integrate your astrological and numerological influences.',
+  };
+}
+
+function mapAstroNumerologyParsed(
+  parsed: Record<string, unknown>,
+): AstroNumerologyComprehensiveAnalysis {
+  return {
+    personalitySynthesis: String(parsed.personalitySynthesis ?? ''),
+    careerGuidance: String(parsed.careerGuidance ?? ''),
+    relationshipInsights: String(parsed.relationshipInsights ?? ''),
+    lifePurpose: String(parsed.lifePurpose ?? ''),
+    personalGrowth: String(parsed.personalGrowth ?? ''),
+    challenges: Array.isArray(parsed.challenges) ? parsed.challenges.map(String) : [],
+    opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities.map(String) : [],
+    yearlyForecast: String(parsed.yearlyForecast ?? ''),
+  };
+}
+
+function textFallbackAstroNumerology(response: string): AstroNumerologyComprehensiveAnalysis {
   const sections = response.split(/\n\n+/);
   return {
     personalitySynthesis: sections[0] || response.substring(0, 300),
@@ -174,10 +233,38 @@ function parseGroqResponse(response: string): NonNullable<AstroNumerologyRespons
     relationshipInsights: sections[2] || 'Relationship insights from your astro-numerology combination.',
     lifePurpose: sections[3] || 'Life purpose revealed through astro-numerology analysis.',
     personalGrowth: sections[4] || 'Personal growth recommendations for your journey.',
-    challenges: ['Balancing different aspects of your personality', 'Navigating life transitions', 'Developing your full potential'],
-    opportunities: ['Harnessing your unique combination of energies', 'Aligning with your life purpose', 'Building meaningful connections'],
-    yearlyForecast: sections[5] || `Your ${new Date().getFullYear()} forecast based on your astro-numerology profile.`
+    challenges: [
+      'Balancing different aspects of your personality',
+      'Navigating life transitions',
+      'Developing your full potential',
+    ],
+    opportunities: [
+      'Harnessing your unique combination of energies',
+      'Aligning with your life purpose',
+      'Building meaningful connections',
+    ],
+    yearlyForecast:
+      sections[5] || `Your ${new Date().getFullYear()} forecast based on your astro-numerology profile.`,
   };
+}
+
+function parseGroqResponse(response: GroqStructuredParseInput): AstroNumerologyComprehensiveAnalysis {
+  if (isGroqParsedRecord(response)) {
+    return mapAstroNumerologyParsed(response);
+  }
+
+  const trimmed = response.trim();
+  if (!trimmed) {
+    return textFallbackAstroNumerology('');
+  }
+
+  const structured = parseStructuredJsonFromResponse(trimmed);
+  if (structured.ok && structured.data) {
+    return mapAstroNumerologyParsed(structured.data);
+  }
+
+  devLog.warn('Failed to parse JSON from Groq response, using fallback', undefined, 'astro-numerology');
+  return textFallbackAstroNumerology(trimmed);
 }
 
 export async function POST(request: NextRequest) {
@@ -208,114 +295,146 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check Firebase cache
+    const birthDataKey = `${birthDate}_${fullName}_${actualSunSign}`;
+
     try {
-      const docSnap = await getCachedDoc(['users', userId, 'astroNumerologyReports'], 'current');
-      
-      if (docSnap && docSnap.exists()) {
-        const cachedData = docSnap.data();
-        // Check if cache is valid (same data and < 24 hours old)
-        const birthDataKey = `${birthDate}_${fullName}_${actualSunSign}`;
-        const cachedBirthKey = cachedData?.birthDataKey;
-        const lastUpdated = cachedData?.timestamp;
-        
-        if (cachedBirthKey === birthDataKey && lastUpdated) {
-          const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
-          if (hoursSinceUpdate < 24) {
-            devLog.info('✅ Returning cached Astro-Numerology report for user:', userId, 'astro-numerology');
-            return NextResponse.json({
-              success: true,
-              data: cachedData.data || cachedData
-            });
-          }
-        }
+      const cached = await readAstroNumerologyCache(userId, birthDataKey);
+      if (cached) {
+        devLog.info('✅ Returning cached Astro-Numerology report for user:', userId, 'astro-numerology');
+        return NextResponse.json({
+          success: true,
+          data: {
+            sunSign: actualSunSign,
+            lifePathNumber,
+            nameNumber,
+            comprehensiveAnalysis: cached,
+            timestamp: Date.now(),
+          },
+        });
       }
-    } catch (cacheError: any) {
-      if (process.env.NODE_ENV === 'development') {
-        devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError?.message || cacheError, 'astro-numerology');
-      }
+    } catch (cacheError: unknown) {
+      devLog.warn('⚠️ Error checking cache, proceeding with generation:', cacheError, 'astro-numerology');
     }
 
-    // Check if Groq API key is available
     if (!process.env.GROQ_API_KEY) {
       devLog.error('❌ GROQ_API_KEY is not configured', undefined, 'route');
-      // Return fallback response with basic analysis
       return NextResponse.json({
         success: true,
         data: {
           sunSign: actualSunSign,
           lifePathNumber,
           nameNumber,
-          comprehensiveAnalysis: {
-            personalitySynthesis: `Your ${actualSunSign} sun sign combines with Life Path ${lifePathNumber} and Name Number ${nameNumber} to create a unique personality blend.`,
-            careerGuidance: `Career paths that align with Life Path ${lifePathNumber} and your ${actualSunSign} traits would be most fulfilling.`,
-            relationshipInsights: `Your relationship style is influenced by both your ${actualSunSign} nature and your numerological patterns.`,
-            lifePurpose: `Your life purpose is revealed through the combination of your astrological and numerological influences.`,
-            personalGrowth: `Focus on developing the strengths of both your sun sign and your life path number for optimal growth.`,
-            challenges: ['Balancing different aspects of your personality', 'Aligning actions with your life purpose'],
-            opportunities: ['Leveraging your unique combination of energies', 'Connecting with like-minded individuals'],
-            yearlyForecast: `This year brings opportunities to integrate your astrological and numerological influences.`
-          },
-          timestamp: Date.now()
-        }
+          comprehensiveAnalysis: buildDeterministicAstroNumerology(
+            actualSunSign,
+            lifePathNumber,
+            nameNumber,
+          ),
+          timestamp: Date.now(),
+        },
       });
     }
 
-    // Build comprehensive prompt
     const prompt = buildGroqPrompt(actualSunSign, lifePathNumber, nameNumber, birthDate, fullName);
 
-    // Call Groq API
-    devLog.info('🤖 Calling Groq API for comprehensive Astro-Numerology analysis...', undefined, 'astro-numerology');
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert astro-numerologist specializing in combining Western Astrology (Tropical Zodiac) with Pythagorean Numerology. Provide comprehensive, insightful, and practical guidance. Always respond with valid JSON when requested.'
-        },
-        {
-          role: 'user',
-          content: prompt
+    devLog.info('🤖 Calling AI for comprehensive Astro-Numerology analysis...', undefined, 'astro-numerology');
+
+    const resolved = await resolveAiReportWithFallback({
+      label: 'astro-numerology-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const structured = await callStructuredAI({
+          label: 'astro-numerology-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          userId,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert astro-numerologist specializing in combining Western Astrology (Tropical Zodiac) with Pythagorean Numerology. Provide comprehensive, insightful, and practical guidance. Always respond with valid JSON when requested.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.75,
+          maxTokens: 2500,
+          responseFormat: { type: 'json_object' },
+          maxAttempts: 3,
+        });
+
+        if (!structured.ok && structured.failureMode !== 'none') {
+          devLog.warn(
+            `astro-numerology structured AI: ${structured.failureMode} after ${structured.attempts} attempt(s)`,
+            undefined,
+            'astro-numerology',
+          );
         }
-      ],
-      temperature: 0.75,
-      maxTokens: 2500
+
+        if (structured.ok && structured.raw) {
+          return {
+            data: mapAstroNumerologyParsed(structured.raw),
+            attempts: structured.attempts,
+            failureMode: 'none',
+          };
+        }
+        const recovered = structured.lastRaw
+          ? parseStructuredJsonFromResponse(structured.lastRaw)
+          : null;
+        if (recovered?.ok && recovered.data) {
+          return {
+            data: mapAstroNumerologyParsed(recovered.data),
+            attempts: structured.attempts,
+            failureMode: structured.failureMode,
+          };
+        }
+        return {
+          data: null,
+          attempts: structured.attempts,
+          failureMode: structured.failureMode,
+          parsingFailed: true,
+        };
+      },
+      readFirestoreCache: () =>
+        readAstroNumerologyCache(userId, birthDataKey, { allowStale: true }),
+      buildDeterministic: () =>
+        buildDeterministicAstroNumerology(actualSunSign, lifePathNumber, nameNumber),
     });
 
-    const aiResponse = result.content || '';
-    devLog.info('✅ Groq API response received', undefined, 'astro-numerology');
-
-    // Parse the response
-    const comprehensiveAnalysis = parseGroqResponse(aiResponse);
-
-    // Prepare response data
     const responseData: AstroNumerologyResponse['data'] = {
       sunSign: actualSunSign,
       lifePathNumber,
       nameNumber,
-      comprehensiveAnalysis,
-      timestamp: Date.now()
+      comprehensiveAnalysis: resolved.data,
+      timestamp: Date.now(),
     };
 
-    // Cache in Firebase
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          ...responseData,
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based defaults',
+        },
+      });
+    }
+
     try {
-      const birthDataKey = `${birthDate}_${fullName}_${actualSunSign}`;
       await setCachedDoc(['users', userId, 'astroNumerologyReports'], 'current', {
         data: responseData,
         birthDataKey,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       devLog.info('✅ Cached Astro-Numerology report in Firebase', undefined, 'astro-numerology');
-    } catch (cacheError: any) {
-      if (process.env.NODE_ENV === 'development') {
-        devLog.warn('⚠️ Error caching report:', cacheError?.message || cacheError, 'astro-numerology');
-      }
+    } catch (cacheError: unknown) {
+      devLog.warn('⚠️ Error caching report:', cacheError, 'astro-numerology');
     }
 
     return NextResponse.json({
       success: true,
       data: responseData,
-      _usage: result.usage,
     });
 
   } catch (error: any) {

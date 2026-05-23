@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import {
+  readAdminComprehensiveCache,
+  writeAdminComprehensiveCache,
+} from '@/lib/adminComprehensiveCache';
+import type { GroqStructuredParseInput } from '@/lib/groqStructuredParse';
+import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import {
   buildPsychologicalReportSystemPrompt,
   buildProfileContext,
 } from '@/lib/psychologicalSeerPrompts';
 import { universalOccultService, BirthData } from '@/lib/universalOccultService';
-import { adminDb } from '@/lib/firebase-admin';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -61,8 +67,11 @@ function formatChartContext(planets: any[], houses: any[], aspects: any[]): stri
   return `PLANETS:\n${planetsText || 'None'}\n\nHOUSES:\n${housesText || 'None'}\n\nASPECTS:\n${aspectsText || 'None'}`;
 }
 
-function parsePsychologicalResponse(response: string): Record<string, unknown> {
-  const trimmed = response.trim();
+function parsePsychologicalResponse(response: GroqStructuredParseInput): Record<string, unknown> {
+  const fromShared = parseLlmJsonRecord(response);
+  if (fromShared) return fromShared;
+
+  const trimmed = typeof response === 'string' ? response.trim() : '';
   let jsonStr = trimmed;
   const codeBlock = trimmed.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
   if (codeBlock?.[1]) jsonStr = codeBlock[1];
@@ -159,6 +168,22 @@ function normalizeAnalysis(parsed: Record<string, unknown>): Record<string, unkn
   return out;
 }
 
+function buildPsychologicalDeterministic(planets: any[]): Record<string, unknown> {
+  const sunPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'sun');
+  const moonPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'moon');
+  const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
+  const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
+  return {
+    core_identity_pattern: `General pattern (Sun in ${sunSign}, Moon in ${moonSign})—full chart analysis unavailable`,
+    emotional_signature: 'Reflective; full chart needed for precise signature.',
+    defense_mechanisms: ['Generalizing cautiously—complete chart data unavailable'],
+    shadow_theme: 'Integration of conscious and unconscious aspects.',
+    relationship_pattern: 'Patterns become clearer with full chart analysis.',
+    growth_focus: 'Focus on emotional awareness and boundary clarity.',
+    integration_guidance: 'Acknowledge emotional needs rather than suppress them.',
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: PsychologicalComprehensiveRequest = await request.json();
@@ -166,6 +191,21 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'Missing userId' }, { status: 400 });
+    }
+
+    const freshCached = await readAdminComprehensiveCache(
+      userId,
+      'psychologicalAstrologyReports',
+      'comprehensive',
+      {
+        extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+      },
+    );
+    if (freshCached) {
+      return NextResponse.json({
+        success: true,
+        data: { comprehensiveAnalysis: freshCached, timestamp: Date.now() },
+      });
     }
 
     let planets: any[] = [];
@@ -223,64 +263,56 @@ export async function POST(request: NextRequest) {
     const profileContext = buildProfileContext(userProfile ?? undefined);
     const systemPrompt = buildPsychologicalReportSystemPrompt(chartContext, profileContext);
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an expert in Psychological Astrology. Respond only with a single valid JSON object, no other text.',
-        },
-        { role: 'user', content: systemPrompt },
-      ],
-      temperature: 0.6,
-      maxTokens: 3600,
-      responseFormat: { type: 'json_object' },
+    const resolved = await resolveAiReportWithFallback({
+      label: 'psychological-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: 'psychological-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert in Psychological Astrology. Respond only with a single valid JSON object, no other text.',
+            },
+            { role: 'user', content: systemPrompt },
+          ],
+          temperature: 0.6,
+          maxTokens: 3600,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, normalizeAnalysis);
+      },
+      readFirestoreCache: () =>
+        readAdminComprehensiveCache(userId, 'psychologicalAstrologyReports', 'comprehensive', {
+          allowStale: true,
+          extract: (d) => (d.comprehensiveAnalysis as Record<string, unknown>) ?? null,
+        }),
+      buildDeterministic: () => buildPsychologicalDeterministic(planets),
     });
 
-    const content = result.content || '';
-    let comprehensiveAnalysis: Record<string, unknown>;
+    const comprehensiveAnalysis = resolved.data;
 
-    try {
-      const parsed = parsePsychologicalResponse(content);
-      comprehensiveAnalysis = normalizeAnalysis(parsed);
-    } catch (parseErr) {
-      const contentLen = content.length;
-      const snippet = content.slice(0, 200).replace(/\n/g, ' ');
-      devLog.warn('[Psychological comprehensive] Using fallback: parse/normalize failed', { contentLen, snippet: snippet.length > 0 ? `${snippet}…` : '(empty)', error: parseErr instanceof Error ? parseErr.message : String(parseErr) }, 'psychological-comprehensive');
-      const sunPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'sun');
-      const moonPlanet = planets.find((p: any) => p.name?.toLowerCase() === 'moon');
-      const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
-      const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
-      comprehensiveAnalysis = {
-        core_identity_pattern: `General pattern (Sun in ${sunSign}, Moon in ${moonSign})—full chart analysis unavailable`,
-        emotional_signature: 'Reflective; full chart needed for precise signature.',
-        defense_mechanisms: ['Generalizing cautiously—complete chart data unavailable'],
-        shadow_theme: 'Integration of conscious and unconscious aspects.',
-        relationship_pattern: 'Patterns become clearer with full chart analysis.',
-        growth_focus: 'Focus on emotional awareness and boundary clarity.',
-        integration_guidance: 'Acknowledge emotional needs rather than suppress them.',
-      };
+    if (resolved.degraded && resolved.source !== 'llm') {
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
+        },
+      });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('users')
-          .doc(userId)
-          .collection('psychologicalAstrologyReports')
-          .doc('comprehensive')
-          .set(
-            {
-              comprehensiveAnalysis,
-              timestamp: Date.now(),
-            },
-            { merge: true }
-          );
-      } catch (e) {
-        devLog.warn('Psychological report cache write failed:', e, 'route');
-      }
-    }
+    await writeAdminComprehensiveCache(userId, 'psychologicalAstrologyReports', 'comprehensive', {
+      comprehensiveAnalysis,
+    });
 
     return NextResponse.json({
       success: true,
@@ -288,7 +320,6 @@ export async function POST(request: NextRequest) {
         comprehensiveAnalysis,
         timestamp: Date.now(),
       },
-      _usage: result.usage,
     });
   } catch (err) {
     devLog.error('Psychological comprehensive API error:', err, 'route');

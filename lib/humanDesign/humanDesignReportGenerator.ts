@@ -8,7 +8,7 @@ import { HumanDesignChart } from './humanDesignCalculator';
 import { devLog } from '@/lib/devLogger';
 import { UserProfile } from '@/lib/firebase';
 import { REPORT_VOICE_RULE } from '@/lib/reportVoiceRule';
-import { createAICompletion } from '@/lib/aiGateway';
+import { callTextAI } from '@/lib/aiStructuredOutput';
 
 export interface HumanDesignReport {
   overview: {
@@ -187,10 +187,12 @@ async function generateAIReport(
     // Build question: second person only; no user name in report
     const question = `Generate a comprehensive, personalized Human Design interpretation. ${REPORT_VOICE_RULE} Write as if FutureSeer has analyzed the chart and is speaking directly to the user.`;
     
-    const result = await createAICompletion({
+    const result = await callTextAI({
+      label: 'human-design-report',
       model: 'llama-3.3-70b-versatile',
       temperature: 0.7,
       maxTokens: 2400,
+      maxAttempts: 2,
       messages: [
         {
           role: 'system',
@@ -224,7 +226,7 @@ async function generateAIReport(
         },
       ],
     });
-    const aiResponse = result.content || '';
+    const aiResponse = result.content;
     
     // Post-process: Remove any user name from response (reports must not contain the user's name)
     let cleanedResponse = aiResponse;
@@ -243,7 +245,6 @@ async function generateAIReport(
     const parsedResponse = parseAIResponse(cleanedResponse);
     parsedResponse._provider = 'groq';
     parsedResponse._model = 'llama-3.3-70b-versatile';
-    if (result.usage) parsedResponse._usage = result.usage;
     
     // Post-process each extracted field to remove any user name
     return cleanAIResponseFields(parsedResponse, userProfile);

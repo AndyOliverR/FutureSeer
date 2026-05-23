@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { devLog } from '@/lib/devLogger';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAICompletion } from '@/lib/aiGateway';
+import { callTextAI } from '@/lib/aiStructuredOutput';
 import { BaziReading } from '@/lib/baziIntelligence';
 
 /**
@@ -288,7 +288,8 @@ Provide a 3-4 paragraph comprehensive overview covering:
 
 Write in second person, be insightful and practical. Avoid generic statements.`;
 
-  const chartOverviewResult = await createAICompletion({
+  const chartOverviewResult = await callTextAI({
+    label: 'bazi-chart-overview',
     model: 'groq/llama-3.3-70b-versatile',
     messages: [
       {
@@ -301,7 +302,8 @@ Write in second person, be insightful and practical. Avoid generic statements.`;
       }
     ],
     maxTokens: 800,
-    temperature: 0.7
+    temperature: 0.7,
+    maxAttempts: 2,
   });
 
   const chartOverview = chartOverviewResult.content;
@@ -322,7 +324,8 @@ Provide:
 
 Be specific, actionable, and inspiring. 3-4 paragraphs.`;
 
-  const lifePathResult = await createAICompletion({
+  const lifePathResult = await callTextAI({
+    label: 'bazi-life-path',
     model: 'groq/llama-3.3-70b-versatile',
     messages: [
       {
@@ -335,7 +338,8 @@ Be specific, actionable, and inspiring. 3-4 paragraphs.`;
       }
     ],
     maxTokens: 800,
-    temperature: 0.7
+    temperature: 0.7,
+    maxAttempts: 2,
   });
 
   const lifePathInsights = lifePathResult.content;
@@ -362,7 +366,8 @@ Provide practical advice on:
 
 Be practical and specific with actionable guidance. 2-3 paragraphs.`;
 
-  const elementResult = await createAICompletion({
+  const elementResult = await callTextAI({
+    label: 'bazi-element-harmonization',
     model: 'groq/llama-3.3-70b-versatile',
     messages: [
       {
@@ -375,7 +380,8 @@ Be practical and specific with actionable guidance. 2-3 paragraphs.`;
       }
     ],
     maxTokens: 600,
-    temperature: 0.7
+    temperature: 0.7,
+    maxAttempts: 2,
   });
 
   const elementHarmonization = elementResult.content;
@@ -396,7 +402,8 @@ Provide:
 
 Be specific with ages/years and explain the elemental reasoning. 2-3 paragraphs.`;
 
-  const timingResult = await createAICompletion({
+  const timingResult = await callTextAI({
+    label: 'bazi-timing',
     model: 'groq/llama-3.3-70b-versatile',
     messages: [
       {
@@ -409,24 +416,11 @@ Be specific with ages/years and explain the elemental reasoning. 2-3 paragraphs.
       }
     ],
     maxTokens: 600,
-    temperature: 0.7
+    temperature: 0.7,
+    maxAttempts: 2,
   });
 
   const timingAndOpportunities = timingResult.content;
-
-  let _usage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
-  const usages = [chartOverviewResult.usage, lifePathResult.usage, elementResult.usage, timingResult.usage].filter(Boolean);
-  if (usages.length > 0) {
-    type UsageSum = { promptTokens: number; completionTokens: number; totalTokens: number };
-    _usage = usages.reduce<UsageSum>(
-      (acc, u) => ({
-        promptTokens: acc.promptTokens + (u?.promptTokens ?? 0),
-        completionTokens: acc.completionTokens + (u?.completionTokens ?? 0),
-        totalTokens: acc.totalTokens + (u?.totalTokens ?? 0),
-      }),
-      { promptTokens: 0, completionTokens: 0, totalTokens: 0 }
-    );
-  }
 
   return {
     chartOverview,
@@ -435,6 +429,5 @@ Be specific with ages/years and explain the elemental reasoning. 2-3 paragraphs.
     timingAndOpportunities,
     generatedAt: new Date().toISOString(),
     version: '1.0',
-    _usage,
   };
 }

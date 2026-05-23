@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAICompletion } from '@/lib/aiGateway';
+import { runStructuredReportAI } from '@/lib/aiStructuredOutput';
+import { resolveAiReportWithFallback, mapStructuredReportRun } from '@/lib/aiFallbackRouter';
+import { parseLlmJsonRecord } from '@/lib/aiStructuredOutputParse';
 import { extractUserContext, buildContextString } from '@/lib/energyHealing/userProfileExtractor';
 import { getAllDivinationData } from '@/lib/universalDataAggregator';
 import { devLog } from '@/lib/devLogger';
@@ -213,50 +215,39 @@ Return JSON.`;
     const promptLength = analysisPrompt.length;
     devLog.debug(`📏 Prompt length: ${promptLength} characters (~${Math.ceil(promptLength / 4)} tokens)`, undefined, 'energy-healing');
 
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'user',
-          content: analysisPrompt
-        }
-      ],
-      temperature: 0.3,
-      maxTokens: method === 'aura' ? 800 : 500, // Allow more tokens for detailed aura analysis
-      response_format: { type: 'json_object' }
+    const buildEnergyHealingDeterministic = (): Record<string, unknown> => ({
+      interpretation: 'Energy analysis is temporarily unavailable. Chart-based context was still applied where possible.',
+      recommendations: ['Try again in a moment', 'Ground with breath and gentle movement'],
     });
 
-    const analysisText = result.content || '';
-    
-    if (!analysisText) {
-      throw new Error('Empty response from Groq API');
-    }
+    const resolved = await resolveAiReportWithFallback({
+      label: `energy-healing-${method}`,
+      tryLlm: async () => {
+        const aiRun = await runStructuredReportAI({
+          label: `energy-healing-${method}`,
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: analysisPrompt }],
+          temperature: 0.3,
+          maxTokens: method === 'aura' ? 800 : 500,
+          maxAttempts: 3,
+        });
+        return mapStructuredReportRun(aiRun, (parsed) => parsed);
+      },
+      buildDeterministic: buildEnergyHealingDeterministic,
+    });
 
-    // Parse JSON response
-    let healingData: any;
-    try {
-      const jsonPayload = extractJsonPayload(analysisText);
-      if (!jsonPayload) {
-        throw new Error('No JSON payload found in AI response');
-      }
-      healingData = JSON.parse(jsonPayload);
-      
-      // Log response structure for debugging (especially for aura)
-      if (method === 'aura') {
-        devLog.debug('📊 Aura API response structure:', {
-          hasLayers: !!healingData.layers,
-          layersType: typeof healingData.layers,
-          isArray: Array.isArray(healingData.layers),
-          layersLength: Array.isArray(healingData.layers) ? healingData.layers.length : 'N/A',
-          dominantColor: healingData.dominantColor,
-          hasInterpretation: !!healingData.interpretation,
-          hasRecommendations: !!healingData.recommendations
-        }, 'energy-healing');
-      }
-    } catch (parseError) {
-      devLog.error('Failed to parse Groq response:', parseError, 'route');
-      devLog.debug('Raw response:', analysisText, 'energy-healing');
-      throw new Error('Invalid JSON response from Groq API');
+    const healingData = resolved.data;
+
+    if (method === 'aura') {
+      devLog.debug('📊 Aura API response structure:', {
+        hasLayers: !!healingData.layers,
+        layersType: typeof healingData.layers,
+        isArray: Array.isArray(healingData.layers),
+        layersLength: Array.isArray(healingData.layers) ? healingData.layers.length : 'N/A',
+        dominantColor: healingData.dominantColor,
+        hasInterpretation: !!healingData.interpretation,
+        hasRecommendations: !!healingData.recommendations,
+      }, 'energy-healing');
     }
 
     devLog.info(`✅ ${method} analysis completed successfully`, undefined, 'energy-healing');
@@ -264,8 +255,14 @@ Return JSON.`;
     return NextResponse.json({
       success: true,
       data: healingData,
-      _usage: result.usage,
-    } as EnergyHealingResponse & { _usage?: typeof result.usage });
+      ...(resolved.degraded && resolved.source !== 'llm'
+        ? {
+            parsingFailed: resolved.parsingFailed ?? true,
+            fallbackSource: resolved.source,
+            error: 'Failed to parse AI response, using minimal energy-healing fallback',
+          }
+        : {}),
+    } as EnergyHealingResponse);
 
   } catch (error: any) {
     // Check for context length errors specifically

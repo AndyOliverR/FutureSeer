@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, security/detect-non-literal-fs-filename */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * One-off: Replace raw console.log/warn/error/debug with devLog in app, components, lib.
  * Skips lib/consoleLogger.ts and lib/devLogger.ts.

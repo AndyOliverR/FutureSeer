@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAICompletion } from '@/lib/aiGateway';
+import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
+import { callStructuredAI } from '@/lib/aiStructuredOutput';
+import type { StructuredFailureMode } from '@/lib/aiStructuredOutputParse';
+import { parseStructuredJsonFromResponse } from '@/lib/aiStructuredOutputParse';
+import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { getVedicReading } from '@/lib/vedicIntelligence';
 import { geocodePlace } from '@/services/geocoding';
@@ -335,118 +339,192 @@ function normalizeHouseAnalysis(raw: unknown): Array<{ house: number; analysis: 
     .filter((x) => x.house >= 1 && x.house <= 12 && x.analysis);
 }
 
-// Parse Groq response and extract structured data
-function parseGroqResponse(response: string, vedicData: any): NonNullable<ComprehensiveVedicResponse['data']>['comprehensiveAnalysis'] {
-  devLog.debug('🔍 Parsing Groq response for Vedic', undefined, 'vedic');
+type VedicComprehensiveAnalysis = NonNullable<ComprehensiveVedicResponse['data']>['comprehensiveAnalysis'];
 
-  if (!response || response.length === 0) {
-    throw new Error('Empty response from Groq');
-  }
+function extractVedicAnalysisFromCache(
+  cached: Record<string, unknown>,
+): VedicComprehensiveAnalysis | null {
+  const analysis = cached.comprehensiveAnalysis as VedicComprehensiveAnalysis | undefined;
+  if (!analysis?.chartOverview) return null;
+  return analysis;
+}
 
+async function readVedicComprehensiveCache(
+  userId: string,
+  userProfile: { birthDate?: string; birthTime?: string; birthPlace?: string },
+  options?: { allowStale?: boolean },
+): Promise<VedicComprehensiveAnalysis | null> {
   try {
-    // Try to extract JSON from markdown code blocks
-    let jsonStr = response.trim();
-    const jsonMatch = jsonStr.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1];
+    const cacheDoc = await getCachedDoc(['users', userId, 'mysticalProfile'], 'comprehensiveVedic');
+    if (!cacheDoc?.exists()) return null;
+    const cached = cacheDoc.data() as Record<string, unknown>;
+    if (cached?.schemaVersion !== COMPREHENSIVE_REPORT_SCHEMA_VERSION) return null;
+    if (
+      cached?.birthDate !== userProfile.birthDate ||
+      cached?.birthTime !== userProfile.birthTime ||
+      cached?.birthPlace !== userProfile.birthPlace
+    ) {
+      return null;
     }
-
-    const parsed = JSON.parse(jsonStr);
-    if (!parsed || typeof parsed !== 'object') {
-      throw new Error('Response is not an object');
+    const timestamp = cached.timestamp as number | undefined;
+    if (!timestamp) return null;
+    if (!options?.allowStale && Date.now() - timestamp >= 7 * 24 * 60 * 60 * 1000) {
+      return null;
     }
+    return extractVedicAnalysisFromCache(cached);
+  } catch {
+    return null;
+  }
+}
 
-    // Relaxed validation: default missing strings instead of throwing
-    const chartOverview = typeof parsed.chartOverview === 'string' && parsed.chartOverview.trim()
+function mapVedicParsed(parsed: Record<string, unknown>): VedicComprehensiveAnalysis {
+  const chartOverview =
+    typeof parsed.chartOverview === 'string' && parsed.chartOverview.trim()
       ? parsed.chartOverview
       : 'Chart overview analysis';
-    const ascendantAnalysis = typeof parsed.ascendantAnalysis === 'string' && parsed.ascendantAnalysis.trim()
+  const ascendantAnalysis =
+    typeof parsed.ascendantAnalysis === 'string' && parsed.ascendantAnalysis.trim()
       ? parsed.ascendantAnalysis
       : 'Ascendant analysis';
 
-    const planetaryAnalysis = normalizePlanetaryAnalysis(parsed.planetaryAnalysis ?? parsed.planetary_analysis);
-    const houseAnalysis = normalizeHouseAnalysis(parsed.houseAnalysis ?? parsed.house_analysis);
+  const planetaryAnalysis = normalizePlanetaryAnalysis(
+    parsed.planetaryAnalysis ?? parsed.planetary_analysis,
+  );
+  const houseAnalysis = normalizeHouseAnalysis(parsed.houseAnalysis ?? parsed.house_analysis);
 
-    const predictiveInsights = parsed.predictiveInsights && typeof parsed.predictiveInsights === 'object'
+  const predictiveInsights =
+    parsed.predictiveInsights && typeof parsed.predictiveInsights === 'object'
       ? {
-          currentPeriod: String(parsed.predictiveInsights.currentPeriod ?? ''),
-          nextThreeMonths: String(parsed.predictiveInsights.nextThreeMonths ?? ''),
-          currentYear: String(parsed.predictiveInsights.currentYear ?? ''),
-          nextYear: String(parsed.predictiveInsights.nextYear ?? ''),
-          longerTermCycles: String(parsed.predictiveInsights.longerTermCycles ?? '')
+          currentPeriod: String((parsed.predictiveInsights as Record<string, unknown>).currentPeriod ?? ''),
+          nextThreeMonths: String((parsed.predictiveInsights as Record<string, unknown>).nextThreeMonths ?? ''),
+          currentYear: String((parsed.predictiveInsights as Record<string, unknown>).currentYear ?? ''),
+          nextYear: String((parsed.predictiveInsights as Record<string, unknown>).nextYear ?? ''),
+          longerTermCycles: String((parsed.predictiveInsights as Record<string, unknown>).longerTermCycles ?? ''),
         }
       : {
           currentPeriod: 'Current period analysis',
           nextThreeMonths: 'Next three months analysis',
           currentYear: 'Current year analysis',
           nextYear: 'Next year analysis',
-          longerTermCycles: 'Longer-term cycles analysis'
+          longerTermCycles: 'Longer-term cycles analysis',
         };
 
-    const co = parsed.challengesAndOpportunities ?? parsed.challenges_and_opportunities;
-    const challengesAndOpportunities = co && typeof co === 'object'
+  const co = parsed.challengesAndOpportunities ?? parsed.challenges_and_opportunities;
+  const challengesAndOpportunities =
+    co && typeof co === 'object'
       ? {
-          challenges: Array.isArray(co.challenges) ? co.challenges.map(String) : [],
-          opportunities: Array.isArray(co.opportunities) ? co.opportunities.map(String) : []
+          challenges: Array.isArray((co as Record<string, unknown>).challenges)
+            ? ((co as Record<string, unknown>).challenges as unknown[]).map(String)
+            : [],
+          opportunities: Array.isArray((co as Record<string, unknown>).opportunities)
+            ? ((co as Record<string, unknown>).opportunities as unknown[]).map(String)
+            : [],
         }
       : { challenges: [], opportunities: [] };
 
-    const rawRemedies = parsed.remedies && typeof parsed.remedies === 'object' ? parsed.remedies : undefined;
-    const remedies = rawRemedies
-      ? {
-          overview: typeof rawRemedies.overview === 'string' ? rawRemedies.overview.trim() : undefined,
-          mantras: Array.isArray(rawRemedies.mantras) ? rawRemedies.mantras.map(String).filter(Boolean) : undefined,
-          gemstones: Array.isArray(rawRemedies.gemstones) ? rawRemedies.gemstones.map(String).filter(Boolean) : undefined,
-          rituals: Array.isArray(rawRemedies.rituals) ? rawRemedies.rituals.map(String).filter(Boolean) : undefined,
-          practices: Array.isArray(rawRemedies.practices) ? rawRemedies.practices.map(String).filter(Boolean) : undefined,
-          lifestyle: Array.isArray(rawRemedies.lifestyle) ? rawRemedies.lifestyle.map(String).filter(Boolean) : undefined
-        }
+  const rawRemedies =
+    parsed.remedies && typeof parsed.remedies === 'object'
+      ? (parsed.remedies as Record<string, unknown>)
       : undefined;
-
-    return {
-      chartOverview,
-      ascendantAnalysis,
-      planetaryAnalysis,
-      houseAnalysis,
-      dashaAnalysis: typeof parsed.dashaAnalysis === 'string' ? parsed.dashaAnalysis : 'Dasha analysis',
-      yogasAnalysis: typeof parsed.yogasAnalysis === 'string' ? parsed.yogasAnalysis : 'Yogas analysis',
-      nakshatraAnalysis: typeof parsed.nakshatraAnalysis === 'string' ? parsed.nakshatraAnalysis : 'Nakshatra analysis',
-      predictiveInsights,
-      challengesAndOpportunities,
-      ...(remedies && (remedies.overview || remedies.mantras?.length || remedies.gemstones?.length || remedies.rituals?.length || remedies.practices?.length || remedies.lifestyle?.length) ? { remedies } : {})
-    };
-  } catch (error) {
-    devLog.warn('Failed to parse Groq JSON, using fallback', error, 'vedic');
-    // Fallback only when JSON parse fails or payload is invalid
-    return {
-      chartOverview: response.substring(0, 500) || 'Comprehensive Vedic chart analysis',
-      ascendantAnalysis: 'Detailed analysis of your Ascendant sign and its influence on your personality and life path.',
-      planetaryAnalysis: [],
-      houseAnalysis: [],
-      dashaAnalysis: 'Analysis of your current planetary period (Dasha) and its effects on your life.',
-      yogasAnalysis: 'Analysis of significant planetary combinations (Yogas) in your chart.',
-      nakshatraAnalysis: 'Analysis of your birth star (Nakshatra) and its characteristics.',
-      predictiveInsights: {
-        currentPeriod: 'Current period insights based on your Dasha and planetary transits.',
-        nextThreeMonths: 'Forecast for the next three months based on planetary movements.',
-        currentYear: `Analysis of ${new Date().getFullYear()} based on your chart and current Dasha period.`,
-        nextYear: `Preview of ${new Date().getFullYear() + 1} based on upcoming Dasha transitions.`,
-        longerTermCycles: 'Longer-term life cycles and patterns revealed through your Vedic chart.'
-      },
-      challengesAndOpportunities: {
-        challenges: ['Challenges revealed through your chart analysis'],
-        opportunities: ['Opportunities revealed through your chart analysis']
-      },
-      remedies: {
-        overview: 'Personalized Vedic remedies (upayas) can help balance planetary influences. Consider consulting the Overview tab once the full report loads.',
-        mantras: ['Chanting planet-specific mantras can strengthen favorable influences.'],
-        gemstones: ['Wearing gemstones recommended for your chart can support key life areas.'],
-        rituals: ['Simple rituals aligned with your Dasha and Ascendant can be beneficial.'],
-        practices: ['Daily practices such as meditation and Surya Namaskar support overall balance.'],
-        lifestyle: ['Lifestyle adjustments based on your chart can enhance well-being.']
+  const remedies = rawRemedies
+    ? {
+        overview: typeof rawRemedies.overview === 'string' ? rawRemedies.overview.trim() : undefined,
+        mantras: Array.isArray(rawRemedies.mantras)
+          ? rawRemedies.mantras.map(String).filter(Boolean)
+          : undefined,
+        gemstones: Array.isArray(rawRemedies.gemstones)
+          ? rawRemedies.gemstones.map(String).filter(Boolean)
+          : undefined,
+        rituals: Array.isArray(rawRemedies.rituals)
+          ? rawRemedies.rituals.map(String).filter(Boolean)
+          : undefined,
+        practices: Array.isArray(rawRemedies.practices)
+          ? rawRemedies.practices.map(String).filter(Boolean)
+          : undefined,
+        lifestyle: Array.isArray(rawRemedies.lifestyle)
+          ? rawRemedies.lifestyle.map(String).filter(Boolean)
+          : undefined,
       }
-    };
+    : undefined;
+
+  return {
+    chartOverview,
+    ascendantAnalysis,
+    planetaryAnalysis,
+    houseAnalysis,
+    dashaAnalysis: typeof parsed.dashaAnalysis === 'string' ? parsed.dashaAnalysis : 'Dasha analysis',
+    yogasAnalysis: typeof parsed.yogasAnalysis === 'string' ? parsed.yogasAnalysis : 'Yogas analysis',
+    nakshatraAnalysis:
+      typeof parsed.nakshatraAnalysis === 'string' ? parsed.nakshatraAnalysis : 'Nakshatra analysis',
+    predictiveInsights,
+    challengesAndOpportunities,
+    ...(remedies &&
+    (remedies.overview ||
+      remedies.mantras?.length ||
+      remedies.gemstones?.length ||
+      remedies.rituals?.length ||
+      remedies.practices?.length ||
+      remedies.lifestyle?.length)
+      ? { remedies }
+      : {}),
+  };
+}
+
+function buildVedicTextFallback(response: string): VedicComprehensiveAnalysis {
+  return {
+    chartOverview: response.substring(0, 500) || 'Comprehensive Vedic chart analysis',
+    ascendantAnalysis:
+      'Detailed analysis of your Ascendant sign and its influence on your personality and life path.',
+    planetaryAnalysis: [],
+    houseAnalysis: [],
+    dashaAnalysis: 'Analysis of your current planetary period (Dasha) and its effects on your life.',
+    yogasAnalysis: 'Analysis of significant planetary combinations (Yogas) in your chart.',
+    nakshatraAnalysis: 'Analysis of your birth star (Nakshatra) and its characteristics.',
+    predictiveInsights: {
+      currentPeriod: 'Current period insights based on your Dasha and planetary transits.',
+      nextThreeMonths: 'Forecast for the next three months based on planetary movements.',
+      currentYear: `Analysis of ${new Date().getFullYear()} based on your chart and current Dasha period.`,
+      nextYear: `Preview of ${new Date().getFullYear() + 1} based on upcoming Dasha transitions.`,
+      longerTermCycles: 'Longer-term life cycles and patterns revealed through your Vedic chart.',
+    },
+    challengesAndOpportunities: {
+      challenges: ['Challenges revealed through your chart analysis'],
+      opportunities: ['Opportunities revealed through your chart analysis'],
+    },
+    remedies: {
+      overview:
+        'Personalized Vedic remedies (upayas) can help balance planetary influences. Consider consulting the Overview tab once the full report loads.',
+      mantras: ['Chanting planet-specific mantras can strengthen favorable influences.'],
+      gemstones: ['Wearing gemstones recommended for your chart can support key life areas.'],
+      rituals: ['Simple rituals aligned with your Dasha and Ascendant can be beneficial.'],
+      practices: ['Daily practices such as meditation and Surya Namaskar support overall balance.'],
+      lifestyle: ['Lifestyle adjustments based on your chart can enhance well-being.'],
+    },
+  };
+}
+
+function parseGroqResponse(
+  response: GroqStructuredParseInput,
+  _vedicData: unknown,
+): VedicComprehensiveAnalysis {
+  devLog.debug('🔍 Parsing Groq response for Vedic', undefined, 'vedic');
+
+  if (isGroqParsedRecord(response)) {
+    return mapVedicParsed(response);
   }
+
+  const trimmed = response.trim();
+  if (!trimmed) {
+    return buildVedicTextFallback('');
+  }
+
+  const structured = parseStructuredJsonFromResponse(trimmed);
+  if (structured.ok && structured.data) {
+    return mapVedicParsed(structured.data);
+  }
+
+  devLog.warn('Failed to parse Groq JSON, using fallback', structured.failureMode, 'vedic');
+  return buildVedicTextFallback(trimmed);
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -511,32 +589,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // Check cache first
     const cacheReadStartedAt = Date.now();
-    const cacheDoc = await getCachedDoc(['users', userId, 'mysticalProfile'], 'comprehensiveVedic');
+    const freshCached = await readVedicComprehensiveCache(userId, userProfile);
     markStage('cache_read', cacheReadStartedAt);
-    if (cacheDoc.exists()) {
-      const cached = cacheDoc.data();
-      if (cached?.schemaVersion === COMPREHENSIVE_REPORT_SCHEMA_VERSION &&
-          cached?.birthDate === userProfile.birthDate &&
-          cached?.birthTime === userProfile.birthTime &&
-          cached?.birthPlace === userProfile.birthPlace &&
-          Date.now() - cached.timestamp < 7 * 24 * 60 * 60 * 1000) { // 7 days cache
-        if (process.env.NODE_ENV === 'development') {
-          devLog.info('⏱️ [vedic/comprehensive][server] cache_hit_timing', {
-            stages: stageMs,
-            totalMs: Date.now() - reqStartedAt
-          }, 'vedic');
-        }
-        devLog.info('✅ Returning cached comprehensive Vedic report for user:', userId, 'vedic');
-        return NextResponse.json({
-          success: true,
-          data: {
-            comprehensiveAnalysis: cached.comprehensiveAnalysis,
-            timestamp: cached.timestamp
-          }
-        });
+    if (freshCached) {
+      if (process.env.NODE_ENV === 'development') {
+        devLog.info('⏱️ [vedic/comprehensive][server] cache_hit_timing', {
+          stages: stageMs,
+          totalMs: Date.now() - reqStartedAt,
+        }, 'vedic');
       }
+      devLog.info('✅ Returning cached comprehensive Vedic report for user:', userId, 'vedic');
+      return NextResponse.json({
+        success: true,
+        data: {
+          comprehensiveAnalysis: freshCached,
+          timestamp: Date.now(),
+        },
+      });
     }
 
     // Get Vedic reading data
@@ -560,53 +630,113 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const prompt = buildGroqPrompt(chartData, userProfile);
     markStage('prompt_build', promptStartedAt);
 
-    // Generate comprehensive analysis using AI
-    devLog.info('🤖 Calling AI Gateway/Groq API for comprehensive Vedic analysis...', undefined, 'vedic');
+    devLog.info('🤖 Calling AI for comprehensive Vedic analysis...', undefined, 'vedic');
     const aiStartedAt = Date.now();
-    let aiResponse: Awaited<ReturnType<typeof createAICompletion>> | null = null;
-    try {
-      aiResponse = await createAICompletion({
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert Vedic Astrologer (Jyotish) providing comprehensive birth chart analysis. Always respond with valid JSON.'
-          },
-          {
-            role: 'user',
-            content: prompt
+
+    const resolved = await resolveAiReportWithFallback({
+      label: 'vedic-comprehensive',
+      userId,
+      tryLlm: async () => {
+        let structured: Awaited<ReturnType<typeof callStructuredAI>>;
+        try {
+          structured = await callStructuredAI({
+            label: 'vedic-comprehensive',
+            userId,
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are an expert Vedic Astrologer (Jyotish) providing comprehensive birth chart analysis. Always respond with valid JSON.',
+              },
+              { role: 'user', content: prompt },
+            ],
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.7,
+            maxTokens: 4000,
+            responseFormat: { type: 'json_object' },
+            maxAttempts: 3,
+          });
+        } catch (aiError) {
+          if (!isRateLimitedError(aiError)) {
+            throw aiError;
           }
-        ],
-        model: 'llama-3.3-70b-versatile',
-        temperature: 0.7,
-        maxTokens: 4000
-      });
-    } catch (aiError) {
-      if (!isRateLimitedError(aiError)) {
-        throw aiError;
+          devLog.warn('⚠️ Vedic AI temporarily rate-limited', aiError, 'vedic');
+          return {
+            data: null,
+            attempts: 0,
+            failureMode: 'provider_error' as StructuredFailureMode,
+            parsingFailed: true,
+          };
+        }
+
+        if (!structured.ok && structured.failureMode !== 'none') {
+          devLog.warn(
+            `vedic-comprehensive structured AI: ${structured.failureMode} after ${structured.attempts} attempt(s)`,
+            undefined,
+            'vedic',
+          );
+        }
+
+        if (structured.ok && structured.raw) {
+          return {
+            data: mapVedicParsed(structured.raw),
+            attempts: structured.attempts,
+            failureMode: 'none',
+          };
+        }
+        const recovered = structured.lastRaw
+          ? parseStructuredJsonFromResponse(structured.lastRaw)
+          : null;
+        if (recovered?.ok && recovered.data) {
+          return {
+            data: mapVedicParsed(recovered.data),
+            attempts: structured.attempts,
+            failureMode: structured.failureMode,
+          };
+        }
+        return {
+          data: null,
+          attempts: structured.attempts,
+          failureMode: structured.failureMode,
+          parsingFailed: true,
+        };
+      },
+      readFirestoreCache: () =>
+        readVedicComprehensiveCache(userId, userProfile, { allowStale: true }),
+      buildDeterministic: () => buildVedicTextFallback(''),
+    });
+
+    markStage('ai_completion', aiStartedAt);
+    markStage('ai_response_parse', aiStartedAt);
+
+    const comprehensiveAnalysis = resolved.data;
+
+    if (resolved.degraded && resolved.source !== 'llm') {
+      devWarn(
+        `⚠️ Vedic comprehensive degraded (${resolved.source}) — not caching fresh LLM output`,
+      );
+      if (process.env.NODE_ENV === 'development') {
+        devLog.info('⏱️ [vedic/comprehensive][server] timing', {
+          stages: stageMs,
+          totalMs: Date.now() - reqStartedAt,
+        }, 'vedic');
       }
-      devLog.warn('⚠️ Vedic AI temporarily rate-limited; returning fallback analysis', aiError, 'vedic');
-      const fallbackAnalysis = parseGroqResponse('', chartData);
       return NextResponse.json({
         success: true,
         data: {
-          comprehensiveAnalysis: fallbackAnalysis,
-          timestamp: Date.now()
+          comprehensiveAnalysis,
+          timestamp: Date.now(),
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
         },
         degraded: true,
       });
     }
-    markStage('ai_completion', aiStartedAt);
 
-    if (!aiResponse || !aiResponse.content) {
-      throw new Error('Failed to generate AI analysis');
-    }
-
-    // Parse response
-    const parseAiStartedAt = Date.now();
-    const comprehensiveAnalysis = parseGroqResponse(aiResponse.content, chartData);
-    markStage('ai_response_parse', parseAiStartedAt);
-
-    // Cache the result
     const cacheWriteStartedAt = Date.now();
     await setCachedDoc(['users', userId, 'mysticalProfile'], 'comprehensiveVedic', {
       comprehensiveAnalysis,
@@ -614,14 +744,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       birthDate: userProfile.birthDate,
       birthTime: userProfile.birthTime,
       birthPlace: userProfile.birthPlace,
-      schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION
+      schemaVersion: COMPREHENSIVE_REPORT_SCHEMA_VERSION,
     });
     markStage('cache_write', cacheWriteStartedAt);
 
     if (process.env.NODE_ENV === 'development') {
       devLog.info('⏱️ [vedic/comprehensive][server] timing', {
         stages: stageMs,
-        totalMs: Date.now() - reqStartedAt
+        totalMs: Date.now() - reqStartedAt,
       }, 'vedic');
     }
 
@@ -631,9 +761,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       success: true,
       data: {
         comprehensiveAnalysis,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       },
-      _usage: aiResponse.usage,
     });
 
   } catch (error: any) {

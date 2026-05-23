@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFirebaseDB } from '@/lib/firebase';
-import { createAICompletion } from '@/lib/aiGateway';
+import { resolveAiReportWithFallback } from '@/lib/aiFallbackRouter';
+import { callStructuredAI, parseLlmJsonRecord } from '@/lib/aiStructuredOutput';
+import type { StructuredFailureMode } from '@/lib/aiStructuredOutputParse';
+import { isGroqParsedRecord, type GroqStructuredParseInput } from '@/lib/groqStructuredParse';
 import { devLog, devWarn } from '@/lib/devLogger';
 import { transformComprehensiveToChunks } from '@/lib/westernReportChunks';
-import {
-  extractJsonCandidate,
-  parseJsonWithRepairs,
-  stripMarkdownCodeFences,
-} from '@/lib/westernJsonParser';
 import {
   elementModalityPolarityCounts,
   partOfFortuneFromPlanets,
@@ -102,38 +100,6 @@ async function setCachedDoc(collectionPath: string[], docId: string, data: any):
 // Version 2.0: Structured object with time-based predictions (today, week, month, year, etc.)
 const PREDICTIVE_INSIGHTS_SCHEMA_VERSION = '2.0';
 
-/** Coordinates concurrent POSTs for the same user; waiters re-read Firestore after the leader finishes. */
-const westernComprehensiveInFlight = new Map<string, Promise<void>>();
-
-async function readValidWesternComprehensiveCache(userId: string): Promise<unknown | null> {
-  try {
-    const docSnap = await getCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive');
-    if (!docSnap || !docSnap.exists()) return null;
-    const cachedData = docSnap.data();
-    const lastUpdated = cachedData?.timestamp;
-    if (!lastUpdated) return null;
-    const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
-    if (hoursSinceUpdate >= 24) return null;
-    const actualData = cachedData.data || cachedData;
-    const comprehensiveAnalysis = actualData?.comprehensiveAnalysis || actualData;
-    const predictiveInsights = comprehensiveAnalysis?.predictiveInsights;
-    const schemaVersion = cachedData?.schemaVersion || actualData?.schemaVersion;
-    const isOldFormat = typeof predictiveInsights === 'string';
-    if (isOldFormat || !schemaVersion || schemaVersion !== PREDICTIVE_INSIGHTS_SCHEMA_VERSION) {
-      devLog.info(
-        '🔄 Cached report has old format or schema version mismatch - forcing regeneration for user:',
-        userId,
-        'western',
-      );
-      return null;
-    }
-    return actualData;
-  } catch {
-    return null;
-  }
-}
-
-
 interface ComprehensiveWesternRequest {
   userId: string;
   chartData: {
@@ -160,12 +126,84 @@ interface ComprehensiveWesternResponse {
         currentYear: string;
         nextYearSneakPeek: string;
         longerTermCycles: string;
-      } | string; // Support both old (string) and new (object) formats
+      } | string;
     };
     timestamp: number;
   };
   error?: string;
 }
+
+type WesternComprehensiveAnalysis = NonNullable<
+  ComprehensiveWesternResponse['data']
+>['comprehensiveAnalysis'];
+
+/** Coordinates concurrent POSTs for the same user; waiters re-read Firestore after the leader finishes. */
+const westernComprehensiveInFlight = new Map<string, Promise<void>>();
+
+function extractWesternAnalysisFromCache(cachedData: Record<string, unknown>): WesternComprehensiveAnalysis | null {
+  const actualData = (cachedData.data as Record<string, unknown> | undefined) || cachedData;
+  const comprehensiveAnalysis =
+    (actualData?.comprehensiveAnalysis as WesternComprehensiveAnalysis | undefined) ||
+    (actualData as WesternComprehensiveAnalysis | undefined);
+  if (!comprehensiveAnalysis?.chartOverview) return null;
+  const predictiveInsights = comprehensiveAnalysis.predictiveInsights;
+  if (typeof predictiveInsights === 'string') return null;
+  return comprehensiveAnalysis;
+}
+
+async function readWesternComprehensiveCache(
+  userId: string,
+  options?: { allowStale?: boolean },
+): Promise<WesternComprehensiveAnalysis | null> {
+  try {
+    const docSnap = await getCachedDoc(['users', userId, 'westernAstrologyReports'], 'comprehensive');
+    if (!docSnap || !docSnap.exists()) return null;
+    const cachedData = docSnap.data() as Record<string, unknown>;
+    const lastUpdated = cachedData?.timestamp as number | undefined;
+    if (!lastUpdated) return null;
+
+    if (!options?.allowStale) {
+      const hoursSinceUpdate = (Date.now() - lastUpdated) / (1000 * 60 * 60);
+      if (hoursSinceUpdate >= 24) return null;
+    }
+
+    const schemaVersion =
+      (cachedData.schemaVersion as string | undefined) ||
+      ((cachedData.data as Record<string, unknown> | undefined)?.schemaVersion as string | undefined);
+    const analysis = extractWesternAnalysisFromCache(cachedData);
+    if (!analysis) {
+      if (!options?.allowStale) {
+        devLog.info(
+          '🔄 Cached report has old format or schema version mismatch - forcing regeneration for user:',
+          userId,
+          'western',
+        );
+      }
+      return null;
+    }
+    if (
+      !options?.allowStale &&
+      (!schemaVersion || schemaVersion !== PREDICTIVE_INSIGHTS_SCHEMA_VERSION)
+    ) {
+      devLog.info(
+        '🔄 Cached report schema mismatch - forcing regeneration for user:',
+        userId,
+        'western',
+      );
+      return null;
+    }
+    return analysis;
+  } catch {
+    return null;
+  }
+}
+
+async function readValidWesternComprehensiveCache(userId: string): Promise<unknown | null> {
+  const analysis = await readWesternComprehensiveCache(userId);
+  if (!analysis) return null;
+  return { comprehensiveAnalysis: analysis, timestamp: Date.now() };
+}
+
 
 // Build comprehensive Groq prompt
 function buildGroqPrompt(chartData: ComprehensiveWesternRequest['chartData']): string {
@@ -345,359 +383,212 @@ Make each section comprehensive yet concise. Focus on practical guidance, self-a
 }
 
 // Parse Groq response and extract structured data
-type WesternComprehensiveAnalysis = NonNullable<ComprehensiveWesternResponse['data']>['comprehensiveAnalysis'];
-
-function parseGroqResponse(response: string, planets: any[], houses: any[], aspects: any[], transits: any[] = []): WesternComprehensiveAnalysis {
-  const verboseParse = process.env.VERBOSE_ASTRO_LOGS === '1';
-  if (verboseParse) {
-    devLog.debug('🔍 ========== STARTING PARSE GROQ RESPONSE ==========', undefined, 'western');
-    devLog.debug('🔍 Response length:', response.length, 'western');
-    devLog.debug('🔍 Planets available:', planets.length, 'western');
-    devLog.debug('🔍 Houses available:', houses.length, 'western');
-    devLog.debug('🔍 Aspects available:', aspects.length, 'western');
-    devLog.debug('🔍 Transits available:', transits.length, 'western');
-  }
-
-  // Verify response structure before parsing
-  if (!response || response.length === 0) {
-    devLog.error('❌ Response is empty - cannot parse');
-    throw new Error('Empty response from Groq');
-  }
-  
-  // Check if response contains any JSON-like structure
-  const hasJsonStructure = response.includes('{');
-  if (!hasJsonStructure) {
-    devLog.error('❌ Response does not contain JSON structure');
-    devLog.error('❌ Response preview:', response.substring(0, 500));
-    throw new Error('Response does not contain valid JSON structure');
-  }
-  
-  try {
-    // Strategy 0: Try direct JSON match (most common)
-    devLog.debug('🔍 Strategy 0: Trying direct JSON match...', undefined, 'western');
-    let jsonCandidate = extractJsonCandidate(response);
-    if (jsonCandidate && jsonCandidate.length > 100) {
-      devLog.debug(`✅ Strategy 0: Found JSON candidate, length: ${jsonCandidate.length}`, undefined, 'western');
-    } else {
-      devLog.warn(`⚠️ Strategy 0: JSON candidate too short or not found, length: ${jsonCandidate?.length ?? 0}`, undefined, 'western');
-    }
-    
-    // Strategy 1: Try extracting from markdown code blocks (most common)
-    if (!jsonCandidate || jsonCandidate.length < 100) {
-      devLog.debug('🔍 Strategy 1: Trying markdown code block extraction...', undefined, 'western');
-      const codeBlockMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-      if (codeBlockMatch && codeBlockMatch[1]) {
-        jsonCandidate = codeBlockMatch[1];
-        devLog.debug(`✅ Strategy 1: Extracted JSON from markdown code block, length: ${jsonCandidate.length}`, undefined, 'western');
-      } else {
-        devLog.warn('⚠️ Strategy 1: No markdown code block found', undefined, 'western');
-      }
-    }
-    
-    // Strategy 2: Try finding JSON after common prefixes
-    if (!jsonCandidate || jsonCandidate.length < 100) {
-      devLog.debug('🔍 Strategy 2: Trying JSON after prefix...', undefined, 'western');
-      const prefixMatch = response.match(/(?:Here'?s?|Here is|Here's|The analysis|The chart analysis|Analysis):\s*(\{[\s\S]*\})/i);
-      if (prefixMatch && prefixMatch[1]) {
-        jsonCandidate = prefixMatch[1];
-        devLog.debug(`✅ Strategy 2: Extracted JSON after prefix, length: ${jsonCandidate.length}`, undefined, 'western');
-      } else {
-        devLog.warn('⚠️ Strategy 2: No prefix match found', undefined, 'western');
-      }
-    }
-    
-    // Strategy 3: Try finding the largest JSON object
-    if (!jsonCandidate || jsonCandidate.length < 100) {
-      devLog.debug('🔍 Strategy 3: Trying to find largest JSON object...', undefined, 'western');
-      const allMatches = response.match(/\{[\s\S]*?\}(?=\s*\{|\s*$)/g);
-      if (allMatches && allMatches.length > 0) {
-        // Find the largest JSON object (likely the main response)
-        jsonCandidate = allMatches.sort((a, b) => b.length - a.length)[0];
-        devLog.debug(`✅ Strategy 3: Extracted largest JSON object from ${allMatches.length} matches, length: ${jsonCandidate.length}`, undefined, 'western');
-      } else {
-        devLog.warn('⚠️ Strategy 3: No JSON objects found', undefined, 'western');
-      }
-    }
-    
-    if (jsonCandidate) {
-      devLog.debug(`✅ Found JSON candidate, length: ${jsonCandidate.length}`, undefined, 'western');
-      devLog.debug('🔍 JSON preview (first 1000 chars):', jsonCandidate.substring(0, 1000), 'western');
-      devLog.debug('🔍 JSON preview (last 500 chars):', jsonCandidate.substring(Math.max(0, jsonCandidate.length - 500)), 'western');
-      
-      let parsed;
-      let jsonString = jsonCandidate;
-      
-      // Clean up JSON string - remove common issues
-      devLog.debug('🔍 Cleaning JSON string...', undefined, 'western');
-      const originalLength = jsonString.length;
-      jsonString = stripMarkdownCodeFences(jsonString);
-      const extracted = extractJsonCandidate(jsonString);
-      if (extracted) jsonString = extracted;
-      jsonString = jsonString.replace(/,(\s*[}\]])/g, '$1');
-      jsonString = jsonString.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-      if (originalLength !== jsonString.length) {
-        devLog.debug(`🔍 Cleaned JSON string, removed ${originalLength - jsonString.length}`, undefined, 'western');
-      }
-      
-      devLog.debug('🔍 Attempting JSON.parse...', undefined, 'western');
-      try {
-        parsed = parseJsonWithRepairs(jsonString);
-        devLog.debug('✅ JSON.parse successful!', undefined, 'western');
-        devLog.debug(`🔍 Parsed object keys: ${Object.keys(parsed || {}).join(', ')}`, undefined, 'western');
-      } catch (parseError: any) {
-        devLog.error('❌ JSON.parse failed:', parseError.message);
-        devLog.error('❌ Error at position:', parseError.message.match(/position (\d+)/)?.[1] || 'unknown');
-        
-        // Try to fix common JSON issues and parse again
-        devLog.debug('🔍 Attempting to fix JSON...', undefined, 'western');
-        try {
-          // Try to extract just the main object if nested incorrectly
-          const fixedMatch = jsonString.match(/\{[\s\S]*"chartOverview"[\s\S]*/);
-          if (fixedMatch) {
-            devLog.debug('🔍 Found chartOverview in JSON, attempting to extract main object...', undefined, 'western');
-            parsed = parseJsonWithRepairs(fixedMatch[0]);
-            devWarn('⚠️ Fixed JSON by extracting main object');
-          } else {
-            // Try to find the main JSON object by looking for key fields
-            const alternativeMatch = jsonString.match(/\{[\s\S]*?(?:"chartOverview"|"planetaryAnalysis"|"houseAnalysis")[\s\S]*/);
-            if (alternativeMatch) {
-              devLog.debug('🔍 Found alternative JSON structure, attempting to parse...', undefined, 'western');
-              parsed = parseJsonWithRepairs(alternativeMatch[0]);
-              devWarn('⚠️ Fixed JSON by extracting alternative structure');
-            } else {
-              throw parseError;
-            }
-          }
-        } catch (secondError: any) {
-          devLog.error('❌ All JSON parsing strategies failed');
-          devLog.error('❌ Original error:', parseError.message);
-          devLog.error('❌ Second attempt error:', secondError.message);
-          devLog.error('❌ JSON that failed to parse (first 500 chars):', jsonString.substring(0, 500));
-          devLog.error('❌ JSON that failed to parse (last 500 chars):', jsonString.substring(Math.max(0, jsonString.length - 500)));
-          throw parseError;
-        }
-      }
-      
-      devLog.debug('✅ Successfully parsed JSON', undefined, 'western');
-      devLog.debug('🔍 Parsed object structure:', undefined, 'western');
-      devLog.debug(`🔍   - Has chartOverview: ${!!parsed.chartOverview}`, undefined, 'western');
-      devLog.debug(`🔍   - Has planetaryAnalysis: ${!!parsed.planetaryAnalysis}`, undefined, 'western');
-      devLog.debug(`🔍   - Has houseAnalysis: ${!!parsed.houseAnalysis}`, undefined, 'western');
-      devLog.debug(`🔍   - Has aspectAnalysis: ${!!parsed.aspectAnalysis}`, undefined, 'western');
-      devLog.debug(`🔍   - Has transitAnalysis: ${!!parsed.transitAnalysis}`, undefined, 'western');
-      devLog.debug(`🔍   - Has predictiveInsights: ${!!parsed.predictiveInsights}`, undefined, 'western');
-      
-      // Ensure planetaryAnalysis matches actual planets
-      const planetaryAnalysis = (parsed.planetaryAnalysis || []).map((item: any) => ({
-        planet: item.planet || 'Unknown',
-        analysis: item.analysis || 'Analysis not available'
-      }));
-
-      // Ensure houseAnalysis has all 12 houses
-      const houseAnalysis = Array.from({ length: 12 }, (_, i) => {
-        const houseNum = i + 1;
-        const houseData = (parsed.houseAnalysis || []).find((h: any) => h.house === houseNum);
-        return {
-          house: houseNum,
-          analysis: houseData?.analysis || `House ${houseNum} analysis not available`
-        };
-      });
-
-      // Ensure aspectAnalysis is populated
-      const aspectAnalysis = (parsed.aspectAnalysis || []).map((item: any) => ({
-        aspect: item.aspect || 'Unknown aspect',
-        analysis: item.analysis || 'Analysis not available'
-      }));
-
-      // Handle predictiveInsights - can be object (new format) or string (old format)
-      let predictiveInsights: any;
-      if (parsed.predictiveInsights && typeof parsed.predictiveInsights === 'object') {
-        // New structured format - only reject if clearly malformed or completely empty
-        const groqInsights = parsed.predictiveInsights;
-        
-        // Only reject if critical fields are completely missing (not just generic)
-        const isMalformed = (
-          !groqInsights.todaysQuickWin || groqInsights.todaysQuickWin.trim().length === 0 ||
-          !groqInsights.currentWeek || groqInsights.currentWeek.trim().length === 0 ||
-          !groqInsights.currentMonth || groqInsights.currentMonth.trim().length === 0 ||
-          !groqInsights.currentYear || groqInsights.currentYear.trim().length === 0
-        );
-        
-        // Use Groq predictions if they exist, even if partially generic
-        // Fill in missing fields with chart-based predictions
-        const chartBased = generateChartBasedPredictions(planets, houses, aspects, transits);
-        
-        if (isMalformed) {
-          devWarn('⚠️ Groq predictions are malformed (missing critical fields) - using chart-based fallback');
-          predictiveInsights = chartBased;
-        } else {
-          // Use Groq predictions but fill missing fields with chart-based ones
-          const chartBased = generateChartBasedPredictions(planets, houses, aspects, transits);
-          predictiveInsights = {
-            todaysQuickWin: groqInsights.todaysQuickWin || chartBased.todaysQuickWin,
-            currentWeek: groqInsights.currentWeek || chartBased.currentWeek,
-            currentMonth: groqInsights.currentMonth || chartBased.currentMonth,
-            currentYear: groqInsights.currentYear || chartBased.currentYear,
-            nextYearSneakPeek: groqInsights.nextYearSneakPeek || chartBased.nextYearSneakPeek,
-            longerTermCycles: groqInsights.longerTermCycles || chartBased.longerTermCycles
-          };
-        }
-      } else {
-        // Old string format - use chart-based predictions
-        devWarn('⚠️ Old format detected - generating chart-based predictions');
-        predictiveInsights = generateChartBasedPredictions(planets, houses, aspects, transits);
-      }
-
-      // Generate chart-based fallbacks if Groq data is missing
-      const sunPlanet = planets.find(p => p.name?.toLowerCase() === 'sun');
-      const moonPlanet = planets.find(p => p.name?.toLowerCase() === 'moon');
-      const risingHouse = houses.find((h, idx) => (h.number || idx + 1) === 1);
-      
-      const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
-      const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
-      const risingSign = risingHouse?.sign?.signName || risingHouse?.sign || 'Unknown';
-      
-      // Generate chart overview fallback if missing
-      const chartOverviewFallback = parsed.chartOverview || 
-        `Your Western astrology chart shows a ${sunSign} Sun, ${moonSign} Moon, and ${risingSign} Rising sign, creating a unique astrological profile. The planetary positions and aspects reveal important patterns in your personality, life path, and potential areas of growth.`;
-      
-      // Improve planetary analysis fallbacks
-      const improvedPlanetaryAnalysis = planetaryAnalysis.length > 0 ? planetaryAnalysis : planets.map(p => {
-        const signName = p.sign?.signName || p.sign || 'Unknown sign';
-        const houseNum = p.house || 'Unknown';
-        const houseTheme = getHouseTheme(Number(p.house) || 1);
-        return {
-          planet: p.name,
-          analysis: `${p.name} in ${signName} in House ${houseNum} influences your ${houseTheme}. This placement shapes how ${p.name.toLowerCase()} energy manifests in your life, affecting your ${houseTheme} and contributing to your overall character.`
-        };
-      });
-      
-      // Improve house analysis - ensure signs are extracted properly
-      const improvedHouseAnalysis = Array.from({ length: 12 }, (_, i) => {
-        const houseNum = i + 1;
-        const houseData = houseAnalysis.find(h => h.house === houseNum);
-        const houseObj = houses[i] || houses.find((h, idx) => (h.number || idx + 1) === houseNum);
-        const signName = houseObj?.sign?.signName || houseObj?.sign || 'Unknown sign';
-        const houseTheme = getHouseTheme(houseNum);
-        
-        return {
-          house: houseNum,
-          analysis: houseData?.analysis || `House ${houseNum} (${signName} sign on cusp) represents ${houseTheme}. Planets in this house and transits through ${signName} will activate themes related to ${houseTheme} in your life.`
-        };
-      });
-      
-      // Improve aspect analysis fallbacks
-      const improvedAspectAnalysis = aspectAnalysis.length > 0 ? aspectAnalysis : aspects.slice(0, 10).map(a => {
-        const planet1 = a.planet1 || 'Planet';
-        const planet2 = a.planet2 || 'Planet';
-        const aspectType = a.type || 'aspect';
-        return {
-          aspect: `${planet1} ${aspectType} ${planet2}`,
-          analysis: `The ${aspectType} between ${planet1} and ${planet2} creates a dynamic relationship in your chart. This aspect influences how these planetary energies interact, bringing both opportunities and challenges in areas where both planets are active.`
-        };
-      });
-      
-      // Improve transit analysis fallback
-      const transitAnalysisFallback = parsed.transitAnalysis || 
-        (transits.length > 0 
-          ? `Current planetary transits are actively influencing your chart. ${transits.slice(0, 3).map(t => `${t.name || 'Planet'} in ${t.sign?.signName || t.sign}`).join(', ')} ${transits.length > 3 ? `and ${transits.length - 3} more` : ''} are creating opportunities and challenges in various life areas.`
-          : 'Current transits are influencing various life areas, activating different houses and aspects of your chart.');
-      
-      const result = {
-        chartOverview: chartOverviewFallback,
-        planetaryAnalysis: improvedPlanetaryAnalysis,
-        houseAnalysis: improvedHouseAnalysis,
-        aspectAnalysis: improvedAspectAnalysis,
-        transitAnalysis: transitAnalysisFallback,
-        predictiveInsights
-      };
-      
-      devLog.info('✅ ========== PARSEGROQRESPONSE SUCCESS ==========', undefined, 'western');
-      devLog.info('✅ Successfully parsed and structured Groq response', undefined, 'western');
-      devLog.info('✅ ===============================================', undefined, 'western');
-      
-      return result;
-    } else {
-      devLog.error('❌ ========== NO JSON FOUND IN RESPONSE ==========');
-      devLog.error('❌ Response does not contain valid JSON structure');
-      devLog.error('❌ Response preview (first 500 chars):', response.substring(0, 500));
-      devLog.error('❌ Response preview (last 500 chars):', response.substring(Math.max(0, response.length - 500)));
-      devLog.error('❌ ==============================================');
-      throw new Error('No JSON structure found in Groq response');
-    }
-  } catch (error: any) {
-    devLog.error('❌ ========== PARSEGROQRESPONSE ERROR ==========');
-    devLog.error('❌ Error message:', error.message);
-    devLog.error('❌ Error stack:', error.stack);
-    devLog.error('❌ Response that caused error (first 1000 chars):', response.substring(0, 1000));
-    devLog.error('❌ ============================================');
-    throw error; // Re-throw to be caught by route-level handler
-  }
-
-  // Fallback: Create basic structure with chart-based predictions and actual chart data
+function buildWesternChartFallback(
+  planets: any[],
+  houses: any[],
+  aspects: any[],
+  transits: any[] = [],
+): WesternComprehensiveAnalysis {
   const chartBasedPredictions = generateChartBasedPredictions(planets, houses, aspects, transits);
-  
-  // Extract key chart elements for fallback
-  const sunPlanet = planets.find(p => p.name?.toLowerCase() === 'sun');
-  const moonPlanet = planets.find(p => p.name?.toLowerCase() === 'moon');
+  const sunPlanet = planets.find((p) => p.name?.toLowerCase() === 'sun');
+  const moonPlanet = planets.find((p) => p.name?.toLowerCase() === 'moon');
   const risingHouse = houses.find((h, idx) => (h.number || idx + 1) === 1);
-  
   const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
   const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
   const risingSign = risingHouse?.sign?.signName || risingHouse?.sign || 'Unknown';
-  
-  // Generate comprehensive chart overview using actual data
-  const chartOverviewFallback = `Your Western astrology chart reveals a ${sunSign} Sun, ${moonSign} Moon, and ${risingSign} Rising sign, creating a unique astrological profile. The planetary positions, house placements, and aspects in your chart reveal important patterns that shape your personality, life path, and potential areas of growth. Each planet's placement in specific signs and houses tells a story about different facets of your character and life experiences.`;
-  
-  // Generate detailed planetary analysis using actual chart data
-  const planetaryAnalysisFallback = planets.map(p => {
-    const signName = p.sign?.signName || p.sign || 'Unknown sign';
-    const houseNum = p.house || 'Unknown';
-    const houseTheme = getHouseTheme(Number(p.house) || 1);
+
+  return {
+    chartOverview: `Your Western astrology chart reveals a ${sunSign} Sun, ${moonSign} Moon, and ${risingSign} Rising sign, creating a unique astrological profile. The planetary positions, house placements, and aspects in your chart reveal important patterns that shape your personality, life path, and potential areas of growth. Each planet's placement in specific signs and houses tells a story about different facets of your character and life experiences.`,
+    planetaryAnalysis: planets.map((p) => {
+      const signName = p.sign?.signName || p.sign || 'Unknown sign';
+      const houseNum = p.house || 'Unknown';
+      const houseTheme = getHouseTheme(Number(p.house) || 1);
+      return {
+        planet: p.name,
+        analysis: `${p.name} in ${signName} in House ${houseNum} influences your ${houseTheme}. This placement reveals how ${p.name.toLowerCase()} energy manifests in your life, affecting your ${houseTheme} and contributing to your overall character. The ${signName} quality combined with ${houseNum} house themes creates a unique expression of ${p.name.toLowerCase()} energy.`,
+      };
+    }),
+    houseAnalysis: Array.from({ length: 12 }, (_, i) => {
+      const houseNum = i + 1;
+      const houseObj = houses[i] || houses.find((h, idx) => (h.number || idx + 1) === houseNum);
+      const signName = houseObj?.sign?.signName || houseObj?.sign || 'Unknown sign';
+      const houseTheme = getHouseTheme(houseNum);
+      return {
+        house: houseNum,
+        analysis: `House ${houseNum} has ${signName} on its cusp and represents ${houseTheme}. This house shows how you experience and express energy related to ${houseTheme}. Planets transiting through ${signName} will activate themes in this life area, and any natal planets in this house will have a significant influence on your ${houseTheme}.`,
+      };
+    }),
+    aspectAnalysis: aspects.slice(0, 10).map((a) => {
+      const planet1 = a.planet1 || 'Planet';
+      const planet2 = a.planet2 || 'Planet';
+      const aspectType = a.type || 'aspect';
+      const orb = a.orb ? `${a.orb.toFixed(1)}°` : '';
+      return {
+        aspect: `${planet1} ${aspectType} ${planet2}${orb ? ` (${orb} orb)` : ''}`,
+        analysis: `The ${aspectType} between ${planet1} and ${planet2} creates a dynamic relationship in your chart. This aspect influences how these planetary energies interact and integrate, bringing both opportunities and challenges. The ${aspectType} suggests a specific way these planetary energies work together to shape your experiences and personality.`,
+      };
+    }),
+    transitAnalysis:
+      transits.length > 0
+        ? `Current planetary transits are actively influencing your chart. Key transits include ${transits
+            .slice(0, 5)
+            .map(
+              (t) =>
+                `${t.name || 'Planet'} in ${t.sign?.signName || t.sign}${t.house ? ` (House ${t.house})` : ''}`,
+            )
+            .join(
+              ', ',
+            )}. These transits are creating opportunities and challenges in various life areas, activating different houses and aspects of your natal chart.`
+        : 'Current planetary transits are influencing various life areas, activating different houses and aspects of your chart. The movement of planets creates ongoing cycles of opportunity and challenge.',
+    predictiveInsights: chartBasedPredictions,
+  };
+}
+
+function mapWesternParsedToAnalysis(
+  parsed: Record<string, unknown>,
+  planets: any[],
+  houses: any[],
+  aspects: any[],
+  transits: any[] = [],
+): WesternComprehensiveAnalysis {
+  const planetaryAnalysis = ((parsed.planetaryAnalysis as unknown[]) || []).map((item: any) => ({
+    planet: item.planet || 'Unknown',
+    analysis: item.analysis || 'Analysis not available',
+  }));
+
+  const houseAnalysis = Array.from({ length: 12 }, (_, i) => {
+    const houseNum = i + 1;
+    const houseData = ((parsed.houseAnalysis as unknown[]) || []).find(
+      (h: any) => h.house === houseNum,
+    );
     return {
-      planet: p.name,
-      analysis: `${p.name} in ${signName} in House ${houseNum} influences your ${houseTheme}. This placement reveals how ${p.name.toLowerCase()} energy manifests in your life, affecting your ${houseTheme} and contributing to your overall character. The ${signName} quality combined with ${houseNum} house themes creates a unique expression of ${p.name.toLowerCase()} energy.`
+      house: houseNum,
+      analysis: (houseData as { analysis?: string })?.analysis || `House ${houseNum} analysis not available`,
     };
   });
-  
-  // Generate house analysis with proper sign extraction
-  const houseAnalysisFallback = Array.from({ length: 12 }, (_, i) => {
+
+  const aspectAnalysis = ((parsed.aspectAnalysis as unknown[]) || []).map((item: any) => ({
+    aspect: item.aspect || 'Unknown aspect',
+    analysis: item.analysis || 'Analysis not available',
+  }));
+
+  let predictiveInsights: WesternComprehensiveAnalysis['predictiveInsights'];
+  if (parsed.predictiveInsights && typeof parsed.predictiveInsights === 'object') {
+    const groqInsights = parsed.predictiveInsights as Record<string, string>;
+    const isMalformed =
+      !groqInsights.todaysQuickWin?.trim() ||
+      !groqInsights.currentWeek?.trim() ||
+      !groqInsights.currentMonth?.trim() ||
+      !groqInsights.currentYear?.trim();
+    const chartBased = generateChartBasedPredictions(planets, houses, aspects, transits);
+    predictiveInsights = isMalformed
+      ? chartBased
+      : {
+          todaysQuickWin: groqInsights.todaysQuickWin || chartBased.todaysQuickWin,
+          currentWeek: groqInsights.currentWeek || chartBased.currentWeek,
+          currentMonth: groqInsights.currentMonth || chartBased.currentMonth,
+          currentYear: groqInsights.currentYear || chartBased.currentYear,
+          nextYearSneakPeek: groqInsights.nextYearSneakPeek || chartBased.nextYearSneakPeek,
+          longerTermCycles: groqInsights.longerTermCycles || chartBased.longerTermCycles,
+        };
+  } else {
+    predictiveInsights = generateChartBasedPredictions(planets, houses, aspects, transits);
+  }
+
+  const sunPlanet = planets.find((p) => p.name?.toLowerCase() === 'sun');
+  const moonPlanet = planets.find((p) => p.name?.toLowerCase() === 'moon');
+  const risingHouse = houses.find((h, idx) => (h.number || idx + 1) === 1);
+  const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
+  const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
+  const risingSign = risingHouse?.sign?.signName || risingHouse?.sign || 'Unknown';
+
+  const chartOverviewFallback =
+    (typeof parsed.chartOverview === 'string' ? parsed.chartOverview : '') ||
+    `Your Western astrology chart shows a ${sunSign} Sun, ${moonSign} Moon, and ${risingSign} Rising sign, creating a unique astrological profile. The planetary positions and aspects reveal important patterns in your personality, life path, and potential areas of growth.`;
+
+  const improvedPlanetaryAnalysis =
+    planetaryAnalysis.length > 0
+      ? planetaryAnalysis
+      : planets.map((p) => {
+          const signName = p.sign?.signName || p.sign || 'Unknown sign';
+          const houseNum = p.house || 'Unknown';
+          const houseTheme = getHouseTheme(Number(p.house) || 1);
+          return {
+            planet: p.name,
+            analysis: `${p.name} in ${signName} in House ${houseNum} influences your ${houseTheme}. This placement shapes how ${p.name.toLowerCase()} energy manifests in your life, affecting your ${houseTheme} and contributing to your overall character.`,
+          };
+        });
+
+  const improvedHouseAnalysis = Array.from({ length: 12 }, (_, i) => {
     const houseNum = i + 1;
+    const houseData = houseAnalysis.find((h) => h.house === houseNum);
     const houseObj = houses[i] || houses.find((h, idx) => (h.number || idx + 1) === houseNum);
     const signName = houseObj?.sign?.signName || houseObj?.sign || 'Unknown sign';
     const houseTheme = getHouseTheme(houseNum);
-    
     return {
       house: houseNum,
-      analysis: `House ${houseNum} has ${signName} on its cusp and represents ${houseTheme}. This house shows how you experience and express energy related to ${houseTheme}. Planets transiting through ${signName} will activate themes in this life area, and any natal planets in this house will have a significant influence on your ${houseTheme}.`
+      analysis:
+        houseData?.analysis ||
+        `House ${houseNum} (${signName} sign on cusp) represents ${houseTheme}. Planets in this house and transits through ${signName} will activate themes related to ${houseTheme} in your life.`,
     };
   });
-  
-  // Generate aspect analysis using actual aspects
-  const aspectAnalysisFallback = aspects.slice(0, 10).map(a => {
-    const planet1 = a.planet1 || 'Planet';
-    const planet2 = a.planet2 || 'Planet';
-    const aspectType = a.type || 'aspect';
-    const orb = a.orb ? `${a.orb.toFixed(1)}°` : '';
-    return {
-      aspect: `${planet1} ${aspectType} ${planet2}${orb ? ` (${orb} orb)` : ''}`,
-      analysis: `The ${aspectType} between ${planet1} and ${planet2} creates a dynamic relationship in your chart. This aspect influences how these planetary energies interact and integrate, bringing both opportunities and challenges. The ${aspectType} suggests a specific way these planetary energies work together to shape your experiences and personality.`
-    };
-  });
-  
-  // Generate transit analysis using actual transits
-  const transitAnalysisFallback = transits.length > 0
-    ? `Current planetary transits are actively influencing your chart. Key transits include ${transits.slice(0, 5).map(t => `${t.name || 'Planet'} in ${t.sign?.signName || t.sign}${t.house ? ` (House ${t.house})` : ''}`).join(', ')}. These transits are creating opportunities and challenges in various life areas, activating different houses and aspects of your natal chart.`
-    : 'Current planetary transits are influencing various life areas, activating different houses and aspects of your chart. The movement of planets creates ongoing cycles of opportunity and challenge.';
-  
+
+  const improvedAspectAnalysis =
+    aspectAnalysis.length > 0
+      ? aspectAnalysis
+      : aspects.slice(0, 10).map((a) => ({
+          aspect: `${a.planet1 || 'Planet'} ${a.type || 'aspect'} ${a.planet2 || 'Planet'}`,
+          analysis: `The ${a.type || 'aspect'} between ${a.planet1 || 'Planet'} and ${a.planet2 || 'Planet'} creates a dynamic relationship in your chart.`,
+        }));
+
+  const transitAnalysisFallback =
+    (typeof parsed.transitAnalysis === 'string' ? parsed.transitAnalysis : '') ||
+    (transits.length > 0
+      ? `Current planetary transits are actively influencing your chart. ${transits
+          .slice(0, 3)
+          .map((t) => `${t.name || 'Planet'} in ${t.sign?.signName || t.sign}`)
+          .join(', ')} ${transits.length > 3 ? `and ${transits.length - 3} more` : ''} are creating opportunities and challenges in various life areas.`
+      : 'Current transits are influencing various life areas, activating different houses and aspects of your chart.');
+
   return {
     chartOverview: chartOverviewFallback,
-    planetaryAnalysis: planetaryAnalysisFallback,
-    houseAnalysis: houseAnalysisFallback,
-    aspectAnalysis: aspectAnalysisFallback,
+    planetaryAnalysis: improvedPlanetaryAnalysis,
+    houseAnalysis: improvedHouseAnalysis,
+    aspectAnalysis: improvedAspectAnalysis,
     transitAnalysis: transitAnalysisFallback,
-    predictiveInsights: chartBasedPredictions
+    predictiveInsights,
   };
+}
+
+function parseGroqResponse(
+  response: GroqStructuredParseInput,
+  planets: any[],
+  houses: any[],
+  aspects: any[],
+  transits: any[] = [],
+): WesternComprehensiveAnalysis {
+  if (isGroqParsedRecord(response)) {
+    return mapWesternParsedToAnalysis(response, planets, houses, aspects, transits);
+  }
+
+  const responseText = response.trim();
+  if (!responseText) {
+    devLog.warn('⚠️ Empty Groq response — using chart-based fallback', undefined, 'western');
+    return buildWesternChartFallback(planets, houses, aspects, transits);
+  }
+
+  if (!responseText.includes('{')) {
+    devLog.error('❌ Response does not contain JSON structure', undefined, 'western');
+    throw new Error('Response does not contain valid JSON structure');
+  }
+
+  const parsed = parseLlmJsonRecord(responseText);
+  if (!parsed) {
+    throw new Error('No JSON structure found in Groq response');
+  }
+
+  devLog.info('✅ Parsed Western comprehensive JSON', undefined, 'western');
+  return mapWesternParsedToAnalysis(parsed, planets, houses, aspects, transits);
 }
 
 // Validate if predictions reference chart-specific elements (relaxed - only check for completely empty)
@@ -867,135 +758,96 @@ export async function POST(request: NextRequest) {
     // Build comprehensive prompt
     const prompt = buildGroqPrompt(chartData);
 
-    // Call AI Gateway or direct Groq API
-    devLog.info('🤖 Calling AI Gateway/Groq API for comprehensive Western astrology analysis...', undefined, 'western-astrology');
-    const result = await createAICompletion({
-      model: 'llama-3.3-70b-versatile',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert Western astrologer specializing in the Tropical Zodiac system. Provide comprehensive, insightful, and practical guidance. Always respond with valid JSON when requested.'
-        },
-        {
-          role: 'user',
-          content: prompt
+    devLog.info('🤖 Calling AI for comprehensive Western astrology analysis...', undefined, 'western-astrology');
+    const chartArgs = [
+      chartData.planets || [],
+      chartData.houses || [],
+      chartData.aspects || [],
+      chartData.transits || [],
+    ] as const;
+
+    const resolved = await resolveAiReportWithFallback({
+      label: 'western-comprehensive',
+      userId,
+      tryLlm: async () => {
+        const structured = await callStructuredAI({
+          label: 'western-comprehensive',
+          model: 'llama-3.3-70b-versatile',
+          userId,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert Western astrologer specializing in the Tropical Zodiac system. Provide comprehensive, insightful, and practical guidance. Always respond with valid JSON when requested.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.75,
+          maxTokens: 3500,
+          responseFormat: { type: 'json_object' },
+          maxAttempts: 3,
+        });
+
+        if (!structured.ok && structured.failureMode !== 'none') {
+          devLog.warn(
+            `western-comprehensive structured AI: ${structured.failureMode} after ${structured.attempts} attempt(s)`,
+            undefined,
+            'western',
+          );
         }
-      ],
-      temperature: 0.75,
-      maxTokens: 3500
+
+        const aiResponse = structured.lastRaw ?? '';
+        const verboseWestern = process.env.VERBOSE_ASTRO_LOGS === '1';
+        if (verboseWestern && aiResponse.length > 0) {
+          devLog.debug('📝 RAW response length:', aiResponse.length, 'western');
+        }
+
+        let failureMode: StructuredFailureMode = structured.failureMode;
+        let parsingFailed = false;
+        try {
+          const analysis = parseGroqResponse(structured.raw ?? aiResponse, ...chartArgs);
+          devLog.info('✅ AI response parsed', undefined, 'western');
+          return {
+            data: analysis,
+            attempts: structured.attempts,
+            failureMode,
+          };
+        } catch (parseError: unknown) {
+          parsingFailed = true;
+          failureMode = 'json_parse_error';
+          const pe = parseError as Error;
+          devLog.error('❌ Parsing error:', pe.message, 'western');
+          return {
+            data: null,
+            attempts: structured.attempts,
+            failureMode,
+            parsingFailed,
+          };
+        }
+      },
+      readFirestoreCache: () => readWesternComprehensiveCache(userId, { allowStale: true }),
+      buildDeterministic: () => buildWesternChartFallback(...chartArgs),
     });
 
-    const aiResponse = result.content || '';
-    devLog.info('✅ Groq API response received', undefined, 'western');
+    const comprehensiveAnalysis = resolved.data;
 
-    const verboseWestern = process.env.VERBOSE_ASTRO_LOGS === '1';
-    if (verboseWestern) {
-      devLog.debug('📝 ========== RAW GROQ RESPONSE ==========', undefined, 'western');
-      devLog.debug('📝 Response length:', aiResponse.length, 'western');
-      devLog.debug('📝 Response is empty:', !aiResponse || aiResponse.length === 0, 'western');
-      if (aiResponse.length > 0) {
-        devLog.debug('📝 First 2000 characters:', aiResponse.substring(0, 2000), 'western');
-        if (aiResponse.length > 2000) {
-          devLog.debug('📝 Last 500 characters:', aiResponse.substring(Math.max(0, aiResponse.length - 500)), 'western');
-        }
-        const hasJson = /\{[\s\S]*\}/.test(aiResponse);
-        const hasMarkdownCodeBlock = /```(?:json)?\s*\{/.test(aiResponse);
-        const hasChartOverview = /chartOverview/i.test(aiResponse);
-        const hasPlanetaryAnalysis = /planetaryAnalysis/i.test(aiResponse);
-        devLog.debug('📝 Response structure analysis:', undefined, 'western');
-        devLog.debug('📝   - Contains JSON braces:', hasJson, 'western');
-        devLog.debug('📝   - Contains markdown code blocks:', hasMarkdownCodeBlock, 'western');
-        devLog.debug('📝   - Mentions "chartOverview":', hasChartOverview, 'western');
-        devLog.debug('📝   - Mentions "planetaryAnalysis":', hasPlanetaryAnalysis, 'western');
-      } else {
-        devLog.error('❌ ERROR: Groq response is EMPTY!');
-      }
-      devLog.debug('📝 =======================================', undefined, 'western');
-    } else if (!aiResponse || aiResponse.length === 0) {
-      devLog.error('❌ ERROR: Groq response is EMPTY!');
-    }
-
-    // Parse the response with error handling
-    let comprehensiveAnalysis;
-    let parsingFailed = false;
-    
-    try {
-      comprehensiveAnalysis = parseGroqResponse(
-        aiResponse,
-        chartData.planets || [],
-        chartData.houses || [],
-        chartData.aspects || [],
-        chartData.transits || []
+    if (resolved.degraded && resolved.source !== 'llm') {
+      devWarn(
+        `⚠️ Western comprehensive degraded (${resolved.source}) — not caching fresh LLM output`,
       );
-    } catch (parseError: any) {
-      parsingFailed = true;
-      devLog.error('❌ ========== PARSING ERROR ==========');
-      devLog.error('❌ Error message:', parseError.message);
-      devLog.error('❌ Error stack:', parseError.stack);
-      devLog.error('❌ Raw response that caused error (first 1000 chars):', aiResponse.substring(0, 1000));
-      devLog.error('❌ ====================================');
-      
-      // Use fallback but don't cache it
-      comprehensiveAnalysis = null;
-    }
-
-    // If parsing failed, generate fallback but don't cache it
-    if (!comprehensiveAnalysis || parsingFailed) {
-      devWarn('⚠️ Parsing failed - generating fallback without caching');
-      // Generate fallback using actual chart data
-      const chartBasedPredictions = generateChartBasedPredictions(
-        chartData.planets || [],
-        chartData.houses || [],
-        chartData.aspects || [],
-        chartData.transits || []
-      );
-      
-      // Extract key chart elements for fallback
-      const sunPlanet = (chartData.planets || []).find((p: any) => p.name?.toLowerCase() === 'sun');
-      const moonPlanet = (chartData.planets || []).find((p: any) => p.name?.toLowerCase() === 'moon');
-      const risingHouse = (chartData.houses || []).find((h: any, idx: number) => (h.number || idx + 1) === 1);
-      
-      const sunSign = sunPlanet?.sign?.signName || sunPlanet?.sign || 'Unknown';
-      const moonSign = moonPlanet?.sign?.signName || moonPlanet?.sign || 'Unknown';
-      const risingSign = risingHouse?.sign?.signName || risingHouse?.sign || 'Unknown';
-      
-      comprehensiveAnalysis = {
-        chartOverview: `Your Western astrology chart reveals a ${sunSign} Sun, ${moonSign} Moon, and ${risingSign} Rising sign, creating a unique astrological profile. The planetary positions, house placements, and aspects in your chart reveal important patterns that shape your personality, life path, and potential areas of growth.`,
-        planetaryAnalysis: (chartData.planets || []).map((p: any) => ({
-          planet: p.name,
-          analysis: `${p.name} in ${p.sign?.signName || p.sign || 'Unknown'} in House ${p.house || 'Unknown'} influences your life patterns and personality.`
-        })),
-        houseAnalysis: Array.from({ length: 12 }, (_, i) => {
-          const houseNum = i + 1;
-          const houseObj = (chartData.houses || [])[i] || (chartData.houses || []).find((h: any, idx: number) => (h.number || idx + 1) === houseNum);
-          const signName = houseObj?.sign?.signName || houseObj?.sign || 'Unknown sign';
-          return {
-            house: houseNum,
-            analysis: `House ${houseNum} (${signName} sign on cusp) represents important life themes and experiences.`
-          };
-        }),
-        aspectAnalysis: (chartData.aspects || []).slice(0, 10).map((a: any) => ({
-          aspect: `${a.planet1 || 'Planet'} ${a.type || 'aspect'} ${a.planet2 || 'Planet'}`,
-          analysis: `This aspect creates dynamic energy between these planetary influences.`
-        })),
-        transitAnalysis: (chartData.transits || []).length > 0
-          ? `Current planetary transits are actively influencing your chart: ${(chartData.transits || []).slice(0, 5).map((t: any) => `${t.name || 'Planet'} in ${t.sign?.signName || t.sign}`).join(', ')}.`
-          : 'Current transits are influencing various life areas.',
-        predictiveInsights: chartBasedPredictions
-      };
-      
-      // Don't cache failed parses - return error response or fallback without caching
-      devWarn('⚠️ Returning fallback analysis without caching due to parsing failure');
-      
       return NextResponse.json({
         success: true,
         data: {
           comprehensiveAnalysis,
           timestamp: Date.now(),
-          parsingFailed: true,
-          error: 'Failed to parse Groq response, using fallback'
-        }
-      } as any);
+          parsingFailed: resolved.parsingFailed ?? true,
+          fallbackSource: resolved.source,
+          error:
+            resolved.source === 'firestore_cache'
+              ? 'Using last saved report; AI narrative refresh failed'
+              : 'Failed to parse AI response, using chart-based fallback',
+        },
+      });
     }
 
     // Prepare response data

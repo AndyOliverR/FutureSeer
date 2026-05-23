@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { enforceToolSeerGate } from '@/lib/enforceToolSeerGate';
-import { createAIStream } from '@/lib/aiGateway';
+import { callTextStream } from '@/lib/aiStructuredOutput';
+import { cacheToolSeerAnswer } from '@/lib/toolSeerQuestionCache';
 import { devLog } from '@/lib/devLogger';
 import {
   buildHellenisticState,
@@ -70,8 +71,9 @@ export async function POST(request: NextRequest) {
     const state = buildHellenisticState(hellenisticContext);
     const chartSlice = getHellenisticSliceForQuestionType(questionType, state);
 
-    const stream = await createAIStream({
-      model: 'llama-3.3-70b-versatile',
+    const { stream } = await callTextStream({ label: 'hellenistic-ask-seer', model: 'llama-3.3-70b-versatile',
+      userId,
+      cacheQuestion: typeof question === 'string' ? question.trim() : String(question).trim(),
       messages: [
         {
           role: 'system',
@@ -87,11 +89,16 @@ export async function POST(request: NextRequest) {
       new ReadableStream({
         async start(controller) {
           try {
+            let fullResponse = '';
             for await (const chunk of stream) {
               const content = chunk.choices[0]?.delta?.content || '';
               if (content) {
+                fullResponse += content;
                 controller.enqueue(new TextEncoder().encode(content));
               }
+            }
+            if (fullResponse.trim()) {
+              await cacheToolSeerAnswer('hellenistic-ask-seer', userId, question, fullResponse);
             }
           } catch (error) {
             devLog.error('Hellenistic Seer stream error:', error);
