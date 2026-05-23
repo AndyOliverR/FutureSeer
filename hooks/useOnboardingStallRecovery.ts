@@ -13,7 +13,8 @@ type LogFn = (
 ) => Promise<void>
 
 /**
- * After `ms` with `enabled` true, sets `stuck` and logs once to onboarding (critical visibility).
+ * After `ms` with `enabled` true (while the tab is visible), sets `stuck` and logs once.
+ * Timer pauses while the document is hidden so background tabs do not false-positive.
  */
 export function useOnboardingStallRecovery(
   enabled: boolean,
@@ -33,29 +34,61 @@ export function useOnboardingStallRecovery(
       loggedRef.current = false
       return undefined
     }
-    const t = window.setTimeout(() => {
+
+    let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+
+    const clearTimer = () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+        timeoutId = undefined
+      }
+    }
+
+    const fireStall = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return
+      }
       setStuck(true)
       if (loggedRef.current) return
       loggedRef.current = true
-      const tabHidden =
-        typeof document !== "undefined" && document.visibilityState === "hidden"
       void logOnboarding(
         "loading_stall",
         `Onboarding wait exceeded ${ms}ms (${surface})`,
-        tabHidden ? "warning" : "error",
+        "error",
         {
           surface,
           reason: "loading_timeout",
           msWaited: ms,
-          ...(tabHidden ? { tabHidden: true } : {}),
           ...(funnelNewUser === true || funnelNewUser === false
             ? { funnelNewUser: funnelNewUser ? "new_user" : "returning" }
             : {}),
         }
       )
-    }, ms)
+    }
+
+    const schedule = () => {
+      clearTimer()
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return
+      }
+      timeoutId = window.setTimeout(fireStall, ms)
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        clearTimer()
+        setStuck(false)
+        return
+      }
+      schedule()
+    }
+
+    schedule()
+    document.addEventListener("visibilitychange", onVisibilityChange)
+
     return () => {
-      window.clearTimeout(t)
+      clearTimer()
+      document.removeEventListener("visibilitychange", onVisibilityChange)
       setStuck(false)
     }
   }, [enabled, ms, surface, funnelNewUser, logOnboarding])

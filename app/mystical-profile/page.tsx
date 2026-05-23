@@ -54,6 +54,27 @@ function humanizePipelineSlug(slug: string): string {
     .trim()
 }
 
+function MysticalProfileRefreshingBar({ variant }: { variant: "m3" | "web" }) {
+  const isM3 = variant === "m3"
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={
+        isM3
+          ? "mb-4 flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-high px-3 py-2 text-xs text-surface-on-variant"
+          : "mb-4 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-slate-900/50 px-3 py-2 text-xs text-slate-400"
+      }
+    >
+      <Loader2
+        className={cn("h-3.5 w-3.5 shrink-0 animate-spin", isM3 ? "text-primary" : "text-amber-400")}
+        aria-hidden
+      />
+      Updating your highlights from the cloud…
+    </div>
+  )
+}
+
 function MysticalProfileGeneratingPlaceholder({
   variant,
   loadingMessages,
@@ -620,6 +641,19 @@ export default function MysticalProfilePage() {
     }
   }, [generationActive, progressLooksStale, user, router])
 
+  const hasCachedMysticalProfile = p != null
+
+  const showMysticalProfileRefresh = useMemo(() => {
+    return Boolean(
+      user &&
+        userProfile != null &&
+        hasRequiredProfileSetup(userProfile) &&
+        userProfile.mysticalProfileGenerated &&
+        profileLoading &&
+        hasCachedMysticalProfile,
+    )
+  }, [user, userProfile, profileLoading, hasCachedMysticalProfile])
+
   const showMysticalPageLoader = useMemo(() => {
     if (authLoading) return true
     // Never paint an empty main slot while auth is unknown (avoids blank shell + FAB only).
@@ -630,12 +664,21 @@ export default function MysticalProfilePage() {
       userProfile != null &&
       hasRequiredProfileSetup(userProfile) &&
       userProfile.mysticalProfileGenerated &&
-      profileLoading
+      profileLoading &&
+      !hasCachedMysticalProfile
     ) {
       return true
     }
     return false
-  }, [authLoading, user, userProfile, isSuperadmin, isAdmin, profileLoading])
+  }, [
+    authLoading,
+    user,
+    userProfile,
+    isSuperadmin,
+    isAdmin,
+    profileLoading,
+    hasCachedMysticalProfile,
+  ])
 
   const mysticalPageLoaderStall = useOnboardingStallRecovery(showMysticalPageLoader, {
     surface: "mystical_profile_page_loader",
@@ -903,6 +946,7 @@ export default function MysticalProfilePage() {
             Your cross-tool map—tap a card for depth in each tradition, then Ask the Seer to connect the threads.
           </p>
         </div>
+        {showMysticalProfileRefresh ? <MysticalProfileRefreshingBar variant="m3" /> : null}
         {ctaRow}
         {mysticalSharePayload ? (
           <MysticalShareCardPanel payload={mysticalSharePayload} variant="m3" />
@@ -1004,6 +1048,7 @@ export default function MysticalProfilePage() {
             unified read.
           </p>
         </div>
+        {showMysticalProfileRefresh ? <MysticalProfileRefreshingBar variant="web" /> : null}
         {ctaRow}
         {mysticalSharePayload ? (
           <MysticalShareCardPanel payload={mysticalSharePayload} variant="web" />
