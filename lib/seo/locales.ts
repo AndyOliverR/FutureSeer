@@ -64,7 +64,7 @@ export function buildLocaleAlternates(baseUrl: string): Record<string, string> {
     const segment = localeSegment(locale);
     map[locale] = `${base}/${segment}`;
   }
-  map["x-default"] = `${base}/en`;
+  map["x-default"] = `${base}/`;
   return map;
 }
 
@@ -76,7 +76,7 @@ export function buildPathLocaleAlternates(baseUrl: string, path: string): Record
     const segment = localeSegment(locale);
     map[locale] = `${base}/${segment}${normalizedPath}`;
   }
-  map["x-default"] = `${base}/en${normalizedPath}`;
+  map["x-default"] = `${base}${normalizedPath}`;
   return map;
 }
 

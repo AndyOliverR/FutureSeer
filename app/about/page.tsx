@@ -4,11 +4,14 @@ import { EnhancedFooter } from "@/components/enhanced-footer";
 import { PersonalNote } from "@/components/about/PersonalNote";
 import { AboutFAQ } from "@/components/about/AboutFAQ";
 import { Button } from "@/components/ui/button";
-import { buildLocalizedKeywordSet } from "@/lib/seo/locales";
+import { buildLocalizedKeywordSet, normalizeSeoBaseUrl } from "@/lib/seo/locales";
+
+const site = normalizeSeoBaseUrl(process.env.NEXT_PUBLIC_APP_URL ?? "https://futureseer.app");
 
 export const metadata: Metadata = {
   title: "About FutureSeer - AI-Powered Mystical Insights",
   description: "Read the founder note, our mission, and common questions about FutureSeer.",
+  alternates: { canonical: `${site}/about` },
   keywords: buildLocalizedKeywordSet([
     "about FutureSeer",
     "mystical AI",
