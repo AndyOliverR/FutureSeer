@@ -163,6 +163,7 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/tools/i-ching', destination: '/tools/iching', permanent: true },
+      { source: '/privacy-policy', destination: '/privacy', permanent: true },
     ];
   },
   // Add security headers to fix Cross-Origin-Opener-Policy warnings
